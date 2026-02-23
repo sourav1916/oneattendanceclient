@@ -263,7 +263,7 @@ const Signup = () => {
   return (
     <>
       <style>{animationStyles}</style>
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 flex items-center justify-center p-5 relative overflow-hidden">
 
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
