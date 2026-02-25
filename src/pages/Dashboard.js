@@ -1,30 +1,36 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import MainLayout from "../layout/MainLayout";
+import Home from "./Enduser/Home";
+import AdminHome from "./Admin/Home";
 
 const Dashboard = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Admin gets MainLayout
+  if (user.is_system_admin) {
+    return (
+      <MainLayout>
+        <Routes>
+          <Route path="/" element={<AdminHome />} />
+        </Routes>
+      </MainLayout>
+    );
+  }
+
+  // Enduser gets simple layout or direct Home
   return (
-    <MainLayout>
-      <h1 className="text-3xl font-bold mb-6">
-        Welcome to OneAttendanceClient Dashboard
-      </h1>
-
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold">Total Clients</h2>
-          <p className="text-3xl mt-4 text-blue-600">120</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold">Today's Attendance</h2>
-          <p className="text-3xl mt-4 text-green-600">98</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold">Pending Reports</h2>
-          <p className="text-3xl mt-4 text-red-600">5</p>
-        </div>
-      </div>
-    </MainLayout>
+    <Routes>
+      <Route path="/" element={<Home />} />
+    </Routes>
   );
 };
-
 export default Dashboard;

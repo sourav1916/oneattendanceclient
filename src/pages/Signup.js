@@ -24,8 +24,10 @@ const Signup = () => {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
 
   const [otpSent, setOtpSent] = useState(false);
@@ -197,19 +199,21 @@ const Signup = () => {
       showToast("Password must be at least 6 characters", "error");
       return;
     }
-
+    let payload = {
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      email: email,
+      phone: phone,
+      password: password,
+    }
     try {
       setLoading(true);
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          password,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -452,6 +456,18 @@ const Signup = () => {
                           className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
                         />
                       </div>
+                      <div className="relative">
+                        <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Middle name"
+                          value={middleName}
+                          onChange={(e) => setMiddleName(e.target.value)}
+                          onFocus={() => setFocusedField('middleName')}
+                          onBlur={() => setFocusedField(null)}
+                          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                        />
+                      </div>
 
                       <div className="relative">
                         <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -574,6 +590,18 @@ const Signup = () => {
                   {currentStep === 3 && (
                     /* Step 3: Set Password */
                     <>
+                      <div className="relative">
+                        <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                        <input
+                          type="tel"
+                          placeholder="Phone number"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                        />
+                      </div>
+
                       <div className="relative">
                         <HiOutlineLockClosed className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
                         <input

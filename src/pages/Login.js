@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FaUserShield,  
-  FaArrowRight, 
+import {
+  FaUserShield,
+  FaArrowRight,
   FaShieldAlt,
   FaRocket,
   FaCheckCircle,
@@ -90,9 +90,8 @@ const Login = () => {
 
   const showToast = (message, type = "success") => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 ${
-      type === "success" ? "bg-gradient-to-r from-green-500 to-blue-500" : "bg-red-500"
-    } text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn`;
+    toast.className = `fixed top-4 right-4 ${type === "success" ? "bg-gradient-to-r from-green-500 to-blue-500" : "bg-red-500"
+      } text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn`;
     toast.innerHTML = type === "success" ? `✓ ${message}` : `✗ ${message}`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
@@ -109,7 +108,6 @@ const Login = () => {
       const res = await fetch(`${API_BASE}/otp/send-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -119,7 +117,7 @@ const Login = () => {
       setOtpSent(true);
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
-      
+
       showToast("OTP sent successfully! 📧");
     } catch (err) {
       showToast(err.message || "Login failed", "error");
@@ -140,19 +138,29 @@ const Login = () => {
       const res = await fetch(`${API_BASE}/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ email, otp: otpString }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
+      // Save token and user data from the nested user object
       localStorage.setItem("token", data.token);
-      
+      localStorage.setItem("user_id", data.user.id);
+      localStorage.setItem("email", data.user.email);
+      localStorage.setItem("first_name", data.user.first_name);
+      localStorage.setItem("middle_name", data.user.middle_name || '');
+      localStorage.setItem("last_name", data.user.last_name);
+      localStorage.setItem("phone", data.user.phone);
+      localStorage.setItem("is_system_admin", data.user.is_system_admin);
+
+      // Also save full user object for easy access
+      localStorage.setItem("user", JSON.stringify(data.user));
+
       showToast("Login Successful! 🎉");
-      
+
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/");
       }, 1500);
     } catch (err) {
       showToast(err.message || "OTP verification failed", "error");
@@ -212,7 +220,7 @@ const Login = () => {
     <>
       <style>{animationStyles}</style>
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 flex items-center justify-center p-5 relative overflow-hidden">
-        
+
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(20)].map((_, i) => (
@@ -276,12 +284,12 @@ const Login = () => {
                 OneAttendance
               </span>
             </motion.h1>
-            
+
             <motion.p
               variants={itemVariants}
               className="mt-6 text-xl text-white/90"
             >
-              Streamline your attendance management with our secure, 
+              Streamline your attendance management with our secure,
               modern platform. Experience the future of workforce tracking.
             </motion.p>
 
@@ -342,8 +350,8 @@ const Login = () => {
                   variants={itemVariants}
                   className="text-sm text-gray-500 text-center"
                 >
-                  {otpSent 
-                    ? 'Enter the 6-digit code sent to your email' 
+                  {otpSent
+                    ? 'Enter the 6-digit code sent to your email'
                     : 'Access your account securely'}
                 </motion.p>
               </motion.div>
@@ -469,9 +477,8 @@ const Login = () => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handleResendOtp}
                         disabled={resendTimer > 0 || loading}
-                        className={`text-blue-600 font-semibold ${
-                          resendTimer > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:text-blue-800'
-                        }`}
+                        className={`text-blue-600 font-semibold ${resendTimer > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:text-blue-800'
+                          }`}
                       >
                         <div className="flex items-center space-x-1">
                           <BiReset />
