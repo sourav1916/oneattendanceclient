@@ -125,40 +125,53 @@ const Signup = () => {
     setTimeout(() => toast.remove(), 3000);
   };
 
-  const handleRequestOtp = async () => {
-    if (!email) {
-      showToast("Please enter email first", "error");
-      return;
+ 
+const handleRequestOtp = async () => {
+  if (!email) {
+    showToast("Please enter email first", "error");
+    return;
+  }
+
+  if (!firstName || !lastName) {
+    showToast("Please enter your full name", "error");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    
+    console.log("📤 Sending OTP to:", email); // Debug log
+    
+    const res = await fetch(`${API_BASE}/otp/send-register`, {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json" 
+      },
+      credentials: "include",  // ✅ Sessions work
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+    
+    console.log("📥 Response:", data); // Debug log
+    
+    if (!res.ok) {
+      throw new Error(data.message || `HTTP ${res.status}`);
     }
 
-    if (!firstName || !lastName) {
-      showToast("Please enter your full name", "error");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/otp/send-register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      setOtpSent(true);
-      setResendTimer(60);
-      setOtp(["", "", "", "", "", ""]);
-      setCurrentStep(2);
-      showToast("OTP sent successfully! 📧");
-    } catch (err) {
-      showToast(err.message || "Failed to send OTP", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setOtpSent(true);
+    setResendTimer(60);
+    setOtp(["", "", "", "", "", ""]);
+    setCurrentStep(2);
+    showToast("OTP sent successfully! 📧");
+    
+  } catch (err) {
+    console.error("OTP Error:", err); // Better debugging
+    showToast(err.message || "Failed to send OTP", "error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
@@ -169,7 +182,7 @@ const Signup = () => {
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/otp/verify`, {
+      const res = await fetch(`${API_BASE}/otp/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
