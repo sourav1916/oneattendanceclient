@@ -37,6 +37,7 @@ const Signup = () => {
   const [focusedField, setFocusedField] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [otpCode, setOtpCode] = useState(null);
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -125,82 +126,65 @@ const Signup = () => {
     setTimeout(() => toast.remove(), 3000);
   };
 
- 
-const handleRequestOtp = async () => {
-  if (!email) {
-    showToast("Please enter email first", "error");
-    return;
-  }
 
-  if (!firstName || !lastName) {
-    showToast("Please enter your full name", "error");
-    return;
-  }
+
+// Generate OTP in frontend
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+const handleRequestOtp = async () => {
+  if (!email) return showToast("Please enter email first", "error");
+  if (!firstName || !lastName) return showToast("Please enter your full name", "error");
 
   try {
     setLoading(true);
-    
-    console.log("📤 Sending OTP to:", email); // Debug log
-    
+
+    // ✅ Generate OTP in frontend
+    const otpCode = generateOtp();
+    setOtpCode(otpCode); // save in state for verification
+
+    console.log("📤 Sending OTP to:", email, "OTP:", otpCode);
+
     const res = await fetch(`${API_BASE}/otp/send-register`, {
       method: "POST",
-      headers: { 
-        "Content-Type": "application/json" 
-      },
-      credentials: "include",  // ✅ Sessions work
-      body: JSON.stringify({ email }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp: otpCode }), // send OTP for email only
     });
 
     const data = await res.json();
-    
-    console.log("📥 Response:", data); // Debug log
-    
-    if (!res.ok) {
-      throw new Error(data.message || `HTTP ${res.status}`);
-    }
+    console.log("📥 Response:", data);
+
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
 
     setOtpSent(true);
     setResendTimer(60);
     setOtp(["", "", "", "", "", ""]);
     setCurrentStep(2);
     showToast("OTP sent successfully! 📧");
-    
+
   } catch (err) {
-    console.error("OTP Error:", err); // Better debugging
+    console.error("OTP Error:", err);
     showToast(err.message || "Failed to send OTP", "error");
   } finally {
     setLoading(false);
   }
 };
 
-  const handleVerifyOtp = async () => {
-    const otpString = otp.join("");
-    if (otpString.length !== 6) {
-      showToast("Please enter complete 6-digit OTP", "error");
-      return;
-    }
+const handleVerifyOtp = () => {
+  const otpString = otp.join("");
+  if (otpString.length !== 6) {
+    return showToast("Please enter complete 6-digit OTP", "error");
+  }
 
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE}/otp/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, otp: otpString }),
-      });
+  // ✅ Verify entirely in frontend
+  if (otpString === otpCode) {
+    setEmailVerified(true);
+    setCurrentStep(3);
+    showToast("Email Verified Successfully! ✅");
+  } else {
+    showToast("Invalid OTP code ❌", "error");
+  }
+};
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      setEmailVerified(true);
-      setCurrentStep(3);
-      showToast("Email Verified Successfully! ✅");
-    } catch (err) {
-      showToast(err.message || "OTP verification failed", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateAccount = async () => {
     if (!password) {
