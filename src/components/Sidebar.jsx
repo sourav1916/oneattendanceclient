@@ -10,30 +10,10 @@ import {
   FaSignOutAlt, FaCog
 } from "react-icons/fa";
 
-const menuItems = [
-  { title: "Dashboard", icon: FaTachometerAlt, path: "/", permission: null },
-  { title: "Employees", icon: FaUsers, path: "/employees", permission: "view_employees" },
-  { title: "Attendance", icon: FaClock, path: "/attendance", permission: "view_attendance" },
-  { title: "Leaves", icon: FaFileAlt, path: "/leaves", permission: "view_leaves" },
-  { title: "Reports", icon: FaChartBar, path: "/reports", permission: "view_reports" },
-  { title: "Companies", icon: FaBriefcase, path: "/companies", permission: "manage_companies" },
-];
-
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const location = useLocation();
-  const { user } = useAuth();
-  const { hasPermission } = usePermission();
   const [isHovered, setIsHovered] = useState(false);
-
   const isExpanded = isHovered || !isCollapsed;
-
-  // Debug: Log permissions
-  console.log("Current user:", user);
-  console.log("Has view_employees permission:", hasPermission("view_employees"));
-  console.log("Has view_attendance permission:", hasPermission("view_attendance"));
-  console.log("Has view_leaves permission:", hasPermission("view_leaves"));
-  console.log("Has view_reports permission:", hasPermission("view_reports"));
-  console.log("Has manage_companies permission:", hasPermission("manage_companies"));
 
   return (
     <motion.aside
@@ -43,76 +23,225 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       animate={{ width: isExpanded ? 256 : 80 }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
     >
-          
-      {/* Menu Items */}
+      {/* Menu Items - Manual Typed */}
       <nav className="p-3 space-y-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ height: 'calc(100vh - 200px)' }}>
-        {menuItems.map((item, index) => {
-          const Icon = item.icon;
-          
-          // Debug: Check each item
-          console.log(`Checking ${item.title}:`, {
-            permission: item.permission,
-            hasAccess: !item.permission || hasPermission(item.permission)
-          });
+        
+        {/* Dashboard */}
+        <motion.a
+          href="/"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0 * 0.05 }}
+          whileHover={{ x: isExpanded ? 5 : 0 }}
+          className={`
+            flex items-center p-2 rounded-lg transition-all duration-200 relative cursor-pointer
+            ${location.pathname === "/" 
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }
+            ${!isExpanded ? 'justify-center' : 'space-x-3'}
+          `}
+          title={!isExpanded ? "Dashboard" : ''}
+        >
+          <FaTachometerAlt className="w-5 h-5 flex-shrink-0" />
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-sm font-medium whitespace-nowrap overflow-hidden"
+              >
+                Dashboard
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {location.pathname === "/" && isExpanded && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute right-2 w-1 h-6 bg-blue-500 rounded-full"
+            />
+          )}
+          {!isExpanded && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              Dashboard
+            </div>
+          )}
+        </motion.a>
 
-          const hasAccess = true; // TEMPORARY: Show all items for debugging
-          
-          if (!hasAccess) return null;
+        {/* Employees */}
+        <motion.a
+          href="/profile"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1 * 0.05 }}
+          whileHover={{ x: isExpanded ? 5 : 0 }}
+          className={`
+            flex items-center p-2 rounded-lg transition-all duration-200 relative cursor-pointer
+            ${location.pathname === "/profile" 
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }
+            ${!isExpanded ? 'justify-center' : 'space-x-3'}
+          `}
+          title={!isExpanded ? "Employees" : ''}
+        >
+          <FaUsers className="w-5 h-5 flex-shrink-0" />
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-sm font-medium whitespace-nowrap overflow-hidden"
+              >
+                Profile
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {location.pathname === "/profile" && isExpanded && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute right-2 w-1 h-6 bg-blue-500 rounded-full"
+            />
+          )}
+          {!isExpanded && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              Profile
+            </div>
+          )}
+        </motion.a>
 
-          const isActive = location.pathname === item.path;
+        {/* Attendance */}
+        <motion.a
+          href="/attendance"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 2 * 0.05 }}
+          whileHover={{ x: isExpanded ? 5 : 0 }}
+          className={`
+            flex items-center p-2 rounded-lg transition-all duration-200 relative cursor-pointer
+            ${location.pathname === "/attendance" 
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }
+            ${!isExpanded ? 'justify-center' : 'space-x-3'}
+          `}
+          title={!isExpanded ? "Attendance" : ''}
+        >
+          <FaClock className="w-5 h-5 flex-shrink-0" />
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-sm font-medium whitespace-nowrap overflow-hidden"
+              >
+                Attendance
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {location.pathname === "/attendance" && isExpanded && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute right-2 w-1 h-6 bg-blue-500 rounded-full"
+            />
+          )}
+          {!isExpanded && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              Attendance
+            </div>
+          )}
+        </motion.a>
 
-          return (
-            <motion.a
-              key={item.path}
-              href={item.path}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              whileHover={{ x: isExpanded ? 5 : 0 }}
-              className={`
-                flex items-center p-2 rounded-lg transition-all duration-200 relative cursor-pointer
-                ${isActive 
-                  ? 'bg-blue-50 text-blue-600' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }
-                ${!isExpanded ? 'justify-center' : 'space-x-3'}
-              `}
-              title={!isExpanded ? item.title : ''}
-            >
-              <Icon className="w-5 h-5 flex-shrink-0" />
-              
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    className="text-sm font-medium whitespace-nowrap overflow-hidden"
-                  >
-                    {item.title}
-                  </motion.span>
-                )}
-              </AnimatePresence>
+        {/* Leaves */}
+        <motion.a
+          href="/leaves"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 3 * 0.05 }}
+          whileHover={{ x: isExpanded ? 5 : 0 }}
+          className={`
+            flex items-center p-2 rounded-lg transition-all duration-200 relative cursor-pointer
+            ${location.pathname === "/leaves" 
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }
+            ${!isExpanded ? 'justify-center' : 'space-x-3'}
+          `}
+          title={!isExpanded ? "Leaves" : ''}
+        >
+          <FaFileAlt className="w-5 h-5 flex-shrink-0" />
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-sm font-medium whitespace-nowrap overflow-hidden"
+              >
+                Leaves
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {location.pathname === "/leaves" && isExpanded && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute right-2 w-1 h-6 bg-blue-500 rounded-full"
+            />
+          )}
+          {!isExpanded && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              Leaves
+            </div>
+          )}
+        </motion.a>
 
-              {isActive && isExpanded && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="absolute right-2 w-1 h-6 bg-blue-500 rounded-full"
-                />
-              )}
+        {/* Reports */}
+        <motion.a
+          href="/reports"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 4 * 0.05 }}
+          whileHover={{ x: isExpanded ? 5 : 0 }}
+          className={`
+            flex items-center p-2 rounded-lg transition-all duration-200 relative cursor-pointer
+            ${location.pathname === "/reports" 
+              ? 'bg-blue-50 text-blue-600' 
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }
+            ${!isExpanded ? 'justify-center' : 'space-x-3'}
+          `}
+          title={!isExpanded ? "Reports" : ''}
+        >
+          <FaChartBar className="w-5 h-5 flex-shrink-0" />
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-sm font-medium whitespace-nowrap overflow-hidden"
+              >
+                Reports
+              </motion.span>
+            )}
+          </AnimatePresence>
+          {location.pathname === "/reports" && isExpanded && (
+            <motion.div
+              layoutId="activeIndicator"
+              className="absolute right-2 w-1 h-6 bg-blue-500 rounded-full"
+            />
+          )}
+          {!isExpanded && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              Reports
+            </div>
+          )}
+        </motion.a>
 
-              {/* Tooltip for mini mode */}
-              {!isExpanded && (
-                <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                  {item.title}
-                </div>
-              )}
-            </motion.a>
-          );
-        })}
       </nav>
-
-      
     </motion.aside>
   );
 }

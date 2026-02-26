@@ -7,6 +7,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import MyAttendance from "./pages/employee/MyAttendance";
 import { useAuth } from "./context/AuthContext";
+import MyProfile from "./pages/employee/Profile";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -47,6 +48,7 @@ export default function App() {
             <>
               <Route index element={<EmployeeDashboard />} />
               <Route path="attendance" element={<MyAttendance />} />
+              <Route path="profile" element={<MyProfile />} />
             </>
           ) : null}
         </Route>
