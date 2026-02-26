@@ -11,10 +11,12 @@ import {
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
+import { useAuth } from "../../context/AuthContext";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
 const Login = () => {
+  const { user, login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +26,7 @@ const Login = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [focusedField, setFocusedField] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -90,7 +93,9 @@ const Login = () => {
 
   const showToast = (message, type = "success") => {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 ${type === "success" ? "bg-gradient-to-r from-green-500 to-blue-500" : "bg-red-500"
+    toast.className = `fixed top-4 right-4 ${type === "success"
+      ? "bg-gradient-to-r from-green-500 to-blue-500"
+      : "bg-red-500"
       } text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn`;
     toast.innerHTML = type === "success" ? `✓ ${message}` : `✗ ${message}`;
     document.body.appendChild(toast);
@@ -144,30 +149,26 @@ const Login = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // Save token and user data from the nested user object
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user_id", data.user.id);
-      localStorage.setItem("email", data.user.email);
-      localStorage.setItem("first_name", data.user.first_name);
-      localStorage.setItem("middle_name", data.user.middle_name || '');
-      localStorage.setItem("last_name", data.user.last_name);
-      localStorage.setItem("phone", data.user.phone);
-      localStorage.setItem("is_system_admin", data.user.is_system_admin);
-
-      // Also save full user object for easy access
+      // ✅ FIXED localStorage syntax
       localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.token);
+
+      login(data.user); // Update context
 
       showToast("Login Successful! 🎉");
 
+      // ✅ Navigate after context updates
       setTimeout(() => {
-        navigate("/");
-      }, 1500);
+        navigate("/", { replace: true });
+      }, 100);
+
     } catch (err) {
       showToast(err.message || "OTP verification failed", "error");
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleResendOtp = async () => {
     if (resendTimer > 0) return;

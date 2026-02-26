@@ -11,7 +11,7 @@ import {
 } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 
-const Home = () => {
+const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [attendanceData, setAttendanceData] = useState(null);
   const [checkInTime, setCheckInTime] = useState(null);
@@ -148,7 +148,7 @@ const Home = () => {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex items-center justify-center p-8">
+      <div className="w-full h-full flex items-center justify-center p-8">
         <div className="w-full max-w-7xl animate-pulse">
           {/* Top bar skeleton */}
           <div className="flex justify-between items-center mb-12">
@@ -175,28 +175,28 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 text-slate-800 overflow-hidden">
-      {/* Light theme background elements */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:64px_64px]"></div>
+    <div className="w-full h-full relative">
+      {/* Light theme background elements - Made less intrusive */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none"></div>
       
-      {/* Soft gradient orbs for light theme */}
+      {/* Soft gradient orbs for light theme - Reduced opacity */}
       <motion.div 
         variants={floatingAnimation}
         initial="initial"
         animate="animate"
-        className="absolute top-20 left-20 w-96 h-96 bg-indigo-200/30 rounded-full blur-3xl"
+        className="absolute top-20 left-20 w-96 h-96 bg-indigo-100/20 rounded-full blur-3xl pointer-events-none"
       />
       <motion.div 
         variants={floatingAnimation}
         initial="initial"
         animate="animate"
-        className="absolute bottom-20 right-20 w-96 h-96 bg-purple-200/30 rounded-full blur-3xl"
+        className="absolute bottom-20 right-20 w-96 h-96 bg-purple-100/20 rounded-full blur-3xl pointer-events-none"
       />
       <motion.div 
         variants={floatingAnimation}
         initial="initial"
         animate="animate"
-        className="absolute top-1/2 left-1/3 w-96 h-96 bg-amber-200/20 rounded-full blur-3xl"
+        className="absolute top-1/2 left-1/3 w-96 h-96 bg-amber-100/10 rounded-full blur-3xl pointer-events-none"
       />
 
       {/* Main content */}
@@ -542,4 +542,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default Dashboard;

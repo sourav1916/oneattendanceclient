@@ -1,139 +1,151 @@
-// components/Navbar.js
+// components/Navbar.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
+import { 
+  FaBell, FaSearch, FaChevronDown, FaSignOutAlt, 
+  FaCog, FaRocket, FaMoon, FaSun, FaCloudSun
+} from "react-icons/fa";
 
-const Navbar = () => {
-  const navigate = useNavigate();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  // ✅ LOGOUT FUNCTION
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login', { replace: true });  // ✅ NOW WORKS!
-  };
+export default function Navbar({ isCollapsed }) {
+  const { user, logout } = useAuth();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   return (
-    <div className="h-16 bg-white shadow flex items-center justify-between px-6 relative">
-      {/* Left */}
-      <h2 className="text-xl font-semibold text-slate-700">
-        Attendance Dashboard
-      </h2>
-
-      {/* Right */}
-      <div className="flex items-center gap-4">
-        {/* Notifications */}
-        <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          🔔
-          <span className="absolute -top-1 -right-1 bg-red-500 text-xs text-white rounded-full px-1.5 py-0.5 min-w-[18px] h-5 flex items-center justify-center text-[10px]">
-            3
-          </span>
-        </button>
-
-        {/* Profile Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 hover:bg-gray-100 p-2 rounded-lg transition-colors"
-          >
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-semibold shadow-md">
-              S
-            </div>
-            <span className="text-slate-600 font-semibold hidden md:inline">Subham</span>
-            <svg className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {/* ✅ DROPDOWN MENU with MOTION */}
+    <motion.nav 
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className="bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm w-auto flex-shrink-0"
+      style={{ 
+        transition: 'margin-left 0.2s ease-in-out, width 0.2s ease-in-out'
+      }}
+    >
+      <div className="px-4 h-16 flex items-center justify-between">
+        {/* Left Section - Logo and Search */}
+        <div className="flex items-center flex-1">
+          {/* Logo - Only show when sidebar is collapsed */}
           <AnimatePresence>
-            {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50"
+            {isCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                whileHover={{ scale: 1.05 }}
+                className="flex items-center space-x-2 mr-8"
               >
-                {/* Profile Info */}
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-semibold">
-                      S
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-sm">Subham Modak</p>
-                      <p className="text-xs text-gray-500">subham@company.com</p>
-                    </div>
-                  </div>
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                  <FaRocket className="text-sm text-white" />
                 </div>
-
-                {/* Menu Items */}
-                <motion.button
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    // Navigate to profile
-                  }}
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-slate-800 font-semibold text-base"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  My Profile
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    // Navigate to settings
-                  }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Settings
-                </motion.button>
-
-                {/* Divider */}
-                <div className="h-px bg-gray-100 my-1"></div>
-
-                {/* ✅ LOGOUT BUTTON */}
-                <motion.button
-                  whileHover={{ x: 4, backgroundColor: '#fee2e2' }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2.5 text-sm text-red-700 font-semibold hover:bg-red-50 flex items-center gap-3 transition-all duration-200"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7" />
-                  </svg>
-                  Logout
-                </motion.button>
+                  OneAttendance
+                </motion.span>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Search Bar - Takes appropriate space */}
+          <div className={isCollapsed ? "flex-1 max-w-2xl" : "flex-1 max-w-md ml-0"}>
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 text-sm" />
+              <input
+                type="text"
+                placeholder="Search employees, reports..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-800 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right Section - Weather and User */}
+        <div className="flex items-center space-x-3 ml-4">
+          {/* Weather Widget */}
+          <div className="flex items-center space-x-2 px-3 py-1.5 bg-slate-100 rounded-lg">
+            <FaCloudSun className="text-amber-500 text-lg" />
+            <div className="text-sm whitespace-nowrap">
+              <span className="font-semibold text-slate-800">29°C</span>
+              <span className="text-slate-500 ml-1">Sunny</span>
+            </div>
+          </div>
+
+          {/* Theme Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            {isDarkMode ? <FaSun className="w-4 h-4" /> : <FaMoon className="w-4 h-4" />}
+          </motion.button>
+
+          {/* Notifications */}
+          <motion.button 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <FaBell className="w-4 h-4" />
+            <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-[10px] rounded-full flex items-center justify-center text-white font-medium">
+              3
+            </span>
+          </motion.button>
+
+          {/* User Menu */}
+          <div className="relative">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center space-x-2 p-1 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
+                <span className="text-white font-medium text-sm">
+                  {user?.name?.charAt(0) || 'U'}
+                </span>
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-slate-800 font-medium text-sm whitespace-nowrap">{user?.name || 'John Doe'}</p>
+                <p className="text-xs text-slate-500 capitalize whitespace-nowrap">{user?.role || 'Developer'}</p>
+              </div>
+              <motion.div
+                animate={{ rotate: showProfileMenu ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FaChevronDown className="w-3 h-3 text-slate-400" />
+              </motion.div>
+            </motion.button>
+
+            <AnimatePresence>
+              {showProfileMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50"
+                >
+                  <button className="flex items-center w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                    <FaCog className="w-4 h-4 mr-2 text-slate-400" />
+                    Settings
+                  </button>
+                  <button
+                    onClick={logout}
+                    className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  >
+                    <FaSignOutAlt className="w-4 h-4 mr-2" />
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
-
-      {/* Click outside to close */}
-      {isDropdownOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-40"
-          onClick={() => setIsDropdownOpen(false)}
-        />
-      )}
-    </div>
+    </motion.nav>
   );
-};
-
-export default Navbar;
+}

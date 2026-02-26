@@ -1,47 +1,56 @@
-// App.js
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-function App() {
-  const [isAuth, setIsAuth] = useState(false);
-  const [loading, setLoading] = useState(true);
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/auth/Login";
+import AdminLayout from "./layouts/AdminLayout";
+import EmployeeLayout from "./layouts/EmployeeLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminDashboard from "./pages/admin/Dashboard";
+import EmployeeDashboard from "./pages/employee/Dashboard";
+import MyAttendance from "./pages/employee/MyAttendance";
+import { useAuth } from "./context/AuthContext";
 
-  // Listen for storage changes (including logout from other tabs)
-  const handleStorageChange = useCallback(() => {
-    const token = localStorage.getItem("token");
-    const user = localStorage.getItem("user");
-    setIsAuth(!!(token && user));
-  }, []);
-
-  useEffect(() => {
-    handleStorageChange();
-    setLoading(false);
-
-    // Listen for logout from other tabs
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [handleStorageChange]);
+export default function App() {
+  const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white flex items-center justify-center">
+        <div className="text-xl font-semibold text-slate-600">Loading...</div>
+      </div>
+    );
   }
 
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
-        <Route path="/login" element={!isAuth ? <Login /> : <Navigate to="/" />} />
-        <Route path="/signup" element={<Signup />} />
-
-        {/* FIX: allow nested routes */}
-        <Route path="/*" element={<Dashboard />} />
-
-        <Route path="*" element={<Navigate to={isAuth ? "/" : "/login"} />} />
+        <Route path="/login" element={<Login />} />
+        
+        {/* Fixed: Always render ONE layout based on user */}
+        <Route
+          path="/"
+          element={
+            user ? (
+              user.is_system_admin ? <AdminLayout /> : <EmployeeLayout />
+            ) : (
+              <ProtectedRoute />
+            )
+          }
+        >
+          {/* Admin routes */}
+          {user?.is_system_admin ? (
+            <>
+              <Route index element={<AdminDashboard />} />
+            </>
+          ) : null}
+          
+          {/* Employee routes */}
+          {!user?.is_system_admin && user ? (
+            <>
+              <Route index element={<EmployeeDashboard />} />
+              <Route path="attendance" element={<MyAttendance />} />
+            </>
+          ) : null}
+        </Route>
       </Routes>
-    </Router>
-
+    </BrowserRouter>
   );
 }
-
-export default App;

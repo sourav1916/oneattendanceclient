@@ -13,7 +13,7 @@ import {
 } from 'react-icons/hi';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Attendance = () => {
+const MyAttendance = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [location, setLocation] = useState({ loading: true, enabled: false, address: '', error: null });
   const [attendance, setAttendance] = useState({
@@ -21,7 +21,7 @@ const Attendance = () => {
     isCheckedOut: false,
     checkInTime: null,
     checkOutTime: null,
-    status: 'absent', // 'present', 'absent', 'late'
+    status: 'absent',
     workingHours: '0h 0m'
   });
   const [showSuccess, setShowSuccess] = useState(false);
@@ -43,8 +43,6 @@ const Attendance = () => {
       
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          // In a real app, you would reverse geocode here
-          // For demo, we'll simulate an address
           setLocation({
             loading: false,
             enabled: true,
@@ -87,7 +85,6 @@ const Attendance = () => {
       hour12: true
     });
 
-    // Determine if late (after 9:15 AM)
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const isLate = hours > 9 || (hours === 9 && minutes > 15);
@@ -116,7 +113,6 @@ const Attendance = () => {
       hour12: true
     });
 
-    // Calculate working hours (simplified)
     const workingHours = calculateWorkingHours(attendance.checkInTime, formattedTime);
 
     setAttendance({
@@ -219,9 +215,9 @@ const Attendance = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden">
+    <div className="w-full h-full relative bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      {/* Animated background - With pointer-events-none */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-200/40 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/40 rounded-full blur-3xl animate-pulse animation-delay-2000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-200/30 rounded-full blur-3xl animate-pulse animation-delay-4000"></div>
@@ -234,7 +230,7 @@ const Attendance = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50"
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"
           >
             <div className="bg-emerald-50 text-emerald-800 px-6 py-3 rounded-2xl shadow-lg border border-emerald-200 flex items-center gap-3">
               <HiOutlineCheckCircle className="w-5 h-5 text-emerald-600" />
@@ -245,13 +241,13 @@ const Attendance = () => {
       </AnimatePresence>
 
       {/* Main content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -517,4 +513,4 @@ const Attendance = () => {
   );
 };
 
-export default Attendance;
+export default MyAttendance;
