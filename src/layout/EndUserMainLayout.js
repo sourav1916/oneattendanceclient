@@ -84,7 +84,7 @@ const EndUserMainLayout = ({ children }) => {
               <span className="text-white font-bold text-xl">E</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">EmployeeHub</h1>
+              <h1 className="text-xl font-bold text-slate-800">OneAttendance</h1>
               <p className="text-xs text-slate-500">Employee Portal</p>
             </div>
           </div>
