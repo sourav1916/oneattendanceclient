@@ -33,13 +33,14 @@ function App() {
       <Routes>
         <Route path="/login" element={!isAuth ? <Login /> : <Navigate to="/" />} />
         <Route path="/signup" element={<Signup />} />
-        
-        {/* ✅ Dashboard handles MainLayout internally */}
-        <Route path="/" element={<Dashboard />} />
-        
+
+        {/* FIX: allow nested routes */}
+        <Route path="/*" element={<Dashboard />} />
+
         <Route path="*" element={<Navigate to={isAuth ? "/" : "/login"} />} />
       </Routes>
     </Router>
+
   );
 }
 
