@@ -1,21 +1,26 @@
 // layouts/EmployeeLayout.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
-import CustomScrollbar from "../components/CustomScrollbar"; // Add this import
+import CustomScrollbar from "../components/CustomScrollbar";
 import { motion, AnimatePresence } from "framer-motion";
+import { useScrollable } from "../hooks/useScrollable";
 
 export default function EmployeeLayout() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [navbarHeight, setNavbarHeight] = useState(64);
+  const navbarRef = useRef(null);
+  
+  // Use our custom scrollable hook
+  const mainContentRef = useScrollable(isMobile);
 
   // Check if mobile view
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
-      // Auto close mobile menu when resizing to desktop
       if (window.innerWidth >= 768) {
         setIsMobileMenuOpen(false);
       }
@@ -23,11 +28,57 @@ export default function EmployeeLayout() {
     
     checkMobile();
     window.addEventListener('resize', checkMobile);
+    window.addEventListener('orientationchange', checkMobile);
     
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('orientationchange', checkMobile);
+    };
   }, []);
 
-  // Close mobile menu when clicking outside
+  // Measure navbar height
+  useEffect(() => {
+    const measureNavbar = () => {
+      if (navbarRef.current) {
+        const height = navbarRef.current.offsetHeight;
+        setNavbarHeight(height);
+      }
+    };
+
+    measureNavbar();
+    window.addEventListener('resize', measureNavbar);
+    window.addEventListener('orientationchange', measureNavbar);
+    
+    return () => {
+      window.removeEventListener('resize', measureNavbar);
+      window.removeEventListener('orientationchange', measureNavbar);
+    };
+  }, []);
+
+  // Set main content height
+  useEffect(() => {
+    if (mainContentRef.current && navbarRef.current) {
+      const updateHeight = () => {
+        const navbarHeight = navbarRef.current.offsetHeight;
+        const viewportHeight = window.innerHeight;
+        const availableHeight = viewportHeight - navbarHeight;
+        
+        mainContentRef.current.style.height = `${availableHeight}px`;
+        mainContentRef.current.style.maxHeight = `${availableHeight}px`;
+      };
+
+      updateHeight();
+      window.addEventListener('resize', updateHeight);
+      window.addEventListener('orientationchange', updateHeight);
+      
+      return () => {
+        window.removeEventListener('resize', updateHeight);
+        window.removeEventListener('orientationchange', updateHeight);
+      };
+    }
+  }, [mainContentRef]);
+
+  // Handle mobile menu
   useEffect(() => {
     if (!isMobile || !isMobileMenuOpen) return;
     
@@ -42,38 +93,65 @@ export default function EmployeeLayout() {
     };
     
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [isMobile, isMobileMenuOpen]);
 
-  // Prevent body scroll when mobile menu is open
+  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (isMobile && isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.top = '0';
+      document.body.style.left = '0';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
     }
     
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
     };
   }, [isMobile, isMobileMenuOpen]);
 
   return (
     <>
-      {/* Add CustomScrollbar here - it will inject styles globally */}
       <CustomScrollbar />
       
-      <div className="h-screen bg-gradient-to-br from-slate-50 to-white overflow-hidden flex flex-col">
-        {/* Navbar with mobile menu toggle */}
-        <Navbar 
-          isCollapsed={isCollapsed} 
-          isMobile={isMobile}
-          isMobileMenuOpen={isMobileMenuOpen}
-          setIsMobileMenuOpen={setIsMobileMenuOpen}
-        />
+      <div 
+        className="bg-gradient-to-br from-slate-50 to-white flex flex-col"
+        style={{ 
+          height: '100vh',
+          overflow: 'hidden',
+          position: 'relative'
+        }}
+      >
+        {/* Navbar */}
+        <div ref={navbarRef} className="flex-shrink-0">
+          <Navbar 
+            isCollapsed={isCollapsed} 
+            isMobile={isMobile}
+            isMobileMenuOpen={isMobileMenuOpen}
+            setIsMobileMenuOpen={setIsMobileMenuOpen}
+          />
+        </div>
         
-        {/* Main Content Area */}
-        <div className="flex flex-1 overflow-hidden relative">
+        <div className="flex flex-1 relative" style={{ minHeight: 0, height: '100%' }}>
           {/* Desktop Sidebar */}
           {!isMobile && (
             <Sidebar 
@@ -83,29 +161,32 @@ export default function EmployeeLayout() {
             />
           )}
           
-          {/* Mobile Sidebar - Overlay (initially hidden) */}
+          {/* Mobile Sidebar */}
           <AnimatePresence>
             {isMobile && isMobileMenuOpen && (
               <>
-                {/* Backdrop */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 0.5 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="fixed inset-0 bg-black z-40"
+                  className="relative inset-0 bg-black z-40"
                   onClick={() => setIsMobileMenuOpen(false)}
+                  onTouchEnd={() => setIsMobileMenuOpen(false)}
                 />
                 
-                {/* Sidebar */}
                 <motion.div
                   id="mobile-sidebar"
                   initial={{ x: -280 }}
                   animate={{ x: 0 }}
                   exit={{ x: -280 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="fixed left-0 top-0 h-full z-50"
-                  style={{ marginTop: '4rem' }} // Height of navbar
+                  className="fixed left-0 z-50 bg-white shadow-xl"
+                  style={{ 
+                    top: `${navbarHeight}px`, 
+                    height: `calc(100% - ${navbarHeight}px)`,
+                    width: '256px'
+                  }}
                 >
                   <Sidebar 
                     isCollapsed={false} 
@@ -118,19 +199,22 @@ export default function EmployeeLayout() {
             )}
           </AnimatePresence>
           
-          {/* Main Content */}
-          <motion.main 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="flex-1 overflow-y-auto bg-slate-50 w-full"
+          {/* Main Content - Works for both mouse and touch */}
+          <main
+            ref={mainContentRef}
+            className="flex-1 bg-slate-50 w-full overflow-y-auto"
+            style={{
+              scrollBehavior: 'smooth',
+              WebkitOverflowScrolling: 'touch', // Critical for iOS
+              position: 'relative',
+            }}
           >
             <div className="p-4 md:p-6 sm:p-2 max-w-7xl mx-auto">
               <AnimatePresence mode="wait">
                 <Outlet />
               </AnimatePresence>
             </div>
-          </motion.main>
+          </main>
         </div>
       </div>
     </>

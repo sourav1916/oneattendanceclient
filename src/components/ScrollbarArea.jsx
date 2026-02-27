@@ -1,17 +1,27 @@
 // components/ScrollableArea.jsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const ScrollableArea = ({ 
   children, 
   className = '', 
-  variant = 'default', // default, thin, extra-thin, gradient, primary, success, warning, danger
+  variant = 'default',
   maxHeight = 'auto',
   maxWidth = 'auto',
   hideScrollbar = false,
   showGradient = false,
   ...props 
 }) => {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    // Ensure the component is scrollable
+    if (scrollRef.current) {
+      scrollRef.current.style.overflowY = 'auto';
+      scrollRef.current.style.overflowX = 'hidden';
+    }
+  }, []);
+
   const getScrollbarClass = () => {
     switch (variant) {
       case 'thin':
@@ -35,6 +45,7 @@ const ScrollableArea = ({
 
   return (
     <motion.div
+      ref={scrollRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -48,7 +59,8 @@ const ScrollableArea = ({
       style={{ 
         maxHeight, 
         maxWidth,
-        scrollBehavior: 'smooth'
+        scrollBehavior: 'smooth',
+        WebkitOverflowScrolling: 'touch',
       }}
       {...props}
     >
