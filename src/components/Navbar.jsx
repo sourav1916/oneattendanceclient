@@ -3,11 +3,17 @@ import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  FaBell, FaSearch, FaChevronDown, FaSignOutAlt, 
-  FaCog, FaRocket, FaMoon, FaSun, FaCloudSun
+  FaBell, FaChevronDown, FaSignOutAlt, 
+  FaCog, FaRocket, FaMoon, FaSun, FaCloudSun,
+  FaBars, FaTimes
 } from "react-icons/fa";
 
-export default function Navbar({ isCollapsed }) {
+export default function Navbar({ 
+  isCollapsed, 
+  isMobile, 
+  isMobileMenuOpen, 
+  setIsMobileMenuOpen 
+}) {
   const { user, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -16,23 +22,41 @@ export default function Navbar({ isCollapsed }) {
     <motion.nav 
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm w-auto flex-shrink-0"
-      style={{ 
-        transition: 'margin-left 0.2s ease-in-out, width 0.2s ease-in-out'
-      }}
+      className="bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm w-auto flex-shrink-0 relative z-50"
     >
-      <div className="px-4 h-16 flex items-center justify-between">
-        {/* Left Section - Logo and Search */}
+      <div className="px-3 md:px-4 h-16 flex items-center justify-between">
+        {/* Left Section - Logo and Menu Toggle */}
         <div className="flex items-center flex-1">
-          {/* Logo - Only show when sidebar is collapsed */}
-          <AnimatePresence>
-            {isCollapsed && (
+          {/* Mobile Menu Toggle - Only shows on mobile */}
+          {isMobile && (
+            <motion.button
+              id="hamburger-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+              }}
+              className="p-2 mr-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              {isMobileMenuOpen ? (
+                <FaTimes className="w-5 h-5" />
+              ) : (
+                <FaBars className="w-5 h-5" />
+              )}
+            </motion.button>
+          )}
+          
+          {/* Logo - Shows differently based on screen size */}
+          <AnimatePresence mode="wait">
+            {(!isMobile || (isMobile && !isMobileMenuOpen)) && (
               <motion.div 
+                key="logo"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center space-x-2 mr-8"
+                className="flex items-center space-x-2"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
                   <FaRocket className="text-sm text-white" />
@@ -40,9 +64,9 @@ export default function Navbar({ isCollapsed }) {
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-slate-800 font-semibold text-base"
+                  className="text-slate-800 font-semibold text-base whitespace-nowrap"
                 >
-                  OneAttendance
+                  {isMobile ? 'OneAttendance' : 'OneAttendance'}
                 </motion.span>
               </motion.div>
             )}
@@ -50,13 +74,13 @@ export default function Navbar({ isCollapsed }) {
         </div>
 
         {/* Right Section - Weather and User */}
-        <div className="flex items-center space-x-3 ml-4">
-          {/* Weather Widget */}
-          <div className="flex items-center space-x-2 px-3 py-1.5 bg-slate-100 rounded-lg">
+        <div className="flex items-center space-x-2 md:space-x-3 ml-auto">
+          {/* Weather Widget - Hide on very small screens */}
+          <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-slate-100 rounded-lg">
             <FaCloudSun className="text-amber-500 text-lg" />
             <div className="text-sm whitespace-nowrap">
               <span className="font-semibold text-slate-800">29°C</span>
-              <span className="text-slate-500 ml-1">Sunny</span>
+              <span className="text-slate-500 ml-1 hidden lg:inline">Sunny</span>
             </div>
           </div>
 
@@ -86,7 +110,10 @@ export default function Navbar({ isCollapsed }) {
           <div className="relative">
             <motion.button
               whileHover={{ scale: 1.02 }}
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProfileMenu(!showProfileMenu);
+              }}
               className="flex items-center space-x-2 p-1 hover:bg-slate-100 rounded-lg transition-colors"
             >
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
