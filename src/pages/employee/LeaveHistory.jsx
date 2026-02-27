@@ -48,7 +48,7 @@ const LeaveHistory = () => {
     direction: 'desc'
   });
   const [expandedRows, setExpandedRows] = useState([]);
-  const [viewMode, setViewMode] = useState('list'); // list, grid, calendar
+  const [viewMode, setViewMode] = useState('list'); // list, grid
   const [stats, setStats] = useState({
     total: 0,
     approved: 0,
@@ -302,7 +302,39 @@ const LeaveHistory = () => {
     });
   };
 
+  const getStatusIcon = (status, size = 'text-sm') => {
+    switch(status) {
+      case 'approved':
+        return <FaCheckCircle className={`${size} text-green-500`} />;
+      case 'rejected':
+        return <FaTimesCircle className={`${size} text-red-500`} />;
+      case 'pending':
+        return <FaClock className={`${size} text-yellow-500`} />;
+      case 'cancelled':
+        return <FaBan className={`${size} text-gray-500`} />;
+      default:
+        return null;
+    }
+  };
+
   const getStatusBadge = (status) => {
+    const classes = {
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      cancelled: 'bg-gray-100 text-gray-800'
+    };
+    
+    return (
+      <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${classes[status]}`}>
+        {status === 'approved' ? 'A' : 
+         status === 'rejected' ? 'R' : 
+         status === 'pending' ? 'P' : 'C'}
+      </span>
+    );
+  };
+
+  const getFullStatusBadge = (status) => {
     const classes = {
       approved: 'bg-green-100 text-green-800',
       rejected: 'bg-red-100 text-red-800',
@@ -318,18 +350,18 @@ const LeaveHistory = () => {
     };
 
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classes[status]}`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${classes[status]}`}>
         {icons[status]}
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = (type, size = 'text-sm') => {
     const leaveType = leaveTypes[type];
     if (!leaveType) return null;
     const Icon = leaveType.icon;
-    return <Icon className={`text-${leaveType.color}-600`} />;
+    return <Icon className={`${size} text-${leaveType.color}-600`} />;
   };
 
   const getTypeBadge = (type) => {
@@ -337,7 +369,24 @@ const LeaveHistory = () => {
     if (!leaveType) return null;
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${leaveType.color}-100 text-${leaveType.color}-800`}>
+      <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-${leaveType.color}-100 text-${leaveType.color}-800`}>
+        {type === 'annual' ? 'AL' :
+         type === 'sick' ? 'SL' :
+         type === 'casual' ? 'CL' :
+         type === 'bereavement' ? 'BL' :
+         type === 'maternity' ? 'ML' :
+         type === 'paternity' ? 'PL' :
+         type === 'study' ? 'ST' : 'UL'}
+      </span>
+    );
+  };
+
+  const getFullTypeBadge = (type) => {
+    const leaveType = leaveTypes[type];
+    if (!leaveType) return null;
+    
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-${leaveType.color}-100 text-${leaveType.color}-800`}>
         {leaveType.label}
       </span>
     );
@@ -384,14 +433,14 @@ const LeaveHistory = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+      <div className="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div className="mx-auto px-2 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center">
-              <FaHistory className="text-3xl text-blue-600 mr-3" />
+              <FaHistory className="text-xl sm:text-2xl md:text-3xl text-blue-600 mr-2 sm:mr-3" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Leave History</h1>
-                <p className="mt-1 text-sm text-gray-500">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Leave History</h1>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
                   Track and manage all your leave requests
                 </p>
               </div>
@@ -399,74 +448,78 @@ const LeaveHistory = () => {
             
             <button
               onClick={loadLeaveHistory}
-              className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
             >
-              <FaRedoAlt className="mr-2" />
-              Refresh
+              <FaRedoAlt className="mr-1 sm:mr-2 text-sm" />
+              <span>Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto px-2 py-4 sm:py-6 md:py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Total Requests</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-white rounded-lg shadow p-2 sm:p-3 md:p-4">
+            <p className="text-[10px] sm:text-xs text-gray-500">Total</p>
+            <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold text-gray-900">{stats.total}</p>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          
+          <div className="bg-white rounded-lg shadow p-2 sm:p-3 md:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">Approved</p>
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold text-green-600">{stats.approved}</p>
               </div>
-              <FaCheckCircle className="text-green-500 text-xl" />
+              <FaCheckCircle className="text-green-500 text-sm sm:text-base md:text-xl hidden sm:block" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          
+          <div className="bg-white rounded-lg shadow p-2 sm:p-3 md:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">Rejected</p>
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold text-red-600">{stats.rejected}</p>
               </div>
-              <FaTimesCircle className="text-red-500 text-xl" />
+              <FaTimesCircle className="text-red-500 text-sm sm:text-base md:text-xl hidden sm:block" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          
+          <div className="bg-white rounded-lg shadow p-2 sm:p-3 md:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">Pending</p>
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
-              <FaClock className="text-yellow-500 text-xl" />
+              <FaClock className="text-yellow-500 text-sm sm:text-base md:text-xl hidden sm:block" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
+          
+          <div className="bg-white rounded-lg shadow p-2 sm:p-3 md:p-4 col-span-2 sm:col-span-1">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total Days</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalDays}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">Days</p>
+                <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold text-blue-600">{stats.totalDays}</p>
               </div>
-              <FaCalendarAlt className="text-blue-500 text-xl" />
+              <FaCalendarAlt className="text-blue-500 text-sm sm:text-base md:text-xl hidden sm:block" />
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className="bg-white rounded-lg shadow mb-4 sm:mb-6">
+          <div className="p-3 sm:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
               {/* Search */}
-              <div className="md:col-span-2 relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <div className="relative sm:col-span-2 lg:col-span-2">
+                <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs sm:text-sm" />
                 <input
                   type="text"
-                  placeholder="Search by ID, reason..."
+                  placeholder="Search..."
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-7 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -475,7 +528,7 @@ const LeaveHistory = () => {
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Status</option>
                   <option value="approved">Approved</option>
@@ -490,7 +543,7 @@ const LeaveHistory = () => {
                 <select
                   value={filters.type}
                   onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Types</option>
                   {Object.entries(leaveTypes).map(([key, value]) => (
@@ -504,7 +557,7 @@ const LeaveHistory = () => {
                 <select
                   value={filters.year}
                   onChange={(e) => setFilters({ ...filters, year: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="all">All Years</option>
                   {getAvailableYears().map(year => (
@@ -518,38 +571,38 @@ const LeaveHistory = () => {
                 <select
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="list">List View</option>
-                  <option value="grid">Grid View</option>
+                  <option value="list">List</option>
+                  <option value="grid">Grid</option>
                 </select>
               </div>
             </div>
 
             {/* Active Filters */}
             {(filters.status !== 'all' || filters.type !== 'all' || filters.year !== 'all' || filters.search) && (
-              <div className="mt-3 flex items-center flex-wrap gap-2">
-                <span className="text-sm text-gray-500">Active Filters:</span>
+              <div className="mt-2 sm:mt-3 flex items-center flex-wrap gap-1 sm:gap-2">
+                <span className="text-[10px] sm:text-xs text-gray-500">Active:</span>
                 {filters.status !== 'all' && (
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  <span className="text-[8px] sm:text-xs bg-blue-100 text-blue-800 px-1.5 sm:px-2 py-0.5 rounded-full">
                     Status: {filters.status}
                   </span>
                 )}
                 {filters.type !== 'all' && (
-                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                  <span className="text-[8px] sm:text-xs bg-purple-100 text-purple-800 px-1.5 sm:px-2 py-0.5 rounded-full">
                     Type: {leaveTypes[filters.type]?.label}
                   </span>
                 )}
                 {filters.year !== 'all' && (
-                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                  <span className="text-[8px] sm:text-xs bg-green-100 text-green-800 px-1.5 sm:px-2 py-0.5 rounded-full">
                     Year: {filters.year}
                   </span>
                 )}
                 <button
                   onClick={() => setFilters({ status: 'all', type: 'all', year: 'all', month: 'all', search: '' })}
-                  className="text-xs text-red-600 hover:text-red-800"
+                  className="text-[8px] sm:text-xs text-red-600 hover:text-red-800"
                 >
-                  Clear All
+                  Clear
                 </button>
               </div>
             )}
@@ -559,12 +612,112 @@ const LeaveHistory = () => {
         {/* Loading State */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
           <>
-            {/* List View */}
-            {viewMode === 'list' && (
+            {/* Mobile View - Cards (320px - 767px) */}
+            <div className="block md:hidden">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                {filteredRequests.map((request) => {
+                  const leaveType = leaveTypes[request.type];
+                  
+                  return (
+                    <div key={request.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                      {/* Card Header with Type and Status */}
+                      <div className={`bg-gradient-to-r from-${leaveType?.color}-500 to-${leaveType?.color}-600 px-4 py-3`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            {getTypeIcon(request.type, 'text-base text-white mr-2')}
+                            <h3 className="text-sm font-semibold text-white">
+                              {leaveType?.label}
+                            </h3>
+                          </div>
+                          <div className="flex items-center">
+                            {getStatusIcon(request.status, 'text-base text-white mr-1')}
+                            <span className="text-xs text-white opacity-90">
+                              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Card Body */}
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs text-gray-500">Request ID</span>
+                          <span className="text-xs font-mono font-medium text-gray-900">{request.requestId}</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs text-gray-500">Applied On</span>
+                          <span className="text-xs text-gray-900">{formatDate(request.appliedOn)}</span>
+                        </div>
+                        
+                        <div className="border-t border-dashed border-gray-200 my-3 pt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-gray-600">Leave Period</span>
+                            <span className="text-xs font-medium text-gray-900">
+                              {request.days} {request.days === 1 ? 'day' : 'days'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600">From</span>
+                            <span className="font-medium">{formatDate(request.startDate)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs mt-1">
+                            <span className="text-gray-600">To</span>
+                            <span className="font-medium">{formatDate(request.endDate)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                          <p className="text-xs text-gray-700 line-clamp-2">{request.reason}</p>
+                        </div>
+                        
+                        {request.reviewer && (
+                          <div className="flex items-center text-[10px] text-gray-500 mb-3">
+                            <FaUserTie className="mr-1 text-xs" />
+                            <span>Reviewed by {request.reviewer}</span>
+                          </div>
+                        )}
+                        
+                        {/* Card Footer Actions */}
+                        <div className="flex items-center justify-end space-x-3 pt-2 border-t border-gray-100">
+                          <button
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setShowDetails(true);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="View Details"
+                          >
+                            <FaEye className="text-sm" />
+                          </button>
+                          <button
+                            onClick={() => handlePrint(request)}
+                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            title="Print"
+                          >
+                            <FaPrint className="text-sm" />
+                          </button>
+                          <button
+                            onClick={() => handleEmail(request)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            title="Email"
+                          >
+                            <FaEnvelope className="text-sm" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop View - Table (768px and above) */}
+            <div className="hidden md:block">
               <div className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -651,7 +804,7 @@ const LeaveHistory = () => {
                               </button>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {getTypeBadge(request.type)}
+                              {getFullTypeBadge(request.type)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {formatDate(request.appliedOn)}
@@ -666,11 +819,11 @@ const LeaveHistory = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="text-sm font-medium text-gray-900">
-                                {request.days} {request.days === 1 ? 'day' : 'days'}
+                                {request.days}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              {getStatusBadge(request.status)}
+                              {getFullStatusBadge(request.status)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end space-x-2">
@@ -756,108 +909,14 @@ const LeaveHistory = () => {
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Grid View */}
-            {viewMode === 'grid' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredRequests.map((request) => {
-                  const leaveType = leaveTypes[request.type];
-                  const Icon = leaveType?.icon || FaUmbrellaBeach;
-                  
-                  return (
-                    <div key={request.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                      <div className={`bg-gradient-to-r from-${leaveType?.color}-500 to-${leaveType?.color}-600 px-6 py-4`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center">
-                            <Icon className="text-white text-xl mr-2" />
-                            <h3 className="text-lg font-semibold text-white">
-                              {leaveType?.label}
-                            </h3>
-                          </div>
-                          {getStatusBadge(request.status)}
-                        </div>
-                      </div>
-                      
-                      <div className="p-6">
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-500">Request ID</span>
-                            <span className="text-sm font-medium text-gray-900">{request.requestId}</span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-500">Applied On</span>
-                            <span className="text-sm text-gray-900">{formatDate(request.appliedOn)}</span>
-                          </div>
-                          
-                          <div className="border-t border-dashed pt-3">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">From</span>
-                              <span className="font-medium">{formatDate(request.startDate)}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm mt-1">
-                              <span className="text-gray-600">To</span>
-                              <span className="font-medium">{formatDate(request.endDate)}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                            <span className="text-sm text-gray-600">Total Days</span>
-                            <span className="text-lg font-bold text-blue-600">{request.days}</span>
-                          </div>
-                          
-                          <div className="text-sm text-gray-600 line-clamp-2">
-                            {request.reason}
-                          </div>
-                          
-                          {request.reviewer && (
-                            <div className="flex items-center text-xs text-gray-500">
-                              <FaUserTie className="mr-1" />
-                              Reviewed by {request.reviewer}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="mt-4 flex justify-end space-x-2">
-                          <button
-                            onClick={() => {
-                              setSelectedRequest(request);
-                              setShowDetails(true);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="View Details"
-                          >
-                            <FaEye />
-                          </button>
-                          <button
-                            onClick={() => handlePrint(request)}
-                            className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                            title="Print"
-                          >
-                            <FaPrint />
-                          </button>
-                          <button
-                            onClick={() => handleEmail(request)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Email"
-                          >
-                            <FaEnvelope />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            </div>
 
             {/* No Results */}
             {filteredRequests.length === 0 && (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <FaHistory className="text-5xl text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No leave requests found</h3>
-                <p className="text-gray-500">Try adjusting your filters or apply for a new leave</p>
+              <div className="bg-white rounded-lg shadow p-8 sm:p-12 text-center">
+                <FaHistory className="text-3xl sm:text-4xl md:text-5xl text-gray-300 mx-auto mb-3 sm:mb-4" />
+                <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-2">No leave requests found</h3>
+                <p className="text-xs sm:text-sm text-gray-500">Try adjusting your filters or apply for a new leave</p>
               </div>
             )}
           </>
@@ -868,12 +927,12 @@ const LeaveHistory = () => {
       {showDetails && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  {getTypeIcon(selectedRequest.type)}
-                  <h3 className="text-xl font-bold text-gray-900 ml-2">
+                  {getTypeIcon(selectedRequest.type, 'text-lg sm:text-xl')}
+                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 ml-2">
                     Leave Request Details
                   </h3>
                 </div>
@@ -881,107 +940,94 @@ const LeaveHistory = () => {
                   onClick={() => setShowDetails(false)}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <FaTimesCircle className="w-6 h-6" />
+                  <FaTimesCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
 
               {/* Status Banner */}
-              <div className={`p-4 rounded-lg mb-4 ${
+              <div className={`p-3 sm:p-4 rounded-lg mb-4 ${
                 selectedRequest.status === 'approved' ? 'bg-green-50 border border-green-200' :
                 selectedRequest.status === 'rejected' ? 'bg-red-50 border border-red-200' :
                 selectedRequest.status === 'pending' ? 'bg-yellow-50 border border-yellow-200' :
                 'bg-gray-50 border border-gray-200'
               }`}>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="flex items-center">
-                    {selectedRequest.status === 'approved' && <FaCheckCircle className="text-green-500 text-xl mr-2" />}
-                    {selectedRequest.status === 'rejected' && <FaTimesCircle className="text-red-500 text-xl mr-2" />}
-                    {selectedRequest.status === 'pending' && <FaClock className="text-yellow-500 text-xl mr-2" />}
-                    {selectedRequest.status === 'cancelled' && <FaBan className="text-gray-500 text-xl mr-2" />}
+                    {getStatusIcon(selectedRequest.status, 'text-lg sm:text-xl mr-2')}
                     <div>
-                      <p className="font-medium">
+                      <p className="text-sm sm:text-base font-medium">
                         Request {selectedRequest.status.charAt(0).toUpperCase() + selectedRequest.status.slice(1)}
                       </p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs sm:text-sm text-gray-500">
                         {selectedRequest.status === 'approved' && `Approved by ${selectedRequest.reviewer} on ${formatDate(selectedRequest.reviewedOn)}`}
                         {selectedRequest.status === 'rejected' && `Rejected by ${selectedRequest.reviewer} on ${formatDate(selectedRequest.reviewedOn)}`}
                         {selectedRequest.status === 'pending' && 'Awaiting approval'}
                       </p>
                     </div>
                   </div>
-                  <span className="text-sm text-gray-500">{selectedRequest.requestId}</span>
+                  <span className="text-xs sm:text-sm text-gray-500">{selectedRequest.requestId}</span>
                 </div>
               </div>
 
               {/* Request Details */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-3">Leave Information</h4>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3">Leave Information</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Leave Type</span>
-                      <span className="text-sm font-medium">{leaveTypes[selectedRequest.type]?.label}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Leave Type</span>
+                      <span className="text-xs sm:text-sm font-medium">{leaveTypes[selectedRequest.type]?.label}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Start Date</span>
-                      <span className="text-sm font-medium">{formatDate(selectedRequest.startDate)}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Start Date</span>
+                      <span className="text-xs sm:text-sm font-medium">{formatDate(selectedRequest.startDate)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">End Date</span>
-                      <span className="text-sm font-medium">{formatDate(selectedRequest.endDate)}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">End Date</span>
+                      <span className="text-xs sm:text-sm font-medium">{formatDate(selectedRequest.endDate)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Total Days</span>
-                      <span className="text-sm font-bold text-blue-600">{selectedRequest.days} days</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Total Days</span>
+                      <span className="text-xs sm:text-sm font-bold text-blue-600">{selectedRequest.days} days</span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500 mb-3">Application Details</h4>
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3">Application Details</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Applied On</span>
-                      <span className="text-sm font-medium">{formatDateTime(selectedRequest.appliedOn)}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Applied On</span>
+                      <span className="text-xs sm:text-sm font-medium">{formatDateTime(selectedRequest.appliedOn)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Contact Number</span>
-                      <span className="text-sm font-medium">{selectedRequest.contactNumber}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Contact</span>
+                      <span className="text-xs sm:text-sm font-medium">{selectedRequest.contactNumber}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Address</span>
-                      <span className="text-sm font-medium text-right">{selectedRequest.addressDuringLeave}</span>
+                      <span className="text-xs sm:text-sm text-gray-600">Address</span>
+                      <span className="text-xs sm:text-sm font-medium text-right">{selectedRequest.addressDuringLeave}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Reason */}
-              <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Reason for Leave</h4>
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-gray-800">{selectedRequest.reason}</p>
+              <div className="mb-4 sm:mb-6">
+                <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Reason for Leave</h4>
+                <div className="bg-gray-50 rounded-lg p-2 sm:p-3">
+                  <p className="text-xs sm:text-sm text-gray-800">{selectedRequest.reason}</p>
                 </div>
               </div>
 
-              {/* Handover Notes */}
-              {selectedRequest.handoverNotes && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Work Handover Notes</h4>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-gray-800">{selectedRequest.handoverNotes}</p>
-                  </div>
-                </div>
-              )}
-
               {/* Documents */}
               {selectedRequest.documents && selectedRequest.documents.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Attached Documents</h4>
-                  <div className="flex flex-wrap gap-2">
+                <div className="mb-4 sm:mb-6">
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Attached Documents</h4>
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     {selectedRequest.documents.map((doc, index) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 bg-gray-100 rounded text-xs">
-                        <FaFileAlt className="mr-1 text-gray-500" />
+                      <span key={index} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-100 rounded text-[10px] sm:text-xs">
+                        <FaFileAlt className="mr-1 text-gray-500 text-[8px] sm:text-xs" />
                         {doc}
                       </span>
                     ))}
@@ -991,12 +1037,12 @@ const LeaveHistory = () => {
 
               {/* Reviewer Comments */}
               {selectedRequest.reviewerComments && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Reviewer Comments</h4>
-                  <div className={`p-3 rounded-lg ${
+                <div className="mb-4 sm:mb-6">
+                  <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-1 sm:mb-2">Reviewer Comments</h4>
+                  <div className={`p-2 sm:p-3 rounded-lg ${
                     selectedRequest.status === 'approved' ? 'bg-green-50' : 'bg-red-50'
                   }`}>
-                    <p className={`text-sm ${
+                    <p className={`text-xs sm:text-sm ${
                       selectedRequest.status === 'approved' ? 'text-green-800' : 'text-red-800'
                     }`}>
                       {selectedRequest.reviewerComments}
@@ -1006,25 +1052,25 @@ const LeaveHistory = () => {
               )}
 
               {/* History Timeline */}
-              <div className="border-t pt-6">
-                <h4 className="text-sm font-medium text-gray-500 mb-4">Request Timeline</h4>
-                <div className="space-y-3">
+              <div className="border-t pt-4 sm:pt-6">
+                <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-4">Request Timeline</h4>
+                <div className="space-y-2 sm:space-y-3">
                   {selectedRequest.history?.map((event, index) => (
                     <div key={index} className="flex items-start">
-                      <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                        {event.action === 'Applied' && <FaFileAlt className="text-blue-500" />}
-                        {event.action === 'Approved' && <FaCheckCircle className="text-green-500" />}
-                        {event.action === 'Rejected' && <FaTimesCircle className="text-red-500" />}
-                        {event.action === 'Cancelled' && <FaBan className="text-gray-500" />}
+                      <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        {event.action === 'Applied' && <FaFileAlt className="text-blue-500 text-xs sm:text-sm" />}
+                        {event.action === 'Approved' && <FaCheckCircle className="text-green-500 text-xs sm:text-sm" />}
+                        {event.action === 'Rejected' && <FaTimesCircle className="text-red-500 text-xs sm:text-sm" />}
+                        {event.action === 'Cancelled' && <FaBan className="text-gray-500 text-xs sm:text-sm" />}
                       </div>
-                      <div className="ml-3 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900">{event.action}</p>
-                          <p className="text-xs text-gray-500">{formatDateTime(event.date)}</p>
+                      <div className="ml-2 sm:ml-3 flex-1">
+                        <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between">
+                          <p className="text-xs sm:text-sm font-medium text-gray-900">{event.action}</p>
+                          <p className="text-[8px] sm:text-xs text-gray-500">{formatDateTime(event.date)}</p>
                         </div>
-                        <p className="text-xs text-gray-500">By: {event.by}</p>
+                        <p className="text-[8px] sm:text-xs text-gray-500">By: {event.by}</p>
                         {event.comments && (
-                          <p className="text-xs text-gray-600 mt-1">{event.comments}</p>
+                          <p className="text-[8px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">{event.comments}</p>
                         )}
                       </div>
                     </div>
@@ -1033,24 +1079,24 @@ const LeaveHistory = () => {
               </div>
 
               {/* Actions */}
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-4 sm:mt-6 flex flex-col xs:flex-row xs:justify-end gap-2 xs:gap-3">
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg order-2 xs:order-1"
                 >
                   Close
                 </button>
                 <button
                   onClick={() => handlePrint(selectedRequest)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center order-1 xs:order-2"
                 >
-                  <FaPrint className="mr-2" />
+                  <FaPrint className="mr-1 sm:mr-2 text-xs" />
                   Print
                 </button>
                 {selectedRequest.status === 'pending' && (
-                  <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center">
-                    <FaBan className="mr-2" />
-                    Cancel Request
+                  <button className="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center order-3">
+                    <FaBan className="mr-1 sm:mr-2 text-xs" />
+                    Cancel
                   </button>
                 )}
               </div>

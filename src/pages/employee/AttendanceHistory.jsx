@@ -27,7 +27,7 @@ const AttendanceHistory = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [viewMode, setViewMode] = useState('monthly'); // 'daily', 'monthly', 'weekly'
+  const [viewMode, setViewMode] = useState('monthly');
   const [summary, setSummary] = useState({
     totalDays: 0,
     presentDays: 0,
@@ -155,7 +155,6 @@ const AttendanceHistory = () => {
   const applyFilters = () => {
     let filtered = [...attendanceData];
     
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(record => 
         record.date.toLocaleDateString().includes(searchTerm) ||
@@ -163,7 +162,6 @@ const AttendanceHistory = () => {
       );
     }
     
-    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(record => record.status === statusFilter);
     }
@@ -201,22 +199,37 @@ const AttendanceHistory = () => {
     });
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status, size = 'text-sm') => {
     switch(status) {
       case 'present':
-        return <FaCheckCircle className="text-green-500" />;
+        return <FaCheckCircle className={`${size} text-green-500`} />;
       case 'late':
-        return <FaExclamationTriangle className="text-yellow-500" />;
+        return <FaExclamationTriangle className={`${size} text-yellow-500`} />;
       case 'absent':
-        return <FaTimesCircle className="text-red-500" />;
+        return <FaTimesCircle className={`${size} text-red-500`} />;
       case 'leave':
-        return <FaUmbrellaBeach className="text-blue-500" />;
+        return <FaUmbrellaBeach className={`${size} text-blue-500`} />;
       default:
         return null;
     }
   };
 
   const getStatusBadge = (status) => {
+    const classes = {
+      present: 'bg-green-100 text-green-800',
+      late: 'bg-yellow-100 text-yellow-800',
+      absent: 'bg-red-100 text-red-800',
+      leave: 'bg-blue-100 text-blue-800'
+    };
+    
+    return (
+      <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${classes[status]}`}>
+        {status.charAt(0).toUpperCase()}
+      </span>
+    );
+  };
+
+  const getFullStatusBadge = (status) => {
     const classes = {
       present: 'bg-green-100 text-green-800',
       late: 'bg-yellow-100 text-yellow-800',
@@ -236,7 +249,6 @@ const AttendanceHistory = () => {
   };
 
   const handleExport = () => {
-    // Create CSV content
     const headers = ['Date', 'Day', 'Status', 'In Time', 'Out Time', 'Break Start', 'Break End', 'Working Hours', 'Break Hours', 'Location'];
     const csvContent = [
       headers.join(','),
@@ -254,7 +266,6 @@ const AttendanceHistory = () => {
       ].join(','))
     ].join('\n');
     
-    // Download CSV
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -267,120 +278,124 @@ const AttendanceHistory = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-            <FaCalendarAlt className="mr-3 text-blue-600" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center">
+            <FaCalendarAlt className="mr-2 sm:mr-3 text-blue-600 text-xl sm:text-2xl md:text-3xl" />
             Attendance History
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-xs sm:text-sm text-gray-500">
             View and manage your attendance records
           </p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto px-2 py-4 sm:py-6 md:py-8">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+          {/* Present Days */}
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Present Days</p>
-                <p className="text-2xl font-semibold text-gray-900">{summary.presentDays}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Present</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">{summary.presentDays}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-full">
-                <FaCheckCircle className="w-6 h-6 text-green-600" />
+              <div className="p-2 sm:p-3 bg-green-100 rounded-full">
+                <FaCheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-green-600" />
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              {((summary.presentDays / summary.totalDays) * 100).toFixed(1)}% of total
+            <p className="mt-1 sm:mt-2 text-xs text-gray-500">
+              {((summary.presentDays / summary.totalDays) * 100 || 0).toFixed(1)}%
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          {/* Late Days */}
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Late Days</p>
-                <p className="text-2xl font-semibold text-gray-900">{summary.lateDays}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Late</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">{summary.lateDays}</p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <FaExclamationTriangle className="w-6 h-6 text-yellow-600" />
+              <div className="p-2 sm:p-3 bg-yellow-100 rounded-full">
+                <FaExclamationTriangle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-yellow-600" />
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              {((summary.lateDays / summary.totalDays) * 100).toFixed(1)}% of total
+            <p className="mt-1 sm:mt-2 text-xs text-gray-500">
+              {((summary.lateDays / summary.totalDays) * 100 || 0).toFixed(1)}%
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          {/* Working Hours */}
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Working Hours</p>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Hours</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
                   {summary.totalWorkingHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <FaHourglassHalf className="w-6 h-6 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-100 rounded-full">
+                <FaHourglassHalf className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-blue-600" />
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              Avg: {(summary.totalWorkingHours / (summary.presentDays + summary.lateDays) || 0).toFixed(1)}h/day
+            <p className="mt-1 sm:mt-2 text-xs text-gray-500">
+              Avg: {(summary.totalWorkingHours / (summary.presentDays + summary.lateDays) || 0).toFixed(1)}h
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          {/* Break Hours */}
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Break Hours</p>
-                <p className="text-2xl font-semibold text-gray-900">
+                <p className="text-xs sm:text-sm font-medium text-gray-600">Break</p>
+                <p className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
                   {summary.totalBreakHours.toFixed(1)}h
                 </p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <FaCoffee className="w-6 h-6 text-purple-600" />
+              <div className="p-2 sm:p-3 bg-purple-100 rounded-full">
+                <FaCoffee className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-purple-600" />
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
-              Avg: {(summary.totalBreakHours / (summary.presentDays + summary.lateDays) || 0).toFixed(1)}h/day
+            <p className="mt-1 sm:mt-2 text-xs text-gray-500">
+              Avg: {(summary.totalBreakHours / (summary.presentDays + summary.lateDays) || 0).toFixed(1)}h
             </p>
           </div>
         </div>
 
         {/* Filters and Controls */}
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="p-6">
+        <div className="bg-white rounded-lg shadow mb-4 sm:mb-6 md:mb-8">
+          <div className="p-4 sm:p-5 md:p-6">
             {/* Month Navigation */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+              <div className="flex items-center justify-between sm:justify-start sm:space-x-4">
                 <button
                   onClick={() => changeMonth(-1)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <FaChevronLeft className="w-5 h-5 text-gray-600" />
+                  <FaChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 </button>
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-800">
+                  {currentMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </h2>
                 <button
                   onClick={() => changeMonth(1)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <FaChevronRight className="w-5 h-5 text-gray-600" />
+                  <FaChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                 </button>
                 <button
                   onClick={() => setCurrentMonth(new Date())}
-                  className="px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors ml-auto sm:ml-0"
                 >
                   Today
                 </button>
               </div>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <button
                   onClick={() => setViewMode('daily')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
                     viewMode === 'daily'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -390,7 +405,7 @@ const AttendanceHistory = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('weekly')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
                     viewMode === 'weekly'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -400,7 +415,7 @@ const AttendanceHistory = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('monthly')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
                     viewMode === 'monthly'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -412,24 +427,24 @@ const AttendanceHistory = () => {
             </div>
 
             {/* Search and Filter */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="relative sm:col-span-1">
+                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                 <input
                   type="text"
-                  placeholder="Search by date or status..."
+                  placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
 
-              <div className="relative">
-                <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <div className="relative sm:col-span-1">
+                <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm" />
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                  className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
                 >
                   <option value="all">All Status</option>
                   <option value="present">Present</option>
@@ -439,183 +454,246 @@ const AttendanceHistory = () => {
                 </select>
               </div>
 
-              <div className="flex space-x-2">
+              <div className="flex gap-2 sm:col-span-2 lg:col-span-1">
                 <button
                   onClick={generateMockData}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  className="flex-1 px-3 sm:px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
                 >
-                  <FaRedoAlt className="mr-2" />
-                  Refresh
+                  <FaRedoAlt className="mr-1 sm:mr-2 text-sm" />
+                  <span>Refresh</span>
                 </button>
                 <button
                   onClick={handleExport}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
+                  className="flex-1 px-3 sm:px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
                 >
-                  <FaDownload className="mr-2" />
-                  Export
+                  <FaDownload className="mr-1 sm:mr-2 text-sm" />
+                  <span>Export</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Attendance Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Day
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    In Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Out Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Break
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Working Hrs
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {loading ? (
-                  <tr>
-                    <td colSpan="9" className="px-6 py-4 text-center">
-                      <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        {/* Mobile View - Cards (320px - 767px) */}
+        <div className="block md:hidden">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="flex justify-center items-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              </div>
+            ) : filteredData.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {filteredData.map((record) => (
+                  <div key={record.id} className="p-4 hover:bg-gray-50 transition-colors">
+                    {/* Date and Status Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {formatDate(record.date)}
+                        </span>
+                        <span className="ml-2 text-xs text-gray-500">
+                          {record.dayName}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                ) : filteredData.length > 0 ? (
-                  filteredData.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {formatDate(record.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.dayName}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getStatusIcon(record.status)}
-                          <span className="ml-2">{getStatusBadge(record.status)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <FaSignInAlt className="mr-1 text-green-500" />
-                          {formatTime(record.inTime)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <FaSignOutAlt className="mr-1 text-red-500" />
-                          {formatTime(record.outTime)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <FaCoffee className="mr-1 text-yellow-500" />
-                          {record.breakHours > 0 ? (
-                            <>
-                              {formatTime(record.breakStart)} - {formatTime(record.breakEnd)}
-                            </>
-                          ) : (
-                            '--:--'
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <FaHourglassHalf className="mr-1 text-blue-500" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {record.workingHours.toFixed(1)}h
-                          </span>
+                      <div className="flex items-center">
+                        {getStatusIcon(record.status, 'text-base')}
+                        <span className="ml-2">{getStatusBadge(record.status)}</span>
+                      </div>
+                    </div>
+
+                    {/* Time Details Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="flex items-center text-xs text-gray-600">
+                        <FaSignInAlt className="mr-1.5 text-green-500 text-xs" />
+                        <span>In: {formatTime(record.inTime)}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <FaSignOutAlt className="mr-1.5 text-red-500 text-xs" />
+                        <span>Out: {formatTime(record.outTime)}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <FaCoffee className="mr-1.5 text-yellow-500 text-xs" />
+                        <span>Break: {record.breakHours > 0 ? formatTime(record.breakStart) : '--:--'}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-600">
+                        <FaHourglassHalf className="mr-1.5 text-blue-500 text-xs" />
+                        <span>
+                          {record.workingHours.toFixed(1)}h
                           {record.overtime > 0 && (
-                            <span className="ml-1 text-xs text-green-600">
-                              (+{record.overtime}h)
+                            <span className="ml-1 text-green-600 text-[10px]">
+                              +{record.overtime}h
                             </span>
                           )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Location and Actions */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                      <span className="text-xs text-gray-500 flex items-center">
+                        <span className="truncate max-w-[150px]">{record.location}</span>
+                      </span>
+                      <button
+                        className="text-blue-600 hover:text-blue-800 transition-colors p-1"
+                        title="View Details"
+                      >
+                        <FaEye className="text-base" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-gray-500 text-sm">
+                No attendance records found
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Desktop View - Table (768px and above) */}
+        <div className="hidden md:block">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Day</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Out Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Working Hrs</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {loading ? (
+                    <tr>
+                      <td colSpan="9" className="px-6 py-4 text-center">
+                        <div className="flex justify-center items-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.location}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                          title="View Details"
-                        >
-                          <FaEye />
-                        </button>
+                    </tr>
+                  ) : filteredData.length > 0 ? (
+                    filteredData.map((record) => (
+                      <tr key={record.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {formatDate(record.date)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {record.dayName}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {getStatusIcon(record.status, 'text-sm')}
+                            <span className="ml-2">{getFullStatusBadge(record.status)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FaSignInAlt className="mr-1 text-green-500 text-xs" />
+                            {formatTime(record.inTime)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FaSignOutAlt className="mr-1 text-red-500 text-xs" />
+                            {formatTime(record.outTime)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FaCoffee className="mr-1 text-yellow-500 text-xs" />
+                            {record.breakHours > 0 ? (
+                              <>
+                                {formatTime(record.breakStart)} - {formatTime(record.breakEnd)}
+                              </>
+                            ) : (
+                              '--:--'
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <FaHourglassHalf className="mr-1 text-blue-500 text-xs" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {record.workingHours.toFixed(1)}h
+                            </span>
+                            {record.overtime > 0 && (
+                              <span className="ml-1 text-xs text-green-600">
+                                (+{record.overtime}h)
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {record.location}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <button
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            title="View Details"
+                          >
+                            <FaEye />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
+                        No attendance records found
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
-                      No attendance records found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-          {/* Table Footer */}
-          <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Showing {filteredData.length} of {attendanceData.length} records
-              </p>
-              <div className="flex items-center space-x-2">
-                <button className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  Previous
-                </button>
-                <button className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  Next
-                </button>
+            {/* Table Footer */}
+            <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  Showing {filteredData.length} of {attendanceData.length} records
+                </p>
+                <div className="flex items-center space-x-2">
+                  <button className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Previous
+                  </button>
+                  <button className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Next
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Legend */}
-        <div className="mt-6 bg-white rounded-lg shadow p-4">
-          <div className="flex items-center space-x-6">
-            <span className="text-sm font-medium text-gray-700">Status Legend:</span>
+        <div className="mt-4 sm:mt-6 bg-white rounded-lg shadow p-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+            <span className="text-xs sm:text-sm font-medium text-gray-700">Status:</span>
             <div className="flex items-center">
-              <FaCheckCircle className="text-green-500 mr-1" />
-              <span className="text-sm text-gray-600">Present</span>
+              <FaCheckCircle className="text-green-500 mr-1 text-xs sm:text-sm" />
+              <span className="text-xs sm:text-sm text-gray-600">Present</span>
             </div>
             <div className="flex items-center">
-              <FaExclamationTriangle className="text-yellow-500 mr-1" />
-              <span className="text-sm text-gray-600">Late</span>
+              <FaExclamationTriangle className="text-yellow-500 mr-1 text-xs sm:text-sm" />
+              <span className="text-xs sm:text-sm text-gray-600">Late</span>
             </div>
             <div className="flex items-center">
-              <FaTimesCircle className="text-red-500 mr-1" />
-              <span className="text-sm text-gray-600">Absent</span>
+              <FaTimesCircle className="text-red-500 mr-1 text-xs sm:text-sm" />
+              <span className="text-xs sm:text-sm text-gray-600">Absent</span>
             </div>
             <div className="flex items-center">
-              <FaUmbrellaBeach className="text-blue-500 mr-1" />
-              <span className="text-sm text-gray-600">Leave</span>
+              <FaUmbrellaBeach className="text-blue-500 mr-1 text-xs sm:text-sm" />
+              <span className="text-xs sm:text-sm text-gray-600">Leave</span>
             </div>
           </div>
         </div>

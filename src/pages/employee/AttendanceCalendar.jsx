@@ -224,164 +224,154 @@ const AttendanceCalendar = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <div className="mx-auto px-2 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div className="flex items-center">
-              <FaCalendarAlt className="text-3xl text-blue-600 mr-3" />
+              <FaCalendarAlt className="text-xl sm:text-2xl md:text-3xl text-blue-600 mr-2 sm:mr-3" />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Attendance Calendar</h1>
-                <p className="mt-1 text-sm text-gray-500">
-                  View attendance status by day, week, or month
+                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">Attendance Calendar</h1>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
+                  View attendance status
                 </p>
               </div>
             </div>
             
-            {/* View Mode Toggle */}
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+            {/* View Mode Toggle - Mobile Optimized */}
+            <div className="flex items-center self-start sm:self-auto bg-gray-100 rounded-lg p-0.5 sm:p-1">
               <button
                 onClick={() => setViewMode('month')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'month' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
                 }`}
               >
-                Month
+                M
               </button>
               <button
                 onClick={() => setViewMode('week')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'week' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
                 }`}
               >
-                Week
+                W
               </button>
               <button
                 onClick={() => setViewMode('day')}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                className={`px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'day' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'
                 }`}
               >
-                Day
+                D
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">Present</p>
-                <p className="text-2xl font-bold text-green-600">{summary.present}</p>
+      {/* Main Content - Mobile Optimized */}
+      <div className="mx-auto px-2 py-4 sm:py-6 md:py-8">
+        {/* Summary Cards - Mobile Optimized */}
+        <div className="grid grid-cols-5 gap-1 sm:gap-2 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+          <div className="bg-white rounded-lg shadow p-1.5 sm:p-2 md:p-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-1 sm:p-1.5 md:p-2 bg-green-100 rounded-full mb-0.5 sm:mb-1">
+                <FaCheckCircle className="text-green-600 text-xs sm:text-sm md:text-base" />
               </div>
-              <div className="p-2 bg-green-100 rounded-full">
-                <FaCheckCircle className="text-green-600" />
-              </div>
+              <p className="text-xs sm:text-sm md:text-base font-bold text-green-600">{summary.present}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Pres</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">Absent</p>
-                <p className="text-2xl font-bold text-red-600">{summary.absent}</p>
+          <div className="bg-white rounded-lg shadow p-1.5 sm:p-2 md:p-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-1 sm:p-1.5 md:p-2 bg-red-100 rounded-full mb-0.5 sm:mb-1">
+                <FaTimesCircle className="text-red-600 text-xs sm:text-sm md:text-base" />
               </div>
-              <div className="p-2 bg-red-100 rounded-full">
-                <FaTimesCircle className="text-red-600" />
-              </div>
+              <p className="text-xs sm:text-sm md:text-base font-bold text-red-600">{summary.absent}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Abs</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">Leave</p>
-                <p className="text-2xl font-bold text-yellow-600">{summary.leave}</p>
+          <div className="bg-white rounded-lg shadow p-1.5 sm:p-2 md:p-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-1 sm:p-1.5 md:p-2 bg-yellow-100 rounded-full mb-0.5 sm:mb-1">
+                <FaUmbrellaBeach className="text-yellow-600 text-xs sm:text-sm md:text-base" />
               </div>
-              <div className="p-2 bg-yellow-100 rounded-full">
-                <FaUmbrellaBeach className="text-yellow-600" />
-              </div>
+              <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600">{summary.leave}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Leave</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">Holidays</p>
-                <p className="text-2xl font-bold text-purple-600">{summary.holiday}</p>
+          <div className="bg-white rounded-lg shadow p-1.5 sm:p-2 md:p-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-1 sm:p-1.5 md:p-2 bg-purple-100 rounded-full mb-0.5 sm:mb-1">
+                <FaGlassCheers className="text-purple-600 text-xs sm:text-sm md:text-base" />
               </div>
-              <div className="p-2 bg-purple-100 rounded-full">
-                <FaGlassCheers className="text-purple-600" />
-              </div>
+              <p className="text-xs sm:text-sm md:text-base font-bold text-purple-600">{summary.holiday}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Hol</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">Working Days</p>
-                <p className="text-2xl font-bold text-blue-600">{summary.workingDays}</p>
+          <div className="bg-white rounded-lg shadow p-1.5 sm:p-2 md:p-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="p-1 sm:p-1.5 md:p-2 bg-blue-100 rounded-full mb-0.5 sm:mb-1">
+                <FaBriefcaseMedical className="text-blue-600 text-xs sm:text-sm md:text-base" />
               </div>
-              <div className="p-2 bg-blue-100 rounded-full">
-                <FaBriefcaseMedical className="text-blue-600" />
-              </div>
+              <p className="text-xs sm:text-sm md:text-base font-bold text-blue-600">{summary.workingDays}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500">Work</p>
             </div>
           </div>
         </div>
 
-        {/* Calendar Navigation */}
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="p-4 flex items-center justify-between border-b">
-            <div className="flex items-center space-x-4">
+        {/* Calendar Navigation - Mobile Optimized */}
+        <div className="bg-white rounded-lg shadow mb-4 sm:mb-5 md:mb-6">
+          <div className="p-2 sm:p-3 md:p-4 flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 border-b">
+            <div className="flex items-center justify-between xs:justify-start xs:space-x-2 sm:space-x-4">
               <button
                 onClick={handlePrevMonth}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <FaChevronLeft className="w-5 h-5 text-gray-600" />
+                <FaChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
               </button>
-              <h2 className="text-2xl font-semibold text-gray-800">
-                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              <h2 className="text-sm sm:text-base md:text-lg lg:text-2xl font-semibold text-gray-800">
+                {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
               </h2>
               <button
                 onClick={handleNextMonth}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <FaChevronRight className="w-5 h-5 text-gray-600" />
+                <FaChevronRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-600" />
               </button>
               <button
                 onClick={handleToday}
-                className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 text-xs sm:text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors ml-auto xs:ml-0"
               >
                 Today
               </button>
             </div>
 
-            {/* Legend */}
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Status:</span>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center">
+            {/* Legend - Hidden on very small screens, scrollable on small */}
+            <div className="hidden sm:flex sm:items-center sm:space-x-2 md:space-x-4 overflow-x-auto pb-1">
+              <span className="text-xs text-gray-500 flex-shrink-0">Status:</span>
+              <div className="flex items-center space-x-2 md:space-x-3">
+                <div className="flex items-center flex-shrink-0">
                   <FaCheckCircle className="text-green-500 mr-1 text-xs" />
                   <span className="text-xs text-gray-600">Present</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center flex-shrink-0">
                   <FaTimesCircle className="text-red-500 mr-1 text-xs" />
                   <span className="text-xs text-gray-600">Absent</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center flex-shrink-0">
                   <FaUmbrellaBeach className="text-yellow-500 mr-1 text-xs" />
                   <span className="text-xs text-gray-600">Leave</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center flex-shrink-0">
                   <FaGlassCheers className="text-purple-500 mr-1 text-xs" />
                   <span className="text-xs text-gray-600">Holiday</span>
                 </div>
-                <div className="flex items-center">
+                <div className="flex items-center flex-shrink-0">
                   <FaMoon className="text-gray-500 mr-1 text-xs" />
                   <span className="text-xs text-gray-600">Weekend</span>
                 </div>
@@ -389,66 +379,77 @@ const AttendanceCalendar = () => {
             </div>
           </div>
 
-          {/* Calendar Grid */}
-          <div className="p-4">
+          {/* Calendar Grid - Mobile Optimized */}
+          <div className="p-2 sm:p-3 md:p-4">
             {/* Week days header */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
               {weekDays.map(day => (
-                <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
-                  {day}
+                <div key={day} className="text-center text-[10px] sm:text-xs font-medium text-gray-500 py-1 sm:py-2">
+                  {day.charAt(0)}
                 </div>
               ))}
             </div>
 
             {/* Calendar days */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
               {calendarDays.map((day, index) => (
                 <div
                   key={index}
                   onClick={() => handleDayClick(day)}
                   className={`
-                    min-h-24 p-2 border rounded-lg cursor-pointer transition-all
+                    min-h-[40px] sm:min-h-[60px] md:min-h-24 p-0.5 sm:p-1 md:p-2 border rounded cursor-pointer transition-all
                     ${day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'}
-                    ${day.isToday ? 'ring-2 ring-blue-400' : ''}
+                    ${day.isToday ? 'ring-1 sm:ring-2 ring-blue-400' : ''}
                     ${day.status ? getStatusColor(day.status) : 'hover:border-gray-300'}
                     hover:shadow-md
                   `}
                 >
                   {day.day && (
                     <>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-sm font-medium ${!day.isCurrentMonth && 'text-gray-400'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] sm:text-xs md:text-sm font-medium ${!day.isCurrentMonth && 'text-gray-400'}`}>
                           {day.day}
                         </span>
                         {day.status && (
-                          <span className="text-xs">
-                            {getStatusIcon(day.status)}
+                          <span className="text-[8px] sm:text-xs">
+                            {getStatusIcon(day.status, 'text-[8px] sm:text-xs')}
                           </span>
                         )}
                       </div>
                       
                       {day.status === 'present' && (
-                        <div className="space-y-1">
-                          <div className="flex items-center text-xs text-green-600">
-                            <FaClock className="mr-1" /> 9:00 - 18:00
+                        <div className="hidden sm:block sm:space-y-0.5 mt-0.5">
+                          <div className="flex items-center text-[8px] sm:text-xs text-green-600">
+                            <FaClock className="mr-0.5 text-[6px] sm:text-xs" /> 9-6
                           </div>
                           {day.overtime > 0 && (
-                            <div className="text-xs text-blue-600">
-                              +{day.overtime}h OT
+                            <div className="text-[8px] text-blue-600">
+                              +{day.overtime}h
                             </div>
                           )}
                         </div>
                       )}
                       
+                      {/* Mobile indicator dots */}
+                      {day.status === 'present' && (
+                        <div className="flex sm:hidden justify-center mt-0.5">
+                          <div className="w-1 h-1 bg-green-500 rounded-full"></div>
+                          {day.overtime > 0 && (
+                            <div className="w-1 h-1 bg-blue-500 rounded-full ml-0.5"></div>
+                          )}
+                        </div>
+                      )}
+                      
                       {day.holidayName && (
-                        <div className="text-xs text-purple-600 font-medium mt-1">
+                        <div className="hidden sm:block text-[8px] text-purple-600 font-medium truncate mt-0.5">
                           {day.holidayName}
                         </div>
                       )}
                       
-                      {day.status === 'leave' && day.notes && (
-                        <div className="text-xs text-yellow-600 mt-1">
-                          {day.notes}
+                      {/* Mobile holiday indicator */}
+                      {day.holidayName && (
+                        <div className="flex sm:hidden justify-center mt-0.5">
+                          <div className="w-1 h-1 bg-purple-500 rounded-full"></div>
                         </div>
                       )}
                     </>
@@ -459,20 +460,20 @@ const AttendanceCalendar = () => {
           </div>
         </div>
 
-        {/* Holidays List */}
+        {/* Holidays List - Mobile Optimized */}
         {holidays.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Upcoming Holidays</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-5 md:mb-6">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-800 mb-2 sm:mb-3">Upcoming Holidays</h3>
+            <div className="flex flex-wrap gap-1 sm:gap-2">
               {holidays.map((holiday, index) => (
                 <div
                   key={index}
-                  className="flex items-center px-3 py-1 bg-purple-50 text-purple-700 rounded-full"
+                  className="flex items-center px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-50 text-purple-700 rounded-full"
                 >
-                  <FaGlassCheers className="mr-1 text-xs" />
-                  <span className="text-sm">{holiday.name}</span>
-                  <span className="mx-1 text-purple-300">•</span>
-                  <span className="text-xs">
+                  <FaGlassCheers className="mr-0.5 sm:mr-1 text-[8px] sm:text-xs" />
+                  <span className="text-[10px] sm:text-sm truncate max-w-[60px] sm:max-w-none">{holiday.name}</span>
+                  <span className="mx-0.5 sm:mx-1 text-purple-300 text-[8px] sm:text-xs">•</span>
+                  <span className="text-[8px] sm:text-xs">
                     {new Date(holiday.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                   </span>
                 </div>
@@ -481,19 +482,19 @@ const AttendanceCalendar = () => {
           </div>
         )}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">Attendance Rate</h3>
+        {/* Quick Stats - Mobile Optimized */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3">Attendance Rate</h3>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {((summary.present / summary.workingDays) * 100 || 0).toFixed(1)}%
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                  {((summary.present / summary.workingDays) * 100 || 0).toFixed(0)}%
                 </p>
-                <p className="text-xs text-gray-500 mt-1">This month</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">This month</p>
               </div>
-              <div className="w-16 h-16">
-                <svg viewBox="0 0 36 36" className="w-16 h-16">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16">
+                <svg viewBox="0 0 36 36" className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16">
                   <path
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     fill="none"
@@ -512,158 +513,157 @@ const AttendanceCalendar = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">Leave Balance</h3>
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3">Leave Balance</h3>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-3xl font-bold text-gray-900">12</p>
-                <p className="text-xs text-gray-500 mt-1">Remaining days</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">12</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Remaining</p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <FaUmbrellaBeach className="text-yellow-600 text-xl" />
+              <div className="p-2 sm:p-2.5 md:p-3 bg-yellow-100 rounded-full">
+                <FaUmbrellaBeach className="text-yellow-600 text-sm sm:text-base md:text-xl" />
               </div>
             </div>
-            <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="mt-2 sm:mt-3 h-1.5 sm:h-2 bg-gray-200 rounded-full overflow-hidden">
               <div className="h-full bg-yellow-500 rounded-full" style={{ width: '60%' }}></div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">Overtime</h3>
+          <div className="bg-white rounded-lg shadow p-3 sm:p-4">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-500 mb-2 sm:mb-3">Overtime</h3>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-3xl font-bold text-gray-900">8.5</p>
-                <p className="text-xs text-gray-500 mt-1">Hours this month</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">8.5</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Hours this month</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <FaClock className="text-blue-600 text-xl" />
+              <div className="p-2 sm:p-2.5 md:p-3 bg-blue-100 rounded-full">
+                <FaClock className="text-blue-600 text-sm sm:text-base md:text-xl" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Day Details Modal */}
+      {/* Day Details Modal - Mobile Optimized */}
       {showDetails && selectedDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  {getStatusIcon(selectedDate.status, 'text-2xl')}
-                  <h3 className="text-xl font-bold text-gray-900 ml-2">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-5 md:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center min-w-0">
+                  {getStatusIcon(selectedDate.status, 'text-lg sm:text-xl md:text-2xl')}
+                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 ml-2 truncate">
                     {new Date(selectedDate.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
+                      weekday: 'short',
+                      month: 'short',
                       day: 'numeric'
                     })}
                   </h3>
                 </div>
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2"
                 >
-                  <FaTimesCircle className="w-6 h-6" />
+                  <FaTimesCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
               </div>
 
-              <div className={`p-4 rounded-lg mb-4 ${getStatusColor(selectedDate.status)}`}>
+              <div className={`p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 ${getStatusColor(selectedDate.status)}`}>
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">Status:</span>
-                  <span className="font-semibold">{getStatusLabel(selectedDate.status)}</span>
+                  <span className="text-xs sm:text-sm font-medium">Status:</span>
+                  <span className="text-xs sm:text-sm font-semibold">{getStatusLabel(selectedDate.status)}</span>
                 </div>
                 {selectedDate.holidayName && (
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="font-medium">Holiday:</span>
-                    <span>{selectedDate.holidayName}</span>
+                  <div className="flex items-center justify-between mt-1 sm:mt-2">
+                    <span className="text-xs sm:text-sm font-medium">Holiday:</span>
+                    <span className="text-xs sm:text-sm">{selectedDate.holidayName}</span>
                   </div>
                 )}
               </div>
 
               {selectedDate.status === 'present' && (
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-700">Attendance Details</h4>
+                <div className="space-y-3 sm:space-y-4">
+                  <h4 className="text-sm sm:text-base font-semibold text-gray-700">Attendance Details</h4>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                    <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center text-green-600 mb-1">
-                        <FaSignInAlt className="mr-1" />
-                        <span className="text-xs text-gray-500">Check In</span>
+                        <FaSignInAlt className="mr-1 text-xs" />
+                        <span className="text-[10px] sm:text-xs text-gray-500">In</span>
                       </div>
-                      <p className="font-medium">{selectedDate.checkIn}</p>
+                      <p className="text-xs sm:text-sm font-medium">{selectedDate.checkIn}</p>
                     </div>
                     
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center text-red-600 mb-1">
-                        <FaSignOutAlt className="mr-1" />
-                        <span className="text-xs text-gray-500">Check Out</span>
+                        <FaSignOutAlt className="mr-1 text-xs" />
+                        <span className="text-[10px] sm:text-xs text-gray-500">Out</span>
                       </div>
-                      <p className="font-medium">{selectedDate.checkOut}</p>
+                      <p className="text-xs sm:text-sm font-medium">{selectedDate.checkOut}</p>
                     </div>
 
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center text-yellow-600 mb-1">
-                        <FaCoffee className="mr-1" />
-                        <span className="text-xs text-gray-500">Break</span>
+                        <FaCoffee className="mr-1 text-xs" />
+                        <span className="text-[10px] sm:text-xs text-gray-500">Break</span>
                       </div>
-                      <p className="font-medium">
-                        {selectedDate.breakStart} - {selectedDate.breakEnd}
+                      <p className="text-xs sm:text-sm font-medium">
+                        {selectedDate.breakStart?.split(' ')[0]} - {selectedDate.breakEnd?.split(' ')[0]}
                       </p>
                     </div>
 
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center text-blue-600 mb-1">
-                        <FaHourglassHalf className="mr-1" />
-                        <span className="text-xs text-gray-500">Working Hours</span>
+                        <FaHourglassHalf className="mr-1 text-xs" />
+                        <span className="text-[10px] sm:text-xs text-gray-500">Hours</span>
                       </div>
-                      <p className="font-medium">
+                      <p className="text-xs sm:text-sm font-medium">
                         {selectedDate.workingHours}h
                         {selectedDate.overtime > 0 && (
-                          <span className="text-xs text-green-600 ml-1">
-                            (+{selectedDate.overtime}h OT)
+                          <span className="text-[8px] sm:text-xs text-green-600 ml-1">
+                            +{selectedDate.overtime}h
                           </span>
                         )}
                       </p>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <FaMapMarkerAlt className="text-gray-500 mr-1" />
-                      <span className="text-xs text-gray-500">Location</span>
+                  <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center mb-1 sm:mb-2">
+                      <FaMapMarkerAlt className="text-gray-500 mr-1 text-xs" />
+                      <span className="text-[10px] sm:text-xs text-gray-500">Location</span>
                     </div>
-                    <p className="text-sm">{selectedDate.location}</p>
+                    <p className="text-xs sm:text-sm">{selectedDate.location}</p>
                   </div>
 
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <FaLaptop className="text-gray-500 mr-1" />
-                      <span className="text-xs text-gray-500">Device</span>
+                  <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center mb-1 sm:mb-2">
+                      <FaLaptop className="text-gray-500 mr-1 text-xs" />
+                      <span className="text-[10px] sm:text-xs text-gray-500">Device</span>
                     </div>
-                    <p className="text-sm">{selectedDate.device}</p>
+                    <p className="text-xs sm:text-sm">{selectedDate.device}</p>
                   </div>
                 </div>
               )}
 
               {selectedDate.notes && (
-                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-yellow-800">{selectedDate.notes}</p>
+                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-yellow-50 rounded-lg">
+                  <p className="text-xs sm:text-sm text-yellow-800">{selectedDate.notes}</p>
                 </div>
               )}
 
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-4 sm:mt-6 flex flex-col xs:flex-row xs:justify-end gap-2 xs:gap-3">
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="w-full xs:w-auto px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg"
                 >
                   Close
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  className="w-full xs:w-auto px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
                 >
-                  <FaChartBar className="mr-2" />
-                  View Report
+                  <FaChartBar className="mr-1 sm:mr-2 text-xs" />
+                  Report
                 </button>
               </div>
             </div>

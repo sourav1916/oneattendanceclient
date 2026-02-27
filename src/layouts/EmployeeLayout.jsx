@@ -125,7 +125,7 @@ export default function EmployeeLayout() {
             transition={{ duration: 0.3 }}
             className="flex-1 overflow-y-auto bg-slate-50 w-full"
           >
-            <div className="p-4 md:p-6 sm:p-2">
+            <div className="p-4 md:p-6 sm:p-2 max-w-7xl mx-auto">
               <AnimatePresence mode="wait">
                 <Outlet />
               </AnimatePresence>
