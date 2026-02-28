@@ -3,98 +3,109 @@ import { useEffect } from 'react';
 
 const CustomScrollbar = () => {
   useEffect(() => {
-    // Add custom scrollbar styles to the document
+    // Detect if mobile - apply different styles
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
     const style = document.createElement('style');
     style.innerHTML = `
-      /* Thin and Beautiful Scrollbar */
+      /* Base scrollbar styles - works everywhere */
       ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
       }
 
-      /* Track */
       ::-webkit-scrollbar-track {
         background: transparent;
-        border-radius: 10px;
       }
 
-      /* Handle */
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+        background: #cbd5e1;
         border-radius: 10px;
-        transition: all 0.3s ease;
       }
 
-      /* Handle on hover */
       ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #94a3b8, #64748b);
+        background: #94a3b8;
       }
 
-      /* Handle on active */
-      ::-webkit-scrollbar-thumb:active {
-        background: linear-gradient(135deg, #64748b, #475569);
-      }
-
-      /* Corner */
-      ::-webkit-scrollbar-corner {
-        background: transparent;
-      }
-
-      /* Firefox support */
+      /* Firefox */
       * {
         scrollbar-width: thin;
-        scrollbar-color: #94a3b8 transparent;
+        scrollbar-color: #cbd5e1 transparent;
       }
 
-      /* For dark mode support */
+      /* Dark mode */
       .dark ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #475569, #334155);
-      }
-
-      .dark ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #334155, #1e293b);
+        background: #475569;
       }
 
       .dark * {
         scrollbar-color: #475569 transparent;
       }
 
-      /* Custom scrollbar for specific elements */
+      /* Mobile optimizations - NO gradients, simpler */
+      @media (max-width: 768px) {
+        ::-webkit-scrollbar {
+          width: 4px; /* Slightly smaller on mobile */
+        }
+        
+        ::-webkit-scrollbar-thumb {
+          background: #94a3b8; /* Solid color instead of gradient */
+          border-radius: 4px;
+        }
+        
+        /* Remove hover effects on mobile (they cause jank) */
+        ::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+        
+        /* Ensure smooth touch scrolling */
+        .overflow-y-auto, 
+        [class*="scrollbar-"] {
+          -webkit-overflow-scrolling: touch !important;
+          scroll-behavior: smooth;
+        }
+      }
+
+      /* Desktop - keep gradients and effects */
+      @media (min-width: 769px) {
+        ::-webkit-scrollbar-thumb {
+          background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+          transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(135deg, #94a3b8, #64748b);
+        }
+
+        /* Smooth scrolling for desktop */
+        * {
+          scroll-behavior: smooth;
+        }
+      }
+
+      /* Utility classes - simplified */
       .scrollbar-thin::-webkit-scrollbar {
         width: 4px;
         height: 4px;
       }
 
-      .scrollbar-extra-thin::-webkit-scrollbar {
-        width: 3px;
-        height: 3px;
-      }
-
-      .scrollbar-gradient::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-      }
-
-      .scrollbar-gradient:hover::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #2563eb, #7c3aed);
-      }
-
       .scrollbar-primary::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        background: #3b82f6;
       }
 
       .scrollbar-success::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #10b981, #059669);
+        background: #10b981;
       }
 
       .scrollbar-warning::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+        background: #f59e0b;
       }
 
       .scrollbar-danger::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
+        background: #ef4444;
       }
 
-      /* Hide scrollbar but keep functionality */
+      /* Hide scrollbar option */
       .scrollbar-hidden {
         -ms-overflow-style: none;
         scrollbar-width: none;
@@ -103,72 +114,13 @@ const CustomScrollbar = () => {
       .scrollbar-hidden::-webkit-scrollbar {
         display: none;
       }
-
-      /* Smooth scrolling for all elements */
-      * {
-        scroll-behavior: smooth;
-      }
-
-      /* Custom scrollbar container with gradient effect */
-      .scrollbar-container {
-        position: relative;
-        overflow: auto;
-      }
-
-      .scrollbar-container::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 10px;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.02));
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .scrollbar-container:hover::after {
-        opacity: 1;
-      }
-
-      /* Sidebar specific scrollbar */
-      .sidebar-scrollbar::-webkit-scrollbar {
-        width: 4px;
-      }
-
-      .sidebar-scrollbar::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #94a3b8, #64748b);
-        border-radius: 4px;
-      }
-
-      .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #64748b, #475569);
-      }
-
-      /* Hide scrollbar when not hovering on sidebar */
-      .sidebar-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: transparent transparent;
-      }
-
-      .sidebar-scrollbar:hover {
-        scrollbar-color: #94a3b8 transparent;
-      }
-
-      .sidebar-scrollbar::-webkit-scrollbar-thumb {
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .sidebar-scrollbar:hover::-webkit-scrollbar-thumb {
-        opacity: 1;
-      }
+      
+      /* Remove gradient container effect - it causes repaints */
+      /* .scrollbar-container styles removed */
     `;
 
     document.head.appendChild(style);
 
-    // Cleanup on unmount
     return () => {
       document.head.removeChild(style);
     };
