@@ -200,7 +200,7 @@ export default function EmployeeLayout() {
           {/* Main Content - Works for both mouse and touch */}
           <main
             ref={mainContentRef}
-            className="flex-1 bg-slate-50 w-full overflow-y-scroll lg:[scroll-behavior:smooth]"
+            className="flex-1 bg-slate-50 w-full max-h-[100vh] overflow-y-scroll lg:[scroll-behavior:smooth]"
             >
             <div className="p-4 md:p-6 sm:p-2 max-w-7xl mx-auto">
               <AnimatePresence mode="wait">
