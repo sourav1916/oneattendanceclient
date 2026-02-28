@@ -37,25 +37,25 @@
   }
 }
 
-/* Global styles for better touch interaction */
+/* Add to your index.css or global styles */
+
+/* Ensure proper scrolling on all devices */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Base scrolling styles for all devices */
+/* Main content scrolling */
 .overflow-y-auto {
-  overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
+  overflow-y: auto !important;
 }
 
-/* Mobile optimizations */
+/* Fix for mobile devices */
 @media (max-width: 767px) {
-  /* Ensure smooth touch scrolling */
+  /* Ensure touch scrolling works */
   [class*="overflow-y-auto"] {
-    -webkit-overflow-scrolling: touch !important;
+    -webkit-overflow-scrolling: touch;
     overflow-y: auto !important;
-    scroll-behavior: smooth;
   }
   
   /* Prevent pull-to-refresh */
@@ -69,228 +69,5 @@
     transform: translateZ(0);
     will-change: transform;
   }
-
-  /* Custom scrollbar for mobile - thin and subtle */
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-    background: transparent;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.3);
-    border-radius: 4px;
-    border: 1px solid transparent;
-    background-clip: padding-box;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 116, 139, 0.5);
-  }
-  
-  ::-webkit-scrollbar-corner {
-    background: transparent;
-  }
-  
-  /* Firefox scrollbar for mobile */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
-  }
-  
-  /* Dark mode scrollbar for mobile */
-  .dark ::-webkit-scrollbar-thumb {
-    background: rgba(71, 85, 105, 0.5);
-  }
-  
-  .dark * {
-    scrollbar-color: rgba(71, 85, 105, 0.5) transparent;
-  }
 }
 
-/* Desktop optimizations */
-@media (min-width: 768px) {
-  .overflow-y-auto {
-    scroll-behavior: smooth;
-  }
-  
-  /* Custom scrollbar for desktop - more prominent */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #94a3b8, #64748b);
-    border-radius: 4px;
-    transition: all 0.2s ease;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #64748b, #475569);
-  }
-  
-  ::-webkit-scrollbar-thumb:active {
-    background: #475569;
-  }
-  
-  /* Firefox scrollbar for desktop */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #94a3b8 #f1f1f1;
-  }
-  
-  /* Dark mode scrollbar for desktop */
-  .dark ::-webkit-scrollbar-track {
-    background: #1e293b;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #475569, #334155);
-  }
-  
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #334155, #1e293b);
-  }
-  
-  .dark * {
-    scrollbar-color: #475569 #1e293b;
-  }
-}
-
-/* Utility classes for custom scrollbar variants */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-.scrollbar-extra-thin::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
-}
-
-.scrollbar-hidden {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hidden::-webkit-scrollbar {
-  display: none;
-}
-
-/* Color variants for scrollbars */
-.scrollbar-primary::-webkit-scrollbar-thumb {
-  background: #3b82f6 !important;
-}
-
-.scrollbar-success::-webkit-scrollbar-thumb {
-  background: #10b981 !important;
-}
-
-.scrollbar-warning::-webkit-scrollbar-thumb {
-  background: #f59e0b !important;
-}
-
-.scrollbar-danger::-webkit-scrollbar-thumb {
-  background: #ef4444 !important;
-}
-
-/* Gradient variants - desktop only */
-@media (min-width: 768px) {
-  .scrollbar-gradient::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
-  }
-  
-  .scrollbar-gradient-primary::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
-  }
-  
-  .scrollbar-gradient-success::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-  }
-  
-  .scrollbar-gradient-warning::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-  }
-  
-  .scrollbar-gradient-danger::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-  }
-}
-
-/* Mobile-specific scrollbar variants - solid colors only */
-@media (max-width: 767px) {
-  .scrollbar-gradient::-webkit-scrollbar-thumb,
-  .scrollbar-gradient-primary::-webkit-scrollbar-thumb,
-  .scrollbar-gradient-success::-webkit-scrollbar-thumb,
-  .scrollbar-gradient-warning::-webkit-scrollbar-thumb,
-  .scrollbar-gradient-danger::-webkit-scrollbar-thumb {
-    background: #94a3b8 !important;
-  }
-  
-  .scrollbar-primary::-webkit-scrollbar-thumb {
-    background: #3b82f6 !important;
-  }
-  
-  .scrollbar-success::-webkit-scrollbar-thumb {
-    background: #10b981 !important;
-  }
-  
-  .scrollbar-warning::-webkit-scrollbar-thumb {
-    background: #f59e0b !important;
-  }
-  
-  .scrollbar-danger::-webkit-scrollbar-thumb {
-    background: #ef4444 !important;
-  }
-}
-
-/* Ensure smooth scrolling on iOS */
-.ios-scroll {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Prevent text size adjustment on orientation change */
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
-/* Improve scrolling performance */
-.scrollable-content {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000;
-}
-
-/* Hide scrollbar when not scrolling on mobile (optional) */
-@media (max-width: 767px) {
-  .auto-hide-scrollbar {
-    scrollbar-width: none;
-  }
-  
-  .auto-hide-scrollbar::-webkit-scrollbar {
-    width: 0;
-    background: transparent;
-  }
-  
-  .auto-hide-scrollbar:hover::-webkit-scrollbar,
-  .auto-hide-scrollbar:focus::-webkit-scrollbar,
-  .auto-hide-scrollbar:active::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .auto-hide-scrollbar:hover::-webkit-scrollbar-thumb,
-  .auto-hide-scrollbar:focus::-webkit-scrollbar-thumb,
-  .auto-hide-scrollbar:active::-webkit-scrollbar-thumb {
-    background: rgba(100, 116, 139, 0.3);
-  }
-}

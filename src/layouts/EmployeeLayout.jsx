@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
-import CustomScrollbar from "../components/CustomScrollbar";
 import { motion, AnimatePresence } from "framer-motion";
 import { useScrollable } from "../hooks/useScrollable";
 
@@ -131,7 +130,6 @@ export default function EmployeeLayout() {
 
   return (
     <>
-      <CustomScrollbar />
       
       <div 
         className="bg-gradient-to-br from-slate-50 to-white flex flex-col"

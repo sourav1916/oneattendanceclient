@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import ScrollableArea from "../components/ScrollbarArea";
 
 import {
   FaTachometerAlt,
@@ -159,13 +158,7 @@ export default function AdminSidebar({
       }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
     >
-      {/* Use ScrollableArea for the navigation */}
-      <ScrollableArea 
-        variant={isExpanded ? "gradient" : "thin"}
-        className="h-full"
-        showGradient={isExpanded}
-        maxHeight="100%"
-      >
+ 
         <nav className="p-3 space-y-2">
           {items.map((item, index) => {
             if (item.section) {
@@ -196,7 +189,6 @@ export default function AdminSidebar({
             return renderMenuItem(item, index);
           })}
         </nav>
-      </ScrollableArea>
 
       {/* Collapse/Expand Toggle Button - Only show on desktop */}
       {!isMobile && (
