@@ -200,10 +200,10 @@ export default function AdminLayout() {
           {/* Main Content - Works for both mouse and touch */}
           <main
             ref={mainContentRef}
-            className="flex-1 bg-slate-50 w-full overflow-y-auto"
+            className="flex-1 bg-slate-50 w-full overflow-y-scroll lg:[scroll-behavior:smooth]"
             style={{
               scrollBehavior: 'smooth',
-              WebkitOverflowScrolling: 'touch', // Critical for iOS
+              WebkitOverflowScrolling: 'touch',
               position: 'relative',
             }}
           >

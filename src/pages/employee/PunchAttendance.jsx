@@ -318,7 +318,7 @@ const PunchAttendance = () => {
 
       {/* Mobile Menu Dropdown */}
       {showMobileMenu && (
-        <div className="md:hidden bg-white border-b shadow-lg fixed top-[73px] left-0 right-0 z-30 animate-slideDown">
+        <div className="md:hidden bg-white border-b shadow-lg fixed top-[73px] left-0 right-0 z-30 animate-slideDown top-[20%]">
           <div className="px-4 py-3 space-y-2">
             <button
               onClick={() => {

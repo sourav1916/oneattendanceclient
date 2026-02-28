@@ -37,37 +37,4 @@
   }
 }
 
-/* Add to your index.css or global styles */
-
-/* Ensure proper scrolling on all devices */
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Main content scrolling */
-.overflow-y-auto {
-  -webkit-overflow-scrolling: touch;
-  overflow-y: auto !important;
-}
-
-/* Fix for mobile devices */
-@media (max-width: 767px) {
-  /* Ensure touch scrolling works */
-  [class*="overflow-y-auto"] {
-    -webkit-overflow-scrolling: touch;
-    overflow-y: auto !important;
-  }
-  
-  /* Prevent pull-to-refresh */
-  body {
-    overscroll-behavior-y: none;
-  }
-  
-  /* Fix for fixed positioning on iOS */
-  .fixed {
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
-    will-change: transform;
-  }
-}
 

@@ -19,6 +19,7 @@ import LeaveHistory from "./pages/employee/LeaveHistory";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import Notifications from "./pages/employee/Notifications";
 import EmployeesList from "./pages/admin/EmployeesList";
+import Signup from "./pages/auth/Signup";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -35,6 +36,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         
         {/* Fixed: Always render ONE layout based on user */}
         <Route
