@@ -21,3 +21,6 @@ code {
     scrollbar-width: thin;
     overflow-y: scroll;
 }
+.overflow-y-auto {
+    scrollbar-width: thin;
+}

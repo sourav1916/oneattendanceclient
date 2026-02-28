@@ -1,6 +1,7 @@
 // pages/admin/employees/EmployeesList.jsx
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   FaSearch, FaFilter, FaPlus, FaEdit, FaTrash, FaEye,
   FaChevronLeft, FaChevronRight, FaUserTie, FaEnvelope,
@@ -28,6 +29,10 @@ export default function EmployeesList() {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const itemsPerPage = 10;
+  const isAnyModalOpen = showAddModal || showEditModal || showViewModal || showDeleteModal;
+
+  // Use the hook
+  useBodyScrollLock(isAnyModalOpen);
 
   // Form state for new employee
   const [newEmployee, setNewEmployee] = useState({
@@ -247,7 +252,7 @@ export default function EmployeesList() {
   const handleAddEmployee = () => {
     // Generate employee ID if not provided
     const empId = newEmployee.employeeId || `EMP${String(employees.length + 1).padStart(3, '0')}`;
-    
+
     // Create new employee object
     const employee = {
       id: employees.length + 1,
@@ -276,7 +281,7 @@ export default function EmployeesList() {
 
     // Add to employees list
     setEmployees([...employees, employee]);
-    
+
     // Reset form
     setNewEmployee({
       firstName: "",
@@ -305,7 +310,7 @@ export default function EmployeesList() {
     setShowAddModal(false);
     setSuccessMessage("Employee added successfully!");
     setShowSuccessMessage(true);
-    
+
     // Hide success message after 3 seconds
     setTimeout(() => {
       setShowSuccessMessage(false);
@@ -316,22 +321,22 @@ export default function EmployeesList() {
   const handleEditEmployee = () => {
     if (selectedEmployee) {
       // Update the employee in the list
-      const updatedEmployees = employees.map(emp => 
-        emp.id === selectedEmployee.id 
+      const updatedEmployees = employees.map(emp =>
+        emp.id === selectedEmployee.id
           ? {
-              ...selectedEmployee,
-              name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
-              emergencyContact: `${selectedEmployee.emergencyName} (${selectedEmployee.emergencyRelationship}): ${selectedEmployee.emergencyPhone}`
-            }
+            ...selectedEmployee,
+            name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+            emergencyContact: `${selectedEmployee.emergencyName} (${selectedEmployee.emergencyRelationship}): ${selectedEmployee.emergencyPhone}`
+          }
           : emp
       );
-      
+
       setEmployees(updatedEmployees);
       setShowEditModal(false);
       setSelectedEmployee(null);
       setSuccessMessage("Employee updated successfully!");
       setShowSuccessMessage(true);
-      
+
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 3000);
@@ -346,7 +351,7 @@ export default function EmployeesList() {
       setSelectedEmployee(null);
       setSuccessMessage("Employee deleted successfully!");
       setShowSuccessMessage(true);
-      
+
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 3000);
@@ -483,19 +488,18 @@ export default function EmployeesList() {
                 <card.icon className={`w-5 h-5 ${card.textColor}`} />
               </div>
               {card.change && (
-                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                  card.changeType === 'increase' 
-                    ? 'bg-green-100 text-green-700' 
+                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${card.changeType === 'increase'
+                    ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'
-                }`}>
+                  }`}>
                   {card.change}
                 </span>
               )}
             </div>
-            
+
             <h3 className="text-xs font-medium text-slate-500 mb-0.5">{card.title}</h3>
             <p className="text-lg sm:text-xl font-bold text-slate-800">{card.value}</p>
-            
+
             {card.subtext && (
               <p className="text-xs text-slate-400 mt-1">{card.subtext}</p>
             )}
@@ -644,11 +648,10 @@ export default function EmployeesList() {
                         <p className="text-xs text-slate-500">{employee.email}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      employee.status === 'active'
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${employee.status === 'active'
                         ? 'bg-green-100 text-green-700'
                         : 'bg-slate-100 text-slate-600'
-                    }`}>
+                      }`}>
                       {employee.status}
                     </span>
                   </div>
@@ -720,11 +723,10 @@ export default function EmployeesList() {
                   <div className="text-sm text-slate-600">{employee.designation}</div>
                   <div className="text-sm text-slate-600">{employee.employeeId}</div>
                   <div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      employee.status === 'active'
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${employee.status === 'active'
                         ? 'bg-green-100 text-green-700'
                         : 'bg-slate-100 text-slate-600'
-                    }`}>
+                      }`}>
                       {employee.status}
                     </span>
                   </div>
@@ -778,11 +780,10 @@ export default function EmployeesList() {
               whileTap={{ scale: 0.9 }}
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className={`p-2 rounded-lg border ${
-                currentPage === 1
+              className={`p-2 rounded-lg border ${currentPage === 1
                   ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
+                }`}
             >
               <FaChevronLeft className="w-4 h-4" />
             </motion.button>
@@ -796,11 +797,10 @@ export default function EmployeesList() {
               whileTap={{ scale: 0.9 }}
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className={`p-2 rounded-lg border ${
-                currentPage === totalPages
+              className={`p-2 rounded-lg border ${currentPage === totalPages
                   ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
+                }`}
             >
               <FaChevronRight className="w-4 h-4" />
             </motion.button>
@@ -808,14 +808,14 @@ export default function EmployeesList() {
         </div>
       </div>
 
-     {/* View Employee Modal */}
+      {/* View Employee Modal */}
       <AnimatePresence>
         {showViewModal && selectedEmployee && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 mt-[0px!important] overflow-y-scroll"
             onClick={() => setShowViewModal(false)}
           >
             <motion.div
@@ -861,11 +861,10 @@ export default function EmployeesList() {
                     <h1 className="text-2xl font-bold text-slate-800 mb-1">{selectedEmployee.name}</h1>
                     <p className="text-slate-500 mb-3">{selectedEmployee.designation}</p>
                     <div className="flex flex-wrap gap-2">
-                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                        selectedEmployee.status === 'active'
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${selectedEmployee.status === 'active'
                           ? 'bg-green-100 text-green-700'
                           : 'bg-slate-100 text-slate-600'
-                      }`}>
+                        }`}>
                         {selectedEmployee.status}
                       </span>
                       <span className="px-3 py-1 text-sm font-medium rounded-full bg-purple-100 text-purple-700">
@@ -910,12 +909,12 @@ export default function EmployeesList() {
                         <div>
                           <p className="text-xs text-slate-400">Date of Birth</p>
                           <p className="text-sm text-slate-700">
-                            {selectedEmployee.dateOfBirth 
+                            {selectedEmployee.dateOfBirth
                               ? new Date(selectedEmployee.dateOfBirth).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })
                               : 'Not specified'}
                           </p>
                         </div>
@@ -1034,7 +1033,7 @@ export default function EmployeesList() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 mt-[0px!important] overflow-y-scroll"
             onClick={() => setShowEditModal(false)}
           >
             <motion.div
@@ -1388,7 +1387,7 @@ export default function EmployeesList() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 mt-[0px!important] overflow-y-scroll"
             onClick={() => setShowAddModal(false)}
           >
             <motion.div
@@ -1747,7 +1746,7 @@ export default function EmployeesList() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 mt-[0px!important]"
             onClick={() => setShowDeleteModal(false)}
           >
             <motion.div

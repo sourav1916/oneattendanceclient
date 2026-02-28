@@ -6,25 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTachometerAlt,
   FaUsers,
-  FaUserTie,
-  FaUserClock,
-  FaCalendarAlt,
-  FaFileAlt,
-  FaMoneyBillWave,
-  FaWallet,
-  FaPlaneDeparture,
-  FaBriefcase,
-  FaBuilding,
-  FaChartBar,
-  FaCog,
-  FaBell,
-  FaShieldAlt,
-  FaClock,
-  FaHistory,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaUserCheck,
-  FaUserSlash
+  FaBuilding
 } from "react-icons/fa";
 
 export default function AdminSidebar({ 
@@ -59,6 +41,11 @@ export default function AdminSidebar({
     {
       section: "Employee Management",
       items: [
+        {
+          name: "All Companies",
+          path: "/admin/companies",
+          icon: FaBuilding,
+        },
         {
           name: "All Employees",
           path: "/admin/employees",
