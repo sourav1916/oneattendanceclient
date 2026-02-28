@@ -18,6 +18,7 @@ import ApplyLeave from "./pages/employee/ApplyLeave";
 import LeaveHistory from "./pages/employee/LeaveHistory";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import Notifications from "./pages/employee/Notifications";
+import EmployeesList from "./pages/admin/EmployeesList";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -50,6 +51,8 @@ export default function App() {
           {user?.is_system_admin ? (
             <>
               <Route index element={<AdminDashboard />} />
+              <Route path="admin/employees" element={<EmployeesList />} />
+
             </>
           ) : null}
           
