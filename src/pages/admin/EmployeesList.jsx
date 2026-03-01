@@ -703,7 +703,7 @@ export default function EmployeesList() {
                                 handleViewEmployee(employee);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                              className="w-full px-4 py-3 text-left text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
                             >
                               <FaEye className="w-4 h-4" />
                               View Details
@@ -713,7 +713,7 @@ export default function EmployeesList() {
                                 handleEditClick(employee);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              className="w-full px-4 py-3 text-left text-sm text-amber-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
                             >
                               <FaEdit className="w-4 h-4" />
                               Edit Employee
@@ -724,7 +724,7 @@ export default function EmployeesList() {
                                 setShowDeleteModal(true);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
                             >
                               <FaTrash className="w-4 h-4" />
                               Delete Employee
@@ -786,7 +786,7 @@ export default function EmployeesList() {
                                 handleViewEmployee(employee);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                              className="w-full px-4 py-2.5 text-left text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
                             >
                               <FaEye className="w-4 h-4" />
                               View Details
@@ -796,7 +796,7 @@ export default function EmployeesList() {
                                 handleEditClick(employee);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              className="w-full px-4 py-2.5 text-left text-sm text-amber-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
                             >
                               <FaEdit className="w-4 h-4" />
                               Edit Employee
@@ -807,7 +807,7 @@ export default function EmployeesList() {
                                 setShowDeleteModal(true);
                                 setActionMenuOpen(null);
                               }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
                             >
                               <FaTrash className="w-4 h-4" />
                               Delete Employee

@@ -57,7 +57,7 @@ export default function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="admin/employees" element={<EmployeesList />} />
               <Route path="admin/companies" element={<CompaniesList />} />
-              <Route path="admin/attendance" element={<AttendanceList/>} />
+              <Route path="admin/attendance-punches" element={<AttendanceList/>} />
 
             </>
           ) : null}
