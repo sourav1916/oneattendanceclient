@@ -143,6 +143,7 @@ const Login = () => {
       const res = await fetch(`${API_BASE}/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
         body: JSON.stringify({ email, otp: otpString }),
       });
 
