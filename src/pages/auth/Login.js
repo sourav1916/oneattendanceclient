@@ -110,10 +110,11 @@ const Login = () => {
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/otp/send-login`, {
+
+      const res = await fetch(`${API_BASE}/login/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password })
       });
 
       const data = await res.json();
@@ -123,9 +124,9 @@ const Login = () => {
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
 
-      showToast("OTP sent successfully! 📧");
+      showToast("OTP sent to your email 📧");
     } catch (err) {
-      showToast(err.message || "Login failed", "error");
+      showToast(err.message || "Failed to send OTP", "error");
     } finally {
       setLoading(false);
     }
@@ -133,6 +134,7 @@ const Login = () => {
 
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
+
     if (otpString.length !== 6) {
       showToast("Please enter complete 6-digit OTP", "error");
       return;
@@ -140,25 +142,27 @@ const Login = () => {
 
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/otp/verify`, {
+
+      const res = await fetch(`${API_BASE}/login/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: 'include',
-        body: JSON.stringify({ email, otp: otpString }),
+        body: JSON.stringify({
+          email,
+          otp: otpString
+        })
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      // ✅ FIXED localStorage syntax
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // ✅ Save auth state
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      login(data.user); // Update context
+      login(data.user); // update auth context
 
-      showToast("Login Successful! 🎉");
+      showToast("Login successful 🎉");
 
-      // ✅ Navigate after context updates
       setTimeout(() => {
         navigate("/", { replace: true });
       }, 100);
