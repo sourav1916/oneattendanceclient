@@ -11,7 +11,8 @@ import {
     FaCheckCircle, FaTimesCircle, FaClock, FaUserCircle,
     FaIdCard, FaInfoCircle, FaChartLine, FaDollarSign,
     FaIndustry, FaRegBuilding, FaUserTie, FaLink,
-    FaFileAlt, FaStar, FaBan, FaCheck, FaExclamationTriangle
+    FaFileAlt, FaStar, FaBan, FaCheck, FaExclamationTriangle,
+    FaEllipsisV
 } from "react-icons/fa";
 
 export default function CompaniesList() {
@@ -27,6 +28,7 @@ export default function CompaniesList() {
     const [showViewModal, setShowViewModal] = useState(false);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+    const [actionMenuOpen, setActionMenuOpen] = useState(null);
     const itemsPerPage = 10;
     const isAnyModalOpen = showAddModal || showEditModal || showViewModal || showDeleteModal;
     const navigate = useNavigate();
@@ -632,7 +634,7 @@ export default function CompaniesList() {
                         className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
                     >
                         <FaFilter className="w-4 h-4 text-slate-500" />
-                        <span className="hidden sm:inline">Filters</span>
+                        <span className="hidden sm:inline"></span>
                     </motion.button>
 
                     <motion.button
@@ -641,7 +643,7 @@ export default function CompaniesList() {
                         className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
                     >
                         <FaDownload className="w-4 h-4 text-slate-500" />
-                        <span className="hidden sm:inline">Export</span>
+                        <span className="hidden sm:inline"></span>
                     </motion.button>
 
                     <motion.button
@@ -651,8 +653,8 @@ export default function CompaniesList() {
                         className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2 text-sm"
                     >
                         <FaPlus className="w-4 h-4" />
-                        <span className="hidden sm:inline">Add Company</span>
-                        <span className="sm:hidden">Add</span>
+                        <span className="hidden sm:inline"></span>
+                        <span className="sm:hidden"></span>
                     </motion.button>
                 </div>
             </div>
@@ -795,34 +797,62 @@ export default function CompaniesList() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-end gap-2">
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleViewCompany(company)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                        >
-                                            <FaEye className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleEditClick(company)}
-                                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg"
-                                        >
-                                            <FaEdit className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => {
-                                                setSelectedCompany(company);
-                                                setShowDeleteModal(true);
-                                            }}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                                        >
-                                            <FaTrash className="w-4 h-4" />
-                                        </motion.button>
+                                    {/* Mobile Actions - Three-dot menu */}
+                                    <div className="flex items-center justify-end">
+                                        <div className="relative">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => setActionMenuOpen(actionMenuOpen === company.id ? null : company.id)}
+                                                className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                            >
+                                                <FaEllipsisV className="w-3 h-3" />
+                                            </motion.button>
+
+                                            {/* Dropdown menu for mobile */}
+                                            <AnimatePresence>
+                                                {actionMenuOpen === company.id && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
+                                                    >
+                                                        <button
+                                                            onClick={() => {
+                                                                handleViewCompany(company);
+                                                                setActionMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-3 text-left text-sm text-blue-600 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                                                        >
+                                                            <FaEye className="w-4 h-4" />
+                                                            View Details
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleEditClick(company);
+                                                                setActionMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-3 text-left text-sm text-amber-600 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                                                        >
+                                                            <FaEdit className="w-4 h-4" />
+                                                            Edit Company
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedCompany(company);
+                                                                setShowDeleteModal(true);
+                                                                setActionMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-3 text-left text-sm text-red-600 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                                                        >
+                                                            <FaTrash className="w-4 h-4" />
+                                                            Delete Company
+                                                        </button>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -862,37 +892,62 @@ export default function CompaniesList() {
                                             {company.status}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleViewCompany(company)}
-                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                            title="View"
-                                        >
-                                            <FaEye className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleEditClick(company)}
-                                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
-                                            title="Edit"
-                                        >
-                                            <FaEdit className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => {
-                                                setSelectedCompany(company);
-                                                setShowDeleteModal(true);
-                                            }}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                                            title="Delete"
-                                        >
-                                            <FaTrash className="w-4 h-4" />
-                                        </motion.button>
+                                    <div className="flex items-center justify-center">
+                                        {/* Three-dot menu for desktop */}
+                                        <div className="relative">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={() => setActionMenuOpen(actionMenuOpen === company.id ? null : company.id)}
+                                                className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                            >
+                                                <FaEllipsisV className="w-3 h-3" />
+                                            </motion.button>
+
+                                            {/* Dropdown menu */}
+                                            <AnimatePresence>
+                                                {actionMenuOpen === company.id && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
+                                                    >
+                                                        <button
+                                                            onClick={() => {
+                                                                handleViewCompany(company);
+                                                                setActionMenuOpen(null);
+                                                            }}
+                                                            className="border-b border-gray-200 w-full px-4 py-3 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                                                        >
+                                                            <FaEye className="w-4 h-4" />
+                                                            View Details
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleEditClick(company);
+                                                                setActionMenuOpen(null);
+                                                            }}
+                                                            className="border-b border-gray-200 w-full px-4 py-3 text-left text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                                                        >
+                                                            <FaEdit className="w-4 h-4" />
+                                                            Edit Company
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedCompany(company);
+                                                                setShowDeleteModal(true);
+                                                                setActionMenuOpen(null);
+                                                            }}
+                                                            className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        >
+                                                            <FaTrash className="w-4 h-4" />
+                                                            Delete Company
+                                                        </button>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>

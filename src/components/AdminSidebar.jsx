@@ -5,8 +5,28 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import {
   FaTachometerAlt,
-  FaUserMd,
-  FaBuilding
+  FaBuilding,
+  FaUserFriends,
+  FaEnvelope,
+  FaUserTag,
+  FaUsersCog,
+  FaUserTie,
+  FaCalendarAlt,
+  FaMoneyBillWave,
+  FaClock,
+  FaBan,
+  FaKey,
+  FaShieldAlt,
+  FaUserLock,
+  FaUserPlus,
+  FaIdCard,
+  FaPercentage,
+  FaFileInvoiceDollar,
+  FaCoins,
+  FaListAlt,
+  FaUserClock,
+  FaUserEdit,
+  FaCog
 } from "react-icons/fa";
 
 export default function AdminSidebar({ 
@@ -31,7 +51,7 @@ export default function AdminSidebar({
     }
   };
 
-  // Sidebar items config for Admin
+  // Sidebar items config for Admin based on database tables
   const items = [
     {
       name: "Dashboard",
@@ -39,18 +59,158 @@ export default function AdminSidebar({
       icon: FaTachometerAlt,
     },
     {
+      section: "Company Management",
+      items: [
+        {
+          name: "Companies",
+          path: "/admin/companies",
+          icon: FaBuilding,
+        },
+        {
+          name: "Company Invites",
+          path: "/admin/company-invites",
+          icon: FaEnvelope,
+        },
+        {
+          name: "Company Users",
+          path: "/admin/company-users",
+          icon: FaUserFriends,
+        },
+        {
+          name: "Company User Roles",
+          path: "/admin/company-user-roles",
+          icon: FaUserTag,
+        }
+      ]
+    },
+    {
       section: "Employee Management",
       items: [
         {
-          name: "All Companies",
-          path: "/admin/companies",
-          icon: FaBuilding,
-        },        
+          name: "Employees",
+          path: "/admin/employees",
+          icon: FaUserTie,
+        },
         {
-          name: "Attendances",
-          path: "/admin/attendance",
-          icon: FaUserMd,
-        }        
+          name: "Attendance",
+          path: "/admin/attendance-punches",
+          icon: FaClock,
+        },
+        {
+          name: "Shifts",
+          path: "/admin/shifts",
+          icon: FaUserClock,
+        }
+      ]
+    },
+    {
+      section: "Leave Management",
+      items: [
+        {
+          name: "Employee Leaves",
+          path: "/admin/employee-leaves",
+          icon: FaCalendarAlt,
+        },
+        {
+          name: "Leave Types",
+          path: "/admin/leave-types",
+          icon: FaBan,
+        }
+      ]
+    },
+    {
+      section: "Salary & Payroll",
+      items: [
+        {
+          name: "Salary Records",
+          path: "/admin/salary-records",
+          icon: FaMoneyBillWave,
+        },
+        {
+          name: "Employee Salaries",
+          path: "/admin/employee-salaries",
+          icon: FaIdCard,
+        },
+        {
+          name: "Salary Components",
+          path: "/admin/salary-components",
+          icon: FaPercentage,
+        },
+        {
+          name: "Salary Advances",
+          path: "/admin/salary-advances",
+          icon: FaCoins,
+        },
+        {
+          name: "Salary Payrolls",
+          path: "/admin/salary-payrolls",
+          icon: FaFileInvoiceDollar,
+        },
+        {
+          name: "Salary Payroll Entries",
+          path: "/admin/salary-payroll-entries",
+          icon: FaListAlt,
+        },
+        {
+          name: "Salary Payments",
+          path: "/admin/salary-payments",
+          icon: FaMoneyBillWave,
+        }
+      ]
+    },
+    {
+      section: "User Management",
+      items: [
+        {
+          name: "Users",
+          path: "/admin/users",
+          icon: FaUserFriends,
+        },
+        {
+          name: "Tokens",
+          path: "/admin/tokens",
+          icon: FaKey,
+        }
+      ]
+    },
+    {
+      section: "Roles & Permissions",
+      items: [
+        {
+          name: "System Roles",
+          path: "/admin/system-roles",
+          icon: FaShieldAlt,
+        },
+        {
+          name: "Custom Roles",
+          path: "/admin/custom-roles",
+          icon: FaUsersCog,
+        },
+        {
+          name: "Permissions",
+          path: "/admin/permissions",
+          icon: FaUserLock,
+        },
+        {
+          name: "Role Permissions",
+          path: "/admin/role-permissions",
+          icon: FaUserEdit,
+        },
+        {
+          name: "User Permission Overrides",
+          path: "/admin/user-permission-overrides",
+          icon: FaUserPlus,
+        }
+      ]
+    },
+    {
+      section: "System",
+      items: [
+        {
+          name: "Settings",
+          path: "/admin/settings",
+          icon: FaCog,
+        }
       ]
     }
   ];
@@ -98,7 +258,7 @@ export default function AdminSidebar({
           )}
         </AnimatePresence>
 
-        {/* Badge */}
+        {/* Badge - You can add logic for badges here */}
         {item.badge && (
           <span className={`
             bg-red-500 text-white text-xs rounded-full px-2 py-0.5
@@ -136,7 +296,7 @@ export default function AdminSidebar({
       onMouseEnter={() => !isMobile && setIsHovered(true)}
       onMouseLeave={() => !isMobile && setIsHovered(false)}
       className={`
-        h-full bg-white shadow-xl border-r border-slate-200 relative
+        h-full bg-white shadow-xl border-r border-slate-200 relative overflow-y-auto
         ${isMobile ? 'w-64 h-[calc(100vh-4rem)]' : ''}
       `}
       animate={{ 
@@ -144,37 +304,36 @@ export default function AdminSidebar({
       }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
     >
- 
-        <nav className="p-3 space-y-2">
-          {items.map((item, index) => {
-            if (item.section) {
-              return (
-                <div key={item.section} className="space-y-1">
-                  {/* Section Header - Only show when expanded */}
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="px-3 pt-2 pb-1"
-                    >
-                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        {item.section}
-                      </span>
-                    </motion.div>
-                  )}
-                  
-                  {/* Section Items */}
-                  {item.items.map((subItem, subIndex) => 
-                    renderMenuItem(subItem, index + subIndex)
-                  )}
-                </div>
-              );
-            }
-            
-            // Regular menu item
-            return renderMenuItem(item, index);
-          })}
-        </nav>
+      <nav className="p-3 space-y-2">
+        {items.map((item, index) => {
+          if (item.section) {
+            return (
+              <div key={item.section} className="space-y-1">
+                {/* Section Header - Only show when expanded */}
+                {isExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="px-3 pt-2 pb-1"
+                  >
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      {item.section}
+                    </span>
+                  </motion.div>
+                )}
+                
+                {/* Section Items */}
+                {item.items.map((subItem, subIndex) => 
+                  renderMenuItem(subItem, index + subIndex)
+                )}
+              </div>
+            );
+          }
+          
+          // Regular menu item (like Dashboard)
+          return renderMenuItem(item, index);
+        })}
+      </nav>
 
       {/* Collapse/Expand Toggle Button - Only show on desktop */}
       {!isMobile && (

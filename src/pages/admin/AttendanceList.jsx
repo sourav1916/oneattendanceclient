@@ -1,5 +1,5 @@
 // pages/admin/attendance/AttendanceList.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
@@ -7,30 +7,18 @@ import {
     FaChevronLeft, FaChevronRight, FaUserCheck, FaUserClock,
     FaClock, FaCalendarAlt, FaMapMarkerAlt, FaCheckCircle,
     FaTimesCircle, FaExclamationTriangle, FaDownload,
-    FaUpload, FaTimes, FaCamera, FaUserCircle, FaIdCard,
-    FaInfoCircle, FaChartLine, FaDollarSign, FaBuilding,
-    FaBriefcase, FaUsers, FaCheck, FaBan, FaRegClock,
-    FaHourglassHalf, FaUserGraduate, FaUserTie, FaUserMd,
-    FaUserCog, FaUserNinja, FaUserAstronaut, FaUserSecret,
+    FaUpload, FaTimes, FaUserCircle,
+    FaInfoCircle, FaChartLine, FaDollarSign,
+    FaBriefcase, FaUsers,
+    FaHourglassHalf,
+
     FaUserCheck as FaUserCheckIcon, FaUserClock as FaUserClockIcon,
-    FaMapPin, FaLocationArrow, FaHome, FaLaptop, FaCoffee,
-    FaUtensils, FaMoon, FaSun, FaCloudSun, FaCloudRain,
-    FaCloud, FaSnowflake, FaWind, FaTemperatureHigh,
-    FaTemperatureLow, FaThermometerHalf, FaTint, FaLeaf,
-    FaTree, FaMountain, FaWater, FaFire, FaBolt, FaBug,
-    FaRocket, FaSpaceShuttle, FaSatellite, FaGlobe,
-    FaGlobeAmericas, FaGlobeAsia, FaGlobeEurope,
-    FaGlobeAfrica, FaGlobeOceania, FaMap, FaCompass,
-    FaStreetView, FaSatelliteDish, FaRadar, FaRss,
-    FaWifi, FaBluetooth, FaBluetoothB, FaNetworkWired,
-    FaNetworkWireless, FaEthernet, FaUsb, FaSdCard,
-    FaMemory, FaMicrochip, FaCpu, FaServer, FaDatabase,
-    FaCloudUploadAlt, FaCloudDownloadAlt, FaCloudMoon,
-    FaCloudSunRain, FaCloudMoonRain, FaCloudSnow,
-    FaCloudHail, FaCloudFog, FaCloudMeatball, FaPoo,
-    FaPooStorm, FaToilet, FaShower, FaBath, FaHotTub,
-    FaHotTubPerson, FaHotTubPersonFilled, FaHotTubPersonOutline,
-    FaHotTubPersonSlash, FaHotTubPersonCheck, FaHotTubPersonTimes
+    FaLocationArrow, FaLaptop,
+    FaSun, FaCloudSun, FaCloudRain,
+    FaCloud, FaSnowflake, FaWind, FaNetworkWired,
+
+    FaMicrochip, FaFileAlt, FaDatabase,
+    FaEllipsisV,
 } from "react-icons/fa";
 
 // Skeleton Component for Loading State
@@ -107,6 +95,99 @@ const AttendanceSkeleton = () => {
     );
 };
 
+// Three Dots Menu Component
+const ThreeDotsMenu = ({ record, onView, onEdit, onDelete, onCheckOut, today }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Actions"
+            >
+                <FaEllipsisV className="w-4 h-4" />
+            </motion.button>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.1 }}
+                        className="absolute right-[100%] top-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10"
+                    >
+                        {/* Check Out Option - Only show if not checked out and date is today */}
+                        {!record.checkOut && record.date === today && (
+                            <button
+                                onClick={() => {
+                                    onCheckOut(record);
+                                    setIsOpen(false);
+                                }}
+                                className="border-b border-gray-200 w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
+                            >
+                                <FaClock className="w-4 h-4" />
+                                Check Out
+                            </button>
+                        )}
+
+                        {/* View Option */}
+                        <button
+                            onClick={() => {
+                                onView(record);
+                                setIsOpen(false);
+                            }}
+                            className="border-b border-gray-200 w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                        >
+                            <FaEye className="w-4 h-4" />
+                            View Details
+                        </button>
+
+                        {/* Edit Option */}
+                        <button
+                            onClick={() => {
+                                onEdit(record);
+                                setIsOpen(false);
+                            }}
+                            className="border-b border-gray-200 w-full px-4 py-2 text-left text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2"
+                        >
+                            <FaEdit className="w-4 h-4" />
+                            Edit Record
+                        </button>
+
+                        {/* Delete Option */}
+                        <button
+                            onClick={() => {
+                                onDelete(record);
+                                setIsOpen(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                            <FaTrash className="w-4 h-4" />
+                            Delete Record
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 export default function AttendanceList() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
@@ -122,7 +203,6 @@ export default function AttendanceList() {
     const [showViewModal, setShowViewModal] = useState(false);
     const [showCheckInModal, setShowCheckInModal] = useState(false);
     const [showCheckOutModal, setShowCheckOutModal] = useState(false);
-    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [showErrorMessage, setShowErrorMessage] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
@@ -132,7 +212,7 @@ export default function AttendanceList() {
     const [locationError, setLocationError] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
     const itemsPerPage = 10;
-    const isAnyModalOpen = showAddModal || showEditModal || showViewModal || showDeleteModal || showCheckInModal || showCheckOutModal || showBulkUploadModal;
+    const isAnyModalOpen = showAddModal || showEditModal || showViewModal || showDeleteModal || showCheckInModal || showCheckOutModal;
 
     // Use the hook
     useBodyScrollLock(isAnyModalOpen);
@@ -163,7 +243,7 @@ export default function AttendanceList() {
                         lng: position.coords.longitude
                     });
                     setLocationError(null);
-                    
+
                     // Simulate weather data based on coordinates
                     simulateWeatherData(position.coords.latitude, position.coords.longitude);
                 },
@@ -187,7 +267,7 @@ export default function AttendanceList() {
         const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
         const randomTemp = Math.floor(Math.random() * 35) + 10; // 10-45°C
         const randomHumidity = Math.floor(Math.random() * 60) + 40; // 40-100%
-        
+
         setWeatherData({
             condition: randomCondition,
             temperature: randomTemp,
@@ -491,14 +571,14 @@ export default function AttendanceList() {
 
     // Department options
     const departments = ["Engineering", "Marketing", "Sales", "HR", "Finance", "Operations", "IT", "Customer Support"];
-    
+
     // Status options
     const statuses = ["Present", "Late", "Absent", "Overtime", "Half Day", "Leave", "Remote"];
 
     // Calculate summary statistics
     const today = new Date().toISOString().split('T')[0];
     const todayAttendance = attendance.filter(record => record.date === today);
-    
+
     const totalEmployees = 50; // This would come from your employees data
     const presentToday = todayAttendance.filter(record => record.status === 'present' || record.status === 'late' || record.status === 'overtime').length;
     const absentToday = todayAttendance.filter(record => record.status === 'absent').length;
@@ -517,7 +597,7 @@ export default function AttendanceList() {
     // Handle input change
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        
+
         if (showEditModal && selectedAttendance) {
             setSelectedAttendance(prev => ({
                 ...prev,
@@ -535,17 +615,17 @@ export default function AttendanceList() {
     const handleCheckIn = () => {
         const now = new Date();
         const currentTimeStr = now.toTimeString().split(' ')[0].substring(0, 5);
-        
+
         // Determine status based on check-in time
         let status = "present";
         const checkInHour = now.getHours();
         const checkInMinute = now.getMinutes();
-        
+
         // Assuming work starts at 9:00 AM
         if (checkInHour > 9 || (checkInHour === 9 && checkInMinute > 0)) {
             status = "late";
         }
-        
+
         const newRecord = {
             id: attendance.length + 1,
             employeeId: "EMP011", // This would come from logged-in user
@@ -570,12 +650,12 @@ export default function AttendanceList() {
             checkInLocation: currentLocation,
             checkOutLocation: null
         };
-        
+
         setAttendance([newRecord, ...attendance]);
         setShowCheckInModal(false);
         setSuccessMessage("Check-in successful!");
         setShowSuccessMessage(true);
-        
+
         setTimeout(() => {
             setShowSuccessMessage(false);
         }, 3000);
@@ -586,15 +666,15 @@ export default function AttendanceList() {
         if (selectedAttendance) {
             const now = new Date();
             const currentTimeStr = now.toTimeString().split(' ')[0].substring(0, 5);
-            
+
             // Calculate work hours
             const checkInTime = new Date(`${selectedAttendance.date}T${selectedAttendance.checkIn}`);
             const checkOutTime = now;
             const workHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
-            
+
             // Calculate overtime (assuming 8-hour workday)
             const overtime = Math.max(0, workHours - 8);
-            
+
             const updatedAttendance = attendance.map(record =>
                 record.id === selectedAttendance.id
                     ? {
@@ -607,13 +687,13 @@ export default function AttendanceList() {
                     }
                     : record
             );
-            
+
             setAttendance(updatedAttendance);
             setShowCheckOutModal(false);
             setSelectedAttendance(null);
             setSuccessMessage("Check-out successful!");
             setShowSuccessMessage(true);
-            
+
             setTimeout(() => {
                 setShowSuccessMessage(false);
             }, 3000);
@@ -625,14 +705,14 @@ export default function AttendanceList() {
         const record = {
             id: attendance.length + 1,
             ...newAttendance,
-            workHours: newAttendance.checkIn && newAttendance.checkOut 
+            workHours: newAttendance.checkIn && newAttendance.checkOut
                 ? calculateWorkHours(newAttendance.checkIn, newAttendance.checkOut)
                 : 0,
             overtime: newAttendance.checkIn && newAttendance.checkOut
                 ? calculateOvertime(newAttendance.checkIn, newAttendance.checkOut)
                 : 0
         };
-        
+
         setAttendance([...attendance, record]);
         setNewAttendance({
             employeeId: "",
@@ -660,7 +740,7 @@ export default function AttendanceList() {
         setShowAddModal(false);
         setSuccessMessage("Attendance record added successfully!");
         setShowSuccessMessage(true);
-        
+
         setTimeout(() => {
             setShowSuccessMessage(false);
         }, 3000);
@@ -682,13 +762,13 @@ export default function AttendanceList() {
                     }
                     : record
             );
-            
+
             setAttendance(updatedAttendance);
             setShowEditModal(false);
             setSelectedAttendance(null);
             setSuccessMessage("Attendance record updated successfully!");
             setShowSuccessMessage(true);
-            
+
             setTimeout(() => {
                 setShowSuccessMessage(false);
             }, 3000);
@@ -703,7 +783,7 @@ export default function AttendanceList() {
             setSelectedAttendance(null);
             setSuccessMessage("Attendance record deleted successfully!");
             setShowSuccessMessage(true);
-            
+
             setTimeout(() => {
                 setShowSuccessMessage(false);
             }, 3000);
@@ -714,10 +794,10 @@ export default function AttendanceList() {
     const calculateWorkHours = (checkIn, checkOut) => {
         const [inHour, inMin] = checkIn.split(':').map(Number);
         const [outHour, outMin] = checkOut.split(':').map(Number);
-        
+
         const inMinutes = inHour * 60 + inMin;
         const outMinutes = outHour * 60 + outMin;
-        
+
         return parseFloat(((outMinutes - inMinutes) / 60).toFixed(1));
     };
 
@@ -739,6 +819,12 @@ export default function AttendanceList() {
         setShowEditModal(true);
     };
 
+    // Open delete modal
+    const handleDeleteClick = (record) => {
+        setSelectedAttendance(record);
+        setShowDeleteModal(true);
+    };
+
     // Open check-out modal
     const handleCheckOutClick = (record) => {
         setSelectedAttendance(record);
@@ -751,11 +837,11 @@ export default function AttendanceList() {
             record.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
             record.employeeEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
             record.employeeDepartment.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         const matchesDate = selectedDate === "all" || record.date === selectedDate;
         const matchesStatus = selectedStatus === "all" || record.status === selectedStatus.toLowerCase();
         const matchesDepartment = selectedDepartment === "all" || record.employeeDepartment === selectedDepartment;
-        
+
         return matchesSearch && matchesDate && matchesStatus && matchesDepartment;
     });
 
@@ -941,11 +1027,10 @@ export default function AttendanceList() {
                                 <card.icon className={`w-5 h-5 ${card.textColor}`} />
                             </div>
                             {card.change && (
-                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
-                                    card.changeType === 'increase'
+                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${card.changeType === 'increase'
                                         ? 'bg-green-100 text-green-700'
                                         : 'bg-red-100 text-red-700'
-                                }`}>
+                                    }`}>
                                     {card.change}
                                 </span>
                             )}
@@ -979,17 +1064,7 @@ export default function AttendanceList() {
                         className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
                     >
                         <FaFilter className="w-4 h-4 text-slate-500" />
-                        <span className="hidden sm:inline">Filters</span>
-                    </motion.button>
-
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowBulkUploadModal(true)}
-                        className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
-                    >
-                        <FaUpload className="w-4 h-4 text-slate-500" />
-                        <span className="hidden sm:inline">Bulk Upload</span>
+                        <span className="hidden sm:inline"></span>
                     </motion.button>
 
                     <motion.button
@@ -1049,7 +1124,7 @@ export default function AttendanceList() {
                                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                                     />
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-xs font-medium text-slate-500 mb-1">
                                         Department
@@ -1065,7 +1140,7 @@ export default function AttendanceList() {
                                         ))}
                                     </select>
                                 </div>
-                                
+
                                 <div>
                                     <label className="block text-xs font-medium text-slate-500 mb-1">
                                         Status
@@ -1163,45 +1238,15 @@ export default function AttendanceList() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-end gap-2">
-                                        {!record.checkOut && record.date === today && (
-                                            <motion.button
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={() => handleCheckOutClick(record)}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                                                title="Check Out"
-                                            >
-                                                <FaClock className="w-4 h-4" />
-                                            </motion.button>
-                                        )}
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleViewAttendance(record)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                        >
-                                            <FaEye className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleEditClick(record)}
-                                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg"
-                                        >
-                                            <FaEdit className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => {
-                                                setSelectedAttendance(record);
-                                                setShowDeleteModal(true);
-                                            }}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                                        >
-                                            <FaTrash className="w-4 h-4" />
-                                        </motion.button>
+                                    <div className="flex items-center justify-end">
+                                        <ThreeDotsMenu
+                                            record={record}
+                                            onView={handleViewAttendance}
+                                            onEdit={handleEditClick}
+                                            onDelete={handleDeleteClick}
+                                            onCheckOut={handleCheckOutClick}
+                                            today={today}
+                                        />
                                     </div>
                                 </div>
 
@@ -1239,48 +1284,15 @@ export default function AttendanceList() {
                                     <div className="text-sm text-slate-600 truncate" title={record.location}>
                                         {record.location || 'N/A'}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        {!record.checkOut && record.date === today && (
-                                            <motion.button
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={() => handleCheckOutClick(record)}
-                                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"
-                                                title="Check Out"
-                                            >
-                                                <FaClock className="w-4 h-4" />
-                                            </motion.button>
-                                        )}
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleViewAttendance(record)}
-                                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
-                                            title="View"
-                                        >
-                                            <FaEye className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => handleEditClick(record)}
-                                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
-                                            title="Edit"
-                                        >
-                                            <FaEdit className="w-4 h-4" />
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => {
-                                                setSelectedAttendance(record);
-                                                setShowDeleteModal(true);
-                                            }}
-                                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                                            title="Delete"
-                                        >
-                                            <FaTrash className="w-4 h-4" />
-                                        </motion.button>
+                                    <div className="flex items-center justify-end">
+                                        <ThreeDotsMenu
+                                            record={record}
+                                            onView={handleViewAttendance}
+                                            onEdit={handleEditClick}
+                                            onDelete={handleDeleteClick}
+                                            onCheckOut={handleCheckOutClick}
+                                            today={today}
+                                        />
                                     </div>
                                 </div>
                             </motion.div>
@@ -1300,11 +1312,10 @@ export default function AttendanceList() {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
-                            className={`p-2 rounded-lg border ${
-                                currentPage === 1
+                            className={`p-2 rounded-lg border ${currentPage === 1
                                     ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                            }`}
+                                }`}
                         >
                             <FaChevronLeft className="w-4 h-4" />
                         </motion.button>
@@ -1318,11 +1329,10 @@ export default function AttendanceList() {
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
-                            className={`p-2 rounded-lg border ${
-                                currentPage === totalPages
+                            className={`p-2 rounded-lg border ${currentPage === totalPages
                                     ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                            }`}
+                                }`}
                         >
                             <FaChevronRight className="w-4 h-4" />
                         </motion.button>
@@ -2281,73 +2291,6 @@ export default function AttendanceList() {
                                     className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                                 >
                                     Delete
-                                </motion.button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Bulk Upload Modal */}
-            <AnimatePresence>
-                {showBulkUploadModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 mt-[0px!important]"
-                        onClick={() => setShowBulkUploadModal(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
-                        >
-                            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FaUpload className="w-8 h-8 text-indigo-600" />
-                            </div>
-
-                            <h3 className="text-lg font-semibold text-slate-800 text-center mb-2">
-                                Bulk Upload Attendance
-                            </h3>
-
-                            <p className="text-sm text-slate-500 text-center mb-6">
-                                Upload a CSV or Excel file with attendance records
-                            </p>
-
-                            <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 mb-6 text-center hover:border-indigo-500 transition-colors cursor-pointer">
-                                <FaUpload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                                <p className="text-sm text-slate-500 mb-1">Click to upload or drag and drop</p>
-                                <p className="text-xs text-slate-400">CSV or Excel files only</p>
-                            </div>
-
-                            <div className="bg-slate-50 rounded-lg p-4 mb-6">
-                                <p className="text-xs font-medium text-slate-500 mb-2">File Requirements:</p>
-                                <ul className="text-xs text-slate-500 space-y-1 list-disc list-inside">
-                                    <li>File must be in CSV or Excel format</li>
-                                    <li>Maximum file size: 10MB</li>
-                                    <li>Required columns: Employee ID, Date, Check In, Check Out, Status</li>
-                                    <li>Download template for correct format</li>
-                                </ul>
-                            </div>
-
-                            <div className="flex gap-3">
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => setShowBulkUploadModal(false)}
-                                    className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
-                                >
-                                    Cancel
-                                </motion.button>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                                >
-                                    Upload
                                 </motion.button>
                             </div>
                         </motion.div>
