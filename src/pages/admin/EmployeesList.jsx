@@ -28,6 +28,7 @@ export default function EmployeesList() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [actionMenuOpen, setActionMenuOpen] = useState(null);
   const itemsPerPage = 10;
   const isAnyModalOpen = showAddModal || showEditModal || showViewModal || showDeleteModal;
 
@@ -458,9 +459,10 @@ export default function EmployeesList() {
       className="space-y-4 sm:space-y-6 relative"
     >
       {/* Success Message Toast */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showSuccessMessage && (
           <motion.div
+            key="success-message"
             initial={{ opacity: 0, y: -50, x: '-50%' }}
             animate={{ opacity: 1, y: 0, x: '-50%' }}
             exit={{ opacity: 0, y: -50, x: '-50%' }}
@@ -525,7 +527,7 @@ export default function EmployeesList() {
             className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
           >
             <FaFilter className="w-4 h-4 text-slate-500" />
-            <span className="hidden sm:inline">Filters</span>
+            <span className="hidden sm:inline"></span>
           </motion.button>
 
           <motion.button
@@ -534,7 +536,7 @@ export default function EmployeesList() {
             className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
           >
             <FaDownload className="w-4 h-4 text-slate-500" />
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline"></span>
           </motion.button>
 
           <motion.button
@@ -544,8 +546,8 @@ export default function EmployeesList() {
             className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 text-sm"
           >
             <FaUserPlus className="w-4 h-4" />
-            <span className="hidden sm:inline">Add Employee</span>
-            <span className="sm:hidden">Add</span>
+            <span className="hidden sm:inline"></span>
+            <span className="sm:hidden"></span>
           </motion.button>
         </div>
       </div>
@@ -624,7 +626,7 @@ export default function EmployeesList() {
 
         {/* Employee Rows */}
         <div className="divide-y divide-slate-200">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             {paginatedEmployees.map((employee, index) => (
               <motion.div
                 key={employee.id}
@@ -675,34 +677,62 @@ export default function EmployeesList() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleViewEmployee(employee)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                    >
-                      <FaEye className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleEditClick(employee)}
-                      className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg"
-                    >
-                      <FaEdit className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setShowDeleteModal(true);
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    >
-                      <FaTrash className="w-4 h-4" />
-                    </motion.button>
+                  {/* Mobile Actions - Three-dot menu */}
+                  <div className="flex items-center justify-end">
+                    <div className="relative">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setActionMenuOpen(actionMenuOpen === employee.id ? null : employee.id)}
+                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <FaEllipsisV className="w-3 h-3" />
+                      </motion.button>
+
+                      {/* Dropdown menu for mobile */}
+                      <AnimatePresence>
+                        {actionMenuOpen === employee.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
+                          >
+                            <button
+                              onClick={() => {
+                                handleViewEmployee(employee);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                            >
+                              <FaEye className="w-4 h-4" />
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleEditClick(employee);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                            >
+                              <FaEdit className="w-4 h-4" />
+                              Edit Employee
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setShowDeleteModal(true);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                            >
+                              <FaTrash className="w-4 h-4" />
+                              Delete Employee
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
 
@@ -730,37 +760,62 @@ export default function EmployeesList() {
                       {employee.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleViewEmployee(employee)}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
-                      title="View"
-                    >
-                      <FaEye className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => handleEditClick(employee)}
-                      className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
-                      title="Edit"
-                    >
-                      <FaEdit className="w-4 h-4" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => {
-                        setSelectedEmployee(employee);
-                        setShowDeleteModal(true);
-                      }}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"
-                      title="Delete"
-                    >
-                      <FaTrash className="w-4 h-4" />
-                    </motion.button>
+                  <div className="flex items-center justify-center">
+                    {/* Three-dot menu for desktop */}
+                    <div className="relative">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setActionMenuOpen(actionMenuOpen === employee.id ? null : employee.id)}
+                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                      >
+                        <FaEllipsisV className="w-3 h-3" />
+                      </motion.button>
+
+                      {/* Dropdown menu */}
+                      <AnimatePresence>
+                        {actionMenuOpen === employee.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
+                          >
+                            <button
+                              onClick={() => {
+                                handleViewEmployee(employee);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                            >
+                              <FaEye className="w-4 h-4" />
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleEditClick(employee);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                            >
+                              <FaEdit className="w-4 h-4" />
+                              Edit Employee
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setShowDeleteModal(true);
+                                setActionMenuOpen(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                            >
+                              <FaTrash className="w-4 h-4" />
+                              Delete Employee
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -809,9 +864,10 @@ export default function EmployeesList() {
       </div>
 
       {/* View Employee Modal */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showViewModal && selectedEmployee && (
           <motion.div
+            key="view-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1027,9 +1083,10 @@ export default function EmployeesList() {
       </AnimatePresence>
 
       {/* Edit Employee Modal */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showEditModal && selectedEmployee && (
           <motion.div
+            key="edit-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1381,9 +1438,10 @@ export default function EmployeesList() {
       </AnimatePresence>
 
       {/* Add Employee Modal */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showAddModal && (
           <motion.div
+            key="add-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1740,9 +1798,10 @@ export default function EmployeesList() {
       </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showDeleteModal && (
           <motion.div
+            key="delete-modal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

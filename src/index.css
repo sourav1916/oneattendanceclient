@@ -18,9 +18,8 @@ code {
 
 
 .overflow-y-scroll {
-    scrollbar-width: thin;
-    overflow-y: scroll;
+    scrollbar-width: none;
 }
 .overflow-y-auto {
-    scrollbar-width: thin;
+    scrollbar-width: none;
 }
