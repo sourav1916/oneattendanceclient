@@ -19,6 +19,9 @@ import LeaveHistory from "./pages/employee/LeaveHistory";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import Notifications from "./pages/employee/Notifications";
 import EmployeesList from "./pages/admin/EmployeesList";
+import Signup from "./pages/auth/Signup";
+import CompaniesList from "./pages/admin/CompaniesList";
+import AttendanceList from "./pages/admin/AttendanceList";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -35,6 +38,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         
         {/* Fixed: Always render ONE layout based on user */}
         <Route
@@ -52,6 +56,8 @@ export default function App() {
             <>
               <Route index element={<AdminDashboard />} />
               <Route path="admin/employees" element={<EmployeesList />} />
+              <Route path="admin/companies" element={<CompaniesList />} />
+              <Route path="admin/attendance" element={<AttendanceList/>} />
 
             </>
           ) : null}

@@ -193,7 +193,7 @@ export default function Sidebar({
       {!isMobile && (
         <motion.button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 p-2 bg-white border border-slate-200 rounded-lg shadow-md hover:bg-slate-50 transition-colors z-10"
+          className="hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 p-2 bg-white border border-slate-200 rounded-lg shadow-md hover:bg-slate-50 transition-colors z-10"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
