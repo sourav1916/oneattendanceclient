@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import {
   FaTachometerAlt,
-  FaUsers,
+  FaUserMd,
   FaBuilding
 } from "react-icons/fa";
 
@@ -45,6 +45,11 @@ export default function AdminSidebar({
           name: "All Companies",
           path: "/admin/companies",
           icon: FaBuilding,
+        },        
+        {
+          name: "Attendances",
+          path: "/admin/attendance",
+          icon: FaUserMd,
         }        
       ]
     }
