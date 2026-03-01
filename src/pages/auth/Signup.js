@@ -127,100 +127,92 @@ const Signup = () => {
   };
 
 
+  const handleRequestOtp = async () => {
+    if (!email) return showToast("Please enter email", "error");
+    if (!firstName || !lastName)
+      return showToast("Please enter your full name", "error");
 
-// Generate OTP in frontend
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-const handleRequestOtp = async () => {
-  if (!email) return showToast("Please enter email first", "error");
-  if (!firstName || !lastName) return showToast("Please enter your full name", "error");
-
-  try {
-    setLoading(true);
-
-    // ✅ Generate OTP in frontend
-    const otpCode = generateOtp();
-    setOtpCode(otpCode); // save in state for verification
-
-    console.log("📤 Sending OTP to:", email, "OTP:", otpCode);
-
-    const res = await fetch(`${API_BASE}/otp/send-register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, otp: otpCode }), // send OTP for email only
-    });
-
-    const data = await res.json();
-    console.log("📥 Response:", data);
-
-    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-
-    setOtpSent(true);
-    setResendTimer(60);
-    setOtp(["", "", "", "", "", ""]);
-    setCurrentStep(2);
-    showToast("OTP sent successfully! 📧");
-
-  } catch (err) {
-    console.error("OTP Error:", err);
-    showToast(err.message || "Failed to send OTP", "error");
-  } finally {
-    setLoading(false);
-  }
-};
-
-const handleVerifyOtp = () => {
-  const otpString = otp.join("");
-  if (otpString.length !== 6) {
-    return showToast("Please enter complete 6-digit OTP", "error");
-  }
-
-  // ✅ Verify entirely in frontend
-  if (otpString === otpCode) {
-    setEmailVerified(true);
-    setCurrentStep(3);
-    showToast("Email Verified Successfully! ✅");
-  } else {
-    showToast("Invalid OTP code ❌", "error");
-  }
-};
-
-
-  const handleCreateAccount = async () => {
-    if (!password) {
-      showToast("Please set a password", "error");
-      return;
-    }
-
-    if (password.length < 6) {
-      showToast("Password must be at least 6 characters", "error");
-      return;
-    }
-    let payload = {
-      first_name: firstName,
-      middle_name: middleName,
-      last_name: lastName,
-      email: email,
-      phone: phone,
-      password: password,
-    }
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/auth/register`, {
+
+      const res = await fetch(`${API_BASE}/signup/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ email })
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
-      showToast("Account Created Successfully! 🎉");
+      setOtpSent(true);
+      setResendTimer(60);
+      setOtp(["", "", "", "", "", ""]);
+      setCurrentStep(2);
 
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      showToast("OTP sent to your email 📧");
+    } catch (err) {
+      showToast(err.message || "Failed to send OTP", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otpString = otp.join("");
+    if (otpString.length !== 6)
+      return showToast("Enter 6-digit OTP", "error");
+
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API_BASE}/signup/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          otp: otpString
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setEmailVerified(true);
+      setCurrentStep(3);
+
+      showToast("Email verified successfully ✅");
+    } catch (err) {
+      showToast(err.message || "Invalid OTP", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateAccount = async () => {
+    if (!password)
+      return showToast("Please set a password", "error");
+
+    if (password.length < 6)
+      return showToast("Password must be at least 6 characters", "error");
+
+    try {
+      setLoading(true);
+
+      const res = await fetch(`${API_BASE}/signup/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      showToast("Account created successfully 🎉");
+
+      setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
       showToast(err.message || "Signup failed", "error");
     } finally {
