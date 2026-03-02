@@ -22,6 +22,7 @@ import EmployeesList from "./pages/admin/EmployeesList";
 import Signup from "./pages/auth/Signup";
 import CompaniesList from "./pages/admin/CompaniesList";
 import AttendanceList from "./pages/admin/AttendanceList";
+import AllEmployeesList from "./pages/admin/AllEmployeeList";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -55,7 +56,8 @@ export default function App() {
           {user?.is_system_admin ? (
             <>
               <Route index element={<AdminDashboard />} />
-              <Route path="admin/employees" element={<EmployeesList />} />
+              <Route path="admin/employees" element={<AllEmployeesList />} />
+              <Route path="admin/company/employees" element={<EmployeesList />} />
               <Route path="admin/companies" element={<CompaniesList />} />
               <Route path="admin/attendance-punches" element={<AttendanceList/>} />
 

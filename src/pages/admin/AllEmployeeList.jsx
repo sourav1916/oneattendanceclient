@@ -1,23 +1,27 @@
-// pages/admin/employees/EmployeesList.jsx
+// pages/admin/employees/AllEmployeesList.jsx
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
-  FaSearch, FaFilter,  FaEdit, FaTrash, FaEye,
+  FaSearch, FaFilter, FaEdit, FaTrash, FaEye,
   FaChevronLeft, FaChevronRight, FaUserTie, FaEnvelope,
   FaPhone, FaBuilding, FaBriefcase, FaEllipsisV,
-  FaDownload,  FaUserPlus, FaTimes, FaCamera,
-   FaVenusMars, FaMapMarkerAlt, 
+  FaDownload, FaUserPlus, FaTimes, FaCamera,
+  FaVenusMars, FaMapMarkerAlt,
   FaCheckCircle, FaClock, FaUserCircle,
-  FaBirthdayCake, FaHeart, FaPhoneAlt, 
-  FaIdBadge, FaCalendarCheck, FaUserTag, FaInfoCircle,
-  FaUsers, FaUserCheck, FaUserClock, FaUserSlash,
+  FaBirthdayCake, FaHeart, FaPhoneAlt,
+  FaIdBadge, FaCalendarCheck, FaUserTag,
+  FaUsers, FaUserCheck, FaUserClock,
+  
+  FaCity, FaIndustry, FaStore, FaLaptop, FaHospital,
+  FaUniversity, FaLandmark
 } from "react-icons/fa";
 
-export default function EmployeesList() {
+export default function AllEmployeesList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedCompany, setSelectedCompany] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -34,6 +38,16 @@ export default function EmployeesList() {
   // Use the hook
   useBodyScrollLock(isAnyModalOpen);
 
+  // Companies data
+  const companies = [
+    { id: 1, name: "TechCorp Solutions", industry: "Technology", location: "San Francisco, CA", icon: FaLaptop },
+    { id: 2, name: "Global Healthcare Inc", industry: "Healthcare", location: "Boston, MA", icon: FaHospital },
+    { id: 3, name: "EduWorld International", industry: "Education", location: "Chicago, IL", icon: FaUniversity },
+    { id: 4, name: "FinTrust Bank", industry: "Finance", location: "New York, NY", icon: FaLandmark },
+    { id: 5, name: "RetailMax Group", industry: "Retail", location: "Seattle, WA", icon: FaStore },
+    { id: 6, name: "ManufacturePro", industry: "Manufacturing", location: "Detroit, MI", icon: FaIndustry }
+  ];
+
   // Form state for new employee
   const [newEmployee, setNewEmployee] = useState({
     firstName: "",
@@ -41,6 +55,8 @@ export default function EmployeesList() {
     email: "",
     phone: "",
     employeeId: "",
+    company: "",
+    companyName: "",
     department: "",
     designation: "",
     joinDate: "",
@@ -58,21 +74,23 @@ export default function EmployeesList() {
     emergencyPhone: ""
   });
 
-  // Sample employees data with more details
+  // Sample employees data with company information
   const [employees, setEmployees] = useState([
     {
       id: 1,
       name: "John Smith",
       firstName: "John",
       lastName: "Smith",
-      email: "john.smith@company.com",
+      email: "john.smith@techcorp.com",
       phone: "+1 234-567-8901",
+      company: "TechCorp Solutions",
+      companyId: 1,
       department: "Engineering",
       designation: "Senior Developer",
       joinDate: "2023-01-15",
       status: "active",
       avatar: null,
-      employeeId: "EMP001",
+      employeeId: "TC001",
       gender: "Male",
       dateOfBirth: "1990-05-15",
       nationality: "American",
@@ -81,131 +99,185 @@ export default function EmployeesList() {
       emergencyName: "Jane Smith",
       emergencyRelationship: "Wife",
       emergencyPhone: "+1 234-567-8999",
-      bloodGroup: "O+",
-      emergencyContact: "Jane Smith (Wife): +1 234-567-8999"
+      bloodGroup: "O+"
     },
     {
       id: 2,
       name: "Sarah Johnson",
       firstName: "Sarah",
       lastName: "Johnson",
-      email: "sarah.j@company.com",
+      email: "sarah.j@globalhealth.com",
       phone: "+1 234-567-8902",
-      department: "Marketing",
-      designation: "Marketing Manager",
+      company: "Global Healthcare Inc",
+      companyId: 2,
+      department: "Medical",
+      designation: "Head Nurse",
       joinDate: "2023-02-20",
       status: "active",
       avatar: null,
-      employeeId: "EMP002",
+      employeeId: "GH045",
       gender: "Female",
       dateOfBirth: "1988-08-22",
       nationality: "American",
       maritalStatus: "Single",
-      address: "456 Market Street, San Francisco, CA 94105",
+      address: "456 Health Ave, Boston, MA 02115",
       emergencyName: "Robert Johnson",
       emergencyRelationship: "Brother",
       emergencyPhone: "+1 234-567-8888",
-      bloodGroup: "A+",
-      emergencyContact: "Robert Johnson (Brother): +1 234-567-8888"
+      bloodGroup: "A+"
     },
     {
       id: 3,
       name: "Michael Brown",
       firstName: "Michael",
       lastName: "Brown",
-      email: "michael.b@company.com",
+      email: "michael.b@eduworld.edu",
       phone: "+1 234-567-8903",
-      department: "Sales",
-      designation: "Sales Representative",
+      company: "EduWorld International",
+      companyId: 3,
+      department: "Academics",
+      designation: "Professor",
       joinDate: "2023-03-10",
-      status: "inactive",
+      status: "active",
       avatar: null,
-      employeeId: "EMP003",
+      employeeId: "EW112",
       gender: "Male",
-      dateOfBirth: "1992-11-30",
+      dateOfBirth: "1975-11-30",
       nationality: "American",
-      maritalStatus: "Single",
-      address: "789 Sales Ave, San Francisco, CA 94105",
+      maritalStatus: "Married",
+      address: "789 Education Blvd, Chicago, IL 60601",
       emergencyName: "Mary Brown",
-      emergencyRelationship: "Mother",
+      emergencyRelationship: "Wife",
       emergencyPhone: "+1 234-567-8777",
-      bloodGroup: "B+",
-      emergencyContact: "Mary Brown (Mother): +1 234-567-8777"
+      bloodGroup: "B+"
     },
     {
       id: 4,
       name: "Emily Davis",
       firstName: "Emily",
       lastName: "Davis",
-      email: "emily.d@company.com",
+      email: "emily.d@fintrust.com",
       phone: "+1 234-567-8904",
-      department: "HR",
-      designation: "HR Manager",
+      company: "FinTrust Bank",
+      companyId: 4,
+      department: "Finance",
+      designation: "Financial Advisor",
       joinDate: "2023-04-05",
       status: "active",
       avatar: null,
-      employeeId: "EMP004",
+      employeeId: "FT789",
       gender: "Female",
       dateOfBirth: "1985-03-18",
       nationality: "American",
       maritalStatus: "Married",
-      address: "321 HR Blvd, San Francisco, CA 94105",
+      address: "321 Wall Street, New York, NY 10005",
       emergencyName: "Tom Davis",
       emergencyRelationship: "Husband",
       emergencyPhone: "+1 234-567-8666",
-      bloodGroup: "AB+",
-      emergencyContact: "Tom Davis (Husband): +1 234-567-8666"
+      bloodGroup: "AB+"
     },
     {
       id: 5,
       name: "David Wilson",
       firstName: "David",
       lastName: "Wilson",
-      email: "david.w@company.com",
+      email: "david.w@retailmax.com",
       phone: "+1 234-567-8905",
-      department: "Finance",
-      designation: "Financial Analyst",
+      company: "RetailMax Group",
+      companyId: 5,
+      department: "Sales",
+      designation: "Store Manager",
       joinDate: "2023-05-12",
-      status: "active",
+      status: "inactive",
       avatar: null,
-      employeeId: "EMP005",
+      employeeId: "RM234",
       gender: "Male",
       dateOfBirth: "1991-07-25",
       nationality: "American",
       maritalStatus: "Single",
-      address: "654 Finance St, San Francisco, CA 94105",
+      address: "567 Retail Way, Seattle, WA 98101",
       emergencyName: "Lisa Wilson",
       emergencyRelationship: "Sister",
       emergencyPhone: "+1 234-567-8555",
-      bloodGroup: "A-",
-      emergencyContact: "Lisa Wilson (Sister): +1 234-567-8555"
+      bloodGroup: "A-"
     },
+    {
+      id: 6,
+      name: "Jennifer Lee",
+      firstName: "Jennifer",
+      lastName: "Lee",
+      email: "jennifer.l@manufacturepro.com",
+      phone: "+1 234-567-8906",
+      company: "ManufacturePro",
+      companyId: 6,
+      department: "Operations",
+      designation: "Production Manager",
+      joinDate: "2023-06-18",
+      status: "active",
+      avatar: null,
+      employeeId: "MP901",
+      gender: "Female",
+      dateOfBirth: "1987-09-12",
+      nationality: "American",
+      maritalStatus: "Married",
+      address: "890 Industrial Rd, Detroit, MI 48201",
+      emergencyName: "James Lee",
+      emergencyRelationship: "Husband",
+      emergencyPhone: "+1 234-567-8444",
+      bloodGroup: "O-"
+    },
+    {
+      id: 7,
+      name: "Robert Martinez",
+      firstName: "Robert",
+      lastName: "Martinez",
+      email: "robert.m@techcorp.com",
+      phone: "+1 234-567-8907",
+      company: "TechCorp Solutions",
+      companyId: 1,
+      department: "Engineering",
+      designation: "DevOps Engineer",
+      joinDate: "2023-07-22",
+      status: "active",
+      avatar: null,
+      employeeId: "TC089",
+      gender: "Male",
+      dateOfBirth: "1993-12-03",
+      nationality: "American",
+      maritalStatus: "Single",
+      address: "432 Innovation Drive, San Francisco, CA 94105",
+      emergencyName: "Maria Martinez",
+      emergencyRelationship: "Mother",
+      emergencyPhone: "+1 234-567-8333",
+      bloodGroup: "B-"
+    }
   ]);
 
-  const departments = ["Engineering", "Marketing", "Sales", "HR", "Finance", "Operations", "IT Support"];
-  const designations = {
-    Engineering: ["Senior Developer", "Junior Developer", "Tech Lead", "Software Architect", "QA Engineer"],
-    Marketing: ["Marketing Manager", "SEO Specialist", "Content Writer", "Social Media Manager"],
-    Sales: ["Sales Representative", "Sales Manager", "Account Executive"],
-    HR: ["HR Manager", "Recruiter", "HR Assistant"],
-    Finance: ["Financial Analyst", "Accountant", "Finance Manager"],
-    Operations: ["Operations Manager", "Logistics Coordinator"],
-    "IT Support": ["IT Support Specialist", "System Administrator"]
-  };
+  const departments = ["Engineering", "Marketing", "Sales", "HR", "Finance", "Operations", "Medical", "Academics", "IT Support"];
   const statuses = ["Active", "Inactive"];
   const genders = ["Male", "Female", "Other"];
   const bloodGroups = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
   const maritalStatuses = ["Single", "Married", "Divorced", "Widowed"];
 
-  // Calculate summary statistics
+  // Calculate summary statistics across all companies
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter(emp => emp.status === 'active').length;
   const inactiveEmployees = employees.filter(emp => emp.status === 'inactive').length;
+  const totalCompanies = companies.length;
+  
   const newThisMonth = employees.filter(emp => {
     const joinDate = new Date(emp.joinDate);
     const now = new Date();
     return joinDate.getMonth() === now.getMonth() && joinDate.getFullYear() === now.getFullYear();
   }).length;
+
+  // Company distribution
+  const companyCount = employees.reduce((acc, emp) => {
+    acc[emp.company] = (acc[emp.company] || 0) + 1;
+    return acc;
+  }, {});
+
+  const topCompany = Object.entries(companyCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
 
   // Department distribution
   const departmentCount = employees.reduce((acc, emp) => {
@@ -235,23 +307,46 @@ export default function EmployeesList() {
   // Handle input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (showEditModal && selectedEmployee) {
-      setSelectedEmployee(prev => ({
-        ...prev,
-        [name]: value
-      }));
+    
+    // If company is selected, also set company name
+    if (name === 'company') {
+      const selectedCompanyObj = companies.find(c => c.id.toString() === value);
+      if (showEditModal && selectedEmployee) {
+        setSelectedEmployee(prev => ({
+          ...prev,
+          company: selectedCompanyObj?.name || '',
+          companyId: value
+        }));
+      } else {
+        setNewEmployee(prev => ({
+          ...prev,
+          company: selectedCompanyObj?.name || '',
+          companyId: value
+        }));
+      }
     } else {
-      setNewEmployee(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      if (showEditModal && selectedEmployee) {
+        setSelectedEmployee(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      } else {
+        setNewEmployee(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
     }
   };
 
   // Handle form submit for add
   const handleAddEmployee = () => {
     // Generate employee ID if not provided
-    const empId = newEmployee.employeeId || `EMP${String(employees.length + 1).padStart(3, '0')}`;
+    const companyPrefix = newEmployee.company ? newEmployee.company.substring(0, 2).toUpperCase() : 'EMP';
+    const empId = newEmployee.employeeId || `${companyPrefix}${String(employees.length + 1).padStart(3, '0')}`;
+
+    // Get company name from companyId
+    const selectedCompanyObj = companies.find(c => c.id.toString() === newEmployee.companyId);
 
     // Create new employee object
     const employee = {
@@ -261,6 +356,8 @@ export default function EmployeesList() {
       lastName: newEmployee.lastName,
       email: newEmployee.email,
       phone: newEmployee.phone,
+      company: selectedCompanyObj?.name || newEmployee.company,
+      companyId: newEmployee.companyId,
       department: newEmployee.department,
       designation: newEmployee.designation,
       joinDate: newEmployee.joinDate,
@@ -289,6 +386,8 @@ export default function EmployeesList() {
       email: "",
       phone: "",
       employeeId: "",
+      company: "",
+      companyId: "",
       department: "",
       designation: "",
       joinDate: "",
@@ -320,13 +419,23 @@ export default function EmployeesList() {
   // Handle form submit for edit
   const handleEditEmployee = () => {
     if (selectedEmployee) {
+      // Get company name if companyId is present
+      let companyName = selectedEmployee.company;
+      if (selectedEmployee.companyId) {
+        const companyObj = companies.find(c => c.id.toString() === selectedEmployee.companyId.toString());
+        companyName = companyObj?.name || selectedEmployee.company;
+      }
+
       // Update the employee in the list
       const updatedEmployees = employees.map(emp =>
         emp.id === selectedEmployee.id
           ? {
             ...selectedEmployee,
             name: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
-            emergencyContact: `${selectedEmployee.emergencyName} (${selectedEmployee.emergencyRelationship}): ${selectedEmployee.emergencyPhone}`
+            company: companyName,
+            emergencyContact: selectedEmployee.emergencyName && selectedEmployee.emergencyRelationship && selectedEmployee.emergencyPhone
+              ? `${selectedEmployee.emergencyName} (${selectedEmployee.emergencyRelationship}): ${selectedEmployee.emergencyPhone}`
+              : emp.emergencyContact
           }
           : emp
       );
@@ -366,20 +475,42 @@ export default function EmployeesList() {
 
   // Open edit modal
   const handleEditClick = (employee) => {
-    setSelectedEmployee(employee);
+    // Ensure all fields are properly set for the edit form
+    const employeeWithFields = {
+      ...employee,
+      firstName: employee.firstName || employee.name?.split(' ')[0] || '',
+      lastName: employee.lastName || employee.name?.split(' ').slice(1).join(' ') || '',
+      companyId: employee.companyId || companies.find(c => c.name === employee.company)?.id || '',
+    };
+    setSelectedEmployee(employeeWithFields);
     setShowEditModal(true);
+  };
+
+  // Get company icon
+  const getCompanyIcon = (companyName) => {
+    const company = companies.find(c => c.name === companyName);
+    return company?.icon || FaBuilding;
   };
 
   // Filter employees
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = 
+      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
+      emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.company.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesDept = selectedDepartment === "all" ||
       emp.department.toLowerCase() === selectedDepartment.toLowerCase();
+    
     const matchesStatus = selectedStatus === "all" ||
       emp.status === selectedStatus.toLowerCase();
-    return matchesSearch && matchesDept && matchesStatus;
+    
+    const matchesCompany = selectedCompany === "all" ||
+      emp.companyId?.toString() === selectedCompany ||
+      emp.company === selectedCompany;
+
+    return matchesSearch && matchesDept && matchesStatus && matchesCompany;
   });
 
   // Pagination
@@ -396,7 +527,7 @@ export default function EmployeesList() {
       color: "from-blue-500 to-blue-600",
       bgColor: "bg-blue-50",
       textColor: "text-blue-600",
-      change: "+12%",
+      change: "+15%",
       changeType: "increase"
     },
     {
@@ -407,46 +538,46 @@ export default function EmployeesList() {
       bgColor: "bg-green-50",
       textColor: "text-green-600",
       subtext: `${((activeEmployees / totalEmployees) * 100).toFixed(1)}% of total`,
-      change: "+5%",
+      change: "+8%",
       changeType: "increase"
     },
     {
-      title: "Inactive Employees",
-      value: inactiveEmployees,
-      icon: FaUserSlash,
-      color: "from-red-500 to-red-600",
-      bgColor: "bg-red-50",
-      textColor: "text-red-600",
-      subtext: `${((inactiveEmployees / totalEmployees) * 100).toFixed(1)}% of total`,
-      change: "-2%",
-      changeType: "decrease"
+      title: "Companies",
+      value: totalCompanies,
+      icon: FaBuilding,
+      color: "from-purple-500 to-purple-600",
+      bgColor: "bg-purple-50",
+      textColor: "text-purple-600",
+      subtext: `${topCompany} leads`,
+      change: "+2",
+      changeType: "increase"
     },
     {
       title: "New This Month",
       value: newThisMonth,
       icon: FaUserClock,
-      color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-600",
+      color: "from-amber-500 to-amber-600",
+      bgColor: "bg-amber-50",
+      textColor: "text-amber-600",
       change: "+3",
       changeType: "increase"
     },
     {
       title: "Departments",
       value: Object.keys(departmentCount).length,
-      icon: FaBuilding,
-      color: "from-amber-500 to-amber-600",
-      bgColor: "bg-amber-50",
-      textColor: "text-amber-600",
+      icon: FaBriefcase,
+      color: "from-indigo-500 to-indigo-600",
+      bgColor: "bg-indigo-50",
+      textColor: "text-indigo-600",
       subtext: `${topDepartment} leads`
     },
     {
       title: "Avg. Tenure",
       value: formatTenure(averageTenure),
       icon: FaClock,
-      color: "from-indigo-500 to-indigo-600",
-      bgColor: "bg-indigo-50",
-      textColor: "text-indigo-600"
+      color: "from-rose-500 to-rose-600",
+      bgColor: "bg-rose-50",
+      textColor: "text-rose-600"
     }
   ];
 
@@ -489,10 +620,11 @@ export default function EmployeesList() {
                 <card.icon className={`w-5 h-5 ${card.textColor}`} />
               </div>
               {card.change && (
-                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${card.changeType === 'increase'
+                <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                  card.changeType === 'increase'
                     ? 'bg-green-100 text-green-700'
                     : 'bg-red-100 text-red-700'
-                  }`}>
+                }`}>
                   {card.change}
                 </span>
               )}
@@ -515,7 +647,7 @@ export default function EmployeesList() {
           animate={{ x: 0, opacity: 1 }}
           className="text-xl sm:text-2xl font-bold text-slate-800"
         >
-          Employees Directory
+          All Employees Directory
         </motion.h1>
 
         <div className="flex items-center gap-2">
@@ -526,7 +658,7 @@ export default function EmployeesList() {
             className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
           >
             <FaFilter className="w-4 h-4 text-slate-500" />
-            <span className="hidden sm:inline"></span>
+            <span className="hidden sm:inline">Filters</span>
           </motion.button>
 
           <motion.button
@@ -535,7 +667,7 @@ export default function EmployeesList() {
             className="px-3 py-2 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 bg-white"
           >
             <FaDownload className="w-4 h-4 text-slate-500" />
-            <span className="hidden sm:inline"></span>
+            <span className="hidden sm:inline">Export</span>
           </motion.button>
 
           <motion.button
@@ -545,8 +677,8 @@ export default function EmployeesList() {
             className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2 text-sm"
           >
             <FaUserPlus className="w-4 h-4" />
-            <span className="hidden sm:inline"></span>
-            <span className="sm:hidden"></span>
+            <span className="hidden sm:inline">Add Employee</span>
+            <span className="sm:hidden">Add</span>
           </motion.button>
         </div>
       </div>
@@ -558,7 +690,7 @@ export default function EmployeesList() {
           <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search by name, email, or employee ID..."
+            placeholder="Search by name, email, employee ID, or company..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 sm:py-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-sm"
@@ -574,7 +706,23 @@ export default function EmployeesList() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 rounded-lg">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                    Company
+                  </label>
+                  <select
+                    value={selectedCompany}
+                    onChange={(e) => setSelectedCompany(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                  >
+                    <option value="all">All Companies</option>
+                    {companies.map(company => (
+                      <option key={company.id} value={company.id}>{company.name}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">
                     Department
@@ -614,8 +762,9 @@ export default function EmployeesList() {
       {/* Employees Grid/Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {/* Table Header - Hidden on mobile */}
-        <div className="hidden md:grid md:grid-cols-7 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase">
+        <div className="hidden md:grid md:grid-cols-8 gap-4 p-4 bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase">
           <div className="col-span-2">Employee</div>
+          <div>Company</div>
           <div>Department</div>
           <div>Designation</div>
           <div>Employee ID</div>
@@ -626,199 +775,218 @@ export default function EmployeesList() {
         {/* Employee Rows */}
         <div className="divide-y divide-slate-200">
           <AnimatePresence mode="popLayout">
-            {paginatedEmployees.map((employee, index) => (
-              <motion.div
-                key={employee.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ delay: index * 0.05 }}
-                className="p-4 hover:bg-slate-50 transition-colors"
-              >
-                {/* Mobile View */}
-                <div className="md:hidden space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-medium">
+            {paginatedEmployees.map((employee, index) => {
+              const CompanyIcon = getCompanyIcon(employee.company);
+              
+              return (
+                <motion.div
+                  key={employee.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="p-4 hover:bg-slate-50 transition-colors"
+                >
+                  {/* Mobile View */}
+                  <div className="md:hidden space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-medium">
+                            {employee.name.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-slate-800">{employee.name}</h3>
+                          <p className="text-xs text-slate-500">{employee.email}</p>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        employee.status === 'active'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {employee.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <p className="text-xs text-slate-400">Company</p>
+                        <p className="text-slate-700 flex items-center gap-1">
+                          <CompanyIcon className="w-3 h-3 text-slate-500" />
+                          {employee.company}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Department</p>
+                        <p className="text-slate-700">{employee.department}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Designation</p>
+                        <p className="text-slate-700">{employee.designation}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Employee ID</p>
+                        <p className="text-slate-700">{employee.employeeId}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Phone</p>
+                        <p className="text-slate-700">{employee.phone}</p>
+                      </div>
+                    </div>
+
+                    {/* Mobile Actions - Three-dot menu */}
+                    <div className="flex items-center justify-end">
+                      <div className="relative">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setActionMenuOpen(actionMenuOpen === employee.id ? null : employee.id)}
+                          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <FaEllipsisV className="w-3 h-3" />
+                        </motion.button>
+
+                        {/* Dropdown menu for mobile */}
+                        <AnimatePresence>
+                          {actionMenuOpen === employee.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
+                            >
+                              <button
+                                onClick={() => {
+                                  handleViewEmployee(employee);
+                                  setActionMenuOpen(null);
+                                }}
+                                className="w-full px-4 py-3 text-left text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                              >
+                                <FaEye className="w-4 h-4" />
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleEditClick(employee);
+                                  setActionMenuOpen(null);
+                                }}
+                                className="w-full px-4 py-3 text-left text-sm text-amber-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              >
+                                <FaEdit className="w-4 h-4" />
+                                Edit Employee
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(employee);
+                                  setShowDeleteModal(true);
+                                  setActionMenuOpen(null);
+                                }}
+                                className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              >
+                                <FaTrash className="w-4 h-4" />
+                                Delete Employee
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop View */}
+                  <div className="hidden md:grid md:grid-cols-8 gap-4 items-center">
+                    <div className="col-span-2 flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-sm font-medium">
                           {employee.name.charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-medium text-slate-800">{employee.name}</h3>
+                        <p className="font-medium text-slate-800">{employee.name}</p>
                         <p className="text-xs text-slate-500">{employee.email}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${employee.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-slate-100 text-slate-600'
-                      }`}>
-                      {employee.status}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <p className="text-xs text-slate-400">Department</p>
-                      <p className="text-slate-700">{employee.department}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">Designation</p>
-                      <p className="text-slate-700">{employee.designation}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">Employee ID</p>
-                      <p className="text-slate-700">{employee.employeeId}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">Phone</p>
-                      <p className="text-slate-700">{employee.phone}</p>
-                    </div>
-                  </div>
-
-                  {/* Mobile Actions - Three-dot menu */}
-                  <div className="flex items-center justify-end">
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setActionMenuOpen(actionMenuOpen === employee.id ? null : employee.id)}
-                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <FaEllipsisV className="w-3 h-3" />
-                      </motion.button>
-
-                      {/* Dropdown menu for mobile */}
-                      <AnimatePresence>
-                        {actionMenuOpen === employee.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
-                          >
-                            <button
-                              onClick={() => {
-                                handleViewEmployee(employee);
-                                setActionMenuOpen(null);
-                              }}
-                              className="w-full px-4 py-3 text-left text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
-                            >
-                              <FaEye className="w-4 h-4" />
-                              View Details
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleEditClick(employee);
-                                setActionMenuOpen(null);
-                              }}
-                              className="w-full px-4 py-3 text-left text-sm text-amber-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
-                            >
-                              <FaEdit className="w-4 h-4" />
-                              Edit Employee
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedEmployee(employee);
-                                setShowDeleteModal(true);
-                                setActionMenuOpen(null);
-                              }}
-                              className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
-                            >
-                              <FaTrash className="w-4 h-4" />
-                              Delete Employee
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Desktop View */}
-                <div className="hidden md:grid md:grid-cols-7 gap-4 items-center">
-                  <div className="col-span-2 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-medium">
-                        {employee.name.charAt(0)}
+                    <div className="flex items-center gap-1.5">
+                      <CompanyIcon className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-sm text-slate-600 truncate" title={employee.company}>
+                        {employee.company}
                       </span>
                     </div>
+                    <div className="text-sm text-slate-600">{employee.department}</div>
+                    <div className="text-sm text-slate-600">{employee.designation}</div>
+                    <div className="text-sm text-slate-600">{employee.employeeId}</div>
                     <div>
-                      <p className="font-medium text-slate-800">{employee.name}</p>
-                      <p className="text-xs text-slate-500">{employee.email}</p>
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-600">{employee.department}</div>
-                  <div className="text-sm text-slate-600">{employee.designation}</div>
-                  <div className="text-sm text-slate-600">{employee.employeeId}</div>
-                  <div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${employee.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-slate-100 text-slate-600'
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        employee.status === 'active'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-slate-100 text-slate-600'
                       }`}>
-                      {employee.status}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-center">
-                    {/* Three-dot menu for desktop */}
-                    <div className="relative">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setActionMenuOpen(actionMenuOpen === employee.id ? null : employee.id)}
-                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                      >
-                        <FaEllipsisV className="w-3 h-3" />
-                      </motion.button>
+                        {employee.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      {/* Three-dot menu for desktop */}
+                      <div className="relative">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setActionMenuOpen(actionMenuOpen === employee.id ? null : employee.id)}
+                          className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <FaEllipsisV className="w-3 h-3" />
+                        </motion.button>
 
-                      {/* Dropdown menu */}
-                      <AnimatePresence>
-                        {actionMenuOpen === employee.id && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
-                          >
-                            <button
-                              onClick={() => {
-                                handleViewEmployee(employee);
-                                setActionMenuOpen(null);
-                              }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                        {/* Dropdown menu */}
+                        <AnimatePresence>
+                          {actionMenuOpen === employee.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 overflow-hidden z-10"
                             >
-                              <FaEye className="w-4 h-4" />
-                              View Details
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleEditClick(employee);
-                                setActionMenuOpen(null);
-                              }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-amber-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
-                            >
-                              <FaEdit className="w-4 h-4" />
-                              Edit Employee
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedEmployee(employee);
-                                setShowDeleteModal(true);
-                                setActionMenuOpen(null);
-                              }}
-                              className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
-                            >
-                              <FaTrash className="w-4 h-4" />
-                              Delete Employee
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                              <button
+                                onClick={() => {
+                                  handleViewEmployee(employee);
+                                  setActionMenuOpen(null);
+                                }}
+                                className="w-full px-4 py-2.5 text-left text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-2 transition-colors"
+                              >
+                                <FaEye className="w-4 h-4" />
+                                View Details
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handleEditClick(employee);
+                                  setActionMenuOpen(null);
+                                }}
+                                className="w-full px-4 py-2.5 text-left text-sm text-amber-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              >
+                                <FaEdit className="w-4 h-4" />
+                                Edit Employee
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedEmployee(employee);
+                                  setShowDeleteModal(true);
+                                  setActionMenuOpen(null);
+                                }}
+                                className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 hover:text-red-600 flex items-center gap-2 transition-colors border-t border-slate-100"
+                              >
+                                <FaTrash className="w-4 h-4" />
+                                Delete Employee
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
 
@@ -834,10 +1002,11 @@ export default function EmployeesList() {
               whileTap={{ scale: 0.9 }}
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className={`p-2 rounded-lg border ${currentPage === 1
+              className={`p-2 rounded-lg border ${
+                currentPage === 1
                   ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+              }`}
             >
               <FaChevronLeft className="w-4 h-4" />
             </motion.button>
@@ -851,10 +1020,11 @@ export default function EmployeesList() {
               whileTap={{ scale: 0.9 }}
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className={`p-2 rounded-lg border ${currentPage === totalPages
+              className={`p-2 rounded-lg border ${
+                currentPage === totalPages
                   ? 'border-slate-200 text-slate-300 cursor-not-allowed'
                   : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+              }`}
             >
               <FaChevronRight className="w-4 h-4" />
             </motion.button>
@@ -916,10 +1086,11 @@ export default function EmployeesList() {
                     <h1 className="text-2xl font-bold text-slate-800 mb-1">{selectedEmployee.name}</h1>
                     <p className="text-slate-500 mb-3">{selectedEmployee.designation}</p>
                     <div className="flex flex-wrap gap-2">
-                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${selectedEmployee.status === 'active'
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                        selectedEmployee.status === 'active'
                           ? 'bg-green-100 text-green-700'
                           : 'bg-slate-100 text-slate-600'
-                        }`}>
+                      }`}>
                         {selectedEmployee.status}
                       </span>
                       <span className="px-3 py-1 text-sm font-medium rounded-full bg-purple-100 text-purple-700">
@@ -966,10 +1137,10 @@ export default function EmployeesList() {
                           <p className="text-sm text-slate-700">
                             {selectedEmployee.dateOfBirth
                               ? new Date(selectedEmployee.dateOfBirth).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })
                               : 'Not specified'}
                           </p>
                         </div>
@@ -979,13 +1150,6 @@ export default function EmployeesList() {
                         <div>
                           <p className="text-xs text-slate-400">Blood Group</p>
                           <p className="text-sm text-slate-700">{selectedEmployee.bloodGroup || 'Not specified'}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <FaInfoCircle className="w-4 h-4 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-xs text-slate-400">Marital Status</p>
-                          <p className="text-sm text-slate-700">{selectedEmployee.maritalStatus || 'Not specified'}</p>
                         </div>
                       </div>
                     </div>
@@ -1000,6 +1164,13 @@ export default function EmployeesList() {
                     <div className="space-y-3">
                       <div className="flex items-start gap-3">
                         <FaBuilding className="w-4 h-4 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-xs text-slate-400">Company</p>
+                          <p className="text-sm text-slate-700">{selectedEmployee.company}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <FaCity className="w-4 h-4 text-slate-400 mt-0.5" />
                         <div>
                           <p className="text-xs text-slate-400">Department</p>
                           <p className="text-sm text-slate-700">{selectedEmployee.department}</p>
@@ -1243,22 +1414,6 @@ export default function EmployeesList() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">
-                        Marital Status
-                      </label>
-                      <select
-                        name="maritalStatus"
-                        value={selectedEmployee.maritalStatus || ''}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                      >
-                        <option value="">Select Status</option>
-                        {maritalStatuses.map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
                 </div>
 
@@ -1269,6 +1424,22 @@ export default function EmployeesList() {
                     Employment Details
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Company <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="company"
+                        value={selectedEmployee.companyId || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      >
+                        <option value="">Select Company</option>
+                        {companies.map(company => (
+                          <option key={company.id} value={company.id}>{company.name}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
                         Employee ID
@@ -1302,18 +1473,13 @@ export default function EmployeesList() {
                       <label className="block text-xs font-medium text-slate-500 mb-1">
                         Designation <span className="text-red-500">*</span>
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="designation"
                         value={selectedEmployee.designation || ''}
                         onChange={handleInputChange}
-                        disabled={!selectedEmployee.department}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-slate-50"
-                      >
-                        <option value="">Select Designation</option>
-                        {selectedEmployee.department && designations[selectedEmployee.department]?.map(des => (
-                          <option key={des} value={des}>{des}</option>
-                        ))}
-                      </select>
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
@@ -1425,7 +1591,7 @@ export default function EmployeesList() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleEditEmployee}
-                  disabled={!selectedEmployee.firstName || !selectedEmployee.lastName || !selectedEmployee.email || !selectedEmployee.phone || !selectedEmployee.department || !selectedEmployee.designation || !selectedEmployee.joinDate}
+                  disabled={!selectedEmployee.firstName || !selectedEmployee.lastName || !selectedEmployee.email || !selectedEmployee.phone || !selectedEmployee.companyId || !selectedEmployee.department || !selectedEmployee.designation || !selectedEmployee.joinDate}
                   className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors disabled:bg-amber-300 disabled:cursor-not-allowed"
                 >
                   Update Employee
@@ -1602,22 +1768,6 @@ export default function EmployeesList() {
                         ))}
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-slate-500 mb-1">
-                        Marital Status
-                      </label>
-                      <select
-                        name="maritalStatus"
-                        value={newEmployee.maritalStatus}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      >
-                        <option value="">Select Status</option>
-                        {maritalStatuses.map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
                 </div>
 
@@ -1630,6 +1780,22 @@ export default function EmployeesList() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
+                        Company <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="company"
+                        value={newEmployee.companyId}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option value="">Select Company</option>
+                        {companies.map(company => (
+                          <option key={company.id} value={company.id}>{company.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-slate-500 mb-1">
                         Employee ID
                       </label>
                       <input
@@ -1638,7 +1804,7 @@ export default function EmployeesList() {
                         value={newEmployee.employeeId}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="EMP006"
+                        placeholder="EMP001"
                       />
                       <p className="text-xs text-slate-400 mt-1">Leave empty for auto-generated ID</p>
                     </div>
@@ -1662,18 +1828,14 @@ export default function EmployeesList() {
                       <label className="block text-xs font-medium text-slate-500 mb-1">
                         Designation <span className="text-red-500">*</span>
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="designation"
                         value={newEmployee.designation}
                         onChange={handleInputChange}
-                        disabled={!newEmployee.department}
-                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-slate-50 disabled:text-slate-400"
-                      >
-                        <option value="">Select Designation</option>
-                        {newEmployee.department && designations[newEmployee.department]?.map(des => (
-                          <option key={des} value={des}>{des}</option>
-                        ))}
-                      </select>
+                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        placeholder="e.g., Senior Developer"
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-slate-500 mb-1">
@@ -1785,7 +1947,7 @@ export default function EmployeesList() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleAddEmployee}
-                  disabled={!newEmployee.firstName || !newEmployee.lastName || !newEmployee.email || !newEmployee.phone || !newEmployee.department || !newEmployee.designation || !newEmployee.joinDate}
+                  disabled={!newEmployee.firstName || !newEmployee.lastName || !newEmployee.email || !newEmployee.phone || !newEmployee.companyId || !newEmployee.department || !newEmployee.designation || !newEmployee.joinDate}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-300 disabled:cursor-not-allowed"
                 >
                   Add Employee
@@ -1823,7 +1985,7 @@ export default function EmployeesList() {
               </h3>
 
               <p className="text-sm text-slate-500 text-center mb-6">
-                Are you sure you want to delete {selectedEmployee?.name}? This action cannot be undone.
+                Are you sure you want to delete {selectedEmployee?.name} from {selectedEmployee?.company}? This action cannot be undone.
               </p>
 
               <div className="flex gap-3">

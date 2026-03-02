@@ -780,7 +780,7 @@ export default function CompaniesList() {
                                                 Employees
                                             </p>
                                             <button
-                                                onClick={() => navigate('/admin/employees', {
+                                                onClick={() => navigate('/admin/company/employees', {
                                                     state: { companyId: company.id, companyName: company.name }
                                                 })}
                                                 className="text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1"
@@ -873,7 +873,7 @@ export default function CompaniesList() {
                                     <div className="text-sm text-slate-600">{company.city}, {company.state}</div>
                                     <div>
                                         <button
-                                            onClick={() => navigate('/admin/employees', {
+                                            onClick={() => navigate('/admin/company/employees', {
                                                 state: { companyId: company.id, companyName: company.name }
                                             })}
                                             className="text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-1"
