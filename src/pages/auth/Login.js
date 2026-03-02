@@ -111,7 +111,7 @@ const Login = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/login/request-otp`, {
+      const res = await fetch(`${API_BASE}/otp/login/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -143,7 +143,7 @@ const Login = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/login/verify-otp`, {
+      const res = await fetch(`${API_BASE}/otp/login/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

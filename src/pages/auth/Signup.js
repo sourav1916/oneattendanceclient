@@ -135,7 +135,7 @@ const Signup = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/signup/request-otp`, {
+      const res = await fetch(`${API_BASE}/otp/signup/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -165,7 +165,7 @@ const Signup = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/signup/verify-otp`, {
+      const res = await fetch(`${API_BASE}/otp/signup/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -198,7 +198,7 @@ const Signup = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/signup/complete`, {
+      const res = await fetch(`${API_BASE}/otp/signup/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
