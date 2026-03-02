@@ -23,6 +23,9 @@ import Signup from "./pages/auth/Signup";
 import CompaniesList from "./pages/admin/CompaniesList";
 import AttendanceList from "./pages/admin/AttendanceList";
 import AllEmployeesList from "./pages/admin/AllEmployeeList";
+import NotFound from "./pages/NotFound";
+import CompanyRoles from "./pages/admin/CompanyUserRoles";
+import CompanyUsers from "./pages/admin/CompanyUsers";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -60,7 +63,8 @@ export default function App() {
               <Route path="admin/company/employees" element={<EmployeesList />} />
               <Route path="admin/companies" element={<CompaniesList />} />
               <Route path="admin/attendance-punches" element={<AttendanceList/>} />
-
+              <Route path="admin/company-user-roles" element={<CompanyRoles/>} />
+              <Route path="admin/company-users" element={<CompanyUsers/>} />
             </>
           ) : null}
           
@@ -83,6 +87,7 @@ export default function App() {
             </>
           ) : null}
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
