@@ -1,10 +1,8 @@
-// layouts/EmployeeLayout.jsx
 import { useState, useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
-import { useScrollable } from "../hooks/useScrollable";
 
 export default function EmployeeLayout() {
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -13,8 +11,6 @@ export default function EmployeeLayout() {
   const [navbarHeight, setNavbarHeight] = useState(64);
   const navbarRef = useRef(null);
   
-  // Use our custom scrollable hook
-  const mainContentRef = useScrollable(isMobile);
 
   // Check if mobile view
   useEffect(() => {

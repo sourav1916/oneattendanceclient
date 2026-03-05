@@ -34,26 +34,24 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route>                   
-          {/* Employee routes */}
-          {!user?.is_system_admin && user ? (
-            <>
-              <Route index element={<EmployeeDashboard />} />
-              <Route path="punch-attendance" element={<PunchAttendance />} />
-              <Route path="attendance-history" element={<AttendanceHistory />} />
-              <Route path="attendance-calendar" element={<AttendanceCalendar />} />
-              <Route path="regularization" element={<RegularizationRequest />} />
-              <Route path="my-requests" element={<MyRequests />} />
-              <Route path="salary-preview" element={<SalaryPreview />} />
-              <Route path="salary-history" element={<SalaryHistory />} />
-              <Route path="salary-advance" element={<SalaryAdvance />} />
-              <Route path="apply-leave" element={<ApplyLeave />} />
-              <Route path="leave-history" element={<LeaveHistory />} />
-              <Route path="employee-profile" element={<EmployeeProfile />} />
-              <Route path="notifications" element={<Notifications />} />
-            </>
-          ) : null}
-        </Route>
+        {/* Employee routes */}
+        {!user?.is_system_admin && user ? (
+          <>
+            <Route index element={<EmployeeDashboard />} />
+            <Route path="punch-attendance" element={<PunchAttendance />} />
+            <Route path="attendance-history" element={<AttendanceHistory />} />
+            <Route path="attendance-calendar" element={<AttendanceCalendar />} />
+            <Route path="regularization" element={<RegularizationRequest />} />
+            <Route path="my-requests" element={<MyRequests />} />
+            <Route path="salary-preview" element={<SalaryPreview />} />
+            <Route path="salary-history" element={<SalaryHistory />} />
+            <Route path="salary-advance" element={<SalaryAdvance />} />
+            <Route path="apply-leave" element={<ApplyLeave />} />
+            <Route path="leave-history" element={<LeaveHistory />} />
+            <Route path="employee-profile" element={<EmployeeProfile />} />
+            <Route path="notifications" element={<Notifications />} />
+          </>
+        ) : null}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
