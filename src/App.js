@@ -1,6 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/Login";
-import EmployeeDashboard from "./pages/employee/Dashboard";
+import Dashboard from "./pages/employee/Dashboard";
 import { useAuth } from "./context/AuthContext";
 import PunchAttendance from "./pages/employee/PunchAttendance";
 import AttendanceHistory from "./pages/employee/AttendanceHistory";
@@ -16,7 +16,7 @@ import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import Notifications from "./pages/employee/Notifications";
 import Signup from "./pages/auth/Signup";
 import NotFound from "./pages/NotFound";
-
+import MainLayout from "./layouts/MainLayout";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -32,26 +32,32 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        {/* Employee routes */}
-        {!user?.is_system_admin && user ? (
-          <>
-            <Route index element={<EmployeeDashboard />} />
-            <Route path="punch-attendance" element={<PunchAttendance />} />
-            <Route path="attendance-history" element={<AttendanceHistory />} />
-            <Route path="attendance-calendar" element={<AttendanceCalendar />} />
-            <Route path="regularization" element={<RegularizationRequest />} />
-            <Route path="my-requests" element={<MyRequests />} />
-            <Route path="salary-preview" element={<SalaryPreview />} />
-            <Route path="salary-history" element={<SalaryHistory />} />
-            <Route path="salary-advance" element={<SalaryAdvance />} />
-            <Route path="apply-leave" element={<ApplyLeave />} />
-            <Route path="leave-history" element={<LeaveHistory />} />
-            <Route path="employee-profile" element={<EmployeeProfile />} />
-            <Route path="notifications" element={<Notifications />} />
-          </>
-        ) : null}
+        
+        {/* Protected Employee Routes WITH LAYOUT */}
+        <Route 
+          element={
+            user && !user.is_system_admin ? <MainLayout /> : <Navigate to="/login" />
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="punch-attendance" element={<PunchAttendance />} />
+          <Route path="attendance-history" element={<AttendanceHistory />} />
+          <Route path="attendance-calendar" element={<AttendanceCalendar />} />
+          <Route path="regularization" element={<RegularizationRequest />} />
+          <Route path="my-requests" element={<MyRequests />} />
+          <Route path="salary-preview" element={<SalaryPreview />} />
+          <Route path="salary-history" element={<SalaryHistory />} />
+          <Route path="salary-advance" element={<SalaryAdvance />} />
+          <Route path="apply-leave" element={<ApplyLeave />} />
+          <Route path="leave-history" element={<LeaveHistory />} />
+          <Route path="employee-profile" element={<EmployeeProfile />} />
+          <Route path="notifications" element={<Notifications />} />
+        </Route>
+
+        {/* Catch-all */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

@@ -4,13 +4,13 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function EmployeeLayout() {
+export default function MainLayout() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [navbarHeight, setNavbarHeight] = useState(64);
   const navbarRef = useRef(null);
-  
+  const mainContentRef = useRef(null); // ← FIXED: Missing ref
 
   // Check if mobile view
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function EmployeeLayout() {
     };
   }, []);
 
-  // Set main content height
+  // Set main content height - FIXED
   useEffect(() => {
     if (mainContentRef.current && navbarRef.current) {
       const updateHeight = () => {
@@ -58,8 +58,10 @@ export default function EmployeeLayout() {
         const viewportHeight = window.innerHeight;
         const availableHeight = viewportHeight - navbarHeight;
         
-        mainContentRef.current.style.height = `${availableHeight}px`;
-        mainContentRef.current.style.maxHeight = `${availableHeight}px`;
+        if (mainContentRef.current) {
+          mainContentRef.current.style.height = `${availableHeight}px`;
+          mainContentRef.current.style.maxHeight = `${availableHeight}px`;
+        }
       };
 
       updateHeight();
@@ -71,9 +73,9 @@ export default function EmployeeLayout() {
         window.removeEventListener('orientationchange', updateHeight);
       };
     }
-  }, [mainContentRef]);
+  }, [navbarHeight]);
 
-  // Handle mobile menu
+  // Handle mobile menu click outside
   useEffect(() => {
     if (!isMobile || !isMobileMenuOpen) return;
     
@@ -102,16 +104,14 @@ export default function EmployeeLayout() {
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
-      document.body.style.height = '100%';
+      document.body.style.height = '100vh';
       document.body.style.top = '0';
-      document.body.style.left = '0';
     } else {
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
       document.body.style.height = '';
       document.body.style.top = '';
-      document.body.style.left = '';
     }
     
     return () => {
@@ -120,23 +120,16 @@ export default function EmployeeLayout() {
       document.body.style.width = '';
       document.body.style.height = '';
       document.body.style.top = '';
-      document.body.style.left = '';
     };
   }, [isMobile, isMobileMenuOpen]);
 
   return (
     <>
-      
       <div 
-        className="bg-gradient-to-br from-slate-50 to-white flex flex-col"
-        style={{ 
-          height: '100vh',
-          overflow: 'hidden',
-          position: 'relative'
-        }}
+        className="h-screen w-screen flex flex-col bg-gradient-to-br from-slate-50 to-white overflow-hidden"
       >
         {/* Navbar */}
-        <div ref={navbarRef} className="flex-shrink-0">
+        <div ref={navbarRef} className="flex-shrink-0 z-50">
           <Navbar 
             isCollapsed={isCollapsed} 
             isMobile={isMobile}
@@ -145,14 +138,16 @@ export default function EmployeeLayout() {
           />
         </div>
         
-        <div className="flex flex-1 relative" style={{ minHeight: 0, height: '100%' }}>
+        <div className="flex flex-1 min-h-0 relative">
           {/* Desktop Sidebar */}
           {!isMobile && (
-            <Sidebar 
-              isCollapsed={isCollapsed} 
-              setIsCollapsed={setIsCollapsed}
-              isMobile={false}
-            />
+            <div className="flex-shrink-0 border-r border-slate-200 bg-white shadow-xl">
+              <Sidebar 
+                isCollapsed={isCollapsed} 
+                setIsCollapsed={setIsCollapsed}
+                isMobile={false}
+              />
+            </div>
           )}
           
           {/* Mobile Sidebar */}
@@ -164,22 +159,20 @@ export default function EmployeeLayout() {
                   animate={{ opacity: 0.5 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="relative inset-0 bg-black z-40"
+                  className="fixed inset-0 bg-black z-40"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  onTouchEnd={() => setIsMobileMenuOpen(false)}
                 />
                 
                 <motion.div
                   id="mobile-sidebar"
-                  initial={{ x: -280 }}
+                  initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
-                  exit={{ x: -280 }}
+                  exit={{ x: '-100%' }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="fixed left-0 z-50 bg-white shadow-xl"
+                  className="fixed top-[64px] left-0 z-50 bg-white shadow-2xl border-r border-slate-200"
                   style={{ 
-                    top: `${navbarHeight}px`, 
-                    height: `calc(100% - ${navbarHeight}px)`,
-                    width: '256px'
+                    height: `calc(100vh - 64px)`,
+                    width: '280px'
                   }}
                 >
                   <Sidebar 
@@ -193,12 +186,12 @@ export default function EmployeeLayout() {
             )}
           </AnimatePresence>
           
-          {/* Main Content - Works for both mouse and touch */}
+          {/* Main Content */}
           <main
             ref={mainContentRef}
-            className="flex-1 bg-slate-50 w-full max-h-[100vh] overflow-y-scroll lg:[scroll-behavior:smooth]"
-            >
-            <div className="p-4 md:p-6 sm:p-2 max-w-7xl mx-auto">
+            className="flex-1 min-h-0 overflow-y-auto bg-slate-50 lg:scroll-smooth"
+          >
+            <div className="p-4 md:p-6 sm:p-2 max-w-7xl mx-auto min-h-full">
               <AnimatePresence mode="wait">
                 <Outlet />
               </AnimatePresence>
