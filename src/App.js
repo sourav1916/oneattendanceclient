@@ -1,9 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/auth/Login";
-import AdminLayout from "./layouts/AdminLayout";
-import EmployeeLayout from "./layouts/EmployeeLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminDashboard from "./pages/admin/Dashboard";
 import EmployeeDashboard from "./pages/employee/Dashboard";
 import { useAuth } from "./context/AuthContext";
 import PunchAttendance from "./pages/employee/PunchAttendance";
@@ -18,14 +14,9 @@ import ApplyLeave from "./pages/employee/ApplyLeave";
 import LeaveHistory from "./pages/employee/LeaveHistory";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import Notifications from "./pages/employee/Notifications";
-import EmployeesList from "./pages/admin/EmployeesList";
 import Signup from "./pages/auth/Signup";
-import CompaniesList from "./pages/admin/CompaniesList";
-import AttendanceList from "./pages/admin/AttendanceList";
-import AllEmployeesList from "./pages/admin/AllEmployeeList";
 import NotFound from "./pages/NotFound";
-import CompanyRoles from "./pages/admin/CompanyUserRoles";
-import CompanyUsers from "./pages/admin/CompanyUsers";
+
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -43,31 +34,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        
-        {/* Fixed: Always render ONE layout based on user */}
-        <Route
-          path="/"
-          element={
-            user ? (
-              user.is_system_admin ? <AdminLayout /> : <EmployeeLayout />
-            ) : (
-              <ProtectedRoute />
-            )
-          }
-        >
-          {/* Admin routes */}
-          {user?.is_system_admin ? (
-            <>
-              <Route index element={<AdminDashboard />} />
-              <Route path="admin/employees" element={<AllEmployeesList />} />
-              <Route path="admin/company/employees" element={<EmployeesList />} />
-              <Route path="admin/companies" element={<CompaniesList />} />
-              <Route path="admin/attendance-punches" element={<AttendanceList/>} />
-              <Route path="admin/company-user-roles" element={<CompanyRoles/>} />
-              <Route path="admin/company-users" element={<CompanyUsers/>} />
-            </>
-          ) : null}
-          
+        <Route>                   
           {/* Employee routes */}
           {!user?.is_system_admin && user ? (
             <>

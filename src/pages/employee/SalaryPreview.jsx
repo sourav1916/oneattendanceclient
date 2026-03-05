@@ -1,27 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import {
   FaMoneyBillWave,
-  FaClock,
   FaMinusCircle,
   FaPlusCircle,
-  FaCalculator,
+  FaTimesCircle,
   FaDownload,
-  FaEye,
   FaCalendarAlt,
-  FaUser,
-  FaBuilding,
   FaPercent,
-  FaRubleSign,
   FaCreditCard,
   FaHistory,
   FaChartLine,
   FaFileInvoice,
-  FaCheckCircle,
-  FaExclamationTriangle,
   FaInfoCircle,
   FaBars,
   FaTimes
 } from 'react-icons/fa';
+import { AnimatePresence } from "framer-motion";
 
 const SalaryPreview = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
@@ -43,7 +37,7 @@ const SalaryPreview = () => {
         setShowMobileActions(false);
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -67,7 +61,7 @@ const SalaryPreview = () => {
 
   const fetchSalaryData = () => {
     setLoading(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       const mockData = generateMockSalaryData();
@@ -81,25 +75,25 @@ const SalaryPreview = () => {
     const overtimeHours = Math.floor(Math.random() * 20);
     const overtimeRate = 500;
     const overtimeAmount = overtimeHours * overtimeRate;
-    
+
     const pfDeduction = baseSalary * 0.12;
     const taxDeduction = baseSalary * 0.1;
     const insuranceDeduction = 1500;
     const otherDeductions = Math.random() * 2000;
-    
+
     const advanceTaken = Math.random() > 0.7 ? 5000 : 0;
     const advanceInstallment = advanceTaken ? 1000 : 0;
-    
+
     const bonus = Math.random() > 0.5 ? 5000 : 0;
     const incentives = Math.random() * 3000;
-    
+
     const totalEarnings = baseSalary + overtimeAmount + bonus + incentives;
     const totalDeductions = pfDeduction + taxDeduction + insuranceDeduction + otherDeductions + advanceInstallment;
     const netSalary = totalEarnings - totalDeductions;
 
     return {
       month: selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-      
+
       earnings: {
         basic: baseSalary,
         hra: baseSalary * 0.4,
@@ -169,8 +163,8 @@ const SalaryPreview = () => {
   };
 
   const formatShortCurrency = (amount) => {
-    if (amount >= 100000) return `₹${(amount/100000).toFixed(1)}L`;
-    if (amount >= 1000) return `₹${(amount/1000).toFixed(1)}K`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
     return formatCurrency(amount);
   };
 
@@ -184,7 +178,7 @@ const SalaryPreview = () => {
 
   const handleAdvanceRequest = () => {
     if (!advanceAmount || !advanceReason) return;
-    
+
     alert(`Advance request for ${formatCurrency(parseInt(advanceAmount))} submitted successfully!`);
     setShowAdvanceModal(false);
     setAdvanceAmount('');
@@ -230,7 +224,7 @@ const SalaryPreview = () => {
           <span className="font-medium ml-2">{formatShortCurrency(value)}</span>
         </div>
         <div className="h-1.5 sm:h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
+          <div
             className={`h-full bg-${color}-600 rounded-full`}
             style={{ width: `${percentage}%` }}
           />
@@ -264,7 +258,7 @@ const SalaryPreview = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center space-x-3">
               <button
@@ -346,13 +340,12 @@ const SalaryPreview = () => {
                   })}
                 </select>
               </div>
-              
+
               <div className="flex items-center justify-between xs:justify-end space-x-2">
-                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${
-                  salaryData.status === 'paid' ? 'bg-green-100 text-green-800' :
-                  salaryData.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap ${salaryData.status === 'paid' ? 'bg-green-100 text-green-800' :
+                    salaryData.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                  }`}>
                   {salaryData.status}
                 </span>
                 <button
@@ -507,7 +500,7 @@ const SalaryPreview = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium text-sm sm:text-base text-gray-700 mb-2 sm:mb-3">Variable Components</h4>
                   <div className="space-y-1 sm:space-y-2">
@@ -528,7 +521,7 @@ const SalaryPreview = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-sm sm:text-base text-gray-800">Total Earnings</span>
@@ -558,7 +551,7 @@ const SalaryPreview = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium text-sm sm:text-base text-gray-700 mb-2 sm:mb-3">Other Deductions</h4>
                   <div className="space-y-1 sm:space-y-2">
@@ -577,7 +570,7 @@ const SalaryPreview = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-sm sm:text-base text-gray-800">Total Deductions</span>
@@ -765,49 +758,51 @@ const SalaryPreview = () => {
       )}
 
       {/* History Modal - Responsive */}
-      {showHistory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-white rounded-t-xl sm:rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slideUp sm:animate-fadeIn">
-            <div className="p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Salary History</h3>
-                <button
-                  onClick={() => setShowHistory(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <FaTimesCircle className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
+      <AnimatePresence>
+        {showHistory && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+            <div className="bg-white rounded-t-xl sm:rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slideUp sm:animate-fadeIn">
+              <div className="p-4 sm:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900">Salary History</h3>
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <FaTimesCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
 
-              <div className="space-y-2 sm:space-y-3">
-                {[...Array(6)].map((_, i) => {
-                  const date = new Date();
-                  date.setMonth(date.getMonth() - i);
-                  const amount = 75000 + Math.random() * 5000;
-                  return (
-                    <div key={i} className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
-                        <div>
-                          <p className="font-medium text-sm sm:text-base text-gray-900">
-                            {date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                          </p>
-                          <p className="text-xs text-gray-500">Paid: {formatDate(date)}</p>
-                        </div>
-                        <div className="text-left xs:text-right">
-                          <p className="text-base sm:text-lg font-bold text-green-600">
-                            {formatShortCurrency(amount)}
-                          </p>
-                          <p className="text-xs text-gray-400">Net Salary</p>
+                <div className="space-y-2 sm:space-y-3">
+                  {[...Array(6)].map((_, i) => {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    const amount = 75000 + Math.random() * 5000;
+                    return (
+                      <div key={i} className="border rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
+                          <div>
+                            <p className="font-medium text-sm sm:text-base text-gray-900">
+                              {date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                            </p>
+                            <p className="text-xs text-gray-500">Paid: {formatDate(date)}</p>
+                          </div>
+                          <div className="text-left xs:text-right">
+                            <p className="text-base sm:text-lg font-bold text-green-600">
+                              {formatShortCurrency(amount)}
+                            </p>
+                            <p className="text-xs text-gray-400">Net Salary</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Custom CSS for additional responsive utilities and animations */}
       <style jsx>{`

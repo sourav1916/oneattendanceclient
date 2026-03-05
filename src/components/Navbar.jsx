@@ -7,6 +7,7 @@ import {
   FaCog, FaRocket, FaMoon, FaSun, FaCloudSun,
   FaBars, FaTimes
 } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
 export default function Navbar({ 
   isCollapsed, 
@@ -18,6 +19,11 @@ export default function Navbar({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  const navigate = useNavigate();
+
+  const handleNavigateNotifications = () => {
+    navigate('/notifications');
+  }
   return (
     <motion.nav 
       initial={{ y: -100 }}
@@ -97,6 +103,7 @@ export default function Navbar({
           {/* Notifications */}
           <motion.button 
             whileHover={{ scale: 1.05 }}
+            onClick={handleNavigateNotifications}
             whileTap={{ scale: 0.95 }}
             className="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
           >
