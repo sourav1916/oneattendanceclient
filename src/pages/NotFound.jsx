@@ -1,4 +1,3 @@
-// pages/NotFound.jsx
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { 
@@ -15,7 +14,6 @@ export default function NotFound() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="max-w-3xl w-full text-center">
-        {/* Animated 404 Number */}
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}

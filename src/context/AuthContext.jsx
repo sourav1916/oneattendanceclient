@@ -6,7 +6,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Load user from localStorage on app start
   useEffect(() => {
     try {
       const userData = localStorage.getItem("user");
@@ -21,9 +20,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (data) => {
-    setUser(data);
-    localStorage.setItem("user", JSON.stringify(data));
+  const login = (responseData) => {
+    const { user, employee, permissions, role } = responseData.data;
+    
+    // Transform YOUR backend data to frontend structure
+    const userData = {
+      id: user.id,
+      name: user.full_name || user.email.split('@')[0],
+      email: user.email,
+      full_name: user.full_name,
+      roleBadge: role.charAt(0).toUpperCase() + role.slice(1), // "Employee"
+      role: role,
+      isOwner: role === 'owner',
+      companies: [{
+        id: employee.company_id,
+        name: employee.company_name,
+        roleBadge: role.charAt(0).toUpperCase() + role.slice(1),
+        permissions: permissions.map(p => p.code) // ["TL_VEW"]
+      }],
+      employee: employee
+    };
+
+    setUser(userData);
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const logout = () => {

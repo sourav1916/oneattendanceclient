@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { usePermission } from "../context/PermissionContext";
+import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTachometerAlt,
@@ -11,46 +13,83 @@ import {
   FaWallet,
   FaPlaneDeparture,
   FaUser,
-  FaBell
+  FaBell,
+  FaUsers,
+  FaCheckCircle,
+  FaTimesCircle
 } from "react-icons/fa";
 
-export default function Sidebar({ 
-  isCollapsed, 
+export default function Sidebar({
+  isCollapsed,
   setIsCollapsed,
   isMobile,
-  setIsMobileMenuOpen 
+  setIsMobileMenuOpen
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { hasPermission } = usePermission();
+  const { user } = useAuth();
   const [isHovered, setIsHovered] = useState(false);
-  
-  // For desktop: expand on hover, for mobile: always expanded
+
+  // Define all possible menu items with their permission requirements
+  const allItems = [
+    // Everyone can see dashboard
+    { name: "Dashboard", path: "/", icon: FaTachometerAlt, alwaysShow: true },
+    
+    // Employee self-service features (available to all employees)
+    { name: "Punch Attendance", path: "/punch-attendance", icon: FaClock, alwaysShow: true },
+    { name: "Attendance History", path: "/attendance-history", icon: FaHistory, alwaysShow: true },
+    { name: "Attendance Calendar", path: "/attendance-calendar", icon: FaCalendarAlt, alwaysShow: true },
+    { name: "Regularization", path: "/regularization", icon: FaFileAlt, alwaysShow: true },
+    { name: "My Requests", path: "/my-requests", icon: FaFileAlt, alwaysShow: true },
+    { name: "Salary Preview", path: "/salary-preview", icon: FaMoneyBillWave, alwaysShow: true },
+    { name: "Salary History", path: "/salary-history", icon: FaHistory, alwaysShow: true },
+    { name: "Salary Advance", path: "/salary-advance", icon: FaWallet, alwaysShow: true },
+    { name: "Apply Leave", path: "/apply-leave", icon: FaPlaneDeparture, alwaysShow: true },
+    { name: "Leave History", path: "/leave-history", icon: FaHistory, alwaysShow: true },
+    { name: "Profile", path: "/employee-profile", icon: FaUser, alwaysShow: true },
+    { name: "Notifications", path: "/notifications", icon: FaBell, alwaysShow: true },
+    
+    // Team Lead only features (requires TL_VEW permission)
+    { 
+      name: "Team Members", 
+      path: "/team-members", 
+      icon: FaUsers, 
+      permissionCode: "TL_VEW",  // Your backend permission code
+      description: "View and manage your team"
+    },
+    
+    // You can add more permission-based items
+    { 
+      name: "Approve Requests", 
+      path: "/approve-requests", 
+      icon: FaCheckCircle, 
+      permissionCode: "TL_VEW",  // Same permission for multiple features
+      description: "Approve team requests"
+    },
+    { 
+      name: "Team Attendance", 
+      path: "/team-attendance", 
+      icon: FaClock, 
+      permissionCode: "TL_VEW",
+      description: "View team attendance"
+    }
+  ];
+
+  // Filter items based on permissions
+  const items = allItems.filter(item => {
+    // Show if alwaysShow is true OR user has the required permission
+    return item.alwaysShow || (item.permissionCode && hasPermission(item.permissionCode));
+  });
+
   const isExpanded = isMobile ? true : (isHovered || !isCollapsed);
-  
-  // Handle navigation
+
   const handleNavigation = (path) => {
     navigate(path);
     if (isMobile && setIsMobileMenuOpen) {
       setIsMobileMenuOpen(false);
     }
   };
-
-  // Sidebar items config
-  const items = [
-    { name: "Dashboard", path: "/", icon: FaTachometerAlt },
-    { name: "Punch Attendance", path: "/punch-attendance", icon: FaClock },
-    { name: "Attendance History", path: "/attendance-history", icon: FaHistory },
-    { name: "Attendance Calendar", path: "/attendance-calendar", icon: FaCalendarAlt },
-    { name: "Regularization", path: "/regularization", icon: FaFileAlt },
-    { name: "My Requests", path: "/my-requests", icon: FaFileAlt },
-    { name: "Salary Preview", path: "/salary-preview", icon: FaMoneyBillWave },
-    { name: "Salary History", path: "/salary-history", icon: FaHistory },
-    { name: "Salary Advance", path: "/salary-advance", icon: FaWallet },
-    { name: "Apply Leave", path: "/apply-leave", icon: FaPlaneDeparture },
-    { name: "Leave History", path: "/leave-history", icon: FaHistory },
-    { name: "Profile", path: "/employee-profile", icon: FaUser },
-    { name: "Notifications", path: "/notifications", icon: FaBell },
-  ];
 
   return (
     <motion.aside
@@ -88,10 +127,8 @@ export default function Sidebar({
               `}
               title={!isExpanded ? item.name : ""}
             >
-              {/* Icon */}
               <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-current'}`} />
-              
-              {/* Text */}
+
               <AnimatePresence mode="wait">
                 {isExpanded && (
                   <motion.span
@@ -107,7 +144,17 @@ export default function Sidebar({
                 )}
               </AnimatePresence>
 
-              {/* Active indicator */}
+              {/* Show permission badge for team lead items (optional) */}
+              {isExpanded && item.permissionCode && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="ml-auto text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded-full"
+                >
+                  Team Lead
+                </motion.span>
+              )}
+
               {isActive && (
                 <motion.div
                   className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full"
@@ -121,9 +168,8 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Collapse Toggle - Desktop Only */}
       {!isMobile && (
-        <div className="p-4 border-t border-slate-200">
+        <div className="hidden p-4 border-t border-slate-200">
           <motion.button
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="w-full p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all duration-200 shadow-sm"

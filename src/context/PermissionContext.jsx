@@ -1,32 +1,40 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./AuthContext";
 
 const PermissionContext = createContext();
 
 export const PermissionProvider = ({ children }) => {
+  const { user } = useAuth();
   const [permissions, setPermissions] = useState([]);
+  const [isTeamLead, setIsTeamLead] = useState(false);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        setPermissions(user.permissions || user.roles || []);
-      } catch (e) {
-        console.error("Failed to load permissions:", e);
-      }
+    if (user?.companies && user.companies.length > 0) {
+      // Get permissions from the active company or first company
+      const userPermissions = user.companies[0]?.permissions || [];
+      setPermissions(userPermissions);
+      
+      // Check if user has team lead permission
+      setIsTeamLead(userPermissions.includes('TL_VEW'));
+    } else {
+      setPermissions([]);
+      setIsTeamLead(false);
     }
-  }, []);
+  }, [user]);
 
-  const hasPermission = (perm) => {
-    return permissions.includes(perm);
+  // Simple check if user has a specific permission code
+  const hasPermission = (permissionCode) => {
+    return permissions.includes(permissionCode);
+  };
+
+  const value = { 
+    permissions, 
+    hasPermission,
+    isTeamLead  // Convenience flag for team lead specific features
   };
 
   return (
-    <PermissionContext.Provider value={{
-      permissions,
-      setPermissions,
-      hasPermission
-    }}>
+    <PermissionContext.Provider value={value}>
       {children}
     </PermissionContext.Provider>
   );
@@ -35,7 +43,7 @@ export const PermissionProvider = ({ children }) => {
 export const usePermission = () => {
   const context = useContext(PermissionContext);
   if (!context) {
-    return { permissions: [], hasPermission: () => false };
+    throw new Error("usePermission must be used within PermissionProvider");
   }
   return context;
 };

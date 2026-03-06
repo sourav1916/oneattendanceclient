@@ -1,6 +1,7 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/auth/Login";
-import Dashboard from "./pages/employee/Dashboard";
+import Dashboard from "./pages/Dashboard";
 import { useAuth } from "./context/AuthContext";
 import PunchAttendance from "./pages/employee/PunchAttendance";
 import AttendanceHistory from "./pages/employee/AttendanceHistory";
@@ -17,14 +18,19 @@ import Notifications from "./pages/employee/Notifications";
 import Signup from "./pages/auth/Signup";
 import NotFound from "./pages/NotFound";
 import MainLayout from "./layouts/MainLayout";
+import { motion } from "framer-motion";
 
 export default function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white flex items-center justify-center">
-        <div className="text-xl font-semibold text-slate-600">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
@@ -35,13 +41,9 @@ export default function App() {
         {/* Auth Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        
-        {/* Protected Employee Routes WITH LAYOUT */}
-        <Route 
-          element={
-            user && !user.is_system_admin ? <MainLayout /> : <Navigate to="/login" />
-          }
-        >
+
+        {/* Protected Routes */}
+        <Route element={user ? <MainLayout /> : <Navigate to="/login" />}>
           <Route index element={<Dashboard />} />
           <Route path="punch-attendance" element={<PunchAttendance />} />
           <Route path="attendance-history" element={<AttendanceHistory />} />
