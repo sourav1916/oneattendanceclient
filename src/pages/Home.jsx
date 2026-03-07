@@ -18,9 +18,9 @@ function HomePage() {
   const [openCompanySwitchModal, setOpenCompanySwitchModal] = useState(false);
   const [staffType, setStaffType] = useState(null);
   const [companies, setCompanies] = useState([]);
-
+  const user = JSON.parse(localStorage.getItem("user"));
   const [companyForm, setCompanyForm] = useState({
-    owner_user_id: 1,
+    owner_user_id: user?.id || null,
     name: "",
     legal_name: "",
     logo_url: "",
@@ -49,7 +49,7 @@ function HomePage() {
         toast.error("Authentication expired. Please login again.");
         return;
       }
-
+      console.log(JSON.stringify(companyForm));
       const response = await fetch(`${API_BASE}/company/create`, {
         method: "POST",
         headers: {
