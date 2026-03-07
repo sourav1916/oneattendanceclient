@@ -84,34 +84,32 @@ function HomePage() {
     fetchPermissions();
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (search = "") => {
     try {
-      const data = [
-        {
-          id: 1,
-          full_name: "Rahul Sharma",
-          email: "rahul.sharma@gmail.com"
-        },
-        {
-          id: 2,
-          full_name: "Priya Singh",
-          email: "priya.singh@gmail.com"
-        },
-        {
-          id: 3,
-          full_name: "Amit Das",
-          email: "amit.das@gmail.com"
-        },
-        {
-          id: 4,
-          full_name: "Sneha Roy",
-          email: "sneha.roy@gmail.com"
-        }
-      ];
+      const token = localStorage.getItem("token");
 
-      setUsers(data);
+      const res = await fetch(`${API_BASE}/users/list`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        }
+      });
+
+      const result = await res.json();
+
+      if (result.success) {
+        const users = result.data.map(user => ({
+          id: user.id,
+          full_name: user.name || "No Name",
+          email: user.email
+        }));
+
+        setUsers(users);
+      }
+
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching users:", err);
     }
   };
 
@@ -154,11 +152,6 @@ function HomePage() {
     { value: "work_basis", label: "Work Basis Staff" }
   ];
 
-  const userOptions = users.map((u) => ({
-    value: u.id,
-    label: `${u.full_name || u.name} (${u.email})`,
-    user: u
-  }));
 
   const permissionOptions = permissions.map((p) => ({
     value: p.id,

@@ -17,10 +17,18 @@ function AppContent() {
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
-      
-      {/* Protected routes with layout */}
+
+      <Route 
+        path="/login" 
+        element={user ? <Navigate to="/home" replace /> : <Login />} 
+      />
+
+      <Route 
+        path="/signup" 
+        element={user ? <Navigate to="/home" replace /> : <Signup />} 
+      />
+
+      {/* Protected routes */}
       <Route 
         path="/home" 
         element={
@@ -31,6 +39,7 @@ function AppContent() {
           </ProtectedRoute>
         } 
       />
+
       <Route 
         path="/cashbook" 
         element={
@@ -41,7 +50,7 @@ function AppContent() {
           </ProtectedRoute>
         } 
       />
-      
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
