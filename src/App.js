@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 import NotFound from './pages/NotFound';
+import Cashbook from './pages/CashBook';
 
 function AppContent() {
   const { user } = useAuth();
@@ -26,6 +27,16 @@ function AppContent() {
           <ProtectedRoute>
             <MainLayout>
               <Home />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/cashbook" 
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Cashbook />
             </MainLayout>
           </ProtectedRoute>
         } 
