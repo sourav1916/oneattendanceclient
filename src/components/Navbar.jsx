@@ -4,9 +4,7 @@ import {
     FaBell,
     FaUserCircle,
     FaFingerprint,
-    FaSearch,
     FaCaretDown,
-    FaEnvelope
 } from 'react-icons/fa';
 import { useAuth } from "../context/AuthContext";
 
@@ -81,11 +79,11 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen }) => {
                             </div>
                             <div className="hidden md:block text-left">
                                 <p className="text-sm font-semibold text-white">
-                                    {user?.full_name || user?.name || "User"}
+                                    { user?.name || "User"}
                                 </p>
 
                                 <p className="text-[10px] text-white/70">
-                                    {user?.roleBadge || "Employee"}
+                                    {user?.roleBadge || "User"}
                                 </p>
 
                             </div>

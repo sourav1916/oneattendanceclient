@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Select from "react-select";
 import SearchableSelect from "../components/SearchableSelect";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
 function HomePage() {
+  const { user, loading } = useAuth();
   const [openModal, setOpenModal] = useState(false);
   const [users, setUsers] = useState([]);
   const [permissions, setPermissions] = useState([]);
@@ -18,9 +20,9 @@ function HomePage() {
   const [openCompanySwitchModal, setOpenCompanySwitchModal] = useState(false);
   const [staffType, setStaffType] = useState(null);
   const [companies, setCompanies] = useState([]);
-  const user = JSON.parse(localStorage.getItem("user"));
+
   const [companyForm, setCompanyForm] = useState({
-    owner_user_id: user?.id || null,
+    owner_user_id: null,
     name: "",
     legal_name: "",
     logo_url: "",
@@ -33,6 +35,68 @@ function HomePage() {
     latitude: "",
     longitude: ""
   });
+
+  // Add effect to log state changes
+  useEffect(() => {
+    console.log("loading changed:", loading);
+  }, [loading]);
+
+  useEffect(() => {
+    console.log("user changed:", user);
+  }, [user]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="text-center">
+          <div className="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl font-semibold text-gray-700">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500 mt-2">Please wait</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user exists
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="text-center max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl">
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Session Expired</h2>
+          <p className="text-gray-600 mb-6">Please login again to continue</p>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // update owner
+  useEffect(() => {
+    if (user?.id) {
+      setCompanyForm(prev => ({
+        ...prev,
+        owner_user_id: user.id
+      }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUsers();
+      fetchPermissions();
+    }
+  }, [user]);
 
   const handleCompanyChange = (e) => {
     setCompanyForm({
@@ -49,7 +113,7 @@ function HomePage() {
         toast.error("Authentication expired. Please login again.");
         return;
       }
-      console.log(JSON.stringify(companyForm));
+
       const response = await fetch(`${API_BASE}/company/create`, {
         method: "POST",
         headers: {
@@ -70,6 +134,22 @@ function HomePage() {
         localStorage.setItem("company", JSON.stringify(result.data));
         toast.success("Company created successfully 🎉");
         setOpenCompanyModal(false);
+        
+        // Reset form
+        setCompanyForm({
+          owner_user_id: user.id,
+          name: "",
+          legal_name: "",
+          logo_url: "",
+          address_line1: "",
+          address_line2: "",
+          city: "",
+          state: "",
+          postal_code: "",
+          country: "India",
+          latitude: "",
+          longitude: ""
+        });
       } else {
         toast.error(result.message || "Something went wrong");
       }
@@ -79,63 +159,49 @@ function HomePage() {
     }
   };
 
-  useEffect(() => {
-    fetchUsers();
-    fetchPermissions();
-  }, []);
-
-  const fetchUsers = async (search = "") => {
+  const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-
       const res = await fetch(`${API_BASE}/users/list`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         }
       });
 
       const result = await res.json();
 
       if (result.success) {
-        const users = result.data.map(user => ({
-          id: user.id,
-          full_name: user.name || "No Name",
-          email: user.email
+        const formatted = result.data.map(u => ({
+          id: u.id,
+          full_name: u.name || u.email || "No Name",
+          email: u.email
         }));
-
-        setUsers(users);
+        setUsers(formatted);
       }
-
     } catch (err) {
       console.error("Error fetching users:", err);
+      toast.error("Failed to fetch users");
     }
   };
 
   const fetchPermissions = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_BASE}/permissions/list`, {
-        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+          Authorization: `Bearer ${token}`
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
       const result = await response.json();
+
       if (result.success) {
         setPermissions(result.data);
-      } else {
-        console.error('API returned unsuccessful response:', result.message);
       }
     } catch (err) {
-      console.error('Error fetching permissions:', err);
+      console.error("Permission error", err);
     }
   };
 
@@ -152,8 +218,7 @@ function HomePage() {
     { value: "work_basis", label: "Work Basis Staff" }
   ];
 
-
-  const permissionOptions = permissions.map((p) => ({
+  const permissionOptions = permissions.map(p => ({
     value: p.id,
     label: p.name
   }));
@@ -170,12 +235,10 @@ function HomePage() {
       setOpenCompanyModal(true);
       return;
     }
-
     setOpenModal(true);
   };
 
   const handleCreate = () => {
-
     if (!selectedUser) {
       toast.warning("Please select a user");
       return;
@@ -199,40 +262,25 @@ function HomePage() {
     });
 
     toast.success("Staff created successfully");
-
     setOpenModal(false);
+    
+    // Reset form
+    setSelectedUser(null);
+    setDesignation(null);
+    setStaffType(null);
+    setSelectedPermissions([]);
   };
 
-
-  const fetchCompanies = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(`${API_BASE}/users/profile-role`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setCompanies(result.data.companies || []);
-      } else {
-        toast.error(result.message || "Failed to load companies");
-      }
-
-    } catch (error) {
-      console.error("Fetch companies error:", error);
-      toast.error("Failed to fetch companies");
+  const fetchCompanies = () => {
+    if (user?.companies && user.companies.length > 0) {
+      setCompanies(user.companies);
+    } else {
+      setCompanies([]);
     }
   };
 
-
-  const handleopenSwitchCompanyModal = async () => {
-    await fetchCompanies();
+  const handleopenSwitchCompanyModal = () => {
+    fetchCompanies();
     setOpenCompanySwitchModal(true);
   };
 
@@ -251,7 +299,7 @@ function HomePage() {
       </div>
 
       <div className="max-w-6xl mx-auto relative">
-        {/* Welcome Section with Glass Effect */}
+        {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -267,7 +315,7 @@ function HomePage() {
           </div>
 
           <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 mb-4">
-            OneAttendance
+            Welcome back, {user?.name || user?.email || 'User'}!
           </h1>
 
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -405,7 +453,6 @@ function HomePage() {
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="bg-white/95 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border border-white/20"
             >
-              {/* Header */}
               <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-5 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
@@ -417,11 +464,8 @@ function HomePage() {
                 </div>
               </div>
 
-              {/* Form - exactly the same fields, just modern styling */}
               <div className="p-6">
                 <div className="space-y-5">
-
-                  {/* User */}
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1.5">
                       Select User
@@ -433,7 +477,6 @@ function HomePage() {
                     />
                   </div>
 
-                  {/* Designation */}
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1.5">
                       Designation
@@ -445,22 +488,9 @@ function HomePage() {
                       placeholder="Select designation"
                       className="react-select-container"
                       classNamePrefix="react-select"
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          borderRadius: '0.75rem',
-                          borderColor: '#e5e7eb',
-                          boxShadow: 'none',
-                          '&:hover': {
-                            borderColor: '#9ca3af'
-                          },
-                          padding: '2px'
-                        })
-                      }}
                     />
                   </div>
 
-                  {/* Staff Type */}
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1.5">
                       Staff Type
@@ -472,22 +502,9 @@ function HomePage() {
                       placeholder="Select staff type"
                       className="react-select-container"
                       classNamePrefix="react-select"
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          borderRadius: '0.75rem',
-                          borderColor: '#e5e7eb',
-                          boxShadow: 'none',
-                          '&:hover': {
-                            borderColor: '#9ca3af'
-                          },
-                          padding: '2px'
-                        })
-                      }}
                     />
                   </div>
 
-                  {/* Permissions */}
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1.5">
                       Permissions
@@ -500,33 +517,20 @@ function HomePage() {
                       placeholder="Select permissions"
                       className="react-container"
                       classNamePrefix="react-select"
-                      styles={{
-                        control: (base) => ({
-                          ...base,
-                          borderRadius: '0.75rem',
-                          borderColor: '#e5e7eb',
-                          boxShadow: 'none',
-                          '&:hover': {
-                            borderColor: '#9ca3af'
-                          },
-                          padding: '2px'
-                        }),
-                        multiValue: (base) => ({
-                          ...base,
-                          borderRadius: '0.5rem',
-                          backgroundColor: '#f3f4f6'
-                        })
-                      }}
                     />
                   </div>
-
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex justify-end gap-3">
                 <button
-                  onClick={() => setOpenModal(false)}
+                  onClick={() => {
+                    setOpenModal(false);
+                    setSelectedUser(null);
+                    setDesignation(null);
+                    setStaffType(null);
+                    setSelectedPermissions([]);
+                  }}
                   className="px-5 py-2 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm"
                 >
                   Cancel
@@ -571,48 +575,56 @@ function HomePage() {
                 <input
                   name="name"
                   placeholder="Company Name *"
+                  value={companyForm.name}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="legal_name"
                   placeholder="Legal Name *"
+                  value={companyForm.legal_name}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="logo_url"
                   placeholder="Logo URL"
+                  value={companyForm.logo_url}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl col-span-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="address_line1"
                   placeholder="Address Line 1"
+                  value={companyForm.address_line1}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl col-span-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="address_line2"
                   placeholder="Address Line 2"
+                  value={companyForm.address_line2}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl col-span-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="city"
                   placeholder="City"
+                  value={companyForm.city}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="state"
                   placeholder="State"
+                  value={companyForm.state}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="postal_code"
                   placeholder="Postal Code"
+                  value={companyForm.postal_code}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
@@ -625,12 +637,14 @@ function HomePage() {
                 <input
                   name="latitude"
                   placeholder="Latitude"
+                  value={companyForm.latitude}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
                 <input
                   name="longitude"
                   placeholder="Longitude"
+                  value={companyForm.longitude}
                   onChange={handleCompanyChange}
                   className="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                 />
@@ -638,7 +652,23 @@ function HomePage() {
 
               <div className="flex justify-end gap-3 mt-8">
                 <button
-                  onClick={() => setOpenCompanyModal(false)}
+                  onClick={() => {
+                    setOpenCompanyModal(false);
+                    setCompanyForm({
+                      owner_user_id: user.id,
+                      name: "",
+                      legal_name: "",
+                      logo_url: "",
+                      address_line1: "",
+                      address_line2: "",
+                      city: "",
+                      state: "",
+                      postal_code: "",
+                      country: "India",
+                      latitude: "",
+                      longitude: ""
+                    });
+                  }}
                   className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200"
                 >
                   Cancel
@@ -697,9 +727,14 @@ function HomePage() {
                     className="w-full text-left p-5 border border-gray-100 rounded-xl hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200 group"
                   >
                     <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                      {company.name}
+                      {company.name || "Unnamed Company"}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">{company.legal_name}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {company.legal_name || "No legal name"}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {company.city}, {company.state}
+                    </p>
                   </motion.button>
                 ))}
               </div>
@@ -717,7 +752,6 @@ function HomePage() {
         )}
       </AnimatePresence>
 
-      {/* Toast Container with Custom Styling */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -732,7 +766,6 @@ function HomePage() {
         className="mt-12"
       />
 
-      {/* Custom CSS for animations and scrollbar */}
       <style>{`
         @keyframes blob {
           0%, 100% { transform: translate(0, 0) scale(1); }
@@ -764,39 +797,6 @@ function HomePage() {
         
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #818cf8;
-        }
-
-        /* React Select Custom Styles */
-        .react-select-container .react-select__control {
-          @apply border border-gray-200 rounded-xl shadow-sm hover:border-indigo-300;
-        }
-        
-        .react-select-container .react-select__control--is-focused {
-          @apply border-indigo-500 ring-2 ring-indigo-200;
-        }
-        
-        .react-select-container .react-select__menu {
-          @apply rounded-xl shadow-xl border border-gray-100;
-        }
-        
-        .react-select-container .react-select__option--is-focused {
-          @apply bg-indigo-50;
-        }
-        
-        .react-select-container .react-select__option--is-selected {
-          @apply bg-indigo-600;
-        }
-        
-        .react-select-container .react-select__multi-value {
-          @apply bg-indigo-50 rounded-lg;
-        }
-        
-        .react-select-container .react-select__multi-value__label {
-          @apply text-indigo-700;
-        }
-        
-        .react-select-container .react-select__multi-value__remove {
-          @apply hover:bg-indigo-200 hover:text-indigo-900 rounded-lg;
         }
       `}</style>
     </div>

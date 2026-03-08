@@ -154,12 +154,7 @@ const Login = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-
-      // ✅ Save auth state
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      login(data.user); // update auth context
+      login(data.token);
 
       showToast("Login successful 🎉");
 
