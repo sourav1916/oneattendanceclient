@@ -20,6 +20,8 @@ function HomePage() {
   const [openCompanySwitchModal, setOpenCompanySwitchModal] = useState(false);
   const [staffType, setStaffType] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [openCompanySelectModal, setOpenCompanySelectModal] = useState(false);
+  const [userCompanies, setUserCompanies] = useState([]);
 
   const [companyForm, setCompanyForm] = useState({
     owner_user_id: null,
@@ -38,11 +40,11 @@ function HomePage() {
 
   // Add effect to log state changes
   useEffect(() => {
-    console.log("loading changed:", loading);
+    // console.log("loading changed:", loading);
   }, [loading]);
 
   useEffect(() => {
-    console.log("user changed:", user);
+    // console.log("user changed:", user);
   }, [user]);
 
   // Show loading state
@@ -134,7 +136,7 @@ function HomePage() {
         localStorage.setItem("company", JSON.stringify(result.data));
         toast.success("Company created successfully 🎉");
         setOpenCompanyModal(false);
-        
+
         // Reset form
         setCompanyForm({
           owner_user_id: user.id,
@@ -227,14 +229,54 @@ function HomePage() {
     setOpenCompanyModal(true);
   };
 
-  const handleAddStaffClick = () => {
+  const handleAddStaffClick = async () => {
     const company = localStorage.getItem("company");
 
     if (!company) {
-      toast.warning("Please create a company first");
-      setOpenCompanyModal(true);
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch(`${API_BASE}/users/profile-role`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const response = await res.json();
+
+        if (response.success && response.data) {
+
+          const companies = response.data.companies || [];
+
+          // ✅ Only one company → auto select
+          if (companies.length === 1) {
+            localStorage.setItem("company", JSON.stringify(companies[0]));
+            setOpenModal(true);
+            return;
+          }
+
+          // ✅ Multiple companies → choose company
+          if (companies.length > 1) {
+            setUserCompanies(companies);
+            setOpenCompanySelectModal(true);
+            return;
+          }
+
+          // ✅ No companies → create company
+          toast.warning("Please create a company first");
+          setOpenCompanyModal(true);
+
+        }
+
+      } catch (error) {
+        console.error("Profile fetch failed:", error);
+        toast.error("Something went wrong");
+      }
+
       return;
     }
+
     setOpenModal(true);
   };
 
@@ -263,7 +305,7 @@ function HomePage() {
 
     toast.success("Staff created successfully");
     setOpenModal(false);
-    
+
     // Reset form
     setSelectedUser(null);
     setDesignation(null);
@@ -750,6 +792,51 @@ function HomePage() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {openCompanySelectModal && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+
+            <div className="bg-white rounded-xl w-[420px] p-6 shadow-xl">
+
+              <h2 className="text-lg font-semibold mb-4">
+                Select Company
+              </h2>
+
+              <div className="space-y-3 max-h-[250px] overflow-y-auto">
+
+                {userCompanies.map((company) => (
+                  <button
+                    key={company.id}
+                    onClick={() => {
+                      localStorage.setItem("company", JSON.stringify(company));
+                      setOpenCompanySelectModal(false);
+                      setOpenModal(true);
+                    }}
+                    className="w-full text-left p-3 border rounded-lg hover:bg-slate-50 transition"
+                  >
+                    <p className="font-medium">{company.name}</p>
+                    <p className="text-xs text-gray-500">{company.legal_name}</p>
+                  </button>
+                ))}
+
+              </div>
+
+              <div className="mt-5 text-right">
+                <button
+                  onClick={() => setOpenCompanySelectModal(false)}
+                  className="px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
       </AnimatePresence>
 
       <ToastContainer

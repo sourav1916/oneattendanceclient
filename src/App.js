@@ -13,9 +13,6 @@ import Cashbook from "./pages/CashBook";
 function AppContent() {
   const { user, loading } = useAuth();
 
-  console.log("AppContent - user:", user);
-  console.log("AppContent - loading:", loading);
-
   // Always show loading while loading is true
   if (loading) {
     return (

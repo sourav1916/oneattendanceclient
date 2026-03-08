@@ -1,4 +1,6 @@
 import React from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     FaBars,
     FaBell,
@@ -10,7 +12,14 @@ import { useAuth } from "../context/AuthContext";
 
 
 const Navbar = ({ toggleSidebar, isMobile, sidebarOpen }) => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
+    const [openDropdown, setOpenDropdown] = useState(false);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();              
+        navigate("/login"); 
+    };
 
     return (
         <nav className="sticky top-0 z-30 h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
@@ -65,31 +74,56 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen }) => {
                         </button>
 
                         {/* User menu with modern dropdown style */}
-                        <button className="flex items-center space-x-3 p-1.5 pr-3 
-                                         rounded-xl bg-white/10 hover:bg-white/20 
-                                         backdrop-blur-sm border border-white/20 hover:border-white/30
-                                         transition-all duration-200 group">
-                            <div className="relative">
-                                <div className="w-8 h-8 bg-gradient-to-br from-amber-300 to-amber-500 
-                                              rounded-xl flex items-center justify-center shadow-lg">
-                                    <FaUserCircle className="w-6 h-6 text-white" />
+                        <div className="relative inline-block">
+                            <button
+                                onClick={() => setOpenDropdown(!openDropdown)}
+                                className="flex items-center space-x-3 p-1.5 pr-3 
+        rounded-xl bg-white/10 hover:bg-white/20 
+        backdrop-blur-sm border border-white/20 hover:border-white/30
+        transition-all duration-200 group"
+                            >
+                                <div className="relative">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-amber-300 to-amber-500 
+            rounded-xl flex items-center justify-center shadow-lg">
+                                        <FaUserCircle className="w-6 h-6 text-white" />
+                                    </div>
+
+                                    <div className="absolute -bottom-1 -right-1 w-3 h-3 
+            bg-emerald-400 border-2 border-white rounded-full"></div>
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 w-3 h-3 
-                                              bg-emerald-400 border-2 border-white rounded-full"></div>
-                            </div>
-                            <div className="hidden md:block text-left">
-                                <p className="text-sm font-semibold text-white">
-                                    { user?.name || "User"}
-                                </p>
 
-                                <p className="text-[10px] text-white/70">
-                                    {user?.roleBadge || "User"}
-                                </p>
+                                <div className="hidden md:block text-left">
+                                    <p className="text-sm font-semibold text-white">
+                                        {user?.name || "User"}
+                                    </p>
 
-                            </div>
-                            <FaCaretDown className="w-3 h-3 text-white/70 group-hover:text-white 
-                                                   transition-colors hidden md:block" />
-                        </button>
+                                    <p className="text-[10px] text-white/70">
+                                        {user?.roleBadge || "User"}
+                                    </p>
+                                </div>
+
+                                <FaCaretDown className="w-3 h-3 text-white/70 group-hover:text-white transition-colors hidden md:block" />
+                            </button>
+
+                            {/* Dropdown */}
+                            {openDropdown && (
+                                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
+                                    <button
+                                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                                    >
+                                        My Profile
+                                    </button>
+
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                     </div>
                 </div>
             </div>

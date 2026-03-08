@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async (token) => {
     try {
-      console.log("Fetching user profile with token:", token);
+      // console.log("Fetching user profile with token:", token);
       const res = await fetch(`${API_BASE}/users/profile-role`, {
         headers: {
           "Content-Type": "application/json",
@@ -30,16 +30,16 @@ export const AuthProvider = ({ children }) => {
         },
       });
 
-      console.log("Response status:", res.status);
+      // console.log("Response status:", res.status);
 
       if (!res.ok) {
-        console.log("Response not OK, logging out");
+        // console.log("Response not OK, logging out");
         logout();
         return;
       }
 
       const response = await res.json();
-      console.log("API Response:", response);
+      // console.log("API Response:", response);
 
       // Remove the isMounted check
       if (response.success && response.data) {
@@ -54,12 +54,17 @@ export const AuthProvider = ({ children }) => {
           total_companies: response.data.total_companies || 0,
           role: response.data.user.role || "user"
         };
-        
+
         // console.log("Setting user data:", userData);
         setUser(userData);
-        
-        if (response.data.companies && response.data.companies.length > 0) {
-          localStorage.setItem("company", JSON.stringify(response.data.companies[0]));
+
+        if (response.data.companies && response.data.companies.length === 1) {
+          localStorage.setItem(
+            "company",
+            JSON.stringify(response.data.companies[0])
+          );
+        } else {
+          localStorage.removeItem("company");
         }
       } else {
         // console.log("Response success false or no data");

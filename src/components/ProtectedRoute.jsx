@@ -5,9 +5,6 @@ import { useAuth } from "../context/AuthContext";
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
-  console.log("ProtectedRoute - user:", user);
-  console.log("ProtectedRoute - loading:", loading);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -20,7 +17,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (!user) {
-    console.log("No user, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
