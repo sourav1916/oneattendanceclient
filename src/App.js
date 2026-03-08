@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
 import NotFound from "./pages/NotFound";
 import Cashbook from "./pages/CashBook";
+import SettingsPage from "./pages/Setting";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -58,6 +59,16 @@ function AppContent() {
           <ProtectedRoute>
             <MainLayout>
               <Cashbook />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <SettingsPage />
             </MainLayout>
           </ProtectedRoute>
         }
