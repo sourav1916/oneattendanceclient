@@ -11,7 +11,7 @@ import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
-import SwitchCompanyModal from "../components/CompanyModals/SwitchCompanyModal";
+// import SwitchCompanyModal from "../components/CompanyModals/SwitchCompanyModal";
 import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
@@ -487,17 +487,6 @@ const SettingsPage = () => {
 
                 <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
                   <button
-                    onClick={() => setOpenSwitchModal(true)}
-                    className="flex items-center justify-center gap-2 bg-gray-600 text-white px-3 sm:px-4 py-2 rounded-xl text-sm sm:text-base hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full xs:w-auto"
-                    disabled={companies.length === 0}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                    <span className="whitespace-nowrap">Switch Company</span>
-                  </button>
-
-                  <button
                     onClick={handleAddCompanyClick}
                     className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-xl text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl w-full xs:w-auto"
                   >
@@ -544,12 +533,6 @@ const SettingsPage = () => {
                       <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{activeCompany.name}</p>
                       <p className="text-xs sm:text-sm text-gray-600 truncate">{activeCompany.legal_name}</p>
                     </div>
-                    <button
-                      onClick={() => setOpenSwitchModal(true)}
-                      className="text-xs sm:text-sm bg-white px-3 sm:px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition-colors w-full xs:w-auto"
-                    >
-                      Switch
-                    </button>
                   </div>
                 </div>
               )}
@@ -799,13 +782,13 @@ const SettingsPage = () => {
         onSuccess={handleEditSubmit}
         company={editingCompany}
       />
-
+{/* 
       <SwitchCompanyModal
         isOpen={openSwitchModal}
         onClose={() => setOpenSwitchModal(false)}
         companies={companies}
         onSwitch={handleSwitchFromModal}
-      />
+      /> */}
 
       <SelectCompanyModal
         isOpen={openSelectModal}
