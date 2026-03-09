@@ -1,19 +1,17 @@
-import { useState } from "react";
+import { useState,Fragment } from "react";
 import { 
-  FaCopy, 
+  FaCheckCircle, 
+  FaTimesCircle,
   FaUserTie, 
   FaClock, 
-  FaLink,
   FaEnvelope,
   FaBriefcase,
-  FaCheckCircle,
-  FaExclamationCircle,
-  FaChevronDown,
-  FaChevronUp
+  FaExclamationCircle
 } from "react-icons/fa";
 
 const dummyInvites = [
 {
+  id: 1, // Added unique ID
   success: true,
   message: "Invitation sent successfully",
   invite_link: "https://oneattendanceclient.vercel.app/invite/df0dbfccf43b6a1d7b3862f1a90bd7598620043c0ea2ef9ff5a51f5c3475f627",
@@ -34,6 +32,7 @@ const dummyInvites = [
   expires_at: "2026-03-11T16:16:13.371Z"
 },
 {
+  id: 2, // Added unique ID
   success: true,
   invite_link: "https://oneattendanceclient.vercel.app/invite/samplelink123",
   user: {
@@ -57,6 +56,7 @@ const dummyInvites = [
   expires_at: "2026-03-09T10:00:00.000Z"
 },
 {
+  id: 3, // Added unique ID
   success: true,
   invite_link: "https://oneattendanceclient.vercel.app/invite/samplelink456",
   user: {
@@ -75,6 +75,10 @@ const dummyInvites = [
     {
       id: 3,
       name: "Can approve timesheets"
+    },
+    {
+      id: 5,
+      name: "Can access analytics"
     }
   ],
   expires_at: "2026-04-15T10:00:00.000Z"
@@ -82,14 +86,23 @@ const dummyInvites = [
 ];
 
 export default function CompanyInvites() {
-  const [invites] = useState(dummyInvites);
-  const [copiedId, setCopiedId] = useState(null);
+  const [invites, setInvites] = useState(dummyInvites);
   const [expandedRows, setExpandedRows] = useState([]);
 
-  const copyLink = (link, id) => {
-    navigator.clipboard.writeText(link);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const handleAccept = (inviteId) => {
+    // Add your accept logic here
+    alert(`Accepting invitation for ID: ${inviteId}`);
+    // Example: Remove from list after accept
+    // setInvites(prev => prev.filter(invite => invite.id !== inviteId));
+  };
+
+  const handleRemove = (inviteId) => {
+    // Add your remove logic here
+    if (window.confirm('Are you sure you want to remove this invitation?')) {
+      alert(`Removing invitation for ID: ${inviteId}`);
+      // Example: Remove from list
+      // setInvites(prev => prev.filter(invite => invite.id !== inviteId));
+    }
   };
 
   const toggleRow = (id) => {
@@ -171,13 +184,13 @@ export default function CompanyInvites() {
         {/* Mobile View (Cards) - visible on small screens */}
         <div className="block lg:hidden">
           <div className="grid grid-cols-1 gap-4">
-            {invites.map((invite, index) => {
+            {invites.map((invite) => {
               const expiry = new Date(invite.expires_at);
               const expired = expiry < new Date();
 
               return (
                 <div
-                  key={index}
+                  key={invite.id} // Fixed: Using unique ID as key
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
                 >
                   <div className={`h-1.5 w-full ${expired ? 'bg-rose-500' : 'bg-emerald-500'}`} />
@@ -220,35 +233,29 @@ export default function CompanyInvites() {
                     </div>
 
                     {/* Expiry */}
-                    <div className="flex items-center gap-1.5 mb-3 text-xs">
+                    <div className="flex items-center gap-1.5 mb-4 text-xs">
                       <FaClock className={expired ? 'text-rose-400' : 'text-gray-400'} />
                       <span className={expired ? 'text-rose-600' : 'text-gray-600'}>
                         {expired ? `Expired on ${expiry.toLocaleDateString()}` : `Expires ${expiry.toLocaleDateString()}`}
                       </span>
                     </div>
 
-                    {/* Actions */}
+                    {/* Action Buttons - Accept and Remove */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => copyLink(invite.invite_link, index)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-medium transition ${
-                          copiedId === index
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-blue-500 hover:bg-blue-600 text-white'
-                        }`}
+                        onClick={() => handleAccept(invite.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition"
                       >
-                        <FaCopy className="text-xs" />
-                        {copiedId === index ? 'Copied!' : 'Copy Link'}
+                        <FaCheckCircle className="text-xs" />
+                        Accept
                       </button>
-                      <a
-                        href={invite.invite_link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      <button
+                        onClick={() => handleRemove(invite.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white transition"
                       >
-                        <FaLink className="text-xs" />
-                        Open
-                      </a>
+                        <FaTimesCircle className="text-xs" />
+                        Remove
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -272,14 +279,14 @@ export default function CompanyInvites() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {invites.map((invite, index) => {
+                {invites.map((invite) => {
                   const expiry = new Date(invite.expires_at);
                   const expired = expiry < new Date();
-                  const isExpanded = expandedRows.includes(index);
+                  const isExpanded = expandedRows.includes(invite.id);
 
                   return (
-                    <>
-                      <tr key={index} className="hover:bg-gray-50 transition">
+                    <Fragment key={invite.id}> {/* Fixed: Using Fragment with key */}
+                      <tr className="hover:bg-gray-50 transition">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${expired ? 'bg-rose-50' : 'bg-blue-50'}`}>
@@ -312,7 +319,7 @@ export default function CompanyInvites() {
                             </div>
                             {invite.permissions_invited.length > 2 && (
                               <button
-                                onClick={() => toggleRow(index)}
+                                onClick={() => toggleRow(invite.id)}
                                 className="text-xs text-blue-500 hover:text-blue-700 font-medium"
                               >
                                 +{invite.permissions_invited.length - 2} more
@@ -334,31 +341,25 @@ export default function CompanyInvites() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => copyLink(invite.invite_link, index)}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                                copiedId === index
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                              }`}
+                              onClick={() => handleAccept(invite.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition"
                             >
-                              <FaCopy className="text-xs" />
-                              {copiedId === index ? 'Copied!' : 'Copy'}
+                              <FaCheckCircle className="text-xs" />
+                              Accept
                             </button>
-                            <a
-                              href={invite.invite_link}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 hover:bg-gray-100"
+                            <button
+                              onClick={() => handleRemove(invite.id)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-600 hover:bg-rose-100 transition"
                             >
-                              <FaLink className="text-xs" />
-                              Open
-                            </a>
+                              <FaTimesCircle className="text-xs" />
+                              Remove
+                            </button>
                           </div>
                         </td>
                       </tr>
                       {/* Expanded row for more permissions */}
                       {isExpanded && invite.permissions_invited.length > 2 && (
-                        <tr className="bg-gray-50">
+                        <tr key={`expanded-${invite.id}`} className="bg-gray-50">
                           <td colSpan="6" className="px-6 py-3">
                             <div className="flex items-start gap-2">
                               <span className="text-xs font-medium text-gray-500 mt-0.5">All permissions:</span>
@@ -373,7 +374,7 @@ export default function CompanyInvites() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>
