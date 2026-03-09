@@ -10,8 +10,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const initialized = useRef(false);
-  // Remove isMounted ref - it's causing the issue
-  // We'll use a different approach
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -22,7 +20,6 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = async (token) => {
     try {
-      // console.log("Fetching user profile with token:", token);
       const res = await fetch(`${API_BASE}/users/profile-role`, {
         headers: {
           "Content-Type": "application/json",
@@ -30,18 +27,13 @@ export const AuthProvider = ({ children }) => {
         },
       });
 
-      // console.log("Response status:", res.status);
-
       if (!res.ok) {
-        // console.log("Response not OK, logging out");
         logout();
         return;
       }
 
       const response = await res.json();
-      // console.log("API Response:", response);
 
-      // Remove the isMounted check
       if (response.success && response.data) {
         const userData = {
           id: response.data.user.id,
@@ -55,27 +47,46 @@ export const AuthProvider = ({ children }) => {
           role: response.data.user.role || "user"
         };
 
-        // console.log("Setting user data:", userData);
         setUser(userData);
 
+        // Get currently stored company
+        const storedCompany = JSON.parse(localStorage.getItem("company"));
+        
+        // If there's only one company, always set it
         if (response.data.companies && response.data.companies.length === 1) {
           localStorage.setItem(
             "company",
             JSON.stringify(response.data.companies[0])
           );
-        } else {
+        } 
+        // If there are multiple companies
+        else if (response.data.companies && response.data.companies.length > 1) {
+          // Check if stored company exists and still belongs to user's companies
+          if (storedCompany) {
+            const companyStillExists = response.data.companies.some(
+              c => c.id === storedCompany.id
+            );
+            
+            // If stored company no longer belongs to user, remove it
+            if (!companyStillExists) {
+              localStorage.removeItem("company");
+            }
+            // Otherwise keep the stored company (do nothing)
+          }
+          // If no stored company, don't set one
+        }
+        // If no companies, remove company
+        else {
           localStorage.removeItem("company");
         }
       } else {
-        // console.log("Response success false or no data");
         setUser(null);
       }
     } catch (error) {
-      // console.error("Profile fetch failed:", error);
+      console.error("Profile fetch failed:", error);
       logout();
     } finally {
-      // console.log("Finally block - setting loading to false");
-      setLoading(false); // Remove isMounted check
+      setLoading(false);
     }
   };
 
@@ -84,35 +95,34 @@ export const AuthProvider = ({ children }) => {
     initialized.current = true;
 
     const token = localStorage.getItem("token");
-    // console.log("Initial token:", token);
 
     if (!token) {
-      // console.log("No token, setting loading false");
       setLoading(false);
       return;
     }
 
-    // Add timeout fallback
     const timeoutId = setTimeout(() => {
-      // console.log("Timeout reached - forcing loading to false");
       setLoading(false);
     }, 5000);
 
     fetchUserProfile(token);
 
-    // Don't set isMounted to false in cleanup
-    // Just clear the timeout
     return () => {
-      // console.log("AuthProvider cleanup - clearing timeout");
       clearTimeout(timeoutId);
     };
-  }, []); // Empty dependency array
+  }, []);
 
   const login = async (token) => {
-    // console.log("Login called with token:", token);
     localStorage.setItem("token", token);
     setLoading(true);
     await fetchUserProfile(token);
+  };
+
+  const refreshUser = async () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      await fetchUserProfile(token);
+    }
   };
 
   const value = {
@@ -120,6 +130,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     loading,
+    refreshUser,
     isAuthenticated: !!user,
   };
 

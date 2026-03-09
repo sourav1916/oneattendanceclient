@@ -1,14 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
+import { 
+  HiOutlineUserGroup, 
+  HiOutlineOfficeBuilding, 
+  HiOutlineSwitchHorizontal,
+  HiOutlineQuestionMarkCircle,
+  HiOutlineSparkles,
+  HiOutlineArrowRight,
+  HiOutlineCalendar,
+  HiOutlineClock,
+  HiOutlineUsers
+} from "react-icons/hi";
 
-import ActionCard from "../components/ActionCard";
 import AddStaffModal from "../components/AddStaffModal";
-import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
-import SwitchCompanyModal from "../components/CompanyModals/SwitchCompanyModal";
 import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
+import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
@@ -18,21 +27,22 @@ function HomePage() {
   // Modal States
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
-  const [openSwitchCompanyModal, setOpenSwitchCompanyModal] = useState(false);
   const [openSelectCompanyModal, setOpenSelectCompanyModal] = useState(false);
   
   // Data States
-  const [companies, setCompanies] = useState([]);
   const [userCompanies, setUserCompanies] = useState([]);
 
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="text-center">
-          <div className="w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-700">Loading your dashboard...</p>
-          <p className="text-sm text-gray-500 mt-2">Please wait</p>
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+            <HiOutlineSparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-indigo-600 animate-pulse" />
+          </div>
+          <p className="text-xl font-semibold text-slate-800">Loading your workspace...</p>
+          <p className="text-sm text-slate-500 mt-2">Please wait</p>
         </div>
       </div>
     );
@@ -41,33 +51,28 @@ function HomePage() {
   // Check if user exists
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="text-center max-w-md mx-auto p-8 bg-white rounded-2xl shadow-xl">
-          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50 px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100"
+        >
+          <div className="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-6 transform rotate-3">
+            <HiOutlineQuestionMarkCircle className="w-10 h-10 text-amber-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Session Expired</h2>
-          <p className="text-gray-600 mb-6">Please login again to continue</p>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Session Expired</h2>
+          <p className="text-slate-600 mb-8">Please login again to continue</p>
           <button
             onClick={() => window.location.href = '/login'}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg"
+            className="group px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
           >
             Go to Login
+            <HiOutlineArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
-
-  const fetchCompanies = () => {
-    if (user?.companies && user.companies.length > 0) {
-      setCompanies(user.companies);
-    } else {
-      setCompanies([]);
-    }
-  };
 
   const handleAddStaffClick = async () => {
     const company = localStorage.getItem("company");
@@ -119,109 +124,215 @@ function HomePage() {
     setOpenAddStaffModal(true);
   };
 
-  const handleCompanyCreated = (company) => {
-    // Handle post-creation if needed
+  // Get current time for greeting
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
   };
 
+  // Format date
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
-      {/* Decorative Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/10 to-purple-100/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="max-w-6xl mx-auto relative">
-        {/* Welcome Section */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+        {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="mb-12 lg:mb-16"
         >
-          <div className="inline-block p-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-6">
-            <div className="bg-white rounded-full px-6 py-2">
-              <span className="text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                🚀 Enterprise Attendance Management
-              </span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-indigo-100 mb-6 shadow-sm">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-slate-600">Active Session</span>
+                <span className="text-xs text-slate-400">•</span>
+                <span className="text-xs font-medium text-indigo-600">{currentDate}</span>
+              </div>
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold">
+                <span className="text-slate-800">{getGreeting()},</span>
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient">
+                  {user?.name?.split(' ')[0] || 'there'}!
+                </span>
+              </h1>
+              
+              <p className="text-lg text-slate-600 mt-4 max-w-2xl">
+                Ready to manage your workforce? Add team members and start tracking attendance seamlessly.
+              </p>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="flex gap-3 sm:flex-col">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <HiOutlineUsers className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-slate-800">{user?.companies?.length || 0}</p>
+                    <p className="text-xs text-slate-500">Companies</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-
-          <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 mb-4">
-            Welcome back, {user?.name || user?.email || 'User'}!
-          </h1>
-
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Streamline your workforce management with intelligent attendance tracking
-          </p>
         </motion.div>
 
-        {/* Action Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <ActionCard
-            icon={
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-            }
-            title="Add Staff"
-            description="Regular Staff and Contract Staff (Monthly, Weekly, Hourly and Work Basis)"
-            buttonText="Add Staff"
-            onClick={handleAddStaffClick}
-            gradient="blue"
-            delay={0.1}
-          />
+        {/* Main Action Card - Add Staff */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-indigo-100 overflow-hidden group hover:shadow-3xl transition-all duration-500">
+            {/* Card Header with Gradient */}
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+            
+            <div className="p-8 sm:p-10 lg:p-12">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+                {/* Left Content */}
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full mb-6">
+                    <HiOutlineSparkles className="w-4 h-4 text-indigo-600" />
+                    <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
+                      Quick Action
+                    </span>
+                  </div>
+                  
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-4">
+                    Add Staff Member
+                  </h2>
+                  
+                  <p className="text-slate-600 text-lg mb-6 leading-relaxed">
+                    Onboard new team members with flexible employment types. Choose from regular, contract, or work-based arrangements.
+                  </p>
+                  
+                  {/* Employee Types Tags */}
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
+                      👥 Regular Staff
+                    </span>
+                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
+                      📅 Monthly Contract
+                    </span>
+                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
+                      ⏰ Weekly Contract
+                    </span>
+                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
+                      💼 Work Basis
+                    </span>
+                  </div>
+                  
+                  {/* Action Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAddStaffClick}
+                    className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-semibold text-lg hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-xl hover:shadow-2xl overflow-hidden"
+                  >
+                    <span className="relative z-10 flex items-center gap-3">
+                      <HiOutlineUserGroup className="w-6 h-6" />
+                      Start Adding Staff
+                      <HiOutlineArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-indigo-600 opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                  </motion.button>
+                </div>
 
-          <ActionCard
-            icon={
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            }
-            title="Create Company"
-            description="Set up your organization profile with complete details and branding"
-            buttonText="Create Company"
-            onClick={() => setOpenCreateCompanyModal(true)}
-            gradient="indigo"
-            delay={0.2}
-          />
+                {/* Right Visual Element */}
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="w-48 h-48 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl rotate-3 transform group-hover:rotate-6 transition-transform duration-300 overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 to-purple-600/10"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <HiOutlineUserGroup className="w-24 h-24 text-indigo-600/30" />
+                      </div>
+                    </div>
+                    <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-400 rounded-2xl -rotate-12 flex items-center justify-center shadow-lg">
+                      <HiOutlineClock className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-2xl rotate-12 flex items-center justify-center shadow-lg">
+                      <HiOutlineCalendar className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
-          <ActionCard
-            icon={
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            }
-            title="Switch Company"
-            description="Quickly toggle between different organizations you manage"
-            buttonText="Switch Company"
-            onClick={() => {
-              fetchCompanies();
-              setOpenSwitchCompanyModal(true);
-            }}
-            gradient="purple"
-            delay={0.3}
-          />
-        </div>
+        {/* Quick Tips Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="max-w-4xl mx-auto mt-12"
+        >
+          <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200 p-6">
+            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Quick Tips</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-indigo-600 text-sm font-bold">1</span>
+                </div>
+                <p className="text-sm text-slate-600">Select employee type based on work arrangement</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-indigo-600 text-sm font-bold">2</span>
+                </div>
+                <p className="text-sm text-slate-600">Add multiple companies to manage different organizations</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-indigo-600 text-sm font-bold">3</span>
+                </div>
+                <p className="text-sm text-slate-600">Switch between companies from settings page</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-indigo-600 text-sm font-bold">4</span>
+                </div>
+                <p className="text-sm text-slate-600">Need help? Click support button below</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Help Footer */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center"
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="text-center mt-16"
         >
-          <p className="text-gray-600 mb-6">Need assistance? We're here to help!</p>
+          <p className="text-slate-500 mb-4 text-sm">Need assistance? We're here to help!</p>
 
-          <a
-            href="#"
-            className="inline-flex items-center gap-3 bg-gradient-to-r from-gray-800 to-gray-900 text-white px-8 py-4 rounded-xl font-medium hover:from-gray-900 hover:to-black transition-all duration-200 transform hover:scale-[1.02] shadow-xl hover:shadow-2xl group"
+          <button
+            onClick={() => window.location.href = '/support'}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/80 backdrop-blur-sm text-slate-700 rounded-2xl font-medium hover:bg-white hover:shadow-lg transition-all duration-200 border border-slate-200 group"
           >
-            <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Get Help & Support
-          </a>
+            <HiOutlineQuestionMarkCircle className="w-5 h-5 text-indigo-600 group-hover:rotate-12 transition-transform" />
+            <span>Get Help & Support</span>
+          </button>
         </motion.div>
       </div>
 
@@ -232,20 +343,6 @@ function HomePage() {
         onSuccess={() => setOpenAddStaffModal(false)}
       />
 
-      <CreateCompanyModal
-        isOpen={openCreateCompanyModal}
-        onClose={() => setOpenCreateCompanyModal(false)}
-        onSuccess={handleCompanyCreated}
-        userId={user?.id}
-      />
-
-      <SwitchCompanyModal
-        isOpen={openSwitchCompanyModal}
-        onClose={() => setOpenSwitchCompanyModal(false)}
-        companies={companies}
-        onSwitch={() => {}}
-      />
-
       <SelectCompanyModal
         isOpen={openSelectCompanyModal}
         onClose={() => setOpenSelectCompanyModal(false)}
@@ -253,10 +350,17 @@ function HomePage() {
         onSelect={handleCompanySelect}
       />
 
+      <CreateCompanyModal
+        isOpen={openCreateCompanyModal}
+        onClose={() => setOpenCreateCompanyModal(false)}
+        onSuccess={() => {}}
+        userId={user?.id}
+      />
+
       <ToastContainer
         position="top-right"
         autoClose={3000}
-        theme="colored"
+        theme="light"
         hideProgressBar={false}
         newestOnTop
         closeOnClick
@@ -265,21 +369,32 @@ function HomePage() {
         draggable
         pauseOnHover
         className="mt-12"
+        toastClassName="!bg-white !text-slate-800 !rounded-2xl !shadow-xl"
       />
 
       <style>{`
-        @keyframes blob {
+        @keyframes float {
           0%, 100% { transform: translate(0, 0) scale(1); }
           33% { transform: translate(30px, -50px) scale(1.1); }
           66% { transform: translate(-20px, 20px) scale(0.9); }
         }
         
-        .animate-blob {
-          animation: blob 7s infinite;
+        .animate-float {
+          animation: float 7s infinite;
         }
         
         .animation-delay-2000 {
           animation-delay: 2s;
+        }
+        
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
         }
         
         .custom-scrollbar::-webkit-scrollbar {

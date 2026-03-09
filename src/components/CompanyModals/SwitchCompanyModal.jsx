@@ -49,7 +49,7 @@ function SwitchCompanyModal({ isOpen, onClose, companies, onSwitch }) {
                   key={company.id}
                   whileHover={{ scale: 1.02, x: 5 }}
                   onClick={() => handleSwitch(company)}
-                  className="w-full text-left p-5 border border-gray-100 rounded-xl hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200 group"
+                  className="w-full text-left p-5 border border-gray-400 rounded-xl hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-200 group"
                 >
                   <p className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                     {company.name || "Unnamed Company"}
