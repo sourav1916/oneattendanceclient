@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
           is_system_admin: response.data.user.is_system_admin,
           companies: response.data.companies || [],
           total_companies: response.data.total_companies || 0,
-          role: response.data.user.role || "user"
+          role: response.role ||"User"
         };
 
         setUser(userData);

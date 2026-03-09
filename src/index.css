@@ -4,6 +4,7 @@
 @tailwind utilities;
 
 @layer base {
+
   /* Light mode styles (default) */
   :root {
     --bg-primary: 255, 255, 255;
@@ -25,6 +26,8 @@
   /* Base styles */
   html {
     @apply h-full;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
   }
 
   body {
@@ -63,11 +66,14 @@
 /* Hide scrollbar but keep functionality */
 .overflow-y-scroll,
 .overflow-y-auto {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
 }
 
 .overflow-y-scroll::-webkit-scrollbar,
 .overflow-y-auto::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
+  /* Chrome, Safari, Opera */
 }

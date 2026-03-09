@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { toast } from "react-toastify";
-import { 
-  FaUserPlus, FaUserTag, FaUserTie, FaKey, 
+import {
+  FaUserPlus, FaUserTag, FaUserTie, FaKey,
   FaTimes, FaCheck, FaSpinner, FaUserCircle,
   FaBriefcase, FaClock, FaShieldAlt, FaSearch
 } from "react-icons/fa";
@@ -121,26 +121,45 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - replace with actual API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      console.log({
+      const token = localStorage.getItem("token");
+      const company = JSON.parse(localStorage.getItem("company"));
+
+      const payload = {
         user_id: selectedUser.id,
+        company_id: company?.id,
         designation: designation.value,
         staff_type: staffType.value,
         permissions: selectedPermissions.map(p => p.value)
+      };
+
+      const response = await fetch(`${API_BASE}/company/invites/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
       });
 
-      toast.success("Staff created successfully");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || "Failed to create staff");
+      }
+
+      toast.success("Staff invited successfully");
+
       onSuccess?.();
       handleClose();
+
     } catch (error) {
       console.error("Error creating staff:", error);
-      toast.error("Failed to create staff");
+      toast.error(error.message || "Failed to create staff");
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   const handleClose = () => {
     setSelectedUser(null);
@@ -218,7 +237,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           >
             {/* Gradient Header */}
             <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-            
+
             <div className="px-6 py-5 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

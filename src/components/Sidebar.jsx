@@ -5,6 +5,7 @@ import {
   FaCommentDots,
   FaCog,
   FaChevronRight,
+  FaUserPlus
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 
@@ -22,6 +23,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
 
   const menuItems = [
     { icon: FaHome, label: 'Home', path: '/home' },
+    { icon: FaUserPlus, label: 'Company Invites', path: '/invites' },
     { icon: FaBook, label: 'Cash Book', path: '/cashbook' },
     { icon: FaCommentDots, label: 'Help', path: '/help' },
     { icon: FaCog, label: 'Settings', path: '/settings' },

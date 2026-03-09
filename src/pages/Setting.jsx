@@ -1,51 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog, 
-  FaMoon, FaSun, FaBars, FaTimes, FaSave, FaSpinner 
+import {
+  FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog,
+  FaMoon, FaSun, FaBars, FaTimes, FaSave, FaSpinner
 } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
-
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
-// import SwitchCompanyModal from "../components/CompanyModals/SwitchCompanyModal";
 import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
 const SettingsPage = () => {
   const { user, loading, refreshUser } = useAuth();
-
-  // Modal States
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openSwitchModal, setOpenSwitchModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState(null);
   const [openSelectModal, setOpenSelectModal] = useState(false);
-
-  // Data States
   const [companies, setCompanies] = useState([]);
   const [activeCompany, setActiveCompany] = useState(null);
   const [editingCompany, setEditingCompany] = useState(null);
   const [userCompanies, setUserCompanies] = useState([]);
 
-  // Settings States
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [activeTab, setActiveTab] = useState("companies");
 
-  // Profile Form States
   const [profileForm, setProfileForm] = useState({
     name: "",
     phone: ""
   });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [originalProfile, setOriginalProfile] = useState({});
-
-  // Mobile Menu State
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -56,7 +47,6 @@ const SettingsPage = () => {
     if (user?.companies) {
       setCompanies(user.companies);
 
-      // Verify that the active company from localStorage still exists
       const storedCompany = JSON.parse(localStorage.getItem("company"));
       if (storedCompany) {
         const companyExists = user.companies.some(c => c.id === storedCompany.id);
@@ -69,7 +59,6 @@ const SettingsPage = () => {
       }
     }
 
-    // Set profile form data when user loads
     if (user) {
       setProfileForm({
         name: user.name || "",
@@ -83,7 +72,6 @@ const SettingsPage = () => {
   }, [user]);
 
   const loadActiveCompany = () => {
-    // Only load active company from localStorage (this is the only thing we store)
     const storedCompany = JSON.parse(localStorage.getItem("company"));
     if (storedCompany) {
       setActiveCompany(storedCompany);
@@ -91,7 +79,6 @@ const SettingsPage = () => {
   };
 
   const selectCompany = (company) => {
-    // Only store the selected company in localStorage
     localStorage.setItem("company", JSON.stringify(company));
     setActiveCompany(company);
     toast.success(`Switched to ${company.name}`);
@@ -111,15 +98,12 @@ const SettingsPage = () => {
         return;
       }
 
-      // Filter out empty values
       const payload = {
         id: companyId,
         ...Object.fromEntries(
           Object.entries(updatedData).filter(([_, value]) => value !== "" && value !== null && value !== undefined)
         )
       };
-
-      console.log("Edit payload:", payload);
 
       const response = await fetch(`${API_BASE}/company/edit`, {
         method: "PUT",
@@ -130,26 +114,18 @@ const SettingsPage = () => {
         body: JSON.stringify(payload)
       });
 
-      // Parse the response
       const result = await response.json();
-      console.log("Edit response:", result);
-
-      // Check both HTTP status and success field
       if (!response.ok || !result.success) {
         toast.error(result.message || "Failed to update company");
         return;
       }
 
-      // Success case
       if (result.success) {
-        // Refresh user data from API to get updated companies
         if (refreshUser) {
           await refreshUser();
         }
 
-        // Update active company if it was edited
         if (activeCompany?.id === companyId) {
-          // Use the data returned from API for consistency
           const updatedCompany = result.data;
           localStorage.setItem("company", JSON.stringify(updatedCompany));
           setActiveCompany(updatedCompany);
@@ -165,11 +141,13 @@ const SettingsPage = () => {
     }
   };
 
-  const handleDelete = async (company) => {
-    if (!window.confirm(`Are you sure you want to delete ${company.name}? This action cannot be undone.`)) {
-      return;
-    }
+  const handleDelete = (company) => {
+    setCompanyToDelete(company);
+    setShowDeleteModal(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!companyToDelete) return;
     try {
       const token = localStorage.getItem("token");
 
@@ -178,21 +156,23 @@ const SettingsPage = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/company/${company.id}`, {
+      const response = await fetch(`${API_BASE}/company/delete`, {
         method: "DELETE",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({
+          id: companyToDelete.id
+        })
       });
 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        // Refresh user data from API
         await refreshUser();
 
-        // Clear active company if it was deleted
-        if (activeCompany?.id === company.id) {
+        if (activeCompany?.id === companyToDelete.id) {
           localStorage.removeItem("company");
           setActiveCompany(null);
         }
@@ -201,11 +181,16 @@ const SettingsPage = () => {
       } else {
         toast.error(result.message || "Failed to delete company");
       }
+
     } catch (error) {
       console.error("Delete error:", error);
       toast.error("Network error. Please try again.");
     }
+
+    setShowDeleteModal(false);
+    setCompanyToDelete(null);
   };
+
 
   const handleCompanyCreated = async (newCompany) => {
     try {
@@ -216,7 +201,6 @@ const SettingsPage = () => {
         return;
       }
 
-      // Make API call to create company
       const response = await fetch(`${API_BASE}/company/create`, {
         method: "POST",
         headers: {
@@ -234,10 +218,7 @@ const SettingsPage = () => {
       }
 
       if (result.success) {
-        // Refresh user data from API to get updated companies
         await refreshUser();
-
-        // Auto switch to new company (store in localStorage)
         selectCompany(result.data);
         setOpenCreateModal(false);
         toast.success("Company created successfully! 🎉");
@@ -250,15 +231,10 @@ const SettingsPage = () => {
     }
   };
 
-  const handleSwitchFromModal = (company) => {
-    selectCompany(company);
-  };
-
   const handleAddCompanyClick = () => {
     setOpenCreateModal(true);
   };
 
-  // Profile form handlers
   const handleProfileChange = (e) => {
     setProfileForm({
       ...profileForm,
@@ -267,7 +243,6 @@ const SettingsPage = () => {
   };
 
   const handleProfileUpdate = async () => {
-    // Check if any fields were changed
     const changedFields = {};
     Object.keys(profileForm).forEach(key => {
       if (profileForm[key] !== originalProfile[key]) {
@@ -290,13 +265,10 @@ const SettingsPage = () => {
         return;
       }
 
-      // Prepare payload with user_id and changed fields
       const payload = {
         user_id: user.id,
         ...changedFields
       };
-
-      console.log("Profile update payload:", payload);
 
       const response = await fetch(`${API_BASE}/users/details/edit-profile`, {
         method: "PUT",
@@ -308,7 +280,6 @@ const SettingsPage = () => {
       });
 
       const result = await response.json();
-      console.log("Profile update response:", result);
 
       if (!response.ok) {
         toast.error(result.message || "Failed to update profile");
@@ -316,12 +287,8 @@ const SettingsPage = () => {
       }
 
       if (result.success) {
-        // Refresh user data to get updated information
         await refreshUser();
-        
-        // Update original profile state with new values
         setOriginalProfile({ ...profileForm });
-        
         toast.success("Profile updated successfully! 🎉");
       } else {
         toast.error(result.message || "Something went wrong");
@@ -782,13 +749,6 @@ const SettingsPage = () => {
         onSuccess={handleEditSubmit}
         company={editingCompany}
       />
-{/* 
-      <SwitchCompanyModal
-        isOpen={openSwitchModal}
-        onClose={() => setOpenSwitchModal(false)}
-        companies={companies}
-        onSwitch={handleSwitchFromModal}
-      /> */}
 
       <SelectCompanyModal
         isOpen={openSelectModal}
@@ -815,6 +775,47 @@ const SettingsPage = () => {
         className="mt-12"
         toastClassName="!text-sm sm:!text-base"
       />
+
+      {/* delete modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-xl w-[400px] p-6"
+            >
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Delete Company
+              </h2>
+
+              <p className="text-gray-600 text-sm mb-6">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">{companyToDelete?.name}</span>?
+                This action cannot be undone.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 rounded-lg border hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
 
       <style>{`
         @keyframes blob {

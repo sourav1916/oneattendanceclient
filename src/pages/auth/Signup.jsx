@@ -22,9 +22,7 @@ const API_BASE = "https://api-attendance.onesaas.in";
 const Signup = () => {
   const navigate = useNavigate();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [middleName, setMiddleName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -37,7 +35,6 @@ const Signup = () => {
   const [focusedField, setFocusedField] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const [otpCode, setOtpCode] = useState(null);
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -129,7 +126,7 @@ const Signup = () => {
 
   const handleRequestOtp = async () => {
     if (!email) return showToast("Please enter email", "error");
-    if (!firstName || !lastName)
+    if (!fullName)
       return showToast("Please enter your full name", "error");
 
     try {
@@ -197,12 +194,14 @@ const Signup = () => {
 
     try {
       setLoading(true);
-
+      const name = fullName;
       const res = await fetch(`${API_BASE}/otp/signup/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
+          name,
+          phone,
           password
         })
       });
@@ -437,35 +436,10 @@ const Signup = () => {
                         <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
                           type="text"
-                          placeholder="First name"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          onFocus={() => setFocusedField('firstName')}
-                          onBlur={() => setFocusedField(null)}
-                          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                        />
-                      </div>
-                      <div className="relative">
-                        <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Middle name"
-                          value={middleName}
-                          onChange={(e) => setMiddleName(e.target.value)}
-                          onFocus={() => setFocusedField('middleName')}
-                          onBlur={() => setFocusedField(null)}
-                          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
-                        />
-                      </div>
-
-                      <div className="relative">
-                        <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Last name"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          onFocus={() => setFocusedField('lastName')}
+                          placeholder="Full name"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          onFocus={() => setFocusedField('fullName')}
                           onBlur={() => setFocusedField(null)}
                           className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
                         />

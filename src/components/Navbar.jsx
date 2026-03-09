@@ -98,7 +98,7 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen }) => {
                                     </p>
 
                                     <p className="text-[10px] text-white/70">
-                                        {user?.roleBadge || "User"}
+                                        {user?.role}
                                     </p>
                                 </div>
 

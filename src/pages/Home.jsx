@@ -4,9 +4,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
 import { 
-  HiOutlineUserGroup, 
-  HiOutlineOfficeBuilding, 
-  HiOutlineSwitchHorizontal,
+  HiOutlineUserGroup,
   HiOutlineQuestionMarkCircle,
   HiOutlineSparkles,
   HiOutlineArrowRight,
@@ -23,13 +21,9 @@ const API_BASE = "https://api-attendance.onesaas.in";
 
 function HomePage() {
   const { user, loading } = useAuth();
-  
-  // Modal States
-  const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
+    const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
   const [openSelectCompanyModal, setOpenSelectCompanyModal] = useState(false);
-  
-  // Data States
   const [userCompanies, setUserCompanies] = useState([]);
 
   // Show loading state

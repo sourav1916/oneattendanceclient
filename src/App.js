@@ -10,6 +10,7 @@ import { useAuth } from "./context/AuthContext";
 import NotFound from "./pages/NotFound";
 import Cashbook from "./pages/CashBook";
 import SettingsPage from "./pages/Setting";
+import CompanyInvites from "./pages/CompanyInvites";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -69,6 +70,16 @@ function AppContent() {
           <ProtectedRoute>
             <MainLayout>
               <SettingsPage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invites"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <CompanyInvites />
             </MainLayout>
           </ProtectedRoute>
         }
