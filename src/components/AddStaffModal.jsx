@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { toast } from "react-toastify";
 import {
-  FaUserPlus, FaUserTag, FaUserTie, FaKey,
+  FaUserPlus, FaUserTag, FaUserCog,
   FaTimes, FaCheck, FaSpinner, FaUserCircle,
-  FaBriefcase, FaClock, FaShieldAlt, FaSearch
+  FaBriefcase, FaClock, FaShieldAlt, FaUserTie
 } from "react-icons/fa";
 import SearchableSelect from "./SearchableSelect";
 
@@ -14,31 +14,83 @@ const API_BASE = "https://api-attendance.onesaas.in";
 function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [users, setUsers] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [salaryTypes, setSalaryTypes] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [designation, setDesignation] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [staffType, setStaffType] = useState(null);
+  const [employmentType, setEmploymentType] = useState(null);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
+  const [isLoadingSalaryTypes, setIsLoadingSalaryTypes] = useState(false);
+  const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
+  const [isLoadingEmploymentTypes, setIsLoadingEmploymentTypes] = useState(false);
+  
+  const [designationOptions, setDesignationOptions] = useState([]);
+  const [employmentTypeOptions, setEmploymentTypeOptions] = useState([]);
 
-  const designationOptions = [
-    { value: "manager", label: "Manager", icon: FaUserTie },
-    { value: "supervisor", label: "Supervisor", icon: FaUserTag },
-    { value: "staff", label: "Staff", icon: FaUserCircle }
-  ];
+  // Icon maps
+  const designationIconMap = {
+    admin: FaUserTie,
+    hr_manager: FaUserCog,
+    hr_executive: FaUserCog,
+    manager: FaUserTie,
+    supervisor: FaUserTag,
+    team_lead: FaUserTag,
+    senior_employee: FaUserCircle
+  };
 
-  const staffTypeOptions = [
-    { value: "monthly", label: "Monthly Staff", icon: FaClock, description: "Fixed monthly salary" },
-    { value: "weekly", label: "Weekly Staff", icon: FaClock, description: "Weekly wage basis" },
-    { value: "hourly", label: "Hourly Staff", icon: FaClock, description: "Hourly rate basis" },
-    { value: "work_basis", label: "Work Basis Staff", icon: FaBriefcase, description: "Project/Work based" }
-  ];
+  const employmentIconMap = {
+    full_time: FaClock,
+    part_time: FaClock,
+    contract: FaBriefcase,
+    intern: FaUserTag,
+    freelancer: FaBriefcase
+  };
 
+  const employmentDescriptionMap = {
+    full_time: "Full time employment",
+    part_time: "Part time employment",
+    contract: "Contract based",
+    intern: "Internship",
+    freelancer: "Freelance work"
+  };
+
+  // Map icon based on salary type key
+  const getSalaryTypeIcon = (key) => {
+    switch(key?.toLowerCase()) {
+      case 'hourly':
+        return FaClock;
+      case 'monthly':
+        return FaClock;
+      default:
+        return FaBriefcase;
+    }
+  };
+
+  // Format salary types from API response
+  const formatSalaryTypeOptions = (salaryTypesData) => {
+    if (!salaryTypesData || !Array.isArray(salaryTypesData)) return [];
+    
+    return salaryTypesData.map(type => ({
+      value: type.value,
+      label: type.key.charAt(0) + type.key.slice(1).toLowerCase(),
+      key: type.key,
+      icon: getSalaryTypeIcon(type.key),
+      description: `${type.key.toLowerCase()} salary basis`
+    }));
+  };
+
+  // Fetch all constants when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
       fetchPermissions();
+      fetchEmploymentTypes();
+      fetchDesignations();
+      fetchSalaryTypes();
     }
   }, [isOpen]);
 
@@ -96,6 +148,93 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  const fetchEmploymentTypes = async () => {
+    setIsLoadingEmploymentTypes(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/constants/?type=employment`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        const options = data.data.employment_types.map((item) => ({
+          value: item.value,
+          label: item.key
+            .toLowerCase()
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase()),
+          icon: employmentIconMap[item.value] || FaBriefcase,
+          description: employmentDescriptionMap[item.value] || "Employment type"
+        }));
+        setEmploymentTypeOptions(options);
+      }
+    } catch (err) {
+      console.error("Failed to fetch employment types", err);
+      toast.error("Failed to fetch employment types");
+    } finally {
+      setIsLoadingEmploymentTypes(false);
+    }
+  };
+
+  const fetchDesignations = async () => {
+    setIsLoadingDesignations(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/constants/?type=designation`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        const options = data.data.designations.map((item) => ({
+          value: item.value,
+          label: item.key
+            .toLowerCase()
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase()),
+          icon: designationIconMap[item.value] || FaUserCircle
+        }));
+        setDesignationOptions(options);
+      }
+    } catch (err) {
+      console.error("Failed to fetch designations", err);
+      toast.error("Failed to fetch designations");
+    } finally {
+      setIsLoadingDesignations(false);
+    }
+  };
+
+  const fetchSalaryTypes = async () => {
+    setIsLoadingSalaryTypes(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE}/constants/?type=salary`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const formattedTypes = formatSalaryTypeOptions(result.data.salary_types);
+        setSalaryTypes(formattedTypes);
+      }
+    } catch (err) {
+      console.error("Error fetching salary types:", err);
+      toast.error("Failed to fetch salary types");
+    } finally {
+      setIsLoadingSalaryTypes(false);
+    }
+  };
+
   const permissionOptions = permissions.map(p => ({
     value: p.id,
     label: p.name,
@@ -114,7 +253,12 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
 
     if (!staffType) {
-      toast.warning("Please select staff type");
+      toast.warning("Please select salary type");
+      return;
+    }
+
+    if (!employmentType) {
+      toast.warning("Please select employment type");
       return;
     }
 
@@ -125,12 +269,15 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const company = JSON.parse(localStorage.getItem("company"));
 
       const payload = {
+        company_id: company?.id || 6,
         user_id: selectedUser.id,
-        company_id: company?.id,
+        permissions: selectedPermissions.map(p => p.value),
+        employment_type: employmentType.value,
         designation: designation.value,
-        staff_type: staffType.value,
-        permissions: selectedPermissions.map(p => p.value)
+        salary_type: staffType.value
       };
+
+      console.log("Submitting payload:", payload);
 
       const response = await fetch(`${API_BASE}/company/invites/send`, {
         method: "POST",
@@ -147,8 +294,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         throw new Error(data?.message || "Failed to create staff");
       }
 
-      toast.success("Staff invited successfully");
-
+      toast.success("Staff created successfully");
       onSuccess?.();
       handleClose();
 
@@ -160,11 +306,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-
   const handleClose = () => {
     setSelectedUser(null);
     setDesignation(null);
     setStaffType(null);
+    setEmploymentType(null);
     setSelectedPermissions([]);
     setIsSubmitting(false);
     onClose();
@@ -208,6 +354,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       }
     })
   };
+
+  // Loading state for any of the constants
+  const isLoadingConstants = isLoadingEmploymentTypes || isLoadingDesignations || isLoadingSalaryTypes;
 
   return (
     <AnimatePresence mode="wait">
@@ -287,8 +436,44 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                   )}
                 </motion.div>
 
-                {/* Designation & Staff Type - Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Three Column Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Employment Type */}
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.15 }}
+                    className="space-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <FaBriefcase className="w-4 h-4 text-indigo-500" />
+                      Employment Type
+                    </label>
+                    {isLoadingEmploymentTypes ? (
+                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        options={employmentTypeOptions}
+                        value={employmentType}
+                        onChange={(option) => setEmploymentType(option)}
+                        placeholder="Select type"
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <div>
+                              <div>{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
+                            </div>
+                          </div>
+                        )}
+                      />
+                    )}
+                  </motion.div>
+
                   {/* Designation */}
                   <motion.div
                     initial={{ x: -20, opacity: 0 }}
@@ -300,22 +485,29 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                       <FaUserTie className="w-4 h-4 text-indigo-500" />
                       Designation
                     </label>
-                    <Select
-                      options={designationOptions}
-                      value={designation}
-                      onChange={(option) => setDesignation(option)}
-                      placeholder="Select designation"
-                      styles={customSelectStyles}
-                      formatOptionLabel={({ label, icon: Icon }) => (
-                        <div className="flex items-center gap-2">
-                          {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                          <span>{label}</span>
-                        </div>
-                      )}
-                    />
+                    {isLoadingDesignations ? (
+                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        options={designationOptions}
+                        value={designation}
+                        onChange={(option) => setDesignation(option)}
+                        placeholder="Select designation"
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <span>{label}</span>
+                          </div>
+                        )}
+                      />
+                    )}
                   </motion.div>
 
-                  {/* Staff Type */}
+                  {/* Salary Type */}
                   <motion.div
                     initial={{ x: 20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -323,25 +515,32 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     className="space-y-2"
                   >
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaBriefcase className="w-4 h-4 text-indigo-500" />
-                      Staff Type
+                      <FaClock className="w-4 h-4 text-indigo-500" />
+                      Salary Type
                     </label>
-                    <Select
-                      options={staffTypeOptions}
-                      value={staffType}
-                      onChange={(option) => setStaffType(option)}
-                      placeholder="Select staff type"
-                      styles={customSelectStyles}
-                      formatOptionLabel={({ label, description, icon: Icon }) => (
-                        <div className="flex items-center gap-2">
-                          {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                          <div>
-                            <div>{label}</div>
-                            {description && <div className="text-xs text-gray-400">{description}</div>}
+                    {isLoadingSalaryTypes ? (
+                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        options={salaryTypes}
+                        value={staffType}
+                        onChange={(option) => setStaffType(option)}
+                        placeholder="Select salary type"
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <div>
+                              <div>{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    />
+                        )}
+                      />
+                    )}
                   </motion.div>
                 </div>
 
@@ -378,6 +577,25 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     />
                   )}
                 </motion.div>
+
+                {/* Selected User Summary */}
+                {selectedUser && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold">
+                        {selectedUser.full_name?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{selectedUser.full_name}</h4>
+                        <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
 
@@ -396,7 +614,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingConstants}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting ? (
