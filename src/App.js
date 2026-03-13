@@ -11,6 +11,8 @@ import NotFound from "./pages/NotFound";
 import Cashbook from "./pages/CashBook";
 import SettingsPage from "./pages/Setting";
 import CompanyInvites from "./pages/CompanyInvites";
+import HelpPage from "./pages/Help";
+import MyInvites from "./pages/auth/invites";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -75,11 +77,31 @@ function AppContent() {
         }
       />
       <Route
-        path="/invites"
+        path="/company-invites"
         element={
           <ProtectedRoute>
             <MainLayout>
               <CompanyInvites />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/help"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <HelpPage />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-invites"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <MyInvites />
             </MainLayout>
           </ProtectedRoute>
         }

@@ -10,7 +10,7 @@ import {
 const API_BASE = "https://api-attendance.onesaas.in";
 const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
 
-function CreateCompanyModal({ isOpen, onClose, onSuccess, userId }) {
+function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreated }) {
   const [companyForm, setCompanyForm] = useState({
     owner_user_id: userId,
     name: "",
@@ -172,6 +172,12 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId }) {
 
       if (result.success) {
         localStorage.setItem("company", JSON.stringify(result.data));
+        
+        // Call the onCompanyCreated callback to refresh user data
+        if (onCompanyCreated) {
+          await onCompanyCreated();
+        }
+        
         toast.success("Company created successfully 🎉");
         onSuccess?.(result.data);
         handleClose();

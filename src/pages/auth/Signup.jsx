@@ -382,7 +382,7 @@ const Signup = () => {
           {/* Right Side - Signup Card */}
           <motion.div
             variants={itemVariants}
-            className="w-full lg:w-[450px]"
+            className="w-full lg:w-96"
           >
             <motion.div
               initial={{ y: 50, opacity: 0 }}
