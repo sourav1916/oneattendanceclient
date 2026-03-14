@@ -20,14 +20,14 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [isLoadingSalaryTypes, setIsLoadingSalaryTypes] = useState(false);
   const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
   const [isLoadingEmploymentTypes, setIsLoadingEmploymentTypes] = useState(false);
-  
+
   const [designationOptions, setDesignationOptions] = useState([]);
   const [employmentTypeOptions, setEmploymentTypeOptions] = useState([]);
 
@@ -60,7 +60,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
 
   // Map icon based on salary type key
   const getSalaryTypeIcon = (key) => {
-    switch(key?.toLowerCase()) {
+    switch (key?.toLowerCase()) {
       case 'hourly':
         return FaClock;
       case 'monthly':
@@ -73,7 +73,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   // Format salary types from API response
   const formatSalaryTypeOptions = (salaryTypesData) => {
     if (!salaryTypesData || !Array.isArray(salaryTypesData)) return [];
-    
+
     return salaryTypesData.map(type => ({
       value: type.value,
       label: type.key.charAt(0) + type.key.slice(1).toLowerCase(),
@@ -94,11 +94,33 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
   }, [isOpen]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (searchQuery = "") => {
     setIsLoadingUsers(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/users/list`, {
+      const company = JSON.parse(localStorage.getItem("company"));
+
+      if (!company?.id) {
+        console.error("No company selected");
+        toast.error("Please select a company first");
+        setIsLoadingUsers(false);
+        return;
+      }
+
+      // Build query params
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "10",
+        sort: "name",
+        order: "asc"
+      });
+
+      // Add search if provided
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+
+      const res = await fetch(`${API_BASE}/company/${company.id}/users/available?${params.toString()}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -106,20 +128,37 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         }
       });
 
+      if (!res.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
       const result = await res.json();
 
       if (result.success) {
-        const formatted = result.data.map(u => ({
+        // Handle different possible response structures
+        const usersData = result.data || result.users || [];
+
+        const formatted = usersData.map(u => ({
           id: u.id,
           full_name: u.name || u.email || "No Name",
           email: u.email,
-          avatar: u.avatar || null
+          avatar: u.avatar || null,
+          phone: u.phone || null,
+          role: u.role || null
         }));
+
         setUsers(formatted);
+
+        // Optional: Handle pagination info if API returns it
+        if (result.pagination) {
+          console.log('Pagination:', result.pagination);
+        }
+      } else {
+        throw new Error(result.message || 'Failed to fetch users');
       }
     } catch (err) {
       console.error("Error fetching users:", err);
-      toast.error("Failed to fetch users");
+      toast.error(err.message || "Failed to fetch users");
     } finally {
       setIsLoadingUsers(false);
     }

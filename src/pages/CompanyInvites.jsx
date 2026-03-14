@@ -20,6 +20,8 @@ import {
   FaSearch
 } from "react-icons/fa";
 import EditStaffModal from "../components/EditStaffModal";
+import Skeleton from "../components/SkeletonComponent";
+
 
 export default function CompanyInvites() {
   const [invites, setInvites] = useState([]);
@@ -350,7 +352,9 @@ export default function CompanyInvites() {
       </motion.div>
     </motion.div>
   );
-
+  if (loading) {
+    return <Skeleton />;
+  }
   if (!company_id) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">

@@ -12,7 +12,7 @@ import {
   HiOutlineClock,
   HiOutlineUsers
 } from "react-icons/hi";
-
+import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/AddStaffModal";
 import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
@@ -27,18 +27,7 @@ function HomePage() {
   const [userCompanies, setUserCompanies] = useState([]);
   // Show loading state
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <HiOutlineSparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-indigo-600 animate-pulse" />
-          </div>
-          <p className="text-xl font-semibold text-slate-800">Loading your workspace...</p>
-          <p className="text-sm text-slate-500 mt-2">Please wait</p>
-        </div>
-      </div>
-    );
+    return <Skeleton />;
   }
 
   // Check if user exists

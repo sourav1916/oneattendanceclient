@@ -20,6 +20,7 @@ import {
     FaUser,
     FaMapMarkerAlt
 } from "react-icons/fa";
+import Skeleton from "../../components/SkeletonComponent";
 
 export default function MyInvites() {
     const [invites, setInvites] = useState([]);
@@ -31,6 +32,7 @@ export default function MyInvites() {
     const [actionMenuId, setActionMenuId] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -40,7 +42,7 @@ export default function MyInvites() {
 
     const API_BASE = "https://api-attendance.onesaas.in";
 
-    const fetchInvites = async (page = currentPage) => {
+    const fetchInvites = async (page = currentPage, isFilterChange = false) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
@@ -73,9 +75,7 @@ export default function MyInvites() {
             const result = await response.json();
 
             if (result.success) {
-                // Set invites from the data array
                 setInvites(result.data || []);
-                // Calculate total pages from total and limit
                 const total = result.total || 0;
                 setTotalItems(total);
                 setTotalPages(Math.ceil(total / itemsPerPage));
@@ -88,24 +88,34 @@ export default function MyInvites() {
             console.error('Error fetching invites:', err);
         } finally {
             setLoading(false);
+            setIsInitialLoad(false);
         }
     };
 
+    // Initial load
     useEffect(() => {
         fetchInvites(1);
-    }, [statusFilter]); // Refetch when status filter changes
+    }, []); // Empty dependency array - only run once on mount
 
-    // Debounce search to avoid too many API calls
+    // Handle status filter changes
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchTerm !== undefined) {
-                setCurrentPage(1);
-                fetchInvites(1);
-            }
-        }, 500);
+        if (!isInitialLoad) {
+            setCurrentPage(1);
+            fetchInvites(1, true);
+        }
+    }, [statusFilter]); // Only depend on statusFilter
 
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
+    // Debounce search
+    useEffect(() => {
+        if (!isInitialLoad) {
+            const timer = setTimeout(() => {
+                setCurrentPage(1);
+                fetchInvites(1, true);
+            }, 500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [searchTerm]); // Only depend on searchTerm
 
     const handlePageChange = (newPage) => {
         if (newPage >= 1 && newPage <= totalPages) {
@@ -137,7 +147,6 @@ export default function MyInvites() {
             const result = await response.json();
 
             if (result.success) {
-                // Update local state
                 setInvites(prev => prev.map(invite =>
                     invite.invite_token === token ? { ...invite, status: 'accepted' } : invite
                 ));
@@ -175,7 +184,6 @@ export default function MyInvites() {
             const result = await response.json();
 
             if (result.success) {
-                // Update local state
                 setInvites(prev => prev.map(invite =>
                     invite.invite_token === token ? { ...invite, status: 'rejected' } : invite
                 ));
@@ -277,7 +285,12 @@ export default function MyInvites() {
         setModalType(null);
     };
 
-    // Modal Components
+    // Show skeleton only on initial load
+    if (isInitialLoad) {
+        return <Skeleton />;
+    }
+
+    // Modal Components (keep all your modal components as they are)
     const ViewModal = ({ invite, onClose }) => (
         <motion.div
             initial={{ opacity: 0 }}
@@ -593,25 +606,17 @@ export default function MyInvites() {
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white"
                         >
-                            <option key="filter-all" value="all">All Status</option>
-                            <option key="filter-pending" value="pending">Pending</option>
-                            <option key="filter-accepted" value="accepted">Accepted</option>
-                            <option key="filter-rejected" value="rejected">Rejected</option>
-                            <option key="filter-cancelled" value="cancelled">Cancelled</option>
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="accepted">Accepted</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
 
-                {/* Loading State */}
-                {loading && (
-                    <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-                        <FaSpinner className="animate-spin text-purple-500 text-4xl mx-auto mb-4" />
-                        <p className="text-gray-500">Loading invitations...</p>
-                    </div>
-                )}
-
                 {/* Error State */}
-                {error && !loading && (
+                {error && (
                     <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
                         <FaExclamationCircle className="mx-auto text-red-500 text-4xl mb-4" />
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Loading Invites</h3>
@@ -626,7 +631,7 @@ export default function MyInvites() {
                 )}
 
                 {/* Table View (Desktop) */}
-                {!loading && !error && filteredInvites.length > 0 && (
+                {!error && filteredInvites.length > 0 && (
                     <>
                         <div className="hidden lg:block bg-white rounded-2xl shadow-sm overflow-hidden">
                             <div className="overflow-x-auto">
@@ -926,7 +931,7 @@ export default function MyInvites() {
                 )}
 
                 {/* Empty State */}
-                {!loading && !error && filteredInvites.length === 0 && (
+                {!error && filteredInvites.length === 0 && (
                     <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
                         <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
                             <FaEnvelope className="text-gray-400 text-3xl" />
