@@ -440,8 +440,6 @@ export default function CompanyInvites() {
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employment</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -482,26 +480,6 @@ export default function CompanyInvites() {
                               {status.text}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-2">
-                              <FaClock size={12} className="text-gray-400" />
-                              {formatDate(invite.expires_at)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-wrap gap-1 max-w-[200px]">
-                              {invite.permissions?.slice(0, 2).map(perm => (
-                                <span key={perm.id} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                  {perm.name.substring(0, 15)}...
-                                </span>
-                              ))}
-                              {invite.permissions?.length > 2 && (
-                                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                  +{invite.permissions.length - 2}
-                                </span>
-                              )}
-                            </div>
-                          </td>
                           <td className="px-6 py-4 relative">
                             <button
                               onClick={() => setActionMenuId(actionMenuId === invite.token ? null : invite.token)}
@@ -516,7 +494,7 @@ export default function CompanyInvites() {
                                   initial={{ opacity: 0, scale: 0.95 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   exit={{ opacity: 0, scale: 0.95 }}
-                                  className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-10"
+                                  className="absolute right-[100%] top-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-10"
                                 >
                                   <div className="py-1">
                                     <button

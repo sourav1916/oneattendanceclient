@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    FaUserTie,
     FaClock,
     FaExclamationCircle,
     FaSpinner,
@@ -12,15 +11,15 @@ import {
     FaEnvelope,
     FaPhone,
     FaCalendarAlt,
-    FaBriefcase,
-    FaDollarSign,
-    FaTag,
     FaSearch,
     FaBuilding,
     FaCheck,
-    FaBan
+    FaBan,
+    FaChevronLeft,
+    FaChevronRight,
+    FaUser,
+    FaMapMarkerAlt
 } from "react-icons/fa";
-import { MdWork } from "react-icons/md";
 
 export default function MyInvites() {
     const [invites, setInvites] = useState([]);
@@ -33,14 +32,34 @@ export default function MyInvites() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [itemsPerPage] = useState(10);
+
     const API_BASE = "https://api-attendance.onesaas.in";
 
-    const fetchInvites = async () => {
+    const fetchInvites = async (page = currentPage) => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
 
-            const response = await fetch(`${API_BASE}/company/invites/user/list`, {
+            // Build query params
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: itemsPerPage.toString()
+            });
+
+            // Add filters if they exist
+            if (statusFilter !== 'all') {
+                params.append('status', statusFilter);
+            }
+            if (searchTerm) {
+                params.append('search', searchTerm);
+            }
+
+            const response = await fetch(`${API_BASE}/company/invites/my?${params.toString()}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -54,7 +73,12 @@ export default function MyInvites() {
             const result = await response.json();
 
             if (result.success) {
-                setInvites(result.data);
+                // Set invites from the data array
+                setInvites(result.data || []);
+                // Calculate total pages from total and limit
+                const total = result.total || 0;
+                setTotalItems(total);
+                setTotalPages(Math.ceil(total / itemsPerPage));
                 setError(null);
             } else {
                 throw new Error(result.message || 'Failed to fetch invites');
@@ -68,20 +92,42 @@ export default function MyInvites() {
     };
 
     useEffect(() => {
-        fetchInvites();
-    }, []);
+        fetchInvites(1);
+    }, [statusFilter]); // Refetch when status filter changes
+
+    // Debounce search to avoid too many API calls
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm !== undefined) {
+                setCurrentPage(1);
+                fetchInvites(1);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+            fetchInvites(newPage);
+        }
+    };
 
     const handleAcceptInvite = async (token) => {
         try {
             setProcessingId(token);
             const authToken = localStorage.getItem('token');
 
-            const response = await fetch(`${API_BASE}/user/invites/${token}/accept`, {
+            const response = await fetch(`${API_BASE}/company/invites/accept`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    token: token
+                })
             });
 
             if (!response.ok) {
@@ -93,7 +139,7 @@ export default function MyInvites() {
             if (result.success) {
                 // Update local state
                 setInvites(prev => prev.map(invite =>
-                    invite.token === token ? { ...invite, status: 'accepted' } : invite
+                    invite.invite_token === token ? { ...invite, status: 'accepted' } : invite
                 ));
                 closeModal();
             } else {
@@ -111,12 +157,15 @@ export default function MyInvites() {
             setProcessingId(token);
             const authToken = localStorage.getItem('token');
 
-            const response = await fetch(`${API_BASE}/user/invites/${token}/reject`, {
-                method: 'POST',
+            const response = await fetch(`${API_BASE}/company/invites/reject`, {
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    "token": token
+                })
             });
 
             if (!response.ok) {
@@ -128,7 +177,7 @@ export default function MyInvites() {
             if (result.success) {
                 // Update local state
                 setInvites(prev => prev.map(invite =>
-                    invite.token === token ? { ...invite, status: 'rejected' } : invite
+                    invite.invite_token === token ? { ...invite, status: 'rejected' } : invite
                 ));
                 closeModal();
             } else {
@@ -152,7 +201,7 @@ export default function MyInvites() {
             };
         }
 
-        switch (status) {
+        switch (status?.toLowerCase()) {
             case 'accepted':
                 return {
                     color: 'bg-green-100 text-green-700 border-green-200',
@@ -181,12 +230,13 @@ export default function MyInvites() {
                 return {
                     color: 'bg-gray-100 text-gray-700 border-gray-200',
                     icon: FaExclamationCircle,
-                    text: status
+                    text: status || 'Unknown'
                 };
         }
     };
 
     const formatDate = (date) => {
+        if (!date) return 'N/A';
         return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -196,12 +246,22 @@ export default function MyInvites() {
         });
     };
 
-    const filteredInvites = invites.filter(invite => {
-        const matchesSearch =
-            invite.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            invite.designation?.toLowerCase().includes(searchTerm.toLowerCase());
+    const formatDesignation = (designation) => {
+        if (!designation) return 'N/A';
+        return designation.split('_').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+    };
 
-        const matchesStatus = statusFilter === 'all' || invite.status === statusFilter;
+    // Client-side filtering as backup
+    const filteredInvites = invites.filter(invite => {
+        const matchesSearch = !searchTerm ||
+            invite.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            formatDesignation(invite.designation).toLowerCase().includes(searchTerm.toLowerCase()) ||
+            invite.invited_by?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus = statusFilter === 'all' ||
+            invite.status?.toLowerCase() === statusFilter.toLowerCase();
 
         return matchesSearch && matchesStatus;
     });
@@ -252,31 +312,47 @@ export default function MyInvites() {
                         <div>
                             <h3 className="text-lg font-semibold text-gray-800">{invite.company?.name || 'Company Name'}</h3>
                             <p className="text-gray-500 flex items-center gap-2 mt-1">
-                                <FaEnvelope className="text-gray-400" size={14} />
-                                {invite.company?.email || 'No email provided'}
+                                <FaMapMarkerAlt className="text-gray-400" size={14} />
+                                {[invite.company?.city, invite.company?.state, invite.company?.country]
+                                    .filter(Boolean).join(', ') || 'Location not provided'}
                             </p>
-                            {invite.company?.phone && (
-                                <p className="text-gray-500 flex items-center gap-2 mt-1">
-                                    <FaPhone className="text-gray-400" size={14} />
-                                    {invite.company.phone}
-                                </p>
-                            )}
                         </div>
                     </div>
+
+                    {/* Invited By */}
+                    {invite.invited_by && (
+                        <div className="mb-6 p-4 bg-purple-50 rounded-xl">
+                            <h4 className="text-sm font-medium text-purple-700 mb-3">Invited By</h4>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center">
+                                    <FaUser className="text-purple-600" size={16} />
+                                </div>
+                                <div>
+                                    <p className="font-medium text-gray-800">{invite.invited_by.name}</p>
+                                    <p className="text-sm text-gray-600">{invite.invited_by.email}</p>
+                                    {invite.invited_by.phone && (
+                                        <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+                                            <FaPhone size={12} /> {invite.invited_by.phone}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Details Grid */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
                         <div className="bg-gray-50 p-4 rounded-xl">
                             <p className="text-xs text-gray-500 mb-1">Designation</p>
-                            <p className="font-medium text-gray-800">{invite.designation?.replace(/_/g, ' ')}</p>
+                            <p className="font-medium text-gray-800">{formatDesignation(invite.designation)}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl">
                             <p className="text-xs text-gray-500 mb-1">Employment Type</p>
-                            <p className="font-medium text-gray-800">{invite.employment_type?.replace(/_/g, ' ')}</p>
+                            <p className="font-medium text-gray-800">{formatDesignation(invite.employment_type)}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl">
                             <p className="text-xs text-gray-500 mb-1">Salary Type</p>
-                            <p className="font-medium text-gray-800">{invite.salary_type}</p>
+                            <p className="font-medium text-gray-800">{formatDesignation(invite.salary_type)}</p>
                         </div>
                         <div className="bg-gray-50 p-4 rounded-xl">
                             <p className="text-xs text-gray-500 mb-1">Status</p>
@@ -294,7 +370,7 @@ export default function MyInvites() {
                             <div className="flex flex-wrap gap-2">
                                 {invite.permissions.map(perm => (
                                     <span
-                                        key={perm.id}
+                                        key={`perm-${perm.id}-${invite.invite_id}`}
                                         className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm border border-purple-100"
                                     >
                                         {perm.name}
@@ -353,11 +429,11 @@ export default function MyInvites() {
                             Cancel
                         </button>
                         <button
-                            onClick={() => onConfirm(invite.token)}
-                            disabled={processingId === invite.token}
+                            onClick={() => onConfirm(invite.invite_token)}
+                            disabled={processingId === invite.invite_token}
                             className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-300 flex items-center justify-center gap-2"
                         >
-                            {processingId === invite.token && <FaSpinner className="animate-spin" />}
+                            {processingId === invite.invite_token && <FaSpinner className="animate-spin" />}
                             Accept
                         </button>
                     </div>
@@ -399,11 +475,11 @@ export default function MyInvites() {
                             Cancel
                         </button>
                         <button
-                            onClick={() => onConfirm(invite.token)}
-                            disabled={processingId === invite.token}
+                            onClick={() => onConfirm(invite.invite_token)}
+                            disabled={processingId === invite.invite_token}
                             className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-300 flex items-center justify-center gap-2"
                         >
-                            {processingId === invite.token && <FaSpinner className="animate-spin" />}
+                            {processingId === invite.invite_token && <FaSpinner className="animate-spin" />}
                             Reject
                         </button>
                     </div>
@@ -411,6 +487,80 @@ export default function MyInvites() {
             </motion.div>
         </motion.div>
     );
+
+    // Pagination Component
+    const Pagination = () => {
+        if (totalPages <= 1) return null;
+
+        return (
+            <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6 rounded-b-2xl">
+                <div className="flex justify-between flex-1 sm:hidden">
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Previous
+                    </button>
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Next
+                    </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm text-gray-700">
+                            Showing <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
+                            <span className="font-medium">
+                                {Math.min(currentPage * itemsPerPage, totalItems)}
+                            </span>{' '}
+                            of <span className="font-medium">{totalItems}</span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav className="relative z-0 inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="sr-only">Previous</span>
+                                <FaChevronLeft className="w-4 h-4" />
+                            </button>
+
+                            {[...Array(totalPages)].map((_, index) => {
+                                const pageNumber = index + 1;
+                                return (
+                                    <button
+                                        key={`pagination-page-${pageNumber}`}
+                                        onClick={() => handlePageChange(pageNumber)}
+                                        className={`relative inline-flex items-center px-4 py-2 text-sm font-medium border ${currentPage === pageNumber
+                                            ? 'z-10 bg-purple-50 border-purple-500 text-purple-600'
+                                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        {pageNumber}
+                                    </button>
+                                );
+                            })}
+
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="sr-only">Next</span>
+                                <FaChevronRight className="w-4 h-4" />
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
@@ -432,7 +582,7 @@ export default function MyInvites() {
                             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search by company name or designation..."
+                                placeholder="Search by company name, designation, or inviter..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
@@ -443,11 +593,11 @@ export default function MyInvites() {
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 bg-white"
                         >
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="accepted">Accepted</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option key="filter-all" value="all">All Status</option>
+                            <option key="filter-pending" value="pending">Pending</option>
+                            <option key="filter-accepted" value="accepted">Accepted</option>
+                            <option key="filter-rejected" value="rejected">Rejected</option>
+                            <option key="filter-cancelled" value="cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -467,7 +617,7 @@ export default function MyInvites() {
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Loading Invites</h3>
                         <p className="text-red-500 text-sm mb-4">{error}</p>
                         <button
-                            onClick={fetchInvites}
+                            onClick={() => fetchInvites(1)}
                             className="px-6 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all shadow-lg shadow-purple-500/25"
                         >
                             Try Again
@@ -484,12 +634,10 @@ export default function MyInvites() {
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
                                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invited By</th>
                                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
                                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employment</th>
-                                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salary Type</th>
                                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
-                                            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
                                             <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
@@ -499,29 +647,40 @@ export default function MyInvites() {
                                             const StatusIcon = status.icon;
 
                                             return (
-                                                <tr key={invite.token} className="hover:bg-gray-50 transition-colors">
+                                                <tr key={`invite-${invite.invite_id}`} className="hover:bg-gray-50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
                                                                 <FaBuilding size={12} />
                                                             </div>
                                                             <div>
-                                                                <p className="font-medium text-gray-800">{invite.company?.name}</p>
-                                                                <p className="text-xs text-gray-500">{invite.company?.email}</p>
+                                                                <p className="font-medium text-gray-800">{invite.company?.name || 'N/A'}</p>
+                                                                <p className="text-xs text-gray-500">
+                                                                    {[invite.company?.city, invite.company?.state].filter(Boolean).join(', ')}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
+                                                                <FaUser className="text-purple-600" size={10} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-medium text-gray-800">{invite.invited_by?.name}</p>
+                                                                <p className="text-xs text-gray-500">{invite.invited_by?.email}</p>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-sm text-gray-600">
-                                                        {invite.designation?.replace(/_/g, ' ')}
+                                                        {formatDesignation(invite.designation)}
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className="inline-block text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                                            {invite.employment_type?.replace(/_/g, ' ')}
+                                                            {formatDesignation(invite.employment_type)}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="inline-block text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded">
-                                                            {invite.salary_type}
+                                                        <span className="inline-block text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded ml-1">
+                                                            {formatDesignation(invite.salary_type)}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4">
@@ -530,41 +689,22 @@ export default function MyInvites() {
                                                             {status.text}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                                        <div className="flex items-center gap-2">
-                                                            <FaClock size={12} className="text-gray-400" />
-                                                            {formatDate(invite.expires_at)}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-wrap gap-1 max-w-[200px]">
-                                                            {invite.permissions?.slice(0, 2).map(perm => (
-                                                                <span key={perm.id} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                                                    {perm.name.substring(0, 15)}...
-                                                                </span>
-                                                            ))}
-                                                            {invite.permissions?.length > 2 && (
-                                                                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                                                                    +{invite.permissions.length - 2}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
                                                     <td className="px-6 py-4 relative">
                                                         <button
-                                                            onClick={() => setActionMenuId(actionMenuId === invite.token ? null : invite.token)}
+                                                            onClick={() => setActionMenuId(actionMenuId === invite.invite_id ? null : invite.invite_id)}
                                                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                                         >
                                                             <FaEllipsisV className="text-gray-500" />
                                                         </button>
 
                                                         <AnimatePresence>
-                                                            {actionMenuId === invite.token && (
+                                                            {actionMenuId === invite.invite_id && (
                                                                 <motion.div
+                                                                    key={`menu-${invite.invite_id}`}
                                                                     initial={{ opacity: 0, scale: 0.95 }}
                                                                     animate={{ opacity: 1, scale: 1 }}
                                                                     exit={{ opacity: 0, scale: 0.95 }}
-                                                                    className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-10"
+                                                                    className="absolute right-[100%] top-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 z-10"
                                                                 >
                                                                     <div className="py-1">
                                                                         <button
@@ -574,7 +714,7 @@ export default function MyInvites() {
                                                                             <FaEye size={14} className="text-gray-400" />
                                                                             View Details
                                                                         </button>
-                                                                        {invite.status === 'pending' && !isExpired(invite.expires_at) && (
+                                                                        {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
                                                                             <>
                                                                                 <button
                                                                                     onClick={() => openModal(invite, 'accept')}
@@ -613,7 +753,7 @@ export default function MyInvites() {
 
                                 return (
                                     <motion.div
-                                        key={invite.token}
+                                        key={`card-${invite.invite_id}`}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-all"
@@ -624,21 +764,24 @@ export default function MyInvites() {
                                                     <FaBuilding size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-gray-800">{invite.company?.name}</p>
-                                                    <p className="text-sm text-gray-500">{invite.company?.email}</p>
+                                                    <p className="font-semibold text-gray-800">{invite.company?.name || 'N/A'}</p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {[invite.company?.city, invite.company?.state].filter(Boolean).join(', ')}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="relative">
                                                 <button
-                                                    onClick={() => setActionMenuId(actionMenuId === invite.token ? null : invite.token)}
+                                                    onClick={() => setActionMenuId(actionMenuId === invite.invite_id ? null : invite.invite_id)}
                                                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                                 >
                                                     <FaEllipsisV className="text-gray-500" />
                                                 </button>
 
                                                 <AnimatePresence>
-                                                    {actionMenuId === invite.token && (
+                                                    {actionMenuId === invite.invite_id && (
                                                         <motion.div
+                                                            key={`mobile-menu-${invite.invite_id}`}
                                                             initial={{ opacity: 0, scale: 0.95 }}
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             exit={{ opacity: 0, scale: 0.95 }}
@@ -652,7 +795,7 @@ export default function MyInvites() {
                                                                     <FaEye size={14} className="text-gray-400" />
                                                                     View Details
                                                                 </button>
-                                                                {invite.status === 'pending' && !isExpired(invite.expires_at) && (
+                                                                {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
                                                                     <>
                                                                         <button
                                                                             onClick={() => openModal(invite, 'accept')}
@@ -677,20 +820,34 @@ export default function MyInvites() {
                                             </div>
                                         </div>
 
+                                        {/* Invited By */}
+                                        <div className="mb-3 p-2 bg-purple-50 rounded-lg">
+                                            <p className="text-xs text-purple-600 mb-1">Invited By</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center">
+                                                    <FaUser className="text-purple-600" size={10} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-800">{invite.invited_by?.name}</p>
+                                                    <p className="text-xs text-gray-600">{invite.invited_by?.email}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-500">Designation</span>
-                                                <span className="font-medium text-gray-800">{invite.designation?.replace(/_/g, ' ')}</span>
+                                                <span className="font-medium text-gray-800">{formatDesignation(invite.designation)}</span>
                                             </div>
 
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-500">Employment</span>
                                                 <div className="flex gap-1">
                                                     <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                                        {invite.employment_type?.replace(/_/g, ' ')}
+                                                        {formatDesignation(invite.employment_type)}
                                                     </span>
                                                     <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded">
-                                                        {invite.salary_type}
+                                                        {formatDesignation(invite.salary_type)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -711,17 +868,24 @@ export default function MyInvites() {
                                                 </span>
                                             </div>
 
+                                            {/* Permissions */}
                                             {invite.permissions?.length > 0 && (
                                                 <div>
                                                     <p className="text-sm text-gray-500 mb-2">Permissions</p>
                                                     <div className="flex flex-wrap gap-1">
                                                         {invite.permissions.slice(0, 3).map(perm => (
-                                                            <span key={perm.id} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                                            <span
+                                                                key={`mobile-perm-${invite.invite_id}-${perm.id}`}
+                                                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                                                            >
                                                                 {perm.name}
                                                             </span>
                                                         ))}
                                                         {invite.permissions.length > 3 && (
-                                                            <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                                            <span
+                                                                key={`mobile-perm-more-${invite.invite_id}`}
+                                                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                                                            >
                                                                 +{invite.permissions.length - 3}
                                                             </span>
                                                         )}
@@ -731,22 +895,22 @@ export default function MyInvites() {
                                         </div>
 
                                         {/* Quick Action Buttons for Pending Invites */}
-                                        {invite.status === 'pending' && !isExpired(invite.expires_at) && (
+                                        {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
                                             <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
                                                 <button
                                                     onClick={() => openModal(invite, 'accept')}
-                                                    disabled={processingId === invite.token}
+                                                    disabled={processingId === invite.invite_token}
                                                     className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-300 flex items-center justify-center gap-1"
                                                 >
-                                                    {processingId === invite.token ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
+                                                    {processingId === invite.invite_token ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
                                                     Accept
                                                 </button>
                                                 <button
                                                     onClick={() => openModal(invite, 'reject')}
-                                                    disabled={processingId === invite.token}
+                                                    disabled={processingId === invite.invite_token}
                                                     className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-300 flex items-center justify-center gap-1"
                                                 >
-                                                    {processingId === invite.token ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
+                                                    {processingId === invite.invite_token ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
                                                     Reject
                                                 </button>
                                             </div>
@@ -755,6 +919,9 @@ export default function MyInvites() {
                                 );
                             })}
                         </div>
+
+                        {/* Pagination */}
+                        <Pagination />
                     </>
                 )}
 
@@ -776,11 +943,16 @@ export default function MyInvites() {
                 {/* Modals */}
                 <AnimatePresence>
                     {modalType === 'view' && selectedInvite && (
-                        <ViewModal invite={selectedInvite} onClose={closeModal} />
+                        <ViewModal
+                            key={`modal-view-${selectedInvite.invite_id}`}
+                            invite={selectedInvite}
+                            onClose={closeModal}
+                        />
                     )}
 
                     {modalType === 'accept' && selectedInvite && (
                         <AcceptModal
+                            key={`modal-accept-${selectedInvite.invite_id}`}
                             invite={selectedInvite}
                             onClose={closeModal}
                             onConfirm={handleAcceptInvite}
@@ -789,6 +961,7 @@ export default function MyInvites() {
 
                     {modalType === 'reject' && selectedInvite && (
                         <RejectModal
+                            key={`modal-reject-${selectedInvite.invite_id}`}
                             invite={selectedInvite}
                             onClose={closeModal}
                             onConfirm={handleRejectInvite}

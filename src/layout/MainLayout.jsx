@@ -74,7 +74,7 @@ const MainLayout = ({ children }) => {
         {/* Main Content - with margin to account for fixed sidebar */}
         <main 
           className={`
-            flex-1 transition-all duration-300 ease-out
+            flex-1 transition-all duration-300 ease-out overflow-auto
             ${getContentMargin()}
             p-4 sm:p-6 lg:p-8
           `}
