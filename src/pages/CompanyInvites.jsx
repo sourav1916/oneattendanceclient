@@ -27,13 +27,13 @@ export default function CompanyInvites() {
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [selectedInvite, setSelectedInvite] = useState(null);
-  const [modalType, setModalType] = useState(null); 
+  const [modalType, setModalType] = useState(null);
   const [actionMenuId, setActionMenuId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingInvite, setEditingInvite] = useState(null);
-  
+
   const API_BASE = "https://api-attendance.onesaas.in";
 
   // Get company_id from localStorage
@@ -81,20 +81,19 @@ export default function CompanyInvites() {
   }, [company_id]);
 
   const handleCancelInvite = async (token) => {
-    if (!window.confirm("Are you sure you want to cancel this invitation?")) {
-      return;
-    }
-
     try {
       setProcessingId(token);
       const authToken = localStorage.getItem('token');
 
-      const response = await fetch(`${API_BASE}/company/invites/${token}/cancel`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE}/company/invites/cancel`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          token: token
+        })
       });
 
       if (!response.ok) {
