@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [employee, setEmployee] = useState(null);
   const [company, setCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [permissions, setPermissions] = useState([]);
 
   const initialized = useRef(false);
 
@@ -21,6 +22,7 @@ export const AuthProvider = ({ children }) => {
     setEmployee(null);
     setCompany(null);
     setCompanies([]);
+    setPermissions([]);
     setLoading(false);
   };
 
@@ -41,7 +43,6 @@ export const AuthProvider = ({ children }) => {
       const response = await res.json();
 
       if (response.success && response.data) {
-        // Extract user data
         const userData = {
           id: response.data.user.id,
           name: response.data.user.name || "User",
@@ -54,29 +55,31 @@ export const AuthProvider = ({ children }) => {
 
         setUser(userData);
         
-        // Handle employee data if present
         if (response.data.employee) {
           setEmployee(response.data.employee);
         }
         
-        // Handle companies data - this works for both employee and owner responses
-        let userCompanies = [];
+        if (response.data.permissions && Array.isArray(response.data.permissions)) {
+          setPermissions(response.data.permissions);
+        }
         
-        // Case 1: Response has companies array (owner, admin)
-        if (response.data.companies && Array.isArray(response.data.companies)) {
-          userCompanies = response.data.companies;
+        if (response.data.company) {
+          const singleCompany = response.data.company;
+          setCompanies([singleCompany]);
+          setCompany(singleCompany);
+          localStorage.setItem("company", JSON.stringify(singleCompany));
+        }
+        else if (response.data.companies && Array.isArray(response.data.companies)) {
+          const userCompanies = response.data.companies;
           setCompanies(userCompanies);
           
-          // Handle company selection for multiple companies
           const storedCompany = JSON.parse(localStorage.getItem("company"));
           
-          // If there's exactly one company, auto-select it
           if (userCompanies.length === 1) {
             const singleCompany = userCompanies[0];
             setCompany(singleCompany);
             localStorage.setItem("company", JSON.stringify(singleCompany));
           }
-          // If multiple companies, check if stored company still exists
           else if (userCompanies.length > 1 && storedCompany) {
             const companyStillExists = userCompanies.some(
               c => c.id === storedCompany.id
@@ -88,20 +91,10 @@ export const AuthProvider = ({ children }) => {
               setCompany(null);
             }
           }
-          // If no stored company and multiple companies exist, don't set any
           else if (userCompanies.length > 1 && !storedCompany) {
             setCompany(null);
           }
         }
-        // Case 2: Response has single company object (employee)
-        else if (response.data.company) {
-          const singleCompany = response.data.company;
-          userCompanies = [singleCompany];
-          setCompanies(userCompanies);
-          setCompany(singleCompany);
-          localStorage.setItem("company", JSON.stringify(singleCompany));
-        }
-        // Case 3: No companies at all
         else {
           setCompanies([]);
           setCompany(null);
@@ -113,6 +106,7 @@ export const AuthProvider = ({ children }) => {
         setEmployee(null);
         setCompany(null);
         setCompanies([]);
+        setPermissions([]);
       }
     } catch (error) {
       console.error("Profile fetch failed:", error);
@@ -157,13 +151,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Select a specific company (for multi-company users)
   const selectCompany = (selectedCompany) => {
     setCompany(selectedCompany);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
   };
 
-  // Get the current company (either from state or localStorage)
   const getCurrentCompany = () => {
     if (company) return company;
     
@@ -176,6 +168,7 @@ export const AuthProvider = ({ children }) => {
     employee,
     company: getCurrentCompany(),
     companies,
+    permissions,
     setCompanies,
     login,
     logout,
@@ -183,18 +176,15 @@ export const AuthProvider = ({ children }) => {
     selectCompany,
     loading,
     isAuthenticated: !!user,
-    // Helper methods
+    rawPermissions: permissions,
     isEmployee: !!employee,
     isCompanyOwner: user?.role === "company_owner",
     hasMultipleCompanies: companies.length > 1,
     hasCompanies: companies.length > 0,
-    // User role specific checks
     isSystemAdmin: user?.is_system_admin || false,
     isActive: user?.is_active || false,
     userRole: user?.role || null,
-    // Employee specific data
     employeeDetails: employee,
-    // Company specific data
     companyDetails: getCurrentCompany(),
   };
 
