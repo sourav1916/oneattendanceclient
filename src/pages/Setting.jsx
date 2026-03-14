@@ -15,16 +15,17 @@ import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 const API_BASE = "https://api-attendance.onesaas.in";
 
 const SettingsPage = () => {
-  const { user, loading, refreshUser } = useAuth();
+  const { user, loading, refreshUser, companies,setCompanies } = useAuth();
+
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [openSelectModal, setOpenSelectModal] = useState(false);
-  const [companies, setCompanies] = useState([]);
   const [activeCompany, setActiveCompany] = useState(null);
   const [editingCompany, setEditingCompany] = useState(null);
   const [userCompanies, setUserCompanies] = useState([]);
+
 
   const [darkMode, setDarkMode] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -43,13 +44,15 @@ const SettingsPage = () => {
     loadActiveCompany();
   }, []);
 
+  // In SettingsPage.js, update the useEffect that handles companies
   useEffect(() => {
-    if (user?.companies) {
-      setCompanies(user.companies);
+    // Use companies from auth context instead of user.companies
+    if (user && companies) {
+      setCompanies(companies); // This is now coming from auth context
 
       const storedCompany = JSON.parse(localStorage.getItem("company"));
       if (storedCompany) {
-        const companyExists = user.companies.some(c => c.id === storedCompany.id);
+        const companyExists = companies.some(c => c.id === storedCompany.id);
         if (!companyExists) {
           localStorage.removeItem("company");
           setActiveCompany(null);
@@ -59,17 +62,10 @@ const SettingsPage = () => {
       }
     }
 
-    if (user) {
-      setProfileForm({
-        name: user.name || "",
-        phone: user.phone || ""
-      });
-      setOriginalProfile({
-        name: user.name || "",
-        phone: user.phone || ""
-      });
-    }
-  }, [user]);
+    // ... rest of your code
+  }, [user, companies]); // Add companies to dependency array
+
+  // Also update the destructuring to get companies from useAuth
 
   const loadActiveCompany = () => {
     const storedCompany = JSON.parse(localStorage.getItem("company"));

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
-import { 
+import {
   HiOutlineUserGroup,
   HiOutlineQuestionMarkCircle,
   HiOutlineSparkles,
@@ -21,11 +21,10 @@ const API_BASE = "https://api-attendance.onesaas.in";
 
 function HomePage() {
   const { user, loading } = useAuth();
-    const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
+  const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
   const [openSelectCompanyModal, setOpenSelectCompanyModal] = useState(false);
   const [userCompanies, setUserCompanies] = useState([]);
-
   // Show loading state
   if (loading) {
     return (
@@ -46,7 +45,7 @@ function HomePage() {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-50 px-4">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100"
@@ -127,11 +126,11 @@ function HomePage() {
   };
 
   // Format date
-  const currentDate = new Date().toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
 
   return (
@@ -159,14 +158,14 @@ function HomePage() {
                 <span className="text-xs text-slate-400">•</span>
                 <span className="text-xs font-medium text-indigo-600">{currentDate}</span>
               </div>
-              
+
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold">
                 <span className="text-slate-800">{getGreeting()},</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient">
                   {user?.name?.split(' ')[0] || 'there'}!
                 </span>
               </h1>
-              
+
               <p className="text-lg text-slate-600 mt-4 max-w-2xl">
                 Ready to manage your workforce? Add team members and start tracking attendance seamlessly.
               </p>
@@ -199,7 +198,7 @@ function HomePage() {
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-indigo-100 overflow-hidden group hover:shadow-3xl transition-all duration-500">
             {/* Card Header with Gradient */}
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-            
+
             <div className="p-8 sm:p-10 lg:p-12">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
                 {/* Left Content */}
@@ -210,15 +209,15 @@ function HomePage() {
                       Quick Action
                     </span>
                   </div>
-                  
+
                   <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-4">
                     Add Staff Member
                   </h2>
-                  
+
                   <p className="text-slate-600 text-lg mb-6 leading-relaxed">
                     Onboard new team members with flexible employment types. Choose from regular, contract, or work-based arrangements.
                   </p>
-                  
+
                   {/* Employee Types Tags */}
                   <div className="flex flex-wrap gap-2 mb-8">
                     <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
@@ -234,7 +233,7 @@ function HomePage() {
                       💼 Work Basis
                     </span>
                   </div>
-                  
+
                   {/* Action Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -347,7 +346,7 @@ function HomePage() {
       <CreateCompanyModal
         isOpen={openCreateCompanyModal}
         onClose={() => setOpenCreateCompanyModal(false)}
-        onSuccess={() => {}}
+        onSuccess={() => { }}
         userId={user?.id}
       />
 

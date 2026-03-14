@@ -8,6 +8,9 @@ const API_BASE = "https://api-attendance.onesaas.in";
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [employee, setEmployee] = useState(null);
+  const [company, setCompany] = useState(null);
+  const [companies, setCompanies] = useState([]);
 
   const initialized = useRef(false);
 
@@ -15,6 +18,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("company");
     setUser(null);
+    setEmployee(null);
+    setCompany(null);
+    setCompanies([]);
     setLoading(false);
   };
 
@@ -35,52 +41,78 @@ export const AuthProvider = ({ children }) => {
       const response = await res.json();
 
       if (response.success && response.data) {
+        // Extract user data
         const userData = {
           id: response.data.user.id,
           name: response.data.user.name || "User",
           email: response.data.user.email,
           phone: response.data.user.phone,
-          is_active: response.data.user.is_active,
-          is_system_admin: response.data.user.is_system_admin,
-          companies: response.data.companies || [],
-          total_companies: response.data.total_companies || 0,
-          role: response.role ||"User"
+          is_active: response.data.user.is_active === 1,
+          is_system_admin: response.data.user.is_system_admin === 1,
+          role: response.role || "employee"
         };
 
         setUser(userData);
-
-        // Get currently stored company
-        const storedCompany = JSON.parse(localStorage.getItem("company"));
         
-        // If there's only one company, always set it
-        if (response.data.companies && response.data.companies.length === 1) {
-          localStorage.setItem(
-            "company",
-            JSON.stringify(response.data.companies[0])
-          );
-        } 
-        // If there are multiple companies
-        else if (response.data.companies && response.data.companies.length > 1) {
-          // Check if stored company exists and still belongs to user's companies
-          if (storedCompany) {
-            const companyStillExists = response.data.companies.some(
+        // Handle employee data if present
+        if (response.data.employee) {
+          setEmployee(response.data.employee);
+        }
+        
+        // Handle companies data - this works for both employee and owner responses
+        let userCompanies = [];
+        
+        // Case 1: Response has companies array (owner, admin)
+        if (response.data.companies && Array.isArray(response.data.companies)) {
+          userCompanies = response.data.companies;
+          setCompanies(userCompanies);
+          
+          // Handle company selection for multiple companies
+          const storedCompany = JSON.parse(localStorage.getItem("company"));
+          
+          // If there's exactly one company, auto-select it
+          if (userCompanies.length === 1) {
+            const singleCompany = userCompanies[0];
+            setCompany(singleCompany);
+            localStorage.setItem("company", JSON.stringify(singleCompany));
+          }
+          // If multiple companies, check if stored company still exists
+          else if (userCompanies.length > 1 && storedCompany) {
+            const companyStillExists = userCompanies.some(
               c => c.id === storedCompany.id
             );
-            
-            // If stored company no longer belongs to user, remove it
-            if (!companyStillExists) {
+            if (companyStillExists) {
+              setCompany(storedCompany);
+            } else {
               localStorage.removeItem("company");
+              setCompany(null);
             }
-            // Otherwise keep the stored company (do nothing)
           }
-          // If no stored company, don't set one
+          // If no stored company and multiple companies exist, don't set any
+          else if (userCompanies.length > 1 && !storedCompany) {
+            setCompany(null);
+          }
         }
-        // If no companies, remove company
+        // Case 2: Response has single company object (employee)
+        else if (response.data.company) {
+          const singleCompany = response.data.company;
+          userCompanies = [singleCompany];
+          setCompanies(userCompanies);
+          setCompany(singleCompany);
+          localStorage.setItem("company", JSON.stringify(singleCompany));
+        }
+        // Case 3: No companies at all
         else {
+          setCompanies([]);
+          setCompany(null);
           localStorage.removeItem("company");
         }
+
       } else {
         setUser(null);
+        setEmployee(null);
+        setCompany(null);
+        setCompanies([]);
       }
     } catch (error) {
       console.error("Profile fetch failed:", error);
@@ -125,13 +157,45 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Select a specific company (for multi-company users)
+  const selectCompany = (selectedCompany) => {
+    setCompany(selectedCompany);
+    localStorage.setItem("company", JSON.stringify(selectedCompany));
+  };
+
+  // Get the current company (either from state or localStorage)
+  const getCurrentCompany = () => {
+    if (company) return company;
+    
+    const storedCompany = localStorage.getItem("company");
+    return storedCompany ? JSON.parse(storedCompany) : null;
+  };
+
   const value = {
     user,
+    employee,
+    company: getCurrentCompany(),
+    companies,
+    setCompanies,
     login,
     logout,
-    loading,
     refreshUser,
+    selectCompany,
+    loading,
     isAuthenticated: !!user,
+    // Helper methods
+    isEmployee: !!employee,
+    isCompanyOwner: user?.role === "company_owner",
+    hasMultipleCompanies: companies.length > 1,
+    hasCompanies: companies.length > 0,
+    // User role specific checks
+    isSystemAdmin: user?.is_system_admin || false,
+    isActive: user?.is_active || false,
+    userRole: user?.role || null,
+    // Employee specific data
+    employeeDetails: employee,
+    // Company specific data
+    companyDetails: getCurrentCompany(),
   };
 
   return (
