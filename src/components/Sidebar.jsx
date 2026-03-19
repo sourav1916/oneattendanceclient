@@ -5,7 +5,9 @@ import {
   FaCommentDots,
   FaCog,
   FaChevronRight,
-  FaUserPlus
+  FaUserPlus,
+  FaUsers,
+  FaUserCheck
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 
@@ -23,14 +25,19 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
 
   const menuItems = [
     { icon: FaHome, label: 'Home', path: '/home' },
-    { icon: FaUserPlus, label: 'Company Invites', path: '/company-invites' },
+
+    { icon: FaUsers, label: 'Company Invites', path: '/company-invites' },
+
     { icon: FaUserPlus, label: 'Invites', path: '/my-invites' },
-    { icon: FaUserPlus, label: 'Employee Management', path: '/employee-management' },
+
+    { icon: FaUserCheck, label: 'Employee Management', path: '/employee-management' },
+
     { icon: FaBook, label: 'Cash Book', path: '/cashbook' },
+
     { icon: FaCommentDots, label: 'Help', path: '/help' },
+
     { icon: FaCog, label: 'Settings', path: '/settings' },
   ];
-
   const isActiveRoute = (itemPath) => {
     return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
   };
@@ -66,8 +73,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
                     <div className="flex items-center gap-3">
                       <div className={`
                         p-2 rounded-lg transition-all duration-200
-                        ${isActive 
-                          ? 'bg-blue-100 text-blue-700' 
+                        ${isActive
+                          ? 'bg-blue-100 text-blue-700'
                           : 'bg-gray-100 text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600'
                         }
                       `}>
@@ -77,11 +84,11 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
                         {item.label}
                       </span>
                     </div>
-                    
+
                     {isActive && (
                       <span className="w-1.5 h-6 bg-blue-600 rounded-full"></span>
                     )}
-                    
+
                     {!isActive && (
                       <FaChevronRight className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 group-hover:text-blue-500 transition-all" />
                     )}
@@ -130,14 +137,14 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
                     <div className={`
                       p-2 rounded-lg transition-all duration-200
                       ${isHovered ? '' : 'mx-auto'}
-                      ${isActive 
-                        ? 'bg-blue-100 text-blue-700' 
+                      ${isActive
+                        ? 'bg-blue-100 text-blue-700'
                         : 'bg-gray-100 text-gray-600 group-hover:bg-blue-50 group-hover:text-blue-600'
                       }
                     `}>
                       <item.icon className="w-4 h-4" />
                     </div>
-                    
+
                     {isHovered && (
                       <>
                         <span className={`flex-1 text-sm font-medium ${isActive ? 'font-semibold' : ''}`}>
