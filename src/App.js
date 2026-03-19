@@ -13,6 +13,7 @@ import SettingsPage from "./pages/Setting";
 import CompanyInvites from "./pages/CompanyInvites";
 import HelpPage from "./pages/Help";
 import MyInvites from "./pages/auth/invites";
+import EmployeeManagement from "./pages/EmployeeManagement";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -122,6 +123,16 @@ function AppContent() {
           <ProtectedRoute>
             <MainLayout>
               <MyInvites />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employee-management"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <EmployeeManagement />
             </MainLayout>
           </ProtectedRoute>
         }

@@ -25,6 +25,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
     { icon: FaHome, label: 'Home', path: '/home' },
     { icon: FaUserPlus, label: 'Company Invites', path: '/company-invites' },
     { icon: FaUserPlus, label: 'Invites', path: '/my-invites' },
+    { icon: FaUserPlus, label: 'Employee Management', path: '/employee-management' },
     { icon: FaBook, label: 'Cash Book', path: '/cashbook' },
     { icon: FaCommentDots, label: 'Help', path: '/help' },
     { icon: FaCog, label: 'Settings', path: '/settings' },

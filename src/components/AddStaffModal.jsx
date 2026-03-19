@@ -107,24 +107,20 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      // Build query params
-      const params = new URLSearchParams({
-        page: "1",
-        limit: "10",
-        sort: "name",
-        order: "asc"
-      });
+      // Build URL - note the endpoint pattern from your example
+      const baseUrl = `${API_BASE}/company/users/available`;
 
-      // Add search if provided
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
+      // Add search query as param if provided
+      const url = searchQuery
+        ? `${baseUrl}?search=${encodeURIComponent(searchQuery)}`
+        : baseUrl;
 
-      const res = await fetch(`${API_BASE}/company/${company.id}/users/available?${params.toString()}`, {
+      const res = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          "company": company.id
         }
       });
 
@@ -148,11 +144,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         }));
 
         setUsers(formatted);
-
-        // Optional: Handle pagination info if API returns it
-        if (result.pagination) {
-          console.log('Pagination:', result.pagination);
-        }
       } else {
         throw new Error(result.message || 'Failed to fetch users');
       }
@@ -163,7 +154,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       setIsLoadingUsers(false);
     }
   };
-
   const fetchPermissions = async () => {
     setIsLoadingPermissions(true);
     try {
