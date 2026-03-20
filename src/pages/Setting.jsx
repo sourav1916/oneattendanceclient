@@ -15,7 +15,7 @@ import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 const API_BASE = "https://api-attendance.onesaas.in";
 
 const SettingsPage = () => {
-  const { user, loading, refreshUser, companies,setCompanies } = useAuth();
+  const { user, loading, refreshUser, companies, setCompanies } = useAuth();
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -32,9 +32,14 @@ const SettingsPage = () => {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [activeTab, setActiveTab] = useState("companies");
 
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   const [profileForm, setProfileForm] = useState({
-    name: "",
-    phone: ""
+    name: user?.name,
+    phone: user?.phone
   });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [originalProfile, setOriginalProfile] = useState({});
@@ -44,11 +49,9 @@ const SettingsPage = () => {
     loadActiveCompany();
   }, []);
 
-  // In SettingsPage.js, update the useEffect that handles companies
   useEffect(() => {
-    // Use companies from auth context instead of user.companies
     if (user && companies) {
-      setCompanies(companies); // This is now coming from auth context
+      setCompanies(companies);
 
       const storedCompany = JSON.parse(localStorage.getItem("company"));
       if (storedCompany) {
@@ -61,11 +64,8 @@ const SettingsPage = () => {
         }
       }
     }
+  }, [user, companies]);
 
-    // ... rest of your code
-  }, [user, companies]); // Add companies to dependency array
-
-  // Also update the destructuring to get companies from useAuth
 
   const loadActiveCompany = () => {
     const storedCompany = JSON.parse(localStorage.getItem("company"));
@@ -188,45 +188,6 @@ const SettingsPage = () => {
   };
 
 
-  const handleCompanyCreated = async (newCompany) => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        toast.error("Authentication expired. Please login again.");
-        return;
-      }
-
-      const response = await fetch(`${API_BASE}/company/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(newCompany)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.message || "Failed to create company");
-        return;
-      }
-
-      if (result.success) {
-        await refreshUser();
-        selectCompany(result.data);
-        setOpenCreateModal(false);
-        toast.success("Company created successfully! 🎉");
-      } else {
-        toast.error(result.message || "Something went wrong");
-      }
-    } catch (error) {
-      console.error("Company creation error:", error);
-      toast.error("Network error. Please check your internet connection.");
-    }
-  };
-
   const handleAddCompanyClick = () => {
     setOpenCreateModal(true);
   };
@@ -297,6 +258,86 @@ const SettingsPage = () => {
     }
   };
 
+  // Password validation function
+  const validatePasswords = () => {
+    if (!currentPassword.trim()) {
+      toast.error('Current password is required');
+      return false;
+    }
+    if (!newPassword.trim()) {
+      toast.error('New password is required');
+      return false;
+    }
+    if (newPassword.length < 4) {
+      toast.error('New password must be at least 4 characters long');
+      return false;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return false;
+    }
+    if (currentPassword === newPassword) {
+      toast.error('New password must be different from current password');
+      return false;
+    }
+    return true;
+  };
+
+  // Password update handler (no 2FA function)
+  const handlePasswordUpdate = async () => {
+    if (!validatePasswords()) return;
+
+    setIsUpdatingPassword(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("Authentication expired. Please login again.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/users/update-password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user_id: user?.id,
+          old_password: currentPassword,
+          new_password: newPassword,
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Success
+        toast.success(data.message || "Password updated successfully!");
+        // Clear form
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        // Handle specific error responses
+        if (response.status === 400) {
+          toast.error(data.message || "Invalid password format");
+        } else if (response.status === 401) {
+          toast.error("Current password is incorrect");
+        } else if (response.status === 404) {
+          toast.error("User not found");
+        } else {
+          toast.error(data.message || "Failed to update password");
+        }
+      }
+    } catch (error) {
+      console.error("Password update error:", error);
+      toast.error("Network error. Please check your connection and try again.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
   const handleNotificationSettings = () => {
     toast.success("Notification preferences updated!");
   };
@@ -637,33 +678,43 @@ const SettingsPage = () => {
                     <input
                       type="password"
                       placeholder="Current Password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
                       className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                      disabled={isUpdatingPassword}
                     />
                     <input
                       type="password"
                       placeholder="New Password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                      disabled={isUpdatingPassword}
                     />
                     <input
                       type="password"
                       placeholder="Confirm New Password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                      disabled={isUpdatingPassword}
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">Two-Factor Authentication</p>
-                    <p className="text-xs sm:text-sm text-gray-500">Add an extra layer of security</p>
-                  </div>
-                  <button className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm sm:text-base hover:bg-indigo-700 transition-colors w-full xs:w-auto">
-                    Enable
-                  </button>
-                </div>
-
-                <button className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg">
-                  Update Password
+                <button
+                  onClick={handlePasswordUpdate}
+                  disabled={isUpdatingPassword}
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdatingPassword ? (
+                    <>
+                      <FaSpinner className="w-4 h-4 animate-spin inline mr-2" />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update Password'
+                  )}
                 </button>
               </div>
             </div>
@@ -732,7 +783,10 @@ const SettingsPage = () => {
       <CreateCompanyModal
         isOpen={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
-        onSuccess={handleCompanyCreated}
+        onCompanyCreated={() => {
+          refreshUser();
+          setOpenCreateModal(false);
+        }}
         userId={user?.id}
       />
 
