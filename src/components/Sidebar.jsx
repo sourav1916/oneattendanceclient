@@ -7,7 +7,8 @@ import {
   FaChevronRight,
   FaUserPlus,
   FaUsers,
-  FaUserCheck
+  FaUserCheck,
+  FaClipboardCheck
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
@@ -34,6 +35,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
 
   const menuItems = [
     { icon: FaHome, label: 'Home', path: '/home' },
+    { icon: FaClipboardCheck, label: 'Attendance', path: '/attendence'},
 
     { icon: FaUserCheck, label: 'Company Invites', path: '/company-invites', permission: 'manage_companies' },
 

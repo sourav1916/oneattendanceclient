@@ -14,6 +14,7 @@ import CompanyInvites from "./pages/CompanyInvites";
 import HelpPage from "./pages/Help";
 import MyInvites from "./pages/invites";
 import EmployeeManagement from "./pages/EmployeeManagement";
+import PunchAttendance from "./pages/PunchAttendance";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -103,6 +104,16 @@ function AppContent() {
           <ProtectedRoute>
             <MainLayout>
               <CompanyInvites />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/attendence"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <PunchAttendance />
             </MainLayout>
           </ProtectedRoute>
         }
