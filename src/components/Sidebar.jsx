@@ -74,7 +74,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
         top-16 h-[calc(100vh-4rem)]
         shadow-xl border-r border-gray-200
       `}>
-        <nav className="p-3 overflow-y-auto h-full">
+        <nav className="p-3 bg-white overflow-y-auto h-full">
           <ul className="space-y-1">
             {filteredMenuItems.map((item) => {
               const isActive = isActiveRoute(item.path);
