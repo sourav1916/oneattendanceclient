@@ -21,6 +21,8 @@ import {
     FaMapMarkerAlt
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
+import { useAuth } from "../context/AuthContext";
+
 
 export default function MyInvites() {
     const [invites, setInvites] = useState([]);
@@ -39,6 +41,8 @@ export default function MyInvites() {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [itemsPerPage] = useState(10);
+    
+    const { refreshUser } = useAuth();
 
     const API_BASE = "https://api-attendance.onesaas.in";
 
@@ -150,6 +154,10 @@ export default function MyInvites() {
                 setInvites(prev => prev.map(invite =>
                     invite.invite_token === token ? { ...invite, status: 'accepted' } : invite
                 ));
+
+                // 🔥 IMPORTANT: refresh user data (company + permissions updated)
+                await refreshUser();
+
                 closeModal();
             } else {
                 throw new Error(result.message || 'Failed to accept invite');
