@@ -10,39 +10,59 @@ import {
   FaUserCheck
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
+import { useAuth } from "../context/AuthContext";
 
 const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
   const [isHovered, setIsHovered] = useState(false);
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Call onHover when isHovered changes
+  const { permissions } = useAuth();
+
+  // ✅ Convert permission objects -> action array
+  const permissionActions = permissions?.map(p => p.action) || [];
+
+  // ✅ Fixed permission checker
+  const hasPermission = (requiredPermission) => {
+    if (!requiredPermission) return true;
+
+    // 🔥 Owner / full access override
+    if (permissionActions.includes('manage_all')) return true;
+
+    return permissionActions.includes(requiredPermission);
+  };
+
+  const menuItems = [
+    { icon: FaHome, label: 'Home', path: '/home' },
+
+    { icon: FaUsers, label: 'Company Invites', path: '/company-invites', permission: 'manage_companies' },
+
+    { icon: FaUserPlus, label: 'My Invites', path: '/my-invites' },
+
+    { icon: FaUserCheck, label: 'Employee Management', path: '/employee-management', permission: 'manage_employees' },
+
+    { icon: FaBook, label: 'Cash Book', path: '/cashbook', permission: 'view_tasks' },
+
+    { icon: FaCommentDots, label: 'Help', path: '/help' },
+
+    { icon: FaCog, label: 'Settings', path: '/settings' },
+  ];
+
+  const filteredMenuItems = menuItems.filter(item =>
+    hasPermission(item.permission)
+  );
+
+  const isActiveRoute = (itemPath) => {
+    return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
+  };
+
   useEffect(() => {
     if (onHover && !isMobile) {
       onHover(isHovered);
     }
   }, [isHovered, onHover, isMobile]);
 
-  const menuItems = [
-    { icon: FaHome, label: 'Home', path: '/home' },
-
-    { icon: FaUsers, label: 'Company Invites', path: '/company-invites' },
-
-    { icon: FaUserPlus, label: 'Invites', path: '/my-invites' },
-
-    { icon: FaUserCheck, label: 'Employee Management', path: '/employee-management' },
-
-    { icon: FaBook, label: 'Cash Book', path: '/cashbook' },
-
-    { icon: FaCommentDots, label: 'Help', path: '/help' },
-
-    { icon: FaCog, label: 'Settings', path: '/settings' },
-  ];
-  const isActiveRoute = (itemPath) => {
-    return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
-  };
-
-  // Mobile Sidebar
+  // ================= MOBILE =================
   if (isMobile) {
     return (
       <div className={`
@@ -54,7 +74,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
       `}>
         <nav className="p-3 overflow-y-auto h-full">
           <ul className="space-y-1">
-            {menuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const isActive = isActiveRoute(item.path);
               return (
                 <li key={item.label}>
@@ -102,7 +122,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
     );
   }
 
-  // Desktop Sidebar
+  // ================= DESKTOP =================
   return (
     <div
       className={`
@@ -118,7 +138,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
       <div className="flex flex-col h-full">
         <nav className="flex-1 py-6 px-2 overflow-y-auto">
           <ul className="space-y-1">
-            {menuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const isActive = isActiveRoute(item.path);
               return (
                 <li key={item.label}>
