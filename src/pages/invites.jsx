@@ -20,7 +20,7 @@ import {
     FaUser,
     FaMapMarkerAlt
 } from "react-icons/fa";
-import Skeleton from "../../components/SkeletonComponent";
+import Skeleton from "../components/SkeletonComponent";
 
 export default function MyInvites() {
     const [invites, setInvites] = useState([]);

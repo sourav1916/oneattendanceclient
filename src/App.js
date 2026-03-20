@@ -12,7 +12,7 @@ import Cashbook from "./pages/CashBook";
 import SettingsPage from "./pages/Setting";
 import CompanyInvites from "./pages/CompanyInvites";
 import HelpPage from "./pages/Help";
-import MyInvites from "./pages/auth/invites";
+import MyInvites from "./pages/invites";
 import EmployeeManagement from "./pages/EmployeeManagement";
 
 function AppContent() {

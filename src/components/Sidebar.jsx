@@ -35,11 +35,11 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
   const menuItems = [
     { icon: FaHome, label: 'Home', path: '/home' },
 
-    { icon: FaUsers, label: 'Company Invites', path: '/company-invites', permission: 'manage_companies' },
+    { icon: FaUserCheck, label: 'Company Invites', path: '/company-invites', permission: 'manage_companies' },
 
     { icon: FaUserPlus, label: 'My Invites', path: '/my-invites' },
 
-    { icon: FaUserCheck, label: 'Employee Management', path: '/employee-management', permission: 'manage_employees' },
+    { icon: FaUsers, label: 'Employee Management', path: '/employee-management', permission: 'manage_employees' },
 
     { icon: FaBook, label: 'Cash Book', path: '/cashbook', permission: 'view_tasks' },
 
