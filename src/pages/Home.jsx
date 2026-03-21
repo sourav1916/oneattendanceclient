@@ -1,30 +1,44 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
-  HiOutlineUserGroup,
-  HiOutlineQuestionMarkCircle,
-  HiOutlineSparkles,
-  HiOutlineArrowRight,
-  HiOutlineCalendar,
-  HiOutlineClock,
-  HiOutlineUsers
-} from "react-icons/hi";
+  FaUsers,
+  FaQuestionCircle,
+  FaArrowRight,
+  FaClock,
+  FaBuilding,
+  FaCheck,
+  FaEnvelope,
+  FaUserPlus,
+  FaStore,
+  FaChartLine,
+  FaFingerprint,
+  FaUserCheck,
+  FaTimes,
+  FaUserCircle,
+  FaRegClock,
+  FaRegCalendarAlt,
+  FaExchangeAlt
+} from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/AddStaffModal";
-// import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
 function HomePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, company, companies, selectCompany, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
-  // const [openSelectCompanyModal, setOpenSelectCompanyModal] = useState(false);
+  const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [selectedCompanyForSwitch, setSelectedCompanyForSwitch] = useState(null);
   const [userCompanies, setUserCompanies] = useState([]);
+
   // Show loading state
   if (loading) {
     return <Skeleton />;
@@ -40,7 +54,7 @@ function HomePage() {
           className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100"
         >
           <div className="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-6 transform rotate-3">
-            <HiOutlineQuestionMarkCircle className="w-10 h-10 text-amber-600" />
+            <FaQuestionCircle className="w-10 h-10 text-amber-600" />
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-2">Session Expired</h2>
           <p className="text-slate-600 mb-8">Please login again to continue</p>
@@ -49,7 +63,7 @@ function HomePage() {
             className="group px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
           >
             Go to Login
-            <HiOutlineArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            <FaArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>
       </div>
@@ -57,9 +71,9 @@ function HomePage() {
   }
 
   const handleAddStaffClick = async () => {
-    const company = localStorage.getItem("company");
+    const storedCompany = localStorage.getItem("company");
 
-    if (!company) {
+    if (!storedCompany) {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE}/users/profile-role`, {
@@ -72,38 +86,48 @@ function HomePage() {
         const response = await res.json();
 
         if (response.success && response.data) {
-          const companies = response.data.companies || [];
+          const userCompaniesData = response.data.companies || [];
 
           // Only one company → auto select
-          if (companies.length === 1) {
-            localStorage.setItem("company", JSON.stringify(companies[0]));
+          if (userCompaniesData.length === 1) {
+            localStorage.setItem("company", JSON.stringify(userCompaniesData[0]));
             setOpenAddStaffModal(true);
             return;
           }
 
-          // Multiple companies → choose company
-          if (companies.length > 1) {
-            setUserCompanies(companies);
-            // setOpenSelectCompanyModal(true);
+          // Multiple companies → open company switcher
+          if (userCompaniesData.length > 1) {
+            setUserCompanies(userCompaniesData);
+            setShowCompanySwitcher(true);
+            toast.info("Please select a company first");
             return;
           }
 
           // No companies → create company
           toast.warning("Please create a company first");
           setOpenCreateCompanyModal(true);
+          return;
         }
       } catch (error) {
         console.error("Profile fetch failed:", error);
-        toast.error("Something went wrong");
+        toast.error("Something went wrong. Please try again.");
+        return;
       }
-      return;
     }
 
     setOpenAddStaffModal(true);
   };
 
-  const handleCompanySelect = (company) => {
-    setOpenAddStaffModal(true);
+  const handleSwitchCompany = async (selectedCompany) => {
+    setSelectedCompanyForSwitch(selectedCompany);
+    setIsSwitching(true);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    selectCompany(selectedCompany);
+    await refreshUser();
+    setIsSwitching(false);
+    setShowCompanySwitcher(false);
+    setSelectedCompanyForSwitch(null);
+    toast.success(`Switched to ${selectedCompany.name}`);
   };
 
   // Get current time for greeting
@@ -122,6 +146,82 @@ function HomePage() {
     day: 'numeric'
   });
 
+  // Stats Cards Data
+  const statsCards = [
+    {
+      title: "Total Employees",
+      value: "24",
+      icon: FaUsers,
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-blue-50",
+      change: "+12%",
+      trend: "up"
+    },
+    {
+      title: "Present Today",
+      value: "18",
+      icon: FaUserCheck,
+      color: "from-green-500 to-emerald-500",
+      bgColor: "bg-green-50",
+      change: "+5%",
+      trend: "up"
+    },
+    {
+      title: "On Leave",
+      value: "3",
+      icon: FaRegClock,
+      color: "from-orange-500 to-amber-500",
+      bgColor: "bg-orange-50",
+      change: "-2%",
+      trend: "down"
+    },
+    {
+      title: "Late Arrivals",
+      value: "2",
+      icon: FaClock,
+      color: "from-red-500 to-pink-500",
+      bgColor: "bg-red-50",
+      change: "+1",
+      trend: "up"
+    }
+  ];
+
+  // Quick Actions
+  const quickActions = [
+    {
+      title: "Punch Attendance",
+      description: "Mark your attendance",
+      icon: FaFingerprint,
+      color: "from-indigo-500 to-purple-500",
+      onClick: () => navigate('/attendence'),
+      gradient: "bg-gradient-to-r from-indigo-500 to-purple-500"
+    },
+    {
+      title: "Add Staff",
+      description: "Onboard new team members",
+      icon: FaUserPlus,
+      color: "from-green-500 to-emerald-500",
+      onClick: handleAddStaffClick,
+      gradient: "bg-gradient-to-r from-green-500 to-emerald-500"
+    },
+    {
+      title: "Company Invites",
+      description: "Manage invitations",
+      icon: FaEnvelope,
+      color: "from-pink-500 to-rose-500",
+      onClick: () => navigate('/my-invites'),
+      gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
+    },
+    {
+      title: "Cashbook",
+      description: "Track transactions",
+      icon: FaChartLine,
+      color: "from-amber-500 to-orange-500",
+      onClick: () => navigate('/cashbook'),
+      gradient: "bg-gradient-to-r from-amber-500 to-orange-500"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 relative overflow-hidden">
       {/* Animated Background Elements */}
@@ -131,192 +231,277 @@ function HomePage() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/10 to-purple-100/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-12 lg:mb-16"
+          className="mb-8"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-2xl border border-indigo-100 mb-6 shadow-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-slate-600">Active Session</span>
-                <span className="text-xs text-slate-400">•</span>
-                <span className="text-xs font-medium text-indigo-600">{currentDate}</span>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex-1">
+              {/* Company Info Bar */}
+              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowCompanySwitcher(true)}
+                    className="group flex items-center gap-3 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                      <FaStore className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs text-slate-500">Current Company</p>
+                      <p className="text-sm font-semibold text-slate-800">{company?.name || 'Select Company'}</p>
+                    </div>
+                    <FaExchangeAlt className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                  </button>
+
+                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200">
+                    <FaRegCalendarAlt className="w-3 h-3 text-indigo-500" />
+                    <span className="text-xs text-slate-600">{currentDate}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <FaUserCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="hidden sm:block">
+                      <p className="text-sm font-semibold text-slate-800">{user?.name?.split(' ')[0]}</p>
+                      <p className="text-xs text-slate-500">{user?.role || 'Employee'}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold">
+              {/* Greeting */}
+              <h1 className="text-3xl sm:text-4xl font-bold">
                 <span className="text-slate-800">{getGreeting()},</span>
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient">
                   {user?.name?.split(' ')[0] || 'there'}!
                 </span>
               </h1>
-
-              <p className="text-lg text-slate-600 mt-4 max-w-2xl">
-                Ready to manage your workforce? Add team members and start tracking attendance seamlessly.
-              </p>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex gap-3 sm:flex-col">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                    <HiOutlineUsers className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{user?.companies?.length || 0}</p>
-                    <p className="text-xs text-slate-500">Companies</p>
-                  </div>
-                </div>
-              </div>
+              <p className="text-slate-600 mt-1">Welcome back to your dashboard</p>
             </div>
           </div>
         </motion.div>
 
-        {/* Main Action Card - Add Staff */}
+        {/* Stats Grid */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+        >
+          {statsCards.map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + index * 0.05 }}
+              whileHover={{ y: -5 }}
+              className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`w-10 h-10 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
+                  <stat.icon className="w-5 h-5 text-indigo-600" />
+                </div>
+                <span className={`text-xs font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'} bg-${stat.trend === 'up' ? 'green' : 'red'}-50 px-2 py-0.5 rounded-full`}>
+                  {stat.change}
+                </span>
+              </div>
+              <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
+              <p className="text-xs text-slate-500 mt-1">{stat.title}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Quick Actions Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="max-w-4xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
         >
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-indigo-100 overflow-hidden group hover:shadow-3xl transition-all duration-500">
-            {/* Card Header with Gradient */}
-            <div className="h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-
-            <div className="p-8 sm:p-10 lg:p-12">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-                {/* Left Content */}
-                <div className="flex-1">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-full mb-6">
-                    <HiOutlineSparkles className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
-                      Quick Action
-                    </span>
-                  </div>
-
-                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-4">
-                    Add Staff Member
-                  </h2>
-
-                  <p className="text-slate-600 text-lg mb-6 leading-relaxed">
-                    Onboard new team members with flexible employment types. Choose from regular, contract, or work-based arrangements.
-                  </p>
-
-                  {/* Employee Types Tags */}
-                  <div className="flex flex-wrap gap-2 mb-8">
-                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
-                      👥 Regular Staff
-                    </span>
-                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
-                      📅 Monthly Contract
-                    </span>
-                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
-                      ⏰ Weekly Contract
-                    </span>
-                    <span className="px-4 py-2 bg-slate-50 rounded-xl text-sm text-slate-600 border border-slate-200">
-                      💼 Work Basis
-                    </span>
-                  </div>
-
-                  {/* Action Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleAddStaffClick}
-                    className="group relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-semibold text-lg hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-xl hover:shadow-2xl overflow-hidden"
-                  >
-                    <span className="relative z-10 flex items-center gap-3">
-                      <HiOutlineUserGroup className="w-6 h-6" />
-                      Start Adding Staff
-                      <HiOutlineArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-400 to-indigo-600 opacity-0 group-hover:opacity-20 transition-opacity"></div>
-                  </motion.button>
-                </div>
-
-                {/* Right Visual Element */}
-                <div className="flex-shrink-0">
-                  <div className="relative">
-                    <div className="w-48 h-48 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl rotate-3 transform group-hover:rotate-6 transition-transform duration-300 overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 to-purple-600/10"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <HiOutlineUserGroup className="w-24 h-24 text-indigo-600/30" />
-                      </div>
-                    </div>
-                    <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-400 rounded-2xl -rotate-12 flex items-center justify-center shadow-lg">
-                      <HiOutlineClock className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-2xl rotate-12 flex items-center justify-center shadow-lg">
-                      <HiOutlineCalendar className="w-8 h-8 text-white" />
-                    </div>
-                  </div>
-                </div>
+          {quickActions.map((action, index) => (
+            <motion.button
+              key={action.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + index * 0.05 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={action.onClick}
+              className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 hover:shadow-lg transition-all duration-300 text-left"
+            >
+              <div className={`absolute inset-0 ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-r ${action.color} shadow-lg`}>
+                <action.icon className="w-6 h-6 text-white" />
               </div>
-            </div>
-          </div>
+              <h3 className="font-semibold text-slate-800 mb-1">{action.title}</h3>
+              <p className="text-xs text-slate-500">{action.description}</p>
+              <FaArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-indigo-600 transition-all" />
+            </motion.button>
+          ))}
         </motion.div>
 
-        {/* Quick Tips Section */}
+        {/* Recent Activity Section */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="max-w-4xl mx-auto mt-12"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 overflow-hidden"
         >
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-slate-200 p-6">
-            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Quick Tips</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-indigo-600 text-sm font-bold">1</span>
-                </div>
-                <p className="text-sm text-slate-600">Select employee type based on work arrangement</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-indigo-600 text-sm font-bold">2</span>
-                </div>
-                <p className="text-sm text-slate-600">Add multiple companies to manage different organizations</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-indigo-600 text-sm font-bold">3</span>
-                </div>
-                <p className="text-sm text-slate-600">Switch between companies from settings page</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-indigo-600 text-sm font-bold">4</span>
-                </div>
-                <p className="text-sm text-slate-600">Need help? Click support button below</p>
-              </div>
-            </div>
+          <div className="p-5 border-b border-slate-200">
+            <h3 className="font-semibold text-slate-800">Recent Activity</h3>
+            <p className="text-xs text-slate-500 mt-1">Your latest attendance and staff updates</p>
           </div>
-        </motion.div>
-
-        {/* Help Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="text-center mt-16"
-        >
-          <p className="text-slate-500 mb-4 text-sm">Need assistance? We're here to help!</p>
-
-          <button
-            onClick={() => window.location.href = '/support'}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white/80 backdrop-blur-sm text-slate-700 rounded-2xl font-medium hover:bg-white hover:shadow-lg transition-all duration-200 border border-slate-200 group"
-          >
-            <HiOutlineQuestionMarkCircle className="w-5 h-5 text-indigo-600 group-hover:rotate-12 transition-transform" />
-            <span>Get Help & Support</span>
-          </button>
+          <div className="divide-y divide-slate-100">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="p-4 flex items-center gap-3 hover:bg-slate-50/50 transition-colors">
+                <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                  <FaClock className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-800">John Doe checked in at 9:15 AM</p>
+                  <p className="text-xs text-slate-500">2 hours ago</p>
+                </div>
+                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">On Time</span>
+              </div>
+            ))}
+          </div>
         </motion.div>
       </div>
+
+      {/* Fullscreen Company Switcher Modal */}
+      <AnimatePresence>
+        {showCompanySwitcher && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
+            onClick={() => !isSwitching && setShowCompanySwitcher(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-2xl mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Switch Company</h2>
+                      <p className="text-indigo-100 text-sm mt-1">Select a company to continue working with</p>
+                    </div>
+                    <button
+                      onClick={() => !isSwitching && setShowCompanySwitcher(false)}
+                      className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
+                    >
+                      <FaTimes className="w-4 h-4 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto p-4">
+                  {companies.length === 0 ? (
+                    /* Empty State */
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
+                        <FaBuilding className="w-8 h-8 text-indigo-500" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
+                        No Companies Found
+                      </h3>
+                      <p className="text-sm text-slate-500 max-w-xs">
+                        You are not associated with any company yet. Please contact your admin
+                        or accept an invite to continue.
+                      </p>
+                    </div>
+                  ) : (
+                    /* Company List */
+                    <div className="space-y-3">
+                      {companies.map((comp) => (
+                        <motion.button
+                          key={comp.id}
+                          whileHover={{ x: 5 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleSwitchCompany(comp)}
+                          disabled={isSwitching}
+                          className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${
+                            company?.id === comp.id
+                              ? 'bg-indigo-50 border-2 border-indigo-200'
+                              : 'bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                          } ${isSwitching && selectedCompanyForSwitch?.id === comp.id ? 'opacity-50' : ''}`}
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div
+                              className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                company?.id === comp.id
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'
+                              }`}
+                            >
+                              <FaBuilding className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-slate-800">{comp.name}</p>
+                              {comp.legal_name && (
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {comp.legal_name}
+                                </p>
+                              )}
+                              {comp.email && (
+                                <div className="flex items-center gap-1 mt-1">
+                                  <FaEnvelope className="w-3 h-3 text-slate-400" />
+                                  <p className="text-xs text-slate-400">{comp.email}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {company?.id === comp.id && (
+                            <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                              <FaCheck className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+
+                          {isSwitching &&
+                            selectedCompanyForSwitch?.id === comp.id && (
+                              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                            )}
+                        </motion.button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-slate-200 bg-slate-50">
+                  <button
+                    onClick={() => {
+                      setShowCompanySwitcher(false);
+                      setOpenCreateCompanyModal(true);
+                    }}
+                    className="w-full text-center py-2.5 text-indigo-600 font-medium text-sm hover:text-indigo-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <FaUserPlus className="w-4 h-4" />
+                    Create New Company
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <AddStaffModal
@@ -325,17 +510,13 @@ function HomePage() {
         onSuccess={() => setOpenAddStaffModal(false)}
       />
 
-      {/* <SelectCompanyModal
-        isOpen={openSelectCompanyModal}
-        onClose={() => setOpenSelectCompanyModal(false)}
-        companies={userCompanies}
-        onSelect={handleCompanySelect}
-      /> */}
-
       <CreateCompanyModal
         isOpen={openCreateCompanyModal}
         onClose={() => setOpenCreateCompanyModal(false)}
-        onSuccess={() => { }}
+        onSuccess={() => {
+          setOpenCreateCompanyModal(false);
+          refreshUser();
+        }}
         userId={user?.id}
       />
 
@@ -350,7 +531,6 @@ function HomePage() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        className="mt-12"
         toastClassName="!bg-white !text-slate-800 !rounded-2xl !shadow-xl"
       />
 
@@ -377,24 +557,6 @@ function HomePage() {
         .animate-gradient {
           background-size: 200% 200%;
           animation: gradient 3s ease infinite;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #c7d2fe;
-          border-radius: 10px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #818cf8;
         }
       `}</style>
     </div>

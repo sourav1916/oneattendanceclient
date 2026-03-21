@@ -10,7 +10,6 @@ import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
-// import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
@@ -21,10 +20,8 @@ const SettingsPage = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
-  const [openSelectModal, setOpenSelectModal] = useState(false);
   const [activeCompany, setActiveCompany] = useState(null);
   const [editingCompany, setEditingCompany] = useState(null);
-  const [userCompanies, setUserCompanies] = useState([]);
 
 
   const [darkMode, setDarkMode] = useState(false);
@@ -799,17 +796,6 @@ const SettingsPage = () => {
         onSuccess={handleEditSubmit}
         company={editingCompany}
       />
-
-      {/* <SelectCompanyModal
-        isOpen={openSelectModal}
-        onClose={() => setOpenSelectModal(false)}
-        companies={userCompanies}
-        onSelect={(company) => {
-          localStorage.setItem("company", JSON.stringify(company));
-          setActiveCompany(company);
-          setOpenSelectModal(false);
-        }}
-      /> */}
 
       <ToastContainer
         position="top-right"
