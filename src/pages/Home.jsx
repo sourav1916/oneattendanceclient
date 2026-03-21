@@ -24,7 +24,7 @@ import {
   FaExchangeAlt
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
-import AddStaffModal from "../components/AddStaffModal";
+import AddStaffModal from "../components/StaffModals/AddStaffModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";

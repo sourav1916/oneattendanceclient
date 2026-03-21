@@ -15,8 +15,6 @@ import {
     FaBuilding,
     FaCheck,
     FaBan,
-    FaChevronLeft,
-    FaChevronRight,
     FaUser,
     FaMapMarkerAlt,
     FaTimes,
@@ -26,6 +24,7 @@ import {
     FaInfoCircle
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
+import Pagination, { usePagination } from "../components/PaginationComponent";
 import { useAuth } from "../context/AuthContext";
 
 const modalVariants = {
@@ -53,17 +52,22 @@ export default function MyInvites() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    // Pagination states
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [totalItems, setTotalItems] = useState(0);
-    const [itemsPerPage] = useState(10);
+    // Use ref to track if fetch is in progress
+    const fetchInProgress = useRef(false);
+    const initialFetchDone = useRef(false);
+
+    // Use the reusable pagination hook
+    const {
+        pagination,
+        updatePagination,
+        goToPage,
+    } = usePagination(1, 10);
 
     const { refreshUser } = useAuth();
 
     const API_BASE = "https://api-attendance.onesaas.in";
 
-    // Debounce search
+    // Debounce search - removed goToPage dependency
     useEffect(() => {
         const t = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
@@ -71,14 +75,29 @@ export default function MyInvites() {
         return () => clearTimeout(t);
     }, [searchTerm]);
 
-    const fetchInvites = useCallback(async (page = currentPage) => {
+    // Reset to page 1 when search or filter changes
+    useEffect(() => {
+        if (!isInitialLoad) {
+            if (pagination.page !== 1) {
+                goToPage(1);
+            } else {
+                fetchInvites(1);
+            }
+        }
+    }, [debouncedSearchTerm, statusFilter]);
+
+    const fetchInvites = useCallback(async (page = pagination.page, resetLoading = true) => {
+        // Prevent multiple simultaneous fetches
+        if (fetchInProgress.current) return;
+        fetchInProgress.current = true;
+        if (resetLoading) setLoading(true);
+        
         try {
-            setLoading(true);
             const token = localStorage.getItem('token');
 
             const params = new URLSearchParams({
                 page: page.toString(),
-                limit: itemsPerPage.toString()
+                limit: pagination.limit.toString()
             });
 
             if (statusFilter !== 'all') {
@@ -103,9 +122,14 @@ export default function MyInvites() {
 
             if (result.success) {
                 setInvites(result.data || []);
-                const total = result.total || 0;
-                setTotalItems(total);
-                setTotalPages(Math.ceil(total / itemsPerPage));
+                // Update pagination with the response data
+                updatePagination({
+                    page: result.current_page || page,
+                    limit: result.per_page || pagination.limit,
+                    total: result.total || 0,
+                    total_pages: result.last_page || Math.ceil((result.total || 0) / pagination.limit),
+                    is_last_page: result.current_page === result.last_page
+                });
                 setError(null);
             } else {
                 throw new Error(result.message || 'Failed to fetch invites');
@@ -116,28 +140,24 @@ export default function MyInvites() {
         } finally {
             setLoading(false);
             setIsInitialLoad(false);
+            fetchInProgress.current = false;
         }
-    }, [currentPage, itemsPerPage, statusFilter, debouncedSearchTerm]);
+    }, [pagination.limit, statusFilter, debouncedSearchTerm, updatePagination]);
 
     // Initial load
     useEffect(() => {
-        fetchInvites(1);
-    }, []);
+        if (!initialFetchDone.current) {
+            fetchInvites(1, true);
+            initialFetchDone.current = true;
+        }
+    }, [fetchInvites]);
 
-    // Handle filter changes
+    // Fetch when page changes
     useEffect(() => {
-        if (!isInitialLoad) {
-            setCurrentPage(1);
-            fetchInvites(1);
+        if (!isInitialLoad && !fetchInProgress.current && initialFetchDone.current) {
+            fetchInvites(pagination.page, true);
         }
-    }, [statusFilter, debouncedSearchTerm]);
-
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setCurrentPage(newPage);
-            fetchInvites(newPage);
-        }
-    };
+    }, [pagination.page, fetchInvites]);
 
     const handleAcceptInvite = async (token) => {
         try {
@@ -165,6 +185,8 @@ export default function MyInvites() {
                 ));
                 await refreshUser();
                 closeModal();
+                // Refresh the current page
+                await fetchInvites(pagination.page, false);
             } else {
                 throw new Error(result.message || 'Failed to accept invite');
             }
@@ -200,6 +222,8 @@ export default function MyInvites() {
                     invite.invite_token === token ? { ...invite, status: 'rejected' } : invite
                 ));
                 closeModal();
+                // Refresh the current page
+                await fetchInvites(pagination.page, false);
             } else {
                 throw new Error(result.message || 'Failed to reject invite');
             }
@@ -301,6 +325,13 @@ export default function MyInvites() {
         e.stopPropagation();
         setActiveActionMenu(activeActionMenu === id ? null : id);
     };
+
+    // Handle page change
+    const handlePageChange = useCallback((newPage) => {
+        if (newPage !== pagination.page) {
+            goToPage(newPage);
+        }
+    }, [pagination.page, goToPage]);
 
     // Responsive columns
     const [visibleColumns, setVisibleColumns] = useState(() => ({
@@ -567,45 +598,7 @@ export default function MyInvites() {
         </motion.div>
     );
 
-    const Pagination = () => {
-        if (totalPages <= 1) return null;
-
-        return (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-6 py-4 rounded-2xl shadow-lg"
-            >
-                <div className="text-sm text-gray-600">
-                    Showing <span className="font-semibold text-purple-600">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
-                    <span className="font-semibold text-purple-600">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{' '}
-                    <span className="font-semibold text-purple-600">{totalItems}</span> results
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className={`px-4 py-2 rounded-xl border flex items-center gap-2 transition-all duration-300 ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white hover:border-transparent'}`}
-                    >
-                        <FaChevronLeft size={12} /> Previous
-                    </button>
-                    <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl min-w-[40px] text-center font-semibold shadow-md">
-                        {currentPage}
-                    </span>
-                    <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className={`px-4 py-2 rounded-xl border flex items-center gap-2 transition-all duration-300 ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-600 hover:text-white hover:border-transparent'}`}
-                    >
-                        Next <FaChevronRight size={12} />
-                    </button>
-                </div>
-            </motion.div>
-        );
-    };
-
-    if (isInitialLoad) {
+    if (isInitialLoad && loading) {
         return <Skeleton />;
     }
 
@@ -622,7 +615,7 @@ export default function MyInvites() {
                         Incoming Invitations
                     </h1>
                     <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        Total: {totalItems} invitations
+                        Total: {pagination.total} invitations
                     </div>
                 </motion.div>
 
@@ -692,7 +685,6 @@ export default function MyInvites() {
                     </motion.div>
                 )}
 
-                {/* Table View (Desktop) */}
                 {/* Table View (Desktop) */}
                 {!loading && !error && invites.length > 0 && (
                     <>
@@ -926,8 +918,15 @@ export default function MyInvites() {
                             })}
                         </div>
 
-                        {/* Pagination */}
-                        <Pagination />
+                        {/* Use the reusable Pagination component */}
+                        <Pagination
+                            currentPage={pagination.page}
+                            totalItems={pagination.total}
+                            itemsPerPage={pagination.limit}
+                            onPageChange={handlePageChange}
+                            variant="default"
+                            showInfo={true}
+                        />
                     </>
                 )}
 

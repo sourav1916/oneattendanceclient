@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaUserCircle,
-    FaSearch, FaSpinner, FaEllipsisV, FaChevronLeft, FaChevronRight,
+    FaSearch, FaSpinner, FaEllipsisV,
     FaEnvelope, FaPhone, FaIdCard, FaCalendarAlt, FaBriefcase,
     FaDollarSign, FaUserTag, FaShieldAlt, FaBan, FaTrashAlt,
     FaInfoCircle, FaPlus
@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import SkeletonComponent from '../components/SkeletonComponent';
+import Pagination, { usePagination } from '../components/PaginationComponent';
 
 const MODAL_TYPES = {
     NONE: 'NONE',
@@ -46,8 +47,6 @@ const EmployeeManagement = () => {
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
 
-    // Tracks which permissions were added via the Select dropdown
-    // (needed to know which ones to revert to 'remove' if deselected)
     const [selectedNewPermissions, setSelectedNewPermissions] = useState([]);
     const [permissionOptions, setPermissionOptions] = useState([]);
 
@@ -57,17 +56,22 @@ const EmployeeManagement = () => {
         joining_date: '', status: '', permissions: []
     });
 
+    // Use pagination hook
+    const {
+        pagination,
+        updatePagination,
+        goToPage,
+    } = usePagination(1, 20);
+
     const constantsFetched = useRef(false);
     const permissionsFetched = useRef(false);
     const isMounted = useRef(true);
     const fetchInProgress = useRef(false);
     const initialFetchDone = useRef(false);
+    const isInitialLoad = useRef(true);
 
     const API_BASE = "https://api-attendance.onesaas.in";
 
-    const [pagination, setPagination] = useState({
-        page: 1, limit: 20, total: 0, total_pages: 1, is_last_page: true
-    });
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
@@ -84,7 +88,6 @@ const EmployeeManagement = () => {
         load();
     }, []);
 
-    // Build react-select options from allPermissions
     useEffect(() => {
         if (allPermissions.length > 0) {
             setPermissionOptions(allPermissions.map(p => ({
@@ -95,16 +98,26 @@ const EmployeeManagement = () => {
         }
     }, [allPermissions]);
 
-    // Debounce search
+    // Debounce search - removed goToPage dependency
     useEffect(() => {
         const t = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
-            setPagination(prev => ({ ...prev, page: 1 }));
         }, 500);
         return () => clearTimeout(t);
     }, [searchTerm]);
 
-    // ─── API ────────────────────────────────────────────────────────────────
+    // Reset to page 1 when search changes
+    useEffect(() => {
+        if (!isInitialLoad.current && debouncedSearchTerm !== undefined) {
+            if (pagination.page !== 1) {
+                goToPage(1);
+            } else {
+                fetchEmployees(1);
+            }
+        }
+    }, [debouncedSearchTerm]);
+
+    // ─── API Calls ────────────────────────────────────────────────────────────────
 
     const fetchConstants = useCallback(async () => {
         if (constantsFetched.current) return;
@@ -124,7 +137,6 @@ const EmployeeManagement = () => {
         } finally { setConstantsLoading(false); }
     }, []);
 
-    // Returns fetched data so callers can use it immediately (avoids stale state)
     const fetchAllPermissions = useCallback(async () => {
         if (permissionsFetched.current) return allPermissions;
         setPermissionsLoading(true);
@@ -149,40 +161,64 @@ const EmployeeManagement = () => {
         } finally { setPermissionsLoading(false); }
     }, [allPermissions]);
 
-    const fetchEmployees = useCallback(async () => {
+    const fetchEmployees = useCallback(async (page = pagination.page, resetLoading = true) => {
+        // Prevent multiple simultaneous fetches
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
-        setLoading(true);
+        if (resetLoading) setLoading(true);
         setError(null);
+        
         try {
             const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
-            const params = new URLSearchParams({ page: pagination.page, limit: pagination.limit });
+            const params = new URLSearchParams({ 
+                page: page.toString(), 
+                limit: pagination.limit.toString() 
+            });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+            
             const res = await fetch(`${API_BASE}/employees/list?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' }
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
-            if (result.success) { setEmployees(result.data); setPagination(result.pagination); }
-            else throw new Error(result.message || 'Failed to fetch employees');
+            
+            if (result.success) {
+                setEmployees(result.data);
+                // Update pagination with response data
+                updatePagination({
+                    page: result.pagination?.page || page,
+                    limit: result.pagination?.limit || pagination.limit,
+                    total: result.pagination?.total || 0,
+                    total_pages: result.pagination?.total_pages || 1,
+                    is_last_page: result.pagination?.is_last_page ?? (page === result.pagination?.total_pages)
+                });
+            } else {
+                throw new Error(result.message || 'Failed to fetch employees');
+            }
         } catch (e) {
             setError(e.message);
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
+            isInitialLoad.current = false;
         }
-    }, [pagination.page, pagination.limit, debouncedSearchTerm]);
+    }, [pagination.page, pagination.limit, debouncedSearchTerm, updatePagination]);
 
+    // Initial load
     useEffect(() => {
-        if (!initialFetchDone.current) { fetchEmployees(); initialFetchDone.current = true; }
-    }, []);
+        if (!initialFetchDone.current) { 
+            fetchEmployees(1, true); 
+            initialFetchDone.current = true; 
+        }
+    }, [fetchEmployees]);
 
+    // Fetch when page changes
     useEffect(() => {
-        if (!initialFetchDone.current) return;
-        const t = setTimeout(fetchEmployees, 300);
-        return () => clearTimeout(t);
-    }, [pagination.page, pagination.limit, debouncedSearchTerm]);
+        if (!isInitialLoad.current && !fetchInProgress.current && initialFetchDone.current) {
+            fetchEmployees(pagination.page, true);
+        }
+    }, [pagination.page, fetchEmployees]);
 
     const updateEmployee = async (id, employeeData) => {
         setLoading(true);
@@ -190,7 +226,6 @@ const EmployeeManagement = () => {
             const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
 
-            // Send only allow/deny permissions (not 'remove')
             const permissionsToSend = (employeeData.permissions || [])
                 .filter(p => p.status !== 'remove')
                 .map(p => ({ permission_id: p.permission_id, is_allowed: p.status === 'allow' }));
@@ -212,7 +247,10 @@ const EmployeeManagement = () => {
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
-            if (result.success) { await fetchEmployees(); return { success: true }; }
+            if (result.success) { 
+                await fetchEmployees(pagination.page, false); 
+                return { success: true }; 
+            }
             throw new Error(result.message || 'Update failed');
         } catch (e) {
             return { success: false, error: e.message };
@@ -231,14 +269,17 @@ const EmployeeManagement = () => {
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
-            if (result.success) { await fetchEmployees(); return { success: true }; }
+            if (result.success) { 
+                await fetchEmployees(pagination.page, false); 
+                return { success: true }; 
+            }
             throw new Error(result.message || 'Delete failed');
         } catch (e) {
             return { success: false, error: e.message };
         } finally { setLoading(false); }
     };
 
-    // ─── Modal handlers ──────────────────────────────────────────────────────
+    // ─── Modal Handlers ──────────────────────────────────────────────────────
 
     const openEditModal = async (employee) => {
         setConstantsLoading(true);
@@ -251,7 +292,6 @@ const EmployeeManagement = () => {
 
             setSelectedEmployee(employee);
 
-            // Build a map of this employee's existing permissions
             const empPermMap = {};
             (employee.permissions || []).forEach(p => {
                 empPermMap[p.permission_id] = {
@@ -260,7 +300,6 @@ const EmployeeManagement = () => {
                 };
             });
 
-            // Merge: every permission in the system gets a status
             const merged = permsData.map(p => ({
                 permission_id: p.id,
                 name: p.name,
@@ -297,12 +336,30 @@ const EmployeeManagement = () => {
         }
     };
 
-    const openViewModal = (emp) => { setSelectedEmployee(emp); setModalType(MODAL_TYPES.VIEW); setActiveActionMenu(null); };
-    const openDeleteModal = (emp) => { setSelectedEmployee(emp); setModalType(MODAL_TYPES.DELETE_CONFIRM); setActiveActionMenu(null); };
-    const closeModal = () => { setModalType(MODAL_TYPES.NONE); setSelectedEmployee(null); setSelectedNewPermissions([]); };
-    const toggleActionMenu = (e, id) => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
+    const openViewModal = (emp) => { 
+        setSelectedEmployee(emp); 
+        setModalType(MODAL_TYPES.VIEW); 
+        setActiveActionMenu(null); 
+    };
+    
+    const openDeleteModal = (emp) => { 
+        setSelectedEmployee(emp); 
+        setModalType(MODAL_TYPES.DELETE_CONFIRM); 
+        setActiveActionMenu(null); 
+    };
+    
+    const closeModal = () => { 
+        setModalType(MODAL_TYPES.NONE); 
+        setSelectedEmployee(null); 
+        setSelectedNewPermissions([]); 
+    };
+    
+    const toggleActionMenu = (e, id) => { 
+        e.stopPropagation(); 
+        setActiveActionMenu(activeActionMenu === id ? null : id); 
+    };
 
-    // ─── Form handlers ───────────────────────────────────────────────────────
+    // ─── Form Handlers ───────────────────────────────────────────────────────
 
     const handleEdit = async (e) => {
         e.preventDefault();
@@ -328,7 +385,6 @@ const EmployeeManagement = () => {
 
     const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    // Toggle allow/deny/remove on an existing permission card
     const handlePermissionChange = (permissionId, newStatus) => {
         setFormData(prev => ({
             ...prev,
@@ -336,21 +392,14 @@ const EmployeeManagement = () => {
                 p.permission_id === permissionId ? { ...p, status: newStatus } : p
             )
         }));
-        // If removed via button, also clear it from the dropdown selection
         if (newStatus === 'remove') {
             setSelectedNewPermissions(prev => prev.filter(opt => opt.value !== permissionId));
         }
     };
 
-    // ✅ KEY FIX: When the Select changes, sync the formData.permissions array properly.
-    // Strategy: iterate over ALL permissions in formData and decide each one's status:
-    //   - If it's currently selected in the dropdown  → ensure status = 'allow'
-    //   - If it was previously selected but now removed from dropdown → revert to 'remove'
-    //   - Everything else stays as-is (user may have manually set allow/deny)
     const handleAddNewPermissions = (selectedOptions) => {
         const newSelection = selectedOptions || [];
         const newSelectedIds = new Set(newSelection.map(o => o.value));
-        const prevSelectedIds = new Set(selectedNewPermissions.map(o => o.value));
 
         setSelectedNewPermissions(newSelection);
 
@@ -358,15 +407,9 @@ const EmployeeManagement = () => {
             ...prev,
             permissions: prev.permissions.map(perm => {
                 if (newSelectedIds.has(perm.permission_id)) {
-                    // Newly selected (or still selected) → activate with 'allow'
-                    // Only change if currently 'remove'; preserve manual allow/deny changes
                     return perm.status === 'remove' ? { ...perm, status: 'allow' } : perm;
                 }
-                if (prevSelectedIds.has(perm.permission_id) && !newSelectedIds.has(perm.permission_id)) {
-                    // Was in previous dropdown selection but now removed → revert to 'remove'
-                    return { ...perm, status: 'remove' };
-                }
-                return perm; // untouched
+                return perm;
             })
         }));
     };
@@ -405,15 +448,7 @@ const EmployeeManagement = () => {
         on_leave: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
     }[v] || 'bg-gray-100 text-gray-800 border border-gray-200'), []);
 
-    const goToNextPage = useCallback(() => {
-        if (!pagination.is_last_page) setPagination(p => ({ ...p, page: p.page + 1 }));
-    }, [pagination.is_last_page]);
-
-    const goToPrevPage = useCallback(() => {
-        if (pagination.page > 1) setPagination(p => ({ ...p, page: p.page - 1 }));
-    }, [pagination.page]);
-
-    // ─── Responsive columns ──────────────────────────────────────────────────
+    // ─── Responsive Columns ──────────────────────────────────────────────────
 
     const [visibleColumns, setVisibleColumns] = useState(() => ({
         showEmployeeCode: true, showName: true,
@@ -443,7 +478,7 @@ const EmployeeManagement = () => {
         return () => { clearTimeout(t); window.removeEventListener('resize', onResize); };
     }, []);
 
-    // ─── Memoized select options ─────────────────────────────────────────────
+    // ─── Memoized Select Options ─────────────────────────────────────────────
 
     const fmt = s => s.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
@@ -452,14 +487,19 @@ const EmployeeManagement = () => {
     const salaryTypeOptions = useMemo(() => constants.salary_types?.map(t => ({ value: t.value, label: fmt(t.key) })) || [], [constants.salary_types]);
     const statusOptions = useMemo(() => constants.employment_status?.map(s => ({ value: s.value, label: fmt(s.key) })) || [], [constants.employment_status]);
 
-    // Active permissions (allow or deny) — shown in the permission cards grid
     const activePermissions = useMemo(() => formData.permissions.filter(p => p.status !== 'remove'), [formData.permissions]);
     const removedPermissionsCount = useMemo(() => formData.permissions.filter(p => p.status === 'remove').length, [formData.permissions]);
 
-    // Only show permissions in the dropdown that are not already active
     const availablePermissionOptions = useMemo(() =>
         permissionOptions.filter(opt => !activePermissions.some(p => p.permission_id === opt.value))
     , [permissionOptions, activePermissions]);
+
+    // Handle page change
+    const handlePageChange = useCallback((newPage) => {
+        if (newPage !== pagination.page) {
+            goToPage(newPage);
+        }
+    }, [pagination.page, goToPage]);
 
     // ─── Render ──────────────────────────────────────────────────────────────
 
@@ -515,7 +555,7 @@ const EmployeeManagement = () => {
 
             {!loading && !error && employees.length > 0 && (
                 <>
-                    {/* Table */}
+                    {/* Desktop Table */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden"
                     >
@@ -620,25 +660,15 @@ const EmployeeManagement = () => {
                         ))}
                     </div>
 
-                    {/* Pagination */}
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                        className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-6 py-4 rounded-2xl shadow-lg"
-                    >
-                        <div className="text-sm text-gray-600">
-                            Showing <span className="font-semibold text-blue-600">{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
-                            <span className="font-semibold text-blue-600">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of{' '}
-                            <span className="font-semibold text-blue-600">{pagination.total}</span> results
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={goToPrevPage} disabled={pagination.page === 1}
-                                className={`px-4 py-2 rounded-xl border flex items-center gap-2 transition-all duration-300 ${pagination.page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'}`}
-                            ><FaChevronLeft size={12} /> Previous</button>
-                            <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl min-w-[40px] text-center font-semibold shadow-md">{pagination.page}</span>
-                            <button onClick={goToNextPage} disabled={pagination.is_last_page}
-                                className={`px-4 py-2 rounded-xl border flex items-center gap-2 transition-all duration-300 ${pagination.is_last_page ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'}`}
-                            >Next <FaChevronRight size={12} /></button>
-                        </div>
-                    </motion.div>
+                    {/* Pagination Component */}
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalItems={pagination.total}
+                        itemsPerPage={pagination.limit}
+                        onPageChange={handlePageChange}
+                        variant="default"
+                        showInfo={true}
+                    />
                 </>
             )}
 
@@ -653,7 +683,7 @@ const EmployeeManagement = () => {
                             className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
                             onClick={e => e.stopPropagation()}
                         >
-                            {/* ── VIEW ── */}
+                            {/* VIEW MODAL */}
                             {modalType === MODAL_TYPES.VIEW && selectedEmployee && (
                                 <>
                                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
@@ -706,7 +736,7 @@ const EmployeeManagement = () => {
                                 </>
                             )}
 
-                            {/* ── EDIT ── */}
+                            {/* EDIT MODAL */}
                             {modalType === MODAL_TYPES.EDIT && (
                                 <>
                                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl">
@@ -738,7 +768,6 @@ const EmployeeManagement = () => {
                                                         <FaShieldAlt className="text-blue-500" /> Permissions
                                                     </h3>
 
-                                                    {/* Active permission cards */}
                                                     {activePermissions.length > 0 && (
                                                         <div className="mb-6">
                                                             <h4 className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
@@ -773,7 +802,6 @@ const EmployeeManagement = () => {
                                                         </div>
                                                     )}
 
-                                                    {/* Add New Permissions dropdown */}
                                                     <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
                                                         <h4 className="text-sm font-medium text-gray-600 mb-3 flex items-center gap-2">
                                                             <FaPlus className="text-blue-500" size={14} /> Add New Permissions
@@ -838,7 +866,7 @@ const EmployeeManagement = () => {
                                 </>
                             )}
 
-                            {/* ── DELETE ── */}
+                            {/* DELETE MODAL */}
                             {modalType === MODAL_TYPES.DELETE_CONFIRM && selectedEmployee && (
                                 <>
                                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
@@ -875,8 +903,7 @@ const EmployeeManagement = () => {
     );
 };
 
-// ─── Helper Components ────────────────────────────────────────────────────────
-
+// Helper Components
 const InfoItem = ({ icon, label, value }) => (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">{icon}{label}</label>

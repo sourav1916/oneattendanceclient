@@ -5,13 +5,13 @@ import { toast } from "react-toastify";
 import {
   FaUserPlus, FaUserTag, FaUserCog,
   FaTimes, FaCheck, FaSpinner, FaUserCircle,
-  FaBriefcase, FaClock, FaShieldAlt, FaUserTie
+  FaBriefcase, FaClock, FaShieldAlt, FaUserTie,
+  FaSave
 } from "react-icons/fa";
-import SearchableSelect from "./SearchableSelect";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
-function AddStaffModal({ isOpen, onClose, onSuccess }) {
+function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const [users, setUsers] = useState([]);
   const [permissions, setPermissions] = useState([]);
   const [salaryTypes, setSalaryTypes] = useState([]);
@@ -27,6 +27,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [isLoadingSalaryTypes, setIsLoadingSalaryTypes] = useState(false);
   const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
   const [isLoadingEmploymentTypes, setIsLoadingEmploymentTypes] = useState(false);
+  const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
   const [designationOptions, setDesignationOptions] = useState([]);
   const [employmentTypeOptions, setEmploymentTypeOptions] = useState([]);
@@ -83,6 +84,13 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }));
   };
 
+  // Fetch staff details when modal opens with staffData
+  useEffect(() => {
+    if (isOpen && staffData) {
+      loadStaffData();
+    }
+  }, [isOpen, staffData]);
+
   // Fetch all constants when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -94,6 +102,66 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
   }, [isOpen]);
 
+  const loadStaffData = () => {
+    setIsLoadingStaff(true);
+    try {
+      // Set selected user
+      if (staffData.user) {
+        setSelectedUser({
+          id: staffData.user.id,
+          full_name: staffData.user.name || staffData.user.email || "No Name",
+          email: staffData.user.email,
+          avatar: staffData.user.avatar || null
+        });
+      }
+
+      // Set designation
+      if (staffData.designation) {
+        setDesignation({
+          value: staffData.designation,
+          label: staffData.designation
+            .toLowerCase()
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase())
+        });
+      }
+
+      // Set employment type
+      if (staffData.employment_type) {
+        setEmploymentType({
+          value: staffData.employment_type,
+          label: staffData.employment_type
+            .toLowerCase()
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase())
+        });
+      }
+
+      // Set salary type
+      if (staffData.salary_type) {
+        setStaffType({
+          value: staffData.salary_type,
+          label: staffData.salary_type.charAt(0) + staffData.salary_type.slice(1).toLowerCase()
+        });
+      }
+
+      // Set permissions
+      if (staffData.permissions && staffData.permissions.length > 0) {
+        const selectedPerms = staffData.permissions.map(p => ({
+          value: p.id,
+          label: p.name,
+          description: p.description || p.name
+        }));
+        setSelectedPermissions(selectedPerms);
+      }
+    } catch (err) {
+      console.error("Error loading staff data:", err);
+      toast.error("Failed to load staff data");
+    } finally {
+      setIsLoadingStaff(false);
+    }
+  };
+
   const fetchUsers = async (searchQuery = "") => {
     setIsLoadingUsers(true);
     try {
@@ -103,24 +171,27 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       if (!company?.id) {
         console.error("No company selected");
         toast.error("Please select a company first");
-        setIsLoadingUsers(false);
         return;
       }
 
-      // Build URL - note the endpoint pattern from your example
-      const baseUrl = `${API_BASE}/company/users/available`;
+      // Build query params
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "5",
+        sort: "name",
+        order: "asc"
+      });
 
-      // Add search query as param if provided
-      const url = searchQuery
-        ? `${baseUrl}?search=${encodeURIComponent(searchQuery)}`
-        : baseUrl;
+      // Add search if provided
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
 
-      const res = await fetch(url, {
+      const res = await fetch(`${API_BASE}/company/${company.id}/users/available?${params.toString()}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "company": company.id
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -131,7 +202,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const result = await res.json();
 
       if (result.success) {
-        // Handle different possible response structures
+        // Handle the response structure based on your API
         const usersData = result.data || result.users || [];
 
         const formatted = usersData.map(u => ({
@@ -139,11 +210,18 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           full_name: u.name || u.email || "No Name",
           email: u.email,
           avatar: u.avatar || null,
+          // Include any additional fields you might need
           phone: u.phone || null,
           role: u.role || null
         }));
 
         setUsers(formatted);
+
+        // If your API returns pagination info, you might want to store it
+        if (result.pagination) {
+          // Handle pagination state if needed
+          console.log('Pagination:', result.pagination);
+        }
       } else {
         throw new Error(result.message || 'Failed to fetch users');
       }
@@ -154,6 +232,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       setIsLoadingUsers(false);
     }
   };
+
   const fetchPermissions = async () => {
     setIsLoadingPermissions(true);
     try {
@@ -306,10 +385,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         salary_type: staffType.value
       };
 
-      console.log("Submitting payload:", payload);
+      console.log("Updating staff with payload:", payload);
 
-      const response = await fetch(`${API_BASE}/company/invites/send`, {
-        method: "POST",
+      // Assuming you have an API endpoint for updating staff
+      const response = await fetch(`${API_BASE}/company/invites/update`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
@@ -320,16 +400,16 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.message || "Failed to create staff");
+        throw new Error(data?.message || "Failed to update staff");
       }
 
-      toast.success("Staff created successfully");
+      toast.success("Staff updated successfully");
       onSuccess?.();
       handleClose();
 
     } catch (error) {
-      console.error("Error creating staff:", error);
-      toast.error(error.message || "Failed to create staff");
+      console.error("Error updating staff:", error);
+      toast.error(error.message || "Failed to update staff");
     } finally {
       setIsSubmitting(false);
     }
@@ -423,8 +503,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     <FaUserPlus className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Add New Staff</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Add team members with roles and permissions</p>
+                    <h2 className="text-xl font-bold text-gray-900">Edit Staff</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Update staff details and permissions</p>
                   </div>
                 </div>
                 <motion.button
@@ -439,193 +519,182 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
             </div>
 
             <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
-              <div className="space-y-6">
-                {/* User Selection */}
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="space-y-2"
-                >
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FaUserCircle className="w-4 h-4 text-indigo-500" />
-                    Select User
-                  </label>
-                  {isLoadingUsers ? (
-                    <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
-                      <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
-                      <span className="ml-2 text-sm text-gray-500">Loading users...</span>
-                    </div>
-                  ) : (
-                    <SearchableSelect
-                      users={users}
-                      onSelect={(user) => setSelectedUser(user)}
-                      placeholder="Search and select user..."
-                    />
-                  )}
-                </motion.div>
-
-                {/* Three Column Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Employment Type */}
+              {isLoadingStaff ? (
+                <div className="flex items-center justify-center py-12">
+                  <FaSpinner className="w-8 h-8 text-indigo-500 animate-spin" />
+                  <span className="ml-3 text-gray-500">Loading staff data...</span>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* User Selection - Disabled in edit mode */}
                   <motion.div
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.15 }}
+                    transition={{ delay: 0.1 }}
                     className="space-y-2"
                   >
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaBriefcase className="w-4 h-4 text-indigo-500" />
-                      Employment Type
+                      <FaUserCircle className="w-4 h-4 text-indigo-500" />
+                      User
                     </label>
-                    {isLoadingEmploymentTypes ? (
-                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
-                      </div>
-                    ) : (
-                      <Select
-                        options={employmentTypeOptions}
-                        value={employmentType}
-                        onChange={(option) => setEmploymentType(option)}
-                        placeholder="Select type"
-                        styles={customSelectStyles}
-                        formatOptionLabel={({ label, description, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div>
-                              <div>{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
-                            </div>
+                    {selectedUser && (
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold">
+                            {selectedUser.full_name?.charAt(0).toUpperCase()}
                           </div>
-                        )}
-                      />
+                          <div>
+                            <h4 className="font-medium text-gray-900">{selectedUser.full_name}</h4>
+                            <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </motion.div>
 
-                  {/* Designation */}
-                  <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-2"
-                  >
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaUserTie className="w-4 h-4 text-indigo-500" />
-                      Designation
-                    </label>
-                    {isLoadingDesignations ? (
-                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
-                      </div>
-                    ) : (
-                      <Select
-                        options={designationOptions}
-                        value={designation}
-                        onChange={(option) => setDesignation(option)}
-                        placeholder="Select designation"
-                        styles={customSelectStyles}
-                        formatOptionLabel={({ label, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <span>{label}</span>
-                          </div>
-                        )}
-                      />
-                    )}
-                  </motion.div>
-
-                  {/* Salary Type */}
-                  <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-2"
-                  >
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaClock className="w-4 h-4 text-indigo-500" />
-                      Salary Type
-                    </label>
-                    {isLoadingSalaryTypes ? (
-                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
-                      </div>
-                    ) : (
-                      <Select
-                        options={salaryTypes}
-                        value={staffType}
-                        onChange={(option) => setStaffType(option)}
-                        placeholder="Select salary type"
-                        styles={customSelectStyles}
-                        formatOptionLabel={({ label, description, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div>
-                              <div>{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
+                  {/* Three Column Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Employment Type */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.15 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaBriefcase className="w-4 h-4 text-indigo-500" />
+                        Employment Type
+                      </label>
+                      {isLoadingEmploymentTypes ? (
+                        <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
+                          <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
+                          <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                        </div>
+                      ) : (
+                        <Select
+                          options={employmentTypeOptions}
+                          value={employmentType}
+                          onChange={(option) => setEmploymentType(option)}
+                          placeholder="Select type"
+                          styles={customSelectStyles}
+                          formatOptionLabel={({ label, description, icon: Icon }) => (
+                            <div className="flex items-center gap-2">
+                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                              <div>
+                                <div>{label}</div>
+                                {description && <div className="text-xs text-gray-400">{description}</div>}
+                              </div>
                             </div>
+                          )}
+                        />
+                      )}
+                    </motion.div>
+
+                    {/* Designation */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaUserTie className="w-4 h-4 text-indigo-500" />
+                        Designation
+                      </label>
+                      {isLoadingDesignations ? (
+                        <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
+                          <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
+                          <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                        </div>
+                      ) : (
+                        <Select
+                          options={designationOptions}
+                          value={designation}
+                          onChange={(option) => setDesignation(option)}
+                          placeholder="Select designation"
+                          styles={customSelectStyles}
+                          formatOptionLabel={({ label, icon: Icon }) => (
+                            <div className="flex items-center gap-2">
+                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                              <span>{label}</span>
+                            </div>
+                          )}
+                        />
+                      )}
+                    </motion.div>
+
+                    {/* Salary Type */}
+                    <motion.div
+                      initial={{ x: 20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaClock className="w-4 h-4 text-indigo-500" />
+                        Salary Type
+                      </label>
+                      {isLoadingSalaryTypes ? (
+                        <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
+                          <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
+                          <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                        </div>
+                      ) : (
+                        <Select
+                          options={salaryTypes}
+                          value={staffType}
+                          onChange={(option) => setStaffType(option)}
+                          placeholder="Select salary type"
+                          styles={customSelectStyles}
+                          formatOptionLabel={({ label, description, icon: Icon }) => (
+                            <div className="flex items-center gap-2">
+                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                              <div>
+                                <div>{label}</div>
+                                {description && <div className="text-xs text-gray-400">{description}</div>}
+                              </div>
+                            </div>
+                          )}
+                        />
+                      )}
+                    </motion.div>
+                  </div>
+
+                  {/* Permissions */}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="space-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <FaShieldAlt className="w-4 h-4 text-indigo-500" />
+                      Permissions
+                    </label>
+                    {isLoadingPermissions ? (
+                      <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading permissions...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        isMulti
+                        options={permissionOptions}
+                        value={selectedPermissions}
+                        onChange={(options) => setSelectedPermissions(options)}
+                        placeholder="Select permissions..."
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description }) => (
+                          <div className="py-1">
+                            <div className="font-medium">{label}</div>
+                            {description && <div className="text-xs text-gray-400">{description}</div>}
                           </div>
                         )}
                       />
                     )}
                   </motion.div>
                 </div>
-
-                {/* Permissions */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="space-y-2"
-                >
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FaShieldAlt className="w-4 h-4 text-indigo-500" />
-                    Permissions
-                  </label>
-                  {isLoadingPermissions ? (
-                    <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
-                      <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
-                      <span className="ml-2 text-sm text-gray-500">Loading permissions...</span>
-                    </div>
-                  ) : (
-                    <Select
-                      isMulti
-                      options={permissionOptions}
-                      value={selectedPermissions}
-                      onChange={(options) => setSelectedPermissions(options)}
-                      placeholder="Select permissions..."
-                      styles={customSelectStyles}
-                      formatOptionLabel={({ label, description }) => (
-                        <div className="py-1">
-                          <div className="font-medium">{label}</div>
-                          {description && <div className="text-xs text-gray-400">{description}</div>}
-                        </div>
-                      )}
-                    />
-                  )}
-                </motion.div>
-
-                {/* Selected User Summary */}
-                {selectedUser && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold">
-                        {selectedUser.full_name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{selectedUser.full_name}</h4>
-                        <p className="text-sm text-gray-500">{selectedUser.email}</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+              )}
             </div>
 
             {/* Footer Actions */}
@@ -643,18 +712,18 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSubmit}
-                disabled={isSubmitting || isLoadingConstants}
+                disabled={isSubmitting || isLoadingConstants || isLoadingStaff}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting ? (
                   <>
                     <FaSpinner className="w-4 h-4 animate-spin" />
-                    Creating...
+                    Updating...
                   </>
                 ) : (
                   <>
-                    <FaCheck className="w-4 h-4" />
-                    Create Staff
+                    <FaSave className="w-4 h-4" />
+                    Update Staff
                   </>
                 )}
               </motion.button>
@@ -666,4 +735,4 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   );
 }
 
-export default AddStaffModal;
+export default EditStaffModal;

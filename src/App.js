@@ -38,16 +38,12 @@ function AppContent() {
       <Route
         path="/login"
         element={
-          // If user is authenticated and has selected company, redirect to home
-          // If user is authenticated but needs to select company, stay on login (company selection will show)
           user && !mustSelectCompany ? <Navigate to="/home" replace /> : <Login />
         }
       />
       <Route
         path="/signup"
         element={
-          // If user is authenticated and has selected company, redirect to home
-          // If user is authenticated but needs to select company, redirect to login (to select company)
           user ? <Navigate to={mustSelectCompany ? "/login" : "/home"} replace /> : <Signup />
         }
       />

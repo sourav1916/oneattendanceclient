@@ -20,11 +20,11 @@ import {
   FaSearch,
   FaTimes,
   FaInfoCircle,
-  FaUserCircle,
-  FaTrashAlt
+  FaUserCircle
 } from "react-icons/fa";
-import EditStaffModal from "../components/EditStaffModal";
+import EditStaffModal from "../components/StaffModals/EditStaffModal";
 import Skeleton from "../components/SkeletonComponent";
+import Pagination, { usePagination } from "../components/PaginationComponent";
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.9, y: 20 },
@@ -48,14 +48,24 @@ export default function CompanyInvites() {
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingInvite, setEditingInvite] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Use ref to track if fetch is in progress
+  const fetchInProgress = useRef(false);
+
+  // Use reusable pagination hook
+  const {
+    pagination,
+    updatePagination,
+    goToPage,
+  } = usePagination(1, 10);
 
   const API_BASE = "https://api-attendance.onesaas.in";
   const company_id = JSON.parse(localStorage.getItem('company'))?.id;
 
-  // Debounce search
+  // Debounce search - removed goToPage from dependency to prevent infinite loop
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -63,12 +73,26 @@ export default function CompanyInvites() {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  const fetchInvites = useCallback(async () => {
+  const fetchInvites = useCallback(async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true) => {
+    // Prevent multiple simultaneous fetches
+    if (fetchInProgress.current) return;
+    
+    fetchInProgress.current = true;
+    if (resetLoading) setLoading(true);
+    
     try {
-      setLoading(true);
       const token = localStorage.getItem('token');
 
-      const response = await fetch(`${API_BASE}/company/invites/${company_id}/list`, {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString()
+      });
+      
+      if (search) {
+        params.append('search', search);
+      }
+
+      const response = await fetch(`${API_BASE}/company/invites/${company_id}/list?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -82,7 +106,15 @@ export default function CompanyInvites() {
       const result = await response.json();
 
       if (result.success) {
-        setInvites(result.data);
+        setInvites(result.data || []);
+        // Update pagination with response data
+        updatePagination({
+          page: result.current_page || page,
+          limit: result.per_page || pagination.limit,
+          total: result.total || 0,
+          total_pages: result.last_page || Math.ceil((result.total || 0) / pagination.limit),
+          is_last_page: result.current_page === result.last_page
+        });
         setError(null);
       } else {
         throw new Error(result.message || 'Failed to fetch invites');
@@ -92,17 +124,47 @@ export default function CompanyInvites() {
       console.error('Error fetching invites:', err);
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
+      fetchInProgress.current = false;
     }
-  }, [company_id]);
+  }, [company_id, pagination.limit, updatePagination]);
 
+  // Handle page changes - separate effect to avoid loops
+  const handlePageChange = useCallback((newPage) => {
+    if (newPage !== pagination.page) {
+      goToPage(newPage);
+    }
+  }, [pagination.page, goToPage]);
+
+  // Fetch when page changes
   useEffect(() => {
-    if (company_id) {
-      fetchInvites();
-    } else {
+    if (!isInitialLoad && !fetchInProgress.current) {
+      fetchInvites(pagination.page, debouncedSearchTerm, true);
+    }
+  }, [pagination.page]); // Only depend on pagination.page
+
+  // Handle search changes - reset to page 1
+  useEffect(() => {
+    if (!isInitialLoad) {
+      // Reset to page 1 when search changes
+      if (pagination.page !== 1) {
+        goToPage(1);
+      } else {
+        fetchInvites(1, debouncedSearchTerm, true);
+      }
+    }
+  }, [debouncedSearchTerm]); // Only depend on debouncedSearchTerm
+
+  // Initial load
+  useEffect(() => {
+    if (company_id && isInitialLoad) {
+      fetchInvites(1, '', true);
+    } else if (!company_id) {
       setError('Company ID not found');
       setLoading(false);
+      setIsInitialLoad(false);
     }
-  }, [company_id, fetchInvites]);
+  }, [company_id]); // Only run when company_id changes
 
   const handleCancelInvite = async (token) => {
     try {
@@ -127,9 +189,8 @@ export default function CompanyInvites() {
       const result = await response.json();
 
       if (result.success) {
-        setInvites(prev => prev.map(invite =>
-          invite.token === token ? { ...invite, status: 'cancelled' } : invite
-        ));
+        // Refresh current page after cancel
+        await fetchInvites(pagination.page, debouncedSearchTerm, false);
         closeModal();
       } else {
         throw new Error(result.message || 'Failed to cancel invite');
@@ -148,7 +209,7 @@ export default function CompanyInvites() {
   };
 
   const handleEditSuccess = () => {
-    fetchInvites();
+    fetchInvites(pagination.page, debouncedSearchTerm, false);
     setIsEditModalOpen(false);
     setEditingInvite(null);
   };
@@ -216,19 +277,6 @@ export default function CompanyInvites() {
       day: 'numeric'
     });
   };
-
-  const filteredInvites = useMemo(() => {
-    return invites.filter(invite => {
-      const matchesSearch =
-        invite.user?.name?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        invite.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        invite.designation?.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
-
-      const matchesStatus = statusFilter === 'all' || invite.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [invites, debouncedSearchTerm, statusFilter]);
 
   const openModal = (invite, type) => {
     setSelectedInvite(invite);
@@ -347,7 +395,7 @@ export default function CompanyInvites() {
           {invite.permissions?.length > 0 && (
             <div className="mt-6">
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <FaShieldAlt className="text-blue-500" /> Permissions
+                <FaInfoCircle className="text-blue-500" /> Permissions
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {invite.permissions.map((perm, idx) => (
@@ -435,7 +483,7 @@ export default function CompanyInvites() {
     </motion.div>
   );
 
-  if (loading && !invites.length) {
+  if (isInitialLoad && loading) {
     return <Skeleton />;
   }
 
@@ -466,46 +514,34 @@ export default function CompanyInvites() {
             Company Invitations
           </h1>
           <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-            Total: {invites.length} invitations
+            Total: {pagination.total} invitations
           </div>
         </motion.div>
 
-        {/* Search and Filter */}
+        {/* Search Input */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-6"
         >
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-              <input
-                type="text"
-                placeholder="Search by name, email or designation..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-6 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all cursor-pointer"
-            >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="accepted">Accepted</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+          <div className="relative">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+            <input
+              type="text"
+              placeholder="Search by name, email or designation..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
         </motion.div>
 
@@ -526,8 +562,11 @@ export default function CompanyInvites() {
           )}
         </AnimatePresence>
 
+        {/* Loading State */}
+        {loading && !invites.length && <Skeleton />}
+
         {/* Empty State */}
-        {!loading && !error && filteredInvites.length === 0 && (
+        {!loading && !error && invites.length === 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -536,15 +575,15 @@ export default function CompanyInvites() {
             <FaEnvelope className="text-8xl text-gray-300 mx-auto mb-4" />
             <p className="text-xl text-gray-500">No invitations found</p>
             <p className="text-gray-400 mt-2">
-              {searchTerm || statusFilter !== 'all'
-                ? 'Try adjusting your filters'
+              {searchTerm
+                ? 'Try adjusting your search'
                 : 'Your company hasn\'t sent any invitations yet'}
             </p>
           </motion.div>
         )}
 
         {/* Table View (Desktop) */}
-        {!loading && !error && filteredInvites.length > 0 && (
+        {!loading && !error && invites.length > 0 && (
           <>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -565,7 +604,7 @@ export default function CompanyInvites() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredInvites.map((invite, index) => {
+                    {invites.map((invite, index) => {
                       const status = getStatusBadge(invite.status, invite.expires_at);
                       const StatusIcon = status.icon;
 
@@ -680,7 +719,7 @@ export default function CompanyInvites() {
 
             {/* Card View (Mobile) */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
-              {filteredInvites.map((invite, index) => {
+              {invites.map((invite, index) => {
                 const status = getStatusBadge(invite.status, invite.expires_at);
                 const StatusIcon = status.icon;
 
@@ -758,6 +797,16 @@ export default function CompanyInvites() {
                 );
               })}
             </div>
+
+            {/* Use reusable Pagination component */}
+            <Pagination
+              currentPage={pagination.page}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={handlePageChange}
+              variant="default"
+              showInfo={true}
+            />
           </>
         )}
 
@@ -800,6 +849,3 @@ const InfoItem = ({ icon, label, value }) => (
     <div className="text-gray-800 font-medium">{value}</div>
   </div>
 );
-
-// Add missing icon import
-const FaShieldAlt = ({ className }) => <FaUserTie className={className} />;

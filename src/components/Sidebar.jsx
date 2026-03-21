@@ -37,13 +37,13 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover }) => {
     { icon: FaHome, label: 'Home', path: '/home' },
     { icon: FaClipboardCheck, label: 'Attendance', path: '/attendence'},
 
-    { icon: FaUserCheck, label: 'Company Invites', path: '/company-invites', permission: 'manage_companies' },
+    { icon: FaUserCheck, label: 'Company Invites', path: '/company-invites' },
 
     { icon: FaUserPlus, label: 'My Invites', path: '/my-invites' },
 
-    { icon: FaUsers, label: 'Employee Management', path: '/employee-management', permission: 'manage_employees' },
+    { icon: FaUsers, label: 'Employee Management', path: '/employee-management' },
 
-    { icon: FaBook, label: 'Cash Book', path: '/cashbook', permission: 'view_tasks' },
+    { icon: FaBook, label: 'Cash Book', path: '/cashbook' },
 
     { icon: FaCommentDots, label: 'Help', path: '/help' },
 
