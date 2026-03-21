@@ -65,16 +65,13 @@ const MainLayout = ({ children }) => {
   // Get the actual sidebar state for the icon
   const getSidebarState = () => {
     if (isMobile) return sidebarOpen;
-    // For desktop: expanded if not collapsed OR hovered
     return !desktopSidebarCollapsed || sidebarHovered;
   };
 
-  // FIXED: Content margin based on actual sidebar state
   const getContentMargin = () => {
     if (isMobile) return 'ml-0';
-    // When sidebar is expanded (either by toggle or hover), content should shift
-    if (isSidebarExpanded()) return 'ml-64'; // 64 is the expanded width (w-64)
-    return 'ml-20'; // 20 is the collapsed width (w-20)
+    if (isSidebarExpanded()) return 'ml-64';
+    return 'ml-20';
   };
 
   return (
@@ -112,9 +109,10 @@ const MainLayout = ({ children }) => {
             flex-1 transition-all duration-300 ease-out
             ${getContentMargin()}
             min-h-[calc(100vh-64px)]
+            max-w-full;
           `}
           style={{
-            padding: '1.5rem',
+            padding: '1rem',
             transition: 'margin-left 0.3s ease-out'
           }}
         >

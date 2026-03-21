@@ -461,16 +461,17 @@ const PermissionManagement = () => {
                     Permission Management
                 </h1>
                 <div className="flex gap-3">
+                    
+                    <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                        Total: {pagination.total} permissions
+                    </div>
                     <button
                         onClick={openCreateModal}
                         className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
                     >
                         <FaPlus size={16} />
-                        Create Permission Group
+                        Create
                     </button>
-                    <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        Total: {pagination.total} groups
-                    </div>
                 </div>
             </motion.div>
 

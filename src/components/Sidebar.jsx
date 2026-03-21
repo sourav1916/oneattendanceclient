@@ -138,7 +138,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         {/* Mobile Sidebar */}
         <div className={`
           fixed left-0 top-16 z-30 w-72 h-[calc(100vh-4rem)]
-          bg-white shadow-2xl transform transition-transform duration-300 ease-out
+          bg-white transform transition-transform duration-300 ease-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           overflow-y-auto overflow-x-hidden
         `}>
