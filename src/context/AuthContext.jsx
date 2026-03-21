@@ -155,7 +155,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (token) => {
     localStorage.setItem("token", token);
-    // Clear any existing company selection on new login
     localStorage.removeItem("company");
     setLoading(true);
     await fetchUserProfile(token);

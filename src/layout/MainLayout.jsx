@@ -6,15 +6,13 @@ const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(true); // Start collapsed
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(true);
 
-  // Check if mobile on mount and when window resizes
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       
-      // On desktop, always close mobile sidebar state
       if (!mobile) {
         setSidebarOpen(false);
       }
@@ -26,43 +24,33 @@ const MainLayout = ({ children }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Toggle sidebar - works on both mobile and desktop
   const toggleSidebar = () => {
     if (isMobile) {
       setSidebarOpen(!sidebarOpen);
     } else {
-      // On desktop, toggle between collapsed and expanded states
       setDesktopSidebarCollapsed(!desktopSidebarCollapsed);
-      // Reset hover state when toggling
       setSidebarHovered(false);
     }
   };
 
-  // Close sidebar on mobile when clicking outside
   const handleOverlayClick = () => {
     if (isMobile) {
       setSidebarOpen(false);
     }
   };
 
-  // Handle sidebar hover state from child (desktop only)
   const handleSidebarHover = (hovered) => {
     if (!isMobile) {
-      // Only set hover state (the Sidebar component will handle expansion)
       setSidebarHovered(hovered);
     }
   };
 
-  // Determine if sidebar should be expanded
   const isSidebarExpanded = () => {
     if (isMobile) return false;
-    // If sidebar is hovered, always expand (even if collapsed)
     if (sidebarHovered) return true;
-    // Otherwise, use the collapsed state
     return !desktopSidebarCollapsed;
   };
 
-  // Get the actual sidebar state for the icon
   const getSidebarState = () => {
     if (isMobile) return sidebarOpen;
     return !desktopSidebarCollapsed || sidebarHovered;
@@ -76,25 +64,22 @@ const MainLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Navbar - always at top */}
       <Navbar 
         toggleSidebar={toggleSidebar}
         isMobile={isMobile}
         sidebarOpen={sidebarOpen}
-        isDesktopSidebarExpanded={!desktopSidebarCollapsed || sidebarHovered} // Pass desktop sidebar state
+        isDesktopSidebarExpanded={!desktopSidebarCollapsed || sidebarHovered}
       />
       
       <div className="flex relative">
-        {/* Sidebar - fixed position */}
         <Sidebar 
           isMobile={isMobile}
           sidebarOpen={sidebarOpen}
           toggleSidebar={toggleSidebar}
           onHover={handleSidebarHover}
-          isExpanded={isSidebarExpanded()} // Pass the expanded state to Sidebar
+          isExpanded={isSidebarExpanded()}
         />
 
-        {/* Overlay for mobile when sidebar is open */}
         {isMobile && sidebarOpen && (
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-20 transition-opacity duration-300"

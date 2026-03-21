@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
+import Skeleton from "../components/SkeletonComponent";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
@@ -349,12 +350,7 @@ const SettingsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg sm:text-xl font-semibold text-gray-700">Loading settings...</p>
-        </div>
-      </div>
+      <Skeleton/>
     );
   }
 
