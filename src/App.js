@@ -15,6 +15,7 @@ import HelpPage from "./pages/Help";
 import MyInvites from "./pages/invites";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
+import PermissionManagement from "./pages/PermissionManagement";
 
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
@@ -49,87 +50,16 @@ function AppContent() {
       />
 
       {/* Protected Routes - Only accessible after company selection */}
-      <Route
-        path="/home"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <Home />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/home"element={<ProtectedRoute> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>}/>
 
-      <Route
-        path="/cashbook"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <Cashbook />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <SettingsPage />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/company-invites"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <CompanyInvites />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/attendance"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <PunchAttendance />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/help"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <HelpPage />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-invites"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <MyInvites />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/employee-management"
-        element={
-          <ProtectedRoute>
-            <MainLayout>
-              <EmployeeManagement />
-            </MainLayout>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/cashbook" element={ <ProtectedRoute> <MainLayout> <Cashbook /> </MainLayout> </ProtectedRoute> }/>
+      <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
+      <Route path="/company-invites" element={ <ProtectedRoute><MainLayout><CompanyInvites /></MainLayout></ProtectedRoute>}/>
+      <Route path="/attendance"element={<ProtectedRoute><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
+      <Route path="/help"element={<ProtectedRoute><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
+      <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
+      <Route path="/employee-management"element={<ProtectedRoute><MainLayout><EmployeeManagement /></MainLayout></ProtectedRoute>} />
+      <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

@@ -90,7 +90,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         {
           icon: FaUserShield,
           label: 'Permissions',
-          path: '/permissions',
+          path: '/permission-management',
           permission: 'manage_permissions'
         },
         {
