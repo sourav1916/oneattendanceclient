@@ -45,8 +45,8 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                             className={`
                                 p-2 rounded-lg transition-all duration-200
                                 focus:outline-none focus:ring-2 focus:ring-white/50
-                                ${isSidebarOpen 
-                                    ? 'text-white bg-white/20' 
+                                ${isSidebarOpen
+                                    ? 'text-white bg-white/20'
                                     : 'text-white/80 hover:text-white hover:bg-white/20'
                                 }
                             `}
@@ -148,11 +148,11 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                     bg-emerald-400 border-2 border-white rounded-full"></div>
                                 </div>
 
-                                <div className="hidden md:block text-left">
-                                    <p className="text-sm font-semibold text-white">
+                                <div className="hidden md:block text-left max-w-[120px]">
+                                    <p className="text-sm font-semibold text-white truncate">
                                         {user?.name || "User"}
                                     </p>
-                                    <p className="text-[10px] text-white/70">
+                                    <p className="text-[10px] text-white/70 truncate">
                                         {user?.role || "Employee"}
                                     </p>
                                 </div>
@@ -173,7 +173,7 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                             <p className="font-semibold text-gray-800">{user?.name || "User"}</p>
                                             <p className="text-xs text-gray-500">{user?.role || "Employee"}</p>
                                         </div>
-                                        
+
                                         <button
                                             onClick={() => {
                                                 setOpenDropdown(false);
@@ -184,9 +184,9 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                             <FaUserCircle className="w-4 h-4" />
                                             My Profile
                                         </button>
-                                        
+
                                         <div className="border-t border-gray-200 my-1"></div>
-                                        
+
                                         <button
                                             onClick={handleLogout}
                                             className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
