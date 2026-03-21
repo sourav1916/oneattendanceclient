@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
-import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
+// import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
 
@@ -800,7 +800,7 @@ const SettingsPage = () => {
         company={editingCompany}
       />
 
-      <SelectCompanyModal
+      {/* <SelectCompanyModal
         isOpen={openSelectModal}
         onClose={() => setOpenSelectModal(false)}
         companies={userCompanies}
@@ -809,7 +809,7 @@ const SettingsPage = () => {
           setActiveCompany(company);
           setOpenSelectModal(false);
         }}
-      />
+      /> */}
 
       <ToastContainer
         position="top-right"

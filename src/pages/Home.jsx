@@ -14,7 +14,7 @@ import {
 } from "react-icons/hi";
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/AddStaffModal";
-import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
+// import SelectCompanyModal from "../components/CompanyModals/SelectCompanyModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 
 const API_BASE = "https://api-attendance.onesaas.in";
@@ -23,7 +23,7 @@ function HomePage() {
   const { user, loading } = useAuth();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
-  const [openSelectCompanyModal, setOpenSelectCompanyModal] = useState(false);
+  // const [openSelectCompanyModal, setOpenSelectCompanyModal] = useState(false);
   const [userCompanies, setUserCompanies] = useState([]);
   // Show loading state
   if (loading) {
@@ -84,7 +84,7 @@ function HomePage() {
           // Multiple companies → choose company
           if (companies.length > 1) {
             setUserCompanies(companies);
-            setOpenSelectCompanyModal(true);
+            // setOpenSelectCompanyModal(true);
             return;
           }
 
@@ -325,12 +325,12 @@ function HomePage() {
         onSuccess={() => setOpenAddStaffModal(false)}
       />
 
-      <SelectCompanyModal
+      {/* <SelectCompanyModal
         isOpen={openSelectCompanyModal}
         onClose={() => setOpenSelectCompanyModal(false)}
         companies={userCompanies}
         onSelect={handleCompanySelect}
-      />
+      /> */}
 
       <CreateCompanyModal
         isOpen={openCreateCompanyModal}
