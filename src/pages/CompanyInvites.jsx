@@ -23,6 +23,7 @@ import {
   FaUserCircle
 } from "react-icons/fa";
 import EditStaffModal from "../components/StaffModals/EditStaffModal";
+import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 
@@ -51,7 +52,7 @@ export default function CompanyInvites() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingInvite, setEditingInvite] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
+  const [openCreateInviteModal, setOpenCreateInviteModal] = useState(false);
   // Use ref to track if fetch is in progress
   const fetchInProgress = useRef(false);
 
@@ -76,10 +77,10 @@ export default function CompanyInvites() {
   const fetchInvites = useCallback(async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true) => {
     // Prevent multiple simultaneous fetches
     if (fetchInProgress.current) return;
-    
+
     fetchInProgress.current = true;
     if (resetLoading) setLoading(true);
-    
+
     try {
       const token = localStorage.getItem('token');
 
@@ -87,7 +88,7 @@ export default function CompanyInvites() {
         page: page.toString(),
         limit: pagination.limit.toString()
       });
-      
+
       if (search) {
         params.append('search', search);
       }
@@ -378,14 +379,14 @@ export default function CompanyInvites() {
             <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(invite.designation)} />
             <InfoItem icon={<FaUserTie className="text-purple-500" />} label="Employment Type" value={formatDisplay(invite.employment_type)} />
             <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(invite.salary_type)} />
-            <InfoItem 
-              icon={<FaTag className="text-orange-500" />} 
-              label="Status" 
+            <InfoItem
+              icon={<FaTag className="text-orange-500" />}
+              label="Status"
               value={
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
                   {getStatusBadge(invite.status, invite.expires_at).text}
                 </span>
-              } 
+              }
             />
             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Sent Date" value={formatDate(invite.created_at)} />
             <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
@@ -502,7 +503,7 @@ export default function CompanyInvites() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
+    <div className="min-h-screen p-3 md:p-6 font-sans">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -513,9 +514,60 @@ export default function CompanyInvites() {
           <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
             Company Invitations
           </h1>
-          <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-            Total: {pagination.total} invitations
+
+          <div className="flex items-center gap-3">
+            {/* Total Count Badge with Icon */}
+            <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="font-medium text-gray-700">{pagination.total}</span>
+              <span className="text-gray-500">invitations</span>
+            </div>
+
+            {/* Create Invite Button */}
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setOpenCreateInviteModal(true)} // Open modal on click
+              className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600 
+               text-white font-semibold rounded-xl shadow-lg hover:shadow-xl 
+               transition-all duration-300 flex items-center gap-2
+               before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r 
+               before:from-blue-500 before:to-purple-500 before:opacity-0 
+               before:transition-opacity before:duration-300 hover:before:opacity-100
+               overflow-hidden"
+            >
+              {/* Icon with animation */}
+              <div className="relative z-10">
+                <svg
+                  className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+
+              <span className="relative z-10 text-sm">Create Invite</span>
+
+              {/* Shine effect on hover */}
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full 
+                    transition-transform duration-700 bg-gradient-to-r 
+                    from-transparent via-white/20 to-transparent"></div>
+            </motion.button>
           </div>
+
+          {/* Create Invite Modal */}
+          <CreateInviteModal
+            isOpen={openCreateInviteModal}
+            onClose={() => setOpenCreateInviteModal(false)}
+            onSuccess={() => {
+              setOpenCreateInviteModal(false);
+              fetchInvites(pagination.page, debouncedSearchTerm, false); // Refresh the list
+            }}
+          />
         </motion.div>
 
         {/* Search Input */}

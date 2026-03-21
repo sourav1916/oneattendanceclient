@@ -91,7 +91,7 @@ function AppContent() {
         }
       />
       <Route
-        path="/attendence"
+        path="/attendance"
         element={
           <ProtectedRoute>
             <MainLayout>

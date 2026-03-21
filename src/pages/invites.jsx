@@ -603,7 +603,7 @@ export default function MyInvites() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
+        <div className="min-h-screen p-3 md:p-6 font-sans">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div

@@ -504,7 +504,7 @@ const EmployeeManagement = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
+        <div className="min-h-screen p-3 md:p-6 font-sans">
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
