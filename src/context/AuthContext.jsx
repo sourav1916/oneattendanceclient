@@ -12,6 +12,8 @@ export const AuthProvider = ({ children }) => {
   const [company, setCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [mustSelectCompany, setMustSelectCompany] = useState(false);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
 
   const initialized = useRef(false);
 
@@ -23,6 +25,8 @@ export const AuthProvider = ({ children }) => {
     setCompany(null);
     setCompanies([]);
     setPermissions([]);
+    setMustSelectCompany(false);
+    setShowCompanyModal(false);
     setLoading(false);
   };
 
@@ -54,51 +58,67 @@ export const AuthProvider = ({ children }) => {
         };
 
         setUser(userData);
-        
+
         if (response.data.employee) {
           setEmployee(response.data.employee);
         }
-        
+
         if (response.data.permissions && Array.isArray(response.data.permissions)) {
           setPermissions(response.data.permissions);
         }
-        
+
+        // Handle company data
         if (response.data.company) {
           const singleCompany = response.data.company;
           setCompanies([singleCompany]);
           setCompany(singleCompany);
           localStorage.setItem("company", JSON.stringify(singleCompany));
+          setMustSelectCompany(false);
+          setShowCompanyModal(false);
         }
         else if (response.data.companies && Array.isArray(response.data.companies)) {
           const userCompanies = response.data.companies;
           setCompanies(userCompanies);
-          
+
           const storedCompany = JSON.parse(localStorage.getItem("company"));
-          
+
           if (userCompanies.length === 1) {
             const singleCompany = userCompanies[0];
             setCompany(singleCompany);
             localStorage.setItem("company", JSON.stringify(singleCompany));
+            setMustSelectCompany(false);
+            setShowCompanyModal(false);
           }
-          else if (userCompanies.length > 1 && storedCompany) {
-            const companyStillExists = userCompanies.some(
-              c => c.id === storedCompany.id
-            );
-            if (companyStillExists) {
-              setCompany(storedCompany);
+          else if (userCompanies.length > 1) {
+            // Check if user has previously selected a company
+            if (storedCompany) {
+              const companyStillExists = userCompanies.some(
+                c => c.id === storedCompany.id
+              );
+              if (companyStillExists) {
+                setCompany(storedCompany);
+                setMustSelectCompany(false);
+                setShowCompanyModal(false);
+              } else {
+                // Previously selected company no longer exists
+                localStorage.removeItem("company");
+                setCompany(null);
+                setMustSelectCompany(true);
+                setShowCompanyModal(true);
+              }
             } else {
-              localStorage.removeItem("company");
+              // No company selected yet, must select one
               setCompany(null);
+              setMustSelectCompany(true);
+              setShowCompanyModal(true);
             }
           }
-          else if (userCompanies.length > 1 && !storedCompany) {
-            setCompany(null);
-          }
-        }
-        else {
+        } else {
           setCompanies([]);
           setCompany(null);
           localStorage.removeItem("company");
+          setMustSelectCompany(true);
+          setShowCompanyModal(true);
         }
 
       } else {
@@ -107,6 +127,8 @@ export const AuthProvider = ({ children }) => {
         setCompany(null);
         setCompanies([]);
         setPermissions([]);
+        setMustSelectCompany(false);
+        setShowCompanyModal(false);
       }
     } catch (error) {
       console.error("Profile fetch failed:", error);
@@ -140,6 +162,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (token) => {
     localStorage.setItem("token", token);
+    // Clear company selection on new login
+    localStorage.removeItem("company");
     setLoading(true);
     await fetchUserProfile(token);
   };
@@ -154,6 +178,8 @@ export const AuthProvider = ({ children }) => {
   const selectCompany = (selectedCompany) => {
     setCompany(selectedCompany);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
+    setMustSelectCompany(false);
+    setShowCompanyModal(false);
   };
 
   const getCurrentCompany = () => {
@@ -174,8 +200,11 @@ export const AuthProvider = ({ children }) => {
     logout,
     refreshUser,
     selectCompany,
+    mustSelectCompany,
+    showCompanyModal,
+    setShowCompanyModal,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !mustSelectCompany,
     rawPermissions: permissions,
     isEmployee: !!employee,
     isCompanyOwner: user?.role === "company_owner",
