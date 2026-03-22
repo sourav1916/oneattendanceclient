@@ -1,1022 +1,1162 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-    FaEdit, FaTrash, FaEye, FaTimes,
-    FaSearch, FaSpinner, FaEllipsisV, FaPlus, FaSave,
-    FaShieldAlt, FaInfoCircle,
-    FaToggleOn, FaCheckSquare, FaKey, FaLayerGroup,
-    FaCalendarAlt
+  FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaSearch, FaSpinner,
+  FaEllipsisV, FaShieldAlt, FaPlus, FaInfoCircle, FaCode,
+  FaLayerGroup, FaTag, FaAlignLeft, FaBan, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-import SkeletonComponent from '../components/SkeletonComponent';
-import Pagination, { usePagination } from '../components/PaginationComponent';
 
-const MODAL_TYPES = {
-    NONE: 'NONE',
-    CREATE: 'CREATE',
-    EDIT: 'EDIT',
-    VIEW: 'VIEW',
-    DELETE_CONFIRM: 'DELETE_CONFIRM',
-};
+// ─── tailwind.config.js ──────────────────────────────────────────────────────
+// module.exports = {
+//   theme: {
+//     extend: {
+//       screens: {
+//         'xsm': '280px',   // 280px → 400px range
+//       }
+//     }
+//   }
+// }
 
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.9, y: 20 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
-    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
-};
+// ─── Inline Pagination Component ─────────────────────────────────────────────
+const Pagination = ({
+  currentPage, totalItems, itemsPerPage, onPageChange,
+  className = '', showInfo = true, variant = 'default'
+}) => {
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+  const isFirstPage = currentPage === 1;
+  const isLastPage = currentPage === totalPages;
 
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
-    exit: { opacity: 0 }
-};
-
-// DUMMY DATA - Available permissions from API
-const AVAILABLE_PERMISSIONS = [
-    { id: 1, name: "Add Employee", code: "EMP_ADD", description: "Can add new employees to the system", group: "Employee Management" },
-    { id: 2, name: "Edit Employee", code: "EMP_EDIT", description: "Can edit existing employee details", group: "Employee Management" },
-    { id: 3, name: "Delete Employee", code: "EMP_DELETE", description: "Can remove employees from the system", group: "Employee Management" },
-    { id: 4, name: "View Employee", code: "EMP_VIEW", description: "Can view employee details", group: "Employee Management" },
-    { id: 5, name: "Add Department", code: "DEPT_ADD", description: "Can add new departments", group: "Department Management" },
-    { id: 6, name: "Edit Department", code: "DEPT_EDIT", description: "Can edit department details", group: "Department Management" },
-    { id: 7, name: "Delete Department", code: "DEPT_DELETE", description: "Can delete departments", group: "Department Management" },
-    { id: 8, name: "View Department", code: "DEPT_VIEW", description: "Can view department details", group: "Department Management" },
-    { id: 9, name: "Add Attendance", code: "ATT_ADD", description: "Can add attendance records", group: "Attendance Management" },
-    { id: 10, name: "Edit Attendance", code: "ATT_EDIT", description: "Can edit attendance records", group: "Attendance Management" },
-    { id: 11, name: "View Attendance", code: "ATT_VIEW", description: "Can view attendance records", group: "Attendance Management" },
-    { id: 12, name: "Generate Reports", code: "REPORT_GEN", description: "Can generate various reports", group: "Reports" },
-    { id: 13, name: "Export Data", code: "DATA_EXPORT", description: "Can export data to Excel/PDF", group: "Reports" },
-    { id: 14, name: "Manage Users", code: "USER_MANAGE", description: "Can manage system users", group: "User Management" },
-    { id: 15, name: "Manage Roles", code: "ROLE_MANAGE", description: "Can manage roles and permissions", group: "User Management" }
-];
-
-// DUMMY DATA - Permission groups/roles created
-const DUMMY_PERMISSION_GROUPS = [
-    {
-        id: 1,
-        name: "HR Manager",
-        code: "HR_MGR",
-        description: "Full access to HR related operations",
-        is_active: true,
-        created_at: "2024-01-15T10:30:00Z",
-        permissions: [
-            { permission_id: 1, name: "Add Employee", code: "EMP_ADD", is_allowed: true },
-            { permission_id: 2, name: "Edit Employee", code: "EMP_EDIT", is_allowed: true },
-            { permission_id: 3, name: "Delete Employee", code: "EMP_DELETE", is_allowed: true },
-            { permission_id: 4, name: "View Employee", code: "EMP_VIEW", is_allowed: true },
-            { permission_id: 9, name: "Add Attendance", code: "ATT_ADD", is_allowed: true },
-            { permission_id: 10, name: "Edit Attendance", code: "ATT_EDIT", is_allowed: true },
-            { permission_id: 11, name: "View Attendance", code: "ATT_VIEW", is_allowed: true }
-        ]
-    },
-    {
-        id: 2,
-        name: "Department Manager",
-        code: "DEPT_MGR",
-        description: "Can manage departments and view employees",
-        is_active: true,
-        created_at: "2024-01-20T14:15:00Z",
-        permissions: [
-            { permission_id: 4, name: "View Employee", code: "EMP_VIEW", is_allowed: true },
-            { permission_id: 5, name: "Add Department", code: "DEPT_ADD", is_allowed: true },
-            { permission_id: 6, name: "Edit Department", code: "DEPT_EDIT", is_allowed: true },
-            { permission_id: 8, name: "View Department", code: "DEPT_VIEW", is_allowed: true }
-        ]
-    },
-    {
-        id: 3,
-        name: "Employee",
-        code: "EMPLOYEE",
-        description: "Basic employee access",
-        is_active: true,
-        created_at: "2024-02-01T09:00:00Z",
-        permissions: [
-            { permission_id: 4, name: "View Employee", code: "EMP_VIEW", is_allowed: true },
-            { permission_id: 11, name: "View Attendance", code: "ATT_VIEW", is_allowed: true }
-        ]
+  const getPageNumbers = () => {
+    const delta = variant === 'compact' ? 1 : 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta))
+        range.push(i);
     }
-];
-
-const PermissionManagement = () => {
-    const [permissionGroups, setPermissionGroups] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
-    const [selectedGroup, setSelectedGroup] = useState(null);
-    const [activeActionMenu, setActiveActionMenu] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-
-    const [formData, setFormData] = useState({
-        name: '',
-        code: '',
-        description: '',
-        is_active: true,
-        permissions: []
+    range.forEach(i => {
+      if (l) {
+        if (i - l === 2) rangeWithDots.push(l + 1);
+        else if (i - l !== 1) rangeWithDots.push('...');
+      }
+      rangeWithDots.push(i);
+      l = i;
     });
-
-    const [selectedPermissions, setSelectedPermissions] = useState({});
-    const [selectAll, setSelectAll] = useState(false);
-
-    // Pagination
-    const {
-        pagination,
-        updatePagination,
-        goToPage,
-    } = usePagination(1, 10);
-
-    const isMounted = useRef(true);
-    const fetchInProgress = useRef(false);
-    const initialFetchDone = useRef(false);
-    const isInitialLoad = useRef(true);
-
-    useEffect(() => {
-        isMounted.current = true;
-        return () => { isMounted.current = false; };
-    }, []);
-
-    // Load dummy data
-    useEffect(() => {
-        loadPermissionGroups();
-    }, []);
-
-    // Debounce search
-    useEffect(() => {
-        const t = setTimeout(() => {
-            setDebouncedSearchTerm(searchTerm);
-        }, 500);
-        return () => clearTimeout(t);
-    }, [searchTerm]);
-
-    // Reset to page 1 when search changes
-    useEffect(() => {
-        if (!isInitialLoad.current && debouncedSearchTerm !== undefined) {
-            if (pagination.page !== 1) {
-                goToPage(1);
-            } else {
-                loadPermissionGroups(1);
-            }
-        }
-    }, [debouncedSearchTerm]);
-
-    const loadPermissionGroups = useCallback(async (page = pagination.page, resetLoading = true) => {
-        if (fetchInProgress.current) return;
-        fetchInProgress.current = true;
-        if (resetLoading) setLoading(true);
-        setError(null);
-
-        try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            let filteredGroups = [...DUMMY_PERMISSION_GROUPS];
-
-            if (debouncedSearchTerm) {
-                filteredGroups = filteredGroups.filter(group =>
-                    group.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    group.code.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-                    group.description.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-                );
-            }
-
-            const start = (page - 1) * pagination.limit;
-            const end = start + pagination.limit;
-            const paginatedGroups = filteredGroups.slice(start, end);
-
-            setPermissionGroups(paginatedGroups);
-            updatePagination({
-                page: page,
-                limit: pagination.limit,
-                total: filteredGroups.length,
-                total_pages: Math.ceil(filteredGroups.length / pagination.limit),
-                is_last_page: end >= filteredGroups.length
-            });
-
-        } catch (e) {
-            setError(e.message);
-        } finally {
-            setLoading(false);
-            fetchInProgress.current = false;
-            isInitialLoad.current = false;
-        }
-    }, [pagination.page, pagination.limit, debouncedSearchTerm, updatePagination]);
-
-    // Initial load
-    useEffect(() => {
-        if (!initialFetchDone.current) {
-            loadPermissionGroups(1, true);
-            initialFetchDone.current = true;
-        }
-    }, [loadPermissionGroups]);
-
-    const createPermissionGroup = async (groupData) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const permissionsArray = Object.entries(selectedPermissions)
-                .filter(([_, isAllowed]) => isAllowed)
-                .map(([id, isAllowed]) => {
-                    const permission = AVAILABLE_PERMISSIONS.find(p => p.id === parseInt(id));
-                    return {
-                        permission_id: parseInt(id),
-                        name: permission.name,
-                        code: permission.code,
-                        is_allowed: isAllowed
-                    };
-                });
-
-            const newGroup = {
-                id: Date.now(),
-                name: groupData.name,
-                code: groupData.code,
-                description: groupData.description,
-                is_active: groupData.is_active,
-                created_at: new Date().toISOString(),
-                permissions: permissionsArray
-            };
-
-            setPermissionGroups(prev => [newGroup, ...prev]);
-            return { success: true };
-        } catch (e) {
-            return { success: false, error: e.message };
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const updatePermissionGroup = async (id, groupData) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const permissionsArray = Object.entries(selectedPermissions)
-                .filter(([_, isAllowed]) => isAllowed)
-                .map(([id, isAllowed]) => {
-                    const permission = AVAILABLE_PERMISSIONS.find(p => p.id === parseInt(id));
-                    return {
-                        permission_id: parseInt(id),
-                        name: permission.name,
-                        code: permission.code,
-                        is_allowed: isAllowed
-                    };
-                });
-
-            setPermissionGroups(prev => prev.map(group =>
-                group.id === id ? {
-                    ...group,
-                    ...groupData,
-                    permissions: permissionsArray
-                } : group
-            ));
-            return { success: true };
-        } catch (e) {
-            return { success: false, error: e.message };
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const deletePermissionGroup = async (id) => {
-        setLoading(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            setPermissionGroups(prev => prev.filter(group => group.id !== id));
-            return { success: true };
-        } catch (e) {
-            return { success: false, error: e.message };
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Modal Handlers
-    const openCreateModal = () => {
-        setFormData({
-            name: '',
-            code: '',
-            description: '',
-            is_active: true,
-            permissions: []
-        });
-        setSelectedPermissions({});
-        setSelectAll(false);
-        setModalType(MODAL_TYPES.CREATE);
-        setActiveActionMenu(null);
-    };
-
-    const openEditModal = (group) => {
-        setSelectedGroup(group);
-
-        const selectedPerms = {};
-        group.permissions.forEach(p => {
-            selectedPerms[p.permission_id] = p.is_allowed;
-        });
-
-        setSelectedPermissions(selectedPerms);
-        const allSelected = AVAILABLE_PERMISSIONS.every(p => selectedPerms[p.id] === true);
-        setSelectAll(allSelected);
-
-        setFormData({
-            name: group.name || '',
-            code: group.code || '',
-            description: group.description || '',
-            is_active: group.is_active === true,
-            permissions: group.permissions || []
-        });
-        setModalType(MODAL_TYPES.EDIT);
-        setActiveActionMenu(null);
-    };
-
-    const openViewModal = (group) => {
-        setSelectedGroup(group);
-        setModalType(MODAL_TYPES.VIEW);
-        setActiveActionMenu(null);
-    };
-
-    const openDeleteModal = (group) => {
-        setSelectedGroup(group);
-        setModalType(MODAL_TYPES.DELETE_CONFIRM);
-        setActiveActionMenu(null);
-    };
-
-    const closeModal = () => {
-        setModalType(MODAL_TYPES.NONE);
-        setSelectedGroup(null);
-        setSelectedPermissions({});
-        setSelectAll(false);
-    };
-
-    const toggleActionMenu = (e, id) => {
-        e.stopPropagation();
-        setActiveActionMenu(activeActionMenu === id ? null : id);
-    };
-
-    // Permission Toggle Handler - Single toggle button
-    const handlePermissionToggle = (permissionId) => {
-        setSelectedPermissions(prev => {
-            const newState = { ...prev };
-            if (newState[permissionId]) {
-                delete newState[permissionId];
-            } else {
-                newState[permissionId] = true;
-            }
-
-            // Update selectAll state
-            const allSelected = AVAILABLE_PERMISSIONS.every(p => newState[p.id] === true);
-            setSelectAll(allSelected);
-
-            return newState;
-        });
-    };
-
-    const handleSelectAll = () => {
-        if (selectAll) {
-            setSelectedPermissions({});
-            setSelectAll(false);
-        } else {
-            const allPermissions = {};
-            AVAILABLE_PERMISSIONS.forEach(p => {
-                allPermissions[p.id] = true;
-            });
-            setSelectedPermissions(allPermissions);
-            setSelectAll(true);
-        }
-    };
-
-    // Form Handlers
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
-    };
-
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        const result = await createPermissionGroup(formData);
-        if (result.success) closeModal();
-        else setError(result.error);
-    };
-
-    const handleEdit = async (e) => {
-        e.preventDefault();
-        if (!selectedGroup) return;
-        const result = await updatePermissionGroup(selectedGroup.id, formData);
-        if (result.success) closeModal();
-        else setError(result.error);
-    };
-
-    const handleDelete = async () => {
-        if (!selectedGroup) return;
-        const result = await deletePermissionGroup(selectedGroup.id);
-        if (result.success) closeModal();
-        else setError(result.error);
-    };
-
-    // Helpers
-    const formatDate = (s) => {
-        if (!s) return 'N/A';
-        return new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    };
-
-    const getStatusClassName = useCallback((isActive) => ({
-        true: 'bg-green-100 text-green-800 border border-green-200',
-        false: 'bg-gray-100 text-gray-800 border border-gray-200',
-    }[isActive] || 'bg-gray-100 text-gray-800 border border-gray-200'), []);
-
-    const getStatusDisplay = useCallback((isActive) => isActive ? 'Active' : 'Inactive', []);
-
-    const handlePageChange = useCallback((newPage) => {
-        if (newPage !== pagination.page) {
-            goToPage(newPage);
-        }
-    }, [pagination.page, goToPage]);
-
-    // Group permissions by category
-    const groupedPermissions = useMemo(() => {
-        const groups = {};
-        AVAILABLE_PERMISSIONS.forEach(perm => {
-            if (!groups[perm.group]) {
-                groups[perm.group] = [];
-            }
-            groups[perm.group].push(perm);
-        });
-        return groups;
-    }, []);
-
-    const filteredGroups = useMemo(() => {
-        if (!debouncedSearchTerm) return permissionGroups;
-        return permissionGroups;
-    }, [permissionGroups, debouncedSearchTerm]);
-
-    const selectedCount = Object.keys(selectedPermissions).length;
-
-    return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
-            {/* Header */}
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
-            >
-                <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                    Permission Management
-                </h1>
-                <div className="flex gap-3">
-                    
-                    <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        Total: {pagination.total} permissions
-                    </div>
-                    <button
-                        onClick={openCreateModal}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-                    >
-                        <FaPlus size={16} />
-                        Create
-                    </button>
-                </div>
-            </motion.div>
-
-            {/* Search */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-                <div className="relative w-full mx-auto">
-                    <input type="text" placeholder="Search permission groups by name, code, or description..."
-                        value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all"
-                    />
-                    <FaSearch className="absolute left-4 top-4 text-gray-400 text-xl" />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600">
-                            <FaTimes />
-                        </button>
-                    )}
-                </div>
-            </motion.div>
-
-            {loading && !permissionGroups.length && <SkeletonComponent />}
-
-            <AnimatePresence>
-                {error && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                        className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 border border-red-200 shadow-lg"
-                    >
-                        <div className="flex items-center gap-2"><FaTimes className="text-red-600" /><span>Error: {error}</span></div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {!loading && !error && filteredGroups.length === 0 && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-2xl shadow-xl">
-                    <FaShieldAlt className="text-8xl text-gray-300 mx-auto mb-4" />
-                    <p className="text-xl text-gray-500">No permission groups found</p>
-                    <p className="text-gray-400 mt-2">Click "Create Permission Group" to create your first group</p>
-                </motion.div>
-            )}
-
-            {!loading && !error && filteredGroups.length > 0 && (
-                <>
-                    {/* Desktop Table */}
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden"
-                    >
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
-                                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                                    <tr>
-                                        <th className="px-6 py-4">Group Name</th>
-                                        <th className="px-6 py-4">Code</th>
-                                        <th className="px-6 py-4">Description</th>
-                                        <th className="px-6 py-4">Permissions</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4">Created At</th>
-                                        <th className="px-6 py-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {filteredGroups.map((group, index) => (
-                                        <motion.tr key={group.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <FaLayerGroup className="text-purple-500" />
-                                                    <span className="font-semibold">{group.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded-lg">{group.code}</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm text-gray-600 truncate max-w-[200px]">{group.description || '—'}</p>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                                                    {group.permissions?.length || 0} permissions
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(group.is_active)}`}>
-                                                    {getStatusDisplay(group.is_active)}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <FaCalendarAlt className="text-gray-400 text-xs" />
-                                                    <span>{formatDate(group.created_at)}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right relative">
-                                                <button onClick={e => toggleActionMenu(e, group.id)} className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
-                                                    <FaEllipsisV className="text-gray-600" />
-                                                </button>
-                                                <AnimatePresence>
-                                                    {activeActionMenu === group.id && (
-                                                        <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                            className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-10 overflow-hidden"
-                                                            onClick={e => e.stopPropagation()}
-                                                        >
-                                                            <button onClick={() => openViewModal(group)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300">
-                                                                <FaEye size={14} /> View Details
-                                                            </button>
-                                                            <button onClick={() => openEditModal(group)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300">
-                                                                <FaEdit size={14} /> Edit
-                                                            </button>
-                                                            <button onClick={() => openDeleteModal(group)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300">
-                                                                <FaTrash size={14} /> Delete
-                                                            </button>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </td>
-                                        </motion.tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
-
-                    {/* Mobile Cards */}
-                    <div className="grid grid-cols-1 gap-4 md:hidden">
-                        {filteredGroups.map((group, index) => (
-                            <motion.div key={group.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300"
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-2xl">
-                                        <FaLayerGroup className="text-white text-3xl" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-bold text-lg text-gray-800 truncate">{group.name}</h3>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(group.is_active)}`}>
-                                                {getStatusDisplay(group.is_active)}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-lg inline-block">{group.code}</p>
-                                        <div className="mt-3 space-y-2">
-                                            {group.description && (
-                                                <p className="text-sm text-gray-600">{group.description}</p>
-                                            )}
-                                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                                                <span className="text-xs text-gray-500 flex items-center gap-1">
-                                                    <FaShieldAlt className="text-blue-500" />
-                                                    {group.permissions?.length || 0} permissions
-                                                </span>
-                                                <span className="text-xs text-gray-500 flex items-center gap-1">
-                                                    <FaCalendarAlt className="text-green-500" />
-                                                    {formatDate(group.created_at)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                                    <button onClick={() => openViewModal(group)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
-                                        <FaEye size={16} />
-                                    </button>
-                                    <button onClick={() => openEditModal(group)} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110">
-                                        <FaEdit size={16} />
-                                    </button>
-                                    <button onClick={() => openDeleteModal(group)} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110">
-                                        <FaTrash size={16} />
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-
-                    {/* Pagination */}
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalItems={pagination.total}
-                        itemsPerPage={pagination.limit}
-                        onPageChange={handlePageChange}
-                        variant="default"
-                        showInfo={true}
-                    />
-                </>
-            )}
-
-            {/* Create/Edit Modal with Toggle Buttons */}
-            <AnimatePresence>
-                {(modalType === MODAL_TYPES.CREATE || modalType === MODAL_TYPES.EDIT) && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                        onClick={closeModal}
-                    >
-                        <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                            className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <div className={`sticky top-0 flex justify-between items-center p-6 border-b ${modalType === MODAL_TYPES.CREATE ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-gradient-to-r from-green-600 to-emerald-600'} text-white rounded-t-2xl`}>
-                                <h2 className="text-xl font-semibold flex items-center gap-2">
-                                    {modalType === MODAL_TYPES.CREATE ? <FaPlus /> : <FaEdit />}
-                                    {modalType === MODAL_TYPES.CREATE ? 'Create Permission Group' : 'Edit Permission Group'}
-                                </h2>
-                                <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                                    <FaTimes size={20} />
-                                </button>
-                            </div>
-
-                            <form onSubmit={modalType === MODAL_TYPES.CREATE ? handleCreate : handleEdit} className="p-6">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* Left Side - Group Details */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                            <FaKey className="text-blue-500" /> Group Details
-                                        </h3>
-
-                                        <FormField
-                                            icon={<FaLayerGroup className="text-purple-500" />}
-                                            label="Group Name"
-                                            name="name"
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={handleInputChange}
-                                            required
-                                            placeholder="e.g., HR Manager, Admin Role"
-                                            className="border-2 focus:border-purple-500"
-                                        />
-
-                                        <FormField
-                                            icon={<FaKey className="text-blue-500" />}
-                                            label="Group Code"
-                                            name="code"
-                                            type="text"
-                                            value={formData.code}
-                                            onChange={handleInputChange}
-                                            required
-                                            placeholder="e.g., HR_MGR, ADMIN_ROLE"
-                                            className="border-2 focus:border-blue-500"
-                                        />
-
-                                        <FormField
-                                            icon={<FaInfoCircle className="text-orange-500" />}
-                                            label="Description"
-                                            name="description"
-                                            type="textarea"
-                                            value={formData.description}
-                                            onChange={handleInputChange}
-                                            placeholder="Describe what this permission group is for"
-                                            className="border-2 focus:border-orange-500"
-                                        />
-
-                                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                                            <div className="flex items-center gap-3">
-                                                <FaToggleOn className="text-2xl text-blue-500" />
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700">Group Status</label>
-                                                    <p className="text-xs text-gray-500">Enable or disable this permission group</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
-                                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${formData.is_active ? 'bg-green-600' : 'bg-gray-300'}`}
-                                            >
-                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-300 ${formData.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Right Side - Permissions Selection with Toggle Buttons */}
-                                    <div>
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                                <FaShieldAlt className="text-blue-500" /> Permissions
-                                            </h3>
-                                            <button
-                                                type="button"
-                                                onClick={handleSelectAll}
-                                                className="px-4 py-2 text-sm bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 flex items-center gap-2 font-medium"
-                                            >
-                                                {selectAll ? (
-                                                    <FaCheckSquare size={14} className="text-blue-600" />
-                                                ) : (
-                                                    <FaCheckSquare size={14} className="text-white-600" />
-                                                )}
-                                                {selectAll ? 'Deselect All' : 'Select All'}
-                                            </button>
-                                        </div>
-
-                                        <div className="max-h-[500px] overflow-y-auto space-y-4 pr-2">
-                                            {Object.entries(groupedPermissions).map(([groupName, permissions]) => (
-                                                <div key={groupName} className="border border-gray-200 rounded-xl overflow-hidden">
-                                                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-2 border-b border-gray-200">
-                                                        <h4 className="font-semibold text-gray-700">{groupName}</h4>
-                                                    </div>
-                                                    <div className="divide-y divide-gray-100">
-                                                        {permissions.map(permission => {
-                                                            const isAllowed = selectedPermissions[permission.id] || false;
-                                                            return (
-                                                                <div key={permission.id} className="p-4 hover:bg-gray-50 transition-all duration-300">
-                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                                        <div className="flex-1">
-                                                                            <p className="font-medium text-gray-800">{permission.name}</p>
-                                                                            <p className="text-xs text-gray-500 font-mono">{permission.code}</p>
-                                                                            {permission.description && (
-                                                                                <p className="text-xs text-gray-400 mt-1">{permission.description}</p>
-                                                                            )}
-                                                                        </div>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handlePermissionToggle(permission.id)}
-                                                                            className={`relative inline-flex h-6 w-12 items-center rounded-full transition-all duration-300 shadow-md ${isAllowed ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gray-300'
-                                                                                }`}
-                                                                        >
-                                                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-all duration-300 flex items-center justify-center ${isAllowed ? 'translate-x-7' : 'translate-x-1'
-                                                                                }`}>
-
-                                                                            </span>
-                                                                            <span className={`absolute text-xs font-medium transition-all duration-300 ${isAllowed ? 'left-2 text-white' : 'right-2 text-gray-600'
-                                                                                }`}>
-
-                                                                            </span>
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                                            <p className="text-sm text-blue-700 flex items-center gap-2">
-                                                <FaInfoCircle className="text-blue-500" />
-                                                <span>Selected: <strong className="font-bold">{selectedCount}</strong> out of <strong>{AVAILABLE_PERMISSIONS.length}</strong> permissions</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end gap-3 pt-6 mt-6 border-t">
-                                    <button type="button" onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
-                                        Cancel
-                                    </button>
-                                    <button type="submit" disabled={loading}
-                                        className={`px-6 py-2 ${modalType === MODAL_TYPES.CREATE ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'} text-white rounded-xl flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl`}
-                                    >
-                                        {loading ? <FaSpinner className="animate-spin" /> : <FaSave size={14} />}
-                                        {modalType === MODAL_TYPES.CREATE ? 'Create Group' : 'Update Group'}
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* View Modal */}
-            <AnimatePresence>
-                {modalType === MODAL_TYPES.VIEW && selectedGroup && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                        onClick={closeModal}
-                    >
-                        <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
-                                <h2 className="text-xl font-semibold flex items-center gap-2">
-                                    <FaEye /> Permission Group Details
-                                </h2>
-                                <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                                    <FaTimes size={20} />
-                                </button>
-                            </div>
-                            <div className="p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="col-span-2 bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <FaLayerGroup className="text-purple-500 text-2xl" />
-                                            <div>
-                                                <h3 className="text-xl font-bold text-gray-800">{selectedGroup.name}</h3>
-                                                <p className="text-sm font-mono text-gray-600">{selectedGroup.code}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <InfoItem icon={<FaInfoCircle className="text-orange-500" />} label="Description" value={selectedGroup.description || 'No description'} />
-                                    <InfoItem icon={<FaToggleOn className="text-green-500" />} label="Status"
-                                        value={<span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(selectedGroup.is_active)}`}>
-                                            {getStatusDisplay(selectedGroup.is_active)}
-                                        </span>}
-                                    />
-                                    <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Created At" value={formatDate(selectedGroup.created_at)} />
-
-                                    <div className="col-span-2">
-                                        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                                            <FaShieldAlt className="text-blue-500" /> Permissions ({selectedGroup.permissions?.length || 0})
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            {selectedGroup.permissions?.map((perm, idx) => (
-                                                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-200">
-                                                    <div>
-                                                        <p className="font-medium text-gray-800">{perm.name}</p>
-                                                        <p className="text-xs text-gray-500">{perm.code}</p>
-                                                    </div>
-                                                    <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${perm.is_allowed ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gray-300'
-                                                        }`}>
-                                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-300 ${perm.is_allowed ? 'translate-x-6' : 'translate-x-1'
-                                                            }`} />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="mt-6 flex justify-end">
-                                    <button onClick={closeModal} className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Delete Modal */}
-            <AnimatePresence>
-                {modalType === MODAL_TYPES.DELETE_CONFIRM && selectedGroup && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                        onClick={closeModal}
-                    >
-                        <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
-                                <h2 className="text-xl font-semibold flex items-center gap-2">
-                                    <FaTrash /> Confirm Delete
-                                </h2>
-                                <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                                    <FaTimes size={20} />
-                                </button>
-                            </div>
-                            <div className="p-6 text-center">
-                                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
-                                    className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
-                                >
-                                    <FaTrash className="text-4xl text-red-600" />
-                                </motion.div>
-                                <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
-                                <p className="text-gray-500 mb-6">
-                                    You are about to delete permission group <span className="font-semibold text-red-600">{selectedGroup.name}</span>.
-                                    This action cannot be undone.
-                                </p>
-                                <div className="flex justify-center gap-4">
-                                    <button onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
-                                        Cancel
-                                    </button>
-                                    <button onClick={handleDelete} disabled={loading}
-                                        className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-                                    >
-                                        {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={14} />}
-                                        Delete Group
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+    return rangeWithDots;
+  };
+
+  if (totalItems === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+      className={`mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-4 xsm:px-3 py-4 rounded-2xl shadow-lg ${className}`}
+    >
+      {showInfo && totalItems > 0 && (
+        <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
+          Showing <span className="font-semibold text-blue-600">{startItem}</span> to{' '}
+          <span className="font-semibold text-blue-600">{endItem}</span> of{' '}
+          <span className="font-semibold text-blue-600">{totalItems}</span> results
         </div>
-    );
+      )}
+      <div className="flex gap-1 flex-wrap justify-center">
+        <button
+          onClick={() => !isFirstPage && onPageChange(currentPage - 1)}
+          disabled={isFirstPage}
+          className={`px-2 sm:px-4 py-2 rounded-xl border flex items-center gap-1 sm:gap-2 text-xs sm:text-sm transition-all duration-300 ${
+            isFirstPage
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'
+          }`}
+        >
+          <FaChevronLeft size={10} /><span className="hidden sm:inline">Previous</span>
+        </button>
+
+        {variant !== 'minimal' && totalPages <= 10 ? (
+          <div className="flex gap-1 flex-wrap justify-center">
+            {getPageNumbers().map((page, index) =>
+              page === '...' ? (
+                <span key={`dots-${index}`} className="px-2 py-2 text-gray-500 text-xs">...</span>
+              ) : (
+                <button key={page} onClick={() => onPageChange(page)}
+                  className={`px-2 sm:px-4 py-2 rounded-xl transition-all duration-300 font-medium text-xs sm:text-sm ${
+                    currentPage === page
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  {page}
+                </button>
+              )
+            )}
+          </div>
+        ) : variant !== 'minimal' && (
+          <span className="px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl min-w-[36px] text-center font-semibold shadow-md text-xs sm:text-sm">
+            {currentPage}
+          </span>
+        )}
+
+        <button
+          onClick={() => !isLastPage && onPageChange(currentPage + 1)}
+          disabled={isLastPage}
+          className={`px-2 sm:px-4 py-2 rounded-xl border flex items-center gap-1 sm:gap-2 text-xs sm:text-sm transition-all duration-300 ${
+            isLastPage
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'
+          }`}
+        >
+          <span className="hidden sm:inline">Next</span><FaChevronRight size={10} />
+        </button>
+      </div>
+    </motion.div>
+  );
 };
 
-// Helper Components
-const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
-            {icon}{label}
-        </label>
-        <div className="text-gray-800 font-medium">{value}</div>
-    </div>
-);
+// usePagination hook (inline)
+export const usePagination = (initialPage = 1, initialLimit = 20) => {
+  const [pagination, setPagination] = React.useState({
+    page: initialPage, limit: initialLimit, total: 0, total_pages: 1, is_last_page: true
+  });
+  const updatePagination = React.useCallback((data) => {
+    setPagination({
+      page: data.page || 1, limit: data.limit || initialLimit,
+      total: data.total || 0, total_pages: data.total_pages || 1,
+      is_last_page: data.is_last_page ?? (data.page === data.total_pages)
+    });
+  }, [initialLimit]);
+  const goToPage = React.useCallback((page) => setPagination(prev => ({ ...prev, page })), []);
+  const goToNextPage = React.useCallback(() => {
+    if (!pagination.is_last_page) setPagination(prev => ({ ...prev, page: prev.page + 1 }));
+  }, [pagination.is_last_page]);
+  const goToPrevPage = React.useCallback(() => {
+    if (pagination.page > 1) setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+  }, [pagination.page]);
+  const resetPagination = React.useCallback(() => {
+    setPagination({ page: initialPage, limit: initialLimit, total: 0, total_pages: 1, is_last_page: true });
+  }, [initialPage, initialLimit]);
+  return { pagination, updatePagination, goToPage, goToNextPage, goToPrevPage, resetPagination };
+};
 
-const FormField = ({ icon, label, name, type, value, onChange, required, placeholder, options, className = '' }) => {
-    const base = `w-full p-3 border rounded-xl focus:ring-4 outline-none transition-all duration-300 ${className}`;
+// ─── Modal animation variants ────────────────────────────────────────────────
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.5 } },
+  exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
+};
+const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } };
 
-    if (type === 'textarea') {
-        return (
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {icon}{label} {required && <span className="text-red-500">*</span>}
-                </label>
-                <textarea
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    required={required}
-                    placeholder={placeholder}
-                    rows={3}
-                    className={`${base} resize-none`}
-                />
-            </div>
-        );
-    }
+const MODAL_TYPES = { NONE: 'NONE', CREATE: 'CREATE', EDIT: 'EDIT', VIEW: 'VIEW', DELETE_CONFIRM: 'DELETE_CONFIRM', PERM_LIST: 'PERM_LIST' };
 
-    if (type === 'select') {
-        return (
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    {icon}{label} {required && <span className="text-red-500">*</span>}
-                </label>
-                <select
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    required={required}
-                    className={base}
-                >
-                    <option value="">Select {label}</option>
-                    {options?.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
-            </div>
-        );
-    }
+const GROUP_COLORS = [
+  'bg-blue-50 text-blue-700 border-blue-200',
+  'bg-purple-50 text-purple-700 border-purple-200',
+  'bg-green-50 text-green-700 border-green-200',
+  'bg-amber-50 text-amber-700 border-amber-200',
+  'bg-rose-50 text-rose-700 border-rose-200',
+  'bg-cyan-50 text-cyan-700 border-cyan-200',
+  'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'bg-emerald-50 text-emerald-700 border-emerald-200',
+];
 
-    return (
+// ─── Package Form (outside main component to prevent remount on every render) ─
+const PackageFormBody = ({
+  onSubmit, isEdit = false,
+  formData, onInputChange, onTogglePermission, onSelectAll, onClearAll,
+  allPermissions, permsLoading, loading, onClose,
+}) => (
+  <form onSubmit={onSubmit} className="p-3 sm:p-6">
+    {permsLoading ? (
+      <div className="flex justify-center py-12 text-center">
         <div>
+          <FaSpinner className="animate-spin text-4xl text-blue-600 mx-auto mb-3" />
+          <p className="text-gray-500">Loading permissions...</p>
+        </div>
+      </div>
+    ) : (
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+          {/* Package Name */}
+          <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                {icon}{label} {required && <span className="text-red-500">*</span>}
+              <FaLayerGroup className="text-blue-500" /> Package Name <span className="text-red-500">*</span>
             </label>
             <input
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                required={required}
-                placeholder={placeholder}
-                className={base}
+              type="text" name="package_name" value={formData.package_name}
+              onChange={onInputChange} required placeholder="e.g. HR Manager Package"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 bg-white hover:border-gray-400 text-sm"
             />
+          </div>
+
+          {/* Group Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FaCode className="text-purple-500" /> Group Code <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text" name="group_code" value={formData.group_code}
+              onChange={onInputChange} required placeholder="e.g. HR_MGR"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all duration-300 bg-white hover:border-gray-400 text-sm uppercase"
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+              <FaAlignLeft className="text-emerald-500" /> Description
+            </label>
+            <input
+              type="text" name="description" value={formData.description}
+              onChange={onInputChange} placeholder="Brief description..."
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all duration-300 bg-white hover:border-gray-400 text-sm"
+            />
+          </div>
         </div>
-    );
+
+        {/* Permissions Selection */}
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <FaShieldAlt className="text-blue-500" /> Assign Permissions
+              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                {formData.permissions.length} selected
+              </span>
+            </h3>
+            <div className="flex gap-2">
+              <button type="button" onClick={onSelectAll}
+                className="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-medium border border-blue-200">
+                Select All
+              </button>
+              <button type="button" onClick={onClearAll}
+                className="text-xs px-3 py-1 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-all font-medium border border-gray-200">
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 rounded-xl">
+            {allPermissions.map((perm) => {
+              const isSelected = formData.permissions.includes(perm.id);
+              return (
+                <motion.div key={perm.id} whileTap={{ scale: 0.97 }}
+                  onClick={() => onTogglePermission(perm.id)}
+                  className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? 'border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50'
+                      : 'border-gray-200 bg-gray-50 hover:border-blue-200 hover:bg-blue-50/40'
+                  }`}
+                >
+                  <div className={`mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all duration-200 ${
+                    isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'
+                  }`}>
+                    {isSelected && <FaCheck size={8} className="text-white" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-800 leading-tight">{perm.name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 font-mono">{perm.code}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+            {allPermissions.length === 0 && (
+              <div className="col-span-2 text-center py-6 text-gray-400 text-sm">No permissions available</div>
+            )}
+          </div>
+
+          <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="text-xs text-blue-700 flex items-center gap-1">
+              <FaInfoCircle className="text-blue-500 flex-shrink-0" />
+              Click permissions to toggle selection. All selected permissions will be assigned to this package.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-6 mt-4 border-t">
+          <button type="button" onClick={onClose}
+            className="px-4 sm:px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">
+            Cancel
+          </button>
+          <button type="submit" disabled={loading}
+            className="px-4 sm:px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl text-sm">
+            {loading ? <FaSpinner className="animate-spin" /> : <FaCheck size={12} />}
+            {isEdit ? 'Update Package' : 'Create Package'}
+          </button>
+        </div>
+      </>
+    )}
+  </form>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+const PermissionManagement = () => {
+  const [packages, setPackages] = useState([]);
+  const [allPermissions, setAllPermissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [permsLoading, setPermsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const { pagination, updatePagination, goToPage } = usePagination(1, 6);
+  const permsFetched = useRef(false);
+  const isInitialLoad = useRef(true);
+  const fetchInProgress = useRef(false);
+  const initialFetchDone = useRef(false);
+
+  const emptyForm = { package_name: '', group_code: '', description: '', permissions: [] };
+  const [formData, setFormData] = useState(emptyForm);
+
+  const API_BASE = 'https://api-attendance.onesaas.in';
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Reset page on new search
+  useEffect(() => {
+    if (!isInitialLoad.current) {
+      if (pagination.page !== 1) goToPage(1);
+      else fetchPackages(1);
+    }
+  }, [debouncedSearch]);
+
+  // ─── API Calls ────────────────────────────────────────────────────────────
+  const fetchAllPermissions = useCallback(async () => {
+    if (permsFetched.current) return;
+    setPermsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
+      const res = await fetch(`${API_BASE}/permissions/list`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'company': company.id.toString(),
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.success) {
+        setAllPermissions(result.data);
+        permsFetched.current = true;
+      } else {
+        throw new Error(result.message || 'Failed to fetch permissions');
+      }
+    } catch (e) {
+      console.error('fetchAllPermissions:', e);
+      setError('Failed to load permissions list');
+    } finally {
+      setPermsLoading(false);
+    }
+  }, []);
+
+  const fetchPackages = useCallback(async (page = pagination.page, resetLoading = true) => {
+    if (fetchInProgress.current) return;
+    fetchInProgress.current = true;
+    if (resetLoading) setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString(),
+      });
+      if (debouncedSearch) params.append('search', debouncedSearch);
+      const res = await fetch(`${API_BASE}/permissions/permission-packages?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'company': company.id.toString(),
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.success) {
+        // API returns: { success, message, data: { total, totalPages, page, limit, packages: [...] } }
+        // Normalise both flat and nested shapes defensively
+        const d = result.data;
+        const list        = d?.packages  ?? d ?? [];
+        const total       = d?.total     ?? list.length;
+        const total_pages = (d?.totalPages ?? d?.total_pages ?? Math.ceil(total / pagination.limit)) || 1
+        const cur_page    = d?.page      ?? page;
+        const cur_limit   = d?.limit     ?? pagination.limit;
+
+        setPackages(list);
+        updatePagination({
+          page:       cur_page,
+          limit:      cur_limit,
+          total,
+          total_pages,
+          is_last_page: cur_page >= total_pages,
+        });
+      } else {
+        throw new Error(result.message || 'Failed to fetch packages');
+      }
+    } catch (e) {
+      console.error('fetchPackages:', e);
+      setError(e.message || 'Failed to fetch packages');
+    } finally {
+      setLoading(false);
+      fetchInProgress.current = false;
+      isInitialLoad.current = false;
+    }
+  }, [pagination.page, pagination.limit, debouncedSearch, updatePagination]);
+
+  // Initial load
+  useEffect(() => {
+    if (!initialFetchDone.current) {
+      initialFetchDone.current = true;
+      fetchAllPermissions();
+      fetchPackages(1, true);
+    }
+  }, [fetchPackages, fetchAllPermissions]);
+
+  // Fetch on page change
+  useEffect(() => {
+    if (!isInitialLoad.current && !fetchInProgress.current && initialFetchDone.current) {
+      fetchPackages(pagination.page, true);
+    }
+  }, [pagination.page, fetchPackages]);
+
+  // ─── CRUD actions ─────────────────────────────────────────────────────────
+  const createPackage = async (data) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
+      const res = await fetch(`${API_BASE}/permissions/create-package`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'company': company.id.toString(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          package_name: data.package_name,
+          group_code: data.group_code,
+          description: data.description,
+          permissions: data.permissions,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.success) return { success: true };
+      throw new Error(result.message || 'Create failed');
+    } catch (e) {
+      console.error('createPackage:', e);
+      return { success: false, error: e.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePackage = async (data) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
+      const res = await fetch(`${API_BASE}/permissions/update-package`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'company': company.id.toString(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: data.id,
+          package_name: data.package_name,
+          group_code: data.group_code,
+          description: data.description,
+          permissions: data.permissions,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.success) return { success: true };
+      throw new Error(result.message || 'Update failed');
+    } catch (e) {
+      console.error('updatePackage:', e);
+      return { success: false, error: e.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deletePackage = async (packageId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
+      const res = await fetch(`${API_BASE}/permissions/delete-packages`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'company': company.id.toString(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ packageId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.success) return { success: true };
+      throw new Error(result.message || 'Delete failed');
+    } catch (e) {
+      console.error('deletePackage:', e);
+      return { success: false, error: e.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Modal handlers ───────────────────────────────────────────────────────
+  const openCreateModal = () => {
+    setFormData(emptyForm);
+    setModalType(MODAL_TYPES.CREATE);
+    setActiveActionMenu(null);
+  };
+
+  const openEditModal = (pkg) => {
+    setSelectedPackage(pkg);
+    setFormData({
+      package_name: pkg.package_name,
+      group_code: pkg.group_code,
+      description: pkg.description || '',
+      permissions: [...(pkg.permissions || [])]
+    });
+    setModalType(MODAL_TYPES.EDIT);
+    setActiveActionMenu(null);
+  };
+
+  const openViewModal = (pkg) => {
+    setSelectedPackage(pkg);
+    setModalType(MODAL_TYPES.VIEW);
+    setActiveActionMenu(null);
+  };
+
+  const openDeleteModal = (pkg) => {
+    setSelectedPackage(pkg);
+    setModalType(MODAL_TYPES.DELETE_CONFIRM);
+    setActiveActionMenu(null);
+  };
+
+  const openPermListModal = (pkg) => {
+    setSelectedPackage(pkg);
+    setModalType(MODAL_TYPES.PERM_LIST);
+    setActiveActionMenu(null);
+  };
+
+  const closeModal = () => {
+    setModalType(MODAL_TYPES.NONE);
+    setSelectedPackage(null);
+    setFormData(emptyForm);
+  };
+
+  const toggleActionMenu = (e, id) => {
+    e.stopPropagation();
+    setActiveActionMenu(activeActionMenu === id ? null : id);
+  };
+
+  // ─── Form handlers ────────────────────────────────────────────────────────
+  const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const togglePermission = (permId) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permId)
+        ? prev.permissions.filter(id => id !== permId)
+        : [...prev.permissions, permId]
+    }));
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    const result = await createPackage(formData);
+    if (result.success) { closeModal(); fetchPackages(1); }
+    else setError(result.error);
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    const result = await updatePackage({ id: selectedPackage.id, ...formData });
+    if (result.success) { closeModal(); fetchPackages(pagination.page, false); }
+    else setError(result.error);
+  };
+
+  const handleDelete = async () => {
+    const result = await deletePackage(selectedPackage.id);
+    if (result.success) { closeModal(); fetchPackages(pagination.page, false); }
+    else setError(result.error);
+  };
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+  const getPermissionById = useCallback((id) => allPermissions.find(p => p.id === id), [allPermissions]);
+  const getGroupColor = (idx) => GROUP_COLORS[idx % GROUP_COLORS.length];
+
+  // Dismiss action menus on outside click
+  useEffect(() => {
+    const handler = () => setActiveActionMenu(null);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
+  // Handle page change
+  const handlePageChange = useCallback((newPage) => {
+    if (newPage !== pagination.page) goToPage(newPage);
+  }, [pagination.page, goToPage]);
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen p-2 xsm:p-2 sm:p-3 md:p-6 font-sans">
+
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col xsm:flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-3">
+        <h1 className="text-lg xsm:text-lg sm:text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 text-center sm:text-left">
+          Permission Management
+        </h1>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center">
+          <div className="text-xs sm:text-sm text-gray-500 bg-white px-3 py-2 rounded-full shadow-sm whitespace-nowrap">
+            Total: <span className="font-semibold text-blue-600">{pagination.total}</span> packages
+          </div>
+          <button onClick={openCreateModal}
+            className="flex items-center gap-2 px-3 sm:px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium shadow-lg hover:shadow-xl text-xs sm:text-sm whitespace-nowrap">
+            <FaPlus size={11} />
+            <span>New Package</span>
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Search */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-4 sm:mb-6">
+        <div className="relative w-full">
+          <input
+            type="text" placeholder="Search packages by name, code, or description..."
+            value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+            className="w-full pl-10 sm:pl-12 pr-10 py-3 sm:py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
+          />
+          <FaSearch className="absolute left-3 sm:left-4 top-3 sm:top-4 text-gray-400 text-sm sm:text-xl" />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} className="absolute right-3 sm:right-4 top-3 sm:top-4 text-gray-400 hover:text-gray-600">
+              <FaTimes size={13} />
+            </button>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Error */}
+      <AnimatePresence>
+        {error && (
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+            className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 sm:mb-6 border border-red-200 shadow-lg flex items-center gap-2 text-sm">
+            <FaTimes className="text-red-600 flex-shrink-0" />
+            <span>Error: {error}</span>
+            <button onClick={() => setError(null)} className="ml-auto p-1 hover:bg-red-100 rounded-lg">
+              <FaTimes size={11} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Loading skeleton — desktop table rows + mobile cards */}
+      {loading && packages.length === 0 && (
+        <>
+          {/* Desktop skeleton */}
+          <div className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden animate-pulse">
+            <div className="h-12 bg-gradient-to-r from-gray-100 to-gray-200" />
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-100">
+                <div className="h-4 bg-gray-200 rounded w-1/5" />
+                <div className="h-4 bg-gray-100 rounded w-1/6" />
+                <div className="h-4 bg-gray-100 rounded w-2/5" />
+                <div className="flex gap-1.5 flex-1">
+                  <div className="h-6 w-14 bg-gray-100 rounded-lg" />
+                  <div className="h-6 w-14 bg-gray-100 rounded-lg" />
+                  <div className="h-6 w-14 bg-gray-100 rounded-lg" />
+                </div>
+                <div className="h-6 w-16 bg-gray-200 rounded-full ml-auto" />
+              </div>
+            ))}
+          </div>
+          {/* Mobile skeleton */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl shadow-lg p-5 animate-pulse">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-gray-200 rounded-xl flex-shrink-0" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="h-3 bg-gray-100 rounded w-full mb-3" />
+                <div className="flex gap-2 flex-wrap">
+                  {[...Array(3)].map((_, j) => <div key={j} className="h-6 w-16 bg-gray-100 rounded-lg" />)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && packages.length === 0 && (
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-12 sm:py-16 bg-white rounded-2xl shadow-xl">
+          <FaShieldAlt className="text-6xl sm:text-8xl text-gray-300 mx-auto mb-4" />
+          <p className="text-lg sm:text-xl text-gray-500">No permission packages found</p>
+          <p className="text-gray-400 mt-2 text-sm">Try adjusting your search or create a new package</p>
+          <button onClick={openCreateModal}
+            className="mt-6 inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all text-sm">
+            <FaPlus size={12} /> Create Package
+          </button>
+        </motion.div>
+      )}
+
+      {/* ── DESKTOP TABLE + MOBILE CARDS ── */}
+      {!loading && !error && packages.length > 0 && (
+        <>
+          {/* ── Desktop Table (md and above) ── */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-700">
+                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                  <tr>
+                    <th className="px-6 py-4">Package Name</th>
+                    <th className="px-6 py-4">Group Code</th>
+                    <th className="px-6 py-4 hidden lg:table-cell">Description</th>
+                    <th className="px-6 py-4 text-center">Permissions</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {packages.map((pkg, index) => (
+                    <motion.tr key={pkg.id}
+                      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.04 }}
+                      className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                    >
+                      {/* Package Name */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl flex-shrink-0">
+                            <FaShieldAlt className="text-white text-xs" />
+                          </div>
+                          <span className="font-semibold text-gray-800 truncate max-w-[160px]">{pkg.package_name}</span>
+                        </div>
+                      </td>
+
+                      {/* Group Code */}
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
+                          <FaCode size={9} />{pkg.group_code}
+                        </span>
+                      </td>
+
+                      {/* Description — large screens only */}
+                      <td className="px-6 py-4 hidden lg:table-cell">
+                        <span className="text-gray-500 text-xs line-clamp-2 max-w-[220px] block">
+                          {pkg.description || <span className="italic text-gray-300">—</span>}
+                        </span>
+                      </td>
+
+                      {/* Permissions — clickable count badge */}
+                      <td className="px-6 py-4 text-center">
+                        {(pkg.permissions?.length || 0) > 0 ? (
+                          <button
+                            onClick={() => openPermListModal(pkg)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-blue-700 text-xs font-bold hover:from-blue-100 hover:to-purple-100 hover:border-blue-400 hover:shadow-md transition-all duration-200 group"
+                          >
+                            <FaShieldAlt size={10} className="text-purple-500 group-hover:scale-110 transition-transform" />
+                            {pkg.permissions.length} permission{pkg.permissions.length !== 1 ? 's' : ''}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">None</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-right relative">
+                        <button onClick={e => toggleActionMenu(e, pkg.id)}
+                          className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
+                          <FaEllipsisV className="text-gray-600 text-xs" />
+                        </button>
+                        <AnimatePresence>
+                          {activeActionMenu === pkg.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <button onClick={() => openViewModal(pkg)}
+                                className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300 text-sm">
+                                <FaEye size={12} /> View Details
+                              </button>
+                              <button onClick={() => openEditModal(pkg)}
+                                className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300 text-sm">
+                                <FaEdit size={12} /> Edit
+                              </button>
+                              <button onClick={() => openDeleteModal(pkg)}
+                                className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 text-sm">
+                                <FaTrash size={12} /> Delete
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+
+          {/* ── Mobile Cards (below md) ── */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {packages.map((pkg, index) => (
+              <motion.div key={pkg.id}
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-2xl shadow-xl p-5 border border-gray-100 hover:shadow-2xl transition-all duration-300"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl flex-shrink-0">
+                    <FaShieldAlt className="text-white text-xl" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
+                      <h3 className="font-bold text-base text-gray-800 truncate">{pkg.package_name}</h3>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200 flex-shrink-0">
+                        <FaCode size={8} />{pkg.group_code}
+                      </span>
+                    </div>
+                    {pkg.description && (
+                      <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{pkg.description}</p>
+                    )}
+                    <div className="mt-3 flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-400 flex items-center gap-1">
+                        <FaTag size={9} /> Permissions
+                      </p>
+                      {(pkg.permissions?.length || 0) > 0 ? (
+                        <button
+                          onClick={() => openPermListModal(pkg)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-blue-700 text-xs font-bold hover:from-blue-100 hover:to-purple-100 hover:border-blue-400 hover:shadow-md transition-all duration-200"
+                        >
+                          <FaShieldAlt size={10} className="text-purple-500" />
+                          {pkg.permissions.length} permission{pkg.permissions.length !== 1 ? 's' : ''}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">No permissions</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile action buttons */}
+                <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
+                  <button onClick={() => openViewModal(pkg)}
+                    className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
+                    <FaEye size={14} />
+                  </button>
+                  <button onClick={() => openEditModal(pkg)}
+                    className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110">
+                    <FaEdit size={14} />
+                  </button>
+                  <button onClick={() => openDeleteModal(pkg)}
+                    className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110">
+                    <FaTrash size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={pagination.page}
+            totalItems={pagination.total}
+            itemsPerPage={pagination.limit}
+            onPageChange={handlePageChange}
+            variant="default"
+            showInfo={true}
+          />
+        </>
+      )}
+
+      {/* ─── MODALS ──────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {modalType !== MODAL_TYPES.NONE && (
+          <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+            onClick={closeModal}
+          >
+            <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[96vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+
+              {/* ── VIEW MODAL ── */}
+              {modalType === MODAL_TYPES.VIEW && selectedPackage && (
+                <>
+                  <div className="sticky top-0 flex justify-between items-center p-4 sm:p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl z-10">
+                    <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                      <FaEye /> Package Details
+                    </h2>
+                    <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                      <FaTimes size={16} />
+                    </button>
+                  </div>
+                  <div className="p-4 sm:p-6">
+                    {/* Package Info Row */}
+                    <div className="flex items-start gap-4 pb-5 border-b mb-5">
+                      <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl flex-shrink-0">
+                        <FaShieldAlt className="text-white text-xl sm:text-2xl" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg sm:text-2xl font-bold text-gray-800 break-words">{selectedPackage.package_name}</h3>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
+                            <FaCode size={9} />{selectedPackage.group_code}
+                          </span>
+                          <span className="text-xs text-gray-400">{selectedPackage.permissions?.length || 0} permissions</span>
+                        </div>
+                        {selectedPackage.description && (
+                          <p className="text-sm text-gray-500 mt-2 leading-relaxed">{selectedPackage.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Permissions List */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <FaShieldAlt className="text-blue-500" />
+                        Assigned Permissions
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                          {selectedPackage.permissions?.length || 0}
+                        </span>
+                      </h4>
+                      {selectedPackage.permissions?.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                          {(selectedPackage.permissions || []).map((permId, idx) => {
+                            const perm = getPermissionById(permId);
+                            return perm ? (
+                              <motion.div key={permId}
+                                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: idx * 0.04 }}
+                                className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200"
+                              >
+                                <span className={`px-2 py-1 rounded-lg text-xs font-bold border flex-shrink-0 ${getGroupColor(idx)}`}>
+                                  {perm.code}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-gray-700 leading-tight">{perm.name}</p>
+                                  <p className="text-xs text-gray-400 font-mono mt-0.5">{perm.action}</p>
+                                </div>
+                                <FaCheck size={10} className="text-green-500 flex-shrink-0" />
+                              </motion.div>
+                            ) : null;
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-400">
+                          <FaBan className="mx-auto text-3xl mb-2 opacity-50" />
+                          <p className="text-sm italic">No permissions assigned to this package</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button onClick={() => openEditModal(selectedPackage)}
+                        className="px-4 sm:px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all font-medium text-sm flex items-center gap-2 shadow-md">
+                        <FaEdit size={12} /> Edit Package
+                      </button>
+                      <button onClick={closeModal}
+                        className="px-4 sm:px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium text-sm">
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── PERMISSIONS LIST MODAL ── */}
+              {modalType === MODAL_TYPES.PERM_LIST && selectedPackage && (
+                <>
+                  <div className="sticky top-0 flex justify-between items-center p-4 sm:p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl z-10">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <FaShieldAlt className="flex-shrink-0" />
+                      <div className="min-w-0">
+                        <h2 className="text-base sm:text-lg font-semibold leading-tight truncate">{selectedPackage.package_name}</h2>
+                        <p className="text-xs text-blue-200 mt-0.5">{selectedPackage.permissions?.length || 0} permissions assigned</p>
+                      </div>
+                    </div>
+                    <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 flex-shrink-0">
+                      <FaTimes size={16} />
+                    </button>
+                  </div>
+                  <div className="p-4 sm:p-6">
+                    {/* Package meta */}
+                    <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full text-xs font-semibold border border-purple-200">
+                        <FaCode size={9} />{selectedPackage.group_code}
+                      </span>
+                      {selectedPackage.description && (
+                        <span className="text-xs text-gray-500 truncate">{selectedPackage.description}</span>
+                      )}
+                    </div>
+
+                    {selectedPackage.permissions?.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-h-[55vh] overflow-y-auto pr-1">
+                        {(selectedPackage.permissions || []).map((permId, idx) => {
+                          const perm = getPermissionById(permId);
+                          return perm ? (
+                            <motion.div key={permId}
+                              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: idx * 0.04 }}
+                              className="flex items-center gap-3 p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:border-blue-200 hover:from-blue-50 hover:to-indigo-50 transition-all duration-200"
+                            >
+                              <span className={`px-2 py-1 rounded-lg text-xs font-bold border flex-shrink-0 ${getGroupColor(idx)}`}>
+                                {perm.code}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-gray-800 leading-tight">{perm.name}</p>
+                                <p className="text-xs text-gray-400 font-mono mt-0.5">{perm.action}</p>
+                              </div>
+                              <div className="w-5 h-5 rounded-full bg-green-100 border border-green-200 flex items-center justify-center flex-shrink-0">
+                                <FaCheck size={8} className="text-green-600" />
+                              </div>
+                            </motion.div>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <FaBan className="mx-auto text-4xl text-gray-300 mb-3" />
+                        <p className="text-gray-400 text-sm italic">No permissions assigned to this package</p>
+                      </div>
+                    )}
+
+                    <div className="mt-5 flex justify-end gap-3">
+                      <button onClick={() => openEditModal(selectedPackage)}
+                        className="px-4 sm:px-5 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all font-medium text-sm flex items-center gap-2 shadow-md">
+                        <FaEdit size={11} /> Edit Package
+                      </button>
+                      <button onClick={closeModal}
+                        className="px-4 sm:px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium text-sm">
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── CREATE MODAL ── */}
+              {modalType === MODAL_TYPES.CREATE && (
+                <>
+                  <div className="sticky top-0 flex justify-between items-center p-4 sm:p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl z-10">
+                    <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                      <FaPlus /> Create Permission Package
+                    </h2>
+                    <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                      <FaTimes size={16} />
+                    </button>
+                  </div>
+                  <PackageFormBody
+                    onSubmit={handleCreate}
+                    isEdit={false}
+                    formData={formData}
+                    onInputChange={handleInputChange}
+                    onTogglePermission={togglePermission}
+                    onSelectAll={() => setFormData(prev => ({ ...prev, permissions: allPermissions.map(p => p.id) }))}
+                    onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
+                    allPermissions={allPermissions}
+                    permsLoading={permsLoading}
+                    loading={loading}
+                    onClose={closeModal}
+                  />
+                </>
+              )}
+
+              {/* ── EDIT MODAL ── */}
+              {modalType === MODAL_TYPES.EDIT && selectedPackage && (
+                <>
+                  <div className="sticky top-0 flex justify-between items-center p-4 sm:p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl z-10">
+                    <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                      <FaEdit /> Edit Package
+                    </h2>
+                    <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                      <FaTimes size={16} />
+                    </button>
+                  </div>
+                  <PackageFormBody
+                    onSubmit={handleEdit}
+                    isEdit={true}
+                    formData={formData}
+                    onInputChange={handleInputChange}
+                    onTogglePermission={togglePermission}
+                    onSelectAll={() => setFormData(prev => ({ ...prev, permissions: allPermissions.map(p => p.id) }))}
+                    onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
+                    allPermissions={allPermissions}
+                    permsLoading={permsLoading}
+                    loading={loading}
+                    onClose={closeModal}
+                  />
+                </>
+              )}
+
+              {/* ── DELETE CONFIRM MODAL ── */}
+              {modalType === MODAL_TYPES.DELETE_CONFIRM && selectedPackage && (
+                <>
+                  <div className="sticky top-0 flex justify-between items-center p-4 sm:p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl z-10">
+                    <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                      <FaTrash /> Confirm Delete
+                    </h2>
+                    <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                      <FaTimes size={16} />
+                    </button>
+                  </div>
+                  <div className="p-4 sm:p-6 text-center">
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', duration: 0.5 }}
+                      className="w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaTrash className="text-2xl sm:text-4xl text-red-600" />
+                    </motion.div>
+                    <p className="text-lg sm:text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
+                    <p className="text-sm text-gray-500 mb-6 px-2">
+                      You are about to delete{' '}
+                      <span className="font-semibold text-red-600">{selectedPackage.package_name}</span>.
+                      This action cannot be undone.
+                    </p>
+                    <div className="flex justify-center gap-3 sm:gap-4">
+                      <button onClick={closeModal}
+                        className="px-4 sm:px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">
+                        Cancel
+                      </button>
+                      <button onClick={handleDelete} disabled={loading}
+                        className="px-4 sm:px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl text-sm">
+                        {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={12} />}
+                        Delete Package
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
 
 export default PermissionManagement;

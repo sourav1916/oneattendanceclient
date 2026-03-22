@@ -8,6 +8,13 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // Custom screens/breakpoints - only between 280px and 400px
+      screens: {
+        'xsm': {               // Only applies from 280px to 400px
+          'min': '280px',
+          'max': '400px'
+        },
+      },
       colors: {
         // You can add custom colors here
       },

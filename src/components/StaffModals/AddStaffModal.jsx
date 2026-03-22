@@ -5,7 +5,10 @@ import { toast } from "react-toastify";
 import {
   FaUserPlus, FaUserTag, FaUserCog,
   FaTimes, FaCheck, FaSpinner, FaUserCircle,
-  FaBriefcase, FaClock, FaShieldAlt, FaUserTie
+  FaBriefcase, FaClock, FaShieldAlt, FaUserTie,
+  FaFingerprint, FaCamera, FaMapMarkerAlt, FaWifi,
+  FaUserCheck, FaRobot, FaHandPaper, FaToggleOn, FaToggleOff,
+  FaDollarSign, FaCalendarAlt, FaIdCard, FaNetworkWired
 } from "react-icons/fa";
 import SearchableSelect from "../SearchableSelect";
 
@@ -14,85 +17,195 @@ const API_BASE = "https://api-attendance.onesaas.in";
 function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [users, setUsers] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  
+  // Dynamic data from API
+  const [employmentTypes, setEmploymentTypes] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [salaryTypes, setSalaryTypes] = useState([]);
+  const [employmentStatuses, setEmploymentStatuses] = useState([]);
+  const [punchTypes, setPunchTypes] = useState([]);
+  const [attendanceMethods, setAttendanceMethods] = useState([]);
+  
+  // Selected values
   const [selectedUser, setSelectedUser] = useState(null);
   const [designation, setDesignation] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
-
+  const [employmentStatus, setEmploymentStatus] = useState(null);
+  
+  // Attendance methods configuration
+  const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
-  const [isLoadingSalaryTypes, setIsLoadingSalaryTypes] = useState(false);
-  const [isLoadingDesignations, setIsLoadingDesignations] = useState(false);
-  const [isLoadingEmploymentTypes, setIsLoadingEmploymentTypes] = useState(false);
+  const [isLoadingConstants, setIsLoadingConstants] = useState(false);
 
-  const [designationOptions, setDesignationOptions] = useState([]);
-  const [employmentTypeOptions, setEmploymentTypeOptions] = useState([]);
-
-  // Icon maps
-  const designationIconMap = {
-    admin: FaUserTie,
-    hr_manager: FaUserCog,
-    hr_executive: FaUserCog,
-    manager: FaUserTie,
-    supervisor: FaUserTag,
-    team_lead: FaUserTag,
-    senior_employee: FaUserCircle
+  // Dynamic icon mapping based on key values
+  const getIconForType = (key, type) => {
+    const iconMap = {
+      // Employment types
+      FULL_TIME: FaClock,
+      PART_TIME: FaClock,
+      CONTRACT: FaBriefcase,
+      INTERN: FaUserTag,
+      FREELANCER: FaBriefcase,
+      
+      // Designations
+      ADMIN: FaUserCog,
+      HR_MANAGER: FaUserCog,
+      HR_EXECUTIVE: FaUserCog,
+      MANAGER: FaUserTie,
+      SUPERVISOR: FaUserTag,
+      TEAM_LEAD: FaUserTag,
+      SENIOR_EMPLOYEE: FaUserCircle,
+      
+      // Salary types
+      HOURLY: FaClock,
+      MONTHLY: FaCalendarAlt,
+      
+      // Employment status
+      ACTIVE: FaUserCheck,
+      INACTIVE: FaUserCircle,
+      RESIGNED: FaTimes,
+      
+      // Attendance methods
+      MANUAL: FaHandPaper,
+      GPS: FaMapMarkerAlt,
+      FACE: FaCamera,
+      QR: FaIdCard,
+      FINGERPRINT: FaFingerprint,
+      IP: FaNetworkWired
+    };
+    
+    const Icon = iconMap[key] || FaUserCircle;
+    return Icon;
   };
 
-  const employmentIconMap = {
-    full_time: FaClock,
-    part_time: FaClock,
-    contract: FaBriefcase,
-    intern: FaUserTag,
-    freelancer: FaBriefcase
+  const getDescriptionForType = (key, type, defaultDesc = "") => {
+    // Use the description from API if available
+    return defaultDesc;
   };
 
-  const employmentDescriptionMap = {
-    full_time: "Full time employment",
-    part_time: "Part time employment",
-    contract: "Contract based",
-    intern: "Internship",
-    freelancer: "Freelance work"
-  };
-
-  // Map icon based on salary type key
-  const getSalaryTypeIcon = (key) => {
-    switch (key?.toLowerCase()) {
-      case 'hourly':
-        return FaClock;
-      case 'monthly':
-        return FaClock;
-      default:
-        return FaBriefcase;
-    }
-  };
-
-  // Format salary types from API response
-  const formatSalaryTypeOptions = (salaryTypesData) => {
-    if (!salaryTypesData || !Array.isArray(salaryTypesData)) return [];
-
-    return salaryTypesData.map(type => ({
-      value: type.value,
-      label: type.key.charAt(0) + type.key.slice(1).toLowerCase(),
-      key: type.key,
-      icon: getSalaryTypeIcon(type.key),
-      description: `${type.key.toLowerCase()} salary basis`
-    }));
-  };
-
-  // Fetch all constants when modal opens
+  // Fetch all constants from the provided data
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
       fetchPermissions();
-      fetchEmploymentTypes();
-      fetchDesignations();
-      fetchSalaryTypes();
+      fetchAllConstants();
+      // Reset attendance methods config
+      setAttendanceMethodsConfig({});
     }
   }, [isOpen]);
+
+  const fetchAllConstants = async () => {
+    setIsLoadingConstants(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/constants/`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        // Process employment types
+        if (data.data.employment_types) {
+          const formattedEmploymentTypes = data.data.employment_types.map(item => ({
+            value: item.value.value,
+            key: item.key,
+            label: item.value.label,
+            description: item.value.description,
+            icon: getIconForType(item.key, 'employment')
+          }));
+          setEmploymentTypes(formattedEmploymentTypes);
+        }
+
+        // Process designations
+        if (data.data.designations) {
+          const formattedDesignations = data.data.designations.map(item => ({
+            value: item.value.value,
+            key: item.key,
+            label: item.value.label,
+            description: item.value.description,
+            icon: getIconForType(item.key, 'designation')
+          }));
+          setDesignations(formattedDesignations);
+        }
+
+        // Process salary types
+        if (data.data.salary_types) {
+          const formattedSalaryTypes = data.data.salary_types.map(item => ({
+            value: item.value.value,
+            key: item.key,
+            label: item.value.label,
+            description: item.value.description,
+            icon: getIconForType(item.key, 'salary')
+          }));
+          setSalaryTypes(formattedSalaryTypes);
+        }
+
+        // Process employment status
+        if (data.data.employment_status) {
+          const formattedStatus = data.data.employment_status.map(item => ({
+            value: item.value.value,
+            key: item.key,
+            label: item.value.label,
+            description: item.value.description,
+            icon: getIconForType(item.key, 'status')
+          }));
+          setEmploymentStatuses(formattedStatus);
+          // Set default status to ACTIVE
+          const activeStatus = formattedStatus.find(s => s.key === 'ACTIVE');
+          if (activeStatus) setEmploymentStatus(activeStatus);
+        }
+
+        // Process punch types
+        if (data.data.punch_types) {
+          const formattedPunchTypes = data.data.punch_types.map(item => ({
+            value: item.value.value,
+            key: item.key,
+            label: item.value.label,
+            description: item.value.description
+          }));
+          setPunchTypes(formattedPunchTypes);
+        }
+
+        // Process attendance methods
+        if (data.data.attendance_methods) {
+          const formattedMethods = data.data.attendance_methods.map(item => ({
+            id: item.key,
+            name: item.value.label,
+            icon: getIconForType(item.key, 'method'),
+            description: item.value.description,
+            available: item.value.is_available,
+            requiresDevice: item.value.requiresDevice || false,
+            requiresLocation: item.value.requiresLocation || false,
+            requiresCamera: item.value.requiresCamera || false
+          }));
+          setAttendanceMethods(formattedMethods);
+          
+          // Initialize config for all methods
+          const initialConfig = {};
+          formattedMethods.forEach(method => {
+            initialConfig[method.id.toLowerCase()] = {
+              enabled: false,
+              internalMethods: []
+            };
+          });
+          setAttendanceMethodsConfig(initialConfig);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch constants", err);
+      toast.error("Failed to fetch configuration data");
+    } finally {
+      setIsLoadingConstants(false);
+    }
+  };
 
   const fetchUsers = async (searchQuery = "") => {
     setIsLoadingUsers(true);
@@ -107,10 +220,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      // Build URL - note the endpoint pattern from your example
       const baseUrl = `${API_BASE}/company/users/available`;
-
-      // Add search query as param if provided
       const url = searchQuery
         ? `${baseUrl}?search=${encodeURIComponent(searchQuery)}`
         : baseUrl;
@@ -131,7 +241,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const result = await res.json();
 
       if (result.success) {
-        // Handle different possible response structures
         const usersData = result.data || result.users || [];
 
         const formatted = usersData.map(u => ({
@@ -154,6 +263,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       setIsLoadingUsers(false);
     }
   };
+
   const fetchPermissions = async () => {
     setIsLoadingPermissions(true);
     try {
@@ -177,98 +287,51 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  const fetchEmploymentTypes = async () => {
-    setIsLoadingEmploymentTypes(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/constants/?type=employment`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        const options = data.data.employment_types.map((item) => ({
-          value: item.value,
-          label: item.key
-            .toLowerCase()
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()),
-          icon: employmentIconMap[item.value] || FaBriefcase,
-          description: employmentDescriptionMap[item.value] || "Employment type"
-        }));
-        setEmploymentTypeOptions(options);
-      }
-    } catch (err) {
-      console.error("Failed to fetch employment types", err);
-      toast.error("Failed to fetch employment types");
-    } finally {
-      setIsLoadingEmploymentTypes(false);
-    }
-  };
-
-  const fetchDesignations = async () => {
-    setIsLoadingDesignations(true);
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/constants/?type=designation`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        const options = data.data.designations.map((item) => ({
-          value: item.value,
-          label: item.key
-            .toLowerCase()
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()),
-          icon: designationIconMap[item.value] || FaUserCircle
-        }));
-        setDesignationOptions(options);
-      }
-    } catch (err) {
-      console.error("Failed to fetch designations", err);
-      toast.error("Failed to fetch designations");
-    } finally {
-      setIsLoadingDesignations(false);
-    }
-  };
-
-  const fetchSalaryTypes = async () => {
-    setIsLoadingSalaryTypes(true);
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE}/constants/?type=salary`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const formattedTypes = formatSalaryTypeOptions(result.data.salary_types);
-        setSalaryTypes(formattedTypes);
-      }
-    } catch (err) {
-      console.error("Error fetching salary types:", err);
-      toast.error("Failed to fetch salary types");
-    } finally {
-      setIsLoadingSalaryTypes(false);
-    }
-  };
-
   const permissionOptions = permissions.map(p => ({
     value: p.id,
     label: p.name,
     description: p.description || p.name
   }));
+
+  // Internal method options
+  const internalMethodOptions = [
+    { value: "auto", label: "Auto", icon: FaRobot, description: "Automatically mark attendance" },
+    { value: "manual", label: "Manual", icon: FaUserCheck, description: "Manually mark attendance" }
+  ];
+
+  // Handle attendance method toggle
+  const handleToggleMethod = (methodId) => {
+    setAttendanceMethodsConfig(prev => ({
+      ...prev,
+      [methodId]: {
+        ...prev[methodId],
+        enabled: !prev[methodId]?.enabled,
+        internalMethods: !prev[methodId]?.enabled ? (prev[methodId]?.internalMethods || []) : []
+      }
+    }));
+  };
+
+  // Handle internal method selection
+  const handleInternalMethodChange = (methodId, internalMethodValue) => {
+    setAttendanceMethodsConfig(prev => {
+      const currentInternalMethods = prev[methodId]?.internalMethods || [];
+      let newInternalMethods;
+
+      if (currentInternalMethods.includes(internalMethodValue)) {
+        newInternalMethods = currentInternalMethods.filter(m => m !== internalMethodValue);
+      } else {
+        newInternalMethods = [...currentInternalMethods, internalMethodValue];
+      }
+
+      return {
+        ...prev,
+        [methodId]: {
+          ...prev[methodId],
+          internalMethods: newInternalMethods
+        }
+      };
+    });
+  };
 
   const handleSubmit = async () => {
     if (!selectedUser) {
@@ -291,11 +354,35 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
+    // Validate attendance methods - at least one method must be enabled
+    const enabledMethods = Object.entries(attendanceMethodsConfig)
+      .filter(([key, config]) => config?.enabled);
+
+    if (enabledMethods.length === 0) {
+      toast.warning("Please enable at least one attendance method");
+      return;
+    }
+
+    // Validate that each enabled method has at least one internal method selected
+    for (const [methodId, config] of enabledMethods) {
+      if (!config.internalMethods || config.internalMethods.length === 0) {
+        const methodName = attendanceMethods.find(m => m.id.toLowerCase() === methodId)?.name || methodId;
+        toast.warning(`Please select at least one internal method for ${methodName}`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem("company"));
+
+      // Format attendance methods data
+      const attendanceMethodsData = enabledMethods.map(([methodId, config]) => ({
+        method: methodId,
+        internal_methods: config.internalMethods
+      }));
 
       const payload = {
         company_id: company?.id || 6,
@@ -303,7 +390,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         permissions: selectedPermissions.map(p => p.value),
         employment_type: employmentType.value,
         designation: designation.value,
-        salary_type: staffType.value
+        salary_type: staffType.value,
+        employment_status: employmentStatus?.value || 'active',
+        attendance_methods: attendanceMethodsData
       };
 
       console.log("Submitting payload:", payload);
@@ -340,7 +429,17 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setDesignation(null);
     setStaffType(null);
     setEmploymentType(null);
+    setEmploymentStatus(null);
     setSelectedPermissions([]);
+    // Reset attendance methods config
+    const resetConfig = {};
+    attendanceMethods.forEach(method => {
+      resetConfig[method.id.toLowerCase()] = {
+        enabled: false,
+        internalMethods: []
+      };
+    });
+    setAttendanceMethodsConfig(resetConfig);
     setIsSubmitting(false);
     onClose();
   };
@@ -384,9 +483,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     })
   };
 
-  // Loading state for any of the constants
-  const isLoadingConstants = isLoadingEmploymentTypes || isLoadingDesignations || isLoadingSalaryTypes;
-
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -411,7 +507,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
             {/* Gradient Header */}
             <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
@@ -423,8 +519,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     <FaUserPlus className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Add New Staff</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Add team members with roles and permissions</p>
+                    <h2 className="text-xl font-bold text-gray-900">Add New Staff Member</h2>
+                    <p className="text-sm text-gray-500 mt-0.5">Configure employee details, roles, and attendance settings</p>
                   </div>
                 </div>
                 <motion.button
@@ -438,134 +534,186 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
               </div>
             </div>
 
-            <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
-              <div className="space-y-6">
-                {/* User Selection */}
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="space-y-2"
-                >
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FaUserCircle className="w-4 h-4 text-indigo-500" />
-                    Select User
-                  </label>
-                  {isLoadingUsers ? (
-                    <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
-                      <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
-                      <span className="ml-2 text-sm text-gray-500">Loading users...</span>
-                    </div>
-                  ) : (
-                    <SearchableSelect
-                      users={users}
-                      onSelect={(user) => setSelectedUser(user)}
-                      placeholder="Search and select user..."
-                    />
-                  )}
-                </motion.div>
-
-                {/* Three Column Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Employment Type */}
+            <div className="p-6 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Employee Details */}
+                <div className="space-y-6">
+                  {/* User Selection */}
                   <motion.div
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.15 }}
+                    transition={{ delay: 0.1 }}
                     className="space-y-2"
                   >
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaBriefcase className="w-4 h-4 text-indigo-500" />
-                      Employment Type
+                      <FaUserCircle className="w-4 h-4 text-indigo-500" />
+                      Select User
                     </label>
-                    {isLoadingEmploymentTypes ? (
-                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
+                    {isLoadingUsers ? (
+                      <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading users...</span>
                       </div>
                     ) : (
+                      <SearchableSelect
+                        users={users}
+                        onSelect={(user) => setSelectedUser(user)}
+                        placeholder="Search and select user..."
+                      />
+                    )}
+                  </motion.div>
+
+                  {/* Employee Information Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Employment Type */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.15 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaBriefcase className="w-4 h-4 text-indigo-500" />
+                        Employment Type
+                      </label>
                       <Select
-                        options={employmentTypeOptions}
+                        options={employmentTypes}
                         value={employmentType}
                         onChange={(option) => setEmploymentType(option)}
                         placeholder="Select type"
                         styles={customSelectStyles}
+                        isLoading={isLoadingConstants}
                         formatOptionLabel={({ label, description, icon: Icon }) => (
                           <div className="flex items-center gap-2">
                             {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div>
-                              <div>{label}</div>
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
                               {description && <div className="text-xs text-gray-400">{description}</div>}
                             </div>
                           </div>
                         )}
                       />
-                    )}
-                  </motion.div>
+                    </motion.div>
 
-                  {/* Designation */}
-                  <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-2"
-                  >
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaUserTie className="w-4 h-4 text-indigo-500" />
-                      Designation
-                    </label>
-                    {isLoadingDesignations ? (
-                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
-                      </div>
-                    ) : (
+                    {/* Designation */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaUserTie className="w-4 h-4 text-indigo-500" />
+                        Designation
+                      </label>
                       <Select
-                        options={designationOptions}
+                        options={designations}
                         value={designation}
                         onChange={(option) => setDesignation(option)}
                         placeholder="Select designation"
                         styles={customSelectStyles}
-                        formatOptionLabel={({ label, icon: Icon }) => (
+                        isLoading={isLoadingConstants}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
                           <div className="flex items-center gap-2">
                             {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <span>{label}</span>
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
+                            </div>
                           </div>
                         )}
                       />
-                    )}
-                  </motion.div>
+                    </motion.div>
 
-                  {/* Salary Type */}
-                  <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="space-y-2"
-                  >
-                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                      <FaClock className="w-4 h-4 text-indigo-500" />
-                      Salary Type
-                    </label>
-                    {isLoadingSalaryTypes ? (
-                      <div className="flex items-center justify-center py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <FaSpinner className="w-5 h-5 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading...</span>
-                      </div>
-                    ) : (
+                    {/* Salary Type */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.25 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaDollarSign className="w-4 h-4 text-indigo-500" />
+                        Salary Type
+                      </label>
                       <Select
                         options={salaryTypes}
                         value={staffType}
                         onChange={(option) => setStaffType(option)}
                         placeholder="Select salary type"
                         styles={customSelectStyles}
+                        isLoading={isLoadingConstants}
                         formatOptionLabel={({ label, description, icon: Icon }) => (
                           <div className="flex items-center gap-2">
                             {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div>
-                              <div>{label}</div>
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
                               {description && <div className="text-xs text-gray-400">{description}</div>}
                             </div>
+                          </div>
+                        )}
+                      />
+                    </motion.div>
+
+                    {/* Employment Status */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaUserCheck className="w-4 h-4 text-indigo-500" />
+                        Employment Status
+                      </label>
+                      <Select
+                        options={employmentStatuses}
+                        value={employmentStatus}
+                        onChange={(option) => setEmploymentStatus(option)}
+                        placeholder="Select status"
+                        styles={customSelectStyles}
+                        isLoading={isLoadingConstants}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
+                            </div>
+                          </div>
+                        )}
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Permissions */}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.35 }}
+                    className="space-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <FaShieldAlt className="w-4 h-4 text-indigo-500" />
+                      Permissions & Access
+                    </label>
+                    {isLoadingPermissions ? (
+                      <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading permissions...</span>
+                      </div>
+                    ) : (
+                      <Select
+                        isMulti
+                        options={permissionOptions}
+                        value={selectedPermissions}
+                        onChange={(options) => setSelectedPermissions(options)}
+                        placeholder="Select permissions..."
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description }) => (
+                          <div className="py-1">
+                            <div className="font-medium">{label}</div>
+                            {description && <div className="text-xs text-gray-400">{description}</div>}
                           </div>
                         )}
                       />
@@ -573,58 +721,152 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                   </motion.div>
                 </div>
 
-                {/* Permissions */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="space-y-2"
-                >
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <FaShieldAlt className="w-4 h-4 text-indigo-500" />
-                    Permissions
-                  </label>
-                  {isLoadingPermissions ? (
-                    <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
-                      <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
-                      <span className="ml-2 text-sm text-gray-500">Loading permissions...</span>
-                    </div>
-                  ) : (
-                    <Select
-                      isMulti
-                      options={permissionOptions}
-                      value={selectedPermissions}
-                      onChange={(options) => setSelectedPermissions(options)}
-                      placeholder="Select permissions..."
-                      styles={customSelectStyles}
-                      formatOptionLabel={({ label, description }) => (
-                        <div className="py-1">
-                          <div className="font-medium">{label}</div>
-                          {description && <div className="text-xs text-gray-400">{description}</div>}
-                        </div>
-                      )}
-                    />
-                  )}
-                </motion.div>
-
-                {/* Selected User Summary */}
-                {selectedUser && (
+                {/* Right Column - Attendance Methods */}
+                <div className="space-y-6">
+                  {/* Attendance Methods Section */}
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="space-y-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold">
-                        {selectedUser.full_name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900">{selectedUser.full_name}</h4>
-                        <p className="text-sm text-gray-500">{selectedUser.email}</p>
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaUserCheck className="w-4 h-4 text-indigo-500" />
+                        Attendance Methods
+                      </label>
+                      <span className="text-xs text-gray-400">Configure how staff marks attendance</span>
                     </div>
+
+                    {isLoadingConstants ? (
+                      <div className="flex items-center justify-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
+                        <FaSpinner className="w-8 h-8 text-indigo-500 animate-spin" />
+                        <span className="ml-3 text-sm text-gray-500">Loading attendance methods...</span>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-3">
+                        {attendanceMethods.map((method) => {
+                          const config = attendanceMethodsConfig[method.id.toLowerCase()];
+                          const isEnabled = config?.enabled || false;
+
+                          return (
+                            <div
+                              key={method.id}
+                              className={`border rounded-xl transition-all duration-200 overflow-hidden ${
+                                isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
+                              } ${!method.available ? 'opacity-60' : ''}`}
+                            >
+                              <div className="flex items-center justify-between p-4">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                    isEnabled ? 'bg-indigo-100' : 'bg-gray-100'
+                                  }`}>
+                                    <method.icon className={`w-5 h-5 ${
+                                      isEnabled ? 'text-indigo-600' : 'text-gray-500'
+                                    }`} />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <h4 className="font-medium text-gray-900">{method.name}</h4>
+                                      {method.requiresDevice && (
+                                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                          Requires Device
+                                        </span>
+                                      )}
+                                      {!method.available && (
+                                        <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                                          Currently Unavailable
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-500 mt-1">{method.description}</p>
+                                    {method.requiresLocation && (
+                                      <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                        <FaMapMarkerAlt className="w-3 h-3" />
+                                        Location tracking required
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={() => method.available && handleToggleMethod(method.id.toLowerCase())}
+                                  disabled={!method.available}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                                    isEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                                  } ${!method.available ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      isEnabled ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+
+                              {/* Internal Methods - Show only when enabled */}
+                              {isEnabled && method.available && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="border-t border-indigo-100 px-4 py-3 bg-indigo-50/50"
+                                >
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">
+                                      Marking Methods
+                                    </label>
+                                    <div className="flex flex-wrap gap-4">
+                                      {internalMethodOptions.map((internalMethod) => (
+                                        <label
+                                          key={internalMethod.value}
+                                          className="flex items-center gap-2 cursor-pointer hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={config.internalMethods.includes(internalMethod.value)}
+                                            onChange={() => handleInternalMethodChange(method.id.toLowerCase(), internalMethod.value)}
+                                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                                          />
+                                          <internalMethod.icon className="w-4 h-4 text-gray-500" />
+                                          <span className="text-sm text-gray-700">{internalMethod.label}</span>
+                                          <span className="text-xs text-gray-400">({internalMethod.description})</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </motion.div>
-                )}
+
+                  {/* Selected User Summary */}
+                  {selectedUser && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100"
+                    >
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">Selected Employee</h4>
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold text-lg">
+                          {selectedUser.full_name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{selectedUser.full_name}</h4>
+                          <p className="text-sm text-gray-500">{selectedUser.email}</p>
+                          {selectedUser.phone && (
+                            <p className="text-xs text-gray-400 mt-1">{selectedUser.phone}</p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -649,7 +891,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                 {isSubmitting ? (
                   <>
                     <FaSpinner className="w-4 h-4 animate-spin" />
-                    Creating...
+                    Creating Staff Member...
                   </>
                 ) : (
                   <>
