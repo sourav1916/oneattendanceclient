@@ -15,43 +15,39 @@ const API_BASE = "https://api-attendance.onesaas.in";
 
 function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const [users, setUsers] = useState([]);
-  const [permissions, setPermissions] = useState([]);
-  
+  const [permissionPackages, setPermissionPackages] = useState([]);
+
   // Dynamic data from API
   const [employmentTypes, setEmploymentTypes] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [salaryTypes, setSalaryTypes] = useState([]);
   const [employmentStatuses, setEmploymentStatuses] = useState([]);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
-  
+
   // Selected values
   const [selectedUser, setSelectedUser] = useState(null);
   const [designation, setDesignation] = useState(null);
-  const [selectedPermissions, setSelectedPermissions] = useState([]);
+  const [selectedPermissionPackage, setSelectedPermissionPackage] = useState(null);
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
   const [employmentStatus, setEmploymentStatus] = useState(null);
-  
+
   // Attendance methods configuration
   const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [isLoadingConstants, setIsLoadingConstants] = useState(false);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
 
-  // Dynamic icon mapping based on key values
-  const getIconForType = (key, type) => {
+  const getIconForType = (key) => {
     const iconMap = {
-      // Employment types
       FULL_TIME: FaClock,
       PART_TIME: FaClock,
       CONTRACT: FaBriefcase,
       INTERN: FaUserTag,
       FREELANCER: FaBriefcase,
-      
-      // Designations
       ADMIN: FaUserCog,
       HR_MANAGER: FaUserCog,
       HR_EXECUTIVE: FaUserCog,
@@ -59,17 +55,11 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       SUPERVISOR: FaUserTag,
       TEAM_LEAD: FaUserTag,
       SENIOR_EMPLOYEE: FaUserCircle,
-      
-      // Salary types
       HOURLY: FaClock,
       MONTHLY: FaCalendarAlt,
-      
-      // Employment status
       ACTIVE: FaUserCheck,
       INACTIVE: FaUserCircle,
       RESIGNED: FaTimes,
-      
-      // Attendance methods
       MANUAL: FaHandPaper,
       GPS: FaMapMarkerAlt,
       FACE: FaCamera,
@@ -77,107 +67,86 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       FINGERPRINT: FaFingerprint,
       IP: FaNetworkWired
     };
-    
-    const Icon = iconMap[key] || FaUserCircle;
-    return Icon;
+    return iconMap[key] || FaUserCircle;
   };
 
-  // Internal method options
   const internalMethodOptions = [
     { value: "auto", label: "Auto", icon: FaRobot, description: "Automatically mark attendance" },
     { value: "manual", label: "Manual", icon: FaUserCheck, description: "Manually mark attendance" }
   ];
 
-  // Fetch all constants from the provided data
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
-      fetchPermissions();
+      fetchPermissionPackages();
       fetchAllConstants();
     }
   }, [isOpen]);
 
-  // Load staff data when constants are loaded
+  // Load staff data once constants are ready
   useEffect(() => {
     if (isOpen && staffData && !isLoadingConstants && employmentTypes.length > 0) {
       loadStaffData();
     }
-  }, [isOpen, staffData, isLoadingConstants, employmentTypes, designations, salaryTypes, attendanceMethods]);
+  }, [isOpen, staffData, isLoadingConstants, employmentTypes, designations, salaryTypes, attendanceMethods, permissionPackages]);
 
   const fetchAllConstants = async () => {
     setIsLoadingConstants(true);
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_BASE}/constants/`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
-
       const data = await res.json();
 
       if (data.success) {
-        // Process employment types
         if (data.data.employment_types) {
-          const formattedEmploymentTypes = data.data.employment_types.map(item => ({
+          setEmploymentTypes(data.data.employment_types.map(item => ({
             value: item.value.value,
             key: item.key,
             label: item.value.label,
             description: item.value.description,
-            icon: getIconForType(item.key, 'employment')
-          }));
-          setEmploymentTypes(formattedEmploymentTypes);
+            icon: getIconForType(item.key)
+          })));
         }
-
-        // Process designations
         if (data.data.designations) {
-          const formattedDesignations = data.data.designations.map(item => ({
+          setDesignations(data.data.designations.map(item => ({
             value: item.value.value,
             key: item.key,
             label: item.value.label,
             description: item.value.description,
-            icon: getIconForType(item.key, 'designation')
-          }));
-          setDesignations(formattedDesignations);
+            icon: getIconForType(item.key)
+          })));
         }
-
-        // Process salary types
         if (data.data.salary_types) {
-          const formattedSalaryTypes = data.data.salary_types.map(item => ({
+          setSalaryTypes(data.data.salary_types.map(item => ({
             value: item.value.value,
             key: item.key,
             label: item.value.label,
             description: item.value.description,
-            icon: getIconForType(item.key, 'salary')
-          }));
-          setSalaryTypes(formattedSalaryTypes);
+            icon: getIconForType(item.key)
+          })));
         }
-
-        // Process employment status
         if (data.data.employment_status) {
-          const formattedStatus = data.data.employment_status.map(item => ({
+          setEmploymentStatuses(data.data.employment_status.map(item => ({
             value: item.value.value,
             key: item.key,
             label: item.value.label,
             description: item.value.description,
-            icon: getIconForType(item.key, 'status')
-          }));
-          setEmploymentStatuses(formattedStatus);
+            icon: getIconForType(item.key)
+          })));
         }
-
-        // Process attendance methods
         if (data.data.attendance_methods) {
-          const formattedMethods = data.data.attendance_methods.map(item => ({
+          setAttendanceMethods(data.data.attendance_methods.map(item => ({
             id: item.key.toLowerCase(),
             name: item.value.label,
-            icon: getIconForType(item.key, 'method'),
+            icon: getIconForType(item.key),
             description: item.value.description,
             available: item.value.is_available,
             requiresDevice: item.value.requiresDevice || false,
             requiresLocation: item.value.requiresLocation || false,
             requiresCamera: item.value.requiresCamera || false
-          }));
-          setAttendanceMethods(formattedMethods);
+          })));
         }
       }
     } catch (err) {
@@ -191,7 +160,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const loadStaffData = () => {
     setIsLoadingStaff(true);
     try {
-      // Set selected user
       if (staffData.user) {
         setSelectedUser({
           id: staffData.user.id,
@@ -202,67 +170,39 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
         });
       }
 
-      // Set designation
       if (staffData.designation) {
-        const foundDesignation = designations.find(d => d.value === staffData.designation);
-        if (foundDesignation) {
-          setDesignation(foundDesignation);
-        } else {
-          setDesignation({
-            value: staffData.designation,
-            label: staffData.designation
-              .toLowerCase()
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase())
-          });
-        }
+        const found = designations.find(d => d.value === staffData.designation);
+        setDesignation(found || {
+          value: staffData.designation,
+          label: staffData.designation.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+        });
       }
 
-      // Set employment type
       if (staffData.employment_type) {
-        const foundEmploymentType = employmentTypes.find(e => e.value === staffData.employment_type);
-        if (foundEmploymentType) {
-          setEmploymentType(foundEmploymentType);
-        } else {
-          setEmploymentType({
-            value: staffData.employment_type,
-            label: staffData.employment_type
-              .toLowerCase()
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (l) => l.toUpperCase())
-          });
-        }
+        const found = employmentTypes.find(e => e.value === staffData.employment_type);
+        setEmploymentType(found || {
+          value: staffData.employment_type,
+          label: staffData.employment_type.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+        });
       }
 
-      // Set employment status
       if (staffData.employment_status) {
-        const foundStatus = employmentStatuses.find(s => s.value === staffData.employment_status);
-        if (foundStatus) {
-          setEmploymentStatus(foundStatus);
-        }
+        const found = employmentStatuses.find(s => s.value === staffData.employment_status);
+        if (found) setEmploymentStatus(found);
       }
 
-      // Set salary type
       if (staffData.salary_type) {
-        const foundSalaryType = salaryTypes.find(s => s.value === staffData.salary_type);
-        if (foundSalaryType) {
-          setStaffType(foundSalaryType);
-        } else {
-          setStaffType({
-            value: staffData.salary_type,
-            label: staffData.salary_type.charAt(0) + staffData.salary_type.slice(1).toLowerCase()
-          });
-        }
+        const found = salaryTypes.find(s => s.value === staffData.salary_type);
+        setStaffType(found || {
+          value: staffData.salary_type,
+          label: staffData.salary_type.charAt(0) + staffData.salary_type.slice(1).toLowerCase()
+        });
       }
 
-      // Set permissions
-      if (staffData.permissions && staffData.permissions.length > 0) {
-        const selectedPerms = staffData.permissions.map(p => ({
-          value: p.id,
-          label: p.name,
-          description: p.description || p.name
-        }));
-        setSelectedPermissions(selectedPerms);
+      // Match permission package by id
+      if (staffData.permission_package_id && permissionPackages.length > 0) {
+        const found = permissionPackages.find(p => p.value === staffData.permission_package_id);
+        if (found) setSelectedPermissionPackage(found);
       }
 
       // Initialize attendance methods config
@@ -275,8 +215,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
         };
       });
 
-      // Set attendance methods from staff data
-      if (staffData.attendance_methods && staffData.attendance_methods.length > 0) {
+      if (staffData.attendance_methods?.length > 0) {
         staffData.attendance_methods.forEach(method => {
           const methodId = method.method.toLowerCase();
           if (initialConfig[methodId]) {
@@ -305,49 +244,31 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const company = JSON.parse(localStorage.getItem("company"));
 
       if (!company?.id) {
-        console.error("No company selected");
         toast.error("Please select a company first");
         return;
       }
 
-      const params = new URLSearchParams({
-        page: "1",
-        limit: "5",
-        sort: "name",
-        order: "asc"
-      });
-
-      if (searchQuery) {
-        params.append('search', searchQuery);
-      }
+      const params = new URLSearchParams({ page: "1", limit: "5", sort: "name", order: "asc" });
+      if (searchQuery) params.append('search', searchQuery);
 
       const res = await fetch(`${API_BASE}/company/${company.id}/users/available?${params.toString()}`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        }
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch users');
-      }
+      if (!res.ok) throw new Error('Failed to fetch users');
 
       const result = await res.json();
-
       if (result.success) {
         const usersData = result.data || result.users || [];
-
-        const formatted = usersData.map(u => ({
+        setUsers(usersData.map(u => ({
           id: u.id,
           full_name: u.name || u.email || "No Name",
           email: u.email,
           avatar: u.avatar || null,
           phone: u.phone || null,
           role: u.role || null
-        }));
-
-        setUsers(formatted);
+        })));
       } else {
         throw new Error(result.message || 'Failed to fetch users');
       }
@@ -359,36 +280,37 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     }
   };
 
-  const fetchPermissions = async () => {
+  const fetchPermissionPackages = async () => {
     setIsLoadingPermissions(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE}/permissions/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const company = JSON.parse(localStorage.getItem('company'));
+
+      const response = await fetch(`${API_BASE}/permissions/permission-packages`, {
+        headers: { Authorization: `Bearer ${token}`, 'company': company.id.toString() }
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setPermissions(result.data);
+        const packages = result.data?.packages || [];
+        setPermissionPackages(packages.map(pkg => ({
+          value: pkg.id,
+          label: pkg.package_name,
+          description: pkg.description,
+          groupCode: pkg.group_code,
+          permissions: pkg.permissions?.filter(p => p.is_active === 1) || [],
+          isActive: pkg.is_active === 1
+        })));
       }
     } catch (err) {
-      console.error("Permission error", err);
-      toast.error("Failed to fetch permissions");
+      console.error("Permission packages error", err);
+      toast.error("Failed to fetch permission packages");
     } finally {
       setIsLoadingPermissions(false);
     }
   };
 
-  const permissionOptions = permissions.map(p => ({
-    value: p.id,
-    label: p.name,
-    description: p.description || p.name
-  }));
-
-  // Handle attendance method toggle
   const handleToggleMethod = (methodId) => {
     setAttendanceMethodsConfig(prev => ({
       ...prev,
@@ -400,52 +322,24 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     }));
   };
 
-  // Handle internal method selection
   const handleInternalMethodChange = (methodId, internalMethodValue) => {
     setAttendanceMethodsConfig(prev => {
-      const currentInternalMethods = prev[methodId]?.internalMethods || [];
-      let newInternalMethods;
-
-      if (currentInternalMethods.includes(internalMethodValue)) {
-        newInternalMethods = currentInternalMethods.filter(m => m !== internalMethodValue);
-      } else {
-        newInternalMethods = [...currentInternalMethods, internalMethodValue];
-      }
-
-      return {
-        ...prev,
-        [methodId]: {
-          ...prev[methodId],
-          internalMethods: newInternalMethods
-        }
-      };
+      const current = prev[methodId]?.internalMethods || [];
+      const updated = current.includes(internalMethodValue)
+        ? current.filter(m => m !== internalMethodValue)
+        : [...current, internalMethodValue];
+      return { ...prev, [methodId]: { ...prev[methodId], internalMethods: updated } };
     });
   };
 
   const handleSubmit = async () => {
-    if (!selectedUser) {
-      toast.warning("Please select a user");
-      return;
-    }
+    if (!selectedUser) { toast.warning("Please select a user"); return; }
+    if (!designation) { toast.warning("Please select designation"); return; }
+    if (!staffType) { toast.warning("Please select salary type"); return; }
+    if (!employmentType) { toast.warning("Please select employment type"); return; }
 
-    if (!designation) {
-      toast.warning("Please select designation");
-      return;
-    }
-
-    if (!staffType) {
-      toast.warning("Please select salary type");
-      return;
-    }
-
-    if (!employmentType) {
-      toast.warning("Please select employment type");
-      return;
-    }
-
-    // Validate attendance methods
     const enabledMethods = Object.entries(attendanceMethodsConfig)
-      .filter(([key, config]) => config?.enabled && config?.available !== false);
+      .filter(([, config]) => config?.enabled && config?.available !== false);
 
     if (enabledMethods.length === 0) {
       toast.warning("Please enable at least one attendance method");
@@ -461,48 +355,38 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     }
 
     setIsSubmitting(true);
-
     try {
       const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem("company"));
 
-      const attendanceMethodsData = enabledMethods.map(([methodId, config]) => ({
-        method: methodId,
-        internal_methods: config.internalMethods
-      }));
-
       const payload = {
         company_id: company?.id || 6,
         user_id: selectedUser.id,
-        permissions: selectedPermissions.map(p => p.value),
+        permission_package_id: selectedPermissionPackage?.value || null,
         employment_type: employmentType.value,
         designation: designation.value,
         salary_type: staffType.value,
         employment_status: employmentStatus?.value || 'active',
-        attendance_methods: attendanceMethodsData
+        attendance_methods: enabledMethods.map(([methodId, config]) => ({
+          method: methodId,
+          internal_methods: config.internalMethods
+        }))
       };
 
       console.log("Updating staff with payload:", payload);
 
       const response = await fetch(`${API_BASE}/company/invites/update`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.message || "Failed to update staff");
-      }
+      if (!response.ok) throw new Error(data?.message || "Failed to update staff");
 
       toast.success("Staff updated successfully");
       onSuccess?.();
       handleClose();
-
     } catch (error) {
       console.error("Error updating staff:", error);
       toast.error(error.message || "Failed to update staff");
@@ -517,7 +401,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     setStaffType(null);
     setEmploymentType(null);
     setEmploymentStatus(null);
-    setSelectedPermissions([]);
+    setSelectedPermissionPackage(null);
     setAttendanceMethodsConfig({});
     setIsSubmitting(false);
     onClose();
@@ -529,9 +413,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       minHeight: "48px",
       borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
       boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
-      "&:hover": {
-        borderColor: "#6366f1"
-      },
+      "&:hover": { borderColor: "#6366f1" },
       borderRadius: "0.75rem",
       padding: "0 0.5rem"
     }),
@@ -539,26 +421,14 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       ...base,
       backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
       color: state.isSelected ? "white" : "#1e293b",
-      "&:active": {
-        backgroundColor: "#6366f1"
-      }
+      "&:active": { backgroundColor: "#6366f1" }
     }),
-    multiValue: (base) => ({
-      ...base,
-      backgroundColor: "#e0e7ff",
-      borderRadius: "0.5rem"
-    }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: "#4f46e5"
-    }),
+    multiValue: (base) => ({ ...base, backgroundColor: "#e0e7ff", borderRadius: "0.5rem" }),
+    multiValueLabel: (base) => ({ ...base, color: "#4f46e5" }),
     multiValueRemove: (base) => ({
       ...base,
       color: "#4f46e5",
-      "&:hover": {
-        backgroundColor: "#4f46e5",
-        color: "white"
-      }
+      "&:hover": { backgroundColor: "#4f46e5", color: "white" }
     })
   };
 
@@ -620,7 +490,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column - Employee Details */}
+                  {/* Left Column */}
                   <div className="space-y-6">
                     {/* User Display */}
                     <motion.div
@@ -770,7 +640,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                       </motion.div>
                     </div>
 
-                    {/* Permissions */}
+                    {/* Permission Package — single select */}
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
@@ -779,28 +649,77 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                     >
                       <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                         <FaShieldAlt className="w-4 h-4 text-indigo-500" />
-                        Permissions & Access
+                        Permission Package
                       </label>
                       {isLoadingPermissions ? (
                         <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
                           <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
-                          <span className="ml-2 text-sm text-gray-500">Loading permissions...</span>
+                          <span className="ml-2 text-sm text-gray-500">Loading permission packages...</span>
                         </div>
                       ) : (
-                        <Select
-                          isMulti
-                          options={permissionOptions}
-                          value={selectedPermissions}
-                          onChange={(options) => setSelectedPermissions(options)}
-                          placeholder="Select permissions..."
-                          styles={customSelectStyles}
-                          formatOptionLabel={({ label, description }) => (
-                            <div className="py-1">
-                              <div className="font-medium">{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
-                            </div>
+                        <>
+                          <Select
+                            options={permissionPackages}
+                            value={selectedPermissionPackage}
+                            onChange={(option) => setSelectedPermissionPackage(option)}
+                            placeholder="Select a permission package..."
+                            isClearable
+                            styles={customSelectStyles}
+                            formatOptionLabel={({ label, description, groupCode, permissions }) => (
+                              <div className="py-1">
+                                <div className="flex items-center gap-2">
+                                  <FaShieldAlt className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                                  <span className="font-medium text-gray-900">{label}</span>
+                                  <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono">
+                                    {groupCode}
+                                  </span>
+                                </div>
+                                {description && (
+                                  <div className="text-xs text-gray-400 mt-0.5 ml-5">{description}</div>
+                                )}
+                                {permissions?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1.5 ml-5">
+                                    {permissions.slice(0, 3).map(p => (
+                                      <span
+                                        key={p.permission_id}
+                                        className="text-xs bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded-full"
+                                      >
+                                        {p.permission_name}
+                                      </span>
+                                    ))}
+                                    {permissions.length > 3 && (
+                                      <span className="text-xs text-gray-400">+{permissions.length - 3} more</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          />
+
+                          {/* Selected package permissions preview */}
+                          {selectedPermissionPackage && selectedPermissionPackage.permissions?.length > 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="mt-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl"
+                            >
+                              <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
+                                <FaCheck className="w-3 h-3" />
+                                Active Permissions in this Package
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {selectedPermissionPackage.permissions.map(p => (
+                                  <span
+                                    key={p.permission_id}
+                                    className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg font-medium shadow-sm"
+                                  >
+                                    {p.permission_name}
+                                  </span>
+                                ))}
+                              </div>
+                            </motion.div>
                           )}
-                        />
+                        </>
                       )}
                     </motion.div>
                   </div>
@@ -829,18 +748,14 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                           return (
                             <div
                               key={method.id}
-                              className={`border rounded-xl transition-all duration-200 overflow-hidden ${
-                                isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
-                              } ${!method.available ? 'opacity-60' : ''}`}
+                              className={`border rounded-xl transition-all duration-200 overflow-hidden ${isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
+                                } ${!method.available ? 'opacity-60' : ''}`}
                             >
                               <div className="flex items-center justify-between p-4">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                    isEnabled ? 'bg-indigo-100' : 'bg-gray-100'
-                                  }`}>
-                                    <method.icon className={`w-5 h-5 ${
-                                      isEnabled ? 'text-indigo-600' : 'text-gray-500'
-                                    }`} />
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isEnabled ? 'bg-indigo-100' : 'bg-gray-100'
+                                    }`}>
+                                    <method.icon className={`w-5 h-5 ${isEnabled ? 'text-indigo-600' : 'text-gray-500'}`} />
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -869,19 +784,14 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                                 <button
                                   onClick={() => method.available && handleToggleMethod(method.id)}
                                   disabled={!method.available}
-                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                                    isEnabled ? 'bg-indigo-600' : 'bg-gray-200'
-                                  } ${!method.available ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${isEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                                    } ${!method.available ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
-                                  <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                      isEnabled ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
-                                  />
+                                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-6' : 'translate-x-1'
+                                    }`} />
                                 </button>
                               </div>
 
-                              {/* Internal Methods - Show only when enabled */}
                               {isEnabled && method.available && (
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
@@ -890,9 +800,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                                   className="border-t border-indigo-100 px-4 py-3 bg-indigo-50/50"
                                 >
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">
-                                      Marking Methods
-                                    </label>
+                                    <label className="text-sm font-medium text-gray-700">Marking Methods</label>
                                     <div className="flex flex-wrap gap-4">
                                       {internalMethodOptions.map((internalMethod) => (
                                         <label

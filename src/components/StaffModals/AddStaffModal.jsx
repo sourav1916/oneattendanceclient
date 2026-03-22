@@ -16,7 +16,7 @@ const API_BASE = "https://api-attendance.onesaas.in";
 
 function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [users, setUsers] = useState([]);
-  const [permissions, setPermissions] = useState([]);
+  const [permissionPackages, setPermissionPackages] = useState([]);
   
   // Dynamic data from API
   const [employmentTypes, setEmploymentTypes] = useState([]);
@@ -29,7 +29,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   // Selected values
   const [selectedUser, setSelectedUser] = useState(null);
   const [designation, setDesignation] = useState(null);
-  const [selectedPermissions, setSelectedPermissions] = useState([]);
+  const [selectedPermissionPackage, setSelectedPermissionPackage] = useState(null);
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
   const [employmentStatus, setEmploymentStatus] = useState(null);
@@ -45,14 +45,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   // Dynamic icon mapping based on key values
   const getIconForType = (key, type) => {
     const iconMap = {
-      // Employment types
       FULL_TIME: FaClock,
       PART_TIME: FaClock,
       CONTRACT: FaBriefcase,
       INTERN: FaUserTag,
       FREELANCER: FaBriefcase,
-      
-      // Designations
       ADMIN: FaUserCog,
       HR_MANAGER: FaUserCog,
       HR_EXECUTIVE: FaUserCog,
@@ -60,17 +57,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       SUPERVISOR: FaUserTag,
       TEAM_LEAD: FaUserTag,
       SENIOR_EMPLOYEE: FaUserCircle,
-      
-      // Salary types
       HOURLY: FaClock,
       MONTHLY: FaCalendarAlt,
-      
-      // Employment status
       ACTIVE: FaUserCheck,
       INACTIVE: FaUserCircle,
       RESIGNED: FaTimes,
-      
-      // Attendance methods
       MANUAL: FaHandPaper,
       GPS: FaMapMarkerAlt,
       FACE: FaCamera,
@@ -83,18 +74,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     return Icon;
   };
 
-  const getDescriptionForType = (key, type, defaultDesc = "") => {
-    // Use the description from API if available
-    return defaultDesc;
-  };
-
-  // Fetch all constants from the provided data
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
-      fetchPermissions();
+      fetchPermissionPackages();
       fetchAllConstants();
-      // Reset attendance methods config
       setAttendanceMethodsConfig({});
     }
   }, [isOpen]);
@@ -112,7 +96,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const data = await res.json();
 
       if (data.success) {
-        // Process employment types
         if (data.data.employment_types) {
           const formattedEmploymentTypes = data.data.employment_types.map(item => ({
             value: item.value.value,
@@ -124,7 +107,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           setEmploymentTypes(formattedEmploymentTypes);
         }
 
-        // Process designations
         if (data.data.designations) {
           const formattedDesignations = data.data.designations.map(item => ({
             value: item.value.value,
@@ -136,7 +118,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           setDesignations(formattedDesignations);
         }
 
-        // Process salary types
         if (data.data.salary_types) {
           const formattedSalaryTypes = data.data.salary_types.map(item => ({
             value: item.value.value,
@@ -148,7 +129,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           setSalaryTypes(formattedSalaryTypes);
         }
 
-        // Process employment status
         if (data.data.employment_status) {
           const formattedStatus = data.data.employment_status.map(item => ({
             value: item.value.value,
@@ -158,12 +138,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
             icon: getIconForType(item.key, 'status')
           }));
           setEmploymentStatuses(formattedStatus);
-          // Set default status to ACTIVE
           const activeStatus = formattedStatus.find(s => s.key === 'ACTIVE');
           if (activeStatus) setEmploymentStatus(activeStatus);
         }
 
-        // Process punch types
         if (data.data.punch_types) {
           const formattedPunchTypes = data.data.punch_types.map(item => ({
             value: item.value.value,
@@ -174,7 +152,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           setPunchTypes(formattedPunchTypes);
         }
 
-        // Process attendance methods
         if (data.data.attendance_methods) {
           const formattedMethods = data.data.attendance_methods.map(item => ({
             id: item.key,
@@ -188,7 +165,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           }));
           setAttendanceMethods(formattedMethods);
           
-          // Initialize config for all methods
           const initialConfig = {};
           formattedMethods.forEach(method => {
             initialConfig[method.id.toLowerCase()] = {
@@ -214,7 +190,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const company = JSON.parse(localStorage.getItem("company"));
 
       if (!company?.id) {
-        console.error("No company selected");
         toast.error("Please select a company first");
         setIsLoadingUsers(false);
         return;
@@ -234,15 +209,12 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         }
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch users');
-      }
+      if (!res.ok) throw new Error('Failed to fetch users');
 
       const result = await res.json();
 
       if (result.success) {
         const usersData = result.data || result.users || [];
-
         const formatted = usersData.map(u => ({
           id: u.id,
           full_name: u.name || u.email || "No Name",
@@ -251,7 +223,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           phone: u.phone || null,
           role: u.role || null
         }));
-
         setUsers(formatted);
       } else {
         throw new Error(result.message || 'Failed to fetch users');
@@ -264,34 +235,39 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
-  const fetchPermissions = async () => {
+  const fetchPermissionPackages = async () => {
     setIsLoadingPermissions(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE}/permissions/list`, {
+      const company = JSON.parse(localStorage.getItem('company'));
+      const response = await fetch(`${API_BASE}/permissions/permission-packages`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'company': company.id.toString(),
         }
       });
 
       const result = await response.json();
 
       if (result.success) {
-        setPermissions(result.data);
+        const packages = result.data?.packages || [];
+        const formatted = packages.map(pkg => ({
+          value: pkg.id,
+          label: pkg.package_name,
+          description: pkg.description,
+          groupCode: pkg.group_code,
+          permissions: pkg.permissions?.filter(p => p.is_active === 1) || [],
+          isActive: pkg.is_active === 1
+        }));
+        setPermissionPackages(formatted);
       }
     } catch (err) {
-      console.error("Permission error", err);
-      toast.error("Failed to fetch permissions");
+      console.error("Permission packages error", err);
+      toast.error("Failed to fetch permission packages");
     } finally {
       setIsLoadingPermissions(false);
     }
   };
-
-  const permissionOptions = permissions.map(p => ({
-    value: p.id,
-    label: p.name,
-    description: p.description || p.name
-  }));
 
   // Internal method options
   const internalMethodOptions = [
@@ -299,7 +275,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     { value: "manual", label: "Manual", icon: FaUserCheck, description: "Manually mark attendance" }
   ];
 
-  // Handle attendance method toggle
   const handleToggleMethod = (methodId) => {
     setAttendanceMethodsConfig(prev => ({
       ...prev,
@@ -311,18 +286,15 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     }));
   };
 
-  // Handle internal method selection
   const handleInternalMethodChange = (methodId, internalMethodValue) => {
     setAttendanceMethodsConfig(prev => {
       const currentInternalMethods = prev[methodId]?.internalMethods || [];
       let newInternalMethods;
-
       if (currentInternalMethods.includes(internalMethodValue)) {
         newInternalMethods = currentInternalMethods.filter(m => m !== internalMethodValue);
       } else {
         newInternalMethods = [...currentInternalMethods, internalMethodValue];
       }
-
       return {
         ...prev,
         [methodId]: {
@@ -334,27 +306,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   };
 
   const handleSubmit = async () => {
-    if (!selectedUser) {
-      toast.warning("Please select a user");
-      return;
-    }
+    if (!selectedUser) { toast.warning("Please select a user"); return; }
+    if (!designation) { toast.warning("Please select designation"); return; }
+    if (!staffType) { toast.warning("Please select salary type"); return; }
+    if (!employmentType) { toast.warning("Please select employment type"); return; }
 
-    if (!designation) {
-      toast.warning("Please select designation");
-      return;
-    }
-
-    if (!staffType) {
-      toast.warning("Please select salary type");
-      return;
-    }
-
-    if (!employmentType) {
-      toast.warning("Please select employment type");
-      return;
-    }
-
-    // Validate attendance methods - at least one method must be enabled
     const enabledMethods = Object.entries(attendanceMethodsConfig)
       .filter(([key, config]) => config?.enabled);
 
@@ -363,7 +319,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       return;
     }
 
-    // Validate that each enabled method has at least one internal method selected
     for (const [methodId, config] of enabledMethods) {
       if (!config.internalMethods || config.internalMethods.length === 0) {
         const methodName = attendanceMethods.find(m => m.id.toLowerCase() === methodId)?.name || methodId;
@@ -378,7 +333,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem("company"));
 
-      // Format attendance methods data
       const attendanceMethodsData = enabledMethods.map(([methodId, config]) => ({
         method: methodId,
         internal_methods: config.internalMethods
@@ -387,7 +341,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       const payload = {
         company_id: company?.id || 6,
         user_id: selectedUser.id,
-        permissions: selectedPermissions.map(p => p.value),
+        permission_package_id: selectedPermissionPackage?.value || null,
         employment_type: employmentType.value,
         designation: designation.value,
         salary_type: staffType.value,
@@ -408,9 +362,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data?.message || "Failed to create staff");
-      }
+      if (!response.ok) throw new Error(data?.message || "Failed to create staff");
 
       toast.success("Staff created successfully");
       onSuccess?.();
@@ -430,14 +382,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setStaffType(null);
     setEmploymentType(null);
     setEmploymentStatus(null);
-    setSelectedPermissions([]);
-    // Reset attendance methods config
+    setSelectedPermissionPackage(null);
     const resetConfig = {};
     attendanceMethods.forEach(method => {
-      resetConfig[method.id.toLowerCase()] = {
-        enabled: false,
-        internalMethods: []
-      };
+      resetConfig[method.id.toLowerCase()] = { enabled: false, internalMethods: [] };
     });
     setAttendanceMethodsConfig(resetConfig);
     setIsSubmitting(false);
@@ -450,9 +398,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       minHeight: "48px",
       borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
       boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
-      "&:hover": {
-        borderColor: "#6366f1"
-      },
+      "&:hover": { borderColor: "#6366f1" },
       borderRadius: "0.75rem",
       padding: "0 0.5rem"
     }),
@@ -460,26 +406,18 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       ...base,
       backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
       color: state.isSelected ? "white" : "#1e293b",
-      "&:active": {
-        backgroundColor: "#6366f1"
-      }
+      "&:active": { backgroundColor: "#6366f1" }
     }),
     multiValue: (base) => ({
       ...base,
       backgroundColor: "#e0e7ff",
       borderRadius: "0.5rem"
     }),
-    multiValueLabel: (base) => ({
-      ...base,
-      color: "#4f46e5"
-    }),
+    multiValueLabel: (base) => ({ ...base, color: "#4f46e5" }),
     multiValueRemove: (base) => ({
       ...base,
       color: "#4f46e5",
-      "&:hover": {
-        backgroundColor: "#4f46e5",
-        color: "white"
-      }
+      "&:hover": { backgroundColor: "#4f46e5", color: "white" }
     })
   };
 
@@ -686,7 +624,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     </motion.div>
                   </div>
 
-                  {/* Permissions */}
+                  {/* Permission Package — single select */}
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -695,35 +633,85 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                   >
                     <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                       <FaShieldAlt className="w-4 h-4 text-indigo-500" />
-                      Permissions & Access
+                      Permission Package
                     </label>
                     {isLoadingPermissions ? (
                       <div className="flex items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
                         <FaSpinner className="w-6 h-6 text-indigo-500 animate-spin" />
-                        <span className="ml-2 text-sm text-gray-500">Loading permissions...</span>
+                        <span className="ml-2 text-sm text-gray-500">Loading permission packages...</span>
                       </div>
                     ) : (
-                      <Select
-                        isMulti
-                        options={permissionOptions}
-                        value={selectedPermissions}
-                        onChange={(options) => setSelectedPermissions(options)}
-                        placeholder="Select permissions..."
-                        styles={customSelectStyles}
-                        formatOptionLabel={({ label, description }) => (
-                          <div className="py-1">
-                            <div className="font-medium">{label}</div>
-                            {description && <div className="text-xs text-gray-400">{description}</div>}
-                          </div>
+                      <>
+                        <Select
+                          options={permissionPackages}
+                          value={selectedPermissionPackage}
+                          onChange={(option) => setSelectedPermissionPackage(option)}
+                          placeholder="Select a permission package..."
+                          isClearable
+                          styles={customSelectStyles}
+                          formatOptionLabel={({ label, description, groupCode, permissions }) => (
+                            <div className="py-1">
+                              <div className="flex items-center gap-2">
+                                <FaShieldAlt className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                                <span className="font-medium text-gray-900">{label}</span>
+                                <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono">
+                                  {groupCode}
+                                </span>
+                              </div>
+                              {description && (
+                                <div className="text-xs text-gray-400 mt-0.5 ml-5">{description}</div>
+                              )}
+                              {permissions?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5 ml-5">
+                                  {permissions.slice(0, 3).map(p => (
+                                    <span
+                                      key={p.permission_id}
+                                      className="text-xs bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded-full"
+                                    >
+                                      {p.permission_name}
+                                    </span>
+                                  ))}
+                                  {permissions.length > 3 && (
+                                    <span className="text-xs text-gray-400">
+                                      +{permissions.length - 3} more
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        />
+
+                        {/* Selected package permissions preview */}
+                        {selectedPermissionPackage && selectedPermissionPackage.permissions?.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl"
+                          >
+                            <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
+                              <FaCheck className="w-3 h-3" />
+                              Active Permissions in this Package
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {selectedPermissionPackage.permissions.map(p => (
+                                <span
+                                  key={p.permission_id}
+                                  className="text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg font-medium shadow-sm"
+                                >
+                                  {p.permission_name}
+                                </span>
+                              ))}
+                            </div>
+                          </motion.div>
                         )}
-                      />
+                      </>
                     )}
                   </motion.div>
                 </div>
 
                 {/* Right Column - Attendance Methods */}
                 <div className="space-y-6">
-                  {/* Attendance Methods Section */}
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -804,7 +792,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                                 </button>
                               </div>
 
-                              {/* Internal Methods - Show only when enabled */}
                               {isEnabled && method.available && (
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}

@@ -6,16 +6,6 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// ─── tailwind.config.js ──────────────────────────────────────────────────────
-// module.exports = {
-//   theme: {
-//     extend: {
-//       screens: {
-//         'xsm': '280px',   // 280px → 400px range
-//       }
-//     }
-//   }
-// }
 
 // ─── Inline Pagination Component ─────────────────────────────────────────────
 const Pagination = ({
