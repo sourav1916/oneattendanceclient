@@ -112,13 +112,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       label: 'Help',
       path: '/help',
       permission: null
-    },
-    {
-      icon: FaCog,
-      label: 'Settings',
-      path: '/settings',
-      permission: null
-    },
+    }
   ];
 
   const isActiveRoute = (itemPath) => {

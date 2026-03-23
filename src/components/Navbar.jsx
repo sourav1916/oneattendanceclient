@@ -7,6 +7,7 @@ import {
     FaFingerprint,
     FaCaretDown,
     FaTimes,
+    FaCog
 } from 'react-icons/fa';
 import { useAuth } from "../context/AuthContext";
 
@@ -183,6 +184,16 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                         >
                                             <FaUserCircle className="w-4 h-4" />
                                             My Profile
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setOpenDropdown(false);
+                                                navigate("/settings");
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
+                                        >
+                                            <FaCog className="w-4 h-4" />
+                                            Settings
                                         </button>
 
                                         <div className="border-t border-gray-200 my-1"></div>

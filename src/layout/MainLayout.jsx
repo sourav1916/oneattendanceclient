@@ -58,7 +58,6 @@ const MainLayout = ({ children }) => {
 
   const getContentMargin = () => {
     if (isMobile) return 'ml-0';
-    if (isSidebarExpanded()) return 'ml-64';
     return 'ml-20';
   };
 

@@ -702,7 +702,7 @@ const Login = () => {
       </div>
 
       {/* Add custom scrollbar styles */}
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

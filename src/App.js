@@ -17,10 +17,12 @@ import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
+import ProfilePage from "./pages/Profile";
 
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
 
+  // console.log(JSON.stringify(user));
   // Show loading state
   if (loading) {
     return (
@@ -47,7 +49,7 @@ function AppContent() {
 
       {/* Protected Routes - Only accessible after company selection */}
       <Route path="/home"element={<ProtectedRoute> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>}/>
-
+      <Route path="/profile"element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>}/>
       <Route path="/cashbook" element={ <ProtectedRoute> <MainLayout> <Cashbook /> </MainLayout> </ProtectedRoute> }/>
       <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
       <Route path="/company-invites" element={ <ProtectedRoute><MainLayout><CompanyInvites /></MainLayout></ProtectedRoute>}/>

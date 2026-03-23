@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [permissions, setPermissions] = useState([]);
   const [mustSelectCompany, setMustSelectCompany] = useState(false);
   const [showCompanySelection, setShowCompanySelection] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
 
   const initialized = useRef(false);
 
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       const response = await res.json();
 
       if (response.success && response.data) {
+        setUserDetails(response.data);
         const userData = {
           id: response.data.user.id,
           name: response.data.user.name || "User",
@@ -206,6 +208,7 @@ export const AuthProvider = ({ children }) => {
     userRole: user?.role || null,
     employeeDetails: employee,
     companyDetails: getCurrentCompany(),
+    userDetails,
   };
 
   return (
