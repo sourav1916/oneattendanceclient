@@ -8,6 +8,8 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 
@@ -42,7 +44,7 @@ const EmployeeManagement = () => {
     const [loading, setLoading] = useState(false);
     const [permissionsLoading, setPermissionsLoading] = useState(false);
     const [constantsLoading, setConstantsLoading] = useState(false);
-    const [error, setError] = useState(null);
+    // ✅ No error state — all errors go to toast only
     const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
@@ -56,7 +58,6 @@ const EmployeeManagement = () => {
         joining_date: '', status: '', permissions: []
     });
 
-    // Use pagination hook
     const {
         pagination,
         updatePagination,
@@ -98,7 +99,6 @@ const EmployeeManagement = () => {
         }
     }, [allPermissions]);
 
-    // Debounce search - removed goToPage dependency
     useEffect(() => {
         const t = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
@@ -106,7 +106,6 @@ const EmployeeManagement = () => {
         return () => clearTimeout(t);
     }, [searchTerm]);
 
-    // Reset to page 1 when search changes
     useEffect(() => {
         if (!isInitialLoad.current && debouncedSearchTerm !== undefined) {
             if (pagination.page !== 1) {
@@ -133,7 +132,7 @@ const EmployeeManagement = () => {
             if (result.success) { setConstants(result.data); constantsFetched.current = true; }
         } catch (e) {
             console.error(e);
-            setError('Failed to load constants');
+            toast.error('Failed to load constants');
         } finally { setConstantsLoading(false); }
     }, []);
 
@@ -156,36 +155,33 @@ const EmployeeManagement = () => {
             return [];
         } catch (e) {
             console.error(e);
-            setError('Failed to load permissions');
+            toast.error('Failed to load permissions');
             return [];
         } finally { setPermissionsLoading(false); }
     }, [allPermissions]);
 
     const fetchEmployees = useCallback(async (page = pagination.page, resetLoading = true) => {
-        // Prevent multiple simultaneous fetches
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
-        setError(null);
-        
+
         try {
             const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
-            const params = new URLSearchParams({ 
-                page: page.toString(), 
-                limit: pagination.limit.toString() 
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: pagination.limit.toString()
             });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-            
+
             const res = await fetch(`${API_BASE}/employees/list?${params}`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' }
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
-            
+
             if (result.success) {
                 setEmployees(result.data);
-                // Update pagination with response data
                 updatePagination({
                     page: result.pagination?.page || page,
                     limit: result.pagination?.limit || pagination.limit,
@@ -197,7 +193,7 @@ const EmployeeManagement = () => {
                 throw new Error(result.message || 'Failed to fetch employees');
             }
         } catch (e) {
-            setError(e.message);
+            toast.error(e.message || 'Failed to fetch employees');
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
@@ -205,15 +201,13 @@ const EmployeeManagement = () => {
         }
     }, [pagination.page, pagination.limit, debouncedSearchTerm, updatePagination]);
 
-    // Initial load
     useEffect(() => {
-        if (!initialFetchDone.current) { 
-            fetchEmployees(1, true); 
-            initialFetchDone.current = true; 
+        if (!initialFetchDone.current) {
+            fetchEmployees(1, true);
+            initialFetchDone.current = true;
         }
     }, [fetchEmployees]);
 
-    // Fetch when page changes
     useEffect(() => {
         if (!isInitialLoad.current && !fetchInProgress.current && initialFetchDone.current) {
             fetchEmployees(pagination.page, true);
@@ -247,9 +241,9 @@ const EmployeeManagement = () => {
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
-            if (result.success) { 
-                await fetchEmployees(pagination.page, false); 
-                return { success: true }; 
+            if (result.success) {
+                await fetchEmployees(pagination.page, false);
+                return { success: true };
             }
             throw new Error(result.message || 'Update failed');
         } catch (e) {
@@ -269,9 +263,9 @@ const EmployeeManagement = () => {
             });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const result = await res.json();
-            if (result.success) { 
-                await fetchEmployees(pagination.page, false); 
-                return { success: true }; 
+            if (result.success) {
+                await fetchEmployees(pagination.page, false);
+                return { success: true };
             }
             throw new Error(result.message || 'Delete failed');
         } catch (e) {
@@ -329,34 +323,34 @@ const EmployeeManagement = () => {
             setActiveActionMenu(null);
         } catch (e) {
             console.error(e);
-            setError('Failed to load edit data');
+            toast.error('Failed to load edit data');
         } finally {
             setConstantsLoading(false);
             setPermissionsLoading(false);
         }
     };
 
-    const openViewModal = (emp) => { 
-        setSelectedEmployee(emp); 
-        setModalType(MODAL_TYPES.VIEW); 
-        setActiveActionMenu(null); 
+    const openViewModal = (emp) => {
+        setSelectedEmployee(emp);
+        setModalType(MODAL_TYPES.VIEW);
+        setActiveActionMenu(null);
     };
-    
-    const openDeleteModal = (emp) => { 
-        setSelectedEmployee(emp); 
-        setModalType(MODAL_TYPES.DELETE_CONFIRM); 
-        setActiveActionMenu(null); 
+
+    const openDeleteModal = (emp) => {
+        setSelectedEmployee(emp);
+        setModalType(MODAL_TYPES.DELETE_CONFIRM);
+        setActiveActionMenu(null);
     };
-    
-    const closeModal = () => { 
-        setModalType(MODAL_TYPES.NONE); 
-        setSelectedEmployee(null); 
-        setSelectedNewPermissions([]); 
+
+    const closeModal = () => {
+        setModalType(MODAL_TYPES.NONE);
+        setSelectedEmployee(null);
+        setSelectedNewPermissions([]);
     };
-    
-    const toggleActionMenu = (e, id) => { 
-        e.stopPropagation(); 
-        setActiveActionMenu(activeActionMenu === id ? null : id); 
+
+    const toggleActionMenu = (e, id) => {
+        e.stopPropagation();
+        setActiveActionMenu(activeActionMenu === id ? null : id);
     };
 
     // ─── Form Handlers ───────────────────────────────────────────────────────
@@ -372,15 +366,23 @@ const EmployeeManagement = () => {
             status: formData.status,
             permissions: formData.permissions
         });
-        if (result.success) closeModal();
-        else setError(result.error);
+        if (result.success) {
+            toast.success('Employee updated successfully!');
+            closeModal();
+        } else {
+            toast.error(result.error || 'Failed to update employee');
+        }
     };
 
     const handleDelete = async () => {
         if (!selectedEmployee) return;
         const result = await deleteEmployee(selectedEmployee.id);
-        if (result.success) closeModal();
-        else setError(result.error);
+        if (result.success) {
+            toast.success('Employee deleted successfully!');
+            closeModal();
+        } else {
+            toast.error(result.error || 'Failed to delete employee');
+        }
     };
 
     const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -494,7 +496,6 @@ const EmployeeManagement = () => {
         permissionOptions.filter(opt => !activePermissions.some(p => p.permission_id === opt.value))
     , [permissionOptions, activePermissions]);
 
-    // Handle page change
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) {
             goToPage(newPage);
@@ -505,6 +506,8 @@ const EmployeeManagement = () => {
 
     return (
         <div className="min-h-screen p-3 md:p-6 font-sans">
+            <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable theme="light" />
+
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
@@ -535,17 +538,7 @@ const EmployeeManagement = () => {
 
             {loading && !employees.length && <SkeletonComponent />}
 
-            <AnimatePresence>
-                {error && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-                        className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 border border-red-200 shadow-lg"
-                    >
-                        <div className="flex items-center gap-2"><FaTimes className="text-red-600" /><span>Error: {error}</span></div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {!loading && !error && employees.length === 0 && (
+            {!loading && employees.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-2xl shadow-xl">
                     <FaUserCircle className="text-8xl text-gray-300 mx-auto mb-4" />
                     <p className="text-xl text-gray-500">No employees found</p>
@@ -553,7 +546,7 @@ const EmployeeManagement = () => {
                 </motion.div>
             )}
 
-            {!loading && !error && employees.length > 0 && (
+            {!loading && employees.length > 0 && (
                 <>
                     {/* Desktop Table */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
@@ -660,7 +653,7 @@ const EmployeeManagement = () => {
                         ))}
                     </div>
 
-                    {/* Pagination Component */}
+                    {/* Pagination */}
                     <Pagination
                         currentPage={pagination.page}
                         totalItems={pagination.total}
