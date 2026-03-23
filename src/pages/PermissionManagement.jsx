@@ -5,6 +5,8 @@ import {
   FaLayerGroup, FaTag, FaAlignLeft, FaBan, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 // ─── Inline Pagination Component ─────────────────────────────────────────────
@@ -573,21 +575,39 @@ const PermissionManagement = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     const result = await createPackage(formData);
-    if (result.success) { closeModal(); fetchPackages(1); }
-    else setError(result.error);
+    if (result.success) {
+      toast.success('Package created successfully!');
+      closeModal();
+      fetchPackages(1);
+    } else {
+      toast.error(result.message || 'Failed to create package');
+      setError(result.error);
+    }
   };
 
   const handleEdit = async (e) => {
     e.preventDefault();
     const result = await updatePackage({ id: selectedPackage.id, ...formData });
-    if (result.success) { closeModal(); fetchPackages(pagination.page, false); }
-    else setError(result.error);
+    if (result.success) {
+      toast.success('Package updated successfully!');
+      closeModal();
+      fetchPackages(pagination.page, false);
+    } else {
+      toast.error(result.error || 'Failed to update package');
+      setError(result.error);
+    }
   };
 
   const handleDelete = async () => {
     const result = await deletePackage(selectedPackage.id);
-    if (result.success) { closeModal(); fetchPackages(pagination.page, false); }
-    else setError(result.error);
+    if (result.success) {
+      toast.success('Package deleted successfully!');
+      closeModal();
+      fetchPackages(pagination.page, false);
+    } else {
+      toast.error(result.error || 'Failed to delete package');
+      setError(result.error);
+    }
   };
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -628,6 +648,9 @@ const PermissionManagement = () => {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen p-2 xsm:p-2 sm:p-3 md:p-6 font-sans">
+
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable theme="light" />
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
