@@ -10,7 +10,7 @@ import { useAuth } from "./context/AuthContext";
 import NotFound from "./pages/NotFound";
 import Cashbook from "./pages/CashBook";
 import SettingsPage from "./pages/Setting";
-import CompanyInvites from "./pages/CompanyInvites";
+import CompanyInvites from "./pages/CompanyInviteManagement";
 import HelpPage from "./pages/Help";
 import MyInvites from "./pages/invites";
 import EmployeeManagement from "./pages/EmployeeManagement";

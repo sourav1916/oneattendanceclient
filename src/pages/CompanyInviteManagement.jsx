@@ -1,3 +1,5 @@
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -27,81 +29,6 @@ import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 
-// ─── Toast System ────────────────────────────────────────────────────────────
-
-let toastIdCounter = 0;
-
-const toastVariants = {
-  hidden:  { opacity: 0, x: 80, scale: 0.92 },
-  visible: { opacity: 1, x: 0,  scale: 1,   transition: { type: "spring", stiffness: 320, damping: 24 } },
-  exit:    { opacity: 0, x: 80, scale: 0.88, transition: { duration: 0.22 } }
-};
-
-const TOAST_ICONS = {
-  success: <FaCheckCircle className="text-emerald-500 shrink-0" size={18} />,
-  error:   <FaTimesCircle  className="text-red-500    shrink-0" size={18} />,
-  info:    <FaInfoCircle   className="text-blue-500   shrink-0" size={18} />,
-  warning: <FaExclamationCircle className="text-yellow-500 shrink-0" size={18} />
-};
-
-const TOAST_STYLES = {
-  success: "border-l-4 border-emerald-500 bg-white",
-  error:   "border-l-4 border-red-500    bg-white",
-  info:    "border-l-4 border-blue-500   bg-white",
-  warning: "border-l-4 border-yellow-500 bg-white"
-};
-
-function ToastContainer({ toasts, onRemove }) {
-  return (
-    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
-      <AnimatePresence>
-        {toasts.map((t) => (
-          <motion.div
-            key={t.id}
-            variants={toastVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl min-w-[280px] max-w-[360px] ${TOAST_STYLES[t.type]}`}
-          >
-            {TOAST_ICONS[t.type]}
-            <p className="text-sm text-gray-800 font-medium flex-1 leading-snug">{t.message}</p>
-            <button
-              onClick={() => onRemove(t.id)}
-              className="text-gray-400 hover:text-gray-600 transition-colors mt-0.5 shrink-0"
-            >
-              <FaTimes size={13} />
-            </button>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function useToast() {
-  const [toasts, setToasts] = useState([]);
-
-  const remove = useCallback((id) =>
-    setToasts((prev) => prev.filter((t) => t.id !== id)), []);
-
-  const add = useCallback((message, type = "info", duration = 4000) => {
-    const id = ++toastIdCounter;
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), duration);
-    return id;
-  }, []);
-
-  const toast = {
-    success: (msg, dur)  => add(msg, "success", dur),
-    error:   (msg, dur)  => add(msg, "error",   dur),
-    info:    (msg, dur)  => add(msg, "info",     dur),
-    warning: (msg, dur)  => add(msg, "warning",  dur),
-  };
-
-  return { toasts, remove, toast };
-}
-
 // ─── Modal Variants ──────────────────────────────────────────────────────────
 
 const modalVariants = {
@@ -119,8 +46,6 @@ const backdropVariants = {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CompanyInvites() {
-  const { toasts, remove, toast } = useToast();
-
   const [invites, setInvites]               = useState([]);
   const [loading, setLoading]               = useState(true);
   const [processingId, setProcessingId]     = useState(null);
@@ -162,7 +87,7 @@ export default function CompanyInvites() {
         if (search) params.append("search", search);
 
         const response = await fetch(
-          `${API_BASE}/company/invites/${company_id}/list?${params.toString()}`,
+          `${API_BASE}/company/invites/list?${params.toString()}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -453,8 +378,19 @@ export default function CompanyInvites() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* ── Toast Portal ── */}
-      <ToastContainer toasts={toasts} onRemove={remove} />
+      {/* ── Toast Container ── */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
 
       <div className="min-h-screen p-3 md:p-6 font-sans">
         <div className="max-w-7xl mx-auto">

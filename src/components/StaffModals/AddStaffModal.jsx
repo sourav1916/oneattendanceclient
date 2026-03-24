@@ -22,7 +22,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [employmentTypes, setEmploymentTypes] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [salaryTypes, setSalaryTypes] = useState([]);
-  const [employmentStatuses, setEmploymentStatuses] = useState([]);
   const [punchTypes, setPunchTypes] = useState([]);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
 
@@ -32,7 +31,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [selectedPermissionPackage, setSelectedPermissionPackage] = useState(null);
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
-  const [employmentStatus, setEmploymentStatus] = useState(null);
 
   // Attendance methods configuration
   const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
@@ -127,19 +125,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
             icon: getIconForType(item.key, 'salary')
           }));
           setSalaryTypes(formattedSalaryTypes);
-        }
-
-        if (data.data.employment_status) {
-          const formattedStatus = data.data.employment_status.map(item => ({
-            value: item.value.value,
-            key: item.key,
-            label: item.value.label,
-            description: item.value.description,
-            icon: getIconForType(item.key, 'status')
-          }));
-          setEmploymentStatuses(formattedStatus);
-          const activeStatus = formattedStatus.find(s => s.key === 'ACTIVE');
-          if (activeStatus) setEmploymentStatus(activeStatus);
         }
 
         if (data.data.punch_types) {
@@ -381,7 +366,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setDesignation(null);
     setStaffType(null);
     setEmploymentType(null);
-    setEmploymentStatus(null);
     setSelectedPermissionPackage(null);
     const resetConfig = {};
     attendanceMethods.forEach(method => {
@@ -501,128 +485,95 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                     )}
                   </motion.div>
 
-                  {/* Employee Information Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Employment Type */}
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.15 }}
-                      className="space-y-2"
-                    >
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <FaBriefcase className="w-4 h-4 text-indigo-500" />
-                        Employment Type
-                      </label>
-                      <Select
-                        options={employmentTypes}
-                        value={employmentType}
-                        onChange={(option) => setEmploymentType(option)}
-                        placeholder="Select type"
-                        styles={customSelectStyles}
-                        isLoading={isLoadingConstants}
-                        formatOptionLabel={({ label, description, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div className="flex-1">
-                              <div className="font-medium">{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
-                            </div>
+                  {/* Employment Type */}
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.15 }}
+                    className="space-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <FaBriefcase className="w-4 h-4 text-indigo-500" />
+                      Employment Type
+                    </label>
+                    <Select
+                      options={employmentTypes}
+                      value={employmentType}
+                      onChange={(option) => setEmploymentType(option)}
+                      placeholder="Select type"
+                      styles={customSelectStyles}
+                      isLoading={isLoadingConstants}
+                      formatOptionLabel={({ label, description, icon: Icon }) => (
+                        <div className="flex items-center gap-2">
+                          {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                          <div className="flex-1">
+                            <div className="font-medium">{label}</div>
+                            {description && <div className="text-xs text-gray-400">{description}</div>}
                           </div>
-                        )}
-                      />
-                    </motion.div>
+                        </div>
+                      )}
+                    />
+                  </motion.div>
 
-                    {/* Designation */}
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      className="space-y-2"
-                    >
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <FaUserTie className="w-4 h-4 text-indigo-500" />
-                        Designation
-                      </label>
-                      <Select
-                        options={designations}
-                        value={designation}
-                        onChange={(option) => setDesignation(option)}
-                        placeholder="Select designation"
-                        styles={customSelectStyles}
-                        isLoading={isLoadingConstants}
-                        formatOptionLabel={({ label, description, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div className="flex-1">
-                              <div className="font-medium">{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
-                            </div>
+                  {/* Designation */}
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <FaUserTie className="w-4 h-4 text-indigo-500" />
+                      Designation
+                    </label>
+                    <Select
+                      options={designations}
+                      value={designation}
+                      onChange={(option) => setDesignation(option)}
+                      placeholder="Select designation"
+                      styles={customSelectStyles}
+                      isLoading={isLoadingConstants}
+                      formatOptionLabel={({ label, description, icon: Icon }) => (
+                        <div className="flex items-center gap-2">
+                          {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                          <div className="flex-1">
+                            <div className="font-medium">{label}</div>
+                            {description && <div className="text-xs text-gray-400">{description}</div>}
                           </div>
-                        )}
-                      />
-                    </motion.div>
+                        </div>
+                      )}
+                    />
+                  </motion.div>
 
-                    {/* Salary Type */}
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.25 }}
-                      className="space-y-2"
-                    >
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <FaDollarSign className="w-4 h-4 text-indigo-500" />
-                        Salary Type
-                      </label>
-                      <Select
-                        options={salaryTypes}
-                        value={staffType}
-                        onChange={(option) => setStaffType(option)}
-                        placeholder="Select salary type"
-                        styles={customSelectStyles}
-                        isLoading={isLoadingConstants}
-                        formatOptionLabel={({ label, description, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div className="flex-1">
-                              <div className="font-medium">{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
-                            </div>
+                  {/* Salary Type */}
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.25 }}
+                    className="space-y-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <FaDollarSign className="w-4 h-4 text-indigo-500" />
+                      Salary Type
+                    </label>
+                    <Select
+                      options={salaryTypes}
+                      value={staffType}
+                      onChange={(option) => setStaffType(option)}
+                      placeholder="Select salary type"
+                      styles={customSelectStyles}
+                      isLoading={isLoadingConstants}
+                      formatOptionLabel={({ label, description, icon: Icon }) => (
+                        <div className="flex items-center gap-2">
+                          {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                          <div className="flex-1">
+                            <div className="font-medium">{label}</div>
+                            {description && <div className="text-xs text-gray-400">{description}</div>}
                           </div>
-                        )}
-                      />
-                    </motion.div>
-
-                    {/* Employment Status */}
-                    <motion.div
-                      initial={{ x: -20, opacity: 0 }}
-                      animate={{ x: 0, opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="space-y-2"
-                    >
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                        <FaUserCheck className="w-4 h-4 text-indigo-500" />
-                        Employment Status
-                      </label>
-                      <Select
-                        options={employmentStatuses}
-                        value={employmentStatus}
-                        onChange={(option) => setEmploymentStatus(option)}
-                        placeholder="Select status"
-                        styles={customSelectStyles}
-                        isLoading={isLoadingConstants}
-                        formatOptionLabel={({ label, description, icon: Icon }) => (
-                          <div className="flex items-center gap-2">
-                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                            <div className="flex-1">
-                              <div className="font-medium">{label}</div>
-                              {description && <div className="text-xs text-gray-400">{description}</div>}
-                            </div>
-                          </div>
-                        )}
-                      />
-                    </motion.div>
-                  </div>
+                        </div>
+                      )}
+                    />
+                  </motion.div>
 
                   {/* Permission Package — single select */}
                   <motion.div

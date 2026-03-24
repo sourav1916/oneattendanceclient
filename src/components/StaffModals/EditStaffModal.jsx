@@ -21,7 +21,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const [employmentTypes, setEmploymentTypes] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [salaryTypes, setSalaryTypes] = useState([]);
-  const [employmentStatuses, setEmploymentStatuses] = useState([]);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
 
   // Selected values
@@ -30,7 +29,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const [selectedPermissionPackage, setSelectedPermissionPackage] = useState(null);
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
-  const [employmentStatus, setEmploymentStatus] = useState(null);
 
   // Attendance methods configuration
   const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
@@ -71,8 +69,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   };
 
   const internalMethodOptions = [
-    { value: "auto", label: "Auto", icon: FaRobot, description: "Automatically mark attendance" },
-    { value: "manual", label: "Manual", icon: FaUserCheck, description: "Manually mark attendance" }
+    { value: "manual", label: "Manual", icon: FaUserCheck, description: "Manually mark attendance" },
+    { value: "auto", label: "Auto", icon: FaRobot, description: "Automatically mark attendance" }
   ];
 
   useEffect(() => {
@@ -83,7 +81,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     }
   }, [isOpen]);
 
-  // Load staff data once constants are ready
+  // Load staff data once constants are ready and staffData changes
   useEffect(() => {
     if (isOpen && staffData && !isLoadingConstants && employmentTypes.length > 0) {
       loadStaffData();
@@ -127,15 +125,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
             icon: getIconForType(item.key)
           })));
         }
-        if (data.data.employment_status) {
-          setEmploymentStatuses(data.data.employment_status.map(item => ({
-            value: item.value.value,
-            key: item.key,
-            label: item.value.label,
-            description: item.value.description,
-            icon: getIconForType(item.key)
-          })));
-        }
         if (data.data.attendance_methods) {
           setAttendanceMethods(data.data.attendance_methods.map(item => ({
             id: item.key.toLowerCase(),
@@ -160,6 +149,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const loadStaffData = () => {
     setIsLoadingStaff(true);
     try {
+      console.log("Loading staff data:", staffData);
+
+      // Load user data
       if (staffData.user) {
         setSelectedUser({
           id: staffData.user.id,
@@ -170,39 +162,52 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
         });
       }
 
+      // Load designation
       if (staffData.designation) {
         const found = designations.find(d => d.value === staffData.designation);
-        setDesignation(found || {
-          value: staffData.designation,
-          label: staffData.designation.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
-        });
+        if (found) {
+          setDesignation(found);
+        } else {
+          // Create a temporary option if not found in list
+          setDesignation({
+            value: staffData.designation,
+            label: staffData.designation.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+          });
+        }
       }
 
+      // Load employment type
       if (staffData.employment_type) {
         const found = employmentTypes.find(e => e.value === staffData.employment_type);
-        setEmploymentType(found || {
-          value: staffData.employment_type,
-          label: staffData.employment_type.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
-        });
+        if (found) {
+          setEmploymentType(found);
+        } else {
+          setEmploymentType({
+            value: staffData.employment_type,
+            label: staffData.employment_type.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+          });
+        }
       }
 
-      if (staffData.employment_status) {
-        const found = employmentStatuses.find(s => s.value === staffData.employment_status);
-        if (found) setEmploymentStatus(found);
-      }
-
+      // Load salary type
       if (staffData.salary_type) {
         const found = salaryTypes.find(s => s.value === staffData.salary_type);
-        setStaffType(found || {
-          value: staffData.salary_type,
-          label: staffData.salary_type.charAt(0) + staffData.salary_type.slice(1).toLowerCase()
-        });
+        if (found) {
+          setStaffType(found);
+        } else {
+          setStaffType({
+            value: staffData.salary_type,
+            label: staffData.salary_type.charAt(0).toUpperCase() + staffData.salary_type.slice(1).toLowerCase()
+          });
+        }
       }
 
-      // Match permission package by id
-      if (staffData.permission_package_id && permissionPackages.length > 0) {
-        const found = permissionPackages.find(p => p.value === staffData.permission_package_id);
-        if (found) setSelectedPermissionPackage(found);
+      // Load permission package (from permission_package object)
+      if (staffData.permission_package && staffData.permission_package.id) {
+        const found = permissionPackages.find(p => p.value === staffData.permission_package.id);
+        if (found) {
+          setSelectedPermissionPackage(found);
+        }
       }
 
       // Initialize attendance methods config
@@ -215,14 +220,19 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
         };
       });
 
-      if (staffData.attendance_methods?.length > 0) {
+      // Load attendance methods from staff data
+      if (staffData.attendance_methods && staffData.attendance_methods.length > 0) {
         staffData.attendance_methods.forEach(method => {
           const methodId = method.method.toLowerCase();
           if (initialConfig[methodId]) {
+            const internalMethods = [];
+            if (method.is_manual === true || method.is_manual === 1) internalMethods.push("manual");
+            if (method.is_auto === true || method.is_auto === 1) internalMethods.push("auto");
+
             initialConfig[methodId] = {
               ...initialConfig[methodId],
               enabled: true,
-              internalMethods: method.internal_methods || []
+              internalMethods: internalMethods
             };
           }
         });
@@ -251,9 +261,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const params = new URLSearchParams({ page: "1", limit: "5", sort: "name", order: "asc" });
       if (searchQuery) params.append('search', searchQuery);
 
-      const res = await fetch(`${API_BASE}/company/${company.id}/users/available?${params.toString()}`, {
+      const res = await fetch(`${API_BASE}/company/users/available?${params.toString()}`, {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "company": company?.id }
       });
 
       if (!res.ok) throw new Error('Failed to fetch users');
@@ -287,7 +297,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const company = JSON.parse(localStorage.getItem('company'));
 
       const response = await fetch(`${API_BASE}/permissions/permission-packages`, {
-        headers: { Authorization: `Bearer ${token}`, 'company': company.id.toString() }
+        headers: { Authorization: `Bearer ${token}`, 'company': company?.id }
       });
 
       const result = await response.json();
@@ -360,6 +370,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const company = JSON.parse(localStorage.getItem("company"));
 
       const payload = {
+        invite_id: staffData.invite_id,
         user_id: selectedUser.id,
         permission_package_id: selectedPermissionPackage?.value || null,
         employment_type: employmentType.value,
@@ -374,9 +385,13 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
 
       console.log("Updating staff with payload:", payload);
 
-      const response = await fetch(`${API_BASE}/company/invites/update`, {
+      const response = await fetch(`${API_BASE}/company/invites/${staffData.invite_id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`,"company":company?.id },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "company": company?.id
+        },
         body: JSON.stringify(payload)
       });
 
@@ -399,7 +414,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     setDesignation(null);
     setStaffType(null);
     setEmploymentType(null);
-    setEmploymentStatus(null);
     setSelectedPermissionPackage(null);
     setAttendanceMethodsConfig({});
     setIsSubmitting(false);
@@ -432,6 +446,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   };
 
   const isLoading = isLoadingConstants || isLoadingStaff;
+
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence mode="wait">
@@ -520,126 +536,94 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                       )}
                     </motion.div>
 
-                    {/* Employee Information Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Employment Type */}
-                      <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.15 }}
-                        className="space-y-2"
-                      >
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                          <FaBriefcase className="w-4 h-4 text-indigo-500" />
-                          Employment Type
-                        </label>
-                        <Select
-                          options={employmentTypes}
-                          value={employmentType}
-                          onChange={(option) => setEmploymentType(option)}
-                          placeholder="Select type"
-                          styles={customSelectStyles}
-                          formatOptionLabel={({ label, description, icon: Icon }) => (
-                            <div className="flex items-center gap-2">
-                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                              <div className="flex-1">
-                                <div className="font-medium">{label}</div>
-                                {description && <div className="text-xs text-gray-400">{description}</div>}
-                              </div>
+                    {/* Employment Type */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.15 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaBriefcase className="w-4 h-4 text-indigo-500" />
+                        Employment Type
+                      </label>
+                      <Select
+                        options={employmentTypes}
+                        value={employmentType}
+                        onChange={(option) => setEmploymentType(option)}
+                        placeholder="Select type"
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
                             </div>
-                          )}
-                        />
-                      </motion.div>
+                          </div>
+                        )}
+                      />
+                    </motion.div>
 
-                      {/* Designation */}
-                      <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="space-y-2"
-                      >
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                          <FaUserTie className="w-4 h-4 text-indigo-500" />
-                          Designation
-                        </label>
-                        <Select
-                          options={designations}
-                          value={designation}
-                          onChange={(option) => setDesignation(option)}
-                          placeholder="Select designation"
-                          styles={customSelectStyles}
-                          formatOptionLabel={({ label, description, icon: Icon }) => (
-                            <div className="flex items-center gap-2">
-                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                              <div className="flex-1">
-                                <div className="font-medium">{label}</div>
-                                {description && <div className="text-xs text-gray-400">{description}</div>}
-                              </div>
+                    {/* Designation */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaUserTie className="w-4 h-4 text-indigo-500" />
+                        Designation
+                      </label>
+                      <Select
+                        options={designations}
+                        value={designation}
+                        onChange={(option) => setDesignation(option)}
+                        placeholder="Select designation"
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
                             </div>
-                          )}
-                        />
-                      </motion.div>
+                          </div>
+                        )}
+                      />
+                    </motion.div>
 
-                      {/* Salary Type */}
-                      <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.25 }}
-                        className="space-y-2"
-                      >
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                          <FaDollarSign className="w-4 h-4 text-indigo-500" />
-                          Salary Type
-                        </label>
-                        <Select
-                          options={salaryTypes}
-                          value={staffType}
-                          onChange={(option) => setStaffType(option)}
-                          placeholder="Select salary type"
-                          styles={customSelectStyles}
-                          formatOptionLabel={({ label, description, icon: Icon }) => (
-                            <div className="flex items-center gap-2">
-                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                              <div className="flex-1">
-                                <div className="font-medium">{label}</div>
-                                {description && <div className="text-xs text-gray-400">{description}</div>}
-                              </div>
+                    {/* Salary Type */}
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.25 }}
+                      className="space-y-2"
+                    >
+                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                        <FaDollarSign className="w-4 h-4 text-indigo-500" />
+                        Salary Type
+                      </label>
+                      <Select
+                        options={salaryTypes}
+                        value={staffType}
+                        onChange={(option) => setStaffType(option)}
+                        placeholder="Select salary type"
+                        styles={customSelectStyles}
+                        formatOptionLabel={({ label, description, icon: Icon }) => (
+                          <div className="flex items-center gap-2">
+                            {Icon && <Icon className="w-4 h-4 text-gray-500" />}
+                            <div className="flex-1">
+                              <div className="font-medium">{label}</div>
+                              {description && <div className="text-xs text-gray-400">{description}</div>}
                             </div>
-                          )}
-                        />
-                      </motion.div>
+                          </div>
+                        )}
+                      />
+                    </motion.div>
 
-                      {/* Employment Status */}
-                      <motion.div
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="space-y-2"
-                      >
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                          <FaUserCheck className="w-4 h-4 text-indigo-500" />
-                          Employment Status
-                        </label>
-                        <Select
-                          options={employmentStatuses}
-                          value={employmentStatus}
-                          onChange={(option) => setEmploymentStatus(option)}
-                          placeholder="Select status"
-                          styles={customSelectStyles}
-                          formatOptionLabel={({ label, description, icon: Icon }) => (
-                            <div className="flex items-center gap-2">
-                              {Icon && <Icon className="w-4 h-4 text-gray-500" />}
-                              <div className="flex-1">
-                                <div className="font-medium">{label}</div>
-                                {description && <div className="text-xs text-gray-400">{description}</div>}
-                              </div>
-                            </div>
-                          )}
-                        />
-                      </motion.div>
-                    </div>
-
-                    {/* Permission Package — single select */}
+                    {/* Permission Package */}
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
@@ -669,9 +653,11 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                                 <div className="flex items-center gap-2">
                                   <FaShieldAlt className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
                                   <span className="font-medium text-gray-900">{label}</span>
-                                  <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono">
-                                    {groupCode}
-                                  </span>
+                                  {groupCode && (
+                                    <span className="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono">
+                                      {groupCode}
+                                    </span>
+                                  )}
                                 </div>
                                 {description && (
                                   <div className="text-xs text-gray-400 mt-0.5 ml-5">{description}</div>
