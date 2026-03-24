@@ -17,7 +17,7 @@ const API_BASE = "https://api-attendance.onesaas.in";
 function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [users, setUsers] = useState([]);
   const [permissionPackages, setPermissionPackages] = useState([]);
-  
+
   // Dynamic data from API
   const [employmentTypes, setEmploymentTypes] = useState([]);
   const [designations, setDesignations] = useState([]);
@@ -25,7 +25,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [employmentStatuses, setEmploymentStatuses] = useState([]);
   const [punchTypes, setPunchTypes] = useState([]);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
-  
+
   // Selected values
   const [selectedUser, setSelectedUser] = useState(null);
   const [designation, setDesignation] = useState(null);
@@ -33,10 +33,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [staffType, setStaffType] = useState(null);
   const [employmentType, setEmploymentType] = useState(null);
   const [employmentStatus, setEmploymentStatus] = useState(null);
-  
+
   // Attendance methods configuration
   const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
@@ -69,7 +69,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
       FINGERPRINT: FaFingerprint,
       IP: FaNetworkWired
     };
-    
+
     const Icon = iconMap[key] || FaUserCircle;
     return Icon;
   };
@@ -164,7 +164,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
             requiresCamera: item.value.requiresCamera || false
           }));
           setAttendanceMethods(formattedMethods);
-          
+
           const initialConfig = {};
           formattedMethods.forEach(method => {
             initialConfig[method.id.toLowerCase()] = {
@@ -335,17 +335,16 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
 
       const attendanceMethodsData = enabledMethods.map(([methodId, config]) => ({
         method: methodId,
-        internal_methods: config.internalMethods
+        is_manual: config.internalMethods.includes("manual") ? 1 : 0,
+        is_auto: config.internalMethods.includes("auto") ? 1 : 0,
       }));
 
       const payload = {
-        company_id: company?.id || 6,
         user_id: selectedUser.id,
         permission_package_id: selectedPermissionPackage?.value || null,
         employment_type: employmentType.value,
         designation: designation.value,
         salary_type: staffType.value,
-        employment_status: employmentStatus?.value || 'active',
         attendance_methods: attendanceMethodsData
       };
 
@@ -355,7 +354,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          "company": company?.id
         },
         body: JSON.stringify(payload)
       });
@@ -740,18 +740,15 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                           return (
                             <div
                               key={method.id}
-                              className={`border rounded-xl transition-all duration-200 overflow-hidden ${
-                                isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
-                              } ${!method.available ? 'opacity-60' : ''}`}
+                              className={`border rounded-xl transition-all duration-200 overflow-hidden ${isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
+                                } ${!method.available ? 'opacity-60' : ''}`}
                             >
                               <div className="flex items-center justify-between p-4">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                    isEnabled ? 'bg-indigo-100' : 'bg-gray-100'
-                                  }`}>
-                                    <method.icon className={`w-5 h-5 ${
-                                      isEnabled ? 'text-indigo-600' : 'text-gray-500'
-                                    }`} />
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isEnabled ? 'bg-indigo-100' : 'bg-gray-100'
+                                    }`}>
+                                    <method.icon className={`w-5 h-5 ${isEnabled ? 'text-indigo-600' : 'text-gray-500'
+                                      }`} />
                                   </div>
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -780,14 +777,12 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
                                 <button
                                   onClick={() => method.available && handleToggleMethod(method.id.toLowerCase())}
                                   disabled={!method.available}
-                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                                    isEnabled ? 'bg-indigo-600' : 'bg-gray-200'
-                                  } ${!method.available ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${isEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+                                    } ${!method.available ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
                                   <span
-                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                      isEnabled ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-6' : 'translate-x-1'
+                                      }`}
                                   />
                                 </button>
                               </div>

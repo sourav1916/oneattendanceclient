@@ -360,16 +360,15 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const company = JSON.parse(localStorage.getItem("company"));
 
       const payload = {
-        company_id: company?.id || 6,
         user_id: selectedUser.id,
         permission_package_id: selectedPermissionPackage?.value || null,
         employment_type: employmentType.value,
         designation: designation.value,
         salary_type: staffType.value,
-        employment_status: employmentStatus?.value || 'active',
         attendance_methods: enabledMethods.map(([methodId, config]) => ({
           method: methodId,
-          internal_methods: config.internalMethods
+          is_manual: config.internalMethods.includes("manual") ? 1 : 0,
+          is_auto: config.internalMethods.includes("auto") ? 1 : 0,
         }))
       };
 
@@ -377,7 +376,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
 
       const response = await fetch(`${API_BASE}/company/invites/update`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`,"company":company?.id },
         body: JSON.stringify(payload)
       });
 
