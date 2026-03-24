@@ -77,7 +77,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       children: [
         {
           icon: FaBuilding,
-          label: 'Company Invites',
+          label: 'Invites Management',
           path: '/company-invites',
           permission: 'manage_invites'
         },

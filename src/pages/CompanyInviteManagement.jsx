@@ -1,0 +1,751 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FaUserTie,
+  FaClock,
+  FaExclamationCircle,
+  FaSpinner,
+  FaEllipsisV,
+  FaEye,
+  FaEdit,
+  FaBan,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaEnvelope,
+  FaPhone,
+  FaCalendarAlt,
+  FaBriefcase,
+  FaDollarSign,
+  FaTag,
+  FaSearch,
+  FaTimes,
+  FaInfoCircle,
+  FaUserCircle
+} from "react-icons/fa";
+import EditStaffModal from "../components/StaffModals/EditStaffModal";
+import CreateInviteModal from "../components/StaffModals/AddStaffModal";
+import Skeleton from "../components/SkeletonComponent";
+import Pagination, { usePagination } from "../components/PaginationComponent";
+
+// ─── Toast System ────────────────────────────────────────────────────────────
+
+let toastIdCounter = 0;
+
+const toastVariants = {
+  hidden:  { opacity: 0, x: 80, scale: 0.92 },
+  visible: { opacity: 1, x: 0,  scale: 1,   transition: { type: "spring", stiffness: 320, damping: 24 } },
+  exit:    { opacity: 0, x: 80, scale: 0.88, transition: { duration: 0.22 } }
+};
+
+const TOAST_ICONS = {
+  success: <FaCheckCircle className="text-emerald-500 shrink-0" size={18} />,
+  error:   <FaTimesCircle  className="text-red-500    shrink-0" size={18} />,
+  info:    <FaInfoCircle   className="text-blue-500   shrink-0" size={18} />,
+  warning: <FaExclamationCircle className="text-yellow-500 shrink-0" size={18} />
+};
+
+const TOAST_STYLES = {
+  success: "border-l-4 border-emerald-500 bg-white",
+  error:   "border-l-4 border-red-500    bg-white",
+  info:    "border-l-4 border-blue-500   bg-white",
+  warning: "border-l-4 border-yellow-500 bg-white"
+};
+
+function ToastContainer({ toasts, onRemove }) {
+  return (
+    <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
+      <AnimatePresence>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            variants={toastVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className={`pointer-events-auto flex items-start gap-3 px-4 py-3 rounded-xl shadow-2xl min-w-[280px] max-w-[360px] ${TOAST_STYLES[t.type]}`}
+          >
+            {TOAST_ICONS[t.type]}
+            <p className="text-sm text-gray-800 font-medium flex-1 leading-snug">{t.message}</p>
+            <button
+              onClick={() => onRemove(t.id)}
+              className="text-gray-400 hover:text-gray-600 transition-colors mt-0.5 shrink-0"
+            >
+              <FaTimes size={13} />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+
+  const remove = useCallback((id) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id)), []);
+
+  const add = useCallback((message, type = "info", duration = 4000) => {
+    const id = ++toastIdCounter;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), duration);
+    return id;
+  }, []);
+
+  const toast = {
+    success: (msg, dur)  => add(msg, "success", dur),
+    error:   (msg, dur)  => add(msg, "error",   dur),
+    info:    (msg, dur)  => add(msg, "info",     dur),
+    warning: (msg, dur)  => add(msg, "warning",  dur),
+  };
+
+  return { toasts, remove, toast };
+}
+
+// ─── Modal Variants ──────────────────────────────────────────────────────────
+
+const modalVariants = {
+  hidden:  { opacity: 0, scale: 0.9,  y: 20 },
+  visible: { opacity: 1, scale: 1,    y: 0,  transition: { type: "spring", duration: 0.5 } },
+  exit:    { opacity: 0, scale: 0.9,  y: 20, transition: { duration: 0.3 } }
+};
+
+const backdropVariants = {
+  hidden:  { opacity: 0 },
+  visible: { opacity: 1 },
+  exit:    { opacity: 0 }
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function CompanyInvites() {
+  const { toasts, remove, toast } = useToast();
+
+  const [invites, setInvites]               = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [processingId, setProcessingId]     = useState(null);
+  const [selectedInvite, setSelectedInvite] = useState(null);
+  const [modalType, setModalType]           = useState(null);
+  const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [searchTerm, setSearchTerm]         = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen]   = useState(false);
+  const [editingInvite, setEditingInvite]       = useState(null);
+  const [isInitialLoad, setIsInitialLoad]       = useState(true);
+  const [openCreateInviteModal, setOpenCreateInviteModal] = useState(false);
+
+  const fetchInProgress = useRef(false);
+
+  const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+
+  const API_BASE   = "https://api-attendance.onesaas.in";
+  const company_id = JSON.parse(localStorage.getItem("company"))?.id;
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  const fetchInvites = useCallback(
+    async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true) => {
+      if (fetchInProgress.current) return;
+      fetchInProgress.current = true;
+      if (resetLoading) setLoading(true);
+
+      try {
+        const token   = localStorage.getItem("token");
+        const company = JSON.parse(localStorage.getItem("company"));
+
+        const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
+        if (search) params.append("search", search);
+
+        const response = await fetch(
+          `${API_BASE}/company/invites/${company_id}/list?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              company: company?.id
+            }
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch invites");
+
+        const result = await response.json();
+
+        if (result.success) {
+          setInvites(result.data || []);
+          updatePagination({
+            page:        result.current_page || page,
+            limit:       result.per_page     || pagination.limit,
+            total:       result.total        || 0,
+            total_pages: result.last_page    || Math.ceil((result.total || 0) / pagination.limit),
+            is_last_page: result.current_page === result.last_page
+          });
+        } else {
+          throw new Error(result.message || "Failed to fetch invites");
+        }
+      } catch (err) {
+        toast.error(err.message || "Failed to load invitations.");
+        console.error("Error fetching invites:", err);
+      } finally {
+        setLoading(false);
+        setIsInitialLoad(false);
+        fetchInProgress.current = false;
+      }
+    },
+    [company_id, pagination.limit, updatePagination] // eslint-disable-line
+  );
+
+  // Page change trigger
+  const handlePageChange = useCallback(
+    (newPage) => { if (newPage !== pagination.page) goToPage(newPage); },
+    [pagination.page, goToPage]
+  );
+
+  useEffect(() => {
+    if (!isInitialLoad && !fetchInProgress.current) {
+      fetchInvites(pagination.page, debouncedSearchTerm, true);
+    }
+  }, [pagination.page]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!isInitialLoad) {
+      if (pagination.page !== 1) goToPage(1);
+      else fetchInvites(1, debouncedSearchTerm, true);
+    }
+  }, [debouncedSearchTerm]); // eslint-disable-line
+
+  useEffect(() => {
+    if (company_id && isInitialLoad) {
+      fetchInvites(1, "", true);
+    } else if (!company_id) {
+      toast.error("Company ID not found. Please ensure you're logged in as a company.");
+      setLoading(false);
+      setIsInitialLoad(false);
+    }
+  }, [company_id]); // eslint-disable-line
+
+  // ── Cancel ─────────────────────────────────────────────────────────────────
+  const handleCancelInvite = async (token) => {
+    try {
+      setProcessingId(token);
+      const authToken = localStorage.getItem("token");
+      const company   = JSON.parse(localStorage.getItem("company"));
+
+      const response = await fetch(`${API_BASE}/company/invites/cancel`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          "Content-Type": "application/json",
+          company: company?.id
+        },
+        body: JSON.stringify({ token })
+      });
+
+      if (!response.ok) throw new Error("Failed to cancel invite");
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Invitation cancelled successfully.");
+        await fetchInvites(pagination.page, debouncedSearchTerm, false);
+        closeModal();
+      } else {
+        throw new Error(result.message || "Failed to cancel invite");
+      }
+    } catch (err) {
+      toast.error(err.message || "Something went wrong while cancelling.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  // ── Edit ───────────────────────────────────────────────────────────────────
+  const handleEditClick = (invite) => {
+    setEditingInvite(invite);
+    setIsEditModalOpen(true);
+    setActiveActionMenu(null);
+  };
+
+  const handleEditSuccess = () => {
+    toast.success("Invitation updated successfully.");
+    fetchInvites(pagination.page, debouncedSearchTerm, false);
+    setIsEditModalOpen(false);
+    setEditingInvite(null);
+  };
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  const isExpired = (date) => new Date(date) < new Date();
+
+  const getStatusBadge = (status, expiresAt) => {
+    if (isExpired(expiresAt))
+      return { icon: FaTimesCircle, text: "Expired",   className: "bg-red-100    text-red-800    border border-red-200"    };
+    switch (status) {
+      case "accepted":
+        return { icon: FaCheckCircle,       text: "Accepted",  className: "bg-green-100  text-green-800  border border-green-200"  };
+      case "pending":
+        return { icon: FaClock,             text: "Pending",   className: "bg-yellow-100 text-yellow-800 border border-yellow-200" };
+      case "cancelled":
+        return { icon: FaBan,               text: "Cancelled", className: "bg-gray-100   text-gray-800   border border-gray-200"   };
+      default:
+        return { icon: FaExclamationCircle, text: status,      className: "bg-gray-100   text-gray-800   border border-gray-200"   };
+    }
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    });
+  };
+
+  const formatDateSimple = (date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric"
+    });
+  };
+
+  const openModal       = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
+  const closeModal      = ()              => { setSelectedInvite(null);   setModalType(null); };
+  const toggleActionMenu = (e, id)        => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
+  const formatDisplay   = (str)           => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+
+  // Responsive columns
+  const [visibleColumns, setVisibleColumns] = useState(() => ({
+    showUser:        true,
+    showDesignation: window.innerWidth >= 768,
+    showEmployment:  window.innerWidth >= 1024,
+    showStatus:      window.innerWidth >= 768,
+    showExpires:     window.innerWidth >= 1280
+  }));
+
+  useEffect(() => {
+    let t;
+    const onResize = () => {
+      clearTimeout(t);
+      t = setTimeout(() =>
+        setVisibleColumns({
+          showUser:        true,
+          showDesignation: window.innerWidth >= 768,
+          showEmployment:  window.innerWidth >= 1024,
+          showStatus:      window.innerWidth >= 768,
+          showExpires:     window.innerWidth >= 1280
+        }), 150);
+    };
+    window.addEventListener("resize", onResize);
+    return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
+  }, []);
+
+  // ── View Modal ─────────────────────────────────────────────────────────────
+  const ViewModal = ({ invite, onClose }) => (
+    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}>
+      <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+          <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center gap-6 pb-6 border-b">
+            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl">
+              <FaUserCircle className="text-white text-5xl" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-800">{invite.user?.name || "No name"}</h3>
+              <p className="text-gray-600 flex items-center gap-2 mt-1">
+                <FaEnvelope className="text-blue-500" size={14} />{invite.user?.email}
+              </p>
+              {invite.user?.phone && (
+                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                  <FaPhone className="text-green-500" size={14} />{invite.user.phone}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <InfoItem icon={<FaBriefcase className="text-blue-500" />}   label="Designation"      value={formatDisplay(invite.designation)} />
+            <InfoItem icon={<FaUserTie   className="text-purple-500" />} label="Employment Type"  value={formatDisplay(invite.employment_type)} />
+            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type"    value={formatDisplay(invite.salary_type)} />
+            <InfoItem icon={<FaTag       className="text-orange-500" />} label="Status"
+              value={
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
+                  {getStatusBadge(invite.status, invite.expires_at).text}
+                </span>
+              } />
+            <InfoItem icon={<FaCalendarAlt className="text-rose-500" />}  label="Sent Date"  value={formatDate(invite.created_at)} />
+            <InfoItem icon={<FaClock      className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
+          </div>
+          {invite.permissions?.length > 0 && (
+            <div className="mt-6">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                <FaInfoCircle className="text-blue-500" /> Permissions
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {invite.permissions.map((perm, idx) => (
+                  <motion.div key={perm.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                    className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                    <span className="font-medium text-gray-700">{perm.name}</span>
+                    {perm.is_allowed === 1 || perm.is_allowed === true
+                      ? <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1"><FaCheckCircle size={10} /> Allowed</span>
+                      : <span className="px-3 py-1 bg-red-100   text-red-700   rounded-full text-xs font-medium flex items-center gap-1"><FaBan size={10} /> Denied</span>
+                    }
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  // ── Cancel Modal ───────────────────────────────────────────────────────────
+  const CancelModal = ({ invite, onClose, onConfirm }) => (
+    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}>
+      <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
+          <h2 className="text-xl font-semibold flex items-center gap-2"><FaBan /> Cancel Invitation</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+        </div>
+        <div className="p-6 text-center">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
+            className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaBan className="text-4xl text-red-600" />
+          </motion.div>
+          <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
+          <p className="text-gray-500 mb-6">
+            You are about to cancel the invitation for{" "}
+            <span className="font-semibold text-red-600">{invite.user?.email}</span>.
+            This action cannot be undone.
+          </p>
+          <div className="flex gap-4">
+            <button onClick={onClose}
+              className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
+              Keep
+            </button>
+            <button onClick={() => onConfirm(invite.token)} disabled={processingId === invite.token}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+              {processingId === invite.token && <FaSpinner className="animate-spin" />}
+              Cancel Invite
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  // ── Early returns ──────────────────────────────────────────────────────────
+  if (isInitialLoad && loading) return <Skeleton />;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <>
+      {/* ── Toast Portal ── */}
+      <ToastContainer toasts={toasts} onRemove={remove} />
+
+      <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="max-w-7xl mx-auto">
+
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+              Company Invitations
+            </h1>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span className="font-medium text-gray-700">{pagination.total}</span>
+                <span className="text-gray-500">invitations</span>
+              </div>
+
+              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+                onClick={() => setOpenCreateInviteModal(true)}
+                className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
+                           text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
+                           transition-all duration-300 flex items-center gap-2
+                           before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r
+                           before:from-blue-500 before:to-purple-500 before:opacity-0
+                           before:transition-opacity before:duration-300 hover:before:opacity-100 overflow-hidden">
+                <div className="relative z-10">
+                  <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
+                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <span className="relative z-10 text-sm">Create Invite</span>
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
+                               transition-transform duration-700 bg-gradient-to-r
+                               from-transparent via-white/20 to-transparent" />
+              </motion.button>
+            </div>
+
+            <CreateInviteModal
+              isOpen={openCreateInviteModal}
+              onClose={() => setOpenCreateInviteModal(false)}
+              onSuccess={() => {
+                setOpenCreateInviteModal(false);
+                toast.success("Invitation created successfully.");
+                fetchInvites(pagination.page, debouncedSearchTerm, false);
+              }}
+            />
+          </motion.div>
+
+          {/* Search */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
+            <div className="relative">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+              <input type="text" placeholder="Search by name, email or designation..."
+                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all" />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Loading skeleton */}
+          {loading && !invites.length && <Skeleton />}
+
+          {/* Empty State */}
+          {!loading && invites.length === 0 && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-16 bg-white rounded-2xl shadow-xl">
+              <FaEnvelope className="text-8xl text-gray-300 mx-auto mb-4" />
+              <p className="text-xl text-gray-500">No invitations found</p>
+              <p className="text-gray-400 mt-2">
+                {searchTerm ? "Try adjusting your search" : "Your company hasn't sent any invitations yet"}
+              </p>
+            </motion.div>
+          )}
+
+          {/* Table (Desktop) */}
+          {!loading && invites.length > 0 && (
+            <>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-700">
+                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                      <tr>
+                        {visibleColumns.showUser        && <th className="px-6 py-4">User</th>}
+                        {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
+                        {visibleColumns.showEmployment  && <th className="px-6 py-4">Employment</th>}
+                        {visibleColumns.showStatus      && <th className="px-6 py-4">Status</th>}
+                        {visibleColumns.showExpires     && <th className="px-6 py-4">Expires</th>}
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {invites.map((invite, index) => {
+                        const status     = getStatusBadge(invite.status, invite.expires_at);
+                        const StatusIcon = status.icon;
+                        return (
+                          <motion.tr key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                            {visibleColumns.showUser && (
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                                    {invite.user?.name?.charAt(0)?.toUpperCase() || invite.user?.email?.charAt(0)?.toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-gray-800">{invite.user?.name || "No name"}</p>
+                                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                                      <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+                            )}
+                            {visibleColumns.showDesignation && (
+                              <td className="px-6 py-4">
+                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                  {formatDisplay(invite.designation)}
+                                </span>
+                              </td>
+                            )}
+                            {visibleColumns.showEmployment && (
+                              <td className="px-6 py-4">
+                                <div className="flex flex-wrap gap-1">
+                                  <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">{formatDisplay(invite.employment_type)}</span>
+                                  <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">{formatDisplay(invite.salary_type)}</span>
+                                </div>
+                              </td>
+                            )}
+                            {visibleColumns.showStatus && (
+                              <td className="px-6 py-4">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                                  <StatusIcon size={12} />{status.text}
+                                </span>
+                              </td>
+                            )}
+                            {visibleColumns.showExpires && (
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-2">
+                                  <FaClock className="text-gray-400 text-xs" />
+                                  <span className="text-sm">{formatDateSimple(invite.expires_at)}</span>
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-6 py-4 text-right relative">
+                              <button onClick={(e) => toggleActionMenu(e, invite.token)}
+                                className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
+                                <FaEllipsisV className="text-gray-600" />
+                              </button>
+                              <AnimatePresence>
+                                {activeActionMenu === invite.token && (
+                                  <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                    className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-10 overflow-hidden"
+                                    onClick={(e) => e.stopPropagation()}>
+                                    <button onClick={() => openModal(invite, "view")}
+                                      className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300">
+                                      <FaEye size={14} /> View Details
+                                    </button>
+                                    {invite.status === "pending" && !isExpired(invite.expires_at) && (
+                                      <>
+                                        <button onClick={() => handleEditClick(invite)}
+                                          className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300">
+                                          <FaEdit size={14} /> Edit Invite
+                                        </button>
+                                        <button onClick={() => openModal(invite, "cancel")}
+                                          className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300">
+                                          <FaBan size={14} /> Cancel Invite
+                                        </button>
+                                      </>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </td>
+                          </motion.tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+
+              {/* Cards (Mobile) */}
+              <div className="grid grid-cols-1 gap-4 md:hidden">
+                {invites.map((invite, index) => {
+                  const status     = getStatusBadge(invite.status, invite.expires_at);
+                  const StatusIcon = status.icon;
+                  return (
+                    <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
+                          <FaUserCircle className="text-white text-3xl" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-bold text-lg text-gray-800 truncate">{invite.user?.name || "No name"}</h3>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                              <StatusIcon size={10} />{status.text}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                            <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
+                          </p>
+                          <div className="mt-3 space-y-2">
+                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                              <FaBriefcase className="text-blue-500" />{formatDisplay(invite.designation)}
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">{formatDisplay(invite.employment_type)}</span>
+                              <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{formatDisplay(invite.salary_type)}</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                              <span className="text-xs text-gray-500 flex items-center gap-1">
+                                <FaClock className="text-yellow-500" />
+                                Expires: {formatDateSimple(invite.expires_at)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
+                        <button onClick={() => openModal(invite, "view")}
+                          className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
+                          <FaEye size={16} />
+                        </button>
+                        {invite.status === "pending" && !isExpired(invite.expires_at) && (
+                          <>
+                            <button onClick={() => handleEditClick(invite)}
+                              className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110">
+                              <FaEdit size={16} />
+                            </button>
+                            <button onClick={() => openModal(invite, "cancel")}
+                              className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110">
+                              <FaBan size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              <Pagination
+                currentPage={pagination.page}
+                totalItems={pagination.total}
+                itemsPerPage={pagination.limit}
+                onPageChange={handlePageChange}
+                variant="default"
+                showInfo={true}
+              />
+            </>
+          )}
+
+          {/* Modals */}
+          <AnimatePresence>
+            {modalType === "view"   && selectedInvite && <ViewModal   invite={selectedInvite} onClose={closeModal} />}
+            {modalType === "cancel" && selectedInvite && <CancelModal invite={selectedInvite} onClose={closeModal} onConfirm={handleCancelInvite} />}
+          </AnimatePresence>
+
+          <EditStaffModal
+            isOpen={isEditModalOpen}
+            onClose={() => { setIsEditModalOpen(false); setEditingInvite(null); }}
+            onSuccess={handleEditSuccess}
+            staffData={editingInvite}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Helper Components ────────────────────────────────────────────────────────
+
+const InfoItem = ({ icon, label, value }) => (
+  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+      {icon}{label}
+    </label>
+    <div className="text-gray-800 font-medium">{value}</div>
+  </div>
+);
