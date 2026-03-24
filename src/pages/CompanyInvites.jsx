@@ -83,6 +83,7 @@ export default function CompanyInvites() {
 
     try {
       const token = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -96,7 +97,8 @@ export default function CompanyInvites() {
       const response = await fetch(`${API_BASE}/company/invites/${company_id}/list?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          "company":company?.id
         }
       });
 
@@ -171,12 +173,14 @@ export default function CompanyInvites() {
     try {
       setProcessingId(token);
       const authToken = localStorage.getItem('token');
+      const company = JSON.parse(localStorage.getItem('company'));
 
       const response = await fetch(`${API_BASE}/company/invites/cancel`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          "company":company?.id
         },
         body: JSON.stringify({
           token: token
