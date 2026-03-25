@@ -437,7 +437,7 @@ export default function CompanyInvites() {
               onClose={() => setOpenCreateInviteModal(false)}
               onSuccess={() => {
                 setOpenCreateInviteModal(false);
-                toast.success("Invitation created successfully.");
+                // toast.success("Invitation created successfully.");
                 fetchInvites(pagination.page, debouncedSearchTerm, false);
               }}
             />
