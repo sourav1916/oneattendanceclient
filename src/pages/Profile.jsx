@@ -36,7 +36,7 @@ const TABS = ["Overview", "Companies", "Permissions"];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-    const { userDetails, loading, userRole } = useAuth();
+    const { userDetails, loading, userRole, companies, permissions } = useAuth();
     const [activeTab, setActiveTab] = useState("Overview");
     const [expandedCompany, setExpandedCompany] = useState(null);
 
@@ -54,13 +54,17 @@ export default function ProfilePage() {
     }
 
     // Destructure directly from userDetails (which is response.data)
-    const { user, companies = [], total_companies = 0, permissions = [] } = userDetails;
+    const { user } = userDetails;
+    const total_companies = companies.length;
     const role = userRole === "user"
         ? "User"
         : userRole === "employee"
             ? "Employee"
             : userRole === "company_owner"
-                ? "Company Owner" : "Unknown";
+                ? "Company Owner"
+                : userRole === "owner_employee"
+                    ? "Owner & Employee"
+                    : "Unknown";
 
 
     return (

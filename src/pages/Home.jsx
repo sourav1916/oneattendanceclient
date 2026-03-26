@@ -86,7 +86,9 @@ function HomePage() {
         const response = await res.json();
 
         if (response.success && response.data) {
-          const userCompaniesData = response.data.companies || [];
+          const ownedCompanies = response.data.companies?.owned_companies || [];
+          const memberCompanies = response.data.companies?.companies || [];
+          const userCompaniesData = [...ownedCompanies, ...memberCompanies];
 
           // Only one company → auto select
           if (userCompaniesData.length === 1) {

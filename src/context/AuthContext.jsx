@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   const [mustSelectCompany, setMustSelectCompany] = useState(false);
   const [showCompanySelection, setShowCompanySelection] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
+  const [attendanceMethods, setAttendanceMethods] = useState([]);
 
   const initialized = useRef(false);
 
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
     setCompanies([]);
     setPermissions([]);
     setUserDetails(null);
+    setAttendanceMethods([]);
 
     setMustSelectCompany(false);
     setShowCompanySelection(false);
@@ -72,6 +74,9 @@ export const AuthProvider = ({ children }) => {
 
         // ✅ PERMISSIONS
         setPermissions(Array.isArray(data.permissions) ? data.permissions : []);
+
+        // ✅ ATTENDANCE METHODS
+        setAttendanceMethods(Array.isArray(data.attendance_methods) ? data.attendance_methods : []);
 
         // ✅ EMPLOYEE FLAG
         if (data.meta?.is_employee) {
@@ -227,6 +232,7 @@ export const AuthProvider = ({ children }) => {
     employeeDetails: employee,
     companyDetails: getCurrentCompany(),
     userDetails,
+    attendanceMethods,
   };
 
   return (
