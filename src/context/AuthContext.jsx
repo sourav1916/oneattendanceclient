@@ -128,8 +128,8 @@ export const AuthProvider = ({ children }) => {
           setCompanies([]);
           setCompany(null);
           localStorage.removeItem("company");
-          setMustSelectCompany(true);
-          setShowCompanySelection(true);
+          setMustSelectCompany(false);
+          setShowCompanySelection(false);
         }
 
       } else {
