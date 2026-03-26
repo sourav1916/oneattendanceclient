@@ -10,6 +10,11 @@ function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete }) {
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <p className="font-medium text-gray-900">{company.name || "Unnamed Company"}</p>
+          {company.role && (
+            <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded capitalize">
+              {company.role.replace(/_/g, ' ')}
+            </span>
+          )}
           {isActive && (
             <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium">
               Active

@@ -38,7 +38,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   // Permission checker
   const hasPermission = (requiredPermission) => {
     if (!requiredPermission) return true;
-    if (permissionActions.includes('manage_all')) return true;
     return permissionActions.includes(requiredPermission);
   };
 
@@ -154,9 +153,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
               {menuItems.map((item) => {
                 if (item.isSection) {
                   const isOpen = openSections[item.label];
-                  const authorizedChildren = item.children.filter(child => hasPermission(child.permission));
-
-                  if (authorizedChildren.length === 0) return null;
+                  // SHOW ALL CHILDREN BUT WITH AUTHORIZATION DATA
+                  const authorizedChildren = item.children;
 
                   return (
                     <div key={item.label} className="mb-2">
@@ -371,9 +369,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const renderSection = (item, isExpandedState) => {
     const isOpen = openSections[item.label];
     const Icon = item.icon;
-    const authorizedChildren = item.children.filter(child => hasPermission(child.permission));
-
-    if (authorizedChildren.length === 0) return null;
+    const authorizedChildren = item.children;
 
     return (
       <div key={item.label} className="mb-1">
@@ -414,6 +410,29 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
             {authorizedChildren.map((child) => {
               const isActive = isActiveRoute(child.path);
               const ChildIcon = child.icon;
+              const authorized = hasPermission(child.permission);
+
+              if (!authorized) {
+                return (
+                  <div
+                    key={child.label}
+                    className={`
+                      flex items-center rounded-xl transition-all duration-200
+                      px-3 py-2 gap-3
+                      cursor-not-allowed opacity-50
+                      text-gray-400
+                    `}
+                    title="Access Denied"
+                  >
+                    <div className="p-2 rounded-lg bg-gray-100 text-gray-400">
+                      <ChildIcon className="w-3 h-3" />
+                    </div>
+                    <span className="flex-1 text-xs font-medium">
+                      {child.label}
+                    </span>
+                  </div>
+                );
+              }
 
               return (
                 <Link

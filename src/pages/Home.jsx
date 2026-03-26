@@ -456,30 +456,24 @@ function HomePage() {
                             </div>
                             <div className="flex-1">
                               <p className="font-semibold text-slate-800">{comp.name}</p>
-                              {comp.legal_name && (
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                  {comp.legal_name}
-                                </p>
-                              )}
-                              {comp.email && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <FaEnvelope className="w-3 h-3 text-slate-400" />
-                                  <p className="text-xs text-slate-400">{comp.email}</p>
-                                </div>
-                              )}
+                              <p className="text-xs text-slate-500 mt-0.5 capitalize">
+                                {comp.role ? comp.role.replace(/_/g, ' ') : 'Member'}
+                              </p>
                             </div>
                           </div>
 
-                          {company?.id === comp.id && (
-                            <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                              <FaCheck className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-
-                          {isSwitching &&
-                            selectedCompanyForSwitch?.id === comp.id && (
-                              <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="flex items-center gap-3">
+                            {company?.id === comp.id && (
+                              <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                                <FaCheck className="w-3 h-3 text-white" />
+                              </div>
                             )}
+
+                            {isSwitching &&
+                              selectedCompanyForSwitch?.id === comp.id && (
+                                <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                              )}
+                          </div>
                         </motion.button>
                       ))}
                     </div>

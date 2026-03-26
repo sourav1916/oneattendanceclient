@@ -72,9 +72,6 @@ export const AuthProvider = ({ children }) => {
 
         setUser(userData);
 
-        // ✅ PERMISSIONS
-        setPermissions(Array.isArray(data.permissions) ? data.permissions : []);
-
         // ✅ ATTENDANCE METHODS
         setAttendanceMethods(Array.isArray(data.attendance_methods) ? data.attendance_methods : []);
 
@@ -97,6 +94,7 @@ export const AuthProvider = ({ children }) => {
         if (allCompanies.length === 1) {
           const single = allCompanies[0];
           setCompany(single);
+          setPermissions(single.permissions || []);
           localStorage.setItem("company", JSON.stringify(single));
           setMustSelectCompany(false);
           setShowCompanySelection(false);
@@ -105,10 +103,11 @@ export const AuthProvider = ({ children }) => {
           if (storedCompany) {
             const parsed = JSON.parse(storedCompany);
 
-            const exists = allCompanies.some(c => c.id === parsed.id);
+            const found = allCompanies.find(c => c.id === parsed.id);
 
-            if (exists) {
-              setCompany(parsed);
+            if (found) {
+              setCompany(found);
+              setPermissions(found.permissions || []);
               setMustSelectCompany(false);
               setShowCompanySelection(false);
             } else {
@@ -127,6 +126,7 @@ export const AuthProvider = ({ children }) => {
           // No companies
           setCompanies([]);
           setCompany(null);
+          setPermissions([]);
           localStorage.removeItem("company");
           setMustSelectCompany(false);
           setShowCompanySelection(false);
@@ -177,6 +177,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ SELECT COMPANY
   const selectCompany = (selectedCompany) => {
     setCompany(selectedCompany);
+    setPermissions(selectedCompany.permissions || []);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
     setMustSelectCompany(false);
     setShowCompanySelection(false);
