@@ -18,19 +18,24 @@ export const AuthProvider = ({ children }) => {
 
   const initialized = useRef(false);
 
+  // ✅ LOGOUT
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("company");
+
     setUser(null);
     setEmployee(null);
     setCompany(null);
     setCompanies([]);
     setPermissions([]);
+    setUserDetails(null);
+
     setMustSelectCompany(false);
     setShowCompanySelection(false);
     setLoading(false);
   };
 
+  // ✅ FETCH PROFILE
   const fetchUserProfile = async (token) => {
     try {
       const res = await fetch(`${API_BASE}/users/profile-role`, {
@@ -48,75 +53,73 @@ export const AuthProvider = ({ children }) => {
       const response = await res.json();
 
       if (response.success && response.data) {
-        setUserDetails(response.data);
+        const data = response.data;
+
+        setUserDetails(data);
+
+        // ✅ USER
         const userData = {
-          id: response.data.user.id,
-          name: response.data.user.name || "User",
-          email: response.data.user.email,
-          phone: response.data.user.phone,
-          is_active: response.data.user.is_active === 1,
-          is_system_admin: response.data.user.is_system_admin === 1,
-          role: response.role || "employee"
+          id: data.user?.id,
+          name: data.user?.name || "User",
+          email: data.user?.email,
+          phone: data.user?.phone,
+          is_active: data.user?.is_active === 1,
+          is_system_admin: data.meta?.is_system_admin === 1,
+          role: response.role || "employee",
         };
 
         setUser(userData);
 
-        if (response.data.employee) {
-          setEmployee(response.data.employee);
+        // ✅ PERMISSIONS
+        setPermissions(Array.isArray(data.permissions) ? data.permissions : []);
+
+        // ✅ EMPLOYEE FLAG
+        if (data.meta?.is_employee) {
+          setEmployee(data.user);
+        } else {
+          setEmployee(null);
         }
 
-        if (response.data.permissions && Array.isArray(response.data.permissions)) {
-          setPermissions(response.data.permissions);
-        }
+        // ✅ COMPANIES (MERGE)
+        const ownedCompanies = data.companies?.owned_companies || [];
+        const memberCompanies = data.companies?.companies || [];
+        const allCompanies = [...ownedCompanies, ...memberCompanies];
 
-        // Handle company data
-        if (response.data.company) {
-          const singleCompany = response.data.company;
-          setCompanies([singleCompany]);
-          setCompany(singleCompany);
-          localStorage.setItem("company", JSON.stringify(singleCompany));
+        setCompanies(allCompanies);
+
+        const storedCompany = localStorage.getItem("company");
+
+        if (allCompanies.length === 1) {
+          const single = allCompanies[0];
+          setCompany(single);
+          localStorage.setItem("company", JSON.stringify(single));
           setMustSelectCompany(false);
           setShowCompanySelection(false);
-        }
-        else if (response.data.companies && Array.isArray(response.data.companies)) {
-          const userCompanies = response.data.companies;
-          setCompanies(userCompanies);
+        } 
+        else if (allCompanies.length > 1) {
+          if (storedCompany) {
+            const parsed = JSON.parse(storedCompany);
 
-          const storedCompany = localStorage.getItem("company");
+            const exists = allCompanies.some(c => c.id === parsed.id);
 
-          if (userCompanies.length === 1) {
-            // Auto-select single company
-            const singleCompany = userCompanies[0];
-            setCompany(singleCompany);
-            localStorage.setItem("company", JSON.stringify(singleCompany));
-            setMustSelectCompany(false);
-            setShowCompanySelection(false);
-          }
-          else if (userCompanies.length > 1) {
-            // Multiple companies - check if already have a valid selection
-            if (storedCompany) {
-              const companyStillExists = userCompanies.some(
-                c => c.id === JSON.parse(storedCompany).id
-              );
-              if (companyStillExists) {
-                setCompany(JSON.parse(storedCompany));
-                setMustSelectCompany(false);
-                setShowCompanySelection(false);
-              } else {
-                // Previously selected company no longer exists
-                localStorage.removeItem("company");
-                setCompany(null);
-                setMustSelectCompany(true);
-                setShowCompanySelection(true);
-              }
+            if (exists) {
+              setCompany(parsed);
+              setMustSelectCompany(false);
+              setShowCompanySelection(false);
             } else {
-              // No company selected yet
+              localStorage.removeItem("company");
               setCompany(null);
               setMustSelectCompany(true);
               setShowCompanySelection(true);
             }
+          } else {
+            setCompany(null);
+            setMustSelectCompany(true);
+            setShowCompanySelection(true);
           }
-        } else {
+        } 
+        else {
+          // No companies
           setCompanies([]);
           setCompany(null);
           localStorage.removeItem("company");
@@ -125,13 +128,7 @@ export const AuthProvider = ({ children }) => {
         }
 
       } else {
-        setUser(null);
-        setEmployee(null);
-        setCompany(null);
-        setCompanies([]);
-        setPermissions([]);
-        setMustSelectCompany(false);
-        setShowCompanySelection(false);
+        logout();
       }
     } catch (error) {
       console.error("Profile fetch failed:", error);
@@ -141,6 +138,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ INIT
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -155,6 +153,7 @@ export const AuthProvider = ({ children }) => {
     fetchUserProfile(token);
   }, []);
 
+  // ✅ LOGIN
   const login = async (token) => {
     localStorage.setItem("token", token);
     localStorage.removeItem("company");
@@ -162,6 +161,7 @@ export const AuthProvider = ({ children }) => {
     await fetchUserProfile(token);
   };
 
+  // ✅ REFRESH
   const refreshUser = async () => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -169,6 +169,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // ✅ SELECT COMPANY
   const selectCompany = (selectedCompany) => {
     setCompany(selectedCompany);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
@@ -176,12 +177,19 @@ export const AuthProvider = ({ children }) => {
     setShowCompanySelection(false);
   };
 
+  // ✅ GET CURRENT COMPANY
   const getCurrentCompany = () => {
     if (company) return company;
     const storedCompany = localStorage.getItem("company");
     return storedCompany ? JSON.parse(storedCompany) : null;
   };
 
+  // ✅ PERMISSION HELPER 🔥
+  const hasPermission = (code) => {
+    return permissions.some(p => p.code === code && p.is_allowed === 1);
+  };
+
+  // ✅ FINAL VALUE
   const value = {
     user,
     employee,
@@ -189,23 +197,33 @@ export const AuthProvider = ({ children }) => {
     companies,
     permissions,
     setCompanies,
+
     login,
     logout,
     refreshUser,
     selectCompany,
+
     mustSelectCompany,
     showCompanySelection,
     setShowCompanySelection,
+
     loading,
     isAuthenticated: !!user && !mustSelectCompany,
+
+    // ✅ FLAGS
     rawPermissions: permissions,
-    isEmployee: !!employee,
-    isCompanyOwner: user?.role === "company_owner",
+    hasPermission,
+
+    isEmployee: userDetails?.meta?.is_employee || false,
+    isCompanyOwner: userDetails?.meta?.is_owner || false,
+    isSystemAdmin: userDetails?.meta?.is_system_admin === 1,
+
     hasMultipleCompanies: companies.length > 1,
     hasCompanies: companies.length > 0,
-    isSystemAdmin: user?.is_system_admin || false,
+
     isActive: user?.is_active || false,
     userRole: user?.role || null,
+
     employeeDetails: employee,
     companyDetails: getCurrentCompany(),
     userDetails,
@@ -218,6 +236,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// ✅ HOOK
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
