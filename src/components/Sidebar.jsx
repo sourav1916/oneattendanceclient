@@ -53,7 +53,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       path: '/attendance',
       permission: ['att_punch', 'att_view_own', 'att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign']
     },
-
+    {
+      icon: FaEnvelope,
+      label: 'My Invites',
+      path: '/my-invites',
+      permission: null
+    },
     {
       icon: FaBriefcase,
       label: 'Management',

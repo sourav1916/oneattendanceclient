@@ -127,7 +127,7 @@ const PunchAttendance = () => {
       // Add IP specific data 
       if (method === 'ip') {
         const ip = await getPublicIP();
-        payload.mask_ip = ip;
+        payload.ip_address = ip;
       }
 
       const response = await apiCall(endpoint, 'POST', payload, company?.id);
@@ -321,8 +321,8 @@ const PunchAttendance = () => {
                       onClick={() => manualEnabled && setActiveMode('manual')}
                       disabled={!manualEnabled}
                       className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeMode === 'manual'
-                          ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
-                          : 'text-slate-500 hover:text-slate-700'
+                        ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
+                        : 'text-slate-500 hover:text-slate-700'
                         } ${!manualEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
                     >
                       Manual
@@ -331,8 +331,8 @@ const PunchAttendance = () => {
                       onClick={() => autoEnabled && setActiveMode('auto')}
                       disabled={!autoEnabled}
                       className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeMode === 'auto'
-                          ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
-                          : 'text-slate-500 hover:text-slate-700'
+                        ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
+                        : 'text-slate-500 hover:text-slate-700'
                         } ${!autoEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
                     >
                       Auto
