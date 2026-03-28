@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem("company", JSON.stringify(single));
           setMustSelectCompany(false);
           setShowCompanySelection(false);
-        } 
+        }
         else if (allCompanies.length > 1) {
           if (storedCompany) {
             const parsed = JSON.parse(storedCompany);
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }) => {
             setMustSelectCompany(true);
             setShowCompanySelection(true);
           }
-        } 
+        }
         else {
           // No companies
           setCompanies([]);
@@ -194,8 +194,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ✅ PERMISSION HELPER 🔥
-  const hasPermission = (code) => {
-    return permissions.some(p => p.code === code && p.is_allowed === 1);
+  const hasPermission = (requiredPermissions) => {
+    // System Admins override
+    if (userDetails?.meta?.is_system_admin === 1) return true;
+    
+    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    
+    // Support either a single code or an array of codes
+    const permsToCheck = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+    
+    // Return true if the user has AT LEAST ONE of the required permissions active in THIS company
+    return permsToCheck.some(code => 
+      permissions.some(p => p.code === code && p.is_allowed === 1)
+    );
   };
 
   // ✅ FINAL VALUE

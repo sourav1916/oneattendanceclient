@@ -10,7 +10,7 @@ const API_BASE = "https://api-attendance.onesaas.in";
  */
 export const apiCall = async (endpoint, method = 'GET', body = null, companyId = null) => {
   const token = localStorage.getItem('token');
-  
+
   const headers = {
     'Content-Type': 'application/json',
   };
@@ -34,7 +34,7 @@ export const apiCall = async (endpoint, method = 'GET', body = null, companyId =
 
   // Handle absolute vs relative URLs
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-  
+
   try {
     const response = await fetch(url, options);
     return response;

@@ -140,7 +140,8 @@ const EmployeeManagement = () => {
         setConstantsLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const result = await apiCall('/constants/', 'GET', null, company?.id);
+            const response = await apiCall('/constants/', 'GET', null, company?.id);
+            const result = await response.json();
             if (result.success) {
                 const data = result.data;
                 setConstants({
@@ -194,7 +195,8 @@ const EmployeeManagement = () => {
         setPermissionsLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const result = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
+            const response = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
+            const result = await response.json();
             if (result.success) {
                 const packages = result.data?.packages || [];
                 setPermissionPackages(packages.map(pkg => ({
@@ -228,7 +230,8 @@ const EmployeeManagement = () => {
             });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-            const result = await apiCall(`/employees/list?${params}`, 'GET', null, company?.id);
+            const response = await apiCall(`/employees/list?${params}`, 'GET', null, company?.id);
+            const result = await response.json();
 
             if (result.success) {
                 setEmployees(result.data);
@@ -285,7 +288,8 @@ const EmployeeManagement = () => {
                 }))
             };
 
-            const result = await apiCall('/employees/update', 'PUT', payload, company?.id);
+            const response = await apiCall('/employees/update', 'PUT', payload, company?.id);
+            const result = await response.json();
             if (result.success) {
                 await fetchEmployees(pagination.page, false);
                 return { success: true };
@@ -300,7 +304,8 @@ const EmployeeManagement = () => {
         setLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const result = await apiCall('/employees/delete', 'DELETE', { id }, company?.id);
+            const response = await apiCall('/employees/delete', 'DELETE', { id }, company?.id);
+            const result = await response.json();
             if (result.success) {
                 await fetchEmployees(pagination.page, false);
                 return { success: true };

@@ -30,16 +30,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const { permissions } = useAuth();
-
-  // Convert permission objects -> action array
-  const permissionActions = permissions?.map(p => p.action) || [];
-
-  // Permission checker
-  const hasPermission = (requiredPermission) => {
-    if (!requiredPermission) return true;
-    return permissionActions.includes(requiredPermission);
-  };
+  const { hasPermission } = useAuth();
 
   // Toggle section
   const toggleSection = (sectionName) => {
@@ -60,15 +51,9 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaClock,
       label: 'Attendance',
       path: '/attendance',
-      permission: 'view_attendance'
+      permission: ['att_punch', 'att_view_own', 'att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign']
     },
 
-    {
-      icon: FaEnvelope,
-      label: 'My Invites',
-      path: '/my-invites',
-      permission: null
-    },
     {
       icon: FaBriefcase,
       label: 'Management',
@@ -78,25 +63,25 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           icon: FaBuilding,
           label: 'Invites Management',
           path: '/company-invites',
-          permission: 'manage_invites'
+          permission: ['emp_invite', 'emp_invite_accept', 'emp_invite_cancel_own', 'emp_invite_cancel_admin']
         },
         {
           icon: FaUsers,
           label: 'Employee Management',
           path: '/employee-management',
-          permission: 'manage_employees'
+          permission: ['emp_create', 'emp_view', 'emp_update', 'emp_delete']
         },
         {
           icon: FaUserShield,
           label: 'Permissions',
           path: '/permission-management',
-          permission: 'manage_permissions'
+          permission: ['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']
         },
         {
           icon: FaUmbrellaBeach,
           label: 'Leave Management',
           path: '/leave-management',
-          permission: 'manage_leaves'
+          permission: ['leave_apply', 'leave_view_own', 'leave_view_all', 'leave_review', 'leave_type_create']
         }
       ]
     },
@@ -104,7 +89,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaHandHoldingUsd,
       label: 'Cash Book',
       path: '/cashbook',
-      permission: 'view_cashbook'
+      permission: ['salary_create', 'salary_view_own', 'salary_view_all', 'salary_update', 'payroll_generate', 'payroll_view', 'payroll_approve', 'payroll_mark_paid']
     },
     {
       icon: FaCommentDots,
@@ -155,6 +140,25 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                   const isOpen = openSections[item.label];
                   // SHOW ALL CHILDREN BUT WITH AUTHORIZATION DATA
                   const authorizedChildren = item.children;
+
+                  // Disable section itself if NO child is authorized
+                  const hasAnyChildAuthorized = authorizedChildren.some(child => hasPermission(child.permission));
+
+                  if (!hasAnyChildAuthorized) {
+                    return (
+                      <div key={item.label} className="mb-2">
+                        <div className="w-full flex items-center justify-between px-3 py-3 rounded-xl opacity-50 cursor-not-allowed">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-gray-100 text-gray-400">
+                              <item.icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-medium text-gray-400">{item.label}</span>
+                          </div>
+                          <FaChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                        </div>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div key={item.label} className="mb-2">
@@ -370,6 +374,40 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     const isOpen = openSections[item.label];
     const Icon = item.icon;
     const authorizedChildren = item.children;
+
+    // Disable section itself if NO child is authorized
+    const hasAnyChildAuthorized = authorizedChildren.some(child => hasPermission(child.permission));
+
+    if (!hasAnyChildAuthorized) {
+      return (
+        <div key={item.label} className="mb-1">
+          <div
+            className={`
+              w-full flex items-center rounded-xl transition-all duration-200
+              ${isExpandedState ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
+              cursor-not-allowed opacity-50
+            `}
+            title={!isExpandedState ? `${item.label} (Access Denied)` : 'Access Denied - You don\'t have permission'}
+          >
+            <div className={`
+              p-2 rounded-lg transition-all duration-200
+              ${isExpandedState ? '' : 'mx-auto'}
+              bg-gray-100 text-gray-400
+            `}>
+              <Icon className="w-4 h-4" />
+            </div>
+            {isExpandedState && (
+              <>
+                <span className="flex-1 text-sm font-medium text-left text-gray-400">
+                  {item.label}
+                </span>
+                <FaChevronRight className="w-3.5 h-3.5 text-gray-400" />
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div key={item.label} className="mb-1">

@@ -15,15 +15,15 @@ import { useAuth } from "../context/AuthContext";
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
 const modalVariants = {
-  hidden:  { opacity: 0, scale: 0.9, y: 20 },
-  visible: { opacity: 1, scale: 1,   y: 0, transition: { type: "spring", duration: 0.5 } },
-  exit:    { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
+  exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
 };
 
 const backdropVariants = {
-  hidden:  { opacity: 0 },
+  hidden: { opacity: 0 },
   visible: { opacity: 1 },
-  exit:    { opacity: 0 }
+  exit: { opacity: 0 }
 };
 
 const isExpired = (date) => new Date(date) < new Date();
@@ -100,17 +100,17 @@ const InfoItem = ({ icon, label, value }) => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function MyInvites() {
-  const [invites, setInvites]               = useState([]);
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState(null);
-  const [processingId, setProcessingId]     = useState(null);
+  const [invites, setInvites] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [processingId, setProcessingId] = useState(null);
   const [selectedInvite, setSelectedInvite] = useState(null);
-  const [modalType, setModalType]           = useState(null);
+  const [modalType, setModalType] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
-  const [searchTerm, setSearchTerm]         = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter]     = useState("all");
-  const [isInitialLoad, setIsInitialLoad]   = useState(true);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const fetchInProgress = useRef(false);
   const initialFetchDone = useRef(false);
@@ -145,10 +145,10 @@ export default function MyInvites() {
       if (result.success) {
         setInvites(result.data || []);
         updatePagination({
-          page:         result.current_page || page,
-          limit:        result.per_page     || pagination.limit,
-          total:        result.total        || 0,
-          total_pages:  result.last_page     || Math.ceil((result.total || 0) / pagination.limit),
+          page: result.current_page || page,
+          limit: result.per_page || pagination.limit,
+          total: result.total || 0,
+          total_pages: result.last_page || Math.ceil((result.total || 0) / pagination.limit),
           is_last_page: result.current_page === result.last_page
         });
         setError(null);
@@ -188,17 +188,17 @@ export default function MyInvites() {
     }
   }, [debouncedSearchTerm, statusFilter]); // eslint-disable-line
 
-  const handleAcceptInvite = async (inviteId) => {
+  const handleAcceptInvite = async (inviteToken) => {
     try {
-      setProcessingId(inviteId);
-      const response = await apiCall('/company/invites/accept', 'POST', { invite_id: inviteId });
+      setProcessingId(inviteToken);
+      const response = await apiCall('/company/invites/accept', 'POST', { token: inviteToken });
       if (!response.ok) throw new Error('Failed to accept invite');
 
       const result = await response.json();
       if (result.success) {
         toast.success("Invitation accepted successfully!");
         setInvites(prev => prev.map(invite =>
-          invite.id === inviteId ? { ...invite, status: 'accepted' } : invite
+          invite.invite_token === inviteToken ? { ...invite, status: 'accepted' } : invite
         ));
         await refreshUser();
         closeModal();
@@ -213,10 +213,10 @@ export default function MyInvites() {
     }
   };
 
-  const handleRejectInvite = async (inviteId) => {
+  const handleRejectInvite = async (inviteToken) => {
     try {
-      setProcessingId(inviteId);
-      const response = await apiCall('/company/invites/reject', 'POST', { invite_id: inviteId });
+      setProcessingId(inviteToken);
+      const response = await apiCall('/company/invites/reject', 'PUT', { token: inviteToken });
       if (!response.ok) throw new Error('Failed to reject invite');
 
       const result = await response.json();
@@ -234,20 +234,20 @@ export default function MyInvites() {
     }
   };
 
-  const openModal       = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
-  const closeModal      = ()              => { setSelectedInvite(null);   setModalType(null); };
-  const toggleActionMenu = (e, id)        => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
+  const openModal = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
+  const closeModal = () => { setSelectedInvite(null); setModalType(null); };
+  const toggleActionMenu = (e, id) => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
 
   const handlePageChange = useCallback((newPage) => { if (newPage !== pagination.page) goToPage(newPage); }, [pagination.page, goToPage]);
 
   // Responsive columns
   const [visibleColumns, setVisibleColumns] = useState(() => ({
-    showCompany:     true,
-    showInvitedBy:   window.innerWidth >= 768,
+    showCompany: true,
+    showInvitedBy: window.innerWidth >= 768,
     showDesignation: window.innerWidth >= 1024,
-    showEmployment:  window.innerWidth >= 1280,
-    showStatus:      window.innerWidth >= 768,
-    showExpires:     window.innerWidth >= 1024,
+    showEmployment: window.innerWidth >= 1280,
+    showStatus: window.innerWidth >= 768,
+    showExpires: window.innerWidth >= 1024,
   }));
 
   useEffect(() => {
@@ -255,12 +255,12 @@ export default function MyInvites() {
     const onResize = () => {
       clearTimeout(t);
       t = setTimeout(() => setVisibleColumns({
-        showCompany:     true,
-        showInvitedBy:   window.innerWidth >= 768,
+        showCompany: true,
+        showInvitedBy: window.innerWidth >= 768,
         showDesignation: window.innerWidth >= 1024,
-        showEmployment:  window.innerWidth >= 1280,
-        showStatus:      window.innerWidth >= 768,
-        showExpires:     window.innerWidth >= 1024,
+        showEmployment: window.innerWidth >= 1280,
+        showStatus: window.innerWidth >= 768,
+        showExpires: window.innerWidth >= 1024,
       }), 150);
     };
     window.addEventListener('resize', onResize);
@@ -596,7 +596,7 @@ export default function MyInvites() {
 
         {/* Modals */}
         <AnimatePresence>
-          {modalType === 'view'   && selectedInvite && <ViewModal   invite={selectedInvite} onClose={closeModal} />}
+          {modalType === 'view' && selectedInvite && <ViewModal invite={selectedInvite} onClose={closeModal} />}
           {modalType === 'accept' && selectedInvite && <AcceptModal invite={selectedInvite} onClose={closeModal} onConfirm={handleAcceptInvite} />}
           {modalType === 'reject' && selectedInvite && <RejectModal invite={selectedInvite} onClose={closeModal} onConfirm={handleRejectInvite} />}
         </AnimatePresence>

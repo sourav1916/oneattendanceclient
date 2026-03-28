@@ -155,7 +155,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
         return;
       }
 
-      const result = await apiCall('/company/create', 'POST', companyForm);
+      const res = await apiCall('/company/create', 'POST', companyForm);
+      const result = await res.json();
 
       if (!result.success) {
         toast.error(result.message || "Failed to create company");
@@ -170,7 +171,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
           await onCompanyCreated();
         }
         
-        toast.success("Company created successfully 🎉");
+        toast.success(result.message || "Company created successfully 🎉");
         onSuccess?.(result.data);
         handleClose();
       } else {
