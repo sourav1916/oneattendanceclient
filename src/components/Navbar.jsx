@@ -51,6 +51,7 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                     : 'text-white/80 hover:text-white hover:bg-white/20'
                                 }
                             `}
+                            data-sidebar-toggle="true"
                             aria-label="Toggle menu"
                         >
                             {isSidebarOpen ? (

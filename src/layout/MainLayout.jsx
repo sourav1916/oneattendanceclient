@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 
@@ -7,6 +7,7 @@ const MainLayout = ({ children }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(true);
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -23,6 +24,25 @@ const MainLayout = ({ children }) => {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // ✅ CLICK OUTSIDE COLLAPSE (DESKTOP)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // If we're on desktop, sidebar is NOT collapsed, and click is NOT on the sidebar/toggle
+      if (!isMobile && !desktopSidebarCollapsed) {
+        if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+          // Check if click was on a toggle button (usually in Navbar)
+          const isToggleButton = event.target.closest('button[data-sidebar-toggle="true"]');
+          if (!isToggleButton) {
+            setDesktopSidebarCollapsed(true);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobile, desktopSidebarCollapsed]);
 
   const toggleSidebar = () => {
     if (isMobile) {
@@ -71,13 +91,15 @@ const MainLayout = ({ children }) => {
       />
       
       <div className="flex relative">
-        <Sidebar 
-          isMobile={isMobile}
-          sidebarOpen={sidebarOpen}
-          toggleSidebar={toggleSidebar}
-          onHover={handleSidebarHover}
-          isExpanded={isSidebarExpanded()}
-        />
+        <div ref={sidebarRef} className="z-30">
+          <Sidebar 
+            isMobile={isMobile}
+            sidebarOpen={sidebarOpen}
+            toggleSidebar={toggleSidebar}
+            onHover={handleSidebarHover}
+            isExpanded={isSidebarExpanded()}
+          />
+        </div>
 
         {isMobile && sidebarOpen && (
           <div 
