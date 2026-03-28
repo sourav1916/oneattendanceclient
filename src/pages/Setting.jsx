@@ -766,21 +766,6 @@ const SettingsPage = () => {
         company={editingCompany}
       />
 
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        theme="colored"
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        className="mt-12"
-        toastClassName="!text-sm sm:!text-base"
-      />
-
       {/* delete modal */}
       <AnimatePresence>
         {showDeleteModal && (

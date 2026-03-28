@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast, ToastContainer } from "react-toastify";
 import apiCall from "../utils/api";
-import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import {
@@ -94,18 +92,15 @@ function HomePage() {
           if (userCompaniesData.length > 1) {
             setUserCompanies(userCompaniesData);
             setShowCompanySwitcher(true);
-            toast.info("Please select a company first");
             return;
           }
 
           // No companies → create company
-          toast.warning("Please create a company first");
           setOpenCreateCompanyModal(true);
           return;
         }
       } catch (error) {
         console.error("Profile fetch failed:", error);
-        toast.error("Something went wrong. Please try again.");
         return;
       }
     }
@@ -122,7 +117,6 @@ function HomePage() {
     setIsSwitching(false);
     setShowCompanySwitcher(false);
     setSelectedCompanyForSwitch(null);
-    toast.success(`Switched to ${selectedCompany.name}`);
   };
 
   // Get current time for greeting
@@ -509,20 +503,6 @@ function HomePage() {
           refreshUser();
         }}
         userId={user?.id}
-      />
-
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        theme="light"
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        toastClassName="!bg-white !text-slate-800 !rounded-2xl !shadow-xl"
       />
 
       <style>{`

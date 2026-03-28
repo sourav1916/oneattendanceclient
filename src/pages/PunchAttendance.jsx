@@ -72,13 +72,14 @@ const PunchAttendance = () => {
     setLoadingAction(actionName);
     try {
       const location = await getCurrentLocation();
+      const company = JSON.parse(localStorage.getItem('company'));
 
       const response = await apiCall(endpoint, 'POST', {
         attendance_method: activeTab || "gps",
         attendance_mode: "manual",
         latitude: location.latitude,
         longitude: location.longitude
-      });
+      }, company?.id);
 
       const data = await response.json();
 

@@ -18,6 +18,8 @@ import PunchAttendance from "./pages/PunchAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ProfilePage from "./pages/Profile";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
@@ -60,6 +62,7 @@ function AppContent() {
       <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </Routes>
   );
 }
