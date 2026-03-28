@@ -96,15 +96,29 @@ const PunchAttendance = () => {
   const callAttendanceAPI = async (endpoint, actionName) => {
     setLoadingAction(actionName);
     try {
-      const location = await getCurrentLocation();
       const company = JSON.parse(localStorage.getItem('company'));
+      const method = activeTab || "gps";
+      const mode = activeMode || "manual";
 
-      const response = await apiCall(endpoint, 'POST', {
-        attendance_method: activeTab || "gps",
-        attendance_mode: activeMode || "manual",
-        latitude: location.latitude,
-        longitude: location.longitude
-      }, company?.id);
+      // ─── Build Request Payload ──────────────────────────────────────────
+      const payload = {
+        attendance_method: method,
+        attendance_mode: mode
+      };
+
+      // Add GPS specific data
+      if (method === 'gps') {
+        const location = await getCurrentLocation();
+        payload.latitude = location.latitude;
+        payload.longitude = location.longitude;
+      }
+
+      // Add IP specific data 
+      if (method === 'ip') {
+        payload.mask_ip = ''; // As requested
+      }
+
+      const response = await apiCall(endpoint, 'POST', payload, company?.id);
 
       const data = await response.json();
 
