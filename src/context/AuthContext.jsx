@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [permissions, setPermissions] = useState([]);
   const [mustSelectCompany, setMustSelectCompany] = useState(false);
   const [showCompanySelection, setShowCompanySelection] = useState(false);
+  const [activeRole, setActiveRole] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
 
@@ -31,6 +32,7 @@ export const AuthProvider = ({ children }) => {
     setPermissions([]);
     setUserDetails(null);
     setAttendanceMethods([]);
+    setActiveRole(null);
 
     setMustSelectCompany(false);
     setShowCompanySelection(false);
@@ -95,6 +97,7 @@ export const AuthProvider = ({ children }) => {
           setCompany(single);
           setPermissions(single.permissions || []);
           setAttendanceMethods(single.attendance_methods || []);
+          setActiveRole(single.role || null);
           localStorage.setItem("company", JSON.stringify(single));
           setMustSelectCompany(false);
           setShowCompanySelection(false);
@@ -109,6 +112,7 @@ export const AuthProvider = ({ children }) => {
               setCompany(found);
               setPermissions(found.permissions || []);
               setAttendanceMethods(found.attendance_methods || []);
+              setActiveRole(found.role || null);
               setMustSelectCompany(false);
               setShowCompanySelection(false);
             } else {
@@ -180,6 +184,7 @@ export const AuthProvider = ({ children }) => {
     setCompany(selectedCompany);
     setPermissions(selectedCompany.permissions || []);
     setAttendanceMethods(selectedCompany.attendance_methods || []);
+    setActiveRole(selectedCompany.role || null);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
     setMustSelectCompany(false);
     setShowCompanySelection(false);
@@ -236,6 +241,7 @@ export const AuthProvider = ({ children }) => {
     companyDetails: getCurrentCompany(),
     userDetails,
     attendanceMethods,
+    activeRole,
   };
 
   return (

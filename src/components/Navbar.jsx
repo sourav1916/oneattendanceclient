@@ -12,7 +12,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 
 const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded }) => {
-    const { user, logout } = useAuth();
+    const { user, logout, activeRole } = useAuth();
     const [openDropdown, setOpenDropdown] = useState(false);
     const [openNotifications, setOpenNotifications] = useState(false);
     const navigate = useNavigate();
@@ -154,7 +154,7 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                         {user?.name || "User"}
                                     </p>
                                     <p className="text-[10px] text-white/70 truncate">
-                                        {user?.role || "Employee"}
+                                        {activeRole ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Employee"}
                                     </p>
                                 </div>
 
@@ -172,7 +172,9 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                         {/* User info in dropdown for mobile */}
                                         <div className="md:hidden p-3 border-b border-gray-200 bg-gray-50">
                                             <p className="font-semibold text-gray-800">{user?.name || "User"}</p>
-                                            <p className="text-xs text-gray-500">{user?.role || "Employee"}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {activeRole ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Employee"}
+                                            </p>
                                         </div>
 
                                         <button

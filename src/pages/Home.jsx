@@ -30,7 +30,7 @@ import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 const API_BASE = "https://api-attendance.onesaas.in";
 
 function HomePage() {
-  const { user, loading, company, companies, selectCompany, refreshUser } = useAuth();
+  const { user, loading, company, companies, selectCompany, refreshUser, activeRole } = useAuth();
   const navigate = useNavigate();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
@@ -273,7 +273,9 @@ function HomePage() {
                     </div>
                     <div className="hidden sm:block">
                       <p className="text-sm font-semibold text-slate-800">{user?.name?.split(' ')[0]}</p>
-                      <p className="text-xs text-slate-500">{user?.role || 'Employee'}</p>
+                      <p className="text-xs text-slate-500">
+                        {activeRole ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Employee'}
+                      </p>
                     </div>
                   </div>
                 </div>

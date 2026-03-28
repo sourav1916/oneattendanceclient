@@ -36,7 +36,7 @@ const TABS = ["Overview", "Companies", "Permissions"];
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
-    const { userDetails, loading, userRole, companies, permissions } = useAuth();
+    const { userDetails, loading, activeRole, companies, permissions } = useAuth();
     const [activeTab, setActiveTab] = useState("Overview");
     const [expandedCompany, setExpandedCompany] = useState(null);
 
@@ -56,15 +56,11 @@ export default function ProfilePage() {
     // Destructure directly from userDetails (which is response.data)
     const { user } = userDetails;
     const total_companies = companies.length;
-    const role = userRole === "user"
-        ? "User"
-        : userRole === "employee"
-            ? "Employee"
-            : userRole === "company_owner"
-                ? "Company Owner"
-                : userRole === "owner_employee"
-                    ? "Owner & Employee"
-                    : "Unknown";
+    
+    // Format activeRole for display
+    const role = activeRole
+        ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+        : "Employee";
 
 
     return (
