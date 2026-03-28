@@ -34,7 +34,7 @@ const PunchAttendance = () => {
   const { attendanceMethods, user } = useAuth();
   const [activeTab, setActiveTab] = useState(null);
   const [activeMode, setActiveMode] = useState(null);
-  const [loadingAction, setLoadingAction] = useState(null); // 'punch-in', 'punch-out', 'break-in', 'break-out'
+  const [loadingAction, setLoadingAction] = useState(null);
 
   // Toggle states
   const [isPunchedIn, setIsPunchedIn] = useState(false);
@@ -45,7 +45,7 @@ const PunchAttendance = () => {
     if (attendanceMethods && attendanceMethods.length > 0) {
       const firstMethod = attendanceMethods[0];
       setActiveTab(firstMethod.method);
-      
+
       // Set default mode
       if (firstMethod.is_manual) setActiveMode('manual');
       else if (firstMethod.is_auto) setActiveMode('auto');
@@ -69,8 +69,8 @@ const PunchAttendance = () => {
     }
   }, [activeTab, attendanceMethods, activeMode]);
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
-    const getIcon = (key) => ATTENDANCE_ICONS[key] || FaFingerprint;
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+  const getIcon = (key) => ATTENDANCE_ICONS[key] || FaFingerprint;
 
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
@@ -91,6 +91,17 @@ const PunchAttendance = () => {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
+  };
+
+  const getPublicIP = async () => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      console.error("IP fetch failed:", error);
+      return "";
+    }
   };
 
   const callAttendanceAPI = async (endpoint, actionName) => {
@@ -115,7 +126,8 @@ const PunchAttendance = () => {
 
       // Add IP specific data 
       if (method === 'ip') {
-        payload.mask_ip = ''; // As requested
+        const ip = await getPublicIP();
+        payload.mask_ip = ip;
       }
 
       const response = await apiCall(endpoint, 'POST', payload, company?.id);
@@ -239,8 +251,8 @@ const PunchAttendance = () => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   className={`flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm ${isPunchedIn
-                      ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                      : 'bg-slate-100 border-slate-200 text-slate-500'
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                    : 'bg-slate-100 border-slate-200 text-slate-500'
                     }`}
                 >
                   {isPunchedIn ? <FaCheckCircle className="w-4 h-4" /> : <FaTimesCircle className="w-4 h-4" />}
@@ -281,8 +293,8 @@ const PunchAttendance = () => {
                   key={m.method}
                   onClick={() => setActiveTab(m.method)}
                   className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl whitespace-nowrap transition-all duration-300 font-bold text-sm ${isActive
-                      ? 'bg-white text-indigo-600 shadow-md border-slate-200 scale-[1.02]'
-                      : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                    ? 'bg-white text-indigo-600 shadow-md border-slate-200 scale-[1.02]'
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
                     }`}
                 >
                   <Icon className={`w-5 h-5 ${isActive ? 'text-indigo-500' : 'text-slate-300'}`} />
@@ -297,10 +309,10 @@ const PunchAttendance = () => {
             (() => {
               const currentMethod = attendanceMethods.find(m => m.method === activeTab);
               if (!currentMethod) return null;
-              
+
               const manualEnabled = currentMethod.is_manual === 1;
               const autoEnabled = currentMethod.is_auto === 1;
-              
+
               return (
                 <div className="px-8 py-4 bg-indigo-50/30 border-b border-slate-100 flex items-center gap-4">
                   <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Validation Mode:</span>
@@ -308,22 +320,20 @@ const PunchAttendance = () => {
                     <button
                       onClick={() => manualEnabled && setActiveMode('manual')}
                       disabled={!manualEnabled}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        activeMode === 'manual'
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeMode === 'manual'
                           ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
                           : 'text-slate-500 hover:text-slate-700'
-                      } ${!manualEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
+                        } ${!manualEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
                     >
                       Manual
                     </button>
                     <button
                       onClick={() => autoEnabled && setActiveMode('auto')}
                       disabled={!autoEnabled}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        activeMode === 'auto'
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${activeMode === 'auto'
                           ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
                           : 'text-slate-500 hover:text-slate-700'
-                      } ${!autoEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
+                        } ${!autoEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
                     >
                       Auto
                     </button>

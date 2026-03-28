@@ -262,7 +262,9 @@ function HomePage() {
                     <div className="hidden sm:block">
                       <p className="text-sm font-semibold text-slate-800">{user?.name?.split(' ')[0]}</p>
                       <p className="text-xs text-slate-500">
-                        {activeRole ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Employee'}
+                        {activeRole 
+                          ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') 
+                          : user?.role?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'User'}
                       </p>
                     </div>
                   </div>

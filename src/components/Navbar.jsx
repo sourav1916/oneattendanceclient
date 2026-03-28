@@ -154,7 +154,9 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                         {user?.name || "User"}
                                     </p>
                                     <p className="text-[10px] text-white/70 truncate">
-                                        {activeRole ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Employee"}
+                                        {activeRole 
+                                            ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') 
+                                            : user?.role?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || "User"}
                                     </p>
                                 </div>
 
@@ -173,7 +175,9 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                         <div className="md:hidden p-3 border-b border-gray-200 bg-gray-50">
                                             <p className="font-semibold text-gray-800">{user?.name || "User"}</p>
                                             <p className="text-xs text-gray-500">
-                                                {activeRole ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : "Employee"}
+                                                {activeRole 
+                                                    ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') 
+                                                    : user?.role?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || "User"}
                                             </p>
                                         </div>
 
