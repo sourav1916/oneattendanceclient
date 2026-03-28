@@ -72,8 +72,7 @@ export const AuthProvider = ({ children }) => {
 
         setUser(userData);
 
-        // ✅ ATTENDANCE METHODS
-        setAttendanceMethods(Array.isArray(data.attendance_methods) ? data.attendance_methods : []);
+        // ✅ ATTENDANCE METHODS handled below during company selection
 
         // ✅ EMPLOYEE FLAG
         if (data.meta?.is_employee) {
@@ -95,6 +94,7 @@ export const AuthProvider = ({ children }) => {
           const single = allCompanies[0];
           setCompany(single);
           setPermissions(single.permissions || []);
+          setAttendanceMethods(single.attendance_methods || []);
           localStorage.setItem("company", JSON.stringify(single));
           setMustSelectCompany(false);
           setShowCompanySelection(false);
@@ -108,6 +108,7 @@ export const AuthProvider = ({ children }) => {
             if (found) {
               setCompany(found);
               setPermissions(found.permissions || []);
+              setAttendanceMethods(found.attendance_methods || []);
               setMustSelectCompany(false);
               setShowCompanySelection(false);
             } else {
@@ -178,6 +179,7 @@ export const AuthProvider = ({ children }) => {
   const selectCompany = (selectedCompany) => {
     setCompany(selectedCompany);
     setPermissions(selectedCompany.permissions || []);
+    setAttendanceMethods(selectedCompany.attendance_methods || []);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
     setMustSelectCompany(false);
     setShowCompanySelection(false);

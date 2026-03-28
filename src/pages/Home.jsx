@@ -195,7 +195,7 @@ function HomePage() {
       description: "Mark your attendance",
       icon: FaFingerprint,
       color: "from-indigo-500 to-purple-500",
-      onClick: () => navigate('/attendence'),
+      onClick: () => navigate('/attendance'),
       gradient: "bg-gradient-to-r from-indigo-500 to-purple-500"
     },
     {
