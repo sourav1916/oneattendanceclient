@@ -222,7 +222,7 @@ function HomePage() {
   const quickActions = getQuickActions();
 
   return (
-    <div className="min-h-screen  relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
@@ -230,49 +230,80 @@ function HomePage() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/10 to-purple-100/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        {/* Header Section */}
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Remade Organized Header (min-h 400px) */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mb-12"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="relative mb-12 overflow-hidden min-h-[400px] flex flex-col md:flex-row group"
         >
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 bg-white/40 backdrop-blur-md p-8 sm:p-10 rounded-[2.5rem] border border-white/60 shadow-sm">
-            {/* Left: Greeting */}
-            <div className="space-y-1">
-              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-                <span className="text-slate-800">{getGreeting()},</span>
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient pb-2">
-                  {user?.name?.split(' ')[0] || 'there'}!
-                </span>
-              </h1>
-              <p className="text-lg text-slate-500 font-medium">Welcome back to your organizational dashboard</p>
+          {/* Subtle Background Pattern */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:20px_20px]"></div>
+
+          <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 lg:p-6 relative z-10">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100">
+                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Workspace Dashboard</span>
+              </div>
+
+              <div className="space-y-2">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+                  {getGreeting()}, <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 animate-gradient">
+                    {user?.name?.split(' ')[0]}!
+                  </span>
+                </h1>
+                <p className="text-base text-slate-500 font-medium max-w-lg">
+                  Welcome back! Your workspace is organized and ready. Manage your team, track attendance, and stay on top of your tasks.
+                </p>
+              </div>
             </div>
 
-            {/* Right: Company/Date Context */}
-            <div className="flex flex-col items-start md:items-end gap-4 min-w-[240px]">
-              {/* Company Switcher */}
+            {/* Bottom: Action Chips */}
+            <div className="flex flex-wrap gap-3 mt-8">
               <button
-                onClick={() => setShowCompanySwitcher(true)}
-                className="w-full md:w-auto group flex items-center gap-4 px-6 py-3 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-200"
+                onClick={() => navigate('/attendance')}
+                className="group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300"
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-indigo-100 shadow-lg group-hover:scale-110 transition-transform">
-                  <FaStore className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center group-hover/chip:bg-indigo-600 transition-colors">
+                  <FaFingerprint className="w-4 h-4 text-indigo-600 group-hover/chip:text-white" />
                 </div>
-                <div className="text-left">
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Selected Company</p>
-                  <p className="text-base font-bold text-slate-800 leading-tight">{company?.name || 'Select Company'}</p>
-                </div>
-                <FaExchangeAlt className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 group-hover:rotate-180 transition-all duration-500 ml-2" />
+                <span className="text-sm font-bold text-slate-700">Punch Now</span>
               </button>
+              <button
+                onClick={() => navigate('/my-invites')}
+                className="group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-pink-300 transition-all duration-300"
+              >
+                <div className="w-8 h-8 bg-pink-50 rounded-xl flex items-center justify-center group-hover/chip:bg-pink-600 transition-colors">
+                  <FaEnvelope className="w-4 h-4 text-pink-600 group-hover/chip:text-white" />
+                </div>
+                <span className="text-sm font-bold text-slate-700">Check Invites</span>
+              </button>
+            </div>
+          </div>
 
-              {/* Date Badge (Timestamp) */}
-              <div className="flex items-center gap-3 px-5 py-2 bg-slate-50/80 backdrop-blur-sm rounded-full border border-slate-200 shadow-sm">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
-                <FaRegCalendarAlt className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{currentDate}</span>
+          {/* Right Column: Compact Context (Prev Styled) */}
+          <div className="md:w-[32%] p-8 flex flex-col justify-start items-center lg:items-end gap-3 relative z-10 border-t md:border-t-0 md:border-l border-slate-100 bg-slate-50/20">
+            <button
+              onClick={() => setShowCompanySwitcher(true)}
+              className="group flex items-center gap-3 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <FaStore className="w-4 h-4 text-white" />
               </div>
+              <div className="text-left">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Company</p>
+                <p className="text-sm font-bold text-slate-800 leading-tight">{company?.name || 'Select Company'}</p>
+              </div>
+              <FaExchangeAlt className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-600 transition-colors ml-1" />
+            </button>
+
+            <div className="flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200">
+              <FaRegCalendarAlt className="w-3 h-3 text-indigo-500" />
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentDate}</span>
             </div>
           </div>
         </motion.div>
@@ -283,7 +314,6 @@ function HomePage() {
           <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap">Your Workspace</h2>
           <div className="h-px flex-1 bg-slate-200"></div>
         </div>
-
 
         {/* Quick Actions Grid */}
         <motion.div
@@ -313,7 +343,6 @@ function HomePage() {
             </motion.button>
           ))}
         </motion.div>
-
       </div>
 
       {/* Fullscreen Company Switcher Modal */}
@@ -335,7 +364,6 @@ function HomePage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-                {/* Modal Header */}
                 <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5">
                   <div className="flex items-center justify-between">
                     <div>
@@ -353,21 +381,14 @@ function HomePage() {
 
                 <div className="max-h-[60vh] overflow-y-auto p-4">
                   {companies.length === 0 ? (
-                    /* Empty State */
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
                         <FaBuilding className="w-8 h-8 text-indigo-500" />
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-2">
-                        No Companies Found
-                      </h3>
-                      <p className="text-sm text-slate-500 max-w-xs">
-                        You are not associated with any company yet. Please contact your admin
-                        or accept an invite to continue.
-                      </p>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">No Companies Found</h3>
+                      <p className="text-sm text-slate-500 max-w-xs">You are not associated with any company yet.</p>
                     </div>
                   ) : (
-                    /* Company List */
                     <div className="space-y-3">
                       {companies.map((comp) => (
                         <motion.button
@@ -376,53 +397,31 @@ function HomePage() {
                           whileTap={{ scale: 0.98 }}
                           onClick={() => handleSwitchCompany(comp)}
                           disabled={isSwitching}
-                          className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${company?.id === comp.id
-                            ? 'bg-indigo-50 border-2 border-indigo-200'
-                            : 'bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
-                            } ${isSwitching && selectedCompanyForSwitch?.id === comp.id ? 'opacity-50' : ''}`}
+                          className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${company?.id === comp.id ? 'bg-indigo-50 border-2 border-indigo-200' : 'bg-slate-50 border border-slate-200 hover:border-indigo-300'}`}
                         >
                           <div className="flex items-center gap-4 flex-1">
-                            <div
-                              className={`w-12 h-12 rounded-xl flex items-center justify-center ${company?.id === comp.id
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'
-                                }`}
-                            >
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${company?.id === comp.id ? 'bg-indigo-600 text-white' : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'}`}>
                               <FaBuilding className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
                               <p className="font-semibold text-slate-800">{comp.name}</p>
-                              <p className="text-xs text-slate-500 mt-0.5 capitalize">
-                                {comp.role ? comp.role.replace(/_/g, ' ') : 'Member'}
-                              </p>
+                              <p className="text-xs text-slate-500 mt-0.5 capitalize">{comp.role ? comp.role.replace(/_/g, ' ') : 'Member'}</p>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-3">
-                            {company?.id === comp.id && (
-                              <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                                <FaCheck className="w-3 h-3 text-white" />
-                              </div>
-                            )}
-
-                            {isSwitching &&
-                              selectedCompanyForSwitch?.id === comp.id && (
-                                <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                              )}
-                          </div>
+                          {company?.id === comp.id && (
+                            <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
+                              <FaCheck className="w-3 h-3 text-white" />
+                            </div>
+                          )}
                         </motion.button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Footer */}
                 <div className="p-4 border-t border-slate-200 bg-slate-50">
                   <button
-                    onClick={() => {
-                      setShowCompanySwitcher(false);
-                      setOpenCreateCompanyModal(true);
-                    }}
+                    onClick={() => { setShowCompanySwitcher(false); setOpenCreateCompanyModal(true); }}
                     className="w-full text-center py-2.5 text-indigo-600 font-medium text-sm hover:text-indigo-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <FaUserPlus className="w-4 h-4" />
@@ -445,37 +444,16 @@ function HomePage() {
       <CreateCompanyModal
         isOpen={openCreateCompanyModal}
         onClose={() => setOpenCreateCompanyModal(false)}
-        onSuccess={() => {
-          setOpenCreateCompanyModal(false);
-          refreshUser();
-        }}
+        onSuccess={() => { setOpenCreateCompanyModal(false); refreshUser(); }}
         userId={user?.id}
       />
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-        
-        .animate-float {
-          animation: float 7s infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
+        @keyframes float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(0, -10px); } }
+        .animate-float { animation: float 5s ease-in-out infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        @keyframes gradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .animate-gradient { background-size: 200% 200%; animation: gradient 3s ease infinite; }
       `}</style>
     </div>
   );
