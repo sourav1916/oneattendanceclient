@@ -33,6 +33,7 @@ const floatAnimation = {
 const PunchAttendance = () => {
   const { attendanceMethods, user } = useAuth();
   const [activeTab, setActiveTab] = useState(null);
+  const [activeMode, setActiveMode] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null); // 'punch-in', 'punch-out', 'break-in', 'break-out'
 
   // Toggle states
@@ -42,9 +43,31 @@ const PunchAttendance = () => {
 
   useEffect(() => {
     if (attendanceMethods && attendanceMethods.length > 0) {
-      setActiveTab(attendanceMethods[0].method);
+      const firstMethod = attendanceMethods[0];
+      setActiveTab(firstMethod.method);
+      
+      // Set default mode
+      if (firstMethod.is_manual) setActiveMode('manual');
+      else if (firstMethod.is_auto) setActiveMode('auto');
     }
   }, [attendanceMethods]);
+
+  useEffect(() => {
+    if (activeTab && attendanceMethods) {
+      const currentMethod = attendanceMethods.find(m => m.method === activeTab);
+      if (currentMethod) {
+        // If current mode is not available in new tab, switch
+        if (activeMode === 'manual' && !currentMethod.is_manual) {
+          setActiveMode(currentMethod.is_auto ? 'auto' : null);
+        } else if (activeMode === 'auto' && !currentMethod.is_auto) {
+          setActiveMode(currentMethod.is_manual ? 'manual' : null);
+        } else if (!activeMode) {
+          if (currentMethod.is_manual) setActiveMode('manual');
+          else if (currentMethod.is_auto) setActiveMode('auto');
+        }
+      }
+    }
+  }, [activeTab, attendanceMethods, activeMode]);
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
     const getIcon = (key) => ATTENDANCE_ICONS[key] || FaFingerprint;
@@ -78,7 +101,7 @@ const PunchAttendance = () => {
 
       const response = await apiCall(endpoint, 'POST', {
         attendance_method: activeTab || "gps",
-        attendance_mode: "manual",
+        attendance_mode: activeMode || "manual",
         latitude: location.latitude,
         longitude: location.longitude
       }, company?.id);
@@ -254,6 +277,47 @@ const PunchAttendance = () => {
               );
             })}
           </div>
+
+          {/* Internal Method Options */}
+          {activeTab && (
+            (() => {
+              const currentMethod = attendanceMethods.find(m => m.method === activeTab);
+              if (!currentMethod) return null;
+              
+              const manualEnabled = currentMethod.is_manual === 1;
+              const autoEnabled = currentMethod.is_auto === 1;
+              
+              return (
+                <div className="px-8 py-4 bg-indigo-50/30 border-b border-slate-100 flex items-center gap-4">
+                  <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Validation Mode:</span>
+                  <div className="flex bg-slate-200/50 p-1 rounded-xl">
+                    <button
+                      onClick={() => manualEnabled && setActiveMode('manual')}
+                      disabled={!manualEnabled}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        activeMode === 'manual'
+                          ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
+                          : 'text-slate-500 hover:text-slate-700'
+                      } ${!manualEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
+                    >
+                      Manual
+                    </button>
+                    <button
+                      onClick={() => autoEnabled && setActiveMode('auto')}
+                      disabled={!autoEnabled}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        activeMode === 'auto'
+                          ? 'bg-white text-indigo-600 shadow-sm outline outline-1 outline-indigo-100'
+                          : 'text-slate-500 hover:text-slate-700'
+                      } ${!autoEnabled ? 'opacity-40 grayscale cursor-not-allowed border-none shadow-none bg-transparent' : ''}`}
+                    >
+                      Auto
+                    </button>
+                  </div>
+                </div>
+              );
+            })()
+          )}
 
           {/* Action Content */}
           <div className="p-8 sm:p-12">
