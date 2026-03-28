@@ -16,6 +16,7 @@ import {
   FaChartLine,
   FaFingerprint,
   FaUserCheck,
+  FaPlusCircle,
   FaTimes,
   FaUserCircle,
   FaRegClock,
@@ -29,7 +30,7 @@ import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 
 
 function HomePage() {
-  const { user, loading, company, companies, selectCompany, refreshUser, activeRole } = useAuth();
+  const { user, loading, company, companies, selectCompany, refreshUser, activeRole, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
@@ -74,13 +75,13 @@ function HomePage() {
 
     if (!storedCompany) {
       try {
-      const res = await apiCall('/users/profile-role', 'GET');
-      const response = await res.json();
+        const res = await apiCall('/users/profile-role', 'GET');
+        const response = await res.json();
 
-      if (response.success && response.data) {
-        const ownedCompanies = response.data.companies?.owned_companies || [];
-        const memberCompanies = response.data.companies?.companies || [];
-        const userCompaniesData = [...ownedCompanies, ...memberCompanies];
+        if (response.success && response.data) {
+          const ownedCompanies = response.data.companies?.owned_companies || [];
+          const memberCompanies = response.data.companies?.companies || [];
+          const userCompaniesData = [...ownedCompanies, ...memberCompanies];
 
           // Only one company → auto select
           if (userCompaniesData.length === 1) {
@@ -136,81 +137,89 @@ function HomePage() {
     day: 'numeric'
   });
 
-  // Stats Cards Data
-  const statsCards = [
-    {
-      title: "Total Employees",
-      value: "24",
-      icon: FaUsers,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-blue-50",
-      change: "+12%",
-      trend: "up"
-    },
-    {
-      title: "Present Today",
-      value: "18",
-      icon: FaUserCheck,
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-green-50",
-      change: "+5%",
-      trend: "up"
-    },
-    {
-      title: "On Leave",
-      value: "3",
-      icon: FaRegClock,
-      color: "from-orange-500 to-amber-500",
-      bgColor: "bg-orange-50",
-      change: "-2%",
-      trend: "down"
-    },
-    {
-      title: "Late Arrivals",
-      value: "2",
-      icon: FaClock,
-      color: "from-red-500 to-pink-500",
-      bgColor: "bg-red-50",
-      change: "+1",
-      trend: "up"
-    }
-  ];
+  // Quick Actions Definition based on Role
+  const getQuickActions = () => {
+    const isEmployeeRole = activeRole === 'employee';
 
-  // Quick Actions
-  const quickActions = [
-    {
-      title: "Punch Attendance",
-      description: "Mark your attendance",
-      icon: FaFingerprint,
-      color: "from-indigo-500 to-purple-500",
-      onClick: () => navigate('/attendance'),
-      gradient: "bg-gradient-to-r from-indigo-500 to-purple-500"
-    },
-    {
-      title: "Add Staff",
-      description: "Onboard new team members",
-      icon: FaUserPlus,
-      color: "from-green-500 to-emerald-500",
-      onClick: handleAddStaffClick,
-      gradient: "bg-gradient-to-r from-green-500 to-emerald-500"
-    },
-    {
-      title: "Company Invites",
-      description: "Manage invitations",
-      icon: FaEnvelope,
-      color: "from-pink-500 to-rose-500",
-      onClick: () => navigate('/my-invites'),
-      gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
-    },
-    {
-      title: "Cashbook",
-      description: "Track transactions",
-      icon: FaChartLine,
-      color: "from-amber-500 to-orange-500",
-      onClick: () => navigate('/cashbook'),
-      gradient: "bg-gradient-to-r from-amber-500 to-orange-500"
+    // Base actions for non-employees (Users/Owners)
+    const ownerActions = [
+      {
+        title: "My Invites",
+        description: "View and accept company invites",
+        icon: FaEnvelope,
+        color: "from-pink-500 to-rose-500",
+        onClick: () => navigate('/my-invites'),
+        gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
+      },
+      {
+        title: "Add Staff",
+        description: "Onboard new team members",
+        icon: FaUserPlus,
+        color: "from-green-500 to-emerald-500",
+        onClick: handleAddStaffClick,
+        gradient: "bg-gradient-to-r from-green-500 to-emerald-500"
+      },
+      {
+        title: "Create Company",
+        description: "Launch a new organization",
+        icon: FaBuilding,
+        color: "from-blue-500 to-indigo-500",
+        onClick: () => setOpenCreateCompanyModal(true),
+        gradient: "bg-gradient-to-r from-blue-500 to-indigo-500"
+      },
+      {
+        title: "Cashbook",
+        description: "Track your transactions",
+        icon: FaChartLine,
+        color: "from-amber-500 to-orange-500",
+        onClick: () => navigate('/cashbook'),
+        gradient: "bg-gradient-to-r from-amber-500 to-orange-500"
+      }
+    ];
+
+    if (isEmployeeRole) {
+      const hasInvitePerm = hasPermission('manage_invites');
+      return [
+        {
+          title: "Punch Attendance",
+          description: "Mark your work session",
+          icon: FaFingerprint,
+          color: "from-indigo-500 to-purple-500",
+          onClick: () => navigate('/attendance'),
+          gradient: "bg-gradient-to-r from-indigo-500 to-purple-500"
+        },
+        {
+          title: "My Invites",
+          description: "View personal invitations",
+          icon: FaEnvelope,
+          color: "from-pink-500 to-rose-500",
+          onClick: () => navigate('/my-invites'),
+          gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
+        },
+        {
+          title: "Cashbook",
+          description: "View financial logs",
+          icon: FaChartLine,
+          color: "from-amber-500 to-orange-500",
+          onClick: () => navigate('/cashbook'),
+          gradient: "bg-gradient-to-r from-amber-500 to-orange-500"
+        },
+        {
+          title: "Company Invites",
+          description: hasInvitePerm ? "Manage team invites" : "No permission to manage",
+          icon: FaEnvelope,
+          color: hasInvitePerm ? "from-indigo-500 to-blue-500" : "from-slate-400 to-slate-500",
+          onClick: () => hasInvitePerm && navigate('/company-invites'),
+          gradient: hasInvitePerm ? "bg-gradient-to-r from-indigo-500 to-blue-500" : "bg-slate-200",
+          disabled: !hasInvitePerm
+        }
+      ];
     }
-  ];
+
+    return ownerActions;
+  };
+
+  const quickActions = getQuickActions();
 
   return (
     <div className="min-h-screen  relative overflow-hidden">
@@ -227,91 +236,54 @@ function HomePage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="mb-8"
+          className="mb-12"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex-1">
-              {/* Company Info Bar */}
-              <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setShowCompanySwitcher(true)}
-                    className="group flex items-center gap-3 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-                      <FaStore className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs text-slate-500">Current Company</p>
-                      <p className="text-sm font-semibold text-slate-800">{company?.name || 'Select Company'}</p>
-                    </div>
-                    <FaExchangeAlt className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
-                  </button>
-
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200">
-                    <FaRegCalendarAlt className="w-3 h-3 text-indigo-500" />
-                    <span className="text-xs text-slate-600">{currentDate}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 ml-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
-                      <FaUserCircle className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="hidden sm:block">
-                      <p className="text-sm font-semibold text-slate-800">{user?.name?.split(' ')[0]}</p>
-                      <p className="text-xs text-slate-500">
-                        {activeRole 
-                          ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') 
-                          : user?.role?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'User'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Greeting */}
-              <h1 className="text-3xl sm:text-4xl font-bold">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 bg-white/40 backdrop-blur-md p-8 sm:p-10 rounded-[2.5rem] border border-white/60 shadow-sm">
+            {/* Left: Greeting */}
+            <div className="space-y-1">
+              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
                 <span className="text-slate-800">{getGreeting()},</span>
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient pb-2">
                   {user?.name?.split(' ')[0] || 'there'}!
                 </span>
               </h1>
-              <p className="text-slate-600 mt-1">Welcome back to your dashboard</p>
+              <p className="text-lg text-slate-500 font-medium">Welcome back to your organizational dashboard</p>
+            </div>
+
+            {/* Right: Company/Date Context */}
+            <div className="flex flex-col items-start md:items-end gap-4 min-w-[240px]">
+              {/* Company Switcher */}
+              <button
+                onClick={() => setShowCompanySwitcher(true)}
+                className="w-full md:w-auto group flex items-center gap-4 px-6 py-3 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 hover:border-indigo-200"
+              >
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-indigo-100 shadow-lg group-hover:scale-110 transition-transform">
+                  <FaStore className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-[0.2em] mb-0.5">Selected Company</p>
+                  <p className="text-base font-bold text-slate-800 leading-tight">{company?.name || 'Select Company'}</p>
+                </div>
+                <FaExchangeAlt className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 group-hover:rotate-180 transition-all duration-500 ml-2" />
+              </button>
+
+              {/* Date Badge (Timestamp) */}
+              <div className="flex items-center gap-3 px-5 py-2 bg-slate-50/80 backdrop-blur-sm rounded-full border border-slate-200 shadow-sm">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                <FaRegCalendarAlt className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{currentDate}</span>
+              </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-        >
-          {statsCards.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-              whileHover={{ y: -5 }}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-10 h-10 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                  <stat.icon className="w-5 h-5 text-indigo-600" />
-                </div>
-                <span className={`text-xs font-medium ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'} bg-${stat.trend === 'up' ? 'green' : 'red'}-50 px-2 py-0.5 rounded-full`}>
-                  {stat.change}
-                </span>
-              </div>
-              <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-              <p className="text-xs text-slate-500 mt-1">{stat.title}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+        {/* Quick Actions Header */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="h-px flex-1 bg-slate-200"></div>
+          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap">Your Workspace</h2>
+          <div className="h-px flex-1 bg-slate-200"></div>
+        </div>
+
 
         {/* Quick Actions Grid */}
         <motion.div
@@ -329,45 +301,19 @@ function HomePage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={action.onClick}
-              className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 hover:shadow-lg transition-all duration-300 text-left"
+              className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-200 hover:shadow-lg transition-all duration-300 text-left ${action.disabled ? 'opacity-60 cursor-not-allowed grayscale' : ''}`}
             >
-              <div className={`absolute inset-0 ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+              <div className={`absolute inset-0 ${action.gradient} opacity-0 ${!action.disabled && 'group-hover:opacity-10'} transition-opacity duration-300`}></div>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-r ${action.color} shadow-lg`}>
                 <action.icon className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-semibold text-slate-800 mb-1">{action.title}</h3>
               <p className="text-xs text-slate-500">{action.description}</p>
-              <FaArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-indigo-600 transition-all" />
+              {!action.disabled && <FaArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-indigo-600 transition-all" />}
             </motion.button>
           ))}
         </motion.div>
 
-        {/* Recent Activity Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 overflow-hidden"
-        >
-          <div className="p-5 border-b border-slate-200">
-            <h3 className="font-semibold text-slate-800">Recent Activity</h3>
-            <p className="text-xs text-slate-500 mt-1">Your latest attendance and staff updates</p>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="p-4 flex items-center gap-3 hover:bg-slate-50/50 transition-colors">
-                <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                  <FaClock className="w-4 h-4 text-indigo-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-800">John Doe checked in at 9:15 AM</p>
-                  <p className="text-xs text-slate-500">2 hours ago</p>
-                </div>
-                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">On Time</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
 
       {/* Fullscreen Company Switcher Modal */}
@@ -430,19 +376,17 @@ function HomePage() {
                           whileTap={{ scale: 0.98 }}
                           onClick={() => handleSwitchCompany(comp)}
                           disabled={isSwitching}
-                          className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${
-                            company?.id === comp.id
-                              ? 'bg-indigo-50 border-2 border-indigo-200'
-                              : 'bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
-                          } ${isSwitching && selectedCompanyForSwitch?.id === comp.id ? 'opacity-50' : ''}`}
+                          className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${company?.id === comp.id
+                            ? 'bg-indigo-50 border-2 border-indigo-200'
+                            : 'bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'
+                            } ${isSwitching && selectedCompanyForSwitch?.id === comp.id ? 'opacity-50' : ''}`}
                         >
                           <div className="flex items-center gap-4 flex-1">
                             <div
-                              className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                company?.id === comp.id
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'
-                              }`}
+                              className={`w-12 h-12 rounded-xl flex items-center justify-center ${company?.id === comp.id
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'
+                                }`}
                             >
                               <FaBuilding className="w-5 h-5" />
                             </div>
