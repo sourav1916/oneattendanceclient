@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { toast } from "react-toastify";
+import apiCall from "../../utils/api";
 import {
   FaUserPlus, FaUserTag, FaUserCog,
   FaTimes, FaCheck, FaSpinner, FaUserCircle,
@@ -11,8 +12,6 @@ import {
   FaDollarSign, FaCalendarAlt, FaIdCard, FaNetworkWired
 } from "react-icons/fa";
 import SearchableSelect from "../SearchableSelect";
-
-const API_BASE = "https://api-attendance.onesaas.in";
 
 function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [users, setUsers] = useState([]);
@@ -84,12 +83,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const fetchAllConstants = async () => {
     setIsLoadingConstants(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/constants/`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const company = JSON.parse(localStorage.getItem("company"));
+      const res = await apiCall("/constants/", "GET", null, company?.id);
 
       const data = await res.json();
 
@@ -171,7 +166,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const fetchUsers = async (searchQuery = "") => {
     setIsLoadingUsers(true);
     try {
-      const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem("company"));
 
       if (!company?.id) {
@@ -180,19 +174,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         return;
       }
 
-      const baseUrl = `${API_BASE}/company/users/available`;
-      const url = searchQuery
-        ? `${baseUrl}?search=${encodeURIComponent(searchQuery)}`
-        : baseUrl;
+      const endpoint = searchQuery
+        ? `/company/users/available?search=${encodeURIComponent(searchQuery)}`
+        : `/company/users/available`;
 
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "company": company.id
-        }
-      });
+      const res = await apiCall(endpoint, "GET", null, company.id);
 
       if (!res.ok) throw new Error('Failed to fetch users');
 
@@ -223,14 +209,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const fetchPermissionPackages = async () => {
     setIsLoadingPermissions(true);
     try {
-      const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem('company'));
-      const response = await fetch(`${API_BASE}/permissions/permission-packages`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'company': company.id.toString(),
-        }
-      });
+      const response = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
 
       const result = await response.json();
 
@@ -315,7 +295,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem("company"));
 
       const attendanceMethodsData = enabledMethods.map(([methodId, config]) => ({
@@ -333,18 +312,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
         attendance_methods: attendanceMethodsData
       };
 
-      console.log("Submitting payload:", payload);
-
-      const response = await fetch(`${API_BASE}/company/invites/send`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "company": company?.id
-        },
-        body: JSON.stringify(payload)
-      });
-
+      const response = await apiCall('/company/invites/send', 'POST', payload, company?.id);
       const data = await response.json();
 
       if (!response.ok) throw new Error(data?.message || "Failed to create staff");

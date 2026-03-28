@@ -63,7 +63,7 @@ export default function CompanyInvites() {
 
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
 
-  const API_BASE   = "https://api-attendance.onesaas.in";
+
   const company_id = JSON.parse(localStorage.getItem("company"))?.id;
 
   // Debounce search
@@ -80,22 +80,12 @@ export default function CompanyInvites() {
       if (resetLoading) setLoading(true);
 
       try {
-        const token   = localStorage.getItem("token");
         const company = JSON.parse(localStorage.getItem("company"));
 
         const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
         if (search) params.append("search", search);
 
-        const response = await fetch(
-          `${API_BASE}/company/invites/list?${params.toString()}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-              company: company?.id
-            }
-          }
-        );
+        const response = await apiCall(`/company/invites/list?${params.toString()}`, 'GET', null, company?.id);
 
         if (!response.ok) throw new Error("Failed to fetch invites");
 
@@ -155,21 +145,12 @@ export default function CompanyInvites() {
   }, [company_id]); // eslint-disable-line
 
   // ── Cancel ─────────────────────────────────────────────────────────────────
-  const handleCancelInvite = async (token) => {
+  const handleCancelInvite = async (inviteId) => {
     try {
-      setProcessingId(token);
-      const authToken = localStorage.getItem("token");
+      setProcessingId(inviteId);
       const company   = JSON.parse(localStorage.getItem("company"));
 
-      const response = await fetch(`${API_BASE}/company/invites/cancel`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json",
-          company: company?.id
-        },
-        body: JSON.stringify({ token })
-      });
+      const response = await apiCall('/company/invites/cancel', 'POST', { invite_id: inviteId }, company?.id);
 
       if (!response.ok) throw new Error("Failed to cancel invite");
 

@@ -23,6 +23,8 @@ import {
     FaUserTag,
     FaInfoCircle
 } from "react-icons/fa";
+import { toast } from 'react-toastify';
+import apiCall from '../utils/api';
 import Skeleton from "../components/SkeletonComponent";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 import { useAuth } from "../context/AuthContext";
@@ -65,8 +67,6 @@ export default function MyInvites() {
 
     const { refreshUser } = useAuth();
 
-    const API_BASE = "https://api-attendance.onesaas.in";
-
     // Debounce search - removed goToPage dependency
     useEffect(() => {
         const t = setTimeout(() => {
@@ -93,8 +93,6 @@ export default function MyInvites() {
         if (resetLoading) setLoading(true);
         
         try {
-            const token = localStorage.getItem('token');
-
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: pagination.limit.toString()
@@ -107,12 +105,7 @@ export default function MyInvites() {
                 params.append('search', debouncedSearchTerm);
             }
 
-            const response = await fetch(`${API_BASE}/company/invites/my?${params.toString()}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await apiCall(`/company/invites/my?${params.toString()}`, 'GET');
 
             if (!response.ok) {
                 throw new Error('Failed to fetch invites');
@@ -159,19 +152,11 @@ export default function MyInvites() {
         }
     }, [pagination.page, fetchInvites]);
 
-    const handleAcceptInvite = async (token) => {
+    const handleAcceptInvite = async (inviteId) => {
         try {
-            setProcessingId(token);
-            const authToken = localStorage.getItem('token');
+            setProcessingId(inviteId);
 
-            const response = await fetch(`${API_BASE}/company/invites/accept`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: token })
-            });
+            const response = await apiCall('/company/invites/accept', 'POST', { invite_id: inviteId });
 
             if (!response.ok) {
                 throw new Error('Failed to accept invite');
@@ -181,7 +166,7 @@ export default function MyInvites() {
 
             if (result.success) {
                 setInvites(prev => prev.map(invite =>
-                    invite.invite_token === token ? { ...invite, status: 'accepted' } : invite
+                    invite.id === inviteId ? { ...invite, status: 'accepted' } : invite
                 ));
                 await refreshUser();
                 closeModal();
@@ -197,19 +182,11 @@ export default function MyInvites() {
         }
     };
 
-    const handleRejectInvite = async (token) => {
+    const handleRejectInvite = async (inviteId) => {
         try {
-            setProcessingId(token);
-            const authToken = localStorage.getItem('token');
+            setProcessingId(inviteId);
 
-            const response = await fetch(`${API_BASE}/company/invites/reject`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: token })
-            });
+            const response = await apiCall('/company/invites/reject', 'POST', { invite_id: inviteId });
 
             if (!response.ok) {
                 throw new Error('Failed to reject invite');

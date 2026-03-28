@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import React from "react";
+import apiCall from "../utils/api";
 
 const AuthContext = createContext();
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -42,12 +43,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ FETCH PROFILE
   const fetchUserProfile = async (token) => {
     try {
-      const res = await fetch(`${API_BASE}/users/profile-role`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await apiCall('/users/profile-role', 'GET');
 
       if (!res.ok) {
         logout();

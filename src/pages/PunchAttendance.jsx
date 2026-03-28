@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import apiCall from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import {
@@ -21,6 +22,7 @@ import {
 const PunchAttendance = () => {
   const { attendanceMethods, user } = useAuth();
   const [activeTab, setActiveTab] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(null); // 'punch-in', 'punch-out', 'break-in', 'break-out'
 
   // Toggle states
   const [isPunchedIn, setIsPunchedIn] = useState(false);
@@ -45,29 +47,95 @@ const PunchAttendance = () => {
     return icons[key] || FaFingerprint;
   };
 
-  const handlePunchIn = () => {
-    setIsPunchedIn(true);
-    setLastAction('Punched In');
-    toast.success("Successfully Punched In!");
+  const getCurrentLocation = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation is not supported by your browser"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          reject(error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
   };
 
-  const handlePunchOut = () => {
-    setIsPunchedIn(false);
-    setIsBreakActive(false); // Reset break if punching out
-    setLastAction('Punched Out');
-    toast.success("Successfully Punched Out!");
+  const callAttendanceAPI = async (endpoint, actionName) => {
+    setLoadingAction(actionName);
+    try {
+      const location = await getCurrentLocation();
+
+      const response = await apiCall(endpoint, 'POST', {
+        attendance_method: activeTab || "gps",
+        attendance_mode: "manual",
+        latitude: location.latitude,
+        longitude: location.longitude
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        return true;
+      } else {
+        toast.error(data.message || `Failed to ${actionName.replace('-', ' ')}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`${actionName} error:`, error);
+      if (error.code === 1) {
+        toast.error("Location permission denied. Please enable location to mark attendance.");
+      } else {
+        toast.error(`Error: ${error.message}`);
+      }
+      return false;
+    } finally {
+      setLoadingAction(null);
+    }
   };
 
-  const handleBreakIn = () => {
-    setIsBreakActive(true);
-    setLastAction('On Break');
-    toast.info("Break Started");
+  const handlePunchIn = async () => {
+    const success = await callAttendanceAPI('/attendance/punch-in', 'punch-in');
+    if (success) {
+      setIsPunchedIn(true);
+      setLastAction('Punched In');
+      toast.success("Successfully Punched In!");
+    }
   };
 
-  const handleBreakOut = () => {
-    setIsBreakActive(false);
-    setLastAction('Break Ended');
-    toast.success("Break Ended - Welcome back!");
+  const handlePunchOut = async () => {
+    const success = await callAttendanceAPI('/attendance/punch-out', 'punch-out');
+    if (success) {
+      setIsPunchedIn(false);
+      setIsBreakActive(false); // Reset break if punching out
+      setLastAction('Punched Out');
+      toast.success("Successfully Punched Out!");
+    }
+  };
+
+  const handleBreakIn = async () => {
+    const success = await callAttendanceAPI('/attendance/break-in', 'break-in');
+    if (success) {
+      setIsBreakActive(true);
+      setLastAction('On Break');
+      toast.info("Break Started");
+    }
+  };
+
+  const handleBreakOut = async () => {
+    const success = await callAttendanceAPI('/attendance/break-out', 'break-out');
+    if (success) {
+      setIsBreakActive(false);
+      setLastAction('Break Ended');
+      toast.success("Break Ended - Welcome back!");
+    }
   };
 
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -211,9 +279,14 @@ const PunchAttendance = () => {
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handlePunchIn}
-                      disabled={isPunchedIn}
-                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group"
+                      disabled={isPunchedIn || loadingAction === 'punch-in'}
+                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
+                      {loadingAction === 'punch-in' && (
+                        <div className="absolute inset-0 bg-emerald-600/50 flex items-center justify-center backdrop-blur-sm">
+                          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                      )}
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-disabled:bg-slate-200">
                         <FaSignInAlt className="w-6 h-6" />
                       </div>
@@ -224,9 +297,14 @@ const PunchAttendance = () => {
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handlePunchOut}
-                      disabled={!isPunchedIn}
-                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group"
+                      disabled={!isPunchedIn || loadingAction === 'punch-out'}
+                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
+                      {loadingAction === 'punch-out' && (
+                        <div className="absolute inset-0 bg-rose-600/50 flex items-center justify-center backdrop-blur-sm">
+                          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                      )}
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-disabled:bg-slate-200">
                         <FaSignOutAlt className="w-6 h-6" />
                       </div>
@@ -252,9 +330,14 @@ const PunchAttendance = () => {
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleBreakIn}
-                      disabled={!isPunchedIn || isBreakActive}
-                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group"
+                      disabled={!isPunchedIn || isBreakActive || loadingAction === 'break-in'}
+                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
+                      {loadingAction === 'break-in' && (
+                        <div className="absolute inset-0 bg-amber-500/50 flex items-center justify-center backdrop-blur-sm">
+                          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                      )}
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-disabled:bg-slate-200">
                         <FaCoffee className="w-6 h-6" />
                       </div>
@@ -265,9 +348,14 @@ const PunchAttendance = () => {
                       whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={handleBreakOut}
-                      disabled={!isBreakActive}
-                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group"
+                      disabled={!isBreakActive || loadingAction === 'break-out'}
+                      className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
+                      {loadingAction === 'break-out' && (
+                        <div className="absolute inset-0 bg-indigo-600/50 flex items-center justify-center backdrop-blur-sm">
+                          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        </div>
+                      )}
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-disabled:bg-slate-200">
                         <FaSignInAlt className="w-6 h-6" />
                       </div>

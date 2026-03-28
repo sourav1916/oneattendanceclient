@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { toast } from "react-toastify";
+import apiCall from "../../utils/api";
 import {
   FaUserPlus, FaUserTag, FaUserCog,
   FaTimes, FaCheck, FaSpinner, FaUserCircle,
@@ -11,7 +12,7 @@ import {
   FaCalendarAlt, FaIdCard, FaNetworkWired
 } from "react-icons/fa";
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 
 function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const [users, setUsers] = useState([]);
@@ -91,10 +92,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const fetchAllConstants = async () => {
     setIsLoadingConstants(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/constants/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const company = JSON.parse(localStorage.getItem('company'));
+      const res = await apiCall('/constants/', 'GET', null, company?.id);
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
       if (data.success) {
@@ -250,7 +251,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const fetchUsers = async (searchQuery = "") => {
     setIsLoadingUsers(true);
     try {
-      const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem("company"));
 
       if (!company?.id) {
@@ -261,10 +261,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const params = new URLSearchParams({ page: "1", limit: "5", sort: "name", order: "asc" });
       if (searchQuery) params.append('search', searchQuery);
 
-      const res = await fetch(`${API_BASE}/company/users/available?${params.toString()}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, "company": company?.id }
-      });
+      const res = await apiCall(`/company/users/available?${params.toString()}`, 'GET', null, company?.id);
 
       if (!res.ok) throw new Error('Failed to fetch users');
 
@@ -293,14 +290,11 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const fetchPermissionPackages = async () => {
     setIsLoadingPermissions(true);
     try {
-      const token = localStorage.getItem("token");
       const company = JSON.parse(localStorage.getItem('company'));
+      const res = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
 
-      const response = await fetch(`${API_BASE}/permissions/permission-packages`, {
-        headers: { Authorization: `Bearer ${token}`, 'company': company?.id }
-      });
-
-      const result = await response.json();
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
 
       if (result.success) {
         const packages = result.data?.packages || [];
@@ -366,10 +360,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
 
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const company = JSON.parse(localStorage.getItem("company"));
-
-      const payload = {
+      const company = JSON.parse(localStorage.getItem('company'));
+      const response = await apiCall(`/company/invites/${staffData.invite_id}`, 'PUT', {
         invite_id: staffData.invite_id,
         user_id: selectedUser.id,
         permission_package_id: selectedPermissionPackage?.value || null,
@@ -381,22 +373,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
           is_manual: config.internalMethods.includes("manual") ? 1 : 0,
           is_auto: config.internalMethods.includes("auto") ? 1 : 0,
         }))
-      };
+      }, company?.id);
 
-      console.log("Updating staff with payload:", payload);
-
-      const response = await fetch(`${API_BASE}/company/invites/${staffData.invite_id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "company": company?.id
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.message || "Failed to update staff");
+      const result = await response.json();
+      if (!response.ok) throw new Error(result?.message || "Failed to update staff");
 
       toast.success("Staff updated successfully");
       onSuccess?.();
@@ -505,9 +485,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column */}
                   <div className="space-y-6">
-                    {/* User Display */}
                     <motion.div
                       initial={{ x: -20, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
@@ -536,7 +514,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                       )}
                     </motion.div>
 
-                    {/* Employment Type */}
                     <motion.div
                       initial={{ x: -20, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
@@ -565,7 +542,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                       />
                     </motion.div>
 
-                    {/* Designation */}
                     <motion.div
                       initial={{ x: -20, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
@@ -594,7 +570,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                       />
                     </motion.div>
 
-                    {/* Salary Type */}
                     <motion.div
                       initial={{ x: -20, opacity: 0 }}
                       animate={{ x: 0, opacity: 1 }}
@@ -623,7 +598,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                       />
                     </motion.div>
 
-                    {/* Permission Package */}
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
@@ -681,7 +655,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                             )}
                           />
 
-                          {/* Selected package permissions preview */}
                           {selectedPermissionPackage && selectedPermissionPackage.permissions?.length > 0 && (
                             <motion.div
                               initial={{ opacity: 0, y: -8 }}
@@ -709,7 +682,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                     </motion.div>
                   </div>
 
-                  {/* Right Column - Attendance Methods */}
                   <div className="space-y-6">
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}

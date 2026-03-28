@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiCall from '../utils/api';
 
 // ─── Inline Pagination Component ─────────────────────────────────────────────
 const Pagination = ({
@@ -274,8 +275,6 @@ const PermissionManagement = () => {
   const emptyForm = { package_name: '', group_code: '', description: '', permissions: [] };
   const [formData, setFormData] = useState(emptyForm);
 
-  const API_BASE = 'https://api-attendance.onesaas.in';
-
   // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
@@ -295,11 +294,9 @@ const PermissionManagement = () => {
     if (permsFetched.current) return;
     setPermsLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const company = JSON.parse(localStorage.getItem('company'));
-      const res = await fetch(`${API_BASE}/permissions/list`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-      });
+      const res = await apiCall('/permissions/list', 'GET', null, company?.id);
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
       if (result.success) { setAllPermissions(result.data); permsFetched.current = true; }
@@ -317,13 +314,12 @@ const PermissionManagement = () => {
     fetchInProgress.current = true;
     if (resetLoading) setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const company = JSON.parse(localStorage.getItem('company'));
       const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
       if (debouncedSearch) params.append('search', debouncedSearch);
-      const res = await fetch(`${API_BASE}/permissions/permission-packages?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-      });
+
+      const res = await apiCall(`/permissions/permission-packages?${params}`, 'GET', null, company?.id);
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
       if (result.success) {
@@ -364,13 +360,14 @@ const PermissionManagement = () => {
   const createPackage = async (data) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const company = JSON.parse(localStorage.getItem('company'));
-      const res = await fetch(`${API_BASE}/permissions/create-package`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ package_name: data.package_name, group_code: data.group_code, description: data.description, permissions: data.permissions }),
-      });
+      const res = await apiCall('/permissions/create-package', 'POST', {
+        package_name: data.package_name,
+        group_code: data.group_code,
+        description: data.description,
+        permissions: data.permissions
+      }, company?.id);
+
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || `HTTP ${res.status}`);
       if (result.success) return { success: true };
@@ -382,13 +379,15 @@ const PermissionManagement = () => {
   const updatePackage = async (data) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const company = JSON.parse(localStorage.getItem('company'));
-      const res = await fetch(`${API_BASE}/permissions/update-package`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: data.id, package_name: data.package_name, group_code: data.group_code, description: data.description, permissions: data.permissions }),
-      });
+      const res = await apiCall('/permissions/update-package', 'PUT', {
+        id: data.id,
+        package_name: data.package_name,
+        group_code: data.group_code,
+        description: data.description,
+        permissions: data.permissions
+      }, company?.id);
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
       if (result.success) return { success: true };
@@ -400,13 +399,11 @@ const PermissionManagement = () => {
   const deletePackage = async (packageId) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const company = JSON.parse(localStorage.getItem('company'));
-      const res = await fetch(`${API_BASE}/permissions/delete-package`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({"packageId":packageId }),
-      });
+      const res = await apiCall('/permissions/delete-package', 'DELETE', {
+        "packageId": packageId
+      }, company?.id);
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
       if (result.success) return { success: true };

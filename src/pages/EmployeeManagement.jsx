@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 
@@ -72,15 +73,8 @@ const EmployeeManagement = () => {
     const initialFetchDone = useRef(false);
     const isInitialLoad = useRef(true);
 
-    const API_BASE = "https://api-attendance.onesaas.in";
-
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-
-    const internalMethodOptions = [
-        { value: "manual", label: "Manual", icon: FaUserCheck, description: "Manually mark attendance" },
-        { value: "auto", label: "Auto", icon: FaRobot, description: "Automatically mark attendance" }
-    ];
 
     const getIconForType = (key) => {
         const iconMap = {
@@ -130,13 +124,8 @@ const EmployeeManagement = () => {
         if (constantsFetched.current) return;
         setConstantsLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
-            const res = await fetch(`${API_BASE}/constants/`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' }
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const result = await res.json();
+            const result = await apiCall('/constants/', 'GET', null, company?.id);
             if (result.success) {
                 const data = result.data;
                 setConstants({
@@ -176,6 +165,8 @@ const EmployeeManagement = () => {
                     })) || []
                 });
                 constantsFetched.current = true;
+            } else {
+                throw new Error(result.message || 'Failed to load constants');
             }
         } catch (e) {
             console.error(e);
@@ -187,13 +178,8 @@ const EmployeeManagement = () => {
         if (permissionsFetched.current) return;
         setPermissionsLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
-            const res = await fetch(`${API_BASE}/permissions/permission-packages`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' }
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const result = await res.json();
+            const result = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
             if (result.success) {
                 const packages = result.data?.packages || [];
                 setPermissionPackages(packages.map(pkg => ({
@@ -205,6 +191,8 @@ const EmployeeManagement = () => {
                     isActive: pkg.is_active === 1
                 })));
                 permissionsFetched.current = true;
+            } else {
+                throw new Error(result.message || 'Failed to load permission packages');
             }
         } catch (e) {
             console.error(e);
@@ -218,7 +206,6 @@ const EmployeeManagement = () => {
         if (resetLoading) setLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
             const params = new URLSearchParams({
                 page: page.toString(),
@@ -226,11 +213,7 @@ const EmployeeManagement = () => {
             });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-            const res = await fetch(`${API_BASE}/employees/list?${params}`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' }
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const result = await res.json();
+            const result = await apiCall(`/employees/list?${params}`, 'GET', null, company?.id);
 
             if (result.success) {
                 setEmployees(result.data);
@@ -269,7 +252,6 @@ const EmployeeManagement = () => {
     const updateEmployee = async (id, employeeData) => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
 
             const enabledMethods = Object.entries(attendanceMethodsConfig)
@@ -288,13 +270,7 @@ const EmployeeManagement = () => {
                 }))
             };
 
-            const res = await fetch(`${API_BASE}/employees/update`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const result = await res.json();
+            const result = await apiCall('/employees/update', 'PUT', payload, company?.id);
             if (result.success) {
                 await fetchEmployees(pagination.page, false);
                 return { success: true };
@@ -308,15 +284,8 @@ const EmployeeManagement = () => {
     const deleteEmployee = async (id) => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
             const company = JSON.parse(localStorage.getItem('company'));
-            const res = await fetch(`${API_BASE}/employees/delete`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}`, 'company': company.id.toString(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
-            });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const result = await res.json();
+            const result = await apiCall('/employees/delete', 'DELETE', { id }, company?.id);
             if (result.success) {
                 await fetchEmployees(pagination.page, false);
                 return { success: true };

@@ -17,7 +17,7 @@ import {
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -132,14 +132,10 @@ const Signup = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/otp/signup/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
+      const response = await apiCall('/otp/signup/request-otp', 'POST', {
+        email: email,
+        phone: phone,
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
 
       setOtpSent(true);
       setResendTimer(60);
@@ -162,17 +158,10 @@ const Signup = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/otp/signup/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          otp: otpString
-        })
+      const response = await apiCall('/otp/signup/verify-otp', 'POST', {
+        email: email,
+        otp: otpString
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
 
       setEmailVerified(true);
       setCurrentStep(3);
@@ -195,18 +184,6 @@ const Signup = () => {
     try {
       setLoading(true);
       const name = fullName;
-      const res = await fetch(`${API_BASE}/otp/signup/complete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          name,
-          phone,
-          password
-        })
-      });
-
-      const data = await res.json();
       if (!res.ok) throw new Error(data.message);
 
       showToast("Account created successfully 🎉");

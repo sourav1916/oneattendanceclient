@@ -11,8 +11,9 @@ import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
 import Skeleton from "../components/SkeletonComponent";
+import apiCall from "../utils/api";
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 
 const SettingsPage = () => {
   const { user, loading, refreshUser, companies, setCompanies } = useAuth();
@@ -99,14 +100,7 @@ const SettingsPage = () => {
         )
       };
 
-      const response = await fetch(`${API_BASE}/company/edit`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await apiCall('/company/edit', 'PUT', payload);
 
       const result = await response.json();
       if (!response.ok || !result.success) {
@@ -150,15 +144,8 @@ const SettingsPage = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/company/delete`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          id: companyToDelete.id
-        })
+      const response = await apiCall('/company/delete', 'DELETE', {
+        id: companyToDelete.id
       });
 
       const result = await response.json();
@@ -225,14 +212,7 @@ const SettingsPage = () => {
         ...changedFields
       };
 
-      const response = await fetch(`${API_BASE}/users/details/edit-profile`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const response = await apiCall('/users/details/edit-profile', 'PUT', payload);
 
       const result = await response.json();
 
@@ -295,17 +275,10 @@ const SettingsPage = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE}/users/update-password`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          user_id: user?.id,
-          old_password: currentPassword,
-          new_password: newPassword,
-        })
+      const response = await apiCall('/users/update-password', 'PUT', {
+        user_id: user?.id,
+        old_password: currentPassword,
+        new_password: newPassword,
       });
 
       const data = await response.json();

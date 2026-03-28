@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
+import apiCall from "../../utils/api";
 import { 
   FaBuilding, FaTimes, FaCheck, FaSpinner, 
   FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
   FaEnvelope, FaLink, FaMapPin, FaCrosshairs
 } from "react-icons/fa";
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
 
 function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreated }) {
@@ -154,18 +155,9 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
         return;
       }
 
-      const response = await fetch(`${API_BASE}/company/create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(companyForm)
-      });
+      const result = await apiCall('/company/create', 'POST', companyForm);
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         toast.error(result.message || "Failed to create company");
         return;
       }

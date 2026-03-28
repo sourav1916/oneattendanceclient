@@ -11,10 +11,11 @@ import {
   FaBuilding
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
-import { BiReset } from "react-icons/bi";
+import { toast } from 'react-toastify';
+import apiCall from '../../utils/api';
 import { useAuth } from "../../context/AuthContext";
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 
 const Login = () => {
   const { user, login, selectCompany, companies, mustSelectCompany, showCompanySelection, setShowCompanySelection } = useAuth();
@@ -144,14 +145,10 @@ const Login = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/otp/login/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+      const response = await apiCall('/otp/login/request-otp', 'POST', {
+        email: email,
+        password: password
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
 
       setOtpSent(true);
       setResendTimer(60);
@@ -176,17 +173,10 @@ const Login = () => {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API_BASE}/otp/login/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          otp: otpString
-        })
+      const data = await apiCall('/otp/login/verify-otp', 'POST', {
+        email,
+        otp: otpString
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
       
       // Login will fetch user profile and set mustSelectCompany if needed
       await login(data.token);

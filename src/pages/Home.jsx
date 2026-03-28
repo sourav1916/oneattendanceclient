@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, ToastContainer } from "react-toastify";
+import apiCall from "../utils/api";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -27,7 +28,7 @@ import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/StaffModals/AddStaffModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 
-const API_BASE = "https://api-attendance.onesaas.in";
+
 
 function HomePage() {
   const { user, loading, company, companies, selectCompany, refreshUser, activeRole } = useAuth();
@@ -75,15 +76,7 @@ function HomePage() {
 
     if (!storedCompany) {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE}/users/profile-role`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const response = await res.json();
+        const response = await apiCall('/users/profile-role', 'GET');
 
         if (response.success && response.data) {
           const ownedCompanies = response.data.companies?.owned_companies || [];
