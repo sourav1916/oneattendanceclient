@@ -1,35 +1,19 @@
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaUserTie,
-  FaClock,
-  FaExclamationCircle,
-  FaSpinner,
-  FaEllipsisV,
-  FaEye,
-  FaEdit,
-  FaBan,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaEnvelope,
-  FaPhone,
-  FaCalendarAlt,
-  FaBriefcase,
-  FaDollarSign,
-  FaTag,
-  FaSearch,
-  FaTimes,
-  FaInfoCircle,
-  FaUserCircle
+  FaUserTie, FaClock, FaExclamationCircle, FaSpinner, FaEllipsisV,
+  FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
+  FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
+  FaSearch, FaTimes, FaInfoCircle, FaUserCircle
 } from "react-icons/fa";
+import { toast } from 'react-toastify';
+import apiCall from "../utils/api";
+import Pagination, { usePagination } from "../components/PaginationComponent";
 import EditStaffModal from "../components/StaffModals/EditStaffModal";
 import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
-import Pagination, { usePagination } from "../components/PaginationComponent";
 
-// ─── Modal Variants ──────────────────────────────────────────────────────────
+// ─── Constants & Helpers ─────────────────────────────────────────────────────
 
 const modalVariants = {
   hidden:  { opacity: 0, scale: 0.9,  y: 20 },
@@ -42,6 +26,51 @@ const backdropVariants = {
   visible: { opacity: 1 },
   exit:    { opacity: 0 }
 };
+
+const isExpired = (date) => new Date(date) < new Date();
+
+const getStatusBadge = (status, expiresAt) => {
+  if (isExpired(expiresAt))
+    return { icon: FaTimesCircle, text: "Expired", className: "bg-red-100 text-red-800 border border-red-200" };
+  switch (status) {
+    case "accepted":
+      return { icon: FaCheckCircle, text: "Accepted", className: "bg-green-100 text-green-800 border border-green-200" };
+    case "pending":
+      return { icon: FaClock, text: "Pending", className: "bg-yellow-100 text-yellow-800 border border-yellow-200" };
+    case "cancelled":
+      return { icon: FaBan, text: "Cancelled", className: "bg-gray-100 text-gray-800 border border-gray-200" };
+    default:
+      return { icon: FaExclamationCircle, text: status, className: "bg-gray-100 text-gray-800 border border-gray-200" };
+  }
+};
+
+const formatDate = (date) => {
+  if (!date) return "N/A";
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric", month: "short", day: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  });
+};
+
+const formatDateSimple = (date) => {
+  if (!date) return "N/A";
+  return new Date(date).toLocaleDateString("en-US", {
+    year: "numeric", month: "short", day: "numeric"
+  });
+};
+
+const formatDisplay = (str) => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+
+// ─── Local Components ────────────────────────────────────────────────────────
+
+const InfoItem = ({ icon, label, value }) => (
+  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+      {icon}{label}
+    </label>
+    <div className="text-gray-800 font-medium">{value}</div>
+  </div>
+);
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -63,7 +92,6 @@ export default function CompanyInvites() {
 
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
 
-
   const company_id = JSON.parse(localStorage.getItem("company"))?.id;
 
   // Debounce search
@@ -81,16 +109,13 @@ export default function CompanyInvites() {
 
       try {
         const company = JSON.parse(localStorage.getItem("company"));
-
         const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
         if (search) params.append("search", search);
 
         const response = await apiCall(`/company/invites/list?${params.toString()}`, 'GET', null, company?.id);
-
         if (!response.ok) throw new Error("Failed to fetch invites");
 
         const result = await response.json();
-
         if (result.success) {
           setInvites(result.data || []);
           updatePagination({
@@ -112,7 +137,7 @@ export default function CompanyInvites() {
         fetchInProgress.current = false;
       }
     },
-    [company_id, pagination.limit, updatePagination] // eslint-disable-line
+    [company_id, pagination.limit, updatePagination, debouncedSearchTerm]
   );
 
   // Page change trigger
@@ -149,13 +174,10 @@ export default function CompanyInvites() {
     try {
       setProcessingId(inviteId);
       const company   = JSON.parse(localStorage.getItem("company"));
-
       const response = await apiCall('/company/invites/cancel', 'POST', { invite_id: inviteId }, company?.id);
-
       if (!response.ok) throw new Error("Failed to cancel invite");
 
       const result = await response.json();
-
       if (result.success) {
         toast.success("Invitation cancelled successfully.");
         await fetchInvites(pagination.page, debouncedSearchTerm, false);
@@ -184,43 +206,9 @@ export default function CompanyInvites() {
     setEditingInvite(null);
   };
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-  const isExpired = (date) => new Date(date) < new Date();
-
-  const getStatusBadge = (status, expiresAt) => {
-    if (isExpired(expiresAt))
-      return { icon: FaTimesCircle, text: "Expired",   className: "bg-red-100    text-red-800    border border-red-200"    };
-    switch (status) {
-      case "accepted":
-        return { icon: FaCheckCircle,       text: "Accepted",  className: "bg-green-100  text-green-800  border border-green-200"  };
-      case "pending":
-        return { icon: FaClock,             text: "Pending",   className: "bg-yellow-100 text-yellow-800 border border-yellow-200" };
-      case "cancelled":
-        return { icon: FaBan,               text: "Cancelled", className: "bg-gray-100   text-gray-800   border border-gray-200"   };
-      default:
-        return { icon: FaExclamationCircle, text: status,      className: "bg-gray-100   text-gray-800   border border-gray-200"   };
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric", month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit"
-    });
-  };
-
-  const formatDateSimple = (date) => {
-    if (!date) return "N/A";
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric", month: "short", day: "numeric"
-    });
-  };
-
   const openModal       = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
   const closeModal      = ()              => { setSelectedInvite(null);   setModalType(null); };
   const toggleActionMenu = (e, id)        => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
-  const formatDisplay   = (str)           => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
 
   // Responsive columns
   const [visibleColumns, setVisibleColumns] = useState(() => ({
@@ -358,311 +346,280 @@ export default function CompanyInvites() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <>
-      {/* ── Toast Container ── */}
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+    <div className="min-h-screen p-3 md:p-6 font-sans">
+      <div className="max-w-7xl mx-auto">
 
-      <div className="min-h-screen p-3 md:p-6 font-sans">
-        <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+            Company Invitations
+          </h1>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="font-medium text-gray-700">{pagination.total}</span>
+              <span className="text-gray-500">invitations</span>
+            </div>
 
-          {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-              Company Invitations
-            </h1>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+              onClick={() => setOpenCreateInviteModal(true)}
+              className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
+                         text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
+                         transition-all duration-300 flex items-center gap-2 overflow-hidden">
+              <div className="relative z-10">
+                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="font-medium text-gray-700">{pagination.total}</span>
-                <span className="text-gray-500">invitations</span>
               </div>
+              <span className="relative z-10 text-sm">Create Invite</span>
+              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
+                             transition-transform duration-700 bg-gradient-to-r
+                             from-transparent via-white/20 to-transparent" />
+            </motion.button>
+          </div>
 
-              <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                onClick={() => setOpenCreateInviteModal(true)}
-                className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
-                           text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
-                           transition-all duration-300 flex items-center gap-2
-                           before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-r
-                           before:from-blue-500 before:to-purple-500 before:opacity-0
-                           before:transition-opacity before:duration-300 hover:before:opacity-100 overflow-hidden">
-                <div className="relative z-10">
-                  <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                <span className="relative z-10 text-sm">Create Invite</span>
-                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
-                               transition-transform duration-700 bg-gradient-to-r
-                               from-transparent via-white/20 to-transparent" />
-              </motion.button>
-            </div>
+          <CreateInviteModal
+            isOpen={openCreateInviteModal}
+            onClose={() => setOpenCreateInviteModal(false)}
+            onSuccess={() => {
+              setOpenCreateInviteModal(false);
+              fetchInvites(pagination.page, debouncedSearchTerm, false);
+            }}
+          />
+        </motion.div>
 
-            <CreateInviteModal
-              isOpen={openCreateInviteModal}
-              onClose={() => setOpenCreateInviteModal(false)}
-              onSuccess={() => {
-                setOpenCreateInviteModal(false);
-                // toast.success("Invitation created successfully.");
-                fetchInvites(pagination.page, debouncedSearchTerm, false);
-              }}
-            />
+        {/* Search */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
+          <div className="relative">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+            <input type="text" placeholder="Search by name, email or designation..."
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all" />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm("")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <FaTimes />
+              </button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Loading skeleton */}
+        {loading && !invites.length && <Skeleton />}
+
+        {/* Empty State */}
+        {!loading && invites.length === 0 && (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16 bg-white rounded-2xl shadow-xl">
+            <FaEnvelope className="text-8xl text-gray-300 mx-auto mb-4" />
+            <p className="text-xl text-gray-500">No invitations found</p>
+            <p className="text-gray-400 mt-2">
+              {searchTerm ? "Try adjusting your search" : "Your company hasn't sent any invitations yet"}
+            </p>
           </motion.div>
+        )}
 
-          {/* Search */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-            <div className="relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-              <input type="text" placeholder="Search by name, email or designation..."
-                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all" />
-              {searchTerm && (
-                <button onClick={() => setSearchTerm("")}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Loading skeleton */}
-          {loading && !invites.length && <Skeleton />}
-
-          {/* Empty State */}
-          {!loading && invites.length === 0 && (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-16 bg-white rounded-2xl shadow-xl">
-              <FaEnvelope className="text-8xl text-gray-300 mx-auto mb-4" />
-              <p className="text-xl text-gray-500">No invitations found</p>
-              <p className="text-gray-400 mt-2">
-                {searchTerm ? "Try adjusting your search" : "Your company hasn't sent any invitations yet"}
-              </p>
-            </motion.div>
-          )}
-
-          {/* Table (Desktop) */}
-          {!loading && invites.length > 0 && (
-            <>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-gray-700">
-                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                      <tr>
-                        {visibleColumns.showUser        && <th className="px-6 py-4">User</th>}
-                        {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
-                        {visibleColumns.showEmployment  && <th className="px-6 py-4">Employment</th>}
-                        {visibleColumns.showStatus      && <th className="px-6 py-4">Status</th>}
-                        {visibleColumns.showExpires     && <th className="px-6 py-4">Expires</th>}
-                        <th className="px-6 py-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {invites.map((invite, index) => {
-                        const status     = getStatusBadge(invite.status, invite.expires_at);
-                        const StatusIcon = status.icon;
-                        return (
-                          <motion.tr key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
-                            {visibleColumns.showUser && (
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                                    {invite.user?.name?.charAt(0)?.toUpperCase() || invite.user?.email?.charAt(0)?.toUpperCase()}
-                                  </div>
-                                  <div>
-                                    <p className="font-semibold text-gray-800">{invite.user?.name || "No name"}</p>
-                                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                                      <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
-                                    </p>
-                                  </div>
+        {/* Table (Desktop) */}
+        {!loading && invites.length > 0 && (
+          <>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-700">
+                  <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                    <tr>
+                      {visibleColumns.showUser        && <th className="px-6 py-4">User</th>}
+                      {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
+                      {visibleColumns.showEmployment  && <th className="px-6 py-4">Employment</th>}
+                      {visibleColumns.showStatus      && <th className="px-6 py-4">Status</th>}
+                      {visibleColumns.showExpires     && <th className="px-6 py-4">Expires</th>}
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {invites.map((invite, index) => {
+                      const status     = getStatusBadge(invite.status, invite.expires_at);
+                      const StatusIcon = status.icon;
+                      return (
+                        <motion.tr key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                          {visibleColumns.showUser && (
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                                  {invite.user?.name?.charAt(0)?.toUpperCase() || invite.user?.email?.charAt(0)?.toUpperCase()}
                                 </div>
-                              </td>
-                            )}
-                            {visibleColumns.showDesignation && (
-                              <td className="px-6 py-4">
-                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                                  {formatDisplay(invite.designation)}
-                                </span>
-                              </td>
-                            )}
-                            {visibleColumns.showEmployment && (
-                              <td className="px-6 py-4">
-                                <div className="flex flex-wrap gap-1">
-                                  <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">{formatDisplay(invite.employment_type)}</span>
-                                  <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">{formatDisplay(invite.salary_type)}</span>
+                                <div>
+                                  <p className="font-semibold text-gray-800">{invite.user?.name || "No name"}</p>
+                                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                                    <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
+                                  </p>
                                 </div>
-                              </td>
-                            )}
-                            {visibleColumns.showStatus && (
-                              <td className="px-6 py-4">
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
-                                  <StatusIcon size={12} />{status.text}
-                                </span>
-                              </td>
-                            )}
-                            {visibleColumns.showExpires && (
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                  <FaClock className="text-gray-400 text-xs" />
-                                  <span className="text-sm">{formatDateSimple(invite.expires_at)}</span>
-                                </div>
-                              </td>
-                            )}
-                            <td className="px-6 py-4 text-right relative">
-                              <button onClick={(e) => toggleActionMenu(e, invite.token)}
-                                className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
-                                <FaEllipsisV className="text-gray-600" />
-                              </button>
-                              <AnimatePresence>
-                                {activeActionMenu === invite.token && (
-                                  <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-10 overflow-hidden"
-                                    onClick={(e) => e.stopPropagation()}>
-                                    <button onClick={() => openModal(invite, "view")}
-                                      className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300">
-                                      <FaEye size={14} /> View Details
-                                    </button>
-                                    {invite.status === "pending" && !isExpired(invite.expires_at) && (
-                                      <>
-                                        <button onClick={() => handleEditClick(invite)}
-                                          className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300">
-                                          <FaEdit size={14} /> Edit Invite
-                                        </button>
-                                        <button onClick={() => openModal(invite, "cancel")}
-                                          className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300">
-                                          <FaBan size={14} /> Cancel Invite
-                                        </button>
-                                      </>
-                                    )}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
+                              </div>
                             </td>
-                          </motion.tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
+                          )}
+                          {visibleColumns.showDesignation && (
+                            <td className="px-6 py-4">
+                              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                {formatDisplay(invite.designation)}
+                              </span>
+                            </td>
+                          )}
+                          {visibleColumns.showEmployment && (
+                            <td className="px-6 py-4">
+                              <div className="flex flex-wrap gap-1">
+                                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">{formatDisplay(invite.employment_type)}</span>
+                                <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">{formatDisplay(invite.salary_type)}</span>
+                              </div>
+                            </td>
+                          )}
+                          {visibleColumns.showStatus && (
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                                <StatusIcon size={12} />{status.text}
+                              </span>
+                            </td>
+                          )}
+                          {visibleColumns.showExpires && (
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <FaClock className="text-gray-400 text-xs" />
+                                <span className="text-sm">{formatDateSimple(invite.expires_at)}</span>
+                              </div>
+                            </td>
+                          )}
+                          <td className="px-6 py-4 text-right relative">
+                            <button onClick={(e) => toggleActionMenu(e, invite.token)}
+                              className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
+                              <FaEllipsisV className="text-gray-600" />
+                            </button>
+                            <AnimatePresence>
+                              {activeActionMenu === invite.token && (
+                                <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                  className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-10 overflow-hidden"
+                                  onClick={(e) => e.stopPropagation()}>
+                                  <button onClick={() => openModal(invite, "view")}
+                                    className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300">
+                                    <FaEye size={14} /> View Details
+                                  </button>
+                                  {invite.status === "pending" && !isExpired(invite.expires_at) && (
+                                    <>
+                                      <button onClick={() => handleEditClick(invite)}
+                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300">
+                                        <FaEdit size={14} /> Edit Invite
+                                      </button>
+                                      <button onClick={() => openModal(invite, "cancel")}
+                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300">
+                                        <FaBan size={14} /> Cancel Invite
+                                      </button>
+                                    </>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
 
-              {/* Cards (Mobile) */}
-              <div className="grid grid-cols-1 gap-4 md:hidden">
-                {invites.map((invite, index) => {
-                  const status     = getStatusBadge(invite.status, invite.expires_at);
-                  const StatusIcon = status.icon;
-                  return (
-                    <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
-                      <div className="flex items-start gap-4">
-                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
-                          <FaUserCircle className="text-white text-3xl" />
+            {/* Cards (Mobile) */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+              {invites.map((invite, index) => {
+                const status     = getStatusBadge(invite.status, invite.expires_at);
+                const StatusIcon = status.icon;
+                return (
+                  <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
+                    <div className="flex items-start gap-4">
+                      <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
+                        <FaUserCircle className="text-white text-3xl" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-bold text-lg text-gray-800 truncate">{invite.user?.name || "No name"}</h3>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                            <StatusIcon size={10} />{status.text}
+                          </span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-bold text-lg text-gray-800 truncate">{invite.user?.name || "No name"}</h3>
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
-                              <StatusIcon size={10} />{status.text}
+                        <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                          <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
+                        </p>
+                        <div className="mt-3 space-y-2">
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <FaBriefcase className="text-blue-500" />{formatDisplay(invite.designation)}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">{formatDisplay(invite.employment_type)}</span>
+                            <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{formatDisplay(invite.salary_type)}</span>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <FaClock className="text-yellow-500" />
+                              Expires: {formatDateSimple(invite.expires_at)}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                            <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
-                          </p>
-                          <div className="mt-3 space-y-2">
-                            <p className="text-sm text-gray-600 flex items-center gap-2">
-                              <FaBriefcase className="text-blue-500" />{formatDisplay(invite.designation)}
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">{formatDisplay(invite.employment_type)}</span>
-                              <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{formatDisplay(invite.salary_type)}</span>
-                            </div>
-                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                              <span className="text-xs text-gray-500 flex items-center gap-1">
-                                <FaClock className="text-yellow-500" />
-                                Expires: {formatDateSimple(invite.expires_at)}
-                              </span>
-                            </div>
-                          </div>
                         </div>
                       </div>
-                      <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                        <button onClick={() => openModal(invite, "view")}
-                          className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
-                          <FaEye size={16} />
-                        </button>
-                        {invite.status === "pending" && !isExpired(invite.expires_at) && (
-                          <>
-                            <button onClick={() => handleEditClick(invite)}
-                              className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110">
-                              <FaEdit size={16} />
-                            </button>
-                            <button onClick={() => openModal(invite, "cancel")}
-                              className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110">
-                              <FaBan size={16} />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+                    </div>
+                    <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
+                      <button onClick={() => openModal(invite, "view")}
+                        className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
+                        <FaEye size={16} />
+                      </button>
+                      {invite.status === "pending" && !isExpired(invite.expires_at) && (
+                        <>
+                          <button onClick={() => handleEditClick(invite)}
+                            className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110">
+                            <FaEdit size={16} />
+                          </button>
+                          <button onClick={() => openModal(invite, "cancel")}
+                            className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110">
+                            <FaBan size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
 
-              <Pagination
-                currentPage={pagination.page}
-                totalItems={pagination.total}
-                itemsPerPage={pagination.limit}
-                onPageChange={handlePageChange}
-                variant="default"
-                showInfo={true}
-              />
-            </>
-          )}
+            <Pagination
+              currentPage={pagination.page}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={handlePageChange}
+              variant="default"
+              showInfo={true}
+            />
+          </>
+        )}
 
-          {/* Modals */}
-          <AnimatePresence>
-            {modalType === "view"   && selectedInvite && <ViewModal   invite={selectedInvite} onClose={closeModal} />}
-            {modalType === "cancel" && selectedInvite && <CancelModal invite={selectedInvite} onClose={closeModal} onConfirm={handleCancelInvite} />}
-          </AnimatePresence>
+        {/* Modals */}
+        <AnimatePresence>
+          {modalType === "view" && selectedInvite && <ViewModal invite={selectedInvite} onClose={closeModal} />}
+          {modalType === "cancel" && selectedInvite && <CancelModal invite={selectedInvite} onClose={closeModal} onConfirm={handleCancelInvite} />}
+        </AnimatePresence>
 
-          <EditStaffModal
-            isOpen={isEditModalOpen}
-            onClose={() => { setIsEditModalOpen(false); setEditingInvite(null); }}
-            onSuccess={handleEditSuccess}
-            staffData={editingInvite}
-          />
-        </div>
+        <EditStaffModal
+          isOpen={isEditModalOpen}
+          onClose={() => { setIsEditModalOpen(false); setEditingInvite(null); }}
+          onSuccess={handleEditSuccess}
+          staffData={editingInvite}
+        />
       </div>
-    </>
+    </div>
   );
 }
-
-// ─── Helper Components ────────────────────────────────────────────────────────
-
-const InfoItem = ({ icon, label, value }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
-      {icon}{label}
-    </label>
-    <div className="text-gray-800 font-medium">{value}</div>
-  </div>
-);

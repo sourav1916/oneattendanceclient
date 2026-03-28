@@ -1,38 +1,32 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    FaEnvelope,
-    FaPhone,
-    FaBuilding,
-    FaMapMarkerAlt,
-    FaShieldAlt,
-    FaCrown,
-    FaCheckCircle,
-    FaCalendarAlt,
-    FaChevronRight,
-    FaIdBadge,
-    FaGlobe,
-    FaCity,
-    FaUserCircle,
-    FaHashtag,
-    FaBolt,
-    FaLayerGroup,
-    FaUserShield,
+  FaEnvelope, FaPhone, FaBuilding, FaMapMarkerAlt, FaShieldAlt,
+  FaCrown, FaCheckCircle, FaCalendarAlt, FaChevronRight, FaIdBadge,
+  FaGlobe, FaCity, FaUserCircle, FaHashtag, FaBolt, FaLayerGroup,
+  FaUserShield
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Constants & Helpers ─────────────────────────────────────────────────────
+
+const PROFILE_TABS = ["Overview", "Companies", "Permissions"];
+
 const getInitials = (name) =>
-    name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+  name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 const formatDate = (iso) => {
-    if (!iso) return "N/A";
-    return new Date(iso).toLocaleDateString("en-IN", {
-        day: "numeric", month: "short", year: "numeric",
-    });
+  if (!iso) return "N/A";
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric",
+  });
 };
 
-const TABS = ["Overview", "Companies", "Permissions"];
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
+
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ProfilePage() {
@@ -145,31 +139,25 @@ export default function ProfilePage() {
                     </div>
                 </motion.div>
 
-                {/* ── Tab Navigation ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 }}
-                    className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm mb-6"
-                >
-                    {TABS.map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`relative flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-700"
-                                }`}
-                        >
-                            {activeTab === tab && (
-                                <motion.div
-                                    layoutId="activeTab"
-                                    className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md"
-                                    transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                                />
-                            )}
-                            <span className="relative z-10">{tab}</span>
-                        </button>
-                    ))}
-                </motion.div>
+                    <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm mb-6">
+                        {PROFILE_TABS.map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`relative flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                            >
+                                {activeTab === tab && (
+                                    <motion.div
+                                        layoutId="activeTab"
+                                        className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md"
+                                        transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                                    />
+                                )}
+                                <span className="relative z-10">{tab}</span>
+                            </button>
+                        ))}
+                    </div>
 
                 {/* ── Tab Content ── */}
                 <AnimatePresence mode="wait">

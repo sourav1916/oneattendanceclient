@@ -16,7 +16,8 @@ import {
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
-
+import apiCall from "../../utils/api";
+import { toast } from "react-toastify";
 
 
 const Signup = () => {
@@ -104,47 +105,45 @@ const Signup = () => {
 
     // Auto-focus next input
     if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`).focus();
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      if (nextInput) nextInput.focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
-      document.getElementById(`otp-${index - 1}`).focus();
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      if (prevInput) prevInput.focus();
     }
-  };
-
-  const showToast = (message, type = "success") => {
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 ${type === "success" ? "bg-gradient-to-r from-green-500 to-blue-500" : "bg-red-500"
-      } text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slideIn`;
-    toast.innerHTML = type === "success" ? `✓ ${message}` : `✗ ${message}`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
   };
 
 
   const handleRequestOtp = async () => {
-    if (!email) return showToast("Please enter email", "error");
-    if (!fullName)
-      return showToast("Please enter your full name", "error");
+    if (!email || !fullName) {
+      toast.error("Please enter both full name and email");
+      return;
+    }
 
     try {
       setLoading(true);
-
-      const response = await apiCall('/otp/signup/request-otp', 'POST', {
+      const res = await apiCall('/otp/signup/request-otp', 'POST', {
         email: email,
         phone: phone,
       });
 
-      setOtpSent(true);
-      setResendTimer(60);
-      setOtp(["", "", "", "", "", ""]);
-      setCurrentStep(2);
+      const data = await res.json();
 
-      showToast("OTP sent to your email 📧");
+      if (res.ok) {
+        setOtpSent(true);
+        setResendTimer(60);
+        setOtp(["", "", "", "", "", ""]);
+        setCurrentStep(2);
+        toast.success("OTP sent to your email 📧");
+      } else {
+        throw new Error(data.message || "Failed to send OTP");
+      }
     } catch (err) {
-      showToast(err.message || "Failed to send OTP", "error");
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -152,45 +151,63 @@ const Signup = () => {
 
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
-    if (otpString.length !== 6)
-      return showToast("Enter 6-digit OTP", "error");
+    if (otpString.length !== 6) {
+      toast.error("Please enter 6-digit OTP");
+      return;
+    }
 
     try {
       setLoading(true);
-
-      const response = await apiCall('/otp/signup/verify-otp', 'POST', {
+      const res = await apiCall('/otp/signup/verify-otp', 'POST', {
         email: email,
         otp: otpString
       });
 
-      setEmailVerified(true);
-      setCurrentStep(3);
+      const data = await res.json();
 
-      showToast("Email verified successfully ✅");
+      if (res.ok) {
+        setEmailVerified(true);
+        setCurrentStep(3);
+        toast.success("Email verified successfully ✅");
+      } else {
+        throw new Error(data.message || "Invalid OTP");
+      }
     } catch (err) {
-      showToast(err.message || "Invalid OTP", "error");
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateAccount = async () => {
-    if (!password)
-      return showToast("Please set a password", "error");
-
-    if (password.length < 6)
-      return showToast("Password must be at least 6 characters", "error");
+    if (!password) {
+      toast.error("Please set a password");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
 
     try {
       setLoading(true);
-      const name = fullName;
-      if (!res.ok) throw new Error(data.message);
+      const res = await apiCall('/users/register', 'POST', {
+        name: fullName,
+        email: email,
+        password: password,
+        phone: phone
+      });
 
-      showToast("Account created successfully 🎉");
+      const data = await res.json();
 
-      setTimeout(() => navigate("/login"), 1500);
+      if (res.ok) {
+        toast.success("Account created successfully 🎉");
+        setTimeout(() => navigate("/login"), 1500);
+      } else {
+        throw new Error(data.message || "Signup failed");
+      }
     } catch (err) {
-      showToast(err.message || "Signup failed", "error");
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

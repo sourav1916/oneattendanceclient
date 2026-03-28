@@ -74,12 +74,13 @@ function HomePage() {
 
     if (!storedCompany) {
       try {
-        const response = await apiCall('/users/profile-role', 'GET');
+      const res = await apiCall('/users/profile-role', 'GET');
+      const response = await res.json();
 
-        if (response.success && response.data) {
-          const ownedCompanies = response.data.companies?.owned_companies || [];
-          const memberCompanies = response.data.companies?.companies || [];
-          const userCompaniesData = [...ownedCompanies, ...memberCompanies];
+      if (response.success && response.data) {
+        const ownedCompanies = response.data.companies?.owned_companies || [];
+        const memberCompanies = response.data.companies?.companies || [];
+        const userCompaniesData = [...ownedCompanies, ...memberCompanies];
 
           // Only one company → auto select
           if (userCompaniesData.length === 1) {

@@ -150,7 +150,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
   const loadStaffData = () => {
     setIsLoadingStaff(true);
     try {
-      console.log("Loading staff data:", staffData);
+
 
       // Load user data
       if (staffData.user) {

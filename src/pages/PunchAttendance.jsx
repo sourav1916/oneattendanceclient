@@ -1,23 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import apiCall from '../utils/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  FaFingerprint, FaClock, FaCoffee, FaSignInAlt, FaSignOutAlt,
+  FaMapMarkerAlt, FaCamera, FaIdCard, FaWifi, FaHandPaper,
+  FaCheckCircle, FaTimesCircle, FaCalendarAlt
+} from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import {
-  FaFingerprint,
-  FaClock,
-  FaCoffee,
-  FaSignInAlt,
-  FaSignOutAlt,
-  FaMapMarkerAlt,
-  FaCamera,
-  FaIdCard,
-  FaWifi,
-  FaHandPaper,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaCalendarAlt
-} from 'react-icons/fa';
+import apiCall from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const ATTENDANCE_ICONS = {
+  gps: FaMapMarkerAlt,
+  face: FaCamera,
+  qr: FaIdCard,
+  fingerprint: FaFingerprint,
+  ip: FaWifi,
+  manual: FaHandPaper
+};
+
+// ─── Animation Variables ─────────────────────────────────────────────────────
+
+const floatAnimation = {
+  float: {
+    translate: ["0px 0px", "30px -50px", "-20px 20px", "0px 0px"],
+    scale: [1, 1.1, 0.9, 1],
+    transition: { duration: 7, repeat: Infinity, ease: "easeInOut" }
+  }
+};
 
 const PunchAttendance = () => {
   const { attendanceMethods, user } = useAuth();
@@ -35,17 +46,8 @@ const PunchAttendance = () => {
     }
   }, [attendanceMethods]);
 
-  const getIcon = (key) => {
-    const icons = {
-      gps: FaMapMarkerAlt,
-      face: FaCamera,
-      qr: FaIdCard,
-      fingerprint: FaFingerprint,
-      ip: FaWifi,
-      manual: FaHandPaper
-    };
-    return icons[key] || FaFingerprint;
-  };
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+    const getIcon = (key) => ATTENDANCE_ICONS[key] || FaFingerprint;
 
   const getCurrentLocation = () => {
     return new Promise((resolve, reject) => {
@@ -417,7 +419,6 @@ const PunchAttendance = () => {
     </div>
   );
 };
-
 
 export default PunchAttendance;
 

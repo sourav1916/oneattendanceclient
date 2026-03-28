@@ -9,11 +9,12 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const MODAL_TYPES = {
     NONE: 'NONE',
@@ -33,6 +34,20 @@ const backdropVariants = {
     visible: { opacity: 1 },
     exit: { opacity: 0 }
 };
+
+const INTERNAL_METHOD_OPTIONS = [
+    { value: 'manual', label: 'Manual', icon: FaHandPaper, description: 'Staff marks manually' },
+    { value: 'auto', label: 'Auto', icon: FaRobot, description: 'Automatic detection' }
+];
+
+// ─── Helper Components ───────────────────────────────────────────────────────
+
+const InfoItem = ({ icon, label, value }) => (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">{icon}{label}</label>
+        <div className="text-gray-800 font-medium">{value}</div>
+    </div>
+);
 
 const EmployeeManagement = () => {
     const [employees, setEmployees] = useState([]);
@@ -565,7 +580,6 @@ const EmployeeManagement = () => {
 
     return (
         <div className="min-h-screen p-3 md:p-6 font-sans">
-            <ToastContainer position="top-right" autoClose={3500} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable theme="light" />
 
             {/* Header */}
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
@@ -1153,7 +1167,7 @@ const EmployeeManagement = () => {
                                                                                     <div className="space-y-2">
                                                                                         <label className="text-sm font-medium text-gray-700">Marking Methods</label>
                                                                                         <div className="flex flex-wrap gap-4">
-                                                                                            {internalMethodOptions.map((internalMethod) => (
+                                                                                            {INTERNAL_METHOD_OPTIONS.map((internalMethod) => (
                                                                                                 <label
                                                                                                     key={internalMethod.value}
                                                                                                     className="flex items-center gap-2 cursor-pointer hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors"
@@ -1291,12 +1305,6 @@ const EmployeeManagement = () => {
     );
 };
 
-// Helper Components
-const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">{icon}{label}</label>
-        <div className="text-gray-800 font-medium">{value}</div>
-    </div>
-);
+// InfoItem removed from bottom as it was moved to top
 
 export default EmployeeManagement;

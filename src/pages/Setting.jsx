@@ -1,17 +1,31 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog,
   FaMoon, FaSun, FaBars, FaTimes, FaSave, FaSpinner
 } from "react-icons/fa";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
 import Skeleton from "../components/SkeletonComponent";
 import apiCall from "../utils/api";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SETTINGS_TABS = [
+  { id: "companies", label: "Companies", icon: FaBuilding },
+  { id: "profile", label: "Profile", icon: FaUser },
+  { id: "notifications", label: "Notifications", icon: FaBell },
+  { id: "security", label: "Security", icon: FaShieldAlt },
+  { id: "preferences", label: "Preferences", icon: FaCog },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
+};
 
 
 
@@ -284,20 +298,13 @@ const SettingsPage = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Success
         toast.success(data.message || "Password updated successfully!");
-        // Clear form
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        // Handle specific error responses
-        if (response.status === 400) {
-          toast.error(data.message || "Invalid password format");
-        } else if (response.status === 401) {
+        if (response.status === 401) {
           toast.error("Current password is incorrect");
-        } else if (response.status === 404) {
-          toast.error("User not found");
         } else {
           toast.error(data.message || "Failed to update password");
         }
@@ -309,17 +316,12 @@ const SettingsPage = () => {
       setIsUpdatingPassword(false);
     }
   };
+
   const handleNotificationSettings = () => {
     toast.success("Notification preferences updated!");
   };
 
-  const tabs = [
-    { id: "companies", label: "Companies", icon: FaBuilding },
-    { id: "profile", label: "Profile", icon: FaUser },
-    { id: "notifications", label: "Notifications", icon: FaBell },
-    { id: "security", label: "Security", icon: FaShieldAlt },
-    { id: "preferences", label: "Preferences", icon: FaCog },
-  ];
+  const ActiveIcon = SETTINGS_TABS.find(tab => tab.id === activeTab)?.icon || FaBuilding;
 
   if (loading) {
     return (
@@ -344,7 +346,7 @@ const SettingsPage = () => {
     );
   }
 
-  const ActiveIcon = tabs.find(tab => tab.id === activeTab)?.icon || FaBuilding;
+  // (Handled by the find on SETTINGS_TABS above)
 
   return (
     <div className="min-h-screen py-4 sm:py-6 lg:py-8 px-3 sm:px-4 lg:px-6 xl:px-8">
@@ -392,7 +394,7 @@ const SettingsPage = () => {
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute z-10 w-[calc(100%-1.5rem)] mt-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
               >
-                {tabs.map((tab) => {
+                {SETTINGS_TABS.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
@@ -417,9 +419,9 @@ const SettingsPage = () => {
         </div>
 
         {/* Desktop Tabs - Hidden on small screens */}
-        <div className="hidden sm:block mb-6 lg:mb-8 border-b border-gray-200 overflow-x-auto">
-          <nav className="flex space-x-4 lg:space-x-8 min-w-max pb-1">
-            {tabs.map((tab) => {
+        <div className="hidden sm:block mb-6 lg:mb-8 border-b border-gray-200 overflow-x-auto text-center justify-center place-items-center">
+          <nav className="flex space-x-4 lg:space-x-8 min-w-max pb-1 items-center justify-center">
+            {SETTINGS_TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
