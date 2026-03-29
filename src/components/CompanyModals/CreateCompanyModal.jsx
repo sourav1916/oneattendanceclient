@@ -14,6 +14,7 @@ const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
 function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreated }) {
   const [companyForm, setCompanyForm] = useState({
     owner_user_id: userId,
+    company_ip: "",
     name: "",
     legal_name: "",
     logo_url: "",
@@ -30,6 +31,15 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [addressTouched, setAddressTouched] = useState(false);
+  const [ipMode, setIpMode] = useState('auto');
+  const [addressMode, setAddressMode] = useState('manual');
+  const [logoFile, setLogoFile] = useState(null);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setLogoFile(e.target.files[0]);
+    }
+  };
 
   useEffect(() => {
     if (userId) {
@@ -114,27 +124,64 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
     }
   };
 
-  const handleManualLocation = () => {
-    if ("geolocation" in navigator) {
-      setIsGeocoding(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCompanyForm(prev => ({
-            ...prev,
-            latitude: position.coords.latitude.toString(),
-            longitude: position.coords.longitude.toString()
-          }));
-          setIsGeocoding(false);
-          toast.success("📍 Current location detected!");
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          toast.error("Failed to get current location");
-          setIsGeocoding(false);
-        }
-      );
-    } else {
-      toast.error("Geolocation is not supported by your browser");
+  const handleAddressModeChange = (mode) => {
+    setAddressMode(mode);
+    if (mode === 'auto') {
+      if ("geolocation" in navigator) {
+        setIsGeocoding(true);
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            
+            try {
+              const params = new URLSearchParams({
+                lat: lat.toString(),
+                lon: lon.toString(),
+                format: 'json',
+                addressdetails: 1
+              });
+              const response = await fetch(`${GEOCODING_API.replace('search', 'reverse')}?${params}`, {
+                headers: {
+                  'Accept': 'application/json',
+                  'User-Agent': 'AttendanceApp/1.0'
+                }
+              });
+              const data = await response.json();
+              if (data && data.address) {
+                setCompanyForm(prev => ({
+                  ...prev,
+                  latitude: lat.toString(),
+                  longitude: lon.toString(),
+                  address_line1: data.address.road || data.address.suburb || data.address.neighbourhood || "",
+                  city: data.address.city || data.address.town || data.address.county || "",
+                  state: data.address.state || "",
+                  postal_code: data.address.postcode || ""
+                }));
+                toast.success("📍 Location and address auto-detected!");
+              } else {
+                setCompanyForm(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
+                toast.info("📍 Coordinates detected, but could not resolve address.");
+              }
+            } catch (err) {
+              console.error("Reverse geocoding error:", err);
+              setCompanyForm(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
+              toast.info("📍 Coordinates detected, but could not resolve address.");
+            } finally {
+              setIsGeocoding(false);
+            }
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+            toast.error("Failed to get current location");
+            setIsGeocoding(false);
+            setAddressMode('manual');
+          }
+        );
+      } else {
+        toast.error("Geolocation is not supported by your browser");
+        setAddressMode('manual');
+      }
     }
   };
 
@@ -155,7 +202,21 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
         return;
       }
 
-      const res = await apiCall('/company/create', 'POST', companyForm);
+      const formData = new FormData();
+      Object.keys(companyForm).forEach(key => {
+        if (key === 'logo_url') return;
+        if (key === 'company_ip' && ipMode === 'auto') return; // backend handles auto
+        
+        if (companyForm[key] !== null && companyForm[key] !== undefined) {
+          formData.append(key, companyForm[key]);
+        }
+      });
+      
+      if (logoFile) {
+        formData.append('logo_url', logoFile);
+      }
+
+      const res = await apiCall('/company/create', 'POST', formData);
       const result = await res.json();
 
       if (!result.success) {
@@ -188,6 +249,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
   const handleClose = () => {
     setCompanyForm({
       owner_user_id: userId,
+      company_ip: "",
       name: "",
       legal_name: "",
       logo_url: "",
@@ -200,6 +262,9 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
       latitude: "",
       longitude: ""
     });
+    setIpMode('auto');
+    setAddressMode('manual');
+    setLogoFile(null);
     setAddressTouched(false);
     setIsSubmitting(false);
     setIsGeocoding(false);
@@ -299,27 +364,103 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                   />
                 </div>
 
-                {/* Logo URL */}
+                {/* Company IP */}
+                <div className="md:col-span-2 space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                    <FaBuilding className="w-3 h-3 text-indigo-500" />
+                    Company IP Settings
+                  </label>
+                  
+                  <div className="flex items-center gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="ipMode" 
+                        value="auto"
+                        checked={ipMode === 'auto'}
+                        onChange={() => setIpMode('auto')}
+                        className="text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-sm text-gray-700 font-medium">Auto-detect</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="radio" 
+                        name="ipMode" 
+                        value="manual"
+                        checked={ipMode === 'manual'}
+                        onChange={() => setIpMode('manual')}
+                        className="text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                      />
+                      <span className="text-sm text-gray-700 font-medium">Manual Entry</span>
+                    </label>
+                  </div>
+
+                  {ipMode === 'manual' ? (
+                    <div className="space-y-1 pt-2">
+                      <input
+                        name="company_ip"
+                        placeholder="e.g., 192.168.1.1, 8.8.8.8 (Comma-separated for multiple URLs)"
+                        value={companyForm.company_ip}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm bg-white"
+                      />
+                      <p className="text-xs text-gray-500">Provide multiple IP addresses separated by commas.</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 pt-1">The system will automatically record the valid network IP via connection headers.</p>
+                  )}
+                </div>
+
+                {/* Logo File */}
                 <div className="md:col-span-2 space-y-1">
                   <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
                     <FaLink className="w-3 h-3 text-indigo-500" />
-                    Logo URL
+                    Company Logo
                   </label>
                   <input
+                    type="file"
                     name="logo_url"
-                    placeholder="https://example.com/logo.png"
-                    value={companyForm.logo_url}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                   />
+                  {logoFile && <p className="text-xs text-green-600 mt-1">Selected: {logoFile.name}</p>}
                 </div>
 
                 {/* Address Section */}
                 <div className="md:col-span-2 mt-2">
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <FaMapMarkerAlt className="w-4 h-4" />
-                    Address Information
-                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-gray-100 pb-3">
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                      <FaMapMarkerAlt className="w-4 h-4" />
+                      Address Information
+                    </h3>
+
+                    <div className="flex items-center gap-4 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          name="addressMode" 
+                          value="auto"
+                          checked={addressMode === 'auto'}
+                          onChange={() => handleAddressModeChange('auto')}
+                          className="text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                        <span className="text-xs text-gray-700 font-medium">Auto-detect Location</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="radio" 
+                          name="addressMode" 
+                          value="manual"
+                          checked={addressMode === 'manual'}
+                          onChange={() => handleAddressModeChange('manual')}
+                          className="text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                        <span className="text-xs text-gray-700 font-medium">Manual Entry</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Address Line 1 */}
@@ -333,7 +474,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                     placeholder="Street address, P.O. box, company name"
                     value={companyForm.address_line1}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                    disabled={addressMode === 'auto'}
                   />
                 </div>
 
@@ -348,7 +490,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                     placeholder="Apartment, suite, unit, building, floor, etc."
                     value={companyForm.address_line2}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                    disabled={addressMode === 'auto'}
                   />
                 </div>
 
@@ -363,7 +506,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                     placeholder="e.g., Mumbai"
                     value={companyForm.city}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                    disabled={addressMode === 'auto'}
                   />
                 </div>
 
@@ -378,7 +522,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                     placeholder="e.g., Maharashtra"
                     value={companyForm.state}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                    disabled={addressMode === 'auto'}
                   />
                 </div>
 
@@ -393,7 +538,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                     placeholder="e.g., 400001"
                     value={companyForm.postal_code}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm"
+                    className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                    disabled={addressMode === 'auto'}
                   />
                 </div>
 
@@ -426,7 +572,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mb-3">
-                    Coordinates are automatically calculated from your address. You can also manually set them or use your current location.
+                    {addressMode === 'auto' ? "Coordinates are auto-detected from your current location." : "Coordinates are automatically calculated from your address. You can also manually set them."}
                   </p>
                 </div>
 
@@ -442,7 +588,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                       placeholder="Auto-detected"
                       value={companyForm.latitude}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm pr-10"
+                      className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm pr-10 ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                      disabled={addressMode === 'auto'}
                     />
                     {companyForm.latitude && (
                       <FaCheck className="absolute right-3 top-3 w-4 h-4 text-green-500" />
@@ -462,7 +609,8 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                       placeholder="Auto-detected"
                       value={companyForm.longitude}
                       onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm pr-10"
+                      className={`w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm pr-10 ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                      disabled={addressMode === 'auto'}
                     />
                     {companyForm.longitude && (
                       <FaCheck className="absolute right-3 top-3 w-4 h-4 text-green-500" />
@@ -470,22 +618,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                   </div>
                 </div>
 
-                {/* Manual Location Button */}
-                <div className="md:col-span-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleManualLocation}
-                    disabled={isGeocoding}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isGeocoding ? (
-                      <FaSpinner className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <FaCrosshairs className="w-4 h-4" />
-                    )}
-                    Use My Current Location
-                  </button>
-                </div>
+                {/* No Manual Location Button anymore, handled by toggle */}
               </div>
             </div>
 

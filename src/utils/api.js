@@ -11,9 +11,11 @@ const API_BASE = "https://api-attendance.onesaas.in";
 export const apiCall = async (endpoint, method = 'GET', body = null, companyId = null) => {
   const token = localStorage.getItem('token');
 
-  const headers = {
-    'Content-Type': 'application/json',
-  };
+  const headers = {};
+
+  if (!(body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -29,7 +31,11 @@ export const apiCall = async (endpoint, method = 'GET', body = null, companyId =
   };
 
   if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
-    options.body = JSON.stringify(body);
+    if (body instanceof FormData) {
+      options.body = body;
+    } else {
+      options.body = JSON.stringify(body);
+    }
   }
 
   // Handle absolute vs relative URLs

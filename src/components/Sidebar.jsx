@@ -51,7 +51,19 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaClock,
       label: 'Attendance',
       path: '/attendance',
-      permission: ['att_punch', 'att_view_own', 'att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign']
+      permission: ['att_punch', 'att_view_own']
+    },
+    {
+      icon: FaUmbrellaBeach,
+      label: 'My Leaves',
+      path: '/my-leaves',
+      permission: ['leave_apply', 'leave_view_own', 'leave_cancel_own']
+    },
+    {
+      icon: FaFileInvoiceDollar,
+      label: 'My Salary',
+      path: '/my-salary',
+      permission: ['salary_view_own', 'salary_advance_view']
     },
     {
       icon: FaEnvelope,
@@ -68,13 +80,13 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           icon: FaBuilding,
           label: 'Invites Management',
           path: '/company-invites',
-          permission: ['emp_invite', 'emp_invite_accept', 'emp_invite_cancel_own', 'emp_invite_cancel_admin']
+          permission: ['emp_invite', 'emp_invite_cancel_admin']
         },
         {
           icon: FaUsers,
           label: 'Employee Management',
           path: '/employee-management',
-          permission: ['emp_create', 'emp_view', 'emp_update', 'emp_delete']
+          permission: ['emp_create', 'emp_view', 'emp_update', 'emp_delete', 'report_emp', 'export_emp']
         },
         {
           icon: FaUserShield,
@@ -83,10 +95,22 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           permission: ['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']
         },
         {
+          icon: FaClock,
+          label: 'Attendance Management',
+          path: '/attendance-management',
+          permission: ['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']
+        },
+        {
           icon: FaUmbrellaBeach,
           label: 'Leave Management',
           path: '/leave-management',
-          permission: ['leave_apply', 'leave_view_own', 'leave_view_all', 'leave_review', 'leave_type_create']
+          permission: ['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']
+        },
+        {
+          icon: FaCog,
+          label: 'Company Settings',
+          path: '/company-settings',
+          permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
         }
       ]
     },
@@ -94,7 +118,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaHandHoldingUsd,
       label: 'Cash Book',
       path: '/cashbook',
-      permission: ['salary_create', 'salary_view_own', 'salary_view_all', 'salary_update', 'payroll_generate', 'payroll_view', 'payroll_approve', 'payroll_mark_paid']
+      permission: ['salary_create', 'salary_view_all', 'salary_update', 'payroll_generate', 'payroll_view', 'payroll_approve', 'payroll_mark_paid', 'salary_advance_create', 'report_payroll', 'export_payroll']
     },
     {
       icon: FaCommentDots,

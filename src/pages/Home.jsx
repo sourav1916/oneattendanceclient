@@ -21,7 +21,12 @@ import {
   FaUserCircle,
   FaRegClock,
   FaRegCalendarAlt,
-  FaExchangeAlt
+  FaExchangeAlt,
+  FaCog,
+  FaUmbrellaBeach,
+  FaFileInvoiceDollar,
+  FaUserShield,
+  FaHandHoldingUsd
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/StaffModals/AddStaffModal";
@@ -139,87 +144,144 @@ function HomePage() {
 
   // Quick Actions Definition based on Role
   const getQuickActions = () => {
-    const isEmployeeRole = activeRole === 'employee';
+    // 1. Core Personal Permissions
+    const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']);
+    const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']);
+    const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']);
+    
+    // 2. Management Permissions
+    const hasAddStaffPerm = hasPermission(['emp_create', 'emp_invite']);
+    const hasInviteMgmtPerm = hasPermission(['emp_invite', 'emp_invite_cancel_admin']);
+    const hasEmployeeMgmtPerm = hasPermission(['emp_create', 'emp_view', 'emp_update', 'emp_delete', 'report_emp', 'export_emp']);
+    const hasPermissionsPerm = hasPermission(['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']);
+    const hasAttendanceMgmtPerm = hasPermission(['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']);
+    const hasLeaveMgmtPerm = hasPermission(['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']);
+    const hasCompanySetPerm = hasPermission(['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']);
+    const hasCashbookPerm = hasPermission(['salary_create', 'salary_view_all', 'salary_update', 'payroll_generate', 'payroll_view', 'payroll_approve', 'payroll_mark_paid', 'salary_advance_create', 'report_payroll', 'export_payroll']);
 
-    // Base actions for non-employees (Users/Owners)
-    const ownerActions = [
+    return [
+      {
+        title: "Punch Attendance",
+        description: hasPunchPerm ? "Mark your work session" : "No permission",
+        icon: FaFingerprint,
+        color: hasPunchPerm ? "from-indigo-500 to-purple-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasPunchPerm && navigate('/attendance'),
+        gradient: hasPunchPerm ? "bg-gradient-to-r from-indigo-500 to-purple-500" : "bg-slate-200",
+        disabled: !hasPunchPerm
+      },
+      {
+        title: "My Leaves",
+        description: hasMyLeavePerm ? "Apply & view leaves" : "No permission",
+        icon: FaUmbrellaBeach,
+        color: hasMyLeavePerm ? "from-cyan-500 to-blue-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasMyLeavePerm && navigate('/my-leaves'),
+        gradient: hasMyLeavePerm ? "bg-gradient-to-r from-cyan-500 to-blue-500" : "bg-slate-200",
+        disabled: !hasMyLeavePerm
+      },
+      {
+        title: "My Salary",
+        description: hasMySalaryPerm ? "View financial logs" : "No permission",
+        icon: FaFileInvoiceDollar,
+        color: hasMySalaryPerm ? "from-amber-500 to-orange-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasMySalaryPerm && navigate('/my-salary'),
+        gradient: hasMySalaryPerm ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-slate-200",
+        disabled: !hasMySalaryPerm
+      },
       {
         title: "My Invites",
-        description: "View and accept company invites",
+        description: "View personal invitations",
         icon: FaEnvelope,
         color: "from-pink-500 to-rose-500",
         onClick: () => navigate('/my-invites'),
-        gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
+        gradient: "bg-gradient-to-r from-pink-500 to-rose-500",
+        disabled: false
       },
       {
         title: "Add Staff",
-        description: "Onboard new team members",
+        description: hasAddStaffPerm ? "Onboard new members" : "No permission",
         icon: FaUserPlus,
-        color: "from-green-500 to-emerald-500",
-        onClick: handleAddStaffClick,
-        gradient: "bg-gradient-to-r from-green-500 to-emerald-500"
+        color: hasAddStaffPerm ? "from-green-500 to-emerald-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasAddStaffPerm && handleAddStaffClick(),
+        gradient: hasAddStaffPerm ? "bg-gradient-to-r from-green-500 to-emerald-500" : "bg-slate-200",
+        disabled: !hasAddStaffPerm
+      },
+      {
+        title: "Invites Mgmt",
+        description: hasInviteMgmtPerm ? "Manage team invites" : "No permission",
+        icon: FaBuilding,
+        color: hasInviteMgmtPerm ? "from-indigo-600 to-blue-600" : "from-slate-400 to-slate-500",
+        onClick: () => hasInviteMgmtPerm && navigate('/company-invites'),
+        gradient: hasInviteMgmtPerm ? "bg-gradient-to-r from-indigo-600 to-blue-600" : "bg-slate-200",
+        disabled: !hasInviteMgmtPerm
+      },
+      {
+        title: "Employee Mgmt",
+        description: hasEmployeeMgmtPerm ? "Manage directory" : "No permission",
+        icon: FaUsers,
+        color: hasEmployeeMgmtPerm ? "from-blue-500 to-cyan-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasEmployeeMgmtPerm && navigate('/employee-management'),
+        gradient: hasEmployeeMgmtPerm ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-slate-200",
+        disabled: !hasEmployeeMgmtPerm
+      },
+      {
+        title: "Permissions",
+        description: hasPermissionsPerm ? "Manage roles" : "No permission",
+        icon: FaUserShield,
+        color: hasPermissionsPerm ? "from-purple-500 to-pink-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasPermissionsPerm && navigate('/permission-management'),
+        gradient: hasPermissionsPerm ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-slate-200",
+        disabled: !hasPermissionsPerm
+      },
+      {
+        title: "Attendance Mgmt",
+        description: hasAttendanceMgmtPerm ? "Review & edit records" : "No permission",
+        icon: FaClock,
+        color: hasAttendanceMgmtPerm ? "from-teal-500 to-emerald-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasAttendanceMgmtPerm && navigate('/attendance-management'),
+        gradient: hasAttendanceMgmtPerm ? "bg-gradient-to-r from-teal-500 to-emerald-500" : "bg-slate-200",
+        disabled: !hasAttendanceMgmtPerm
+      },
+      {
+        title: "Leave Mgmt",
+        description: hasLeaveMgmtPerm ? "Review applications" : "No permission",
+        icon: FaUmbrellaBeach,
+        color: hasLeaveMgmtPerm ? "from-orange-500 to-red-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasLeaveMgmtPerm && navigate('/leave-management'),
+        gradient: hasLeaveMgmtPerm ? "bg-gradient-to-r from-orange-500 to-red-500" : "bg-slate-200",
+        disabled: !hasLeaveMgmtPerm
+      },
+      {
+        title: "Company Config",
+        description: hasCompanySetPerm ? "Manage settings & shifts" : "No permission",
+        icon: FaCog, 
+        color: hasCompanySetPerm ? "from-slate-600 to-slate-800" : "from-slate-400 to-slate-500",
+        onClick: () => hasCompanySetPerm && navigate('/company-settings'),
+        gradient: hasCompanySetPerm ? "bg-gradient-to-r from-slate-600 to-slate-800" : "bg-slate-200",
+        disabled: !hasCompanySetPerm
+      },
+      {
+        title: "Cashbook & Payroll",
+        description: hasCashbookPerm ? "Track finances" : "No permission",
+        icon: FaHandHoldingUsd,
+        color: hasCashbookPerm ? "from-amber-600 to-orange-600" : "from-slate-400 to-slate-500",
+        onClick: () => hasCashbookPerm && navigate('/cashbook'),
+        gradient: hasCashbookPerm ? "bg-gradient-to-r from-amber-600 to-orange-600" : "bg-slate-200",
+        disabled: !hasCashbookPerm
       },
       {
         title: "Create Company",
         description: "Launch a new organization",
         icon: FaBuilding,
-        color: "from-blue-500 to-indigo-500",
+        color: "from-blue-600 to-indigo-700",
         onClick: () => setOpenCreateCompanyModal(true),
-        gradient: "bg-gradient-to-r from-blue-500 to-indigo-500"
-      },
-      {
-        title: "Cashbook",
-        description: "Track your transactions",
-        icon: FaChartLine,
-        color: "from-amber-500 to-orange-500",
-        onClick: () => navigate('/cashbook'),
-        gradient: "bg-gradient-to-r from-amber-500 to-orange-500"
+        gradient: "bg-gradient-to-r from-blue-600 to-indigo-700",
+        disabled: false // Global action
       }
     ];
-
-    if (isEmployeeRole) {
-      const hasInvitePerm = hasPermission('manage_invites');
-      return [
-        {
-          title: "Punch Attendance",
-          description: "Mark your work session",
-          icon: FaFingerprint,
-          color: "from-indigo-500 to-purple-500",
-          onClick: () => navigate('/attendance'),
-          gradient: "bg-gradient-to-r from-indigo-500 to-purple-500"
-        },
-        {
-          title: "My Invites",
-          description: "View personal invitations",
-          icon: FaEnvelope,
-          color: "from-pink-500 to-rose-500",
-          onClick: () => navigate('/my-invites'),
-          gradient: "bg-gradient-to-r from-pink-500 to-rose-500"
-        },
-        {
-          title: "Cashbook",
-          description: "View financial logs",
-          icon: FaChartLine,
-          color: "from-amber-500 to-orange-500",
-          onClick: () => navigate('/cashbook'),
-          gradient: "bg-gradient-to-r from-amber-500 to-orange-500"
-        },
-        {
-          title: "Company Invites",
-          description: hasInvitePerm ? "Manage team invites" : "No permission to manage",
-          icon: FaEnvelope,
-          color: hasInvitePerm ? "from-indigo-500 to-blue-500" : "from-slate-400 to-slate-500",
-          onClick: () => hasInvitePerm && navigate('/company-invites'),
-          gradient: hasInvitePerm ? "bg-gradient-to-r from-indigo-500 to-blue-500" : "bg-slate-200",
-          disabled: !hasInvitePerm
-        }
-      ];
-    }
-
-    return ownerActions;
   };
 
   const quickActions = getQuickActions();
+  const canPunch = hasPermission(['att_punch', 'att_view_own']);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -237,7 +299,7 @@ function HomePage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="relative mb-12 overflow-hidden min-h-[400px] flex flex-col md:flex-row group"
+          className="relative mb-12 overflow-hidden min-h-[300px] pt-12 flex flex-col md:flex-row group"
         >
           {/* Subtle Background Pattern */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:20px_20px]"></div>
@@ -265,13 +327,13 @@ function HomePage() {
             {/* Bottom: Action Chips */}
             <div className="flex flex-wrap gap-3 mt-8">
               <button
-                onClick={() => navigate('/attendance')}
-                className="group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-300"
+                onClick={() => canPunch && navigate('/attendance')}
+                className={`group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm transition-all duration-300 ${!canPunch ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:shadow-md hover:border-indigo-300'}`}
               >
-                <div className="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center group-hover/chip:bg-indigo-600 transition-colors">
-                  <FaFingerprint className="w-4 h-4 text-indigo-600 group-hover/chip:text-white" />
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${!canPunch ? 'bg-slate-100' : 'bg-indigo-50 group-hover/chip:bg-indigo-600'}`}>
+                  <FaFingerprint className={`w-4 h-4 ${!canPunch ? 'text-slate-400' : 'text-indigo-600 group-hover/chip:text-white'}`} />
                 </div>
-                <span className="text-sm font-bold text-slate-700">Punch Now</span>
+                <span className={`text-sm font-bold ${!canPunch ? 'text-slate-400' : 'text-slate-700'}`}>Punch Now</span>
               </button>
               <button
                 onClick={() => navigate('/my-invites')}
@@ -291,7 +353,19 @@ function HomePage() {
               onClick={() => setShowCompanySwitcher(true)}
               className="group flex items-center gap-3 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
             >
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+              {company?.logo_url ? (
+                <img 
+                  src={company.logo_url.startsWith('http') ? company.logo_url : `https://api-attendance.onesaas.in${company.logo_url}`} 
+                  alt="Company Logo" 
+                  className="w-8 h-8 rounded-xl object-cover border border-slate-200 bg-white"
+                  onError={(e) => {
+                    e.target.onerror = null; 
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div className={`w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl items-center justify-center ${company?.logo_url ? 'hidden' : 'flex'}`}>
                 <FaStore className="w-4 h-4 text-white" />
               </div>
               <div className="text-left">
@@ -400,7 +474,19 @@ function HomePage() {
                           className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${company?.id === comp.id ? 'bg-indigo-50 border-2 border-indigo-200' : 'bg-slate-50 border border-slate-200 hover:border-indigo-300'}`}
                         >
                           <div className="flex items-center gap-4 flex-1">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${company?.id === comp.id ? 'bg-indigo-600 text-white' : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'}`}>
+                            {comp?.logo_url ? (
+                              <img 
+                                src={comp.logo_url.startsWith('http') ? comp.logo_url : `https://api-attendance.onesaas.in${comp.logo_url}`} 
+                                alt="Company Logo" 
+                                className="w-12 h-12 rounded-xl object-cover shadow-sm bg-white border border-indigo-100 shrink-0"
+                                onError={(e) => {
+                                  e.target.onerror = null; 
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-12 h-12 rounded-xl items-center justify-center shrink-0 ${company?.id === comp.id ? 'bg-indigo-600 text-white' : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'} ${comp?.logo_url ? 'hidden' : 'flex'}`}>
                               <FaBuilding className="w-5 h-5" />
                             </div>
                             <div className="flex-1">

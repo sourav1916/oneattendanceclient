@@ -107,12 +107,25 @@ const SettingsPage = () => {
         return;
       }
 
-      const payload = {
-        id: companyId,
-        ...Object.fromEntries(
-          Object.entries(updatedData).filter(([_, value]) => value !== "" && value !== null && value !== undefined)
-        )
-      };
+      const hasFile = Object.values(updatedData).some(val => val instanceof File);
+
+      let payload;
+      if (hasFile) {
+        payload = new FormData();
+        payload.append('id', companyId);
+        Object.entries(updatedData).forEach(([key, value]) => {
+          if (value !== "" && value !== null && value !== undefined) {
+            payload.append(key, value);
+          }
+        });
+      } else {
+        payload = {
+          id: companyId,
+          ...Object.fromEntries(
+            Object.entries(updatedData).filter(([_, value]) => value !== "" && value !== null && value !== undefined)
+          )
+        };
+      }
 
       const response = await apiCall('/company/edit', 'PUT', payload);
 
@@ -380,7 +393,7 @@ const SettingsPage = () => {
             <div className="flex items-center gap-2">
               <ActiveIcon className="w-5 h-5 text-indigo-600" />
               <span className="font-medium text-gray-900">
-                {tabs.find(tab => tab.id === activeTab)?.label}
+                {SETTINGS_TABS.find(tab => tab.id === activeTab)?.label}
               </span>
             </div>
             {isMobileMenuOpen ? <FaTimes className="w-4 h-4 text-gray-500" /> : <FaBars className="w-4 h-4 text-gray-500" />}
@@ -498,8 +511,23 @@ const SettingsPage = () => {
 
               {/* Active Company Info - Responsive */}
               {activeCompany && companies.length > 0 && (
-                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
-                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-center gap-4">
+                  {activeCompany.logo_url ? (
+                    <img 
+                      src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`} 
+                      alt="Company Logo" 
+                      className="w-14 h-14 rounded-xl object-cover border border-indigo-200 shadow-sm bg-white shrink-0 hidden sm:block"
+                      onError={(e) => {
+                        e.target.onerror = null; 
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-14 h-14 rounded-xl bg-indigo-100 items-center justify-center border border-indigo-200 shadow-sm shrink-0 hidden sm:flex ${activeCompany.logo_url ? '!hidden' : ''}`}>
+                    <FaBuilding className="text-indigo-500 text-2xl" />
+                  </div>
+                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 flex-1">
                     <div className="min-w-0 flex-1">
                       <p className="text-xs sm:text-sm text-indigo-700 font-medium mb-1">Currently Active Company</p>
                       <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{activeCompany.name}</p>

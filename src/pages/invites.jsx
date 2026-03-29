@@ -282,7 +282,10 @@ export default function MyInvites() {
         </div>
         <div className="p-6">
           <div className="flex items-center gap-6 pb-6 border-b">
-            <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl">
+            {invite.company?.logo_url ? (
+               <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="Company Logo" className="w-16 h-16 rounded-2xl object-cover border border-purple-200 shadow-md bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+            ) : null}
+            <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'} items-center justify-center w-16 h-16`}>
               <FaBuilding className="text-white text-4xl" />
             </div>
             <div>
@@ -479,7 +482,10 @@ export default function MyInvites() {
                           {visibleColumns.showCompany && (
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white"><FaBuilding size={16} /></div>
+                                {invite.company?.logo_url ? (
+                                  <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="logo" className="w-10 h-10 rounded-full object-cover border border-purple-200 bg-white min-w-10 min-h-10 shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                                ) : null}
+                                <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 items-center justify-center text-white shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'}`}><FaBuilding size={16} /></div>
                                 <div>
                                   <p className="font-semibold text-gray-800">{invite.company?.name || 'N/A'}</p>
                                   <p className="text-xs text-gray-500">{[invite.company?.city, invite.company?.state].filter(Boolean).join(', ')}</p>
@@ -551,7 +557,10 @@ export default function MyInvites() {
                   <motion.div key={`card-${invite.invite_id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
                     className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
                     <div className="flex items-start gap-4">
-                      <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl"><FaBuilding className="text-white text-2xl" /></div>
+                      {invite.company?.logo_url ? (
+                        <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="logo" className="w-12 h-12 rounded-2xl object-cover border border-purple-200 bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                      ) : null}
+                      <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl w-12 h-12 items-center justify-center shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'}`}><FaBuilding className="text-white text-2xl" /></div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <h3 className="font-bold text-lg text-gray-800 truncate">{invite.company?.name || 'N/A'}</h3>

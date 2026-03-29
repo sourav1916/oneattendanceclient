@@ -1,5 +1,5 @@
 import React from "react";
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaTrash, FaBuilding } from "react-icons/fa";
 
 function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete }) {
   return (
@@ -7,7 +7,23 @@ function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete }) {
       className={`flex justify-between items-center p-4 border rounded-lg transition-all duration-200
       ${isActive ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-gray-200 hover:bg-gray-50"}`}
     >
-      <div className="flex-1">
+      <div className="flex items-center gap-4 flex-1">
+        {company.logo_url ? (
+          <img 
+            src={company.logo_url.startsWith('http') ? company.logo_url : `https://api-attendance.onesaas.in${company.logo_url}`} 
+            alt="Company Logo" 
+            className="w-10 h-10 rounded-lg object-cover border border-gray-200 shadow-sm bg-white shrink-0"
+            onError={(e) => {
+              e.target.onerror = null; 
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div className={`w-10 h-10 rounded-lg bg-indigo-100 items-center justify-center border border-indigo-200 shadow-sm shrink-0 ${company.logo_url ? 'hidden' : 'flex'}`}>
+          <FaBuilding className="text-indigo-500 text-lg" />
+        </div>
+        <div className="flex-col">
         <div className="flex items-center gap-2">
           <p className="font-medium text-gray-900">{company.name || "Unnamed Company"}</p>
           {company.role && (
@@ -27,6 +43,7 @@ function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete }) {
             {[company.city, company.state].filter(Boolean).join(", ")}
           </p>
         )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
