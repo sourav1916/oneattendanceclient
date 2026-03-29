@@ -295,7 +295,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="relative w-full max-h-[70%] max-w-3xl bg-white rounded-2xl shadow-2xl overflow-auto [scrollbar-behaviour:smooth] [scrollbar-width:none]"
+            className="relative w-full max-h-[70%] max-w-3xl bg-white rounded-2xl shadow-2xl "
           >
             {/* Gradient Header Bar */}
             <div className="relative h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
