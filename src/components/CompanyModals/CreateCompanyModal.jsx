@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import apiCall from "../../utils/api";
 import { 
   FaBuilding, FaTimes, FaCheck, FaSpinner, 
   FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
-  FaEnvelope, FaLink, FaMapPin, FaCrosshairs
+  FaEnvelope, FaLink, FaMapPin, FaCrosshairs,
+  FaEye, FaTrash, FaPlus, FaMinusCircle
 } from "react-icons/fa";
 
 const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
@@ -13,7 +14,7 @@ const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
 function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreated }) {
   const [companyForm, setCompanyForm] = useState({
     owner_user_id: userId,
-    company_ip: "",
+    company_ip: [], // Changed to array
     name: "",
     legal_name: "",
     logo_url: "",
@@ -33,12 +34,78 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
   const [ipMode, setIpMode] = useState('auto');
   const [addressMode, setAddressMode] = useState('manual');
   const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [ipInputValue, setIpInputValue] = useState("");
+  const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setLogoFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setLogoFile(file);
+      
+      const previewUrl = URL.createObjectURL(file);
+      setLogoPreview(previewUrl);
     }
   };
+
+  const handleRemoveLogo = () => {
+    setLogoFile(null);
+    if (logoPreview) {
+      URL.revokeObjectURL(logoPreview);
+      setLogoPreview(null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Add IP to list
+  const handleAddIp = () => {
+    if (ipInputValue.trim()) {
+      const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const ips = ipInputValue.split(',').map(ip => ip.trim()).filter(ip => ip);
+      
+      const validIps = ips.filter(ip => ipPattern.test(ip));
+      const invalidIps = ips.filter(ip => !ipPattern.test(ip));
+      
+      if (invalidIps.length > 0) {
+        toast.error(`Invalid IP address(es): ${invalidIps.join(', ')}`);
+        return;
+      }
+      
+      setCompanyForm(prev => ({
+        ...prev,
+        company_ip: [...prev.company_ip, ...validIps]
+      }));
+      setIpInputValue("");
+    }
+  };
+
+  // Remove IP from list
+  const handleRemoveIp = (ipToRemove) => {
+    setCompanyForm(prev => ({
+      ...prev,
+      company_ip: prev.company_ip.filter(ip => ip !== ipToRemove)
+    }));
+  };
+
+  // Handle key press for IP input
+  const handleIpKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddIp();
+    }
+  };
+
+  // Cleanup preview URL on component unmount
+  useEffect(() => {
+    return () => {
+      if (logoPreview) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
 
   useEffect(() => {
     if (userId) {
@@ -198,9 +265,17 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
       }
 
       const formData = new FormData();
+      
+      // Send company_ip as array or empty array
+      if (ipMode === 'manual') {
+        formData.append('company_ip', JSON.stringify(companyForm.company_ip));
+      } else {
+        formData.append('company_ip', JSON.stringify([]));
+      }
+      
+      // Send other fields
       Object.keys(companyForm).forEach(key => {
-        if (key === 'logo_url') return;
-        if (key === 'company_ip' && ipMode === 'auto') return;
+        if (key === 'logo_url' || key === 'company_ip') return;
         
         if (companyForm[key] !== null && companyForm[key] !== undefined && companyForm[key] !== "") {
           formData.append(key, companyForm[key]);
@@ -243,7 +318,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
   const handleClose = () => {
     setCompanyForm({
       owner_user_id: userId,
-      company_ip: "",
+      company_ip: [],
       name: "",
       legal_name: "",
       logo_url: "",
@@ -258,10 +333,11 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
     });
     setIpMode('auto');
     setAddressMode('manual');
-    setLogoFile(null);
+    handleRemoveLogo();
     setAddressTouched(false);
     setIsSubmitting(false);
     setIsGeocoding(false);
+    setIpInputValue("");
     onClose();
   };
 
@@ -328,16 +404,86 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                   <FaLink className="w-3 h-3 text-indigo-500" />
                   Company Logo
                 </label>
-                <input
-                  type="file"
-                  name="logo_url"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="w-full border border-gray-200 p-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 text-sm"
-                />
-                {logoFile && (
-                  <p className="text-xs text-green-600 pl-2 mt-1">Selected: {logoFile.name}</p>
-                )}
+                
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      name="logo_url"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="flex-1 border border-gray-200 p-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 text-sm"
+                    />
+                    
+                    {logoPreview && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowPreview(!showPreview)}
+                          className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+                          title="Preview logo"
+                        >
+                          <FaEye className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveLogo}
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 transition-colors"
+                          title="Remove logo"
+                        >
+                          <FaTrash className="w-4 h-4 text-red-500" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  
+                  {showPreview && logoPreview && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowPreview(false)}>
+                      <div className="relative max-w-2xl max-h-[90vh] bg-white rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => setShowPreview(false)}
+                          className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
+                        >
+                          <FaTimes className="w-4 h-4 text-gray-600" />
+                        </button>
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo Preview" 
+                          className="max-w-full max-h-[80vh] object-contain rounded-xl"
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {logoPreview && (
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                        <img 
+                          src={logoPreview} 
+                          alt="Logo preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-700">{logoFile?.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(logoFile?.size / 1024).toFixed(2)} KB
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleRemoveLogo}
+                        className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                      >
+                        <FaTrash className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {!logoPreview && companyForm.logo_url && (
+                    <p className="text-xs text-gray-500 pl-2 mt-1">Current logo exists. Select new file to replace.</p>
+                  )}
+                </div>
               </div>
 
               <div className="md:col-span-2 space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100 mt-2">
@@ -372,21 +518,50 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                 </div>
 
                 {ipMode === 'manual' ? (
-                  <div className="space-y-1 pt-2">
-                    <input
-                      name="company_ip"
-                      placeholder="e.g., 192.168.1.1, 8.8.8.8 (Comma-separated)"
-                      value={companyForm.company_ip}
-                      onChange={handleChange}
-                      className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm bg-white"
-                    />
-                    <p className="text-xs text-gray-500">Provide multiple IP addresses separated by commas.</p>
+                  <div className="space-y-2 pt-2">
+                    <div className="flex gap-2">
+                      <input
+                        value={ipInputValue}
+                        onChange={(e) => setIpInputValue(e.target.value)}
+                        onKeyPress={handleIpKeyPress}
+                        placeholder="e.g., 192.168.1.1 or 192.168.1.1, 8.8.8.8"
+                        className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddIp}
+                        className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                      >
+                        <FaPlus className="w-4 h-4" />
+                        Add
+                      </button>
+                    </div>
+                    
+                    {companyForm.company_ip.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {companyForm.company_ip.map((ip, index) => (
+                          <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg">
+                            <span className="text-sm text-gray-700 font-mono">{ip}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveIp(ip)}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              <FaMinusCircle className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-gray-500 mt-2">Add IP addresses one by one or comma-separated. Supports IPv4 addresses only.</p>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500 pt-1">The system will automatically record the valid network IP via connection headers.</p>
+                  <p className="text-xs text-gray-500 pt-1">The system will automatically record the valid network IP via connection headers. An empty array [] will be sent to backend.</p>
                 )}
               </div>
 
+              {/* Rest of the form remains the same */}
               {/* Address toggle header */}
               <div className="md:col-span-2 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
