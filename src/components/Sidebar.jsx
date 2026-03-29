@@ -30,7 +30,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const { hasPermission } = useAuth();
+  const { hasPermission, activeRole, company } = useAuth();
 
   // Toggle section
   const toggleSection = (sectionName) => {
@@ -131,6 +131,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const isActiveRoute = (itemPath) => {
     return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
   };
+
+  const isCompanyOwnerForCurrentCompany =
+    activeRole === 'company_owner' || company?.role === 'company_owner';
+
+  const isItemDisabled = (item) =>
+    item.path === '/attendance' && isCompanyOwnerForCurrentCompany;
 
   useEffect(() => {
     if (onHover && !isMobile) {
@@ -265,9 +271,10 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                 // Regular menu item
                 const isActive = isActiveRoute(item.path);
                 const authorized = hasPermission(item.permission);
+                const disabled = isItemDisabled(item);
                 const Icon = item.icon;
 
-                if (!authorized) {
+                if (!authorized || disabled) {
                   return (
                     <div
                       key={item.label}
@@ -329,9 +336,10 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const renderMenuItem = (item, isExpandedState) => {
     const isActive = isActiveRoute(item.path);
     const authorized = hasPermission(item.permission);
+    const disabled = isItemDisabled(item);
     const Icon = item.icon;
 
-    if (!authorized) {
+    if (!authorized || disabled) {
       return (
         <div
           key={item.label}
@@ -340,7 +348,13 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
             ${isExpandedState ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
             cursor-not-allowed opacity-50
           `}
-          title={!isExpandedState ? `${item.label} (Access Denied)` : 'Access Denied - You don\'t have permission'}
+          title={
+            !isExpandedState
+              ? `${item.label} (${disabled ? 'Disabled for company owner' : 'Access Denied'})`
+              : disabled
+                ? 'Disabled for company owner'
+                : 'Access Denied - You don\'t have permission'
+          }
         >
           <div className={`
             p-2 rounded-lg transition-all duration-200

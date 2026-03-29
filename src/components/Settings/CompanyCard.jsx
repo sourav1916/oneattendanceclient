@@ -1,7 +1,7 @@
 import React from "react";
 import { FaEdit, FaTrash, FaBuilding } from "react-icons/fa";
 
-function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete }) {
+function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete, canManageCompany = true }) {
   return (
     <div
       className={`flex justify-between items-center p-4 border rounded-lg transition-all duration-200
@@ -54,21 +54,25 @@ function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete }) {
           Switch
         </button>
 
-        <button
-          onClick={() => onEdit(company)}
-          className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-          title="Edit Company"
-        >
-          <FaEdit className="w-4 h-4" />
-        </button>
+        {canManageCompany && (
+          <>
+            <button
+              onClick={() => onEdit(company)}
+              className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+              title="Edit Company"
+            >
+              <FaEdit className="w-4 h-4" />
+            </button>
 
-        <button
-          onClick={() => onDelete(company)}
-          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-          title="Delete Company"
-        >
-          <FaTrash className="w-4 h-4" />
-        </button>
+            <button
+              onClick={() => onDelete(company)}
+              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+              title="Delete Company"
+            >
+              <FaTrash className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

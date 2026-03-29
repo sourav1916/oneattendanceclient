@@ -30,7 +30,7 @@ const containerVariants = {
 
 
 const SettingsPage = () => {
-  const { user, loading, refreshUser, companies, setCompanies } = useAuth();
+  const { user, loading, refreshUser, companies, setCompanies, company } = useAuth();
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
@@ -66,6 +66,13 @@ const SettingsPage = () => {
     if (user && companies) {
       setCompanies(companies);
 
+      if (company) {
+        const matchedCompany = companies.find((item) => item.id === company.id) || company;
+        setActiveCompany(matchedCompany);
+        localStorage.setItem("company", JSON.stringify(matchedCompany));
+        return;
+      }
+
       const storedCompany = JSON.parse(localStorage.getItem("company"));
       if (storedCompany) {
         const companyExists = companies.some(c => c.id === storedCompany.id);
@@ -77,7 +84,7 @@ const SettingsPage = () => {
         }
       }
     }
-  }, [user, companies]);
+  }, [user, companies, company, setCompanies]);
 
 
   const loadActiveCompany = () => {
@@ -87,9 +94,10 @@ const SettingsPage = () => {
     }
   };
 
-  const selectCompany = (company) => {
+  const selectCompany = async (company) => {
     localStorage.setItem("company", JSON.stringify(company));
     setActiveCompany(company);
+    await refreshUser();
     toast.success(`Switched to ${company.name}`);
   };
 
@@ -138,12 +146,6 @@ const SettingsPage = () => {
       if (result.success) {
         if (refreshUser) {
           await refreshUser();
-        }
-
-        if (activeCompany?.id === companyId) {
-          const updatedCompany = result.data;
-          localStorage.setItem("company", JSON.stringify(updatedCompany));
-          setActiveCompany(updatedCompany);
         }
 
         setOpenEditModal(false);
@@ -501,6 +503,7 @@ const SettingsPage = () => {
                       key={company.id}
                       company={company}
                       isActive={activeCompany?.id === company.id}
+                      canManageCompany={company.role !== "employee"}
                       onSwitch={selectCompany}
                       onEdit={handleEdit}
                       onDelete={handleDelete}

@@ -144,8 +144,11 @@ function HomePage() {
 
   // Quick Actions Definition based on Role
   const getQuickActions = () => {
+    const isCompanyOwnerForCurrentCompany =
+      activeRole === 'company_owner' || company?.role === 'company_owner';
+
     // 1. Core Personal Permissions
-    const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']);
+    const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
     const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']);
     const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']);
     
@@ -281,7 +284,9 @@ function HomePage() {
   };
 
   const quickActions = getQuickActions();
-  const canPunch = hasPermission(['att_punch', 'att_view_own']);
+  const isCompanyOwnerForCurrentCompany =
+    activeRole === 'company_owner' || company?.role === 'company_owner';
+  const canPunch = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
 
   return (
     <div className="min-h-screen relative overflow-hidden">
