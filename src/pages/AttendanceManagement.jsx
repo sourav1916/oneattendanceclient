@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
-  FaInfoCircle, FaEye, FaSpinner, FaChevronLeft,
-  FaChevronRight, FaHourglassStart, FaHourglassEnd, FaCheck,
+  FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
   FaBan, FaComment, FaHistory, FaUserCheck,
   FaEllipsisV
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiCall from '../utils/api';
+import Pagination, { usePagination } from '../components/PaginationComponent';
 
 const attendanceAPI = {
   fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '') => {
@@ -92,60 +93,6 @@ const PunchTypeBadge = ({ type }) => {
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${config.className}`}>
       <Icon size={10} /> {config.text}
     </span>
-  );
-};
-
-const Pagination = ({ currentPage, totalPages, onPageChange }) => {
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisible = window.innerWidth < 640 ? 3 : 5; // Show fewer pages on mobile
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-    if (endPage - startPage + 1 < maxVisible) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    return pages;
-  };
-
-  if (totalPages <= 1) return null;
-
-  return (
-    <div className="flex flex-wrap justify-center items-center gap-1 sm:gap-2 mt-6">
-      <button
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="p-1.5 sm:p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-      >
-        <FaChevronLeft size={12} className="sm:w-4 sm:h-4" />
-      </button>
-
-      {getPageNumbers().map(page => (
-        <button
-          key={page}
-          onClick={() => onPageChange(page)}
-          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-medium transition ${page === currentPage
-              ? 'bg-purple-600 text-white'
-              : 'hover:bg-gray-100 text-gray-700'
-            }`}
-        >
-          {page}
-        </button>
-      ))}
-
-      <button
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="p-1.5 sm:p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-      >
-        <FaChevronRight size={12} className="sm:w-4 sm:h-4" />
-      </button>
-    </div>
   );
 };
 
@@ -393,9 +340,6 @@ const AttendanceManagement = ({ companyId }) => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalRecords, setTotalRecords] = useState(0);
   const [selectedAttendance, setSelectedAttendance] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [processingId, setProcessingId] = useState(null);
@@ -404,12 +348,14 @@ const AttendanceManagement = ({ companyId }) => {
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const navigate = useNavigate();
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
   const previousSearchRef = useRef('');
   const lastRequestKeyRef = useRef('');
 
-  const itemsPerPage = 10;
+  const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+  const itemsPerPage = pagination.limit;
 
   // Handle window resize with debounce
   useEffect(() => {
@@ -450,7 +396,7 @@ const AttendanceManagement = ({ companyId }) => {
       setLoading(false);
       return;
     }
-    const requestKey = `${resolvedCompanyId}-${currentPage}-${debouncedSearchTerm}`;
+    const requestKey = `${resolvedCompanyId}-${pagination.page}-${debouncedSearchTerm}-${pagination.limit}`;
     if (!force && lastRequestKeyRef.current === requestKey) {
       return;
     }
@@ -460,15 +406,25 @@ const AttendanceManagement = ({ companyId }) => {
       setLoading(true);
       const response = await attendanceAPI.fetchCompanyAttendances(
         resolvedCompanyId,
-        currentPage,
+        pagination.page,
         itemsPerPage,
         debouncedSearchTerm
       );
 
       if (response.success) {
+        const currentPage = response.current_page || response.page || pagination.page;
+        const perPage = response.per_page || response.limit || pagination.limit;
+        const total = response.total || 0;
+        const totalPages = response.total_pages || response.last_page || Math.ceil(total / perPage) || 1;
+
         setAttendances(response.data);
-        setTotalPages(response.total_pages);
-        setTotalRecords(response.total);
+        updatePagination({
+          page: currentPage,
+          limit: perPage,
+          total,
+          total_pages: totalPages,
+          is_last_page: currentPage >= totalPages
+        });
         setError(null);
       } else {
         throw new Error(response.message || 'Failed to fetch attendances');
@@ -480,18 +436,18 @@ const AttendanceManagement = ({ companyId }) => {
     } finally {
       setLoading(false);
     }
-  }, [resolvedCompanyId, currentPage, debouncedSearchTerm]);
+  }, [resolvedCompanyId, pagination.page, pagination.limit, debouncedSearchTerm, itemsPerPage, updatePagination]);
 
   useEffect(() => {
-    if (previousSearchRef.current !== debouncedSearchTerm && currentPage !== 1) {
+    if (previousSearchRef.current !== debouncedSearchTerm && pagination.page !== 1) {
       previousSearchRef.current = debouncedSearchTerm;
-      setCurrentPage(1);
+      goToPage(1);
       return;
     }
 
     previousSearchRef.current = debouncedSearchTerm;
     fetchAttendances();
-  }, [currentPage, debouncedSearchTerm, fetchAttendances]);
+  }, [pagination.page, debouncedSearchTerm, fetchAttendances, goToPage]);
 
   // Handle status update
   const handleStatusUpdate = async (punchId, action) => {
@@ -529,7 +485,9 @@ const AttendanceManagement = ({ companyId }) => {
 
   // Handle page change
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    if (page !== pagination.page) {
+      goToPage(page);
+    }
     setActiveActionMenu(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -589,11 +547,21 @@ const AttendanceManagement = ({ companyId }) => {
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">Company ID: {resolvedCompanyId}</p>
               </div>
-              <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg w-full sm:w-auto justify-between sm:justify-start">
-                <FaUserCheck className="text-purple-500 text-sm sm:text-base" />
-                <span className="text-xs sm:text-sm font-medium text-gray-700">
-                  Total: {totalRecords}
-                </span>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/pending-attendance')}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-amber-600 sm:text-sm"
+                >
+                  <FaClock />
+                  Pending Attendance
+                </button>
+                <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg justify-between sm:justify-start">
+                  <FaUserCheck className="text-purple-500 text-sm sm:text-base" />
+                  <span className="text-xs sm:text-sm font-medium text-gray-700">
+                    Total: {pagination.total}
+                  </span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -768,19 +736,9 @@ const AttendanceManagement = ({ companyId }) => {
                     </table>
                   </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="border-t border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                      />
-                    </div>
-                  )}
+
                 </motion.div>
               )}
-
               {/* Mobile Card View */}
               {isMobile && (
                 <div className="space-y-3 sm:space-y-4">
@@ -796,18 +754,15 @@ const AttendanceManagement = ({ companyId }) => {
                       activeMenuId={activeActionMenu}
                     />
                   ))}
-
-                  {/* Pagination for Mobile */}
-                  {totalPages > 1 && (
-                    <div className="mt-4">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                      />
-                    </div>
-                  )}
                 </div>
+              )}
+              {pagination.total > 0 && (
+                <Pagination
+                  currentPage={pagination.page}
+                  totalItems={pagination.total}
+                  itemsPerPage={pagination.limit}
+                  onPageChange={goToPage}
+                />
               )}
             </>
           )}

@@ -21,7 +21,7 @@ import {
   FaWifi
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import Pagination from '../components/PaginationComponent';
+import Pagination, { usePagination } from '../components/PaginationComponent';
 import apiCall from '../utils/api';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
@@ -344,10 +344,10 @@ const AttendanceHistory = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
+  const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
 
   // ── Debounce search ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -405,13 +405,22 @@ const AttendanceHistory = () => {
   }, [allRecords, debouncedSearch]);
 
   useEffect(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    setRecords(filteredRecords.slice(startIndex, startIndex + ITEMS_PER_PAGE));
-  }, [currentPage, filteredRecords]);
+    const startIndex = (pagination.page - 1) * pagination.limit;
+    setRecords(filteredRecords.slice(startIndex, startIndex + pagination.limit));
+    updatePagination({
+      page: pagination.page,
+      limit: pagination.limit,
+      total: filteredRecords.length,
+      total_pages: Math.ceil(filteredRecords.length / pagination.limit) || 1,
+      is_last_page: pagination.page >= (Math.ceil(filteredRecords.length / pagination.limit) || 1)
+    });
+  }, [filteredRecords, pagination.page, pagination.limit, updatePagination]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch]);
+    if (pagination.page !== 1) {
+      goToPage(1);
+    }
+  }, [debouncedSearch, goToPage, pagination.page]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
   const showClockOut = windowWidth >= 768;
@@ -461,7 +470,7 @@ const AttendanceHistory = () => {
             )}
             <div className="rounded-full bg-white px-5 py-2 text-sm text-gray-600 shadow-md">
               <FaCalendarAlt className="mr-2 inline text-slate-400" />
-              {filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''}
+              {pagination.total} record{pagination.total !== 1 ? 's' : ''}
             </div>
           </div>
         </motion.div>
@@ -681,12 +690,12 @@ const AttendanceHistory = () => {
         )}
 
         {/* ── Pagination ──────────────────────────────────────────────────── */}
-        {filteredRecords.length > 0 && (
+        {pagination.total > 0 && (
           <Pagination
-            currentPage={currentPage}
-            totalItems={filteredRecords.length}
-            itemsPerPage={ITEMS_PER_PAGE}
-            onPageChange={setCurrentPage}
+            currentPage={pagination.page}
+            totalItems={pagination.total}
+            itemsPerPage={pagination.limit}
+            onPageChange={goToPage}
           />
         )}
       </div>
