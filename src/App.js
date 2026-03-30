@@ -15,6 +15,7 @@ import HelpPage from "./pages/Help";
 import MyInvites from "./pages/invites";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
+import AttendanceHistory from "./pages/AttendanceHistory";
 import PermissionManagement from "./pages/PermissionManagement";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ProfilePage from "./pages/Profile";
@@ -57,6 +58,7 @@ function AppContent() {
         <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
         <Route path="/company-invites" element={ <ProtectedRoute><MainLayout><CompanyInvites /></MainLayout></ProtectedRoute>}/>
         <Route path="/attendance"element={<ProtectedRoute><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
+        <Route path="/attendance-history"element={<ProtectedRoute><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
         <Route path="/help"element={<ProtectedRoute><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
         <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
         <Route path="/employee-management"element={<ProtectedRoute><MainLayout><EmployeeManagement /></MainLayout></ProtectedRoute>} />

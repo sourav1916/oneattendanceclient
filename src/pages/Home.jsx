@@ -26,7 +26,8 @@ import {
   FaUmbrellaBeach,
   FaFileInvoiceDollar,
   FaUserShield,
-  FaHandHoldingUsd
+  FaHandHoldingUsd,
+  FaHistory
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/StaffModals/AddStaffModal";
@@ -149,6 +150,7 @@ function HomePage() {
 
     // 1. Core Personal Permissions
     const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
+    const hasAttendanceHistoryPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
     const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']);
     const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']);
     
@@ -180,6 +182,15 @@ function HomePage() {
         onClick: () => hasMyLeavePerm && navigate('/my-leaves'),
         gradient: hasMyLeavePerm ? "bg-gradient-to-r from-cyan-500 to-blue-500" : "bg-slate-200",
         disabled: !hasMyLeavePerm
+      },
+      {
+        title: "Attendance History",
+        description: hasAttendanceHistoryPerm ? "Review your past records" : "No permission",
+        icon: FaHistory,
+        color: hasAttendanceHistoryPerm ? "from-violet-500 to-fuchsia-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasAttendanceHistoryPerm && navigate('/attendance-history'),
+        gradient: hasAttendanceHistoryPerm ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : "bg-slate-200",
+        disabled: !hasAttendanceHistoryPerm
       },
       {
         title: "My Salary",

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   FaFingerprint, FaClock, FaCoffee, FaSignInAlt, FaSignOutAlt,
   FaMapMarkerAlt, FaCamera, FaIdCard, FaWifi, FaHandPaper,
-  FaCheckCircle, FaTimesCircle, FaCalendarAlt
+  FaCheckCircle, FaTimesCircle, FaCalendarAlt, FaHistory,
+  FaHourglassHalf, FaPause, FaPlay
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -20,6 +21,24 @@ const ATTENDANCE_ICONS = {
   manual: FaHandPaper
 };
 
+const STATUS_CONFIG = {
+  WORKING: {
+    label: 'Working',
+    color: 'emerald',
+    icon: FaPlay
+  },
+  ON_BREAK: {
+    label: 'On Break',
+    color: 'amber',
+    icon: FaPause
+  },
+  OFF_DUTY: {
+    label: 'Off Duty',
+    color: 'slate',
+    icon: FaTimesCircle
+  }
+};
+
 // ─── Animation Variables ─────────────────────────────────────────────────────
 
 const floatAnimation = {
@@ -35,11 +54,16 @@ const PunchAttendance = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [activeMode, setActiveMode] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
+  const [loadingStatus, setLoadingStatus] = useState(true);
 
-  // Toggle states
-  const [isPunchedIn, setIsPunchedIn] = useState(false);
-  const [isBreakActive, setIsBreakActive] = useState(false);
-  const [lastAction, setLastAction] = useState(null);
+  // Status state from API
+  const [currentStatus, setCurrentStatus] = useState(null);
+  const [allowedActions, setAllowedActions] = useState([]);
+  const [todaySummary, setTodaySummary] = useState(null);
+
+  // Derived states
+  const isPunchedIn = currentStatus === 'WORKING' || currentStatus === 'ON_BREAK';
+  const isBreakActive = currentStatus === 'ON_BREAK';
 
   useEffect(() => {
     if (attendanceMethods && attendanceMethods.length > 0) {
@@ -68,6 +92,34 @@ const PunchAttendance = () => {
       }
     }
   }, [activeTab, attendanceMethods, activeMode]);
+
+  // ─── Fetch Current Status ────────────────────────────────────────────────
+  const fetchCurrentStatus = useCallback(async () => {
+    setLoadingStatus(true);
+    try {
+      const company = JSON.parse(localStorage.getItem('company'));
+      const response = await apiCall('/attendance/current-status', 'GET', null, company?.id);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setCurrentStatus(data.data.status);
+        setAllowedActions(data.data.allowed_actions || []);
+        setTodaySummary(data.data.today_summary);
+      } else {
+        toast.error(data.message || 'Failed to fetch attendance status');
+      }
+    } catch (error) {
+      console.error('Status fetch error:', error);
+      toast.error('Error fetching attendance status');
+    } finally {
+      setLoadingStatus(false);
+    }
+  }, []);
+
+  // Fetch status on mount
+  useEffect(() => {
+    fetchCurrentStatus();
+  }, [fetchCurrentStatus]);
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
   const getIcon = (key) => ATTENDANCE_ICONS[key] || FaFingerprint;
@@ -135,6 +187,8 @@ const PunchAttendance = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
+        // Refresh status after successful action
+        await fetchCurrentStatus();
         return true;
       } else {
         toast.error(data.message || `Failed to ${actionName.replace('-', ' ')}`);
@@ -156,8 +210,6 @@ const PunchAttendance = () => {
   const handlePunchIn = async () => {
     const success = await callAttendanceAPI('/attendance/punch-in', 'punch-in');
     if (success) {
-      setIsPunchedIn(true);
-      setLastAction('Punched In');
       toast.success("Successfully Punched In!");
     }
   };
@@ -165,9 +217,6 @@ const PunchAttendance = () => {
   const handlePunchOut = async () => {
     const success = await callAttendanceAPI('/attendance/punch-out', 'punch-out');
     if (success) {
-      setIsPunchedIn(false);
-      setIsBreakActive(false); // Reset break if punching out
-      setLastAction('Punched Out');
       toast.success("Successfully Punched Out!");
     }
   };
@@ -175,8 +224,6 @@ const PunchAttendance = () => {
   const handleBreakIn = async () => {
     const success = await callAttendanceAPI('/attendance/break-in', 'break-in');
     if (success) {
-      setIsBreakActive(true);
-      setLastAction('On Break');
       toast.info("Break Started");
     }
   };
@@ -184,10 +231,78 @@ const PunchAttendance = () => {
   const handleBreakOut = async () => {
     const success = await callAttendanceAPI('/attendance/break-out', 'break-out');
     if (success) {
-      setIsBreakActive(false);
-      setLastAction('Break Ended');
       toast.success("Break Ended - Welcome back!");
     }
+  };
+
+  // ─── Check if action is allowed ──────────────────────────────────────────
+  const isActionAllowed = (action) => {
+    return allowedActions.includes(action);
+  };
+
+  // ─── Format time ─────────────────────────────────────────────────────────
+  const formatTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // ─── Punch Helpers ─────────────────────────────────────────────
+
+  const getPunchLabel = (type) => {
+    switch (type) {
+      case 'in':
+        return 'Punch In';
+      case 'out':
+        return 'Punch Out';
+      case 'break_start':
+        return 'Break Start';
+      case 'break_end':
+        return 'Break End';
+      default:
+        return type;
+    }
+  };
+
+  const getPunchStyle = (type) => {
+    switch (type) {
+      case 'in':
+        return {
+          color: 'bg-emerald-100 text-emerald-600',
+          icon: <FaSignInAlt className="w-5 h-5" />
+        };
+      case 'out':
+        return {
+          color: 'bg-rose-100 text-rose-600',
+          icon: <FaSignOutAlt className="w-5 h-5" />
+        };
+      case 'break_start':
+        return {
+          color: 'bg-amber-100 text-amber-600',
+          icon: <FaPause className="w-5 h-5" />
+        };
+      case 'break_end':
+        return {
+          color: 'bg-indigo-100 text-indigo-600',
+          icon: <FaPlay className="w-5 h-5" />
+        };
+      default:
+        return {
+          color: 'bg-slate-100 text-slate-600',
+          icon: <FaClock className="w-5 h-5" />
+        };
+    }
+  };
+
+
+  const formatHours = (hours) => {
+    if (!hours) return '0h 0m';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}h ${m}m`;
   };
 
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -215,9 +330,12 @@ const PunchAttendance = () => {
     );
   }
 
+  const statusConfig = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.OFF_DUTY;
+  const StatusIcon = statusConfig.icon;
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-slate-50/30 font-sans">
-      {/* Animated Background Elements (Matches Home.jsx) */}
+      {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float animation-delay-2000"></div>
@@ -243,35 +361,33 @@ const PunchAttendance = () => {
               <p className="text-slate-500 mt-2 text-lg">Welcome back, <span className="font-semibold text-slate-700">{user?.name}</span></p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={isPunchedIn ? 'active' : 'inactive'}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm ${isPunchedIn
-                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                    : 'bg-slate-100 border-slate-200 text-slate-500'
-                    }`}
-                >
-                  {isPunchedIn ? <FaCheckCircle className="w-4 h-4" /> : <FaTimesCircle className="w-4 h-4" />}
-                  <span className="text-sm font-bold uppercase tracking-wide">
-                    {isPunchedIn ? 'Logged In' : 'Off Duty'}
-                  </span>
-                </motion.div>
+                {loadingStatus ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-2xl border bg-slate-50 border-slate-200"
+                  >
+                    <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
+                    <span className="text-sm font-medium text-slate-500">Loading...</span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={currentStatus}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-2xl border shadow-sm bg-${statusConfig.color}-50 border-${statusConfig.color}-100 text-${statusConfig.color}-700`}
+                  >
+                    <StatusIcon className="w-4 h-4" />
+                    <span className="text-sm font-bold uppercase tracking-wide">
+                      {statusConfig.label}
+                    </span>
+                  </motion.div>
+                )}
               </AnimatePresence>
-
-              {isBreakActive && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-100 text-amber-700 rounded-2xl shadow-sm"
-                >
-                  <FaCoffee className="w-4 h-4" />
-                  <span className="text-sm font-bold uppercase tracking-wide">On Break</span>
-                </motion.div>
-              )}
             </div>
           </div>
         </motion.div>
@@ -367,10 +483,10 @@ const PunchAttendance = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: isActionAllowed('PUNCH_IN') ? 1.02 : 1, y: isActionAllowed('PUNCH_IN') ? -2 : 0 }}
+                      whileTap={{ scale: isActionAllowed('PUNCH_IN') ? 0.98 : 1 }}
                       onClick={handlePunchIn}
-                      disabled={isPunchedIn || loadingAction === 'punch-in'}
+                      disabled={!isActionAllowed('PUNCH_IN') || loadingAction === 'punch-in'}
                       className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
                       {loadingAction === 'punch-in' && (
@@ -385,10 +501,10 @@ const PunchAttendance = () => {
                     </motion.button>
 
                     <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: isActionAllowed('PUNCH_OUT') ? 1.02 : 1, y: isActionAllowed('PUNCH_OUT') ? -2 : 0 }}
+                      whileTap={{ scale: isActionAllowed('PUNCH_OUT') ? 0.98 : 1 }}
                       onClick={handlePunchOut}
-                      disabled={!isPunchedIn || loadingAction === 'punch-out'}
+                      disabled={!isActionAllowed('PUNCH_OUT') || loadingAction === 'punch-out'}
                       className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
                       {loadingAction === 'punch-out' && (
@@ -418,10 +534,10 @@ const PunchAttendance = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: isActionAllowed('BREAK_START') ? 1.02 : 1, y: isActionAllowed('BREAK_START') ? -2 : 0 }}
+                      whileTap={{ scale: isActionAllowed('BREAK_START') ? 0.98 : 1 }}
                       onClick={handleBreakIn}
-                      disabled={!isPunchedIn || isBreakActive || loadingAction === 'break-in'}
+                      disabled={!isActionAllowed('BREAK_START') || loadingAction === 'break-in'}
                       className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
                       {loadingAction === 'break-in' && (
@@ -436,10 +552,10 @@ const PunchAttendance = () => {
                     </motion.button>
 
                     <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={{ scale: isActionAllowed('BREAK_END') ? 1.02 : 1, y: isActionAllowed('BREAK_END') ? -2 : 0 }}
+                      whileTap={{ scale: isActionAllowed('BREAK_END') ? 0.98 : 1 }}
                       onClick={handleBreakOut}
-                      disabled={!isBreakActive || loadingAction === 'break-out'}
+                      disabled={!isActionAllowed('BREAK_END') || loadingAction === 'break-out'}
                       className="flex flex-col items-center justify-center gap-3 py-10 px-6 rounded-3xl transition-all duration-300 bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-200 disabled:from-slate-100 disabled:to-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed group relative overflow-hidden"
                     >
                       {loadingAction === 'break-out' && (
@@ -461,8 +577,8 @@ const PunchAttendance = () => {
           {/* Footer Status Bar */}
           <div className="px-8 py-6 bg-slate-50/80 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></div>
-              <span className="text-sm text-slate-500 font-medium">Last Action: <span className="text-slate-900 font-bold">{lastAction || 'Pending Registration'}</span></span>
+              <div className={`w-2.5 h-2.5 rounded-full ${currentStatus === 'WORKING' ? 'bg-emerald-500' : currentStatus === 'ON_BREAK' ? 'bg-amber-500' : 'bg-slate-400'} animate-pulse`}></div>
+              <span className="text-sm text-slate-500 font-medium">Current Status: <span className="text-slate-900 font-bold">{statusConfig.label}</span></span>
             </div>
 
             <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
@@ -471,6 +587,123 @@ const PunchAttendance = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Today's Activity Summary */}
+        {todaySummary && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-slate-100/50 border border-slate-200/60 overflow-hidden"
+          >
+            <div className="px-8 py-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center">
+                  <FaHistory className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-800">Today's Activity</h2>
+                  <p className="text-slate-500 text-sm">Your attendance summary for today</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 p-8">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-emerald-600 uppercase tracking-wider">Total Hours</span>
+                  <FaClock className="w-5 h-5 text-emerald-500" />
+                </div>
+                <p className="text-3xl font-extrabold text-emerald-700">
+                  {formatHours(todaySummary.total_worked_hours)}
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-amber-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-amber-600 uppercase tracking-wider">Break Time</span>
+                  <FaCoffee className="w-5 h-5 text-amber-500" />
+                </div>
+                <p className="text-3xl font-extrabold text-amber-700">
+                  {todaySummary.total_break_minutes} min
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-2xl p-6 border border-indigo-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold text-indigo-600 uppercase tracking-wider">Total Punches</span>
+                  <FaCheckCircle className="w-5 h-5 text-indigo-500" />
+                </div>
+                <p className="text-3xl font-extrabold text-indigo-700">
+                  {todaySummary.total_punches}
+                </p>
+              </div>
+            </div>
+
+            {/* Punch History */}
+            {/* Punch History */}
+            {todaySummary.punches && todaySummary.punches.length > 0 && (
+              <div className="px-8 pb-8">
+                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                  <FaHourglassHalf className="w-4 h-4 text-indigo-500" />
+                  Punch History
+                </h3>
+
+                <div className="space-y-3">
+                  {[...todaySummary.punches]
+                    .sort((a, b) => new Date(a.punch_time) - new Date(b.punch_time))
+                    .map((punch, index) => {
+                      const style = getPunchStyle(punch.punch_type);
+
+                      return (
+                        <motion.div
+                          key={punch.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-md transition-shadow"
+                        >
+                          {/* Left */}
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${style.color}`}>
+                              {style.icon}
+                            </div>
+
+                            <div>
+                              <p className="font-bold text-slate-800 capitalize">
+                                {getPunchLabel(punch.punch_type)}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {punch.attendance_method} • {punch.attendance_mode}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right */}
+                          <div className="text-right">
+                            <p className="font-bold text-slate-700">
+                              {formatTime(punch.punch_time)}
+                            </p>
+
+                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold rounded-full uppercase ${punch.status === 'approved'
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : punch.status === 'rejected'
+                                ? 'bg-rose-100 text-rose-700'
+                                : 'bg-amber-100 text-amber-700'
+                              }`}>
+                              {punch.status}
+                            </span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+          </motion.div>
+        )}
 
         {/* Floating Help Tip */}
         <motion.div
@@ -509,4 +742,3 @@ const PunchAttendance = () => {
 };
 
 export default PunchAttendance;
-
