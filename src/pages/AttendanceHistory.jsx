@@ -1,11 +1,9 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaCalendarAlt,
   FaChartLine,
   FaCheckCircle,
-  FaChevronLeft,
-  FaChevronRight,
   FaClock,
   FaExclamationCircle,
   FaEye,
@@ -18,107 +16,148 @@ import {
   FaSignOutAlt,
   FaStickyNote,
   FaTimes,
-  FaTimesCircle
+  FaTimesCircle,
+  FaCoffee,
+  FaWifi
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import Pagination from '../components/PaginationComponent';
+import apiCall from '../utils/api';
 
-const generateMockAttendance = () => {
-  const statuses = ['Present', 'Absent', 'Late', 'Half Day', 'Holiday', 'Present', 'Present', 'Late', 'Present', 'Absent'];
-  const clockInTimes = ['09:00 AM', '09:15 AM', '09:45 AM', '10:00 AM', '08:55 AM', '09:10 AM', '09:30 AM', '09:05 AM', '09:20 AM', '08:45 AM'];
-  const clockOutTimes = ['06:00 PM', '06:30 PM', '06:15 PM', '05:45 PM', '06:00 PM', '07:00 PM', '06:20 PM', '06:10 PM', '05:55 PM', '06:45 PM'];
-  const locations = ['Office Main', 'Remote - Home', 'Client Site', 'Office - Branch', 'Remote'];
-  const records = [];
+// ─── API Integration ─────────────────────────────────────────────────────────
 
-  for (let index = 0; index < 52; index += 1) {
-    const date = new Date(2025, 0, 1);
-    date.setDate(date.getDate() + index * 2);
+const FETCH_LIMIT = 200;
+const ITEMS_PER_PAGE = 8;
 
-    if (date > new Date()) {
-      break;
-    }
+const fetchAttendanceAPI = async ({ companyId }) => {
+  const response = await apiCall(`/attendance/my?page=1&limit=${FETCH_LIMIT}`, 'GET', null, companyId);
 
-    const randomIndex = Math.floor(Math.random() * statuses.length);
-    const status = statuses[randomIndex];
-    const isPresent = ['Present', 'Late', 'Half Day'].includes(status);
-    const workedHours = isPresent ? `${(Math.random() * 5 + 4).toFixed(1)} hrs` : '0 hrs';
-
-    records.push({
-      id: index + 1,
-      date: date.toISOString().split('T')[0],
-      day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-      clock_in: isPresent ? clockInTimes[Math.floor(Math.random() * clockInTimes.length)] : '--:-- --',
-      clock_out: isPresent ? clockOutTimes[Math.floor(Math.random() * clockOutTimes.length)] : '--:-- --',
-      status,
-      location: isPresent ? locations[Math.floor(Math.random() * locations.length)] : '-',
-      worked_hours: workedHours,
-      overtime: isPresent && Math.random() > 0.7 ? '0.5 hrs' : '0 hrs',
-      notes:
-        status === 'Late'
-          ? 'Traffic delay'
-          : status === 'Absent'
-            ? 'Unplanned leave'
-            : status === 'Half Day'
-              ? 'Personal reasons'
-              : 'Regular shift'
-    });
+  if (!response.ok) {
+    throw new Error(`Server error: ${response.status} ${response.statusText}`);
   }
 
-  return records.sort((left, right) => new Date(right.date) - new Date(left.date));
+  const json = await response.json();
+
+  if (!json.success) {
+    throw new Error(json.message || 'Failed to fetch attendance');
+  }
+
+  return json; // { success, message, total, page, limit, total_pages, data: PunchRecord[] }
 };
 
-const allAttendanceRecords = generateMockAttendance();
+// ─── Data Transformation ──────────────────────────────────────────────────────
+const deriveDailyRecords = (punches) => {
+  const byDate = {};
 
-const fetchAttendanceAPI = async ({ page, limit, search, status }) =>
-  new Promise((resolve) => {
-    setTimeout(() => {
-      let filtered = [...allAttendanceRecords];
-
-      if (search) {
-        const searchValue = search.toLowerCase();
-        filtered = filtered.filter((record) =>
-          record.date.includes(search)
-          || record.status.toLowerCase().includes(searchValue)
-          || record.location.toLowerCase().includes(searchValue)
-        );
-      }
-
-      if (status !== 'all') {
-        filtered = filtered.filter((record) => record.status.toLowerCase() === status.toLowerCase());
-      }
-
-      const total = filtered.length;
-      const totalPages = Math.ceil(total / limit);
-      const startIndex = (page - 1) * limit;
-
-      resolve({
-        data: filtered.slice(startIndex, startIndex + limit),
-        current_page: page,
-        per_page: limit,
-        total,
-        last_page: totalPages || 1,
-        success: true
-      });
-    }, 400);
+  punches.forEach((punch) => {
+    const date = punch.punch_time.split('T')[0];
+    if (!byDate[date]) byDate[date] = [];
+    byDate[date].push(punch);
   });
 
-const formatDateFull = (dateValue) => {
-  if (!dateValue) {
-    return 'N/A';
-  }
+  return Object.entries(byDate)
+    .map(([date, dayPunches]) => {
+      const sorted = [...dayPunches].sort(
+        (a, b) => new Date(a.punch_time) - new Date(b.punch_time)
+      );
 
-  return new Date(dateValue).toLocaleDateString('en-US', {
+      const inPunch = sorted.find((p) => p.punch_type === 'in');
+      const outPunch = [...sorted].reverse().find((p) => p.punch_type === 'out');
+      const breakStarts = sorted.filter((p) => p.punch_type === 'break_start');
+      const breakEnds = sorted.filter((p) => p.punch_type === 'break_end');
+
+      // Calculate worked hours (in → out, minus breaks)
+      let workedMs = 0;
+      if (inPunch && outPunch) {
+        workedMs = new Date(outPunch.punch_time) - new Date(inPunch.punch_time);
+
+        // Subtract each break window
+        const maxBreaks = Math.min(breakStarts.length, breakEnds.length);
+        for (let i = 0; i < maxBreaks; i++) {
+          const breakDuration =
+            new Date(breakEnds[i].punch_time) - new Date(breakStarts[i].punch_time);
+          if (breakDuration > 0) workedMs -= breakDuration;
+        }
+      }
+
+      const workedHours =
+        workedMs > 0 ? `${(workedMs / 3_600_000).toFixed(1)} hrs` : inPunch ? 'In progress' : '0 hrs';
+
+      // Derive status
+      let status = 'Absent';
+      if (inPunch && outPunch) status = 'Present';
+      else if (inPunch) status = 'Present'; // clocked in, not yet out
+
+      // Location from first available punch
+      const locPunch = inPunch || sorted[0];
+      const location =
+        locPunch?.location?.ip_address ||
+        (locPunch?.location?.latitude ? 'GPS Tracked' : null) ||
+        (sorted[0]?.attendance?.mode === 'manual' ? 'Manual Entry' : 'Remote');
+
+      // Method / mode
+      const method = sorted[0]?.attendance?.method || '-';
+      const mode = sorted[0]?.attendance?.mode || '-';
+
+      // API-level status (pending / approved / rejected)
+      const apiStatus = sorted[0]?.status || '-';
+
+      return {
+        id: sorted[0]?.id,
+        date,
+        day: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+        clock_in: inPunch ? formatTimestamp(inPunch.punch_time) : '--:-- --',
+        clock_out: outPunch ? formatTimestamp(outPunch.punch_time) : '--:-- --',
+        status,
+        api_status: apiStatus,
+        location,
+        worked_hours: workedHours,
+        breaks: breakStarts.length,
+        method,
+        mode,
+        punches: sorted, // raw punches for detail modal
+      };
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const formatTimestamp = (iso) => {
+  if (!iso) return '--:-- --';
+  return new Date(iso).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const formatDateFull = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   });
 };
 
-const formatTime = (timeValue) => timeValue || '-';
+const formatDateTimeFull = (iso) => {
+  if (!iso) return 'N/A';
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+// ─── Status Badge ─────────────────────────────────────────────────────────────
 
 const getStatusBadge = (status) => {
   switch (status?.toLowerCase()) {
     case 'present':
-      return { icon: FaCheckCircle, className: 'bg-green-100 text-green-800 border border-green-200' };
+      return { icon: FaCheckCircle, className: 'bg-emerald-100 text-emerald-800 border border-emerald-200' };
     case 'absent':
       return { icon: FaTimesCircle, className: 'bg-red-100 text-red-800 border border-red-200' };
     case 'late':
@@ -132,122 +171,50 @@ const getStatusBadge = (status) => {
   }
 };
 
-const usePagination = (initialPage = 1, perPage = 8) => {
-  const [page, setPage] = useState(initialPage);
-  const [limit, setLimit] = useState(perPage);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const goToPage = (nextPage) => {
-    if (nextPage >= 1 && nextPage <= totalPages) {
-      setPage(nextPage);
-    }
-  };
-
-  const updatePagination = ({ page: currentPage, limit: currentLimit, total: totalItems, total_pages: pages }) => {
-    setPage(currentPage);
-    setLimit(currentLimit);
-    setTotal(totalItems);
-    setTotalPages(pages);
-  };
-
-  return {
-    pagination: { page, limit, total, totalPages },
-    updatePagination,
-    goToPage
-  };
+const getApiStatusBadge = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'approved':
+      return 'bg-green-100 text-green-700 border border-green-200';
+    case 'rejected':
+      return 'bg-red-100 text-red-700 border border-red-200';
+    case 'pending':
+    default:
+      return 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+  }
 };
 
-const PaginationComponent = ({ currentPage, totalItems, itemsPerPage, totalPages, onPageChange }) => {
-  if (totalItems <= 0) {
-    return null;
+const punchTypeLabel = (type) => {
+  switch (type) {
+    case 'in': return { label: 'Clock In', color: 'text-emerald-600', icon: FaSignInAlt };
+    case 'out': return { label: 'Clock Out', color: 'text-red-500', icon: FaSignOutAlt };
+    case 'break_start': return { label: 'Break Start', color: 'text-amber-500', icon: FaCoffee };
+    case 'break_end': return { label: 'Break End', color: 'text-blue-500', icon: FaCoffee };
+    default: return { label: type, color: 'text-gray-500', icon: FaClock };
   }
-
-  const maxVisible = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-  if (endPage - startPage + 1 < maxVisible) {
-    startPage = Math.max(1, endPage - maxVisible + 1);
-  }
-
-  const pages = [];
-  for (let pageNumber = startPage; pageNumber <= endPage; pageNumber += 1) {
-    pages.push(pageNumber);
-  }
-
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-4 mt-8">
-      <div className="rounded-full bg-white px-4 py-2 text-sm text-gray-500 shadow-sm">
-        Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} - {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm transition-all hover:bg-purple-50 disabled:opacity-50"
-        >
-          <FaChevronLeft className="mr-1 inline text-xs" />
-          Prev
-        </button>
-
-        {pages.map((pageNumber) => (
-          <button
-            key={pageNumber}
-            type="button"
-            onClick={() => onPageChange(pageNumber)}
-            className={`h-10 w-10 rounded-xl text-sm font-medium shadow-sm transition-all ${
-              pageNumber === currentPage
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
-                : 'border border-gray-200 bg-white text-gray-700 hover:bg-purple-50'
-            }`}
-          >
-            {pageNumber}
-          </button>
-        ))}
-
-        <button
-          type="button"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 shadow-sm transition-all hover:bg-purple-50 disabled:opacity-50"
-        >
-          Next
-          <FaChevronRight className="ml-1 inline text-xs" />
-        </button>
-      </div>
-    </div>
-  );
 };
+
+// ─── Info Item ────────────────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-  <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-    <label className="mb-2 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+    <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
       {icon}
       {label}
     </label>
-    <div className="text-sm font-medium text-gray-800 md:text-base">{value || '-'}</div>
+    <div className="text-sm font-medium text-gray-800">{value || '-'}</div>
   </div>
 );
 
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 20 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.5 } },
-  exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
-};
+// ─── Modal ────────────────────────────────────────────────────────────────────
 
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 }
+const modalVariants = {
+  hidden: { opacity: 0, scale: 0.93, y: 24 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 320, damping: 28 } },
+  exit: { opacity: 0, scale: 0.93, y: 24, transition: { duration: 0.2 } },
 };
 
 const DetailsModal = ({ record, onClose }) => {
-  if (!record) {
-    return null;
-  }
+  if (!record) return null;
 
   const statusStyle = getStatusBadge(record.status);
   const StatusIcon = statusStyle.icon;
@@ -256,10 +223,9 @@ const DetailsModal = ({ record, onClose }) => {
     <AnimatePresence>
       <motion.div
         key="backdrop"
-        variants={backdropVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
         onClick={onClose}
       >
@@ -268,48 +234,78 @@ const DetailsModal = ({ record, onClose }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
-          onClick={(event) => event.stopPropagation()}
+          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
-            <h2 className="flex items-center gap-2 text-xl font-semibold">
-              <FaEye />
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-slate-800 to-slate-700 p-5 text-white">
+            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+              <FaEye className="text-slate-300" />
               Attendance Details
             </h2>
-            <button type="button" onClick={onClose} className="rounded-xl p-2 transition hover:bg-white/20">
-              <FaTimes size={20} />
+            <button type="button" onClick={onClose} className="rounded-lg p-1.5 transition hover:bg-white/20">
+              <FaTimes size={18} />
             </button>
           </div>
 
           <div className="p-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b pb-5">
+            {/* Date & Status Row */}
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-5">
               <div>
-                <h3 className="flex items-center gap-2 text-2xl font-bold text-gray-800">
-                  {formatDateFull(record.date)}
-                  <span className="text-sm font-normal text-gray-500">({record.day})</span>
-                </h3>
-                <div className="mt-1 flex items-center gap-2">
+                <h3 className="text-2xl font-bold text-gray-900">{formatDateFull(record.date)}</h3>
+                <p className="mt-0.5 text-sm text-gray-400">{record.day}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${statusStyle.className}`}>
-                    <StatusIcon size={12} />
+                    <StatusIcon size={11} />
                     {record.status}
+                  </span>
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium capitalize ${getApiStatusBadge(record.api_status)}`}>
+                    {record.api_status}
                   </span>
                 </div>
               </div>
-
-              <div className="rounded-xl bg-gray-100 p-3 text-center">
-                <FaChartLine className="mx-auto text-xl text-purple-500" />
-                <p className="mt-1 text-xs text-gray-500">Work Hours</p>
-                <p className="font-bold">{record.worked_hours}</p>
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center min-w-[90px]">
+                <FaChartLine className="mx-auto mb-1 text-lg text-slate-500" />
+                <p className="text-[10px] uppercase tracking-wider text-gray-400">Worked</p>
+                <p className="font-bold text-gray-800">{record.worked_hours}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <InfoItem icon={<FaHourglassStart className="text-blue-500" />} label="Clock In" value={formatTime(record.clock_in)} />
-              <InfoItem icon={<FaHourglassEnd className="text-red-500" />} label="Clock Out" value={formatTime(record.clock_out)} />
-              <InfoItem icon={<FaMapMarkerAlt className="text-green-500" />} label="Location" value={record.location || '-'} />
-              <InfoItem icon={<FaChartLine className="text-orange-500" />} label="Overtime" value={record.overtime || '0 hrs'} />
-              <InfoItem icon={<FaStickyNote className="text-gray-500" />} label="Notes" value={record.notes || '-'} />
+            {/* Summary Grid */}
+            <div className="mb-6 grid grid-cols-2 gap-3">
+              <InfoItem icon={<FaSignInAlt className="text-emerald-500" />} label="Clock In" value={record.clock_in} />
+              <InfoItem icon={<FaSignOutAlt className="text-red-400" />} label="Clock Out" value={record.clock_out} />
+              <InfoItem icon={<FaMapMarkerAlt className="text-blue-500" />} label="Location" value={record.location} />
+              <InfoItem icon={<FaCoffee className="text-amber-500" />} label="Breaks" value={record.breaks > 0 ? `${record.breaks} break(s)` : 'None'} />
+              <InfoItem icon={<FaWifi className="text-slate-400" />} label="Method" value={`${record.method} / ${record.mode}`} />
             </div>
+
+            {/* Punch Timeline */}
+            {record.punches?.length > 0 && (
+              <div>
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Punch Timeline</h4>
+                <div className="space-y-2">
+                  {record.punches.map((punch) => {
+                    const { label, color, icon: PunchIcon } = punchTypeLabel(punch.punch_type);
+                    return (
+                      <div
+                        key={punch.id}
+                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <PunchIcon className={`text-sm ${color}`} />
+                          <span className="text-sm font-medium text-gray-700">{label}</span>
+                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${getApiStatusBadge(punch.status)}`}>
+                            {punch.status}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-500">{formatDateTimeFull(punch.punch_time)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </motion.div>
@@ -317,121 +313,110 @@ const DetailsModal = ({ record, onClose }) => {
   );
 };
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
 const SkeletonLoader = () => (
-  <div className="space-y-4">
-    {[1, 2, 3, 4].map((item) => (
-      <div key={item} className="animate-pulse rounded-2xl bg-white p-5 shadow-sm">
-        <div className="flex justify-between">
-          <div className="h-5 w-1/3 rounded bg-gray-200" />
-          <div className="h-5 w-20 rounded bg-gray-200" />
+  <div className="space-y-3">
+    {[1, 2, 3, 4, 5].map((i) => (
+      <div key={i} className="animate-pulse rounded-2xl bg-white p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-1/3 rounded-lg bg-gray-200" />
+          <div className="h-6 w-20 rounded-full bg-gray-200" />
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="h-4 w-full rounded bg-gray-200" />
-          <div className="h-4 w-full rounded bg-gray-200" />
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="h-3 rounded bg-gray-100" />
+          <div className="h-3 rounded bg-gray-100" />
+          <div className="h-3 rounded bg-gray-100" />
         </div>
       </div>
     ))}
   </div>
 );
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 const AttendanceHistory = () => {
   const [records, setRecords] = useState([]);
+  const [allRecords, setAllRecords] = useState([]); // client-side search pool
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-
-  const fetchInProgress = useRef(false);
-  const initialFetchDone = useRef(false);
-  const { pagination, updatePagination, goToPage } = usePagination(1, 6);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const fetchAttendance = useCallback(
-    async (page = pagination.page, resetLoading = true) => {
-      if (fetchInProgress.current) {
-        return;
-      }
-
-      fetchInProgress.current = true;
-
-      if (resetLoading) {
-        setLoading(true);
-      }
-
-      try {
-        const result = await fetchAttendanceAPI({
-          page,
-          limit: pagination.limit,
-          search: debouncedSearch,
-          status: statusFilter
-        });
-
-        if (!result.success) {
-          throw new Error('Failed to fetch records');
-        }
-
-        setRecords(result.data);
-        updatePagination({
-          page: result.current_page,
-          limit: result.per_page,
-          total: result.total,
-          total_pages: result.last_page
-        });
-        setError(null);
-      } catch (fetchError) {
-        setError(fetchError.message);
-        toast.error(fetchError.message || 'Failed to load attendance.');
-      } finally {
-        setLoading(false);
-        setIsInitialLoad(false);
-        fetchInProgress.current = false;
-      }
-    },
-    [debouncedSearch, pagination.limit, pagination.page, statusFilter, updatePagination]
+  const [currentPage, setCurrentPage] = useState(1);
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
   );
 
+  // ── Debounce search ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!initialFetchDone.current) {
-      fetchAttendance(1, true);
-      initialFetchDone.current = true;
-    }
-  }, [fetchAttendance]);
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
-  useEffect(() => {
-    if (!isInitialLoad && !fetchInProgress.current && initialFetchDone.current) {
-      fetchAttendance(pagination.page, true);
-    }
-  }, [fetchAttendance, isInitialLoad, pagination.page]);
-
-  useEffect(() => {
-    if (!isInitialLoad) {
-      if (pagination.page !== 1) {
-        goToPage(1);
-      } else {
-        fetchAttendance(1, true);
-      }
-    }
-  }, [debouncedSearch, fetchAttendance, goToPage, isInitialLoad, pagination.page, statusFilter]);
-
+  // ── Resize ───────────────────────────────────────────────────────────────
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ── Fetch from real API ───────────────────────────────────────────────────
+  const fetchAttendance = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const company = JSON.parse(localStorage.getItem('company'));
+      const result = await fetchAttendanceAPI({
+        companyId: company?.id,
+      });
+
+      const daily = deriveDailyRecords(result.data || []);
+      setAllRecords(daily);
+    } catch (err) {
+      setError(err.message);
+      toast.error(err.message || 'Failed to load attendance.');
+    } finally {
+      setLoading(false);
+    }
+
+  }, []);
+
+  useEffect(() => {
+    fetchAttendance();
+  }, [fetchAttendance]);
+
+  // ── Client-side search + pagination ──────────────────────────────────────
+  const filteredRecords = useMemo(() => {
+    if (!debouncedSearch) {
+      return allRecords;
+    }
+
+    const query = debouncedSearch.toLowerCase();
+    return allRecords.filter(
+      (record) =>
+        record.date.includes(debouncedSearch)
+        || record.status.toLowerCase().includes(query)
+        || record.location?.toLowerCase().includes(query)
+        || record.day.toLowerCase().includes(query)
+    );
+  }, [allRecords, debouncedSearch]);
+
+  useEffect(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    setRecords(filteredRecords.slice(startIndex, startIndex + ITEMS_PER_PAGE));
+  }, [currentPage, filteredRecords]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
+  // ── Responsive columns ────────────────────────────────────────────────────
   const showClockOut = windowWidth >= 768;
   const showLocation = windowWidth >= 1024;
-  const showOvertime = windowWidth >= 1280;
+  const showApiStatus = windowWidth >= 1280;
 
   const openDetails = (record) => {
     setSelectedRecord(record);
@@ -443,7 +428,8 @@ const AttendanceHistory = () => {
     setSelectedRecord(null);
   };
 
-  if (isInitialLoad && loading) {
+  // ── Initial skeleton ──────────────────────────────────────────────────────
+  if (loading && allRecords.length === 0) {
     return (
       <div className="mx-auto min-h-screen max-w-7xl p-6">
         <SkeletonLoader />
@@ -454,63 +440,76 @@ const AttendanceHistory = () => {
   return (
     <div className="min-h-screen p-4 font-sans md:p-6">
       <div className="mx-auto max-w-7xl">
+
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 flex flex-col items-center justify-between gap-3 sm:flex-row"
         >
-          <h1 className="flex items-center gap-2 bg-gradient-to-r from-purple-700 to-pink-600 bg-clip-text text-2xl font-extrabold text-transparent md:text-3xl">
-            <FaHistory className="text-purple-500" />
+          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-800 md:text-3xl">
+            <FaHistory className="text-slate-500" />
             Attendance History
           </h1>
 
-          <div className="rounded-full bg-white px-5 py-2 text-sm text-gray-600 shadow-md">
-            <FaCalendarAlt className="mr-2 inline text-purple-500" />
-            Total Records: {pagination.total}
+          <div className="flex items-center gap-3">
+            {loading && (
+              <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-4 py-2 text-xs font-medium text-blue-600 shadow-sm">
+                <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-400" />
+                Syncing…
+              </span>
+            )}
+            <div className="rounded-full bg-white px-5 py-2 text-sm text-gray-600 shadow-md">
+              <FaCalendarAlt className="mr-2 inline text-slate-400" />
+              {filteredRecords.length} record{filteredRecords.length !== 1 ? 's' : ''}
+            </div>
           </div>
         </motion.div>
 
+        {/* ── Search ─────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex flex-col gap-4 md:flex-row"
+          className="mb-6"
         >
-          <div className="relative flex-1">
+          <div className="relative">
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by date, status, location..."
+              placeholder="Search by date, status, location…"
               value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-12 pr-4 shadow-md outline-none transition focus:border-purple-400 focus:ring-4 focus:ring-purple-300"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-12 pr-4 shadow-md outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200"
             />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">Filter:</label>
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-purple-300"
-            >
-              <option value="all">All Status</option>
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="late">Late</option>
-              <option value="half day">Half Day</option>
-              <option value="holiday">Holiday</option>
-            </select>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes size={14} />
+              </button>
+            )}
           </div>
         </motion.div>
 
+        {/* ── Error ──────────────────────────────────────────────────────── */}
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-red-700">
             <FaExclamationCircle />
             {error}
+            <button
+              type="button"
+              onClick={() => fetchAttendance()}
+              className="ml-auto rounded-lg bg-red-100 px-3 py-1 text-xs font-medium hover:bg-red-200"
+            >
+              Retry
+            </button>
           </div>
         )}
 
-        {!loading && records.length > 0 && (
+        {/* ── Desktop Table ───────────────────────────────────────────────── */}
+        {records.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -518,20 +517,21 @@ const AttendanceHistory = () => {
           >
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-gray-700">
-                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-xs uppercase text-gray-600">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                   <tr>
                     <th className="px-5 py-4">Date</th>
                     <th className="px-5 py-4">Day</th>
                     <th className="px-5 py-4">Clock In</th>
                     {showClockOut && <th className="px-5 py-4">Clock Out</th>}
+                    <th className="px-5 py-4">Worked</th>
                     <th className="px-5 py-4">Status</th>
                     {showLocation && <th className="px-5 py-4">Location</th>}
-                    {showOvertime && <th className="px-5 py-4">Overtime</th>}
+                    {showApiStatus && <th className="px-5 py-4">Approval</th>}
                     <th className="px-5 py-4 text-center">Action</th>
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-50">
                   {records.map((record, index) => {
                     const style = getStatusBadge(record.status);
                     const StatusIcon = style.icon;
@@ -539,42 +539,51 @@ const AttendanceHistory = () => {
                     return (
                       <motion.tr
                         key={record.id}
-                        initial={{ opacity: 0, x: -10 }}
+                        initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.03 }}
-                        className="transition duration-200 hover:bg-purple-50/40"
+                        className="transition duration-150 hover:bg-slate-50/60"
                       >
-                        <td className="px-5 py-4 font-medium">{formatDateFull(record.date)}</td>
-                        <td className="px-5 py-4 text-gray-500">{record.day}</td>
+                        <td className="px-5 py-4 font-medium text-gray-800">{formatDateFull(record.date)}</td>
+                        <td className="px-5 py-4 text-gray-400">{record.day}</td>
                         <td className="px-5 py-4">
                           <span className="inline-flex items-center gap-1">
-                            <FaSignInAlt className="text-xs text-green-500" />
+                            <FaSignInAlt className="text-emerald-500" />
                             {record.clock_in}
                           </span>
                         </td>
                         {showClockOut && (
                           <td className="px-5 py-4">
                             <span className="inline-flex items-center gap-1">
-                              <FaSignOutAlt className="text-xs text-red-400" />
+                              <FaSignOutAlt className="text-red-400" />
                               {record.clock_out}
                             </span>
                           </td>
                         )}
+                        <td className="px-5 py-4 text-gray-600">{record.worked_hours}</td>
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
-                            <StatusIcon size={12} />
+                            <StatusIcon size={11} />
                             {record.status}
                           </span>
                         </td>
-                        {showLocation && <td className="px-5 py-4 text-gray-600">{record.location}</td>}
-                        {showOvertime && <td className="px-5 py-4 text-gray-600">{record.overtime}</td>}
+                        {showLocation && (
+                          <td className="px-5 py-4 text-gray-500 text-xs">{record.location}</td>
+                        )}
+                        {showApiStatus && (
+                          <td className="px-5 py-4">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${getApiStatusBadge(record.api_status)}`}>
+                              {record.api_status}
+                            </span>
+                          </td>
+                        )}
                         <td className="px-5 py-4 text-center">
                           <button
                             type="button"
                             onClick={() => openDetails(record)}
-                            className="rounded-xl bg-purple-50 p-2 text-purple-600 shadow-sm transition-all duration-200 hover:bg-purple-100 hover:text-purple-800"
+                            className="rounded-xl bg-slate-50 px-3 py-1.5 text-slate-600 shadow-sm transition hover:bg-slate-100 hover:text-slate-900"
                           >
-                            <FaEye className="mr-1 inline" />
+                            <FaEye className="mr-1 inline text-xs" />
                             View
                           </button>
                         </td>
@@ -587,8 +596,9 @@ const AttendanceHistory = () => {
           </motion.div>
         )}
 
-        {!loading && records.length > 0 && (
-          <div className="grid grid-cols-1 gap-5 md:hidden">
+        {/* ── Mobile Cards ────────────────────────────────────────────────── */}
+        {records.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:hidden">
             {records.map((record) => {
               const style = getStatusBadge(record.status);
               const StatusIcon = style.icon;
@@ -596,44 +606,55 @@ const AttendanceHistory = () => {
               return (
                 <motion.div
                   key={record.id}
-                  initial={{ opacity: 0, y: 15 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="card-hover rounded-2xl border border-gray-100 bg-white p-5 shadow-lg"
+                  className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md"
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-bold text-gray-800">{formatDateFull(record.date)}</h3>
-                      <p className="text-xs text-gray-500">{record.day}</p>
+                      <h3 className="font-bold text-gray-800">{formatDateFull(record.date)}</h3>
+                      <p className="text-xs text-gray-400">{record.day}</p>
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
-                      <StatusIcon size={12} />
-                      {record.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
+                        <StatusIcon size={11} />
+                        {record.status}
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${getApiStatusBadge(record.api_status)}`}>
+                        {record.api_status}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <FaClock className="mr-1 inline text-purple-400" />
-                      In: {record.clock_in}
+                  <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <FaSignInAlt className="text-emerald-500" />
+                      {record.clock_in}
                     </div>
-                    <div>
-                      <FaHourglassEnd className="mr-1 inline text-purple-400" />
-                      Out: {record.clock_out}
+                    <div className="flex items-center gap-1">
+                      <FaSignOutAlt className="text-red-400" />
+                      {record.clock_out}
                     </div>
-                    <div className="col-span-2">
-                      <FaMapMarkerAlt className="mr-1 inline text-gray-400" />
-                      {record.location}
+                    <div className="flex items-center gap-1 col-span-2">
+                      <FaMapMarkerAlt className="text-gray-400" />
+                      <span className="text-xs">{record.location}</span>
                     </div>
-                    <div>
-                      <FaChartLine className="mr-1 inline text-green-500" />
-                      Overtime: {record.overtime}
+                    <div className="flex items-center gap-1">
+                      <FaChartLine className="text-slate-400" />
+                      {record.worked_hours}
                     </div>
+                    {record.breaks > 0 && (
+                      <div className="flex items-center gap-1">
+                        <FaCoffee className="text-amber-400" />
+                        {record.breaks} break(s)
+                      </div>
+                    )}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => openDetails(record)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 py-2.5 font-medium text-purple-700 transition hover:from-purple-100 hover:to-pink-100"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
                   >
                     <FaEye />
                     View Full Details
@@ -644,26 +665,38 @@ const AttendanceHistory = () => {
           </div>
         )}
 
+        {/* ── Empty State ─────────────────────────────────────────────────── */}
         {!loading && records.length === 0 && (
-          <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="rounded-2xl bg-white py-16 text-center shadow-lg">
-            <FaCalendarAlt className="mx-auto mb-4 text-6xl text-gray-300" />
-            <p className="text-xl text-gray-500">No attendance records found</p>
-            <p className="mt-1 text-gray-400">Try adjusting search or filter</p>
+          <motion.div
+            initial={{ scale: 0.96 }}
+            animate={{ scale: 1 }}
+            className="rounded-2xl bg-white py-16 text-center shadow-md"
+          >
+            <FaCalendarAlt className="mx-auto mb-4 text-5xl text-gray-200" />
+            <p className="text-lg font-semibold text-gray-500">No attendance records found</p>
+            <p className="mt-1 text-sm text-gray-400">
+              {debouncedSearch ? 'Try adjusting your search.' : 'No data available yet.'}
+            </p>
           </motion.div>
         )}
 
-        {pagination.total > 0 && (
-          <PaginationComponent
-            currentPage={pagination.page}
-            totalItems={pagination.total}
-            itemsPerPage={pagination.limit}
-            totalPages={pagination.totalPages}
-            onPageChange={goToPage}
+        {/* ── Pagination ──────────────────────────────────────────────────── */}
+        {filteredRecords.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={filteredRecords.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
           />
         )}
       </div>
 
-      <AnimatePresence>{modalOpen && selectedRecord && <DetailsModal record={selectedRecord} onClose={closeModal} />}</AnimatePresence>
+      {/* ── Detail Modal ────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {modalOpen && selectedRecord && (
+          <DetailsModal record={selectedRecord} onClose={closeModal} />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
