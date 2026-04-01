@@ -72,6 +72,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       permission: null
     },
     {
+      icon: FaCalendarAlt,
+      label: 'Holidays',
+      path: '/holidays',
+      permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
+    },
+    {
       icon: FaBriefcase,
       label: 'Management',
       isSection: true,
@@ -114,12 +120,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         },
         {
           icon: FaCalendarAlt,
-          label: 'Holidays',
-          path: '/holidays',
-          permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
-        },
-        {
-          icon: FaCalendarAlt,
           label: 'Holiday Management',
           path: '/holiday-management',
           permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
@@ -142,7 +142,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     activeRole === 'company_owner' || company?.role === 'company_owner';
 
   const isItemDisabled = (item) =>
-    ['/attendance', '/my-leaves','/my-salary','/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany;
+    ['/attendance', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany;
 
   useEffect(() => {
     if (onHover && !isMobile) {
