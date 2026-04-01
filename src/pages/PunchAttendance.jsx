@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ const floatAnimation = {
 
 const PunchAttendance = () => {
   const { attendanceMethods, user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(null);
   const [activeMode, setActiveMode] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
@@ -362,6 +364,13 @@ const PunchAttendance = () => {
             </div>
 
             <div className="flex items-center gap-3 flex-wrap">
+              <button
+                onClick={() => navigate('/attendance-history')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-indigo-100 bg-white/80 text-indigo-600 font-semibold shadow-sm transition-all duration-200 hover:bg-indigo-50 hover:border-indigo-200"
+              >
+                <FaHistory className="w-4 h-4" />
+                <span>History</span>
+              </button>
               <AnimatePresence mode="wait">
                 {loadingStatus ? (
                   <motion.div

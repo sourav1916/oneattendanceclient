@@ -15,12 +15,10 @@ import {
   FaBuilding,
   FaBriefcase,
   FaCalculator,
-  FaHandHoldingUsd,
   FaUserGraduate,
   FaProjectDiagram,
   FaTasks,
   FaClock,
-  FaHistory,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
@@ -52,12 +50,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaClock,
       label: 'Attendance',
       path: '/attendance',
-      permission: ['att_punch', 'att_view_own']
-    },
-    {
-      icon: FaHistory,
-      label: 'Attendance History',
-      path: '/attendance-history',
       permission: ['att_punch', 'att_view_own']
     },
     {
@@ -122,12 +114,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       ]
     },
     {
-      icon: FaHandHoldingUsd,
-      label: 'Cash Book',
-      path: '/cashbook',
-      permission: ['salary_create', 'salary_view_all', 'salary_update', 'payroll_generate', 'payroll_view', 'payroll_approve', 'payroll_mark_paid', 'salary_advance_create', 'report_payroll', 'export_payroll']
-    },
-    {
       icon: FaCommentDots,
       label: 'Help',
       path: '/help',
@@ -143,7 +129,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     activeRole === 'company_owner' || company?.role === 'company_owner';
 
   const isItemDisabled = (item) =>
-    ['/attendance', '/attendance-history'].includes(item.path) && isCompanyOwnerForCurrentCompany;
+    ['/attendance', '/my-leaves','/my-salary','/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany;
 
   useEffect(() => {
     if (onHover && !isMobile) {

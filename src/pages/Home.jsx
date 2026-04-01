@@ -26,7 +26,6 @@ import {
   FaUmbrellaBeach,
   FaFileInvoiceDollar,
   FaUserShield,
-  FaHandHoldingUsd,
   FaHistory
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
@@ -162,7 +161,6 @@ function HomePage() {
     const hasAttendanceMgmtPerm = hasPermission(['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']);
     const hasLeaveMgmtPerm = hasPermission(['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']);
     const hasCompanySetPerm = hasPermission(['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']);
-    const hasCashbookPerm = hasPermission(['salary_create', 'salary_view_all', 'salary_update', 'payroll_generate', 'payroll_view', 'payroll_approve', 'payroll_mark_paid', 'salary_advance_create', 'report_payroll', 'export_payroll']);
 
     return [
       {
@@ -272,15 +270,6 @@ function HomePage() {
         onClick: () => hasCompanySetPerm && navigate('/company-settings'),
         gradient: hasCompanySetPerm ? "bg-gradient-to-r from-slate-600 to-slate-800" : "bg-slate-200",
         disabled: !hasCompanySetPerm
-      },
-      {
-        title: "Cashbook & Payroll",
-        description: hasCashbookPerm ? "Track finances" : "No permission",
-        icon: FaHandHoldingUsd,
-        color: hasCashbookPerm ? "from-amber-600 to-orange-600" : "from-slate-400 to-slate-500",
-        onClick: () => hasCashbookPerm && navigate('/cashbook'),
-        gradient: hasCashbookPerm ? "bg-gradient-to-r from-amber-600 to-orange-600" : "bg-slate-200",
-        disabled: !hasCashbookPerm
       },
       {
         title: "Create Company",
