@@ -19,6 +19,7 @@ import {
   FaProjectDiagram,
   FaTasks,
   FaClock,
+  FaCalendarAlt,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
@@ -109,6 +110,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           icon: FaCog,
           label: 'Company Settings',
           path: '/company-settings',
+          permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
+        },
+        {
+          icon: FaCalendarAlt,
+          label: 'Company Holidays',
+          path: '/company-holidays',
           permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
         }
       ]

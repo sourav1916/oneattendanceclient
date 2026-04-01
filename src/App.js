@@ -19,6 +19,7 @@ import AttendanceHistory from "./pages/AttendanceHistory";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
+import CompanyHolidays from "./pages/HolidayManagement";
 import LeaveManagement from "./pages/LeaveManagement";
 import CompanySettings from "./pages/CompanySettings";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
@@ -65,6 +66,7 @@ function AppContent() {
         <Route path="/attendance-management"element={<ProtectedRoute><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-management"element={<ProtectedRoute><MainLayout><LeaveManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/pending-attendance"element={<ProtectedRoute><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
+        <Route path="/company-holidays"element={<ProtectedRoute><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
         <Route path="/help"element={<ProtectedRoute><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
         <Route path="/my-leaves"element={<ProtectedRoute><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
         <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
