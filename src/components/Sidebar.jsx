@@ -75,7 +75,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaCalendarAlt,
       label: 'Holidays',
       path: '/holidays',
-      permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
+      permission: ['hd_view_own']
     },
     {
       icon: FaBriefcase,
@@ -122,7 +122,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           icon: FaCalendarAlt,
           label: 'Holiday Management',
           path: '/holiday-management',
-          permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
+          permission: ['hd_create', 'hd_view_company', 'hd_update', 'hd_delete']
         }
       ]
     },

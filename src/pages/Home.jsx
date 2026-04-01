@@ -162,6 +162,7 @@ function HomePage() {
     const hasAttendanceMgmtPerm = hasPermission(['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']);
     const hasLeaveMgmtPerm = hasPermission(['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']);
     const hasCompanySetPerm = hasPermission(['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']);
+    const hasHolidayMgmtPerm = hasPermission(['holiday_view', 'holiday_create', 'holiday_update', 'holiday_delete']) || hasCompanySetPerm;
 
     return [
       {
@@ -264,13 +265,22 @@ function HomePage() {
         disabled: !hasLeaveMgmtPerm
       },
       {
-        title: "Holidays",
-        description: hasCompanySetPerm ? "View company holiday calendars" : "No permission",
+        title: "Holiday Mgmt",
+        description: hasHolidayMgmtPerm ? "Configure company holidays" : "No permission",
         icon: FaCalendarAlt,
-        color: hasCompanySetPerm ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasCompanySetPerm && navigate('/holidays'),
-        gradient: hasCompanySetPerm ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
-        disabled: !hasCompanySetPerm
+        color: hasHolidayMgmtPerm ? "from-sky-500 to-indigo-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasHolidayMgmtPerm && navigate('/holiday-management'),
+        gradient: hasHolidayMgmtPerm ? "bg-gradient-to-r from-sky-500 to-indigo-500" : "bg-slate-200",
+        disabled: !hasHolidayMgmtPerm
+      },
+      {
+        title: "Holidays",
+        description: "View company holiday calendars",
+        icon: FaRegCalendarAlt,
+        color: "from-rose-500 to-orange-500",
+        onClick: () => navigate('/holidays'),
+        gradient: "bg-gradient-to-r from-rose-500 to-orange-500",
+        disabled: false
       },
       {
         title: "Company Config",
