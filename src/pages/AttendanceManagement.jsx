@@ -12,6 +12,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import ModalScrollLock from '../components/ModalScrollLock';
 
 const attendanceAPI = {
   fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '') => {
@@ -107,6 +108,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
       onClick={onClose}
     >
+      <ModalScrollLock />
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
@@ -793,6 +795,7 @@ const AttendanceManagement = ({ companyId }) => {
               setNotes('');
             }}
           >
+            <ModalScrollLock />
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}

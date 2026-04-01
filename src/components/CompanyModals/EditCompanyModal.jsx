@@ -6,6 +6,7 @@ import {
   FaEnvelope, FaMapPin, FaLink, FaPlus, FaMinusCircle,
   FaEye, FaTrash
 } from "react-icons/fa";
+import ModalScrollLock from "../ModalScrollLock";
 
 const GEOCODING_API = "https://nominatim.openstreetmap.org/reverse";
 
@@ -248,6 +249,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
+          <ModalScrollLock />
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}

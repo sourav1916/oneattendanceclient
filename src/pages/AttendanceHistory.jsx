@@ -22,6 +22,7 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import ModalScrollLock from '../components/ModalScrollLock';
 import apiCall from '../utils/api';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
@@ -229,6 +230,7 @@ const DetailsModal = ({ record, onClose }) => {
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
         onClick={onClose}
       >
+        <ModalScrollLock />
         <motion.div
           variants={modalVariants}
           initial="hidden"

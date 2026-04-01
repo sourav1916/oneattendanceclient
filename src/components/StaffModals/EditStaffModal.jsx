@@ -11,6 +11,7 @@ import {
   FaUserCheck, FaRobot, FaHandPaper, FaDollarSign,
   FaCalendarAlt, FaIdCard, FaNetworkWired
 } from "react-icons/fa";
+import ModalScrollLock from "../ModalScrollLock";
 
 
 
@@ -438,6 +439,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
+          <ModalScrollLock />
           <motion.div
             className="absolute inset-0 bg-black/60 backdrop-blur-md"
             initial={{ opacity: 0 }}

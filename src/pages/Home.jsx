@@ -31,6 +31,7 @@ import {
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/StaffModals/AddStaffModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
+import ModalScrollLock from "../components/ModalScrollLock";
 
 
 
@@ -434,6 +435,7 @@ function HomePage() {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
             onClick={() => !isSwitching && setShowCompanySwitcher(false)}
           >
+            <ModalScrollLock />
             <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}

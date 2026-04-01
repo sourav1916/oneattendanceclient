@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ModalScrollLock from '../components/ModalScrollLock';
 
 // Dummy Data
 const DUMMY_LEAVES = [
@@ -217,6 +218,7 @@ const LeaveDetailsModal = ({ leave, onClose }) => {
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
       onClick={onClose}
     >
+      <ModalScrollLock />
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
@@ -490,6 +492,7 @@ const ApplyLeaveModal = ({ isOpen, onClose, onSubmit }) => {
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
       onClick={onClose}
     >
+      <ModalScrollLock />
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}

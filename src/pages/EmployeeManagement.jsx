@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import ModalScrollLock from '../components/ModalScrollLock';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -750,6 +751,7 @@ const EmployeeManagement = () => {
                         className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
                         onClick={closeModal}
                     >
+                        <ModalScrollLock />
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}

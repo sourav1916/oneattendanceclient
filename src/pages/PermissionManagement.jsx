@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import ModalScrollLock from '../components/ModalScrollLock';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -589,6 +590,7 @@ const PermissionManagement = () => {
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
             onClick={closeModal}
           >
+            <ModalScrollLock />
             <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
               className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80%] overflow-y-auto"
               onClick={e => e.stopPropagation()}

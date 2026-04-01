@@ -11,6 +11,7 @@ import apiCall from '../utils/api';
 import Skeleton from "../components/SkeletonComponent";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 import { useAuth } from "../context/AuthContext";
+import ModalScrollLock from "../components/ModalScrollLock";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -273,6 +274,7 @@ export default function MyInvites() {
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}>
+      <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
@@ -356,6 +358,7 @@ export default function MyInvites() {
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}>
+      <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
         onClick={e => e.stopPropagation()}>
@@ -389,6 +392,7 @@ export default function MyInvites() {
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}>
+      <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
         onClick={e => e.stopPropagation()}>

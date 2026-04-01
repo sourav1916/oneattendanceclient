@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
+import ModalScrollLock from "../components/ModalScrollLock";
 import Skeleton from "../components/SkeletonComponent";
 import apiCall from "../utils/api";
 
@@ -803,6 +804,7 @@ const SettingsPage = () => {
       <AnimatePresence>
         {showDeleteModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+            <ModalScrollLock />
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

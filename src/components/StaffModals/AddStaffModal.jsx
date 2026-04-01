@@ -12,6 +12,7 @@ import {
   FaDollarSign, FaCalendarAlt, FaIdCard, FaNetworkWired
 } from "react-icons/fa";
 import SearchableSelect from "../SearchableSelect";
+import ModalScrollLock from "../ModalScrollLock";
 
 function AddStaffModal({ isOpen, onClose, onSuccess }) {
   const [users, setUsers] = useState([]);
@@ -382,6 +383,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
+          <ModalScrollLock />
           {/* Backdrop */}
           <motion.div
             className="absolute inset-0 bg-black/60 backdrop-blur-md"
