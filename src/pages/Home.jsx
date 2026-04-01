@@ -19,7 +19,7 @@ import {
   FaPlusCircle,
   FaTimes,
   FaUserCircle,
-  FaRegClock,
+  FaCalendarAlt,
   FaRegCalendarAlt,
   FaExchangeAlt,
   FaCog,
@@ -262,6 +262,15 @@ function HomePage() {
         onClick: () => hasLeaveMgmtPerm && navigate('/leave-management'),
         gradient: hasLeaveMgmtPerm ? "bg-gradient-to-r from-orange-500 to-red-500" : "bg-slate-200",
         disabled: !hasLeaveMgmtPerm
+      },
+      {
+        title: "Holidays",
+        description: hasCompanySetPerm ? "View company holiday calendars" : "No permission",
+        icon: FaCalendarAlt,
+        color: hasCompanySetPerm ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasCompanySetPerm && navigate('/holidays'),
+        gradient: hasCompanySetPerm ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
+        disabled: !hasCompanySetPerm
       },
       {
         title: "Company Config",

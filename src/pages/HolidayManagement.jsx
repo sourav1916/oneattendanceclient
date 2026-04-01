@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaChevronLeft,
@@ -43,11 +43,46 @@ const holidayService = {
 // ==================== HELPER FUNCTIONS ====================
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-const formatDate = (date) => date.toISOString().split('T')[0];
-const isSameDay = (left, right) =>
-  left.getFullYear() === right.getFullYear() &&
-  left.getMonth() === right.getMonth() &&
-  left.getDate() === right.getDate();
+const toCalendarDate = (value) => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      if ([year, month, day].every(num => Number.isFinite(num))) {
+        return new Date(year, month - 1, day);
+      }
+    }
+  }
+
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+
+  return null;
+};
+
+const formatDate = (date) => {
+  const normalized = toCalendarDate(date);
+  if (!normalized) return '';
+  const year = normalized.getFullYear();
+  const month = String(normalized.getMonth() + 1).padStart(2, '0');
+  const day = String(normalized.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const isSameDay = (left, right) => {
+  const a = toCalendarDate(left);
+  const b = toCalendarDate(right);
+  if (!a || !b) return false;
+  return a.getTime() === b.getTime();
+};
 
 // ==================== CALENDAR CELL COMPONENT ====================
 const CalendarCell = ({ 
@@ -266,7 +301,7 @@ const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess }) => {
 
 // ==================== MAIN CALENDAR COMPONENT ====================
 const HolidayManagementCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => toCalendarDate(new Date()) || new Date());
   const [selectedDates, setSelectedDates] = useState([]);
   const [isSelecting, setIsSelecting] = useState(false);
   const [showCreatePopup, setShowCreatePopup] = useState(false);
@@ -276,7 +311,7 @@ const HolidayManagementCalendar = () => {
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
-  const today = new Date();
+  const today = useMemo(() => toCalendarDate(new Date()) || new Date(), []);
 
   // Fetch master holidays when month/year changes
   useEffect(() => {
@@ -310,27 +345,29 @@ const HolidayManagementCalendar = () => {
   };
 
   const handleDateTap = useCallback((date) => {
-    if (!date) return;
+    const normalized = toCalendarDate(date);
+    if (!normalized) return;
     
     if (isSelecting) {
       setSelectedDates(prev => {
-        const exists = prev.some(d => formatDate(d) === formatDate(date));
+        const exists = prev.some(d => formatDate(d) === formatDate(normalized));
         if (exists) {
-          return prev.filter(d => formatDate(d) !== formatDate(date));
+          return prev.filter(d => formatDate(d) !== formatDate(normalized));
         }
-        return [...prev, date];
+        return [...prev, normalized];
       });
     } else {
-      setSelectedDates([date]);
+      setSelectedDates([normalized]);
       setIsSelecting(false);
       setShowCreatePopup(true);
     }
   }, [isSelecting]);
 
   const handlePressHold = useCallback((date) => {
-    if (!date) return;
+    const normalized = toCalendarDate(date);
+    if (!normalized) return;
     setIsSelecting(true);
-    setSelectedDates([date]);
+    setSelectedDates([normalized]);
   }, []);
 
   const resetSelection = () => {
@@ -345,12 +382,13 @@ const HolidayManagementCalendar = () => {
   };
 
   const changeMonth = (delta) => {
-    setCurrentDate(new Date(currentYear, currentMonth + delta, 1));
+    const target = toCalendarDate(new Date(currentYear, currentMonth + delta, 1));
+    setCurrentDate(target || new Date(currentYear, currentMonth + delta, 1));
     resetSelection();
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    setCurrentDate(toCalendarDate(new Date()) || new Date());
     resetSelection();
   };
 
