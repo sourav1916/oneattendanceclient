@@ -13,9 +13,18 @@ import {
 import apiCall from '../utils/api';
 
 // ==================== API SERVICE ====================
+const masterHolidayRequests = new Map();
+
 const holidayService = {
   // Fetch master holidays for a specific year and month
   getMasterHolidays: async (year, month) => {
+    const requestKey = `${year}-${month}`;
+
+    if (masterHolidayRequests.has(requestKey)) {
+      return masterHolidayRequests.get(requestKey);
+    }
+
+    const request = (async () => {
     try {
       const response = await apiCall(`/holiday/master-holidays?year=${year}&month=${month}`);
       const data = await response.json();
@@ -23,7 +32,13 @@ const holidayService = {
     } catch (error) {
       console.error('Failed to fetch master holidays:', error);
       return [];
+    } finally {
+      masterHolidayRequests.delete(requestKey);
     }
+    })();
+
+    masterHolidayRequests.set(requestKey, request);
+    return request;
   },
 
   // Create a new holiday
@@ -315,11 +330,15 @@ const HolidayManagementCalendar = () => {
 
   // Fetch master holidays when month/year changes
   useEffect(() => {
+    let isActive = true;
+
     const fetchHolidays = async () => {
       if (yearMonth.year === currentYear && yearMonth.month === currentMonth) return;
       
       setIsLoading(true);
       const holidays = await holidayService.getMasterHolidays(currentYear, currentMonth + 1);
+
+      if (!isActive) return;
       
       const holidaysByDate = {};
       holidays.forEach(holiday => {
@@ -336,6 +355,10 @@ const HolidayManagementCalendar = () => {
     };
 
     fetchHolidays();
+
+    return () => {
+      isActive = false;
+    };
   }, [currentYear, currentMonth]);
 
   const getHolidayForDate = (date) => {
