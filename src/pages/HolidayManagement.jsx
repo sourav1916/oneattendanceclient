@@ -44,6 +44,10 @@ const holidayService = {
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 const formatDate = (date) => date.toISOString().split('T')[0];
+const isSameDay = (left, right) =>
+  left.getFullYear() === right.getFullYear() &&
+  left.getMonth() === right.getMonth() &&
+  left.getDate() === right.getDate();
 
 // ==================== CALENDAR CELL COMPONENT ====================
 const CalendarCell = ({ 
@@ -51,6 +55,7 @@ const CalendarCell = ({
   dayNumber, 
   isCurrentMonth, 
   isSelected, 
+  isToday,
   isHoliday, 
   holidayInfo,
   onTap,
@@ -90,15 +95,23 @@ const CalendarCell = ({
         relative h-28 md:h-32 p-2 border border-gray-200 rounded-lg cursor-pointer
         transition-all duration-200 hover:shadow-md hover:border-indigo-300
         ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+        ${isToday ? 'border-sky-500 border-2 shadow-[0_0_0_1px_rgba(14,165,233,0.15)]' : ''}
         ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2 bg-indigo-50' : ''}
         ${isHoliday ? getHolidayTypeClass() : ''}
       `}
     >
       <div className="flex justify-between items-start">
-        <span className={`text-sm font-medium ${!isCurrentMonth ? 'text-gray-400' : 'text-gray-700'}`}>
+        <span className={`text-sm font-medium ${!isCurrentMonth ? 'text-gray-400' : isToday ? 'text-sky-700' : 'text-gray-700'}`}>
           {dayNumber}
         </span>
-        {getHolidayBadge()}
+        <div className="flex flex-col items-end gap-1">
+          {isToday && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 font-semibold">
+              Today
+            </span>
+          )}
+          {getHolidayBadge()}
+        </div>
       </div>
       
       {holidayInfo && (
@@ -263,6 +276,7 @@ const HolidayManagementCalendar = () => {
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
+  const today = new Date();
 
   // Fetch master holidays when month/year changes
   useEffect(() => {
@@ -372,6 +386,7 @@ const HolidayManagementCalendar = () => {
       }
       
       const isSelected = selectedDates.some(d => formatDate(d) === formatDate(date));
+      const isToday = isSameDay(date, today);
       const holidayInfo = getHolidayForDate(date);
       const isHoliday = !!holidayInfo;
       
@@ -380,6 +395,7 @@ const HolidayManagementCalendar = () => {
         dayNumber,
         isCurrentMonth,
         isSelected,
+        isToday,
         isHoliday,
         holidayInfo
       });
