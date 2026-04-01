@@ -757,7 +757,7 @@ const EmployeeManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}

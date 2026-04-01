@@ -441,7 +441,7 @@ function HomePage() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-2xl mx-4"
+              className="relative w-full max-w-4xl max-h-[90vh] mx-4 overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">

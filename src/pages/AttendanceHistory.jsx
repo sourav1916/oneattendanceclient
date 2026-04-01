@@ -236,7 +236,7 @@ const DetailsModal = ({ record, onClose }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

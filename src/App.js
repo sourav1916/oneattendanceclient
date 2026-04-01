@@ -20,6 +20,7 @@ import AttendanceManagement from "./pages/AttendanceManagement";
 import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
 import LeaveManagement from "./pages/LeaveManagement";
+import CompanySettings from "./pages/CompanySettings";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ProfilePage from "./pages/Profile";
 import { ToastContainer } from "react-toastify";
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/my-leaves"element={<ProtectedRoute><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
         <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
         <Route path="/employee-management"element={<ProtectedRoute><MainLayout><EmployeeManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/company-settings"element={<ProtectedRoute><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
         <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />

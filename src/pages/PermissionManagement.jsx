@@ -592,7 +592,7 @@ const PermissionManagement = () => {
           >
             <ModalScrollLock />
             <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[80%] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
               onClick={e => e.stopPropagation()}
             >
               {/* VIEW */}

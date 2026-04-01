@@ -276,7 +276,7 @@ export default function MyInvites() {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-2xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
@@ -360,7 +360,7 @@ export default function MyInvites() {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaCheckCircle /> Accept Invitation</h2>
@@ -394,7 +394,7 @@ export default function MyInvites() {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaBan /> Reject Invitation</h2>

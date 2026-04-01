@@ -254,7 +254,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white backdrop-blur-xl w-[95%] sm:w-[80%] max-w-5xl max-h-[85vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col"
+            className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col"
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
@@ -340,7 +340,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
                   
                   {showPreview && logoPreview && (
                     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowPreview(false)}>
-                      <div className="relative max-w-2xl max-h-[90vh] bg-white rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+                      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => setShowPreview(false)}
                           className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"

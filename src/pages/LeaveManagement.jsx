@@ -984,7 +984,7 @@ const LeaveManagement = () => {
                         <ModalScrollLock />
                         <motion.div
                             variants={modalVariants}
-                            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}
