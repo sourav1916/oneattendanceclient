@@ -77,15 +77,19 @@ const isSameDay = (date1, date2) => {
 
 
 // ==================== CALENDAR CELL COMPONENT ====================
-const CalendarCell = ({ 
-  dayNumber, 
-  isCurrentMonth, 
+const CalendarCell = ({
+  date,
+  dayNumber,
+  isCurrentMonth,
   isToday,
   holidays,
-  showHolidayDetails
+  showHolidayDetails,
+  onMonthNavigate,
+  onTap,
+  isHighlighted
 }) => {
   const hasHolidays = holidays && holidays.length > 0;
-  
+
   const getHolidayStyles = () => {
     if (!hasHolidays) return {};
     const holiday = holidays[0];
@@ -99,7 +103,7 @@ const CalendarCell = ({
 
   const getHolidayBadge = (holiday) => {
     const type = holiday.type || (holiday.is_optional === 1 ? 'Optional' : 'Holiday');
-    
+
     return (
       <span className="text-[9px] xsm:text-[8px] px-1 py-0.5 rounded-full truncate font-bold opacity-80 bg-white/50">
         {type === 'Observance' ? 'Obs' : type.slice(0, 3)}
@@ -110,11 +114,19 @@ const CalendarCell = ({
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
+      onClick={() => {
+        if (!isCurrentMonth) {
+          onMonthNavigate(date);
+        } else {
+          onTap(date);
+        }
+      }}
       className={`
         relative h-20 xsm:h-16 sm:h-24 md:h-28 lg:h-32 p-1 xsm:p-0.5 sm:p-1.5 md:p-2 border border-gray-100 rounded-lg
-        transition-all duration-200 hover:shadow-md hover:border-indigo-300
-        ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300' : 'bg-white text-gray-700'}
-        ${isToday ? 'border-sky-500 border-2 shadow-[0_0_0_1px_rgba(14,165,233,0.15)] z-10' : ''}
+        transition-all duration-200 hover:shadow-md
+        ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300 cursor-pointer hover:bg-gray-100/80 active:scale-[0.98]' : 'bg-white text-gray-700'}
+        ${isToday ? 'border-sky-600 border-2 shadow-[0_0_12px_rgba(79,70,229,0.3)] z-20 scale-[1.02]' : ''}
+        ${isHighlighted ? 'border-indigo-400 border-2 shadow-[0_0_12px_rgba(79,70,229,0.3)] z-20 scale-[1.02]' : ''}
       `}
       style={hasHolidays && showHolidayDetails ? getHolidayStyles() : {}}
     >
@@ -136,7 +148,7 @@ const CalendarCell = ({
           )}
         </div>
       </div>
-      
+
       {hasHolidays && showHolidayDetails && (
         <div className="mt-1 space-y-0.5">
           {holidays.slice(0, 1).map((holiday, idx) => (
@@ -154,7 +166,7 @@ const CalendarCell = ({
 };
 
 // ==================== HOLIDAY DETAILS SIDEBAR ====================
-const HolidayDetailsSidebar = ({ holidays, onClose }) => {
+const HolidayDetailsSidebar = ({ holidays, onClose, onMonthNavigate }) => {
   const groupedHolidays = holidays.reduce((acc, holiday) => {
     const date = formatDate(holiday.date);
     if (!acc[date]) acc[date] = [];
@@ -163,59 +175,74 @@ const HolidayDetailsSidebar = ({ holidays, onClose }) => {
   }, {});
 
   return (
-    <motion.div
-      initial={{ x: '100%', opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: '100%', opacity: 0 }}
-      className="fixed right-0 top-0 h-full w-[400px] xsm:w-full bg-white shadow-2xl z-[100] overflow-y-auto"
-    >
-      <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-6 xsm:p-4 flex justify-between items-center z-10">
-        <div>
-          <h3 className="text-xl xsm:text-lg font-black text-gray-900 uppercase tracking-tight">Corporate Calendar</h3>
-          <p className="text-xs xsm:text-[10px] text-indigo-600 font-bold uppercase tracking-widest">{holidays.length} holidays configured</p>
-        </div>
-        <button onClick={onClose} className="p-3 xsm:p-2 hover:bg-gray-100 rounded-full transition-all active:scale-90 bg-gray-50">
-          <FaTimes className="w-5 h-5 xsm:w-4 xsm:h-4 text-gray-500" />
-        </button>
-      </div>
-      
-      <div className="p-6 xsm:p-4 space-y-6">
-        {Object.entries(groupedHolidays).map(([date, dateHolidays]) => (
-          <div key={date} className="group">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                <FaCalendarAlt className="w-5 h-5" />
-              </div>
-              <span className="font-black text-gray-900 text-sm tracking-tight">
-                {new Date(date).toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
-              </span>
-            </div>
-            <div className="space-y-3 pl-10 xsm:pl-0">
-              {dateHolidays.map((holiday, idx) => (
-                <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-all hover:bg-white hover:shadow-sm">
-                  <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${
-                    holiday.type === 'Observance' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' :
-                    holiday.is_optional === 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
-                    'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]'
-                  }`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-black text-gray-900 leading-tight truncate">{holiday.name}</p>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                      {holiday.type || (holiday.is_optional === 1 ? 'Optional Holiday' : 'Mandatory Holiday')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[90]"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ x: '100%', opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: '100%', opacity: 0 }}
+        className="fixed right-0 top-0 h-full w-[400px] xsm:w-full bg-white shadow-2xl z-[100] overflow-y-auto"
+      >
+        <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-6 xsm:p-4 flex justify-between items-center z-10">
+          <div>
+            <h3 className="text-xl xsm:text-lg font-black text-gray-900 uppercase tracking-tight">Corporate Calendar</h3>
+            <p className="text-xs xsm:text-[10px] text-indigo-600 font-bold uppercase tracking-widest">{holidays.length} holidays configured</p>
           </div>
-        ))}
-      </div>
-    </motion.div>
+          <button onClick={onClose} className="p-3 xsm:p-2 hover:bg-gray-100 rounded-full transition-all active:scale-90 bg-gray-50">
+            <FaTimes className="w-5 h-5 xsm:w-4 xsm:h-4 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="p-6 xsm:p-4 space-y-6">
+          {Object.entries(groupedHolidays).map(([date, dateHolidays]) => (
+            <div key={date} className="group">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                  <FaCalendarAlt className="w-5 h-5" />
+                </div>
+                <span className="font-black text-gray-900 text-sm tracking-tight">
+                  {new Date(date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+              <div className="space-y-3 pl-10 xsm:pl-0">
+                {dateHolidays.map((holiday, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      onMonthNavigate(holiday.date);
+                      onClose();
+                    }}
+                    className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-all hover:bg-white hover:shadow-sm cursor-pointer active:scale-[0.98] group/item"
+                  >
+                    <div className={`w-3 h-3 rounded-full mt-1 shrink-0 group-hover/item:scale-125 transition-transform ${holiday.type === 'Observance' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' :
+                        holiday.is_optional === 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
+                          'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]'
+                      }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-black text-gray-900 leading-tight truncate group-hover/item:text-indigo-600 transition-colors">{holiday.name}</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                        {holiday.type || (holiday.is_optional === 1 ? 'Optional Holiday' : 'Mandatory Holiday')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    </>
   );
 };
 
@@ -225,9 +252,10 @@ const CompanyHolidayCalendar = () => {
   const [showHolidaySidebar, setShowHolidaySidebar] = useState(false);
   const [showHolidayDetails, setShowHolidayDetails] = useState(true);
   const [companyHolidays, setCompanyHolidays] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
   const [selectedCompany] = useState(() => JSON.parse(localStorage.getItem('company')));
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Shared fetch lock to prevent double loading while ensuring UI updates
   const fetchLock = useRef(null);
 
@@ -252,9 +280,9 @@ const CompanyHolidayCalendar = () => {
         }
         return;
       }
-      
+
       setIsLoading(true);
-      
+
       // 2. Start the fetch and store the promise in the ref
       const activePromise = holidayService.getCompanyHolidays(selectedCompany.id);
       fetchLock.current = activePromise;
@@ -283,22 +311,40 @@ const CompanyHolidayCalendar = () => {
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
+    const todayDate = new Date();
+    setSelectedDate(toCalendarDate(todayDate));
+    setCurrentDate(todayDate);
   };
+
+  const handleMonthNavigate = useCallback((date) => {
+    const normalized = toCalendarDate(date);
+    if (!normalized) return;
+    
+    // Select the day and show that month
+    setSelectedDate(normalized);
+    const targetMonth = new Date(normalized.getFullYear(), normalized.getMonth(), 1);
+    setCurrentDate(targetMonth);
+  }, []);
+  
+  const handleDateClick = useCallback((date) => {
+    const normalized = toCalendarDate(date);
+    if (!normalized) return;
+    setSelectedDate(normalized);
+  }, []);
 
   const generateCalendarGrid = useMemo(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const prevMonthDays = getDaysInMonth(currentYear, currentMonth - 1);
-    
+
     const grid = [];
     const totalCells = 42;
-    
+
     for (let i = 0; i < totalCells; i++) {
       let date;
       let isCurrentMonth = true;
       let dayNumber;
-      
+
       if (i < firstDay) {
         dayNumber = prevMonthDays - (firstDay - i - 1);
         date = new Date(currentYear, currentMonth - 1, dayNumber);
@@ -312,21 +358,23 @@ const CompanyHolidayCalendar = () => {
         date = new Date(currentYear, currentMonth, dayNumber);
         isCurrentMonth = true;
       }
-      
+
       const isToday = isSameDay(date, today);
       const holidays = getHolidaysForDate(date);
+      const isHighlighted = selectedDate && isSameDay(date, selectedDate);
       
       grid.push({
         date,
         dayNumber,
         isCurrentMonth,
         isToday,
-        holidays
+        holidays,
+        isHighlighted
       });
     }
-    
+
     return grid;
-  }, [currentYear, currentMonth, today, getHolidaysForDate]);
+  }, [currentYear, currentMonth, today, getHolidaysForDate, selectedDate]);
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const weekDaysShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -345,7 +393,7 @@ const CompanyHolidayCalendar = () => {
               {selectedCompany ? `Syncing from Directory #${selectedCompany.id}` : 'Stay updated with your corporate schedule'}
             </p>
           </div>
-          
+
           <div className="flex items-center gap-2 xsm:gap-1.5 flex-wrap">
             <button
               onClick={() => setShowHolidayDetails(!showHolidayDetails)}
@@ -354,7 +402,7 @@ const CompanyHolidayCalendar = () => {
               {showHolidayDetails ? <FaEyeSlash className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" /> : <FaEye className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" />}
               {showHolidayDetails ? 'Hide Names' : 'Show Names'}
             </button>
-            
+
             <button
               onClick={() => setShowHolidaySidebar(true)}
               className="flex items-center gap-1.5 xsm:gap-1 px-4 xsm:px-3 py-2 xsm:py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-xs xsm:text-[10px] shadow-lg shadow-indigo-100 font-bold uppercase tracking-wider active:scale-95"
@@ -391,7 +439,7 @@ const CompanyHolidayCalendar = () => {
                 <FaChevronRight className="w-4 h-4 xsm:w-3 xsm:h-3 text-gray-600" />
               </button>
             </div>
-            
+
             <button
               onClick={goToToday}
               className="px-4 xsm:px-3 py-2 xsm:py-1.5 text-xs xsm:text-[10px] bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-indigo-600 font-black uppercase tracking-widest border border-indigo-50"
@@ -412,7 +460,7 @@ const CompanyHolidayCalendar = () => {
               </div>
             ))}
           </div>
-          
+
           {/* Calendar cells */}
           {isLoading ? (
             <div className="flex flex-col items-center justify-center h-96 xsm:h-64 gap-3">
@@ -426,6 +474,8 @@ const CompanyHolidayCalendar = () => {
                   key={idx}
                   {...cell}
                   showHolidayDetails={showHolidayDetails}
+                  onMonthNavigate={handleMonthNavigate}
+                  onTap={handleDateClick}
                 />
               ))}
             </div>
@@ -456,6 +506,7 @@ const CompanyHolidayCalendar = () => {
           <HolidayDetailsSidebar
             holidays={companyHolidays}
             onClose={() => setShowHolidaySidebar(false)}
+            onMonthNavigate={handleMonthNavigate}
           />
         )}
       </AnimatePresence>

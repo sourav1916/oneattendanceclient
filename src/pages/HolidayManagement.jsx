@@ -44,9 +44,9 @@ const holidayService = {
   },
 
   // Create holiday API
-  createHoliday: async (payload) => {
+  createHoliday: async (payload, companyId) => {
     try {
-      const response = await apiCall('/holiday/create', 'POST', payload);
+      const response = await apiCall('/holiday/create', 'POST', payload, companyId);
       return await response.json();
     } catch (error) {
       console.error('Failed to create holiday:', error);
@@ -55,9 +55,9 @@ const holidayService = {
   },
 
   // Update holiday API
-  updateHoliday: async (payload) => {
+  updateHoliday: async (payload, companyId) => {
     try {
-      const response = await apiCall('/holiday/update', 'PUT', payload);
+      const response = await apiCall('/holiday/update', 'PUT', payload, companyId);
       return await response.json();
     } catch (error) {
       console.error('Failed to update holiday:', error);
@@ -66,9 +66,9 @@ const holidayService = {
   },
 
   // Delete holiday API
-  deleteHoliday: async (id) => {
+  deleteHoliday: async (id, companyId) => {
     try {
-      const response = await apiCall('/holiday/delete', 'POST', { id });
+      const response = await apiCall('/holiday/delete', 'POST', { id }, companyId);
       return await response.json();
     } catch (error) {
       console.error('Failed to delete holiday:', error);
@@ -133,7 +133,8 @@ const CalendarCell = ({
   onTap,
   onPressHold,
   isSelecting,
-  onAction
+  onAction,
+  onMonthNavigate
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   
@@ -163,11 +164,17 @@ const CalendarCell = ({
         e.preventDefault();
         onPressHold(date);
       }}
-      onClick={() => isSelecting ? onTap(date) : null}
+      onClick={() => {
+        if (isSelecting) {
+          onTap(date);
+        } else if (!isCurrentMonth) {
+          onMonthNavigate(date);
+        }
+      }}
       className={`
         relative h-20 xsm:h-16 sm:h-24 md:h-28 lg:h-32 p-1 xsm:p-0.5 sm:p-1.5 md:p-2 border border-gray-100 rounded-lg
         transition-all duration-200
-        ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300' : 'bg-white text-gray-700'}
+        ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300 cursor-pointer hover:bg-gray-100/80 active:scale-[0.98]' : 'bg-white text-gray-700'}
         ${isToday ? 'border-sky-500 border-2 shadow-[0_0_0_1px_rgba(14,165,233,0.15)] z-10' : ''}
         ${isSelecting ? 'cursor-pointer hover:border-indigo-400' : ''}
       `}
@@ -223,12 +230,15 @@ const CalendarCell = ({
                       className="absolute bottom-5 right-2 w-40 xsm:w-36 bg-white/95 backdrop-blur-sm rounded-xl shadow-[0_10px_40px_-10px_rgba(79,70,229,0.3)] border border-indigo-100 py-1.5 z-40"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {!holidayInfo ? (
+                      {!holidayInfo || holidayInfo.source === 'master' ? (
                         <button
                           onClick={() => handleAction('create')}
                           className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95"
                         >
-                          <FaPlus className="w-3 h-3" /> Add Corporate
+                          <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600">
+                             <FaPlus className="w-3 h-3" />
+                          </div>
+                          {holidayInfo ? 'Add to Corporate' : 'Add Corporate'}
                         </button>
                       ) : (
                         <>
@@ -281,8 +291,8 @@ const CalendarCell = ({
 };
 
 // ==================== CREATE HOLIDAY POPUP ====================
-const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess }) => {
-  const [holidayName, setHolidayName] = useState('');
+const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess, initialName }) => {
+  const [holidayName, setHolidayName] = useState(initialName || '');
   const [isOptional, setIsOptional] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -302,7 +312,7 @@ const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess }) => {
         date: formatDate(date),
         is_optional: isOptional ? 1 : 0,
         company_id: company?.id
-      })
+      }, company?.id)
     ));
 
     const successCount = results.filter(r => r.success).length;
@@ -427,12 +437,13 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
 
     setIsSubmitting(true);
     
+    const company = JSON.parse(localStorage.getItem('company'));
     const result = await holidayService.updateHoliday({
       id: holiday.id,
       name: holidayName.trim(),
       date: holiday.date,
       is_optional: isOptional ? 1 : 0
-    });
+    }, company?.id);
 
     if (result.success) {
       toast.success('Holiday updated successfully!');
@@ -546,7 +557,8 @@ const DeleteConfirmationModal = ({ holiday, onClose, onDeleteSuccess }) => {
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    const result = await holidayService.deleteHoliday(holiday.id);
+    const company = JSON.parse(localStorage.getItem('company'));
+    const result = await holidayService.deleteHoliday(holiday.id, company?.id);
     if (result.success) {
       toast.success('Holiday deleted successfully!');
       onDeleteSuccess();
@@ -715,6 +727,7 @@ const HolidayManagementCalendar = () => {
     switch (action) {
       case 'create':
         setSelectedDates([date]);
+        setSelectedHoliday(holiday || null);
         setShowCreatePopup(true);
         break;
       case 'update':
@@ -725,10 +738,26 @@ const HolidayManagementCalendar = () => {
         setSelectedHoliday(holiday);
         setShowDeleteModal(true);
         break;
-      default:
-        break;
     }
   }, []);
+
+  const resetSelection = useCallback(() => {
+    setSelectedDates([]);
+    setIsSelecting(false);
+    setSelectedHoliday(null);
+  }, []);
+
+  const handleMonthNavigate = useCallback((date) => {
+    const normalized = toCalendarDate(date);
+    if (!normalized) return;
+    
+    // Clear selection and navigate
+    resetSelection();
+    
+    // Set current date to the 1st of that month to ensure consistency
+    const targetDate = new Date(normalized.getFullYear(), normalized.getMonth(), 1);
+    setCurrentDate(targetDate);
+  }, [resetSelection]);
 
   const handlePressHold = useCallback((date) => {
     const normalized = toCalendarDate(date);
@@ -737,16 +766,11 @@ const HolidayManagementCalendar = () => {
     setSelectedDates([normalized]);
   }, []);
 
-  const resetSelection = () => {
-    setSelectedDates([]);
-    setIsSelecting(false);
-    setSelectedHoliday(null);
-  };
 
   const handleRefresh = () => {
     resetSelection();
-    // Force a re-fetch by clearing the ref cache
-    lastFetched.current = { year: null, month: null };
+    // Force a re-fetch by clearing state
+    setAllHolidays({});
     setCurrentDate(new Date(currentDate)); // Trigger effect
   };
 
@@ -917,6 +941,7 @@ const HolidayManagementCalendar = () => {
                   onPressHold={handlePressHold}
                   isSelecting={isSelecting}
                   onAction={handleActionClick}
+                  onMonthNavigate={handleMonthNavigate}
                 />
               ))}
             </div>
@@ -949,6 +974,7 @@ const HolidayManagementCalendar = () => {
         {showCreatePopup && selectedDates.length > 0 && (
           <CreateHolidayPopup
             selectedDates={selectedDates}
+            initialName={selectedHoliday?.name || ''}
             onClose={() => {
               setShowCreatePopup(false);
               resetSelection();
