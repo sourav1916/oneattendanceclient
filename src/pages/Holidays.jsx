@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaChevronLeft,
@@ -14,7 +14,6 @@ import {
   FaEyeSlash,
 } from 'react-icons/fa';
 import apiCall from '../utils/api';
-import { useAuth } from '../context/AuthContext';
 
 // ==================== API SERVICE ====================
 const holidayService = {
@@ -76,44 +75,6 @@ const isSameDay = (date1, date2) => {
   return left.getTime() === right.getTime();
 };
 
-// ==================== COMPANY SELECTOR COMPONENT ====================
-const CompanySelector = ({ companies, selectedCompany, onSelectCompany }) => {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6">
-      <div className="flex items-center gap-2 mb-3">
-        <FaBuilding className="w-5 h-5 text-indigo-500" />
-        <h3 className="font-semibold text-gray-700">Select Company</h3>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {companies.map(company => (
-          <motion.button
-            key={company.id}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onSelectCompany(company)}
-            className={`
-              flex items-center gap-3 p-3 rounded-xl border-2 transition-all
-              ${selectedCompany?.id === company.id 
-                ? 'border-indigo-500 bg-indigo-50 shadow-md' 
-                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
-            `}
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${selectedCompany?.id === company.id ? 'bg-indigo-500' : 'bg-gray-200'}`}>
-              <FaBuilding className={`w-5 h-5 ${selectedCompany?.id === company.id ? 'text-white' : 'text-gray-500'}`} />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="font-medium text-gray-800">{company.name}</p>
-              <p className="text-xs text-gray-500">ID: {company.id}</p>
-            </div>
-            {selectedCompany?.id === company.id && (
-              <FaCheck className="w-5 h-5 text-indigo-500" />
-            )}
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 // ==================== CALENDAR CELL COMPONENT ====================
 const CalendarCell = ({ 
@@ -125,49 +86,52 @@ const CalendarCell = ({
 }) => {
   const hasHolidays = holidays && holidays.length > 0;
   
-  const getHolidayTypeClass = (holiday) => {
-    if (holiday.type) return 'border-l-4 border-amber-500';
-    if (holiday.is_optional === 1) return 'border-l-4 border-emerald-500';
-    return 'border-l-4 border-red-500';
+  const getHolidayStyles = () => {
+    if (!hasHolidays) return {};
+    const holiday = holidays[0];
+    const isOptional = holiday.is_optional === 1;
+    const isObservance = holiday.type === 'Observance';
+
+    if (isObservance) return { backgroundColor: '#fef3c7', color: '#92400e' }; // light-amber
+    if (isOptional) return { backgroundColor: '#d1fae5', color: '#065f46' }; // light-emerald
+    return { backgroundColor: '#fee2e2', color: '#991b1b' }; // light-red
   };
 
   const getHolidayBadge = (holiday) => {
     const type = holiday.type || (holiday.is_optional === 1 ? 'Optional' : 'Holiday');
-    const color = holiday.type === 'Observance' ? 'bg-amber-100 text-amber-800' :
-                  holiday.is_optional === 1 ? 'bg-emerald-100 text-emerald-800' :
-                  'bg-red-100 text-red-800';
+    
     return (
-      <span className={`text-[10px] px-1 rounded-full truncate max-w-[60px] ${color}`}>
-        {type === 'Observance' ? 'Observance' : type}
+      <span className="text-[9px] xsm:text-[8px] px-1 py-0.5 rounded-full truncate font-bold opacity-80 bg-white/50">
+        {type === 'Observance' ? 'Obs' : type.slice(0, 3)}
       </span>
     );
   };
 
   return (
     <motion.div
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.98 }}
       className={`
-        relative h-28 md:h-32 p-2 border border-gray-200 rounded-lg
+        relative h-20 xsm:h-16 sm:h-24 md:h-28 lg:h-32 p-1 xsm:p-0.5 sm:p-1.5 md:p-2 border border-gray-100 rounded-lg
         transition-all duration-200 hover:shadow-md hover:border-indigo-300
-        ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
-        ${isToday ? 'border-sky-500 border-2 shadow-[0_0_0_1px_rgba(14,165,233,0.15)]' : ''}
-        ${hasHolidays && showHolidayDetails ? getHolidayTypeClass(holidays[0]) : ''}
+        ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300' : 'bg-white text-gray-700'}
+        ${isToday ? 'border-sky-500 border-2 shadow-[0_0_0_1px_rgba(14,165,233,0.15)] z-10' : ''}
       `}
+      style={hasHolidays && showHolidayDetails ? getHolidayStyles() : {}}
     >
       <div className="flex justify-between items-start">
-        <span className={`text-sm font-medium ${!isCurrentMonth ? 'text-gray-400' : isToday ? 'text-sky-700' : 'text-gray-700'}`}>
+        <span className={`text-xs xsm:text-[10px] sm:text-sm font-bold ${!isCurrentMonth ? 'text-gray-300' : isToday ? 'text-sky-800' : 'text-gray-700'}`}>
           {dayNumber}
         </span>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-0.5 xsm:gap-0">
           {isToday && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 font-semibold">
+            <span className="text-[8px] xsm:text-[7px] sm:text-[10px] px-1 xsm:px-0.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-bold uppercase tracking-tighter">
               Today
             </span>
           )}
           {hasHolidays && showHolidayDetails && getHolidayBadge(holidays[0])}
           {hasHolidays && !showHolidayDetails && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
-              {holidays.length} holiday{holidays.length > 1 ? 's' : ''}
+            <span className="text-[8px] xsm:text-[7px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-black">
+              {holidays.length}
             </span>
           )}
         </div>
@@ -175,13 +139,13 @@ const CalendarCell = ({
       
       {hasHolidays && showHolidayDetails && (
         <div className="mt-1 space-y-0.5">
-          {holidays.slice(0, 2).map((holiday, idx) => (
-            <p key={idx} className="text-xs font-medium text-gray-800 truncate">
+          {holidays.slice(0, 1).map((holiday, idx) => (
+            <p key={idx} className="text-[10px] xsm:text-[8px] sm:text-xs font-bold truncate leading-tight opacity-95 tracking-tight">
               {holiday.name}
             </p>
           ))}
-          {holidays.length > 2 && (
-            <p className="text-[10px] text-gray-500">+{holidays.length - 2} more</p>
+          {holidays.length > 1 && (
+            <p className="text-[8px] xsm:text-[7px] opacity-70 font-bold uppercase tracking-widest text-right">+{holidays.length - 1} more</p>
           )}
         </div>
       )}
@@ -192,7 +156,6 @@ const CalendarCell = ({
 // ==================== HOLIDAY DETAILS SIDEBAR ====================
 const HolidayDetailsSidebar = ({ holidays, onClose }) => {
   const groupedHolidays = holidays.reduce((acc, holiday) => {
-    // Format the date properly from the API response
     const date = formatDate(holiday.date);
     if (!acc[date]) acc[date] = [];
     acc[date].push(holiday);
@@ -201,46 +164,48 @@ const HolidayDetailsSidebar = ({ holidays, onClose }) => {
 
   return (
     <motion.div
-      initial={{ x: '100%' }}
-      animate={{ x: 0 }}
-      exit={{ x: '100%' }}
-      className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-40 overflow-y-auto"
+      initial={{ x: '100%', opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: '100%', opacity: 0 }}
+      className="fixed right-0 top-0 h-full w-[400px] xsm:w-full bg-white shadow-2xl z-[100] overflow-y-auto"
     >
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
+      <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-gray-100 p-6 xsm:p-4 flex justify-between items-center z-10">
         <div>
-          <h3 className="text-lg font-semibold text-gray-800">Company Holidays</h3>
-          <p className="text-sm text-gray-500">{holidays.length} holidays found</p>
+          <h3 className="text-xl xsm:text-lg font-black text-gray-900 uppercase tracking-tight">Corporate Calendar</h3>
+          <p className="text-xs xsm:text-[10px] text-indigo-600 font-bold uppercase tracking-widest">{holidays.length} holidays configured</p>
         </div>
-        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition">
-          <FaTimes className="w-5 h-5 text-gray-500" />
+        <button onClick={onClose} className="p-3 xsm:p-2 hover:bg-gray-100 rounded-full transition-all active:scale-90 bg-gray-50">
+          <FaTimes className="w-5 h-5 xsm:w-4 xsm:h-4 text-gray-500" />
         </button>
       </div>
       
-      <div className="p-4 space-y-4">
+      <div className="p-6 xsm:p-4 space-y-6">
         {Object.entries(groupedHolidays).map(([date, dateHolidays]) => (
-          <div key={date} className="border border-gray-100 rounded-xl p-3 hover:shadow-md transition">
-            <div className="flex items-center gap-2 mb-2">
-              <FaCalendarAlt className="w-4 h-4 text-indigo-500" />
-              <span className="font-medium text-gray-700">
+          <div key={date} className="group">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                <FaCalendarAlt className="w-5 h-5" />
+              </div>
+              <span className="font-black text-gray-900 text-sm tracking-tight">
                 {new Date(date).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
+                  weekday: 'short', 
                   year: 'numeric', 
-                  month: 'long', 
+                  month: 'short', 
                   day: 'numeric' 
                 })}
               </span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3 pl-10 xsm:pl-0">
               {dateHolidays.map((holiday, idx) => (
-                <div key={idx} className="flex items-start gap-2 pl-6">
-                  <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                    holiday.type === 'Observance' ? 'bg-amber-500' :
-                    holiday.is_optional === 1 ? 'bg-emerald-500' :
-                    'bg-red-500'
+                <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-all hover:bg-white hover:shadow-sm">
+                  <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${
+                    holiday.type === 'Observance' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' :
+                    holiday.is_optional === 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
+                    'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]'
                   }`} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-800">{holiday.name}</p>
-                    <p className="text-xs text-gray-500">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-black text-gray-900 leading-tight truncate">{holiday.name}</p>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
                       {holiday.type || (holiday.is_optional === 1 ? 'Optional Holiday' : 'Mandatory Holiday')}
                     </p>
                   </div>
@@ -256,51 +221,53 @@ const HolidayDetailsSidebar = ({ holidays, onClose }) => {
 
 // ==================== MAIN COMPONENT ====================
 const CompanyHolidayCalendar = () => {
-  const { companies: authCompanies, company: activeCompany } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showHolidaySidebar, setShowHolidaySidebar] = useState(false);
   const [showHolidayDetails, setShowHolidayDetails] = useState(true);
   const [companyHolidays, setCompanyHolidays] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [selectedCompany] = useState(() => JSON.parse(localStorage.getItem('company')));
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Shared fetch lock to prevent double loading while ensuring UI updates
+  const fetchLock = useRef(null);
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
   const today = useMemo(() => toCalendarDate(new Date()), []);
 
-  useEffect(() => {
-    setCompanies(authCompanies || []);
 
-    if (!authCompanies?.length) {
-      setSelectedCompany(null);
-      return;
-    }
-
-    setSelectedCompany((prev) => {
-      if (prev) {
-        const matchedPrevious = authCompanies.find((company) => company.id === prev.id);
-        if (matchedPrevious) return matchedPrevious;
-      }
-
-      if (activeCompany) {
-        const matchedActive = authCompanies.find((company) => company.id === activeCompany.id);
-        if (matchedActive) return matchedActive;
-      }
-
-      return authCompanies[0];
-    });
-  }, [authCompanies, activeCompany]);
-
-  // Fetch company holidays when selected company changes
   useEffect(() => {
     const fetchCompanyHolidays = async () => {
       if (!selectedCompany) return;
+
+      // 1. If another instance is already fetching, wait for its promise
+      if (fetchLock.current) {
+        try {
+          const data = await fetchLock.current;
+          setCompanyHolidays(data);
+        } catch (err) {
+          console.error("Lock sync failed:", err);
+        } finally {
+          setIsLoading(false);
+        }
+        return;
+      }
       
       setIsLoading(true);
-      const holidays = await holidayService.getCompanyHolidays(selectedCompany.id);
-      setCompanyHolidays(holidays);
-      setIsLoading(false);
+      
+      // 2. Start the fetch and store the promise in the ref
+      const activePromise = holidayService.getCompanyHolidays(selectedCompany.id);
+      fetchLock.current = activePromise;
+
+      try {
+        const holidays = await activePromise;
+        setCompanyHolidays(holidays);
+      } catch (err) {
+        console.error("Failed to fetch holidays:", err);
+        fetchLock.current = null; // Clear lock on error
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchCompanyHolidays();
@@ -308,12 +275,7 @@ const CompanyHolidayCalendar = () => {
 
   const getHolidaysForDate = useCallback((date) => {
     const dateStr = formatDate(date);
-    const holidays = companyHolidays.filter((holiday) => {
-      const holidayDateStr = formatDate(holiday.date);
-      return holidayDateStr === dateStr;
-    });
-    
-    return holidays;
+    return companyHolidays.filter(holiday => formatDate(holiday.date) === dateStr);
   }, [companyHolidays]);
 
   const changeMonth = (delta) => {
@@ -324,7 +286,6 @@ const CompanyHolidayCalendar = () => {
     setCurrentDate(new Date());
   };
 
-  // Generate calendar grid
   const generateCalendarGrid = useMemo(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
@@ -368,73 +329,72 @@ const CompanyHolidayCalendar = () => {
   }, [currentYear, currentMonth, today, getHolidaysForDate]);
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDaysShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 xsm:p-2 sm:p-4 md:p-6 lg:p-8 font-outfit">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mb-4 xsm:mb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Company Holiday Management
+            <h1 className="text-xl xsm:text-lg sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent uppercase tracking-tight">
+              {selectedCompany ? `${selectedCompany.name} Holidays` : 'Company Holiday Hub'}
             </h1>
-            <p className="text-gray-500 mt-1">View and manage holidays for your companies</p>
+            <p className="text-xs xsm:text-[10px] sm:text-sm text-gray-500 mt-1 font-medium italic">
+              {selectedCompany ? `Syncing from Directory #${selectedCompany.id}` : 'Stay updated with your corporate schedule'}
+            </p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 xsm:gap-1.5 flex-wrap">
             <button
               onClick={() => setShowHolidayDetails(!showHolidayDetails)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition text-gray-700"
+              className="flex items-center gap-1.5 xsm:gap-1 px-3 xsm:px-2 py-2 xsm:py-1.5 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition text-xs xsm:text-[10px] text-gray-700 shadow-sm font-bold uppercase tracking-wider active:scale-95"
             >
-              {showHolidayDetails ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
-              {showHolidayDetails ? 'Hide Details' : 'Show Details'}
+              {showHolidayDetails ? <FaEyeSlash className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" /> : <FaEye className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" />}
+              {showHolidayDetails ? 'Hide Names' : 'Show Names'}
             </button>
             
             <button
               onClick={() => setShowHolidaySidebar(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition text-gray-700"
+              className="flex items-center gap-1.5 xsm:gap-1 px-4 xsm:px-3 py-2 xsm:py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition text-xs xsm:text-[10px] shadow-lg shadow-indigo-100 font-bold uppercase tracking-wider active:scale-95"
             >
-              <FaFilter className="w-4 h-4" />
-              View All Holidays
+              <FaFilter className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" />
+              All Holidays
             </button>
           </div>
         </div>
 
-        {/* Company Selector */}
-        <CompanySelector
-          companies={companies}
-          selectedCompany={selectedCompany}
-          onSelectCompany={setSelectedCompany}
-        />
+        {/* Spacing correction */}
+        <div className="h-4 xsm:h-2"></div>
 
         {/* Calendar Controls */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <div className="bg-white rounded-2xl xsm:rounded-xl shadow-sm border border-gray-200 p-3 xsm:p-2 mb-4 xsm:mb-3">
+          <div className="flex items-center justify-between gap-3 xsm:gap-2">
+            <div className="flex items-center gap-2 xsm:gap-1.5">
               <button
                 onClick={() => changeMonth(-1)}
-                className="p-2 hover:bg-gray-100 rounded-xl transition"
+                className="p-2 xsm:p-1 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
               >
-                <FaChevronLeft className="w-5 h-5 text-gray-600" />
+                <FaChevronLeft className="w-4 h-4 xsm:w-3 xsm:h-3 text-gray-600" />
               </button>
-              <div className="flex items-center gap-2">
-                <FaCalendarAlt className="w-5 h-5 text-indigo-500" />
-                <h2 className="text-xl font-semibold text-gray-800">
+              <div className="flex items-center gap-1.5 xsm:gap-1">
+                <FaCalendarAlt className="w-4 h-4 xsm:w-3 xsm:h-3 text-indigo-500" />
+                <h2 className="text-base xsm:text-sm sm:text-lg md:text-xl font-black text-gray-900 uppercase tracking-tight">
                   {monthNames[currentMonth]} {currentYear}
                 </h2>
               </div>
               <button
                 onClick={() => changeMonth(1)}
-                className="p-2 hover:bg-gray-100 rounded-xl transition"
+                className="p-2 xsm:p-1 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
               >
-                <FaChevronRight className="w-5 h-5 text-gray-600" />
+                <FaChevronRight className="w-4 h-4 xsm:w-3 xsm:h-3 text-gray-600" />
               </button>
             </div>
             
             <button
               onClick={goToToday}
-              className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition text-gray-700"
+              className="px-4 xsm:px-3 py-2 xsm:py-1.5 text-xs xsm:text-[10px] bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-indigo-600 font-black uppercase tracking-widest border border-indigo-50"
             >
               Today
             </button>
@@ -442,23 +402,25 @@ const CompanyHolidayCalendar = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-3xl xsm:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 border-b border-gray-200">
-            {weekDays.map(day => (
-              <div key={day} className="p-3 text-center text-sm font-semibold text-gray-500">
-                {day}
+          <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">
+            {weekDays.map((day, idx) => (
+              <div key={day} className="p-3 xsm:p-2 text-center text-xs xsm:text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                <span className="xsm:hidden">{day}</span>
+                <span className="hidden xsm:inline">{weekDaysShort[idx]}</span>
               </div>
             ))}
           </div>
           
           {/* Calendar cells */}
           {isLoading ? (
-            <div className="flex items-center justify-center h-96">
-              <FaSpinner className="w-8 h-8 animate-spin text-indigo-500" />
+            <div className="flex flex-col items-center justify-center h-96 xsm:h-64 gap-3">
+              <FaSpinner className="w-8 h-8 xsm:w-6 xsm:h-6 animate-spin text-indigo-500" />
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest animate-pulse">Syncing Calendar...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-7 auto-rows-fr">
+            <div className="grid grid-cols-7 gap-px bg-gray-100">
               {generateCalendarGrid.map((cell, idx) => (
                 <CalendarCell
                   key={idx}
@@ -471,43 +433,21 @@ const CompanyHolidayCalendar = () => {
         </div>
 
         {/* Legend */}
-        <div className="mt-6 flex flex-wrap gap-4 justify-center">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-100 border-l-4 border-red-500 rounded"></div>
-            <span className="text-sm text-gray-600">Mandatory Holiday</span>
+        <div className="mt-4 xsm:mt-3 flex flex-wrap gap-4 xsm:gap-2 justify-center text-[10px] xsm:text-[9px] font-black uppercase tracking-widest">
+          <div className="flex items-center gap-1.5 xsm:gap-1">
+            <div className="w-4 h-4 rounded-lg border border-red-200 shadow-sm" style={{ backgroundColor: '#fee2e2' }}></div>
+            <span className="text-gray-500">Mandatory</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-emerald-100 border-l-4 border-emerald-500 rounded"></div>
-            <span className="text-sm text-gray-600">Optional Holiday</span>
+          <div className="flex items-center gap-1.5 xsm:gap-1">
+            <div className="w-4 h-4 rounded-lg border border-emerald-200 shadow-sm" style={{ backgroundColor: '#d1fae5' }}></div>
+            <span className="text-gray-500">Optional</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-amber-100 border-l-4 border-amber-500 rounded"></div>
-            <span className="text-sm text-gray-600">Observance</span>
+          <div className="flex items-center gap-1.5 xsm:gap-1">
+            <div className="w-4 h-4 rounded-lg border border-amber-200 shadow-sm" style={{ backgroundColor: '#fef3c7' }}></div>
+            <span className="text-gray-500">Observance</span>
           </div>
         </div>
 
-        {/* Company Info Card */}
-        {selectedCompany && (
-          <div className="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-100">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                <FaBuilding className="w-6 h-6 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-800">{selectedCompany.name}</h3>
-                <p className="text-sm text-gray-600">
-                  Company ID: {selectedCompany.id} | Total Holidays: {companyHolidays.length}
-                </p>
-              </div>
-              <div className="ml-auto">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <FaUsers className="w-4 h-4" />
-                  <span>Company Specific Holidays</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Holiday Details Sidebar */}
