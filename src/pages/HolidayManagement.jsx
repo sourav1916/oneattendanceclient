@@ -250,26 +250,30 @@ const CalendarCell = ({
         {showMenu && (
           <>
             {/* Backdrop for closing menu */}
-            <div 
-              className="fixed inset-0 z-30" 
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-30 bg-black/5" 
               onClick={() => setShowMenu(false)}
             />
             
             {/* Menu */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -5 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 bottom-0 mb-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 w-32 xsm:w-28 overflow-hidden z-40"
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="absolute bottom-10 right-2 w-40 xsm:w-36 bg-white/95 backdrop-blur-sm rounded-xl shadow-[0_10px_40px_-10px_rgba(79,70,229,0.3)] border border-indigo-100 py-1.5 z-40"
               onClick={(e) => e.stopPropagation()}
             >
               {!holidayInfo ? (
                 <button
                   onClick={() => handleAction('create')}
-                  className="w-full flex items-center gap-2 px-3 xsm:px-2 py-2 xsm:py-1.5 text-xs xsm:text-[10px] text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95"
                 >
-                  <FaPlus className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                  <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600">
+                    <FaPlus className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                  </div>
                   Add Holiday
                 </button>
               ) : (
@@ -278,26 +282,32 @@ const CalendarCell = ({
                     <>
                       <button
                         onClick={() => handleAction('update')}
-                        className="w-full flex items-center gap-2 px-3 xsm:px-2 py-2 xsm:py-1.5 text-xs xsm:text-[10px] text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95"
                       >
-                        <FaEdit className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                        <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600">
+                          <FaEdit className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                        </div>
                         Edit
                       </button>
                       <button
                         onClick={() => handleAction('delete')}
-                        className="w-full flex items-center gap-2 px-3 xsm:px-2 py-2 xsm:py-1.5 text-xs xsm:text-[10px] text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-all active:scale-95"
                       >
-                        <FaTrash className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                        <div className="p-1 rounded-lg bg-red-50 text-red-600">
+                          <FaTrash className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                        </div>
                         Delete
                       </button>
-                      <div className="h-px bg-gray-100 my-0.5"></div>
+                      <div className="h-px bg-gray-100 mx-3 my-1"></div>
                     </>
                   )}
                   <button
                     onClick={() => handleAction('create')}
-                    className="w-full flex items-center gap-2 px-3 xsm:px-2 py-2 xsm:py-1.5 text-xs xsm:text-[10px] text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95"
                   >
-                    <FaPlus className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                    <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600">
+                      <FaPlus className="w-3 h-3 xsm:w-2.5 xsm:h-2.5" />
+                    </div>
                     Add Corporate
                   </button>
                 </>
@@ -358,31 +368,40 @@ const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 xsm:p-2"
+      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 xsm:p-2"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl xsm:rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-white rounded-3xl xsm:rounded-2xl shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden border border-white/20"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 xsm:p-3 border-b border-gray-100">
-          <div>
-            <h3 className="text-lg xsm:text-base font-semibold text-gray-800">Create Holiday</h3>
-            <p className="text-xs xsm:text-[10px] text-gray-500 mt-1">
-              {selectedDates.length === 1 
-                ? formatDate(selectedDates[0]) 
-                : `${selectedDates.length} dates selected`}
-            </p>
+        <div className="relative bg-gradient-to-br from-indigo-600 to-purple-600 p-6 xsm:p-4 text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-xl xsm:text-lg font-bold">Create New Holiday</h3>
+              <p className="text-white/80 text-xs xsm:text-[10px] mt-1 flex items-center gap-1">
+                <FaCalendarAlt className="w-3 h-3" />
+                {selectedDates.length === 1 
+                  ? formatDate(selectedDates[0]) 
+                  : `${selectedDates.length} dates selected`}
+              </p>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 xsm:p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-all active:scale-90"
+            >
+              <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 xsm:p-1.5 hover:bg-gray-100 rounded-full transition">
-            <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5 text-gray-500" />
-          </button>
+          
+          {/* Abstract decoration */}
+          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 xsm:p-3 space-y-3 xsm:space-y-2">
+        <form onSubmit={handleSubmit} className="p-6 xsm:p-4 space-y-5 xsm:space-y-4">
           <div>
             <label className="block text-sm xsm:text-xs font-medium text-gray-700 mb-1.5 xsm:mb-1">
               Holiday Name *
@@ -413,7 +432,7 @@ const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess }) => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 xsm:py-2 text-sm xsm:text-xs rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 xsm:py-2.5 text-sm rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -423,7 +442,7 @@ const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess }) => {
               ) : (
                 <>
                   <FaPlus className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
-                  Create {selectedDates.length > 1 ? `${selectedDates.length} Holidays` : 'Holiday'}
+                  Create Holiday{selectedDates.length > 1 ? 's' : ''}
                 </>
               )}
             </button>
@@ -472,50 +491,63 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 xsm:p-2"
+      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 xsm:p-2"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl xsm:rounded-xl shadow-2xl max-w-md w-full overflow-hidden"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-white rounded-3xl xsm:rounded-2xl shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden border border-white/20"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-4 xsm:p-3 border-b border-gray-100">
-          <div>
-            <h3 className="text-lg xsm:text-base font-semibold text-gray-800">Update Holiday</h3>
-            <p className="text-xs xsm:text-[10px] text-gray-500 mt-1">{holiday.date}</p>
+        <div className="relative bg-gradient-to-br from-indigo-600 to-purple-600 p-6 xsm:p-4 text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="text-xl xsm:text-lg font-bold">Update Holiday</h3>
+              <p className="text-white/80 text-xs xsm:text-[10px] mt-1 flex items-center gap-1">
+                <FaCalendarAlt className="w-3 h-3" />
+                {holiday.date}
+              </p>
+            </div>
+            <button 
+              onClick={onClose} 
+              className="p-2 xsm:p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-all active:scale-90"
+            >
+              <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-2 xsm:p-1.5 hover:bg-gray-100 rounded-full transition">
-            <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5 text-gray-500" />
-          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 xsm:p-3 space-y-3 xsm:space-y-2">
+        <form onSubmit={handleSubmit} className="p-6 xsm:p-4 space-y-5 xsm:space-y-4">
           <div>
-            <label className="block text-sm xsm:text-xs font-medium text-gray-700 mb-1.5 xsm:mb-1">
-              Holiday Name *
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Holiday Name
             </label>
             <input
               type="text"
               value={holidayName}
               onChange={(e) => setHolidayName(e.target.value)}
-              className="w-full px-3 xsm:px-2 py-2 xsm:py-1.5 text-sm xsm:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all text-sm"
               placeholder="e.g., Diwali, Republic Day"
               autoFocus
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isOptional}
-                onChange={(e) => setIsOptional(e.target.checked)}
-                className="w-4 h-4 xsm:w-3.5 xsm:h-3.5 text-indigo-600 rounded focus:ring-indigo-500"
-              />
-              <span className="text-sm xsm:text-xs text-gray-700">Mark as Optional Holiday</span>
+          <div className="flex items-center gap-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+            <label className="flex items-center gap-3 cursor-pointer w-full">
+              <div className="relative flex items-center">
+                <input
+                  type="checkbox"
+                  checked={isOptional}
+                  onChange={(e) => setIsOptional(e.target.checked)}
+                  className="w-5 h-5 text-indigo-600 rounded-lg border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gray-800">Optional Holiday</span>
+                <span className="text-[10px] text-gray-500 italic">Allow employees to choose to observe this day</span>
+              </div>
             </label>
           </div>
 
@@ -523,7 +555,7 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 xsm:py-2 text-sm xsm:text-xs rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 xsm:py-2.5 text-sm rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>
@@ -566,36 +598,37 @@ const DeleteConfirmationModal = ({ holiday, onClose, onDeleteSuccess }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-3 xsm:p-2"
+      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[60] p-4 xsm:p-2"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl xsm:rounded-xl shadow-2xl max-w-sm w-full p-5 xsm:p-3 text-center"
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-white rounded-3xl xsm:rounded-2xl shadow-[0_20px_70px_-15px_rgba(239,68,68,0.3)] max-w-sm w-full p-8 xsm:p-4 text-center border border-red-50"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="w-14 h-14 xsm:w-12 xsm:h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
-          <FaTrash className="w-6 h-6 xsm:w-5 xsm:h-5" />
+        <div className="w-20 h-20 xsm:w-16 xsm:h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm ring-4 ring-red-50/50">
+          <FaTrash className="w-8 h-8 xsm:w-6 xsm:h-6" />
         </div>
-        <h3 className="text-lg xsm:text-base font-bold text-gray-800 mb-2">Delete Holiday?</h3>
-        <p className="text-sm xsm:text-xs text-gray-500 mb-5 xsm:mb-4">
-          Are you sure you want to delete <span className="font-semibold text-gray-700">"{holiday.name}"</span>? This action cannot be undone.
+        <h3 className="text-2xl xsm:text-xl font-black text-gray-900 mb-2 font-outfit uppercase tracking-tight">Wait!</h3>
+        <p className="text-gray-500 text-sm xsm:text-xs mb-8 xsm:mb-6 leading-relaxed">
+          Are you sure you want to delete <span className="font-bold text-gray-900 block mt-1 text-lg">"{holiday.name}"</span>?
+          <span className="text-red-500 block mt-2 text-[10px] font-bold uppercase tracking-widest">This action is irreversible</span>
         </p>
-        <div className="flex gap-2 xsm:gap-1.5 mt-3">
+        <div className="grid grid-cols-2 gap-4 xsm:gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-3 xsm:px-2 py-2 xsm:py-1.5 text-sm xsm:text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition"
+            className="px-4 py-3 xsm:py-2.5 text-sm font-bold bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-2xl transition-all active:scale-95 border border-gray-100"
           >
-            Cancel
+            Go Back
           </button>
           <button
             onClick={handleDelete}
             disabled={isDeleting}
-            className="flex-1 px-3 xsm:px-2 py-2 xsm:py-1.5 text-sm xsm:text-xs bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition flex items-center justify-center gap-1.5"
+            className="px-4 py-3 xsm:py-2.5 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-2xl transition-all shadow-lg shadow-red-200 active:scale-95 flex items-center justify-center gap-2"
           >
-            {isDeleting ? <FaSpinner className="animate-spin w-3.5 h-3.5 xsm:w-3 xsm:h-3" /> : 'Delete'}
+            {isDeleting ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Yes, Delete'}
           </button>
         </div>
       </motion.div>
