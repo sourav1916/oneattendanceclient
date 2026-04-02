@@ -167,6 +167,13 @@ const CalendarCell = ({
 
 // ==================== HOLIDAY DETAILS SIDEBAR ====================
 const HolidayDetailsSidebar = ({ holidays, onClose, onMonthNavigate }) => {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   const groupedHolidays = holidays.reduce((acc, holiday) => {
     const date = formatDate(holiday.date);
     if (!acc[date]) acc[date] = [];

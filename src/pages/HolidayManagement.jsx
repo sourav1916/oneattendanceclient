@@ -1,24 +1,70 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaCalendarAlt,
-  FaBuilding,
-  FaUsers,
-  FaTimes,
-  FaPlus,
-  FaSpinner,
-  FaTrash,
-  FaCheck,
-  FaExclamationCircle,
-} from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 
+// ==================== ICONS (inline SVG to avoid FA sizing issues) ====================
+const Icon = {
+  ChevronLeft: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  ),
+  ChevronRight: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  ),
+  Calendar: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
+  Plus: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-4 h-4">
+      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  Edit: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  ),
+  Trash: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4h6v2" />
+    </svg>
+  ),
+  X: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="w-4 h-4">
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
+  Check: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  Spinner: () => (
+    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  ),
+  Dots: () => (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+      <circle cx="12" cy="5" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="12" cy="19" r="1.5" />
+    </svg>
+  ),
+  Warning: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  ),
+};
+
 // ==================== API SERVICE ====================
 const holidayService = {
-  // Fetch master holidays list
   getMasterHolidays: async (year, month) => {
     try {
       const response = await apiCall(`/holiday/master-holidays?year=${year}&month=${month}`, 'GET');
@@ -29,8 +75,6 @@ const holidayService = {
       return [];
     }
   },
-
-  // Fetch company holidays list
   getCompanyHolidays: async (companyId) => {
     if (!companyId) return [];
     try {
@@ -42,965 +86,714 @@ const holidayService = {
       return [];
     }
   },
-
-  // Create holiday API
   createHoliday: async (payload, companyId) => {
     try {
       const response = await apiCall('/holiday/create', 'POST', payload, companyId);
       return await response.json();
     } catch (error) {
-      console.error('Failed to create holiday:', error);
       return { success: false, error: 'Internal Server Error' };
     }
   },
-
-  // Update holiday API
   updateHoliday: async (payload, companyId) => {
     try {
       const response = await apiCall('/holiday/update', 'PUT', payload, companyId);
       return await response.json();
     } catch (error) {
-      console.error('Failed to update holiday:', error);
       return { success: false, error: 'Internal Server Error' };
     }
   },
-
-  // Delete holiday API
   deleteHoliday: async (id, companyId) => {
     try {
-      const response = await apiCall('/holiday/delete', 'POST', { id }, companyId);
+      const response = await apiCall('/holiday/delete', 'DELETE', { id }, companyId);
       return await response.json();
     } catch (error) {
-      console.error('Failed to delete holiday:', error);
       return { success: false, error: 'Internal Server Error' };
     }
   }
 };
 
-// ==================== HELPER FUNCTIONS ====================
+// ==================== HELPERS ====================
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
 const toCalendarDate = (value) => {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
     return new Date(value.getFullYear(), value.getMonth(), value.getDate());
   }
-
   if (typeof value === 'string') {
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
-      const year = Number(match[1]);
-      const month = Number(match[2]);
-      const day = Number(match[3]);
-      if ([year, month, day].every(num => Number.isFinite(num))) {
-        return new Date(year, month - 1, day);
-      }
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
     }
   }
-
   const parsed = new Date(value);
-  if (!Number.isNaN(parsed.getTime())) {
+  if (!isNaN(parsed.getTime())) {
     return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
   }
-
   return null;
 };
 
 const formatDate = (date) => {
-  const normalized = toCalendarDate(date);
-  if (!normalized) return '';
-  const year = normalized.getFullYear();
-  const month = String(normalized.getMonth() + 1).padStart(2, '0');
-  const day = String(normalized.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const d = toCalendarDate(date);
+  if (!d) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const isSameDay = (date1, date2) => {
-  const left = toCalendarDate(date1);
-  const right = toCalendarDate(date2);
+const isSameDay = (a, b) => {
+  const left = toCalendarDate(a);
+  const right = toCalendarDate(b);
   if (!left || !right) return false;
   return left.getTime() === right.getTime();
 };
 
-// ==================== CALENDAR CELL COMPONENT ====================
-const CalendarCell = ({ 
-  date, 
-  dayNumber, 
-  isCurrentMonth, 
-  isSelected, 
-  isToday, 
-  holidayInfo,
-  onTap,
-  onPressHold,
-  isSelecting,
-  onAction,
-  onMonthNavigate
-}) => {
-  const [showMenu, setShowMenu] = useState(false);
-  
-  const getCellStyles = () => {
-    if (isSelected) return { backgroundColor: '#e0e7ff', borderColor: '#4f46e5', zIndex: 10 };
-    if (!holidayInfo) return {};
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WEEK_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-    const isOptional = holidayInfo.is_optional === 1;
-    const isObservance = holidayInfo.type === 'Observance';
-    const isCorporate = holidayInfo.source === 'company';
+// Holiday type config
+const HOLIDAY_CONFIG = {
+  master_observance: { bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-400', text: 'text-amber-700', badge: 'Observance', badgeBg: 'bg-amber-100 text-amber-700' },
+  master_optional:   { bg: 'bg-teal-50',  border: 'border-teal-200',  dot: 'bg-teal-400',  text: 'text-teal-700',  badge: 'Optional',    badgeBg: 'bg-teal-100 text-teal-700' },
+  master_mandatory:  { bg: 'bg-rose-50',  border: 'border-rose-200',  dot: 'bg-rose-400',  text: 'text-rose-700',  badge: 'National',    badgeBg: 'bg-rose-100 text-rose-700' },
+  company:           { bg: 'bg-violet-50',border: 'border-violet-200',dot: 'bg-violet-500',text: 'text-violet-700',badge: 'Corporate',   badgeBg: 'bg-violet-100 text-violet-700' },
+};
 
-    if (isObservance) return { backgroundColor: '#fef3c7', color: '#92400e' }; // light-amber
-    if (isOptional) return { backgroundColor: '#d1fae5', color: '#065f46' }; // light-emerald
-    if (isCorporate) return { backgroundColor: '#e0e7ff', color: '#3730a3' }; // light-indigo
-    return { backgroundColor: '#fee2e2', color: '#991b1b' }; // light-red
-  };
+const getHolidayConfig = (holiday) => {
+  if (!holiday) return null;
+  if (holiday.source === 'company') return HOLIDAY_CONFIG.company;
+  if (holiday.type === 'Observance') return HOLIDAY_CONFIG.master_observance;
+  if (holiday.is_optional === 1) return HOLIDAY_CONFIG.master_optional;
+  return HOLIDAY_CONFIG.master_mandatory;
+};
 
-  const handleAction = (action) => {
-    setShowMenu(false);
-    onAction(date, holidayInfo, action);
+// ==================== MODAL WRAPPER ====================
+const Modal = ({ children, onClose, danger = false }) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    style={{ backgroundColor: 'rgba(15,15,25,0.65)', backdropFilter: 'blur(8px)' }}
+    onClick={onClose}
+  >
+    <motion.div
+      initial={{ opacity: 0, y: 60, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 40, scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+      className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
+      onClick={e => e.stopPropagation()}
+    >
+      {children}
+    </motion.div>
+  </motion.div>
+);
+
+// ==================== CREATE HOLIDAY MODAL ====================
+const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialName }) => {
+  const [name, setName] = useState(initialName || '');
+  const [isOptional, setIsOptional] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => inputRef.current?.focus(), 300);
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) { toast.error('Holiday name is required'); return; }
+    setLoading(true);
+    const company = JSON.parse(localStorage.getItem('company') || '{}');
+    const results = await Promise.all(selectedDates.map(date =>
+      holidayService.createHoliday({ name: name.trim(), date: formatDate(date), is_optional: isOptional ? 1 : 0, company_id: company?.id }, company?.id)
+    ));
+    const ok = results.filter(r => r.success).length;
+    if (ok > 0) { toast.success(`${ok} holiday${ok > 1 ? 's' : ''} created!`); onCreateSuccess(); onClose(); }
+    else toast.error('Failed to create holiday');
+    setLoading(false);
   };
 
   return (
-    <motion.div
-      whileTap={{ scale: 0.98 }}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        onPressHold(date);
-      }}
-      onClick={() => {
-        if (isSelecting) {
-          onTap(date);
-        } else if (!isCurrentMonth) {
-          onMonthNavigate(date);
-        }
-      }}
-      className={`
-        relative h-20 xsm:h-16 sm:h-24 md:h-28 lg:h-32 p-1 xsm:p-0.5 sm:p-1.5 md:p-2 border border-gray-100 rounded-lg
-        transition-all duration-200
-        ${!isCurrentMonth ? 'bg-gray-50/50 text-gray-300 cursor-pointer hover:bg-gray-100/80 active:scale-[0.98]' : 'bg-white text-gray-700'}
-        ${isToday ? 'border-sky-500 border-2 shadow-[0_0_0_1px_rgba(14,165,233,0.15)] z-10' : ''}
-        ${isSelecting ? 'cursor-pointer hover:border-indigo-400' : ''}
-      `}
-      style={getCellStyles()}
-    >
-      <div className="flex justify-between items-start">
-        <span className={`text-xs xsm:text-[10px] sm:text-sm font-bold ${!isCurrentMonth ? 'text-gray-300' : isToday ? 'text-sky-800' : 'text-gray-700'}`}>
-          {dayNumber}
-        </span>
-        <div className="flex items-center gap-1">
-          {isToday && (
-            <span className="text-[8px] xsm:text-[7px] sm:text-[10px] px-1 xsm:px-0.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-bold uppercase tracking-tighter">
-              TDY
-            </span>
-          )}
-          {holidayInfo && (
-            <span className="text-[8px] xsm:text-[7px] sm:text-[10px] px-1 rounded-full bg-white/50 font-bold shadow-sm">
-              {holidayInfo.source === 'master' ? 'M' : 'C'}
-            </span>
-          )}
-          
-          {/* Action Menu Trigger (ONLY if not selecting) */}
-          {!isSelecting && (
-            <div className="relative">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(!showMenu);
-                }}
-                className={`p-1 rounded-lg transition-all active:scale-95 ${showMenu ? 'bg-black/10' : 'hover:bg-black/5'}`}
-              >
-                <div className="flex flex-col gap-0.5">
-                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                  <div className="w-0.5 h-0.5 bg-current rounded-full"></div>
-                </div>
-              </button>
+    <Modal onClose={onClose}>
+      {/* Header */}
+      <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-500 mb-0.5">New Holiday</p>
+          <h2 className="text-xl font-bold text-gray-900 leading-tight">Add to Calendar</h2>
+          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+            <Icon.Calendar />
+            {selectedDates.length === 1 ? formatDate(selectedDates[0]) : `${selectedDates.length} dates selected`}
+          </p>
+        </div>
+        <button onClick={onClose} className="mt-1 p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+          <Icon.X />
+        </button>
+      </div>
 
-              <AnimatePresence>
-                {showMenu && (
-                  <>
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="fixed inset-0 z-30 bg-black/5" 
-                      onClick={() => setShowMenu(false)}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                      className="absolute bottom-5 right-2 w-40 xsm:w-36 bg-white/95 backdrop-blur-sm rounded-xl shadow-[0_10px_40px_-10px_rgba(79,70,229,0.3)] border border-indigo-100 py-1.5 z-40"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {!holidayInfo || holidayInfo.source === 'master' ? (
-                        <button
-                          onClick={() => handleAction('create')}
-                          className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition-all active:scale-95"
-                        >
-                          <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600">
-                             <FaPlus className="w-3 h-3" />
-                          </div>
-                          {holidayInfo ? 'Add to Corporate' : 'Add Corporate'}
-                        </button>
-                      ) : (
-                        <>
-                          {holidayInfo.source === 'company' && (
-                            <>
-                              <button
-                                onClick={() => handleAction('update')}
-                                className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95"
-                              >
-                                <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600">
-                                  <FaCalendarAlt className="w-3 h-3" />
-                                </div>
-                                Update
-                              </button>
-                              <button
-                                onClick={() => handleAction('delete')}
-                                className="w-full flex items-center gap-3 px-4 xsm:px-3 py-2.5 xsm:py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition-all active:scale-95"
-                              >
-                                <div className="p-1 rounded-lg bg-red-50 text-red-600">
-                                  <FaTrash className="w-3 h-3" />
-                                </div>
-                                Delete
-                              </button>
-                              <div className="h-px bg-gray-100 mx-3 my-1"></div>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Holiday Name</label>
+          <input
+            ref={inputRef}
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="e.g. Diwali, Republic Day…"
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent focus:bg-white transition-all"
+          />
+        </div>
+
+        <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group">
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isOptional ? 'bg-violet-500 border-violet-500' : 'border-gray-300 group-hover:border-violet-400'}`}>
+            {isOptional && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
+          </div>
+          <input type="checkbox" checked={isOptional} onChange={e => setIsOptional(e.target.checked)} className="sr-only" />
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Optional Holiday</p>
+            <p className="text-xs text-gray-500 mt-0.5">Employees can choose to observe this day</p>
+          </div>
+        </label>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {loading ? <><Icon.Spinner /> Creating…</> : <><Icon.Plus /> Create Holiday{selectedDates.length > 1 ? 's' : ''}</>}
+        </button>
+      </form>
+    </Modal>
+  );
+};
+
+// ==================== UPDATE HOLIDAY MODAL ====================
+const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
+  const [name, setName] = useState(holiday.name || '');
+  const [isOptional, setIsOptional] = useState(holiday.is_optional === 1);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) { toast.error('Holiday name is required'); return; }
+    setLoading(true);
+    const company = JSON.parse(localStorage.getItem('company') || '{}');
+    const result = await holidayService.updateHoliday({ id: holiday.id, name: name.trim(), date: holiday.date, is_optional: isOptional ? 1 : 0 }, company?.id);
+    if (result.success) { toast.success('Holiday updated!'); onUpdateSuccess(); onClose(); }
+    else toast.error(result.error || 'Failed to update holiday');
+    setLoading(false);
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-500 mb-0.5">Edit Holiday</p>
+          <h2 className="text-xl font-bold text-gray-900">Update Details</h2>
+          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5"><Icon.Calendar />{holiday.date}</p>
+        </div>
+        <button onClick={onClose} className="mt-1 p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"><Icon.X /></button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Holiday Name</label>
+          <input
+            autoFocus
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent focus:bg-white transition-all"
+          />
+        </div>
+
+        <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group">
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isOptional ? 'bg-violet-500 border-violet-500' : 'border-gray-300 group-hover:border-violet-400'}`}>
+            {isOptional && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
+          </div>
+          <input type="checkbox" checked={isOptional} onChange={e => setIsOptional(e.target.checked)} className="sr-only" />
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Optional Holiday</p>
+            <p className="text-xs text-gray-500 mt-0.5">Employees can choose to observe this day</p>
+          </div>
+        </label>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? <><Icon.Spinner /> Updating…</> : <><Icon.Check /> Save Changes</>}
+        </button>
+      </form>
+    </Modal>
+  );
+};
+
+// ==================== DELETE CONFIRMATION MODAL ====================
+const DeleteModal = ({ holiday, onClose, onDeleteSuccess }) => {
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    const company = JSON.parse(localStorage.getItem('company') || '{}');
+    const result = await holidayService.deleteHoliday(holiday.id, company?.id);
+    if (result.success) { toast.success('Holiday deleted'); onDeleteSuccess(); onClose(); }
+    else toast.error(result.error || 'Failed to delete');
+    setLoading(false);
+  };
+
+  return (
+    <Modal onClose={onClose} danger>
+      <div className="p-6 text-center">
+        <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5 text-red-500">
+          <Icon.Trash />
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Holiday?</h2>
+        <p className="text-sm text-gray-500 mb-1">You're about to remove</p>
+        <p className="text-base font-bold text-gray-800 mb-1">"{holiday.name}"</p>
+        <p className="text-xs text-gray-400 mb-7">{holiday.date} · This cannot be undone</p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-100 disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {loading ? <><Icon.Spinner /> Deleting…</> : 'Delete'}
+          </button>
         </div>
       </div>
-      
-      {holidayInfo && (
-        <div className="mt-1 space-y-0.5">
-          <p className="text-[10px] xsm:text-[8px] sm:text-xs font-bold truncate leading-tight opacity-95 tracking-tight">
-            {holidayInfo.name}
-          </p>
-          <p className="text-[8px] xsm:text-[7px] font-bold opacity-60 uppercase tracking-widest leading-none">
-            {holidayInfo.source === 'master' ? 'Master' : 'Company'}
-          </p>
-        </div>
+    </Modal>
+  );
+};
+
+// ==================== ACTION MENU ====================
+const ActionMenu = ({ date, holidayInfo, onAction, onClose }) => {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) onClose(); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const isCompany = holidayInfo?.source === 'company';
+  const canCreate = !holidayInfo || holidayInfo.source === 'master';
+
+  return (
+    <motion.div
+      ref={menuRef}
+      initial={{ opacity: 0, scale: 0.92, y: -4 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: -4 }}
+      transition={{ duration: 0.12 }}
+      className="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden py-1"
+      onClick={e => e.stopPropagation()}
+    >
+      {canCreate && (
+        <button
+          onClick={() => { onAction(date, holidayInfo, 'create'); onClose(); }}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+        >
+          <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center flex-shrink-0">
+            <Icon.Plus />
+          </span>
+          {holidayInfo ? 'Add Corporate' : 'Add Holiday'}
+        </button>
+      )}
+      {isCompany && (
+        <>
+          <button
+            onClick={() => { onAction(date, holidayInfo, 'update'); onClose(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+          >
+            <span className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+              <Icon.Edit />
+            </span>
+            Edit Holiday
+          </button>
+          <div className="mx-3 h-px bg-gray-100" />
+          <button
+            onClick={() => { onAction(date, holidayInfo, 'delete'); onClose(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+          >
+            <span className="w-7 h-7 rounded-lg bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0">
+              <Icon.Trash />
+            </span>
+            Delete
+          </button>
+        </>
       )}
     </motion.div>
   );
 };
 
-// ==================== CREATE HOLIDAY POPUP ====================
-const CreateHolidayPopup = ({ selectedDates, onClose, onCreateSuccess, initialName }) => {
-  const [holidayName, setHolidayName] = useState(initialName || '');
-  const [isOptional, setIsOptional] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// ==================== CALENDAR CELL ====================
+const CalendarCell = ({ date, dayNumber, isCurrentMonth, isToday, holidayInfo, onAction, onMonthNavigate }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const config = getHolidayConfig(holidayInfo);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!holidayName.trim()) {
-      toast.error('Please enter a holiday name');
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    const company = JSON.parse(localStorage.getItem('company'));
-    const results = await Promise.all(selectedDates.map(date => 
-      holidayService.createHoliday({
-        name: holidayName.trim(),
-        date: formatDate(date),
-        is_optional: isOptional ? 1 : 0,
-        company_id: company?.id
-      }, company?.id)
-    ));
-
-    const successCount = results.filter(r => r.success).length;
-    if (successCount > 0) {
-      toast.success(`Successfully created ${successCount} holiday(s)!`);
-      onCreateSuccess();
-      onClose();
-    } else {
-      toast.error('Failed to create holidays');
-    }
-    
-    setIsSubmitting(false);
+  const handleCellClick = () => {
+    if (!isCurrentMonth) onMonthNavigate(date);
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 xsm:p-2"
-      onClick={onClose}
+    <div
+      onClick={handleCellClick}
+      className={`
+        relative min-h-[80px] sm:min-h-[100px] p-2 sm:p-2.5 flex flex-col gap-1 border-r border-b border-gray-100 transition-colors
+        ${!isCurrentMonth ? 'bg-gray-50/60 cursor-pointer' : 'bg-white'}
+        ${isToday ? 'ring-2 ring-inset ring-violet-400 z-10' : ''}
+        ${holidayInfo && isCurrentMonth ? config.bg : ''}
+      `}
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white rounded-3xl xsm:rounded-2xl shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden border border-white/20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative bg-gradient-to-br from-indigo-600 to-purple-600 p-6 xsm:p-4 text-white">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-xl xsm:text-lg font-bold">Create New Holiday</h3>
-              <p className="text-white/80 text-xs xsm:text-[10px] mt-1 flex items-center gap-1">
-                <FaCalendarAlt className="w-3 h-3" />
-                {selectedDates.length === 1 
-                  ? formatDate(selectedDates[0]) 
-                  : `${selectedDates.length} dates selected`}
-              </p>
-            </div>
-            <button 
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onClose();
-              }} 
-              className="relative z-[70] p-2 xsm:p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-            >
-              <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
-            </button>
-          </div>
-          
-          {/* Abstract decoration */}
-          <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-        </div>
+      {/* Day number */}
+      <div className="flex items-center justify-between">
+        <span className={`
+          text-xs sm:text-sm font-semibold leading-none
+          ${!isCurrentMonth ? 'text-gray-300' : isToday ? 'text-violet-600' : 'text-gray-700'}
+          ${isToday ? 'w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold' : ''}
+        `}>
+          {dayNumber}
+        </span>
 
-        <form onSubmit={handleSubmit} className="p-6 xsm:p-4 space-y-5 xsm:space-y-4">
-          <div>
-            <label className="block text-sm xsm:text-xs font-medium text-gray-700 mb-1.5 xsm:mb-1">
-              Holiday Name *
-            </label>
-            <input
-              type="text"
-              value={holidayName}
-              onChange={(e) => setHolidayName(e.target.value)}
-              className="w-full px-3 xsm:px-2 py-2 xsm:py-1.5 text-sm xsm:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
-              placeholder="e.g., Diwali, Republic Day"
-              autoFocus
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isOptional}
-                onChange={(e) => setIsOptional(e.target.checked)}
-                className="w-4 h-4 xsm:w-3.5 xsm:h-3.5 text-indigo-600 rounded focus:ring-indigo-500"
-              />
-              <span className="text-sm xsm:text-xs text-gray-700">Mark as Optional Holiday</span>
-            </label>
-          </div>
-
-          <div className="pt-2">
+        {/* Action menu trigger — only for current month */}
+        {isCurrentMonth && (
+          <div className="relative">
             <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 xsm:py-2.5 text-sm rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              onClick={e => { e.stopPropagation(); setMenuOpen(p => !p); }}
+              className={`p-1 rounded-lg transition-colors opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 ${menuOpen ? 'bg-gray-200 opacity-100' : 'hover:bg-gray-100/80'} text-gray-400 hover:text-gray-600`}
+              style={{ opacity: menuOpen ? 1 : undefined }}
             >
-              {isSubmitting ? (
-                <>
-                  <FaSpinner className="w-4 h-4 xsm:w-3.5 xsm:h-3.5 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <FaPlus className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
-                  Create Holiday{selectedDates.length > 1 ? 's' : ''}
-                </>
-              )}
+              <Icon.Dots />
             </button>
-          </div>
-        </form>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// ==================== UPDATE HOLIDAY POPUP ====================
-const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
-  const [holidayName, setHolidayName] = useState(holiday.name || '');
-  const [isOptional, setIsOptional] = useState(holiday.is_optional === 1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!holidayName.trim()) {
-      toast.error('Please enter a holiday name');
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    const company = JSON.parse(localStorage.getItem('company'));
-    const result = await holidayService.updateHoliday({
-      id: holiday.id,
-      name: holidayName.trim(),
-      date: holiday.date,
-      is_optional: isOptional ? 1 : 0
-    }, company?.id);
-
-    if (result.success) {
-      toast.success('Holiday updated successfully!');
-      onUpdateSuccess();
-      onClose();
-    } else {
-      toast.error(result.error || 'Failed to update holiday');
-    }
-    
-    setIsSubmitting(false);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-50 p-4 xsm:p-2"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white rounded-3xl xsm:rounded-2xl shadow-[0_20px_70px_-15px_rgba(0,0,0,0.3)] max-w-md w-full overflow-hidden border border-white/20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative bg-gradient-to-br from-indigo-600 to-purple-600 p-6 xsm:p-4 text-white">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-xl xsm:text-lg font-bold">Update Holiday</h3>
-              <p className="text-white/80 text-xs xsm:text-[10px] mt-1 flex items-center gap-1">
-                <FaCalendarAlt className="w-3 h-3" />
-                {holiday.date}
-              </p>
-            </div>
-            <button 
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onClose();
-              }} 
-              className="relative z-[70] p-2 xsm:p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-            >
-              <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 xsm:p-4 space-y-5 xsm:space-y-4">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Holiday Name
-            </label>
-            <input
-              type="text"
-              value={holidayName}
-              onChange={(e) => setHolidayName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all text-sm"
-              placeholder="e.g., Diwali, Republic Day"
-              autoFocus
-            />
-          </div>
-
-          <div className="flex items-center gap-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-            <label className="flex items-center gap-3 cursor-pointer w-full">
-              <div className="relative flex items-center">
-                <input
-                  type="checkbox"
-                  checked={isOptional}
-                  onChange={(e) => setIsOptional(e.target.checked)}
-                  className="w-5 h-5 text-indigo-600 rounded-lg border-gray-300 focus:ring-indigo-500 cursor-pointer"
+            <AnimatePresence>
+              {menuOpen && (
+                <ActionMenu
+                  date={date}
+                  holidayInfo={holidayInfo}
+                  onAction={onAction}
+                  onClose={() => setMenuOpen(false)}
                 />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-gray-800">Optional Holiday</span>
-                <span className="text-[10px] text-gray-500 italic">Allow employees to choose to observe this day</span>
-              </div>
-            </label>
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 xsm:py-2.5 text-sm rounded-xl transition-all shadow-lg shadow-indigo-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <FaSpinner className="w-4 h-4 xsm:w-3.5 xsm:h-3.5 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <FaCheck className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
-                  Update Holiday
-                </>
               )}
-            </button>
+            </AnimatePresence>
           </div>
-        </form>
-      </motion.div>
-    </motion.div>
+        )}
+      </div>
+
+      {/* Holiday info */}
+      {holidayInfo && isCurrentMonth && (
+        <div className="flex-1 mt-0.5">
+          <div className={`flex items-start gap-1.5`}>
+            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1 ${config.dot}`} />
+            <div className="min-w-0">
+              <p className={`text-[10px] sm:text-xs font-semibold leading-snug truncate ${config.text}`}>
+                {holidayInfo.name}
+              </p>
+              <span className={`inline-block text-[9px] font-bold uppercase tracking-wider mt-0.5 px-1.5 py-0.5 rounded-full ${config.badgeBg}`}>
+                {config.badge}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Small dot for non-current month holidays */}
+      {holidayInfo && !isCurrentMonth && (
+        <div className="w-1 h-1 rounded-full bg-gray-300 mt-1" />
+      )}
+    </div>
   );
 };
 
-// ==================== DELETE CONFIRMATION POPUP ====================
-const DeleteConfirmationModal = ({ holiday, onClose, onDeleteSuccess }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    const company = JSON.parse(localStorage.getItem('company'));
-    const result = await holidayService.deleteHoliday(holiday.id, company?.id);
-    if (result.success) {
-      toast.success('Holiday deleted successfully!');
-      onDeleteSuccess();
-      onClose();
-    } else {
-      toast.error(result.error || 'Failed to delete holiday');
-    }
-    setIsDeleting(false);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 backdrop-blur-md flex items-center justify-center z-[60] p-4 xsm:p-2"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="bg-white rounded-3xl xsm:rounded-2xl shadow-[0_20px_70px_-15px_rgba(239,68,68,0.3)] max-w-sm w-full p-8 xsm:p-4 text-center border border-red-50"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-20 h-20 xsm:w-16 xsm:h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm ring-4 ring-red-50/50">
-          <FaTrash className="w-8 h-8 xsm:w-6 xsm:h-6" />
-        </div>
-        <h3 className="text-2xl xsm:text-xl font-black text-gray-900 mb-2 font-outfit uppercase tracking-tight">Wait!</h3>
-        <p className="text-gray-500 text-sm xsm:text-xs mb-8 xsm:mb-6 leading-relaxed">
-          Are you sure you want to delete <span className="font-bold text-gray-900 block mt-1 text-lg">"{holiday.name}"</span>?
-          <span className="text-red-500 block mt-2 text-[10px] font-bold uppercase tracking-widest">This action is irreversible</span>
-        </p>
-        <div className="grid grid-cols-2 gap-4 xsm:gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-3 xsm:py-2.5 text-sm font-bold bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-2xl transition-all active:scale-95 border border-gray-100"
-          >
-            Go Back
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="px-4 py-3 xsm:py-2.5 text-sm font-bold bg-red-600 hover:bg-red-700 text-white rounded-2xl transition-all shadow-lg shadow-red-200 active:scale-95 flex items-center justify-center gap-2"
-          >
-            {isDeleting ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Yes, Delete'}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-};
-
-// ==================== MAIN CALENDAR COMPONENT ====================
+// ==================== MAIN COMPONENT ====================
 const HolidayManagementCalendar = () => {
   const [currentDate, setCurrentDate] = useState(() => toCalendarDate(new Date()) || new Date());
-  const [selectedDates, setSelectedDates] = useState([]);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [showCreatePopup, setShowCreatePopup] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedHoliday, setSelectedHoliday] = useState(null);
   const [allHolidays, setAllHolidays] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Shared fetch lock to prevent double loading while ensuring UI updates
-  const fetchLock = useRef(null); 
+  const [activeModal, setActiveModal] = useState(null); // 'create' | 'update' | 'delete'
+  const [modalData, setModalData] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const fetchLock = useRef(null);
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
   const today = useMemo(() => toCalendarDate(new Date()) || new Date(), []);
 
+  // Fetch holidays for current month
   useEffect(() => {
-    let isActive = true;
+    let active = true;
     const key = `${currentYear}-${currentMonth}`;
 
     const fetchHolidays = async () => {
-      // 1. If we already have the data for this month/year in state, don't fetch
-      if (allHolidays[key]) {
-        setIsLoading(false);
-        return;
-      }
-
-      // 2. If another instance (like from StrictMode) is already fetching this same month/year
-      if (fetchLock.current?.key === key) {
-        try {
-          const data = await fetchLock.current.promise;
-          if (isActive) {
-            setAllHolidays(prev => ({ ...prev, [key]: data }));
-          }
-        } catch (err) {
-          console.error("Lock sync failed:", err);
-        } finally {
-          if (isActive) setIsLoading(false);
-        }
-        return;
-      }
-      
+      // Skip cache only when not a forced refresh (refreshKey > 0 means invalidate)
+      if (allHolidays[key] && refreshKey === 0) { setIsLoading(false); return; }
+      // Reset lock so a fresh request always runs after a refresh
+      fetchLock.current = null;
       setIsLoading(true);
-      
-      // 3. Create a shared promise for this specific month/year
-      const company = JSON.parse(localStorage.getItem('company'));
+      const company = JSON.parse(localStorage.getItem('company') || '{}');
       const activePromise = (async () => {
         const [masterData, companyData] = await Promise.all([
           holidayService.getMasterHolidays(currentYear, currentMonth + 1),
           holidayService.getCompanyHolidays(company?.id)
         ]);
-
-        const holidaysByDate = {};
-        masterData.forEach(holiday => {
-          holidaysByDate[holiday.date] = { ...holiday, source: 'master' };
-        });
-        companyData.forEach(holiday => {
-          const hDate = new Date(holiday.date);
-          if (hDate.getFullYear() === currentYear && hDate.getMonth() === currentMonth) {
-            holidaysByDate[holiday.date] = { ...holiday, source: 'company' };
+        const map = {};
+        masterData.forEach(h => { map[h.date] = { ...h, source: 'master' }; });
+        companyData.forEach(h => {
+          const d = new Date(h.date);
+          if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+            map[h.date] = { ...h, source: 'company' };
           }
         });
-        return holidaysByDate;
+        return map;
       })();
-
       fetchLock.current = { key, promise: activePromise };
-
       try {
         const data = await activePromise;
-        if (isActive) {
-          setAllHolidays(prev => ({ ...prev, [key]: data }));
-        }
-      } catch (err) {
-        console.error("Fetch failed:", err);
-        fetchLock.current = null; // Clear lock on error to allow retry
-      } finally {
-        if (isActive) setIsLoading(false);
-      }
+        if (active) setAllHolidays(prev => ({ ...prev, [key]: data }));
+      } catch (e) { console.error(e); fetchLock.current = null; }
+      finally { if (active) setIsLoading(false); }
     };
 
     fetchHolidays();
+    return () => { active = false; };
+  }, [currentYear, currentMonth, refreshKey]);
 
-    return () => {
-      isActive = false;
-    };
-  }, [currentYear, currentMonth]);
-
-  const getHolidayForDate = (date) => {
+  const getHolidayForDate = useCallback((date) => {
     const key = `${currentYear}-${currentMonth}`;
-    const holidaysMap = allHolidays[key] || {};
-    return holidaysMap[formatDate(date)];
-  };
+    return (allHolidays[key] || {})[formatDate(date)] || null;
+  }, [allHolidays, currentYear, currentMonth]);
 
-  const handleDateTap = useCallback((date) => {
-    const normalized = toCalendarDate(date);
-    if (!normalized) return;
-    
-    if (isSelecting) {
-      setSelectedDates(prev => {
-        const exists = prev.some(d => formatDate(d) === formatDate(normalized));
-        if (exists) {
-          return prev.filter(d => formatDate(d) !== formatDate(normalized));
-        }
-        return [...prev, normalized];
-      });
-    }
-  }, [isSelecting]);
-
-  const handleActionClick = useCallback((date, holiday, action) => {
-    switch (action) {
-      case 'create':
-        setSelectedDates([date]);
-        setSelectedHoliday(holiday || null);
-        setShowCreatePopup(true);
-        break;
-      case 'update':
-        setSelectedHoliday(holiday);
-        setShowUpdateModal(true);
-        break;
-      case 'delete':
-        setSelectedHoliday(holiday);
-        setShowDeleteModal(true);
-        break;
+  const handleAction = useCallback((date, holiday, action) => {
+    if (action === 'create') {
+      setModalData({ dates: [date], initialName: holiday?.name || '' });
+      setActiveModal('create');
+    } else if (action === 'update') {
+      setModalData(holiday);
+      setActiveModal('update');
+    } else if (action === 'delete') {
+      setModalData(holiday);
+      setActiveModal('delete');
     }
   }, []);
 
-  const resetSelection = useCallback(() => {
-    setSelectedDates([]);
-    setIsSelecting(false);
-    setSelectedHoliday(null);
-  }, []);
+  const closeModal = useCallback(() => { setActiveModal(null); setModalData(null); }, []);
 
-  const handleMonthNavigate = useCallback((date) => {
-    const normalized = toCalendarDate(date);
-    if (!normalized) return;
-    
-    // Clear selection and navigate
-    resetSelection();
-    
-    // Set current date to the 1st of that month to ensure consistency
-    const targetDate = new Date(normalized.getFullYear(), normalized.getMonth(), 1);
-    setCurrentDate(targetDate);
-  }, [resetSelection]);
-
-  const handlePressHold = useCallback((date) => {
-    const normalized = toCalendarDate(date);
-    if (!normalized) return;
-    setIsSelecting(true);
-    setSelectedDates([normalized]);
-  }, []);
-
-
-  const handleRefresh = () => {
-    resetSelection();
-    // Force a re-fetch by clearing state
+  const handleRefresh = useCallback(() => {
+    // Increment refreshKey to force the fetch useEffect to re-run even if
+    // currentYear/currentMonth hasn't changed (same month after CUD ops).
     setAllHolidays({});
-    setCurrentDate(new Date(currentDate)); // Trigger effect
-  };
+    setRefreshKey(k => k + 1);
+  }, []);
 
   const changeMonth = (delta) => {
-    const target = toCalendarDate(new Date(currentYear, currentMonth + delta, 1));
-    setCurrentDate(target || new Date(currentYear, currentMonth + delta, 1));
-    resetSelection();
+    setCurrentDate(d => new Date(d.getFullYear(), d.getMonth() + delta, 1));
   };
 
-  const goToToday = () => {
-    setCurrentDate(toCalendarDate(new Date()) || new Date());
-    resetSelection();
-  };
-
-  // Generate calendar grid
-  const generateCalendarGrid = () => {
+  // Build grid
+  const grid = useMemo(() => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const prevMonthDays = getDaysInMonth(currentYear, currentMonth - 1);
-    
-    const grid = [];
-    const totalCells = 42; // 6 rows x 7 days
-    
-    for (let i = 0; i < totalCells; i++) {
-      let date;
-      let isCurrentMonth = true;
-      let dayNumber;
-      
+    const cells = [];
+    const total = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+    for (let i = 0; i < total; i++) {
+      let date, dayNumber, isCurrentMonth;
       if (i < firstDay) {
-        // Previous month days
         dayNumber = prevMonthDays - (firstDay - i - 1);
         date = new Date(currentYear, currentMonth - 1, dayNumber);
         isCurrentMonth = false;
       } else if (i >= firstDay + daysInMonth) {
-        // Next month days
         dayNumber = i - (firstDay + daysInMonth) + 1;
         date = new Date(currentYear, currentMonth + 1, dayNumber);
         isCurrentMonth = false;
       } else {
-        // Current month days
         dayNumber = i - firstDay + 1;
         date = new Date(currentYear, currentMonth, dayNumber);
         isCurrentMonth = true;
       }
-      
-      const isSelected = selectedDates.some(d => formatDate(d) === formatDate(date));
-      const isToday = isSameDay(date, today);
-      const holidayInfo = getHolidayForDate(date);
-      const isHoliday = !!holidayInfo;
-      
-      grid.push({
-        date,
-        dayNumber,
-        isCurrentMonth,
-        isSelected,
-        isToday,
-        isHoliday,
-        holidayInfo
-      });
+      cells.push({ date, dayNumber, isCurrentMonth, isToday: isSameDay(date, today), holidayInfo: getHolidayForDate(date) });
     }
-    
-    return grid;
-  };
+    return cells;
+  }, [currentYear, currentMonth, today, getHolidayForDate]);
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const weekDaysShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const handleMonthNavigate = useCallback((date) => {
+    const d = toCalendarDate(date);
+    if (d) setCurrentDate(new Date(d.getFullYear(), d.getMonth(), 1));
+  }, []);
+
+  // Stats
+  const stats = useMemo(() => {
+    const key = `${currentYear}-${currentMonth}`;
+    const map = allHolidays[key] || {};
+    const vals = Object.values(map);
+    return {
+      total: vals.length,
+      mandatory: vals.filter(h => h.source === 'master' && h.is_optional !== 1 && h.type !== 'Observance').length,
+      optional: vals.filter(h => h.is_optional === 1).length,
+      corporate: vals.filter(h => h.source === 'company').length,
+    };
+  }, [allHolidays, currentYear, currentMonth]);
+
+  const isCurrentMonthToday = currentYear === today.getFullYear() && currentMonth === today.getMonth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 xsm:p-2 sm:p-4 md:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-4 xsm:mb-3 sm:mb-6 md:mb-8 flex flex-col gap-3 xsm:gap-2">
+    <div className="min-h-screen bg-gray-50 font-sans">
+      {/* Top Bar */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl xsm:text-lg sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Holiday Management
-            </h1>
-            <p className="text-xs xsm:text-[10px] sm:text-sm text-gray-500 mt-1">Manage and track all system holidays</p>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>
+            <p className="text-xs text-gray-400 mt-0.5">Manage corporate & national holidays</p>
           </div>
-          
-          {selectedDates.length > 0 && (
-            <div className="flex items-center gap-2 xsm:gap-1.5">
-              <button
-                onClick={() => setShowCreatePopup(true)}
-                className="flex items-center gap-1.5 xsm:gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 xsm:px-2 py-2 xsm:py-1.5 text-xs xsm:text-[10px] rounded-xl transition shadow-md hover:shadow-lg"
-              >
-                <FaPlus className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" />
-                Create ({selectedDates.length})
-              </button>
-              <button
-                onClick={resetSelection}
-                className="p-2 xsm:p-1.5 hover:bg-gray-200 rounded-xl transition text-gray-600"
-              >
-                <FaTimes className="w-4 h-4 xsm:w-3.5 xsm:h-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Calendar Controls */}
-        <div className="bg-white rounded-2xl xsm:rounded-xl shadow-sm border border-gray-200 p-3 xsm:p-2 mb-4 xsm:mb-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 xsm:gap-2">
-            <div className="flex items-center gap-2 xsm:gap-1.5">
-              <button
-                onClick={() => changeMonth(-1)}
-                className="p-1.5 xsm:p-1 hover:bg-gray-100 rounded-xl transition"
-              >
-                <FaChevronLeft className="w-4 h-4 xsm:w-3 xsm:h-3 text-gray-600" />
-              </button>
-              <div className="flex items-center gap-1.5 xsm:gap-1">
-                <FaCalendarAlt className="w-4 h-4 xsm:w-3 xsm:h-3 text-indigo-500" />
-                <h2 className="text-base xsm:text-sm sm:text-lg md:text-xl font-semibold text-gray-800">
-                  {monthNames[currentMonth]} {currentYear}
-                </h2>
-              </div>
-              <button
-                onClick={() => changeMonth(1)}
-                className="p-1.5 xsm:p-1 hover:bg-gray-100 rounded-xl transition"
-              >
-                <FaChevronRight className="w-4 h-4 xsm:w-3 xsm:h-3 text-gray-600" />
-              </button>
-            </div>
-            
+          {!isCurrentMonthToday && (
             <button
-              onClick={goToToday}
-              className="px-3 xsm:px-2 py-1.5 xsm:py-1 text-xs xsm:text-[10px] bg-gray-100 hover:bg-gray-200 rounded-xl transition text-gray-700"
+              onClick={() => setCurrentDate(toCalendarDate(new Date()) || new Date())}
+              className="px-3 py-1.5 text-xs font-semibold text-violet-600 bg-violet-50 rounded-lg border border-violet-100 hover:bg-violet-100 transition-colors"
             >
               Today
             </button>
-          </div>
-          
-          {isSelecting && (
-            <div className="mt-3 xsm:mt-2 flex items-center gap-1.5 xsm:gap-1 text-xs xsm:text-[10px] text-indigo-600 bg-indigo-50 p-2 xsm:p-1.5 rounded-lg">
-              <FaExclamationCircle className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" />
-              Multi-select mode active. Tap dates to select/deselect.
-              <button onClick={() => setIsSelecting(false)} className="ml-auto text-gray-500 hover:text-gray-700">
-                <FaTimes className="w-3.5 h-3.5 xsm:w-3 xsm:h-3" />
-              </button>
-            </div>
           )}
         </div>
+      </div>
 
-        {/* Calendar Grid */}
-        <div className="bg-white rounded-2xl xsm:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5">
+        {/* Stats Row */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: 'Total', value: stats.total, color: 'text-gray-700', bg: 'bg-white' },
+            { label: 'National', value: stats.mandatory, color: 'text-rose-600', bg: 'bg-rose-50' },
+            { label: 'Optional', value: stats.optional, color: 'text-teal-600', bg: 'bg-teal-50' },
+            { label: 'Corporate', value: stats.corporate, color: 'text-violet-600', bg: 'bg-violet-50' },
+          ].map(s => (
+            <div key={s.label} className={`${s.bg} rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-sm`}>
+              <p className={`text-xl sm:text-2xl font-bold ${s.color} leading-none`}>{s.value}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 font-medium">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Month Nav */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={() => changeMonth(-1)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+          >
+            <Icon.ChevronLeft />
+          </button>
+          <div className="text-center">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">
+              {MONTH_NAMES[currentMonth]} {currentYear}
+            </h2>
+          </div>
+          <button
+            onClick={() => changeMonth(1)}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+          >
+            <Icon.ChevronRight />
+          </button>
+        </div>
+
+        {/* Calendar */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Weekday headers */}
-          <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
-            {weekDays.map((day, idx) => (
-              <div key={day} className="p-2 xsm:p-1 text-center text-xs xsm:text-[10px] font-semibold text-gray-500">
-                <span className="xsm:hidden">{day}</span>
-                <span className="hidden xsm:inline">{weekDaysShort[idx]}</span>
+          <div className="grid grid-cols-7 border-b border-gray-100">
+            {WEEK_DAYS.map(d => (
+              <div key={d} className="py-2.5 text-center text-[11px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                <span className="hidden sm:inline">{d}</span>
+                <span className="sm:hidden">{d[0]}</span>
               </div>
             ))}
           </div>
-          
-          {/* Calendar cells */}
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64 xsm:h-48 text-indigo-500 font-bold uppercase tracking-widest gap-2">
-              <FaSpinner className="animate-spin text-xl" />
-              Syncing...
-            </div>
-          ) : (
-            <div className="grid grid-cols-7">
-              {generateCalendarGrid().map((cell, idx) => (
+
+          {/* Grid */}
+          <div className="relative">
+            <div className="grid grid-cols-7 group">
+              {grid.map((cell, i) => (
                 <CalendarCell
-                  key={idx}
+                  key={i}
                   {...cell}
-                  onTap={handleDateTap}
-                  onPressHold={handlePressHold}
-                  isSelecting={isSelecting}
-                  onAction={handleActionClick}
+                  onAction={handleAction}
                   onMonthNavigate={handleMonthNavigate}
                 />
               ))}
             </div>
-          )}
+
+            {/* Loading overlay */}
+            <AnimatePresence>
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-20 rounded-b-2xl"
+                >
+                  <div className="flex items-center gap-2.5 bg-white px-5 py-3 rounded-xl shadow-lg border border-gray-100">
+                    <Icon.Spinner />
+                    <span className="text-xs font-semibold text-gray-600">Loading holidays…</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Legend */}
-        <div className="mt-4 xsm:mt-3 flex flex-wrap gap-4 xsm:gap-2 justify-center text-xs xsm:text-[10px]">
-          <div className="flex items-center gap-1.5 xsm:gap-1">
-            <div className="w-4 h-4 rounded border border-red-200" style={{ backgroundColor: '#fee2e2' }}></div>
-            <span className="text-gray-600 font-medium">Mandatory</span>
-          </div>
-          <div className="flex items-center gap-1.5 xsm:gap-1">
-            <div className="w-4 h-4 rounded border border-emerald-200" style={{ backgroundColor: '#d1fae5' }}></div>
-            <span className="text-gray-600 font-medium">Optional</span>
-          </div>
-          <div className="flex items-center gap-1.5 xsm:gap-1">
-            <div className="w-4 h-4 rounded border border-amber-200" style={{ backgroundColor: '#fef3c7' }}></div>
-            <span className="text-gray-600 font-medium">Observance</span>
-          </div>
-          <div className="flex items-center gap-1.5 xsm:gap-1">
-            <div className="w-4 h-4 rounded border border-indigo-200" style={{ backgroundColor: '#e0e7ff' }}></div>
-            <span className="text-gray-600 font-medium">Corporate</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 justify-center pb-4">
+          {[
+            { dot: 'bg-rose-400', label: 'National / Mandatory' },
+            { dot: 'bg-teal-400', label: 'Optional' },
+            { dot: 'bg-amber-400', label: 'Observance' },
+            { dot: 'bg-violet-500', label: 'Corporate' },
+          ].map(l => (
+            <div key={l.label} className="flex items-center gap-1.5">
+              <div className={`w-2 h-2 rounded-full ${l.dot}`} />
+              <span className="text-xs text-gray-500">{l.label}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Popups */}
+      {/* Modals */}
       <AnimatePresence>
-        {showCreatePopup && selectedDates.length > 0 && (
-          <CreateHolidayPopup
-            selectedDates={selectedDates}
-            initialName={selectedHoliday?.name || ''}
-            onClose={() => {
-              setShowCreatePopup(false);
-              resetSelection();
-            }}
+        {activeModal === 'create' && modalData && (
+          <CreateHolidayModal
+            selectedDates={modalData.dates}
+            initialName={modalData.initialName}
+            onClose={closeModal}
             onCreateSuccess={handleRefresh}
           />
         )}
-
-        {showUpdateModal && selectedHoliday && (
+        {activeModal === 'update' && modalData && (
           <UpdateHolidayModal
-            holiday={selectedHoliday}
-            onClose={() => {
-              setShowUpdateModal(false);
-              resetSelection();
-            }}
+            holiday={modalData}
+            onClose={closeModal}
             onUpdateSuccess={handleRefresh}
           />
         )}
-
-        {showDeleteModal && selectedHoliday && (
-          <DeleteConfirmationModal
-            holiday={selectedHoliday}
-            onClose={() => {
-              setShowDeleteModal(false);
-              resetSelection();
-            }}
+        {activeModal === 'delete' && modalData && (
+          <DeleteModal
+            holiday={modalData}
+            onClose={closeModal}
             onDeleteSuccess={handleRefresh}
           />
         )}
