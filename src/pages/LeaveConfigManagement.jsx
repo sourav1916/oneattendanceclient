@@ -29,7 +29,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCRUAL_TYPES = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+// ACCRUAL_TYPES now fetched from API constants
 
 const DEFAULT_FORM = {
   code: '',
@@ -358,7 +358,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading }) => (
 
 // ─── Form Modal ───────────────────────────────────────────────────────────────
 
-const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions }) => {
+const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualTypeOptions, existingCodes }) => {
   const isEdit = !!editRecord;
   const [form, setForm] = useState(isEdit ? { ...editRecord } : { ...DEFAULT_FORM });
   const [saving, setSaving] = useState(false);
@@ -375,13 +375,18 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions }) => {
     }
   };
 
+  // Filter out options whose codes are already used in existing records
+  const availableLeaveTypeOptions = leaveTypeOptions.filter(
+    (opt) => !existingCodes?.has(opt.value.toUpperCase())
+  );
+
   const validate = () => {
     const e = {};
     if (!form.code?.trim()) e.code = 'Code is required';
     if (form.code?.trim().length > 10) e.code = 'Max 10 characters';
     if (!form.name?.trim()) e.name = 'Name is required';
     if (Number(form.max_balance) < 0) e.max_balance = 'Must be ≥ 0';
-    if (form.accrual_type !== 'none' && Number(form.accrual_rate) <= 0)
+    if (form.accrual_type && form.accrual_type !== 'none' && Number(form.accrual_rate) <= 0)
       e.accrual_rate = 'Rate must be > 0 when accrual is active';
     return e;
   };
@@ -450,26 +455,30 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions }) => {
           {!isEdit && leaveTypeOptions.length > 0 && (
             <div>
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Quick Select from Standard Types</h3>
-              <div className="flex flex-wrap gap-2">
-                {leaveTypeOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      set('code', opt.value.toUpperCase());
-                      set('name', opt.label);
-                    }}
-                    title={opt.description}
-                    className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
-                      form.code === opt.value.toUpperCase()
-                        ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
-                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-violet-50 hover:border-violet-300'
-                    }`}
-                  >
-                    <span className="font-bold">{opt.value}</span> — {opt.label}
-                  </button>
-                ))}
-              </div>
+              {availableLeaveTypeOptions.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">All standard leave types have already been added.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {availableLeaveTypeOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        set('code', opt.value.toUpperCase());
+                        set('name', opt.label);
+                      }}
+                      title={opt.description}
+                      className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                        form.code === opt.value.toUpperCase()
+                          ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-violet-50 hover:border-violet-300'
+                      }`}
+                    >
+                      <span className="font-bold">{opt.value}</span> — {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -517,16 +526,20 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions }) => {
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Accrual Type</label>
                 <select value={form.accrual_type} onChange={(e) => set('accrual_type', e.target.value)} className={inputCls('accrual_type')}>
-                  {ACCRUAL_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+                  {accrualTypeOptions.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Accrual Rate (days)</label>
                 <input
                   type="number" min={0} step={0.5} value={form.accrual_rate}
-                  disabled={form.accrual_type === 'none'}
+                  disabled={!form.accrual_type || form.accrual_type === 'none'}
                   onChange={(e) => set('accrual_rate', e.target.value)}
-                  className={`${inputCls('accrual_rate')} ${form.accrual_type === 'none' ? '!bg-gray-50 cursor-not-allowed text-gray-400' : ''}`}
+                  className={`${inputCls('accrual_rate')} ${!form.accrual_type || form.accrual_type === 'none' ? '!bg-gray-50 cursor-not-allowed text-gray-400' : ''}`}
                 />
                 {errors.accrual_rate && <p className="mt-1 text-xs text-red-500">{errors.accrual_rate}</p>}
               </div>
@@ -570,6 +583,7 @@ const LeaveConfigManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
+  const [accrualTypeOptions, setAccrualTypeOptions] = useState([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [formModal, setFormModal] = useState({ open: false, record: null });
@@ -609,14 +623,20 @@ const LeaveConfigManagement = () => {
 
     fetchConstants()
       .then((data) => {
-        const opts = (data.leave_types || []).map((item) => ({
+        const typeOpts = (data.leave_types || []).map((item) => ({
           value: item.value.value,
           label: item.value.label,
           description: item.value.description,
         }));
-        setLeaveTypeOptions(opts);
+        setLeaveTypeOptions(typeOpts);
+
+        const accrualOpts = (data.accrual_types || []).map((item) => ({
+          value: item.value.value,
+          label: item.value.label,
+        }));
+        setAccrualTypeOptions(accrualOpts);
       })
-      .catch(() => {}); // non-critical
+      .catch(() => { }); // non-critical
   }, []);
 
   const loadRecords = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
@@ -627,9 +647,9 @@ const LeaveConfigManagement = () => {
 
     try {
       const company = JSON.parse(localStorage.getItem('company'));
-      const params = new URLSearchParams({ 
-        page: page.toString(), 
-        limit: ITEMS_PER_PAGE.toString() 
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: ITEMS_PER_PAGE.toString()
       });
       if (search) params.append("search", search);
 
@@ -639,7 +659,7 @@ const LeaveConfigManagement = () => {
         throw new Error(errorData.message || 'Failed to fetch leave types');
       }
       const result = await response.json();
-      
+
       if (result.success) {
         const fetchedRecords = result.data || [];
         setRecords(fetchedRecords);
@@ -707,11 +727,11 @@ const LeaveConfigManagement = () => {
 
   // Responsive: progressively hide columns so the table NEVER overflows
   // At 768px only Code, Name, Type, Max Balance, Actions remain (5 cols = fits fine)
-  const showStatus      = windowWidth >= 1140;
-  const showCarryFwd    = windowWidth >= 1060;
-  const showAccrual     = windowWidth >= 960;
-  const showHalfDay     = windowWidth >= 880;
-  const showWeekends    = windowWidth >= 800;
+  const showStatus = windowWidth >= 1140;
+  const showCarryFwd = windowWidth >= 1060;
+  const showAccrual = windowWidth >= 960;
+  const showHalfDay = windowWidth >= 880;
+  const showWeekends = windowWidth >= 800;
 
   if (loading && records.length === 0) {
     return (
@@ -799,11 +819,11 @@ const LeaveConfigManagement = () => {
                   <th className="px-5 py-4">Name</th>
                   <th className="px-5 py-4">Type</th>
                   <th className="px-5 py-4">Max Balance</th>
-                  {showCarryFwd  && <th className="px-5 py-4">Carry Fwd</th>}
-                  {showAccrual   && <th className="px-5 py-4">Accrual</th>}
-                  {showHalfDay   && <th className="px-5 py-4">Half Day</th>}
-                  {showWeekends  && <th className="px-5 py-4">Weekends</th>}
-                  {showStatus    && <th className="px-5 py-4">Status</th>}
+                  {showCarryFwd && <th className="px-5 py-4">Carry Fwd</th>}
+                  {showAccrual && <th className="px-5 py-4">Accrual</th>}
+                  {showHalfDay && <th className="px-5 py-4">Half Day</th>}
+                  {showWeekends && <th className="px-5 py-4">Weekends</th>}
+                  {showStatus && <th className="px-5 py-4">Status</th>}
                   <th className="px-5 py-4 text-center">Actions</th>
                 </tr>
               </thead>
@@ -824,8 +844,8 @@ const LeaveConfigManagement = () => {
                     <td className="px-5 py-4 font-medium text-gray-800">{record.name}</td>
                     <td className="px-5 py-4"><PaidBadge isPaid={record.is_paid} /></td>
                     <td className="px-5 py-4 text-gray-600">{record.max_balance} days</td>
-                    {showCarryFwd  && <td className="px-5 py-4 text-gray-600">{record.carry_forward_limit} days</td>}
-                    {showAccrual   && (
+                    {showCarryFwd && <td className="px-5 py-4 text-gray-600">{record.carry_forward_limit} days</td>}
+                    {showAccrual && (
                       <td className="px-5 py-4">
                         <span className="capitalize text-gray-600">{record.accrual_type}</span>
                         {record.accrual_type !== 'none' && (
@@ -833,15 +853,15 @@ const LeaveConfigManagement = () => {
                         )}
                       </td>
                     )}
-                    {showHalfDay   && <td className="px-5 py-4"><BoolCell value={record.allow_half_day} /></td>}
-                    {showWeekends  && (
+                    {showHalfDay && <td className="px-5 py-4"><BoolCell value={record.allow_half_day} /></td>}
+                    {showWeekends && (
                       <td className="px-5 py-4">
                         <span className={`text-xs font-medium ${record.exclude_weekends ? 'text-amber-600' : 'text-gray-400'}`}>
                           {record.exclude_weekends ? 'Excluded' : 'Included'}
                         </span>
                       </td>
                     )}
-                    {showStatus    && <td className="px-5 py-4"><ActiveBadge isActive={record.is_active} /></td>}
+                    {showStatus && <td className="px-5 py-4"><ActiveBadge isActive={record.is_active} /></td>}
                     <td className="px-5 py-4">
                       <ActionMenu
                         record={record}
@@ -971,8 +991,13 @@ const LeaveConfigManagement = () => {
             key="form-modal"
             editRecord={formModal.record}
             leaveTypeOptions={leaveTypeOptions}
+            accrualTypeOptions={accrualTypeOptions}
+            existingCodes={new Set(records.map((r) => r.code?.toUpperCase()))}
             onClose={() => setFormModal({ open: false, record: null })}
-            onSaved={() => { setFormModal({ open: false, record: null }); loadRecords(pagination.page, debouncedSearch, false); }}
+            onSaved={() => {
+              setFormModal({ open: false, record: null });
+              loadRecords(pagination.page, debouncedSearch, false);
+            }}
           />
         )}
         {deleteModal.open && (
