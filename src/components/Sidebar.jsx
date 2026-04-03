@@ -120,6 +120,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           permission: ['leave_type_create', 'leave_type_update', 'leave_type_delete']
         },
         {
+          icon: FaChartLine,
+          label: 'Leave Balance',
+          path: '/leave-balance',
+          permission: ['leave_view_all', 'leave_review']
+        },
+        {
           icon: FaCog,
           label: 'Company Settings',
           path: '/company-settings',

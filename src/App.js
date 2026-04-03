@@ -23,6 +23,7 @@ import CompanyHolidays from "./pages/HolidayManagement";
 import Holidays from "./pages/Holidays";
 import LeaveManagement from "./pages/LeaveManagement";
 import LeaveConfigManagement from "./pages/LeaveConfigManagement";
+import LeaveBalanceManagement from "./pages/LeaveBalanceManagement";
 import CompanySettings from "./pages/CompanySettings";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ProfilePage from "./pages/Profile";
@@ -77,6 +78,7 @@ function AppContent() {
         <Route path="/company-settings"element={<ProtectedRoute><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
         <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-config"element={<ProtectedRoute><MainLayout><LeaveConfigManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/leave-balance"element={<ProtectedRoute><MainLayout><LeaveBalanceManagement /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
