@@ -20,6 +20,7 @@ import {
   FaTasks,
   FaClock,
   FaCalendarAlt,
+  FaClipboardList,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
@@ -111,6 +112,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           label: 'Leave Management',
           path: '/leave-management',
           permission: ['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']
+        },
+        {
+          icon: FaClipboardList,
+          label: 'Leave Config',
+          path: '/leave-config',
+          permission: ['leave_type_create', 'leave_type_update', 'leave_type_delete']
         },
         {
           icon: FaCog,
