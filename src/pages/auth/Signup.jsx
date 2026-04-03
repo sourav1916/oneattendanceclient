@@ -18,6 +18,7 @@ import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/h
 import { BiReset } from "react-icons/bi";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
+import { useAuth } from "../../context/AuthContext";
 
 
 const Signup = () => {
@@ -36,6 +37,7 @@ const Signup = () => {
   const [focusedField, setFocusedField] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const { login } = useAuth();
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -191,7 +193,7 @@ const Signup = () => {
 
     try {
       setLoading(true);
-      const res = await apiCall('/users/register', 'POST', {
+      const res = await apiCall('/otp/signup/complete', 'POST', {
         name: fullName,
         email: email,
         password: password,
@@ -199,10 +201,10 @@ const Signup = () => {
       });
 
       const data = await res.json();
-
+      console.log(JSON.stringify(data));
       if (res.ok) {
         toast.success("Account created successfully 🎉");
-        setTimeout(() => navigate("/login"), 1500);
+        setTimeout(async () => await login(data.token), 1500);
       } else {
         throw new Error(data.message || "Signup failed");
       }
