@@ -39,7 +39,7 @@ export default function GlobalSkeleton() {
       <div className="flex flex-col flex-1 overflow-auto">
 
         {/* Topbar */}
-        <header className="h-14 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-between px-6 shrink-0">
+        <header className="h-14 bg-white flex items-center justify-between px-6 shrink-0">
           <Sk className="w-36 h-6 rounded-lg bg-white/30" />
           <div className="flex items-center gap-4">
             <Sk className="w-8 h-8 rounded-full bg-white/30" />
