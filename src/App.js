@@ -26,6 +26,7 @@ import LeaveConfigManagement from "./pages/LeaveConfigManagement";
 import LeaveBalanceManagement from "./pages/LeaveBalanceManagement";
 import CompanySettings from "./pages/CompanySettings";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
+import ScrollToTop from "./components/ScrollToTop";
 import ProfilePage from "./pages/Profile";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -43,6 +44,7 @@ function AppContent() {
 
   return (
     <>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
