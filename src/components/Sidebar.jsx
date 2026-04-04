@@ -15,7 +15,6 @@ import {
   FaBuilding,
   FaBriefcase,
   FaCalculator,
-  FaUserGraduate,
   FaProjectDiagram,
   FaTasks,
   FaClock,
@@ -175,19 +174,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           overflow-y-auto overflow-x-hidden
         `}>
           <div className="p-4">
-            {/* User Profile Section */}
-            <div className="mb-6 pb-4 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <FaUserGraduate className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-800">Welcome Back!</p>
-                  <p className="text-sm text-gray-500">View your dashboard</p>
-                </div>
-              </div>
-            </div>
-
             <nav className="space-y-1">
               {menuItems.map((item) => {
                 if (item.isSection) {
