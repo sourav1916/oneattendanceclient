@@ -118,7 +118,7 @@ const MainLayout = ({ children }) => {
             max-w-full;
           `}
           style={{
-            padding: '1rem',
+            padding: isMobile ? '0px' : '1rem',
             transition: 'margin-left 0.3s ease-out'
           }}
         >

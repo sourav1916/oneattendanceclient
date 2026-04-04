@@ -151,8 +151,8 @@ function HomePage() {
     // 1. Core Personal Permissions
     const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
     const hasAttendanceHistoryPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
-    const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']);
-    const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']);
+    const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']) && !isCompanyOwnerForCurrentCompany;
+    const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']) && !isCompanyOwnerForCurrentCompany;
     
     // 2. Management Permissions
     const hasAddStaffPerm = hasPermission(['emp_create', 'emp_invite']);

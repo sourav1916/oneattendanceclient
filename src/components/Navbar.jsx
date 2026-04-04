@@ -62,7 +62,12 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                         </button>
 
                         {/* Logo/Brand - visible on all devices */}
-                        <div className="flex items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/home')}
+                            className="flex items-center gap-1 rounded-lg transition-opacity duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-white/50"
+                            aria-label="Go to home"
+                        >
                             <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm  shadow-inner">
                                 <FaFingerprint className="h-6 w-6 text-white" />
                             </div>
@@ -71,7 +76,7 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
                                     One<span className="font-light text-white/90">Attendance</span>
                                 </span>
                             </div>
-                        </div>
+                        </button>
                     </div>
 
                     {/* Right section */}

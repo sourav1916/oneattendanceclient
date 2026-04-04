@@ -659,7 +659,7 @@ const HolidayManagementCalendar = () => {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-30">
+      <div className="bg-white border-b border-gray-100 top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>

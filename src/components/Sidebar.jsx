@@ -76,7 +76,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaCalendarAlt,
       label: 'Holidays',
       path: '/holidays',
-      permission: ['hd_view_own']
+      permission: null
     },
     {
       icon: FaBriefcase,

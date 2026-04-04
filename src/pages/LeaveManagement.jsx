@@ -355,10 +355,6 @@ const LeaveManagement = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
-  const [resultMeta, setResultMeta] = useState({ total: 0, total_pages: 1 });
-  const [isMobileViewport, setIsMobileViewport] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  );
 
   // Modal states
   const [detailLeave, setDetailLeave] = useState(null);
@@ -385,13 +381,6 @@ const LeaveManagement = () => {
       isMounted.current = false;
       clearTimeout(searchTimer.current);
     };
-  }, []);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobileViewport(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
@@ -435,10 +424,10 @@ const LeaveManagement = () => {
         );
 
         setLeaves(rows);
-        setResultMeta({ total, total_pages: totalPages });
         updatePagination({
           page: p,
           limit: pagination.limit,
+          total,
           total_pages: totalPages,
           is_last_page: p >= totalPages,
         });
@@ -624,7 +613,7 @@ const LeaveManagement = () => {
   };
 
   // ── Stats ──────────────────────────────────────────────────────────────────
-  const totalItems = resultMeta.total || leaves.length;
+  const totalItems = pagination.total || leaves.length;
   const stats = [
     { label: 'Total', val: totalItems, icon: '📋', bg: 'bg-white', text: 'text-slate-700' },
     {
@@ -656,7 +645,10 @@ const LeaveManagement = () => {
 
   const handlePageChange = useCallback(
     (newPage) => {
-      if (newPage !== pagination.page) goToPage(newPage);
+      if (newPage !== pagination.page) {
+        goToPage(newPage);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     },
     [pagination.page, goToPage]
   );
@@ -955,8 +947,8 @@ const LeaveManagement = () => {
             totalItems={totalItems}
             itemsPerPage={pagination.limit}
             onPageChange={handlePageChange}
-            variant={isMobileViewport ? 'minimal' : 'default'}
-            showInfo={!isMobileViewport}
+            variant="default"
+            showInfo={true}
           />
         )}
 
