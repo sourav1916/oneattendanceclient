@@ -246,13 +246,13 @@ const ViewDetailsModal = ({ record, onClose, onEdit }) => {
       <motion.div
         key="backdrop"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
         onClick={onClose}
       >
         <ModalScrollLock />
         <motion.div
           variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-          className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -265,7 +265,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit }) => {
             </button>
           </div>
 
-          <div className="p-6">
+          <div className="max-h-[calc(100vh-200px)] overflow-y-auto p-6 custom-scrollbar">
             {/* Title row */}
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-5">
               <div className="flex items-center gap-3">
@@ -324,7 +324,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit }) => {
 const DeleteModal = ({ leaveType, onConfirm, onClose, loading }) => (
   <motion.div
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
     onClick={onClose}
   >
     <ModalScrollLock />
@@ -427,7 +427,7 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualType
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
       onClick={onClose}
     >
       <ModalScrollLock />
@@ -435,7 +435,7 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualType
         initial={{ opacity: 0, scale: 0.93, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 320, damping: 28 } }}
         exit={{ opacity: 0, scale: 0.93, y: 24, transition: { duration: 0.2 } }}
-        className="w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -449,7 +449,8 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualType
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="max-h-[calc(100vh-170px)] overflow-y-auto p-6 custom-scrollbar">
+          <div className="space-y-6">
 
           {/* Preset leave type selector (from constants API) — only on create */}
           {!isEdit && leaveTypeOptions.length > 0 && (
@@ -565,6 +566,7 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualType
             <button type="button" onClick={handleSubmit} disabled={saving} className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-medium text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60">
               {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Leave Type'}
             </button>
+          </div>
           </div>
         </div>
       </motion.div>
@@ -946,12 +948,14 @@ const LeaveConfigManagement = () => {
         )}
 
         {/* ── Pagination ── */}
-        {pagination.total > ITEMS_PER_PAGE && (
+        {records.length > 0 && (
           <Pagination
             currentPage={pagination.page}
-            totalItems={pagination.total}
+            totalItems={pagination.total || records.length}
             itemsPerPage={ITEMS_PER_PAGE}
             onPageChange={handlePageChange}
+            variant="default"
+            showInfo={true}
           />
         )}
 

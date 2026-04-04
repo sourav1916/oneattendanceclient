@@ -1083,12 +1083,14 @@ const LeaveBalanceManagement = () => {
               )}
             </div>
 
-            {filteredBalances.length > ITEMS_PER_PAGE && (
+            {filteredBalances.length > 0 && (
               <Pagination
                 currentPage={pagination.page}
                 totalItems={filteredBalances.length}
                 itemsPerPage={ITEMS_PER_PAGE}
                 onPageChange={handlePageChange}
+                variant="default"
+                showInfo={true}
               />
             )}
           </>
@@ -1112,7 +1114,7 @@ const LeaveBalanceManagement = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 closeViewModal();
@@ -1124,7 +1126,7 @@ const LeaveBalanceManagement = () => {
               initial={{ scale: 0.96, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.96, opacity: 0, y: 20 }}
-              className="w-full max-w-4xl overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl sm:max-h-[92vh] sm:rounded-[2.5rem]"
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl"
               onMouseDown={(event) => event.stopPropagation()}
             >
               <div className="relative bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-5 py-6 text-white sm:px-8 sm:py-8">
@@ -1150,7 +1152,7 @@ const LeaveBalanceManagement = () => {
                 <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
               </div>
 
-              <div className="p-5 sm:p-8">
+              <div className="max-h-[calc(100vh-200px)] overflow-y-auto p-5 custom-scrollbar sm:p-8">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <DetailItem label="Employee" value={viewModal.balance.employee_name} />
                   <DetailItem label="Employee Code" value={viewModal.balance.employee_code || `#${viewModal.balance.employee_id}`} />
@@ -1263,7 +1265,7 @@ const LeaveBalanceManagement = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 closeModal();
@@ -1276,25 +1278,31 @@ const LeaveBalanceManagement = () => {
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               className={`w-full ${
-                modalMode === 'delete' ? 'max-w-md' : 'max-w-lg'
-              } max-h-[92vh] overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2.5rem]`}
+                modalMode === 'delete'
+                  ? 'max-w-sm rounded-2xl'
+                  : 'max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl'
+              } bg-white shadow-2xl`}
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (
-                <div className="p-6 text-center sm:p-8">
-                  <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-500 sm:h-20 sm:w-20">
-                    <FaTrash size={28} />
+                <div className="p-6">
+                  <div className="mb-4 flex items-center justify-center">
+                    <div className="rounded-full bg-red-100 p-4">
+                      <FaTrash className="text-2xl text-red-500" />
+                    </div>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800">Confirm Deletion</h3>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Are you sure you want to remove this leave balance? This action is permanent and cannot be undone.
+                  <h3 className="mb-1 text-center text-lg font-bold text-gray-800">
+                    Delete Leave Balance
+                  </h3>
+                  <p className="mb-6 text-center text-sm text-gray-500">
+                    Are you sure you want to delete this leave balance? This cannot be undone.
                   </p>
-                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={closeModal}
                       disabled={saving}
-                      className="flex-1 rounded-2xl border border-slate-200 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                      className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
                     >
                       Cancel
                     </button>
@@ -1302,9 +1310,9 @@ const LeaveBalanceManagement = () => {
                       type="button"
                       onClick={handleAction}
                       disabled={saving}
-                      className="flex-1 rounded-2xl bg-rose-500 py-3 text-sm font-bold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:opacity-50"
+                      className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60"
                     >
-                      {saving ? <FaSpinner className="mx-auto animate-spin" /> : 'Delete Balance'}
+                      {saving ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                 </div>
