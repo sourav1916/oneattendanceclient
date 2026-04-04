@@ -63,13 +63,52 @@ const Icon = {
   ),
 };
 
+const MASTER_HOLIDAY_CACHE_TTL = 5 * 60 * 1000;
+const COMPANY_HOLIDAY_CACHE_TTL = 30 * 1000;
+const masterHolidayRequestCache = new Map();
+const companyHolidayRequestCache = new Map();
+
+const getMasterHolidayCacheKey = (year, month) => `${year}-${month}`;
+const getCompanyHolidayCacheKey = (companyId) => `${companyId ?? 'none'}`;
+
+const getCachedHolidayRequest = (cache, key) => {
+  const cached = cache.get(key);
+  if (!cached) return null;
+  if (cached.data && cached.expiresAt > Date.now()) return { type: 'data', value: cached.data };
+  if (cached.promise) return { type: 'promise', value: cached.promise };
+  cache.delete(key);
+  return null;
+};
+
+const clearCompanyHolidayRequestCache = () => {
+  companyHolidayRequestCache.clear();
+};
+
 // ==================== API SERVICE ====================
 const holidayService = {
   getMasterHolidays: async (year, month) => {
+    const cacheKey = getMasterHolidayCacheKey(year, month);
+    const cached = getCachedHolidayRequest(masterHolidayRequestCache, cacheKey);
+    if (cached?.type === 'data') return cached.value;
+    if (cached?.type === 'promise') return cached.value;
+
     try {
-      const response = await apiCall(`/holiday/master-holidays?year=${year}&month=${month}`, 'GET');
-      const data = await response.json();
-      return data.success ? data.data : [];
+      const requestPromise = (async () => {
+        const response = await apiCall(`/holiday/master-holidays?year=${year}&month=${month}`, 'GET');
+        const data = await response.json();
+        const holidays = data.success ? data.data : [];
+        masterHolidayRequestCache.set(cacheKey, {
+          data: holidays,
+          expiresAt: Date.now() + MASTER_HOLIDAY_CACHE_TTL
+        });
+        return holidays;
+      })().catch((error) => {
+        masterHolidayRequestCache.delete(cacheKey);
+        throw error;
+      });
+
+      masterHolidayRequestCache.set(cacheKey, { promise: requestPromise });
+      return await requestPromise;
     } catch (error) {
       console.error('Failed to fetch master holidays:', error);
       return [];
@@ -77,10 +116,29 @@ const holidayService = {
   },
   getCompanyHolidays: async (companyId) => {
     if (!companyId) return [];
+
+    const cacheKey = getCompanyHolidayCacheKey(companyId);
+    const cached = getCachedHolidayRequest(companyHolidayRequestCache, cacheKey);
+    if (cached?.type === 'data') return cached.value;
+    if (cached?.type === 'promise') return cached.value;
+
     try {
-      const response = await apiCall('/holiday/company/list', 'GET', null, companyId);
-      const data = await response.json();
-      return data.success ? data.data : [];
+      const requestPromise = (async () => {
+        const response = await apiCall('/holiday/company/list', 'GET', null, companyId);
+        const data = await response.json();
+        const holidays = data.success ? data.data : [];
+        companyHolidayRequestCache.set(cacheKey, {
+          data: holidays,
+          expiresAt: Date.now() + COMPANY_HOLIDAY_CACHE_TTL
+        });
+        return holidays;
+      })().catch((error) => {
+        companyHolidayRequestCache.delete(cacheKey);
+        throw error;
+      });
+
+      companyHolidayRequestCache.set(cacheKey, { promise: requestPromise });
+      return await requestPromise;
     } catch (error) {
       console.error('Failed to fetch company holidays:', error);
       return [];
@@ -89,6 +147,7 @@ const holidayService = {
   createHoliday: async (payload, companyId) => {
     try {
       const response = await apiCall('/holiday/create', 'POST', payload, companyId);
+      clearCompanyHolidayRequestCache();
       return await response.json();
     } catch (error) {
       return { success: false, error: 'Internal Server Error' };
@@ -97,6 +156,7 @@ const holidayService = {
   updateHoliday: async (payload, companyId) => {
     try {
       const response = await apiCall('/holiday/update', 'PUT', payload, companyId);
+      clearCompanyHolidayRequestCache();
       return await response.json();
     } catch (error) {
       return { success: false, error: 'Internal Server Error' };
@@ -105,6 +165,7 @@ const holidayService = {
   deleteHoliday: async (id, companyId) => {
     try {
       const response = await apiCall('/holiday/delete', 'DELETE', { id }, companyId);
+      clearCompanyHolidayRequestCache();
       return await response.json();
     } catch (error) {
       return { success: false, error: 'Internal Server Error' };
@@ -660,15 +721,15 @@ const HolidayManagementCalendar = () => {
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Bar */}
       <div className="bg-white border-b border-gray-100 top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Manage corporate & national holidays</p>
+            <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">Manage corporate & national holidays</p>
           </div>
           {!isCurrentMonthToday && (
             <button
               onClick={() => setCurrentDate(toCalendarDate(new Date()) || new Date())}
-              className="px-3 py-1.5 text-xs font-semibold text-violet-600 bg-violet-50 rounded-lg border border-violet-100 hover:bg-violet-100 transition-colors"
+              className="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-violet-600 bg-violet-50 rounded-lg border border-violet-100 hover:bg-violet-100 transition-colors"
             >
               Today
             </button>
@@ -676,18 +737,18 @@ const HolidayManagementCalendar = () => {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-5">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
         {/* Stats Row */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
             { label: 'Total', value: stats.total, color: 'text-gray-700', bg: 'bg-white' },
             { label: 'National', value: stats.mandatory, color: 'text-rose-600', bg: 'bg-rose-50' },
             { label: 'Optional', value: stats.optional, color: 'text-teal-600', bg: 'bg-teal-50' },
             { label: 'Corporate', value: stats.corporate, color: 'text-violet-600', bg: 'bg-violet-50' },
           ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-2xl p-3 sm:p-4 border border-gray-100 shadow-sm`}>
-              <p className={`text-xl sm:text-2xl font-bold ${s.color} leading-none`}>{s.value}</p>
-              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 font-medium">{s.label}</p>
+            <div key={s.label} className={`${s.bg} rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-gray-100 shadow-sm`}>
+              <p className={`text-lg sm:text-2xl font-bold ${s.color} leading-none`}>{s.value}</p>
+              <p className="text-[9px] sm:text-xs text-gray-500 mt-1 font-medium">{s.label}</p>
             </div>
           ))}
         </div>
