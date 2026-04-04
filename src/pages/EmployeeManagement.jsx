@@ -41,6 +41,14 @@ const INTERNAL_METHOD_OPTIONS = [
     { value: 'auto', label: 'Auto', icon: FaRobot, description: 'Automatic detection' }
 ];
 
+const EMPLOYEE_REQUEST_CACHE_TTL = 5000;
+let constantsRequestCache = { companyId: null, promise: null, data: null };
+let permissionPackagesRequestCache = { companyId: null, promise: null, data: null };
+const employeeListRequestCache = new Map();
+
+const getEmployeeListCacheKey = ({ companyId, page, limit, search }) =>
+    `${companyId ?? 'none'}|${page}|${limit}|${search ?? ''}`;
+
 // ─── Helper Components ───────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
@@ -141,50 +149,80 @@ const EmployeeManagement = () => {
         setConstantsLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/constants/', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) {
-                const data = result.data;
-                setConstants({
-                    employment_types: data.employment_types?.map(item => ({
-                        value: item.value.value,
-                        key: item.key,
-                        label: item.value.label,
-                        description: item.value.description
-                    })) || [],
-                    salary_types: data.salary_types?.map(item => ({
-                        value: item.value.value,
-                        key: item.key,
-                        label: item.value.label,
-                        description: item.value.description
-                    })) || [],
-                    designations: data.designations?.map(item => ({
-                        value: item.value.value,
-                        key: item.key,
-                        label: item.value.label,
-                        description: item.value.description
-                    })) || [],
-                    employment_status: data.employment_status?.map(item => ({
-                        value: item.value.value,
-                        key: item.key,
-                        label: item.value.label,
-                        description: item.value.description
-                    })) || [],
-                    attendance_methods: data.attendance_methods?.map(item => ({
-                        id: item.key.toLowerCase(),
-                        name: item.value.label,
-                        icon: getIconForType(item.key),
-                        description: item.value.description,
-                        available: item.value.is_available,
-                        requiresDevice: item.value.requiresDevice || false,
-                        requiresLocation: item.value.requiresLocation || false,
-                        requiresCamera: item.value.requiresCamera || false
-                    })) || []
-                });
+            const companyId = company?.id ?? null;
+
+            if (constantsRequestCache.companyId === companyId && constantsRequestCache.data) {
+                setConstants(constantsRequestCache.data);
                 constantsFetched.current = true;
-            } else {
-                throw new Error(result.message || 'Failed to load constants');
+                return;
             }
+
+            if (constantsRequestCache.companyId !== companyId) {
+                constantsRequestCache = { companyId, promise: null, data: null };
+            }
+
+            if (!constantsRequestCache.promise) {
+                constantsRequestCache.promise = (async () => {
+                    const response = await apiCall('/constants/', 'GET', null, companyId);
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(result.message || 'Failed to load constants');
+                    }
+
+                    const data = result.data;
+                    const mappedConstants = {
+                        employment_types: data.employment_types?.map(item => ({
+                            value: item.value.value,
+                            key: item.key,
+                            label: item.value.label,
+                            description: item.value.description
+                        })) || [],
+                        salary_types: data.salary_types?.map(item => ({
+                            value: item.value.value,
+                            key: item.key,
+                            label: item.value.label,
+                            description: item.value.description
+                        })) || [],
+                        designations: data.designations?.map(item => ({
+                            value: item.value.value,
+                            key: item.key,
+                            label: item.value.label,
+                            description: item.value.description
+                        })) || [],
+                        employment_status: data.employment_status?.map(item => ({
+                            value: item.value.value,
+                            key: item.key,
+                            label: item.value.label,
+                            description: item.value.description
+                        })) || [],
+                        attendance_methods: data.attendance_methods?.map(item => ({
+                            id: item.key.toLowerCase(),
+                            name: item.value.label,
+                            icon: getIconForType(item.key),
+                            description: item.value.description,
+                            available: item.value.is_available,
+                            requiresDevice: item.value.requiresDevice || false,
+                            requiresLocation: item.value.requiresLocation || false,
+                            requiresCamera: item.value.requiresCamera || false
+                        })) || []
+                    };
+
+                    constantsRequestCache = {
+                        companyId,
+                        promise: null,
+                        data: mappedConstants
+                    };
+
+                    return mappedConstants;
+                })().catch((error) => {
+                    constantsRequestCache = { companyId, promise: null, data: null };
+                    throw error;
+                });
+            }
+
+            const mappedConstants = await constantsRequestCache.promise;
+            setConstants(mappedConstants);
+            constantsFetched.current = true;
         } catch (e) {
             console.error(e);
             toast.error('Failed to load constants');
@@ -196,22 +234,51 @@ const EmployeeManagement = () => {
         setPermissionsLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) {
-                const packages = result.data?.packages || [];
-                setPermissionPackages(packages.map(pkg => ({
-                    value: pkg.id,
-                    label: pkg.package_name,
-                    description: pkg.description,
-                    groupCode: pkg.group_code,
-                    permissions: pkg.permissions?.filter(p => p.is_active === 1) || [],
-                    isActive: pkg.is_active === 1
-                })));
+            const companyId = company?.id ?? null;
+
+            if (permissionPackagesRequestCache.companyId === companyId && permissionPackagesRequestCache.data) {
+                setPermissionPackages(permissionPackagesRequestCache.data);
                 permissionsFetched.current = true;
-            } else {
-                throw new Error(result.message || 'Failed to load permission packages');
+                return;
             }
+
+            if (permissionPackagesRequestCache.companyId !== companyId) {
+                permissionPackagesRequestCache = { companyId, promise: null, data: null };
+            }
+
+            if (!permissionPackagesRequestCache.promise) {
+                permissionPackagesRequestCache.promise = (async () => {
+                    const response = await apiCall('/permissions/permission-packages', 'GET', null, companyId);
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(result.message || 'Failed to load permission packages');
+                    }
+
+                    const packages = (result.data?.packages || []).map(pkg => ({
+                        value: pkg.id,
+                        label: pkg.package_name,
+                        description: pkg.description,
+                        groupCode: pkg.group_code,
+                        permissions: pkg.permissions?.filter(p => p.is_active === 1) || [],
+                        isActive: pkg.is_active === 1
+                    }));
+
+                    permissionPackagesRequestCache = {
+                        companyId,
+                        promise: null,
+                        data: packages
+                    };
+
+                    return packages;
+                })().catch((error) => {
+                    permissionPackagesRequestCache = { companyId, promise: null, data: null };
+                    throw error;
+                });
+            }
+
+            const packages = await permissionPackagesRequestCache.promise;
+            setPermissionPackages(packages);
+            permissionsFetched.current = true;
         } catch (e) {
             console.error(e);
             toast.error('Failed to load permission packages');
@@ -225,14 +292,46 @@ const EmployeeManagement = () => {
 
         try {
             const company = JSON.parse(localStorage.getItem('company'));
+            const companyId = company?.id ?? null;
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: pagination.limit.toString()
             });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-            const response = await apiCall(`/employees/list?${params}`, 'GET', null, company?.id);
-            const result = await response.json();
+            const requestKey = getEmployeeListCacheKey({
+                companyId,
+                page,
+                limit: pagination.limit,
+                search: debouncedSearchTerm
+            });
+            const cachedEntry = employeeListRequestCache.get(requestKey);
+            let result;
+
+            if (cachedEntry?.data && cachedEntry.expiresAt > Date.now()) {
+                result = cachedEntry.data;
+            } else if (cachedEntry?.promise) {
+                result = await cachedEntry.promise;
+            } else {
+                const requestPromise = (async () => {
+                    const response = await apiCall(`/employees/list?${params}`, 'GET', null, companyId);
+                    const json = await response.json();
+                    if (!json.success) {
+                        throw new Error(json.message || 'Failed to fetch employees');
+                    }
+                    employeeListRequestCache.set(requestKey, {
+                        data: json,
+                        expiresAt: Date.now() + EMPLOYEE_REQUEST_CACHE_TTL
+                    });
+                    return json;
+                })().catch((error) => {
+                    employeeListRequestCache.delete(requestKey);
+                    throw error;
+                });
+
+                employeeListRequestCache.set(requestKey, { promise: requestPromise });
+                result = await requestPromise;
+            }
 
             if (result.success) {
                 setEmployees(result.data);
@@ -292,6 +391,7 @@ const EmployeeManagement = () => {
             const response = await apiCall('/employees/update', 'PUT', payload, company?.id);
             const result = await response.json();
             if (result.success) {
+                employeeListRequestCache.clear();
                 await fetchEmployees(pagination.page, false);
                 return { success: true };
             }
@@ -308,6 +408,7 @@ const EmployeeManagement = () => {
             const response = await apiCall('/employees/delete', 'DELETE', { id }, company?.id);
             const result = await response.json();
             if (result.success) {
+                employeeListRequestCache.clear();
                 await fetchEmployees(pagination.page, false);
                 return { success: true };
             }

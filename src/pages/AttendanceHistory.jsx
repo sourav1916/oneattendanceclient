@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaCalendarAlt,
@@ -227,7 +227,7 @@ const DetailsModal = ({ record, onClose }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-4"
         onClick={onClose}
       >
         <ModalScrollLock />
@@ -250,9 +250,9 @@ const DetailsModal = ({ record, onClose }) => {
             </button>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Date & Status Row */}
-            <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-5">
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-5 max-[390px]:flex-col">
               <div>
                 <h3 className="text-2xl font-bold text-gray-900">{formatDateFull(record.date)}</h3>
                 <p className="mt-0.5 text-sm text-gray-400">{record.day}</p>
@@ -266,7 +266,7 @@ const DetailsModal = ({ record, onClose }) => {
                   </span>
                 </div>
               </div>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 text-center min-w-[90px]">
+              <div className="min-w-[90px] rounded-xl border border-gray-100 bg-gray-50 p-3 text-center max-[390px]:w-full max-[390px]:min-w-0">
                 <FaChartLine className="mx-auto mb-1 text-lg text-slate-500" />
                 <p className="text-[10px] uppercase tracking-wider text-gray-400">Worked</p>
                 <p className="font-bold text-gray-800">{record.worked_hours}</p>
@@ -274,7 +274,7 @@ const DetailsModal = ({ record, onClose }) => {
             </div>
 
             {/* Summary Grid */}
-            <div className="mb-6 grid grid-cols-2 gap-3">
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InfoItem icon={<FaSignInAlt className="text-emerald-500" />} label="Clock In" value={record.clock_in} />
               <InfoItem icon={<FaSignOutAlt className="text-red-400" />} label="Clock Out" value={record.clock_out} />
               <InfoItem icon={<FaMapMarkerAlt className="text-blue-500" />} label="Location" value={record.location} />
@@ -292,16 +292,16 @@ const DetailsModal = ({ record, onClose }) => {
                     return (
                       <div
                         key={punch.id}
-                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"
+                        className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <PunchIcon className={`text-sm ${color}`} />
                           <span className="text-sm font-medium text-gray-700">{label}</span>
                           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${getApiStatusBadge(punch.status)}`}>
                             {punch.status}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-500">{formatDateTimeFull(punch.punch_time)}</span>
+                        <span className="break-words text-sm text-gray-500">{formatDateTimeFull(punch.punch_time)}</span>
                       </div>
                     );
                   })}
@@ -350,6 +350,8 @@ const AttendanceHistory = () => {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
   const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
+  const initialFetchStartedRef = useRef(false);
+  const fetchInProgressRef = useRef(false);
 
   // ── Debounce search ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -366,6 +368,8 @@ const AttendanceHistory = () => {
 
   // ── Fetch from real API ───────────────────────────────────────────────────
   const fetchAttendance = useCallback(async () => {
+    if (fetchInProgressRef.current) return;
+    fetchInProgressRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -381,12 +385,15 @@ const AttendanceHistory = () => {
       setError(err.message);
       toast.error(err.message || 'Failed to load attendance.');
     } finally {
+      fetchInProgressRef.current = false;
       setLoading(false);
     }
 
   }, []);
 
   useEffect(() => {
+    if (initialFetchStartedRef.current) return;
+    initialFetchStartedRef.current = true;
     fetchAttendance();
   }, [fetchAttendance]);
 
@@ -425,6 +432,7 @@ const AttendanceHistory = () => {
   }, [debouncedSearch, goToPage, pagination.page]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
+  const isTinyViewport = windowWidth < 390;
   const showClockOut = windowWidth >= 768;
   const showLocation = windowWidth >= 1024;
   const showApiStatus = windowWidth >= 1280;
@@ -442,14 +450,14 @@ const AttendanceHistory = () => {
   // ── Initial skeleton ──────────────────────────────────────────────────────
   if (loading && allRecords.length === 0) {
     return (
-      <div className="mx-auto min-h-screen max-w-7xl p-6">
+      <div className="mx-auto min-h-screen max-w-7xl p-3 sm:p-6">
         <SkeletonLoader />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 font-sans md:p-6">
+    <div className="min-h-screen p-3 font-sans md:p-6">
       <div className="mx-auto max-w-7xl">
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
@@ -463,14 +471,14 @@ const AttendanceHistory = () => {
             Attendance History
           </h1>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end sm:gap-3">
             {loading && (
-              <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-4 py-2 text-xs font-medium text-blue-600 shadow-sm">
+              <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-600 shadow-sm sm:px-4 sm:text-xs">
                 <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-400" />
                 Syncing…
               </span>
             )}
-            <div className="rounded-full bg-white px-5 py-2 text-sm text-gray-600 shadow-md">
+            <div className="rounded-full bg-white px-4 py-2 text-xs text-gray-600 shadow-md sm:px-5 sm:text-sm">
               <FaCalendarAlt className="mr-2 inline text-slate-400" />
               {pagination.total} record{pagination.total !== 1 ? 's' : ''}
             </div>
@@ -619,15 +627,15 @@ const AttendanceHistory = () => {
                   key={record.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md"
+                  className="min-w-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-md max-[390px]:p-3"
                 >
-                  <div className="mb-3 flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-gray-800">{formatDateFull(record.date)}</h3>
+                  <div className="mb-3 flex items-start justify-between gap-2 max-[390px]:flex-col">
+                    <div className="min-w-0">
+                      <h3 className="break-words font-bold text-gray-800">{formatDateFull(record.date)}</h3>
                       <p className="text-xs text-gray-400">{record.day}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
+                    <div className="flex flex-col items-end gap-1.5 max-[390px]:w-full max-[390px]:flex-row max-[390px]:items-center max-[390px]:justify-between">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${style.className}`}>
                         <StatusIcon size={11} />
                         {record.status}
                       </span>
@@ -637,27 +645,27 @@ const AttendanceHistory = () => {
                     </div>
                   </div>
 
-                  <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
+                  <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600 max-[390px]:text-xs">
+                    <div className="flex min-w-0 items-center gap-1">
                       <FaSignInAlt className="text-emerald-500" />
                       {record.clock_in}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex min-w-0 items-center gap-1">
                       <FaSignOutAlt className="text-red-400" />
                       {record.clock_out}
                     </div>
-                    <div className="flex items-center gap-1 col-span-2">
-                      <FaMapMarkerAlt className="text-gray-400" />
-                      <span className="text-xs">{record.location}</span>
+                    <div className="col-span-2 flex min-w-0 items-start gap-1">
+                      <FaMapMarkerAlt className="mt-0.5 shrink-0 text-gray-400" />
+                      <span className="min-w-0 break-words text-xs">{record.location}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <FaChartLine className="text-slate-400" />
-                      {record.worked_hours}
+                    <div className="flex min-w-0 items-center gap-1">
+                      <FaChartLine className="shrink-0 text-slate-400" />
+                      <span className="min-w-0 break-words">{record.worked_hours}</span>
                     </div>
                     {record.breaks > 0 && (
-                      <div className="flex items-center gap-1">
-                        <FaCoffee className="text-amber-400" />
-                        {record.breaks} break(s)
+                      <div className="flex min-w-0 items-center gap-1">
+                        <FaCoffee className="shrink-0 text-amber-400" />
+                        <span className="min-w-0 break-words">{record.breaks} break(s)</span>
                       </div>
                     )}
                   </div>
@@ -665,7 +673,7 @@ const AttendanceHistory = () => {
                   <button
                     type="button"
                     onClick={() => openDetails(record)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 max-[390px]:text-xs"
                   >
                     <FaEye />
                     View Full Details
@@ -698,6 +706,8 @@ const AttendanceHistory = () => {
             totalItems={pagination.total}
             itemsPerPage={pagination.limit}
             onPageChange={goToPage}
+            variant={isTinyViewport ? 'minimal' : 'default'}
+            showInfo={!isTinyViewport}
           />
         )}
       </div>

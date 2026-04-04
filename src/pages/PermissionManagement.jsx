@@ -44,6 +44,13 @@ const GROUP_COLORS = [
   'bg-emerald-50 text-emerald-700 border-emerald-200',
 ];
 
+const PACKAGE_REQUEST_CACHE_TTL = 5000;
+let permissionListRequestCache = { companyId: null, promise: null, data: null };
+const permissionPackagesRequestCache = new Map();
+
+const getPermissionPackagesCacheKey = ({ companyId, page, limit, search }) =>
+  `${companyId ?? 'none'}|${page}|${limit}|${search ?? ''}`;
+
 // ─── Package Form ─────────────────────────────────────────────────────────────
 const PackageFormBody = ({
   onSubmit, isEdit = false,
@@ -189,12 +196,41 @@ const PermissionManagement = () => {
     setPermsLoading(true);
     try {
       const company = JSON.parse(localStorage.getItem('company'));
-      const res = await apiCall('/permissions/list', 'GET', null, company?.id);
+      const companyId = company?.id ?? null;
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
-      if (result.success) { setAllPermissions(result.data); permsFetched.current = true; }
-      else throw new Error(result.message || 'Failed to fetch permissions');
+      if (permissionListRequestCache.companyId === companyId && permissionListRequestCache.data) {
+        setAllPermissions(permissionListRequestCache.data);
+        permsFetched.current = true;
+        return;
+      }
+
+      if (permissionListRequestCache.companyId !== companyId) {
+        permissionListRequestCache = { companyId, promise: null, data: null };
+      }
+
+      if (!permissionListRequestCache.promise) {
+        permissionListRequestCache.promise = (async () => {
+          const res = await apiCall('/permissions/list', 'GET', null, companyId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const result = await res.json();
+          if (!result.success) throw new Error(result.message || 'Failed to fetch permissions');
+
+          permissionListRequestCache = {
+            companyId,
+            promise: null,
+            data: result.data
+          };
+
+          return result.data;
+        })().catch((error) => {
+          permissionListRequestCache = { companyId, promise: null, data: null };
+          throw error;
+        });
+      }
+
+      const permissions = await permissionListRequestCache.promise;
+      setAllPermissions(permissions);
+      permsFetched.current = true;
     } catch (e) {
       console.error('fetchAllPermissions:', e);
       toast.error('Failed to load permissions list');
@@ -209,13 +245,45 @@ const PermissionManagement = () => {
     if (resetLoading) setLoading(true);
     try {
       const company = JSON.parse(localStorage.getItem('company'));
+      const companyId = company?.id ?? null;
       const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
       if (debouncedSearch) params.append('search', debouncedSearch);
 
-      const res = await apiCall(`/permissions/permission-packages?${params}`, 'GET', null, company?.id);
+      const requestKey = getPermissionPackagesCacheKey({
+        companyId,
+        page,
+        limit: pagination.limit,
+        search: debouncedSearch
+      });
+      const cachedEntry = permissionPackagesRequestCache.get(requestKey);
+      let result;
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
+      if (cachedEntry?.data && cachedEntry.expiresAt > Date.now()) {
+        result = cachedEntry.data;
+      } else if (cachedEntry?.promise) {
+        result = await cachedEntry.promise;
+      } else {
+        const requestPromise = (async () => {
+          const res = await apiCall(`/permissions/permission-packages?${params}`, 'GET', null, companyId);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json();
+          if (!json.success) throw new Error(json.message || 'Failed to fetch packages');
+
+          permissionPackagesRequestCache.set(requestKey, {
+            data: json,
+            expiresAt: Date.now() + PACKAGE_REQUEST_CACHE_TTL
+          });
+
+          return json;
+        })().catch((error) => {
+          permissionPackagesRequestCache.delete(requestKey);
+          throw error;
+        });
+
+        permissionPackagesRequestCache.set(requestKey, { promise: requestPromise });
+        result = await requestPromise;
+      }
+
       if (result.success) {
         const d = result.data;
         const list = d?.packages ?? d ?? [];
@@ -334,18 +402,18 @@ const PermissionManagement = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     const result = await createPackage(formData);
-    if (result.success) { toast.success('Package created successfully!'); closeModal(); fetchPackages(1); }
+    if (result.success) { permissionPackagesRequestCache.clear(); toast.success('Package created successfully!'); closeModal(); fetchPackages(1); }
     else toast.error(result.error || 'Failed to create package');
   };
   const handleEdit = async (e) => {
     e.preventDefault();
     const result = await updatePackage({ id: selectedPackage.id, ...formData });
-    if (result.success) { toast.success('Package updated successfully!'); closeModal(); fetchPackages(pagination.page, false); }
+    if (result.success) { permissionPackagesRequestCache.clear(); toast.success('Package updated successfully!'); closeModal(); fetchPackages(pagination.page, false); }
     else toast.error(result.error || 'Failed to update package');
   };
   const handleDelete = async () => {
     const result = await deletePackage(selectedPackage.id);
-    if (result.success) { toast.success('Package deleted successfully!'); closeModal(); fetchPackages(pagination.page, false); }
+    if (result.success) { permissionPackagesRequestCache.clear(); toast.success('Package deleted successfully!'); closeModal(); fetchPackages(pagination.page, false); }
     else toast.error(result.error || 'Failed to delete package');
   };
 
