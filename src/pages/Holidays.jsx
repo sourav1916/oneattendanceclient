@@ -396,9 +396,6 @@ const CompanyHolidayCalendar = () => {
             <h1 className="text-xl xsm:text-lg sm:text-2xl md:text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent uppercase tracking-tight">
               {selectedCompany ? `${selectedCompany.name} Holidays` : 'Company Holiday Hub'}
             </h1>
-            <p className="text-xs xsm:text-[10px] sm:text-sm text-gray-500 mt-1 font-medium italic">
-              {selectedCompany ? `Syncing from Directory #${selectedCompany.id}` : 'Stay updated with your corporate schedule'}
-            </p>
           </div>
 
           <div className="flex items-center gap-2 xsm:gap-1.5 flex-wrap">
