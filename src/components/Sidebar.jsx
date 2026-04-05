@@ -153,8 +153,17 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const isCompanyOwnerForCurrentCompany =
     activeRole === 'company_owner' || company?.role === 'company_owner';
 
-  const isItemDisabled = (item) =>
-    ['/attendance', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany;
+  const isItemDisabled = (item) => {
+    if (['/attendance', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany) {
+      return true;
+    }
+
+    if (item.path === '/holidays' && !company?.id && !isCompanyOwnerForCurrentCompany) {
+      return true;
+    }
+
+    return false;
+  };
 
   useEffect(() => {
     if (onHover && !isMobile) {

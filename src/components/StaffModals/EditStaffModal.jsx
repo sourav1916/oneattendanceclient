@@ -362,7 +362,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
     setIsSubmitting(true);
     try {
       const company = JSON.parse(localStorage.getItem('company'));
-      const response = await apiCall(`/company/invites/${staffData.invite_id}`, 'PUT', {
+      const response = await apiCall(`/company/invites/update`, 'PUT', {
         invite_id: staffData.invite_id,
         user_id: selectedUser.id,
         permission_package_id: selectedPermissionPackage?.value || null,
@@ -379,7 +379,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
       const result = await response.json();
       if (!response.ok) throw new Error(result?.message || "Failed to update staff");
 
-      toast.success("Staff updated successfully");
+      
       onSuccess?.();
       handleClose();
     } catch (error) {

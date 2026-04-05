@@ -147,6 +147,7 @@ function HomePage() {
   const getQuickActions = () => {
     const isCompanyOwnerForCurrentCompany =
       activeRole === 'company_owner' || company?.role === 'company_owner';
+    const canViewHolidays = Boolean(company?.id) || isCompanyOwnerForCurrentCompany;
 
     // 1. Core Personal Permissions
     const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
@@ -275,12 +276,12 @@ function HomePage() {
       },
       {
         title: "Holidays",
-        description: "View company holiday calendars",
+        description: canViewHolidays ? "View company holiday calendars" : "Select company first",
         icon: FaRegCalendarAlt,
-        color: "from-rose-500 to-orange-500",
-        onClick: () => navigate('/holidays'),
-        gradient: "bg-gradient-to-r from-rose-500 to-orange-500",
-        disabled: false
+        color: canViewHolidays ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
+        onClick: () => canViewHolidays && navigate('/holidays'),
+        gradient: canViewHolidays ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
+        disabled: !canViewHolidays
       },
       {
         title: "Company Config",

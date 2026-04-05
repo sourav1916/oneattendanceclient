@@ -175,7 +175,7 @@ export default function CompanyInvites() {
     try {
       setProcessingId(inviteId);
       const company   = JSON.parse(localStorage.getItem("company"));
-      const response = await apiCall('/company/invites/cancel', 'POST', { invite_id: inviteId }, company?.id);
+      const response = await apiCall('/company/invites/cancel', 'DELETE', { token: inviteId }, company?.id);
       if (!response.ok) throw new Error("Failed to cancel invite");
 
       const result = await response.json();

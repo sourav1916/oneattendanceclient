@@ -8,7 +8,8 @@ import {
   FaRocket,
   FaCheckCircle,
   FaRegClock,
-  FaBuilding
+  FaBuilding,
+  FaSpinner
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
@@ -23,12 +24,13 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpSent, setOtpSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [focusedField, setFocusedField] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [userCompanies, setUserCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const isLoading = loadingAction !== null;
 
   // Check after login if company selection is needed
   useEffect(() => {
@@ -105,13 +107,15 @@ const Login = () => {
   };
 
   const handleRequestOtp = async () => {
+    if (isLoading) return;
+
     if (!email || !password) {
       toast.error("Please enter both email and password");
       return;
     }
 
     try {
-      setLoading(true);
+      setLoadingAction("request-otp");
       const res = await apiCall('/otp/login/request-otp', 'POST', { email, password });
       const data = await res.json();
       
@@ -124,11 +128,13 @@ const Login = () => {
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleVerifyOtp = async () => {
+    if (isLoading) return;
+
     const otpString = otp.join("");
     if (otpString.length !== 6) {
       toast.error("Please enter complete 6-digit OTP");
@@ -136,7 +142,7 @@ const Login = () => {
     }
 
     try {
-      setLoading(true);
+      setLoadingAction("verify-otp");
       const res = await apiCall('/otp/login/verify-otp', 'POST', { email, otp: otpString });
       const data = await res.json();
       
@@ -147,14 +153,32 @@ const Login = () => {
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    setResendTimer(60);
-    await handleRequestOtp();
+    if (resendTimer > 0 || isLoading) return;
+    if (!email || !password) {
+      toast.error("Please enter both email and password");
+      return;
+    }
+
+    try {
+      setLoadingAction("resend-otp");
+      const res = await apiCall('/otp/login/request-otp', 'POST', { email, password });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+
+      setResendTimer(60);
+      setOtp(["", "", "", "", "", ""]);
+      toast.success("OTP resent to your email ðŸ“§");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
   };
 
   const handleCompanySelect = (company) => {
@@ -252,32 +276,45 @@ const Login = () => {
                       <div className="space-y-5">
                         <div className="relative">
                           <HiOutlineMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-                          <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField(null)} className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50" />
+                          <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField(null)} disabled={isLoading} className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />
                         </div>
                         <div className="relative">
                           <HiOutlineLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-                          <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)} className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50" />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{showPassword ? "👁️" : "👁️‍🗨️"}</button>
+                          <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)} disabled={isLoading} className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />
+                          <button type="button" onClick={() => setShowPassword(!showPassword)} disabled={isLoading} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 disabled:opacity-50">{showPassword ? "👁️" : "👁️‍🗨️"}</button>
                         </div>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleRequestOtp} disabled={loading} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg">
-                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mx-auto" /> : "Request OTP"}
+                        <motion.button whileHover={{ scale: isLoading ? 1 : 1.02 }} whileTap={{ scale: isLoading ? 1 : 0.98 }} onClick={handleRequestOtp} disabled={isLoading} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60">
+                          {loadingAction === "request-otp" ? <FaSpinner className="mx-auto h-5 w-5 animate-spin" /> : "Request OTP"}
                         </motion.button>
                       </div>
                     ) : (
                       <div className="space-y-6">
                         <div className="flex justify-center gap-2">
                           {otp.map((digit, index) => (
-                            <input key={index} id={`otp-${index}`} type="text" maxLength="1" value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50" />
+                            <input key={index} id={`otp-${index}`} type="text" maxLength="1" value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} disabled={isLoading} className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />
                           ))}
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center space-x-2 text-gray-600"><FaRegClock /><span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'OTP expired?'}</span></div>
-                          <button onClick={handleResendOtp} disabled={resendTimer > 0 || loading} className="text-blue-600 font-semibold disabled:opacity-50">Resend OTP</button>
+                          <button
+                            onClick={handleResendOtp}
+                            disabled={resendTimer > 0 || isLoading}
+                            className="inline-flex items-center gap-2 text-blue-600 font-semibold disabled:opacity-50"
+                          >
+                            {loadingAction === "resend-otp" ? (
+                              <>
+                                <FaSpinner className="h-3.5 w-3.5 animate-spin" />
+                                <span>Sending...</span>
+                              </>
+                            ) : (
+                              "Resend OTP"
+                            )}
+                          </button>
                         </div>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleVerifyOtp} disabled={loading} className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-lg">
-                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin mx-auto" /> : "Verify OTP"}
+                        <motion.button whileHover={{ scale: isLoading ? 1 : 1.02 }} whileTap={{ scale: isLoading ? 1 : 0.98 }} onClick={handleVerifyOtp} disabled={isLoading} className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60">
+                          {loadingAction === "verify-otp" ? <FaSpinner className="mx-auto h-5 w-5 animate-spin" /> : "Verify OTP"}
                         </motion.button>
-                        <button onClick={() => setOtpSent(false)} className="w-full text-gray-600 text-sm">← Back to login</button>
+                        <button onClick={() => setOtpSent(false)} disabled={isLoading} className="w-full text-gray-600 text-sm disabled:opacity-50">← Back to login</button>
                       </div>
                     )}
                     <div className="mt-6 text-center text-sm text-gray-600">

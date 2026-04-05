@@ -12,7 +12,8 @@ import {
   FaShieldAlt,
   FaRocket,
   FaRegClock,
-  FaUserPlus
+  FaUserPlus,
+  FaSpinner
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
@@ -32,12 +33,13 @@ const Signup = () => {
 
   const [otpSent, setOtpSent] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [focusedField, setFocusedField] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const { login } = useAuth();
+  const isLoading = loadingAction !== null;
 
   // Countdown timer for resend OTP
   useEffect(() => {
@@ -121,13 +123,15 @@ const Signup = () => {
 
 
   const handleRequestOtp = async () => {
+    if (isLoading) return;
+
     if (!email || !fullName) {
       toast.error("Please enter both full name and email");
       return;
     }
 
     try {
-      setLoading(true);
+      setLoadingAction("request-otp");
       const res = await apiCall('/otp/signup/request-otp', 'POST', {
         email: email,
         phone: phone,
@@ -147,11 +151,13 @@ const Signup = () => {
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleVerifyOtp = async () => {
+    if (isLoading) return;
+
     const otpString = otp.join("");
     if (otpString.length !== 6) {
       toast.error("Please enter 6-digit OTP");
@@ -159,7 +165,7 @@ const Signup = () => {
     }
 
     try {
-      setLoading(true);
+      setLoadingAction("verify-otp");
       const res = await apiCall('/otp/signup/verify-otp', 'POST', {
         email: email,
         otp: otpString
@@ -177,11 +183,13 @@ const Signup = () => {
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleCreateAccount = async () => {
+    if (isLoading) return;
+
     if (!password) {
       toast.error("Please set a password");
       return;
@@ -192,7 +200,7 @@ const Signup = () => {
     }
 
     try {
-      setLoading(true);
+      setLoadingAction("create-account");
       const res = await apiCall('/otp/signup/complete', 'POST', {
         name: fullName,
         email: email,
@@ -211,14 +219,35 @@ const Signup = () => {
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
     }
   };
 
   const handleResendOtp = async () => {
-    if (resendTimer > 0) return;
-    setResendTimer(60);
-    await handleRequestOtp();
+    if (resendTimer > 0 || isLoading) return;
+    if (!email || !fullName) {
+      toast.error("Please enter both full name and email");
+      return;
+    }
+
+    try {
+      setLoadingAction("resend-otp");
+      const res = await apiCall('/otp/signup/request-otp', 'POST', {
+        email: email,
+        phone: phone,
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+
+      setResendTimer(60);
+      setOtp(["", "", "", "", "", ""]);
+      toast.success("OTP resent to your email ðŸ“§");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
   };
 
   const getStepTitle = () => {
@@ -437,7 +466,8 @@ const Signup = () => {
                           onChange={(e) => setFullName(e.target.value)}
                           onFocus={() => setFocusedField('fullName')}
                           onBlur={() => setFocusedField(null)}
-                          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                          disabled={isLoading}
+                          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
                         />
                       </div>
 
@@ -450,20 +480,21 @@ const Signup = () => {
                           onChange={(e) => setEmail(e.target.value)}
                           onFocus={() => setFocusedField('email')}
                           onBlur={() => setFocusedField(null)}
-                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                          disabled={isLoading}
+                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
                         />
                       </div>
 
                       <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         onClick={handleRequestOtp}
-                        disabled={loading}
+                        disabled={isLoading}
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 relative overflow-hidden group"
                       >
-                        {loading ? (
+                        {loadingAction === "request-otp" ? (
                           <div className="flex items-center justify-center">
-                            <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                            <FaSpinner className="h-5 w-5 animate-spin" />
                           </div>
                         ) : (
                           <div className="flex items-center justify-center space-x-2">
@@ -488,7 +519,8 @@ const Signup = () => {
                             value={digit}
                             onChange={(e) => handleOtpChange(index, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                            className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                            disabled={isLoading}
+                            className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
                             whileFocus={{ scale: 1.05 }}
                           />
                         ))}
@@ -500,25 +532,26 @@ const Signup = () => {
                           <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Code expired?'}</span>
                         </div>
                         <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          whileHover={{ scale: isLoading ? 1 : 1.05 }}
+                          whileTap={{ scale: isLoading ? 1 : 0.95 }}
                           onClick={handleResendOtp}
-                          disabled={resendTimer > 0 || loading}
+                          disabled={resendTimer > 0 || isLoading}
                           className={`text-purple-600 font-semibold ${resendTimer > 0 ? 'opacity-50 cursor-not-allowed' : 'hover:text-purple-800'
                             }`}
                         >
                           <div className="flex items-center space-x-1">
-                            <BiReset />
-                            <span>Resend</span>
+                            {loadingAction === "resend-otp" ? <FaSpinner className="h-3.5 w-3.5 animate-spin" /> : <BiReset />}
+                            <span>{loadingAction === "resend-otp" ? "Sending..." : "Resend"}</span>
                           </div>
                         </motion.button>
                       </div>
 
                       <div className="flex gap-3">
                         <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                          whileTap={{ scale: isLoading ? 1 : 0.98 }}
                           onClick={() => setCurrentStep(1)}
+                          disabled={isLoading}
                           className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition-colors"
                         >
                           <div className="flex items-center justify-center space-x-2">
@@ -528,15 +561,15 @@ const Signup = () => {
                         </motion.button>
 
                         <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                          whileTap={{ scale: isLoading ? 1 : 0.98 }}
                           onClick={handleVerifyOtp}
-                          disabled={loading}
+                          disabled={isLoading}
                           className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                         >
-                          {loading ? (
+                          {loadingAction === "verify-otp" ? (
                             <div className="flex items-center justify-center">
-                              <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                              <FaSpinner className="h-5 w-5 animate-spin" />
                             </div>
                           ) : (
                             'Verify'
@@ -557,7 +590,8 @@ const Signup = () => {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           required
-                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                          disabled={isLoading}
+                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
                         />
                       </div>
 
@@ -568,12 +602,14 @@ const Signup = () => {
                           placeholder="Create password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white"
+                          disabled={isLoading}
+                          className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          disabled={isLoading}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                         >
                           {showPassword ? "👁️" : "👁️‍🗨️"}
                         </button>
@@ -590,15 +626,15 @@ const Signup = () => {
                       </div>
 
                       <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         onClick={handleCreateAccount}
-                        disabled={loading}
+                        disabled={isLoading}
                         className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
                       >
-                        {loading ? (
+                        {loadingAction === "create-account" ? (
                           <div className="flex items-center justify-center">
-                            <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                            <FaSpinner className="h-5 w-5 animate-spin" />
                           </div>
                         ) : (
                           'Create Account'
