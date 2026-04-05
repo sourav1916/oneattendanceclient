@@ -9,8 +9,7 @@ import {
     FaBan, FaComment, FaHistory, FaUserCheck,
     FaEllipsisV, FaFilter, FaCalendarAlt, FaEnvelope, FaIdCard
 } from 'react-icons/fa';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
@@ -33,14 +32,23 @@ const pendingAttendanceAPI = {
     },
 
     updateAttendanceStatus: async (companyId, punchId, action, notes = '') => {
-        const response = await apiCall('/attendance/approve-reject', 'POST', {
+        let endpoint = '';
+
+        if (action === 'approve') {
+            endpoint = '/attendance/approve';
+        } else if (action === 'reject') {
+            endpoint = '/attendance/reject';
+        } else {
+            throw new Error('Invalid action type');
+        }
+
+        const response = await apiCall(endpoint, 'PUT', {
             punch_id: punchId,
-            action,
             notes
         }, companyId);
 
         if (!response.ok) {
-            throw new Error('Failed to update attendance status');
+            throw new Error(`Failed to ${action} attendance`);
         }
 
         return response.json();
@@ -798,7 +806,6 @@ const PendingAttendance = ({ companyId }) => {
                 )}
             </AnimatePresence>
 
-            <ToastContainer position="bottom-right" />
         </>
     );
 };
