@@ -272,21 +272,40 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
     event.preventDefault();
     setSaving(true);
     try {
-      const body = new FormData();
-      body.append('leave_config_id', form.leave_config_id);
-      body.append('start_date', form.start_date);
-      body.append('end_date', form.end_date);
-      body.append('is_half_day', form.is_half_day ? '1' : '0');
-      body.append('reason', form.reason);
-      if (form.is_half_day) body.append('half_day_type', form.half_day_type);
-      if (initialLeave) body.append('deleted_attachments', JSON.stringify(form.deleted_attachments));
-      form.attachments.forEach((file) => body.append('attachments', file));
+      let body;
+      let method;
+      let endpoint;
 
-      await request(
-        initialLeave ? `/leave/update/${initialLeave.id}` : '/leave/apply',
-        'POST',
-        body
-      );
+      if (initialLeave) {
+        // Edit: send JSON payload matching required structure
+        method = 'PUT';
+        endpoint = '/leave/application-update';
+        body = {
+          id: initialLeave.id,
+          leave_config_id: Number(form.leave_config_id),
+          start_date: form.start_date,
+          end_date: form.end_date,
+          is_half_day: form.is_half_day ? 1 : 0,
+          ...(form.is_half_day && { half_day_type: form.half_day_type }),
+          reason: form.reason,
+          attachments: [],
+          deleted_attachments: form.deleted_attachments,
+        };
+      } else {
+        // Create: keep FormData with POST for file uploads
+        method = 'POST';
+        endpoint = '/leave/apply';
+        body = new FormData();
+        body.append('leave_config_id', form.leave_config_id);
+        body.append('start_date', form.start_date);
+        body.append('end_date', form.end_date);
+        body.append('is_half_day', form.is_half_day ? '1' : '0');
+        body.append('reason', form.reason);
+        if (form.is_half_day) body.append('half_day_type', form.half_day_type);
+        form.attachments.forEach((file) => body.append('attachments', file));
+      }
+
+      await request(endpoint, method, body);
 
       toast.success(initialLeave ? 'Leave updated successfully' : 'Leave application submitted successfully');
       onSuccess();

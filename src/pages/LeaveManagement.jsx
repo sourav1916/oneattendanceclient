@@ -9,10 +9,10 @@ import ModalScrollLock from '../components/ModalScrollLock';
 const fmt = (d) =>
   d
     ? new Date(d).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
     : '—';
 
 const initials = (name = '') =>
@@ -185,8 +185,10 @@ function Spinner() {
 
 // ─── Action Menu (Three-dot vertical) ─────────────────────────────────────────
 function ActionMenu({ leave, activeId, menuId, onToggle, onView, onEdit, onApprove, onReject }) {
-  const canAct = (l) => l.status === 'pending';
-  const canEdit = (l) => ['pending', 'approved'].includes(l.status);
+  const getNormalizedStatus = (l) => String(l?.status || '').toLowerCase();
+  const canAct = (l) => getNormalizedStatus(l) === 'pending';
+  const canEdit = (l) =>
+    ['pending'].includes(getNormalizedStatus(l));
   const isOpen = activeId === menuId;
 
   return (
@@ -419,8 +421,8 @@ const LeaveManagement = () => {
         );
         const totalPages = Number(
           result.meta?.total_pages ??
-            result.last_page ??
-            Math.max(1, Math.ceil(total / pagination.limit))
+          result.last_page ??
+          Math.max(1, Math.ceil(total / pagination.limit))
         );
 
         setLeaves(rows);
@@ -591,9 +593,19 @@ const LeaveManagement = () => {
     }
     setSubmitting(true);
     try {
-      const body = { ...editForm, deleted_attachments: deletedAttachments };
+      const body = {
+        id: editLeave.id,
+        leave_config_id: editForm.leave_config_id,
+        start_date: editForm.start_date,
+        end_date: editForm.end_date,
+        is_half_day: editForm.is_half_day,
+        ...(editForm.is_half_day === 1 && { half_day_type: editForm.half_day_type }),
+        reason: editForm.reason || '',
+        attachments: [],
+        deleted_attachments: deletedAttachments,
+      };
       const response = await apiCall(
-        `/leave/update/${editLeave.id}`,
+        `/leave/application-update`,
         'PUT',
         body,
         getCompanyId()
