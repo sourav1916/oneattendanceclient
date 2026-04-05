@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
+import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 
 const getCompanyId = () => {
@@ -28,6 +29,28 @@ const getCompanyId = () => {
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : 'N/A');
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : 'N/A');
+const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const ALLOWED_ATTACHMENT_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+
+const getFileExtension = (fileName = '') => {
+  const normalizedName = String(fileName).toLowerCase();
+  const lastDotIndex = normalizedName.lastIndexOf('.');
+  return lastDotIndex >= 0 ? normalizedName.slice(lastDotIndex) : '';
+};
+
+const isAllowedAttachment = (file) => {
+  const fileType = String(file?.type || '').toLowerCase();
+  const fileExtension = getFileExtension(file?.name);
+  return ALLOWED_ATTACHMENT_TYPES.includes(fileType) || ALLOWED_ATTACHMENT_EXTENSIONS.includes(fileExtension);
+};
+
+const isImageAttachment = (file) => {
+  if (!file) return false;
+  const fileType = String(file.type || file.file_type || '').toLowerCase();
+  const fileName = file.name || file.original_name || (file.file_url ? file.file_url.split('/').pop() : '');
+  const fileExtension = getFileExtension(fileName);
+  return fileType.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension);
+};
 
 const request = async (endpoint, method = 'GET', body = null) => {
   const response = await apiCall(endpoint, method, body, getCompanyId());
@@ -210,6 +233,31 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
 };
 
 const Modal = ({ open, title, onClose, children }) => {
+  useEffect(() => {
+    if (open) {
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      const originalStyle = {
+        overflow: document.body.style.overflow,
+        paddingRight: document.body.style.paddingRight,
+        height: document.body.style.height
+      };
+      
+      document.body.style.overflow = 'hidden';
+      document.body.style.height = '100vh';
+      document.documentElement.style.overflow = 'hidden';
+      if (scrollBarWidth > 0) {
+        document.body.style.paddingRight = `${scrollBarWidth}px`;
+      }
+
+      return () => {
+        document.body.style.overflow = originalStyle.overflow;
+        document.body.style.paddingRight = originalStyle.paddingRight;
+        document.body.style.height = originalStyle.height;
+        document.documentElement.style.overflow = '';
+      };
+    }
+  }, [open]);
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
@@ -238,6 +286,22 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
     deleted_attachments: [],
   });
   const [saving, setSaving] = useState(false);
+  const [attachmentPreviews, setAttachmentPreviews] = useState([]);
+
+  const handleAttachmentChange = (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    const validFiles = selectedFiles.filter(isAllowedAttachment);
+    const invalidFiles = selectedFiles.filter((file) => !isAllowedAttachment(file));
+
+    if (invalidFiles.length > 0) {
+      toast.error('Only JPG/JPEG images and PDF files are allowed');
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      attachments: validFiles,
+    }));
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -268,6 +332,25 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
     });
   }, [initialLeave, open]);
 
+  useEffect(() => {
+    const nextPreviews = form.attachments.map((file) => ({
+      key: `${file.name}-${file.lastModified}-${file.size}`,
+      file,
+      isImage: isImageAttachment(file),
+      url: isImageAttachment(file) ? URL.createObjectURL(file) : null,
+    }));
+
+    setAttachmentPreviews(nextPreviews);
+
+    return () => {
+      nextPreviews.forEach((preview) => {
+        if (preview.url) {
+          URL.revokeObjectURL(preview.url);
+        }
+      });
+    };
+  }, [form.attachments]);
+
   const submit = async (event) => {
     event.preventDefault();
     setSaving(true);
@@ -277,22 +360,19 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
       let endpoint;
 
       if (initialLeave) {
-        // Edit: send JSON payload matching required structure
         method = 'PUT';
         endpoint = '/leave/application-update';
-        body = {
-          id: initialLeave.id,
-          leave_config_id: Number(form.leave_config_id),
-          start_date: form.start_date,
-          end_date: form.end_date,
-          is_half_day: form.is_half_day ? 1 : 0,
-          ...(form.is_half_day && { half_day_type: form.half_day_type }),
-          reason: form.reason,
-          attachments: [],
-          deleted_attachments: form.deleted_attachments,
-        };
+        body = new FormData();
+        body.append('id', String(initialLeave.id));
+        body.append('leave_config_id', String(Number(form.leave_config_id)));
+        body.append('start_date', form.start_date);
+        body.append('end_date', form.end_date);
+        body.append('is_half_day', form.is_half_day ? '1' : '0');
+        body.append('reason', form.reason);
+        body.append('deleted_attachments', JSON.stringify(form.deleted_attachments));
+        if (form.is_half_day) body.append('half_day_type', form.half_day_type);
+        form.attachments.forEach((file) => body.append('attachments', file));
       } else {
-        // Create: keep FormData with POST for file uploads
         method = 'POST';
         endpoint = '/leave/apply';
         body = new FormData();
@@ -374,40 +454,117 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
         </div>
 
         {initialLeave?.attachments?.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p className="text-sm font-medium text-gray-700">Current Attachments</p>
-            {initialLeave.attachments.map((file) => {
-              const marked = form.deleted_attachments.includes(file.id);
-              return (
-                <button
-                  key={file.id}
-                  type="button"
-                  onClick={() =>
-                    setForm((prev) => ({
-                      ...prev,
-                      deleted_attachments: marked
-                        ? prev.deleted_attachments.filter((id) => id !== file.id)
-                        : [...prev.deleted_attachments, file.id],
-                    }))
-                  }
-                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left ${marked ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 bg-gray-50 text-gray-700'}`}
-                >
-                  <span className="flex items-center gap-2 text-sm">
-                    <FaPaperclip />
-                    {file.original_name}
-                  </span>
-                  <span className="text-xs font-semibold">{marked ? 'Marked for delete' : 'Keep'}</span>
-                </button>
-              );
-            })}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {initialLeave.attachments.map((file) => {
+                const marked = form.deleted_attachments.includes(file.id);
+                const isImage = isImageAttachment(file);
+                return (
+                  <div key={file.id} className={`group relative overflow-hidden rounded-xl border transition-all ${marked ? 'border-red-200 opacity-60' : 'border-gray-200'}`}>
+                    <div className="aspect-square bg-gray-50 flex items-center justify-center">
+                      {isImage ? (
+                        <img 
+                          src={file.file_url} 
+                          alt={file.original_name} 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null; 
+                            e.target.src = 'https://placehold.co/100x100?text=Error';
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-gray-400">
+                          <FaPaperclip size={24} />
+                          <span className="px-2 text-center text-[10px] line-clamp-2">{file.original_name}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          deleted_attachments: marked
+                            ? prev.deleted_attachments.filter((id) => id !== file.id)
+                            : [...prev.deleted_attachments, file.id],
+                        }))
+                      }
+                      className={`absolute inset-0 flex flex-col items-center justify-center gap-1 transition-all ${marked ? 'bg-red-500/80 text-white' : 'bg-black/0 text-transparent hover:bg-black/40 hover:text-white'}`}
+                    >
+                      {marked ? (
+                        <>
+                          <FaPlus className="rotate-45" />
+                          <span className="text-[10px] font-bold">Restore</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaTrash size={14} />
+                          <span className="text-[10px] font-bold">Remove</span>
+                        </>
+                      )}
+                    </button>
+                    
+                    <div className="bg-gray-50 px-2 py-1 text-[10px] text-gray-500 truncate border-t">
+                      {file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         <div>
           <label className="mb-1 block text-xs text-gray-500">Add Attachments</label>
-          <input type="file" multiple onChange={(e) => setForm((prev) => ({ ...prev, attachments: Array.from(e.target.files || []) }))} className="w-full" />
-          <p className="mt-1 text-xs text-gray-400">Accepted formats: PDF, JPG, PNG (Max 5MB)</p>
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={handleAttachmentChange}
+            className="w-full"
+          />
+          <p className="mt-1 text-xs text-gray-400">Accepted formats: PDF, JPG, PNG, WEBP</p>
         </div>
+
+        {attachmentPreviews.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-700">Selected Attachments Preview</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {attachmentPreviews.map((preview, index) => (
+                <div key={preview.key} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                  <div className="relative aspect-square bg-white">
+                    {preview.isImage && preview.url ? (
+                      <img src={preview.url} alt={preview.file.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center text-gray-500">
+                        <FaPaperclip className="text-lg" />
+                        <span className="line-clamp-2 break-all text-xs font-medium">{preview.file.name}</span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          attachments: prev.attachments.filter((_, currentIndex) => currentIndex !== index),
+                        }))
+                      }
+                      className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white transition hover:bg-black/75"
+                      title="Remove attachment"
+                    >
+                      <FaTimes size={10} />
+                    </button>
+                  </div>
+                  <div className="border-t border-gray-200 px-2 py-1.5">
+                    <p className="truncate text-xs text-gray-600">{preview.file.name}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <button type="submit" disabled={saving} className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 py-2 font-medium text-white disabled:opacity-50">
@@ -844,20 +1001,47 @@ const MyLeave = () => {
               </div>
             )}
             {viewLeave.attachments?.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs text-gray-500">Attachments</p>
-                {viewLeave.attachments.map((file) => (
-                  <a
-                    key={file.id}
-                    href={file.file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-sm text-purple-600 transition hover:bg-gray-100"
-                  >
-                    <FaPaperclip />
-                    <span className="truncate">{file.original_name}</span>
-                  </a>
-                ))}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Attachments</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {viewLeave.attachments.map((file) => {
+                    const isImage = isImageAttachment(file);
+                    return (
+                      <a
+                        key={file.id}
+                        href={file.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group overflow-hidden rounded-xl border border-gray-200 bg-gray-50 transition-all hover:border-purple-300 hover:shadow-md"
+                      >
+                        <div className="relative aspect-square flex items-center justify-center">
+                          {isImage ? (
+                            <img 
+                              src={file.file_url} 
+                              alt={file.original_name} 
+                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                              onError={(e) => {
+                                e.target.onerror = null; 
+                                e.target.src = 'https://placehold.co/100x100?text=Error';
+                              }}
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-gray-400">
+                              <FaPaperclip size={24} />
+                              <span className="px-2 text-center text-[10px] font-medium line-clamp-2">{file.original_name}</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 text-transparent transition-all group-hover:bg-black/20 group-hover:text-white">
+                            <FaEye size={20} />
+                          </div>
+                        </div>
+                        <div className="border-t bg-white px-2 py-1.5">
+                          <p className="truncate text-[10px] font-medium text-gray-600">{file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}</p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
