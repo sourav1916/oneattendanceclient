@@ -113,6 +113,13 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           permission: ['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']
         },
         {
+          icon: FaFileInvoiceDollar,
+          label: 'Salary Management',
+          path: '/salary-management',
+          permission: ['salary_view_all', 'salary_assign', 'salary_update', 'salary_delete'],
+          allowCompanyOwner: true
+        },
+        {
           icon: FaTasks,
           label: 'Employee Shifts',
           path: '/employees-shifts',
@@ -165,6 +172,14 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const isCompanyOwnerForCurrentCompany =
     activeRole === 'company_owner' || company?.role === 'company_owner';
 
+  const isAuthorizedItem = (item) => {
+    if (item.allowCompanyOwner && isCompanyOwnerForCurrentCompany) {
+      return true;
+    }
+
+    return hasPermission(item.permission);
+  };
+
   const isItemDisabled = (item) => {
     if (['/attendance', '/my-shifts', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany) {
       return true;
@@ -203,7 +218,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                   const authorizedChildren = item.children;
 
                   // Disable section itself if NO child is authorized
-                  const hasAnyChildAuthorized = authorizedChildren.some(child => hasPermission(child.permission));
+                  const hasAnyChildAuthorized = authorizedChildren.some(child => isAuthorizedItem(child));
 
                   if (!hasAnyChildAuthorized) {
                     return (
@@ -246,7 +261,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                         <div className="ml-8 mt-1 space-y-1">
                           {authorizedChildren.map((child) => {
                             const isActive = isActiveRoute(child.path);
-                            const authorized = hasPermission(child.permission);
+                            const authorized = isAuthorizedItem(child);
 
                             if (!authorized) {
                               return (
@@ -296,7 +311,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 
                 // Regular menu item
                 const isActive = isActiveRoute(item.path);
-                const authorized = hasPermission(item.permission);
+                const authorized = isAuthorizedItem(item);
                 const disabled = isItemDisabled(item);
                 const Icon = item.icon;
 
@@ -361,7 +376,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 
   const renderMenuItem = (item, isExpandedState) => {
     const isActive = isActiveRoute(item.path);
-    const authorized = hasPermission(item.permission);
+    const authorized = isAuthorizedItem(item);
     const disabled = isItemDisabled(item);
     const Icon = item.icon;
 
@@ -445,7 +460,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     const authorizedChildren = item.children;
 
     // Disable section itself if NO child is authorized
-    const hasAnyChildAuthorized = authorizedChildren.some(child => hasPermission(child.permission));
+    const hasAnyChildAuthorized = authorizedChildren.some(child => isAuthorizedItem(child));
 
     if (!hasAnyChildAuthorized) {
       return (
@@ -517,7 +532,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
             {authorizedChildren.map((child) => {
               const isActive = isActiveRoute(child.path);
               const ChildIcon = child.icon;
-              const authorized = hasPermission(child.permission);
+              const authorized = isAuthorizedItem(child);
 
               if (!authorized) {
                 return (

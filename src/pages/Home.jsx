@@ -162,6 +162,7 @@ function HomePage() {
     const hasEmployeeMgmtPerm = hasPermission(['emp_create', 'emp_view', 'emp_update', 'emp_delete', 'report_emp', 'export_emp']);
     const hasPermissionsPerm = hasPermission(['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']);
     const hasAttendanceMgmtPerm = hasPermission(['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']);
+    const hasSalaryMgmtPerm = isCompanyOwnerForCurrentCompany || hasPermission(['salary_view_all', 'salary_assign', 'salary_update', 'salary_delete']);
     const hasEmployeeShiftsPerm = hasPermission(['shift_view', 'shift_create', 'shift_update', 'shift_delete']);
     const hasLeaveMgmtPerm = hasPermission(['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']);
     const hasCompanySetPerm = hasPermission(['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']);
@@ -268,6 +269,15 @@ function HomePage() {
         disabled: !hasAttendanceMgmtPerm
       },
       {
+        title: "Salary Mgmt",
+        description: hasSalaryMgmtPerm ? "Assign and manage employee salaries" : "No permission",
+        icon: FaFileInvoiceDollar,
+        color: hasSalaryMgmtPerm ? "from-emerald-500 to-teal-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasSalaryMgmtPerm && navigate('/salary-management'),
+        gradient: hasSalaryMgmtPerm ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-slate-200",
+        disabled: !hasSalaryMgmtPerm
+      },
+      {
         title: "Employee Shifts",
         description: hasEmployeeShiftsPerm ? "Monitor team shift summaries" : "No permission",
         icon: FaUserCheck,
@@ -345,7 +355,7 @@ function HomePage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="relative mb-12 overflow-hidden min-h-[300px] pt-12 flex flex-col md:flex-row group"
+          className="relative mb-12 overflow-hidden min-h-[300px] flex flex-col md:flex-row group"
         >
           {/* Subtle Background Pattern */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:20px_20px]"></div>

@@ -5,7 +5,8 @@ import {
     FaSearch, FaTimes, FaEye, FaUserCircle, FaBriefcase,
     FaEnvelope, FaIdCard, FaChevronDown, FaChevronUp,
     FaYenSign, FaEuroSign, FaPoundSign, FaRupeeSign,
-    FaSortAmountDown, FaLayerGroup, FaWallet, FaAngleDown
+    FaSortAmountDown, FaLayerGroup, FaWallet, FaAngleDown,
+    FaToggleOn, FaToggleOff
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
@@ -116,13 +117,13 @@ const SalaryDetailModal = ({ record, onClose, showEmployee = false }) => {
                     className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500" />
+                    <div className="h-1.5 bg-gradient-to-r from-amber-400 via-rose-400 to-pink-500" />
 
                     {/* Header */}
                     <div className="px-6 py-5 border-b border-gray-100">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-11 h-11 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-200">
+                                <div className="w-11 h-11 bg-gradient-to-br from-amber-500 to-rose-600 rounded-xl flex items-center justify-center shadow-md shadow-amber-200">
                                     <FaMoneyBillWave className="text-white text-sm" />
                                 </div>
                                 <div>
@@ -159,24 +160,24 @@ const SalaryDetailModal = ({ record, onClose, showEmployee = false }) => {
                             </div>
                         )}
 
-                        {/* Big amount display */}
-                        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-5 text-center">
-                            <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-2">Base Salary</p>
+                        {/* Big amount display - Sweet light colors */}
+                        <div className="bg-gradient-to-br from-amber-50 to-rose-50 border border-amber-100 rounded-2xl p-5 text-center">
+                            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2">Base Salary</p>
                             <div className="flex items-center justify-center gap-2">
-                                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-md">
+                                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl flex items-center justify-center shadow-md">
                                     <CurrIcon className="text-white text-sm" />
                                 </div>
-                                <span className="text-4xl font-bold text-emerald-700">
+                                <span className="text-4xl font-bold text-amber-700">
                                     {formatAmount(salaryData.base_amount, salaryData.currency)}
                                 </span>
                             </div>
-                            <p className="text-sm text-emerald-600 mt-2 font-medium">{formatDisplay(salaryData.salary_type)}</p>
+                            <p className="text-sm text-amber-600 mt-2 font-medium">{formatDisplay(salaryData.salary_type)}</p>
                         </div>
 
                         {/* Details grid */}
                         <div className="grid grid-cols-2 gap-3">
                             <InfoItem
-                                icon={<FaDollarSign className="text-emerald-500" size={11} />}
+                                icon={<FaDollarSign className="text-amber-500" size={11} />}
                                 label="Currency"
                                 value={salaryData.currency?.toUpperCase() || 'N/A'}
                             />
@@ -219,7 +220,7 @@ const SalaryDetailModal = ({ record, onClose, showEmployee = false }) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PAGE 1 — MY SALARY
+// PAGE 1 — MY SALARY (UPDATED with History Toggle & Sweet Light Colors)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const MySalary = () => {
@@ -227,16 +228,20 @@ export const MySalary = () => {
     const [loading, setLoading] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [expandedId, setExpandedId] = useState(null);
+    const [showHistory, setShowHistory] = useState(true); // Toggle state for history
     const fetchInProgress = useRef(false);
     const initialFetchDone = useRef(false);
 
+    // Updated fetchSalary with conditional history param
     const fetchSalary = useCallback(async () => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
         setLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/my-salary?history=true', 'GET', null, company?.id);
+            // Conditionally add history param based on showHistory state
+            const url = showHistory ? '/salary/my-salary?history=true' : '/salary/my-salary';
+            const response = await apiCall(url, 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) {
                 setSalaries(result.data || []);
@@ -249,7 +254,7 @@ export const MySalary = () => {
             setLoading(false);
             fetchInProgress.current = false;
         }
-    }, []);
+    }, [showHistory]); // Dependency on showHistory
 
     useEffect(() => {
         if (!initialFetchDone.current) {
@@ -258,26 +263,54 @@ export const MySalary = () => {
         }
     }, [fetchSalary]);
 
+    // Re-fetch when showHistory toggles
+    const handleToggleHistory = () => {
+        setShowHistory(prev => !prev);
+        // Reset fetch flag to allow new request
+        fetchInProgress.current = false;
+        initialFetchDone.current = false;
+    };
+
+    useEffect(() => {
+        if (initialFetchDone.current) {
+            fetchSalary();
+        }
+    }, [showHistory, fetchSalary]);
+
     const activeSalary = salaries.find(s => s.is_active === 1 || s.is_active === true);
     const history = salaries.filter(s => !s.is_active);
 
     return (
         <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
 
-            {/* Header */}
+            {/* Header with History Toggle Button */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
             >
                 <div>
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600">
+                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-rose-600">
                         My Salary
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">Your compensation details & history</p>
                 </div>
-                <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 flex items-center gap-2">
-                    <FaHistory className="text-teal-400" />
-                    {salaries.length} record{salaries.length !== 1 ? 's' : ''}
+                <div className="flex items-center gap-3">
+                    {/* History Toggle Button */}
+                    <button
+                        onClick={handleToggleHistory}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm ${showHistory
+                            ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                    >
+                        {showHistory ? <FaToggleOn size={18} /> : <FaToggleOff size={18} />}
+                        <FaHistory size={14} />
+                        {showHistory ? 'Hide History' : 'Show History'}
+                    </button>
+                    <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 flex items-center gap-2">
+                        <FaHistory className="text-amber-400" />
+                        {salaries.length} record{salaries.length !== 1 ? 's' : ''}
+                    </div>
                 </div>
             </motion.div>
 
@@ -288,7 +321,7 @@ export const MySalary = () => {
                     initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                     className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
                 >
-                    <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FaMoneyBillWave className="text-4xl text-gray-300" />
                     </div>
                     <p className="text-xl font-semibold text-gray-600">No salary records found</p>
@@ -299,62 +332,62 @@ export const MySalary = () => {
             {!loading && salaries.length > 0 && (
                 <div className="space-y-6">
 
-                    {/* Active Salary Hero Card */}
+                    {/* Active Salary Hero Card - Sweet Light Colors Update */}
                     {activeSalary && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                         >
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block animate-pulse" />
                                 Current Salary
                             </p>
-                            <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 md:p-8 overflow-hidden shadow-2xl">
-                                {/* Background decoration */}
-                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-cyan-500/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                            <div className="relative bg-gradient-to-br from-amber-50 via-rose-50 to-pink-50 rounded-3xl p-6 md:p-8 overflow-hidden shadow-xl border border-amber-100">
+                                {/* Background decoration - softer */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-200/30 to-rose-200/20 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-200/20 to-transparent rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
                                 <div className="relative z-10">
                                     <div className="flex items-start justify-between mb-6">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-11 h-11 bg-emerald-500/20 border border-emerald-400/30 rounded-xl flex items-center justify-center">
-                                                <FaWallet className="text-emerald-400 text-base" />
+                                            <div className="w-11 h-11 bg-amber-200/50 border border-amber-300/50 rounded-xl flex items-center justify-center">
+                                                <FaWallet className="text-amber-600 text-base" />
                                             </div>
                                             <div>
-                                                <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Base Salary</p>
-                                                <p className="text-slate-300 text-sm">{formatDisplay(activeSalary.salary_type)}</p>
+                                                <p className="text-amber-700 text-xs font-medium uppercase tracking-wider">Base Salary</p>
+                                                <p className="text-amber-600 text-sm">{formatDisplay(activeSalary.salary_type)}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-3 py-1 rounded-full">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                            <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-100/80 border border-amber-200 px-3 py-1 rounded-full">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                                                 Active
                                             </span>
                                         </div>
                                     </div>
 
-                                    {/* Big Amount */}
+                                    {/* Big Amount - Sweet colors */}
                                     <div className="mb-6">
-                                        <span className="text-4xl md:text-5xl font-bold text-white tracking-tight">
+                                        <span className="text-4xl md:text-5xl font-bold text-amber-800 tracking-tight">
                                             {formatAmount(activeSalary.base_amount, activeSalary.currency)}
                                         </span>
-                                        <span className="text-slate-400 text-sm ml-2 font-medium">
+                                        <span className="text-amber-500 text-sm ml-2 font-medium">
                                             {activeSalary.currency?.toUpperCase()}
                                         </span>
                                     </div>
 
                                     {/* Meta row */}
                                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
-                                        <div className="flex items-center gap-2 text-slate-400 text-sm">
-                                            <FaCalendarAlt size={12} className="text-teal-400" />
-                                            <span>From <span className="text-slate-200 font-medium">{formatDate(activeSalary.effective_from)}</span></span>
+                                        <div className="flex items-center gap-2 text-amber-600 text-sm">
+                                            <FaCalendarAlt size={12} className="text-amber-400" />
+                                            <span>From <span className="text-amber-800 font-medium">{formatDate(activeSalary.effective_from)}</span></span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-slate-400 text-sm">
-                                            <FaCalendarAlt size={12} className="text-orange-400" />
-                                            <span>To <span className="text-slate-200 font-medium">{formatDate(activeSalary.effective_to)}</span></span>
+                                        <div className="flex items-center gap-2 text-amber-600 text-sm">
+                                            <FaCalendarAlt size={12} className="text-rose-400" />
+                                            <span>To <span className="text-amber-800 font-medium">{formatDate(activeSalary.effective_to)}</span></span>
                                         </div>
                                         <button
                                             onClick={() => setSelectedRecord(activeSalary)}
-                                            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors ml-auto"
+                                            className="flex items-center gap-2 text-amber-600 hover:text-amber-700 text-sm font-medium transition-colors ml-auto"
                                         >
                                             <FaEye size={12} /> View Details
                                         </button>
@@ -364,8 +397,8 @@ export const MySalary = () => {
                         </motion.div>
                     )}
 
-                    {/* History */}
-                    {history.length > 0 && (
+                    {/* History Section - Conditionally rendered based on toggle */}
+                    {showHistory && history.length > 0 && (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                         >
@@ -440,7 +473,7 @@ export const MySalary = () => {
                                                         <div className="px-4 pb-4 md:px-5 flex justify-end">
                                                             <button
                                                                 onClick={() => setSelectedRecord(record)}
-                                                                className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs rounded-xl font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                                                className="px-4 py-2 bg-gradient-to-r from-amber-600 to-rose-600 text-white text-xs rounded-xl font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
                                                             >
                                                                 <FaEye size={11} /> View Full Details
                                                             </button>
@@ -452,6 +485,19 @@ export const MySalary = () => {
                                     );
                                 })}
                             </div>
+                        </motion.div>
+                    )}
+
+                    {/* Message when history is hidden but there is history */}
+                    {!showHistory && history.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center"
+                        >
+                            <p className="text-sm text-gray-500 flex items-center justify-center gap-2">
+                                <FaHistory className="text-amber-400" />
+                                History is hidden. Click "Show History" to view past salary records.
+                            </p>
                         </motion.div>
                     )}
 
@@ -581,13 +627,13 @@ export const EmployeesSalaries = () => {
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
             >
                 <div>
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600">
+                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-rose-600">
                         Employee Salaries
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">Current compensation across all employees</p>
                 </div>
                 <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 flex items-center gap-2">
-                    <FaUserCircle className="text-teal-400" />
+                    <FaUserCircle className="text-amber-400" />
                     {pagination.total} employees
                 </div>
             </motion.div>
@@ -603,7 +649,7 @@ export const EmployeesSalaries = () => {
                         placeholder="Search by name, email, or employee code..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-10 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-lg transition-all"
+                        className="w-full pl-12 pr-10 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none shadow-lg transition-all"
                     />
                     <FaSearch className="absolute left-4 top-4 text-gray-400 text-lg" />
                     {searchTerm && (
@@ -621,12 +667,12 @@ export const EmployeesSalaries = () => {
                     <p className="text-sm text-gray-500">
                         <span className="font-semibold text-gray-800">{employees.length}</span> of{' '}
                         <span className="font-semibold text-gray-800">{pagination.total}</span>
-                        {debouncedSearch && <span className="ml-1 text-emerald-600">· "{debouncedSearch}"</span>}
+                        {debouncedSearch && <span className="ml-1 text-amber-600">· "{debouncedSearch}"</span>}
                     </p>
                     <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
                         {['grid', 'list'].map(m => (
                             <button key={m} onClick={() => setViewMode(m)}
-                                className={`p-2 rounded-lg transition-all text-xs font-semibold px-3 ${viewMode === m ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>
+                                className={`p-2 rounded-lg transition-all text-xs font-semibold px-3 ${viewMode === m ? 'bg-gradient-to-r from-amber-600 to-rose-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>
                                 {m === 'grid' ? 'Grid' : 'List'}
                             </button>
                         ))}
@@ -640,7 +686,7 @@ export const EmployeesSalaries = () => {
             {!loading && employees.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                     className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100">
-                    <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FaMoneyBillWave className="text-4xl text-gray-300" />
                     </div>
                     <p className="text-xl font-semibold text-gray-600">No salary records found</p>
@@ -649,7 +695,7 @@ export const EmployeesSalaries = () => {
                     </p>
                     {debouncedSearch && (
                         <button onClick={() => setSearchTerm('')}
-                            className="mt-4 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all text-sm font-medium">
+                            className="mt-4 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 transition-all text-sm font-medium">
                             Clear Search
                         </button>
                     )}
@@ -682,17 +728,17 @@ export const EmployeesSalaries = () => {
                                     </div>
                                 </div>
 
-                                {/* Salary highlight */}
-                                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-3 mb-3">
+                                {/* Salary highlight - Sweet light colors */}
+                                <div className="bg-gradient-to-br from-amber-50 to-rose-50 border border-amber-100 rounded-xl p-3 mb-3">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-7 h-7 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <div className="w-7 h-7 bg-gradient-to-br from-amber-400 to-rose-500 rounded-lg flex items-center justify-center flex-shrink-0">
                                             <CurrIcon className="text-white text-xs" />
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-emerald-700">
+                                            <p className="text-lg font-bold text-amber-700">
                                                 {sal ? formatAmount(sal.base_amount, sal.currency) : '—'}
                                             </p>
-                                            <p className="text-xs text-emerald-600">{formatDisplay(sal?.salary_type)} · {sal?.currency?.toUpperCase()}</p>
+                                            <p className="text-xs text-amber-600">{formatDisplay(sal?.salary_type)} · {sal?.currency?.toUpperCase()}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -745,7 +791,7 @@ export const EmployeesSalaries = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all duration-200 cursor-pointer"
+                                                className="hover:bg-gradient-to-r hover:from-amber-50 hover:to-rose-50 transition-all duration-200 cursor-pointer"
                                                 onClick={() => setSelectedRecord(emp)}
                                             >
                                                 <td className="px-6 py-4">
@@ -766,10 +812,10 @@ export const EmployeesSalaries = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                        <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-rose-500 rounded-lg flex items-center justify-center flex-shrink-0">
                                                             <CurrIcon className="text-white" size={10} />
                                                         </div>
-                                                        <span className="font-bold text-emerald-700">
+                                                        <span className="font-bold text-amber-700">
                                                             {sal ? formatAmount(sal.base_amount, sal.currency) : '—'}
                                                         </span>
                                                     </div>
@@ -793,7 +839,7 @@ export const EmployeesSalaries = () => {
                                                 <td className="px-6 py-4 text-right">
                                                     <button
                                                         onClick={e => { e.stopPropagation(); setSelectedRecord(emp); }}
-                                                        className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all shadow-sm hover:shadow-md"
+                                                        className="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-rose-600 text-white text-xs rounded-lg hover:from-amber-700 hover:to-rose-700 transition-all shadow-sm hover:shadow-md"
                                                     >
                                                         View
                                                     </button>
@@ -832,15 +878,15 @@ export const EmployeesSalaries = () => {
                                         {sal && <ActiveBadge isActive={!!sal.is_active} />}
                                     </div>
 
-                                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-xl p-3 flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <div className="bg-gradient-to-br from-amber-50 to-rose-50 border border-amber-100 rounded-xl p-3 flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-rose-500 rounded-xl flex items-center justify-center flex-shrink-0">
                                             <CurrIcon className="text-white text-xs" />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-emerald-700 text-lg">
+                                            <p className="font-bold text-amber-700 text-lg">
                                                 {sal ? formatAmount(sal.base_amount, sal.currency) : '—'}
                                             </p>
-                                            <p className="text-xs text-emerald-600">{formatDisplay(sal?.salary_type)} · From {sal ? formatDate(sal.effective_from) : '—'}</p>
+                                            <p className="text-xs text-amber-600">{formatDisplay(sal?.salary_type)} · From {sal ? formatDate(sal.effective_from) : '—'}</p>
                                         </div>
                                     </div>
                                 </motion.div>
