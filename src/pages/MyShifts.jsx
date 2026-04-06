@@ -305,7 +305,7 @@ const MyShifts = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
 
             {/* Header */}
             <motion.div

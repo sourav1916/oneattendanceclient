@@ -262,7 +262,7 @@ export const MySalary = () => {
     const history = salaries.filter(s => !s.is_active);
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
 
             {/* Header */}
             <motion.div
@@ -873,7 +873,7 @@ export const EmployeesSalaries = () => {
                 )}
             </AnimatePresence>
 
-            <style jsx>{`
+            <style>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
