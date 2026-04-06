@@ -657,7 +657,7 @@ const MyShifts = () => {
                 )}
             </AnimatePresence>
 
-            <style jsx>{`
+            <style>{`
                 .active\\:scale-98:active { transform: scale(0.98); }
                 @media (min-width: 475px) {
                     .xs\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
