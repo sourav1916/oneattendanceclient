@@ -113,6 +113,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           permission: ['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']
         },
         {
+          icon: FaTasks,
+          label: 'Employee Shifts',
+          path: '/employees-shifts',
+          permission: ['shift_view', 'shift_create', 'shift_update', 'shift_delete']
+        },
+        {
           icon: FaUmbrellaBeach,
           label: 'Leave Management',
           path: '/leave-management',

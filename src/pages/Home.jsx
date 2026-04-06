@@ -162,6 +162,7 @@ function HomePage() {
     const hasEmployeeMgmtPerm = hasPermission(['emp_create', 'emp_view', 'emp_update', 'emp_delete', 'report_emp', 'export_emp']);
     const hasPermissionsPerm = hasPermission(['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']);
     const hasAttendanceMgmtPerm = hasPermission(['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']);
+    const hasEmployeeShiftsPerm = hasPermission(['shift_view', 'shift_create', 'shift_update', 'shift_delete']);
     const hasLeaveMgmtPerm = hasPermission(['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']);
     const hasCompanySetPerm = hasPermission(['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']);
     const hasHolidayMgmtPerm = hasPermission(['holiday_view', 'holiday_create', 'holiday_update', 'holiday_delete']) || hasCompanySetPerm;
@@ -265,6 +266,15 @@ function HomePage() {
         onClick: () => hasAttendanceMgmtPerm && navigate('/attendance-management'),
         gradient: hasAttendanceMgmtPerm ? "bg-gradient-to-r from-teal-500 to-emerald-500" : "bg-slate-200",
         disabled: !hasAttendanceMgmtPerm
+      },
+      {
+        title: "Employee Shifts",
+        description: hasEmployeeShiftsPerm ? "Monitor team shift summaries" : "No permission",
+        icon: FaUserCheck,
+        color: hasEmployeeShiftsPerm ? "from-indigo-500 to-cyan-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasEmployeeShiftsPerm && navigate('/employees-shifts'),
+        gradient: hasEmployeeShiftsPerm ? "bg-gradient-to-r from-indigo-500 to-cyan-500" : "bg-slate-200",
+        disabled: !hasEmployeeShiftsPerm
       },
       {
         title: "Leave Mgmt",
