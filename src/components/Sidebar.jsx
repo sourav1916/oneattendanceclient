@@ -54,6 +54,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       permission: ['att_punch', 'att_view_own']
     },
     {
+      icon: FaCalendarAlt,
+      label: 'My Shifts',
+      path: '/my-shifts',
+      permission: ['att_punch', 'att_view_own']
+    },
+    {
       icon: FaUmbrellaBeach,
       label: 'My Leaves',
       path: '/my-leaves',
@@ -154,7 +160,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     activeRole === 'company_owner' || company?.role === 'company_owner';
 
   const isItemDisabled = (item) => {
-    if (['/attendance', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany) {
+    if (['/attendance', '/my-shifts', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany) {
       return true;
     }
 

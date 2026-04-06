@@ -152,6 +152,7 @@ function HomePage() {
     // 1. Core Personal Permissions
     const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
     const hasAttendanceHistoryPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
+    const hasMyShiftsPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
     const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']) && !isCompanyOwnerForCurrentCompany;
     const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']) && !isCompanyOwnerForCurrentCompany;
     
@@ -192,6 +193,15 @@ function HomePage() {
         onClick: () => hasAttendanceHistoryPerm && navigate('/attendance-history'),
         gradient: hasAttendanceHistoryPerm ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : "bg-slate-200",
         disabled: !hasAttendanceHistoryPerm
+      },
+      {
+        title: "My Shifts",
+        description: hasMyShiftsPerm ? "View shift hours and summaries" : "No permission",
+        icon: FaClock,
+        color: hasMyShiftsPerm ? "from-blue-500 to-indigo-500" : "from-slate-400 to-slate-500",
+        onClick: () => hasMyShiftsPerm && navigate('/my-shifts'),
+        gradient: hasMyShiftsPerm ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-slate-200",
+        disabled: !hasMyShiftsPerm
       },
       {
         title: "My Salary",

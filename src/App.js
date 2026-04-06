@@ -16,6 +16,7 @@ import MyLeave from "./pages/MyLeave";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
+import MyShifts from "./pages/MyShifts";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/company-invites" element={ <ProtectedRoute><MainLayout><CompanyInvites /></MainLayout></ProtectedRoute>}/>
         <Route path="/attendance"element={<ProtectedRoute><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-history"element={<ProtectedRoute><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-shifts"element={<ProtectedRoute><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management"element={<ProtectedRoute><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-management"element={<ProtectedRoute><MainLayout><LeaveManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/pending-attendance"element={<ProtectedRoute><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
