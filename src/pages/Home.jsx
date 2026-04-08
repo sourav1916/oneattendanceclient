@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiCall from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import usePermissionAccess from "../hooks/usePermissionAccess";
 import { useNavigate } from "react-router-dom";
 import {
   FaUsers,
@@ -36,7 +37,8 @@ import ModalScrollLock from "../components/ModalScrollLock";
 
 
 function HomePage() {
-  const { user, loading, company, companies, selectCompany, refreshUser, activeRole, hasPermission } = useAuth();
+  const { user, loading, company, companies, selectCompany, refreshUser } = useAuth();
+  const { checkPageAccess, checkActionAccess } = usePermissionAccess();
   const navigate = useNavigate();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
@@ -145,182 +147,182 @@ function HomePage() {
 
   // Quick Actions Definition based on Role
   const getQuickActions = () => {
-    const isCompanyOwnerForCurrentCompany =
-      activeRole === 'company_owner' || company?.role === 'company_owner';
-    const canViewHolidays = Boolean(company?.id) || isCompanyOwnerForCurrentCompany;
-
-    // 1. Core Personal Permissions
-    const hasPunchPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
-    const hasAttendanceHistoryPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
-    const hasMyShiftsPerm = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
-    const hasMyLeavePerm = hasPermission(['leave_apply', 'leave_view_own', 'leave_cancel_own']) && !isCompanyOwnerForCurrentCompany;
-    const hasMySalaryPerm = hasPermission(['salary_view_own', 'salary_advance_view']) && !isCompanyOwnerForCurrentCompany;
-    
-    // 2. Management Permissions
-    const hasAddStaffPerm = hasPermission(['emp_create', 'emp_invite']);
-    const hasInviteMgmtPerm = hasPermission(['emp_invite', 'emp_invite_cancel_admin']);
-    const hasEmployeeMgmtPerm = hasPermission(['emp_create', 'emp_view', 'emp_update', 'emp_delete', 'report_emp', 'export_emp']);
-    const hasPermissionsPerm = hasPermission(['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']);
-    const hasAttendanceMgmtPerm = hasPermission(['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']);
-    const hasSalaryMgmtPerm = isCompanyOwnerForCurrentCompany || hasPermission(['salary_view_all', 'salary_assign', 'salary_update', 'salary_delete']);
-    const hasEmployeeShiftsPerm = hasPermission(['shift_view', 'shift_create', 'shift_update', 'shift_delete']);
-    const hasLeaveMgmtPerm = hasPermission(['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']);
-    const hasCompanySetPerm = hasPermission(['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']);
-    const hasHolidayMgmtPerm = hasPermission(['holiday_view', 'holiday_create', 'holiday_update', 'holiday_delete']) || hasCompanySetPerm;
+    const attendancePageAccess = checkPageAccess("attendance");
+    const punchActionAccess = checkActionAccess("attendance", "punch");
+    const attendanceHistoryAccess = checkPageAccess("attendanceHistory");
+    const myShiftsAccess = checkPageAccess("myShifts");
+    const myLeavesAccess = checkPageAccess("myLeaves");
+    const mySalaryAccess = checkPageAccess("mySalary");
+    const myInvitesAccess = checkPageAccess("myInvites");
+    const addStaffAccess = checkActionAccess("workspace", "addStaff");
+    const inviteMgmtAccess = checkPageAccess("companyInvites");
+    const employeeMgmtAccess = checkPageAccess("employeeManagement");
+    const permissionMgmtAccess = checkPageAccess("permissionManagement");
+    const attendanceMgmtAccess = checkPageAccess("attendanceManagement");
+    const salaryMgmtAccess = checkPageAccess("salaryManagement");
+    const employeeShiftsAccess = checkPageAccess("employeesShifts");
+    const leaveMgmtAccess = checkPageAccess("leaveManagement");
+    const holidayMgmtAccess = checkPageAccess("holidayManagement");
+    const holidaysAccess = checkPageAccess("holidays");
+    const companySettingsAccess = checkPageAccess("companySettings");
 
     return [
       {
         title: "Punch Attendance",
-        description: hasPunchPerm ? "Mark your work session" : "No permission",
+        description: punchActionAccess.allowed
+          ? "Mark your work session"
+          : attendancePageAccess.allowed
+            ? "View attendance details"
+            : "No permission",
         icon: FaFingerprint,
-        color: hasPunchPerm ? "from-indigo-500 to-purple-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasPunchPerm && navigate('/attendance'),
-        gradient: hasPunchPerm ? "bg-gradient-to-r from-indigo-500 to-purple-500" : "bg-slate-200",
-        disabled: !hasPunchPerm
+        color: attendancePageAccess.allowed ? "from-indigo-500 to-purple-500" : "from-slate-400 to-slate-500",
+        onClick: () => attendancePageAccess.allowed && navigate('/attendance'),
+        gradient: attendancePageAccess.allowed ? "bg-gradient-to-r from-indigo-500 to-purple-500" : "bg-slate-200",
+        disabled: !attendancePageAccess.allowed
       },
       {
         title: "My Leaves",
-        description: hasMyLeavePerm ? "Apply & view leaves" : "No permission",
+        description: myLeavesAccess.allowed ? "Apply & view leaves" : "No permission",
         icon: FaUmbrellaBeach,
-        color: hasMyLeavePerm ? "from-cyan-500 to-blue-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasMyLeavePerm && navigate('/my-leaves'),
-        gradient: hasMyLeavePerm ? "bg-gradient-to-r from-cyan-500 to-blue-500" : "bg-slate-200",
-        disabled: !hasMyLeavePerm
+        color: myLeavesAccess.allowed ? "from-cyan-500 to-blue-500" : "from-slate-400 to-slate-500",
+        onClick: () => myLeavesAccess.allowed && navigate('/my-leaves'),
+        gradient: myLeavesAccess.allowed ? "bg-gradient-to-r from-cyan-500 to-blue-500" : "bg-slate-200",
+        disabled: !myLeavesAccess.allowed
       },
       {
         title: "Attendance History",
-        description: hasAttendanceHistoryPerm ? "Review your past records" : "No permission",
+        description: attendanceHistoryAccess.allowed ? "Review your past records" : "No permission",
         icon: FaHistory,
-        color: hasAttendanceHistoryPerm ? "from-violet-500 to-fuchsia-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasAttendanceHistoryPerm && navigate('/attendance-history'),
-        gradient: hasAttendanceHistoryPerm ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : "bg-slate-200",
-        disabled: !hasAttendanceHistoryPerm
+        color: attendanceHistoryAccess.allowed ? "from-violet-500 to-fuchsia-500" : "from-slate-400 to-slate-500",
+        onClick: () => attendanceHistoryAccess.allowed && navigate('/attendance-history'),
+        gradient: attendanceHistoryAccess.allowed ? "bg-gradient-to-r from-violet-500 to-fuchsia-500" : "bg-slate-200",
+        disabled: !attendanceHistoryAccess.allowed
       },
       {
         title: "My Shifts",
-        description: hasMyShiftsPerm ? "View shift hours and summaries" : "No permission",
+        description: myShiftsAccess.allowed ? "View shift hours and summaries" : "No permission",
         icon: FaClock,
-        color: hasMyShiftsPerm ? "from-blue-500 to-indigo-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasMyShiftsPerm && navigate('/my-shifts'),
-        gradient: hasMyShiftsPerm ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-slate-200",
-        disabled: !hasMyShiftsPerm
+        color: myShiftsAccess.allowed ? "from-blue-500 to-indigo-500" : "from-slate-400 to-slate-500",
+        onClick: () => myShiftsAccess.allowed && navigate('/my-shifts'),
+        gradient: myShiftsAccess.allowed ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-slate-200",
+        disabled: !myShiftsAccess.allowed
       },
       {
         title: "My Salary",
-        description: hasMySalaryPerm ? "View financial logs" : "No permission",
+        description: mySalaryAccess.allowed ? "View financial logs" : "No permission",
         icon: FaFileInvoiceDollar,
-        color: hasMySalaryPerm ? "from-amber-500 to-orange-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasMySalaryPerm && navigate('/my-salary'),
-        gradient: hasMySalaryPerm ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-slate-200",
-        disabled: !hasMySalaryPerm
+        color: mySalaryAccess.allowed ? "from-amber-500 to-orange-500" : "from-slate-400 to-slate-500",
+        onClick: () => mySalaryAccess.allowed && navigate('/my-salary'),
+        gradient: mySalaryAccess.allowed ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-slate-200",
+        disabled: !mySalaryAccess.allowed
       },
       {
         title: "My Invites",
         description: "View personal invitations",
         icon: FaEnvelope,
         color: "from-pink-500 to-rose-500",
-        onClick: () => navigate('/my-invites'),
+        onClick: () => myInvitesAccess.allowed && navigate('/my-invites'),
         gradient: "bg-gradient-to-r from-pink-500 to-rose-500",
-        disabled: false
+        disabled: !myInvitesAccess.allowed
       },
       {
         title: "Add Staff",
-        description: hasAddStaffPerm ? "Onboard new members" : "No permission",
+        description: addStaffAccess.allowed ? "Onboard new members" : "No permission",
         icon: FaUserPlus,
-        color: hasAddStaffPerm ? "from-green-500 to-emerald-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasAddStaffPerm && handleAddStaffClick(),
-        gradient: hasAddStaffPerm ? "bg-gradient-to-r from-green-500 to-emerald-500" : "bg-slate-200",
-        disabled: !hasAddStaffPerm
+        color: addStaffAccess.allowed ? "from-green-500 to-emerald-500" : "from-slate-400 to-slate-500",
+        onClick: () => addStaffAccess.allowed && handleAddStaffClick(),
+        gradient: addStaffAccess.allowed ? "bg-gradient-to-r from-green-500 to-emerald-500" : "bg-slate-200",
+        disabled: !addStaffAccess.allowed
       },
       {
         title: "Invites Mgmt",
-        description: hasInviteMgmtPerm ? "Manage team invites" : "No permission",
+        description: inviteMgmtAccess.allowed ? "Manage team invites" : "No permission",
         icon: FaBuilding,
-        color: hasInviteMgmtPerm ? "from-indigo-600 to-blue-600" : "from-slate-400 to-slate-500",
-        onClick: () => hasInviteMgmtPerm && navigate('/company-invites'),
-        gradient: hasInviteMgmtPerm ? "bg-gradient-to-r from-indigo-600 to-blue-600" : "bg-slate-200",
-        disabled: !hasInviteMgmtPerm
+        color: inviteMgmtAccess.allowed ? "from-indigo-600 to-blue-600" : "from-slate-400 to-slate-500",
+        onClick: () => inviteMgmtAccess.allowed && navigate('/company-invites'),
+        gradient: inviteMgmtAccess.allowed ? "bg-gradient-to-r from-indigo-600 to-blue-600" : "bg-slate-200",
+        disabled: !inviteMgmtAccess.allowed
       },
       {
         title: "Employee Mgmt",
-        description: hasEmployeeMgmtPerm ? "Manage directory" : "No permission",
+        description: employeeMgmtAccess.allowed ? "Manage directory" : "No permission",
         icon: FaUsers,
-        color: hasEmployeeMgmtPerm ? "from-blue-500 to-cyan-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasEmployeeMgmtPerm && navigate('/employee-management'),
-        gradient: hasEmployeeMgmtPerm ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-slate-200",
-        disabled: !hasEmployeeMgmtPerm
+        color: employeeMgmtAccess.allowed ? "from-blue-500 to-cyan-500" : "from-slate-400 to-slate-500",
+        onClick: () => employeeMgmtAccess.allowed && navigate('/employee-management'),
+        gradient: employeeMgmtAccess.allowed ? "bg-gradient-to-r from-blue-500 to-cyan-500" : "bg-slate-200",
+        disabled: !employeeMgmtAccess.allowed
       },
       {
         title: "Permissions",
-        description: hasPermissionsPerm ? "Manage roles" : "No permission",
+        description: permissionMgmtAccess.allowed ? "Manage roles" : "No permission",
         icon: FaUserShield,
-        color: hasPermissionsPerm ? "from-purple-500 to-pink-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasPermissionsPerm && navigate('/permission-management'),
-        gradient: hasPermissionsPerm ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-slate-200",
-        disabled: !hasPermissionsPerm
+        color: permissionMgmtAccess.allowed ? "from-purple-500 to-pink-500" : "from-slate-400 to-slate-500",
+        onClick: () => permissionMgmtAccess.allowed && navigate('/permission-management'),
+        gradient: permissionMgmtAccess.allowed ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-slate-200",
+        disabled: !permissionMgmtAccess.allowed
       },
       {
         title: "Attendance Mgmt",
-        description: hasAttendanceMgmtPerm ? "Review & edit records" : "No permission",
+        description: attendanceMgmtAccess.allowed ? "Review & edit records" : "No permission",
         icon: FaClock,
-        color: hasAttendanceMgmtPerm ? "from-teal-500 to-emerald-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasAttendanceMgmtPerm && navigate('/attendance-management'),
-        gradient: hasAttendanceMgmtPerm ? "bg-gradient-to-r from-teal-500 to-emerald-500" : "bg-slate-200",
-        disabled: !hasAttendanceMgmtPerm
+        color: attendanceMgmtAccess.allowed ? "from-teal-500 to-emerald-500" : "from-slate-400 to-slate-500",
+        onClick: () => attendanceMgmtAccess.allowed && navigate('/attendance-management'),
+        gradient: attendanceMgmtAccess.allowed ? "bg-gradient-to-r from-teal-500 to-emerald-500" : "bg-slate-200",
+        disabled: !attendanceMgmtAccess.allowed
       },
       {
         title: "Salary Mgmt",
-        description: hasSalaryMgmtPerm ? "Assign and manage employee salaries" : "No permission",
+        description: salaryMgmtAccess.allowed ? "Assign and manage employee salaries" : "No permission",
         icon: FaFileInvoiceDollar,
-        color: hasSalaryMgmtPerm ? "from-emerald-500 to-teal-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasSalaryMgmtPerm && navigate('/salary-management'),
-        gradient: hasSalaryMgmtPerm ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-slate-200",
-        disabled: !hasSalaryMgmtPerm
+        color: salaryMgmtAccess.allowed ? "from-emerald-500 to-teal-500" : "from-slate-400 to-slate-500",
+        onClick: () => salaryMgmtAccess.allowed && navigate('/salary-management'),
+        gradient: salaryMgmtAccess.allowed ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-slate-200",
+        disabled: !salaryMgmtAccess.allowed
       },
       {
         title: "Employee Shifts",
-        description: hasEmployeeShiftsPerm ? "Monitor team shift summaries" : "No permission",
+        description: employeeShiftsAccess.allowed ? "Monitor team shift summaries" : "No permission",
         icon: FaUserCheck,
-        color: hasEmployeeShiftsPerm ? "from-indigo-500 to-cyan-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasEmployeeShiftsPerm && navigate('/employees-shifts'),
-        gradient: hasEmployeeShiftsPerm ? "bg-gradient-to-r from-indigo-500 to-cyan-500" : "bg-slate-200",
-        disabled: !hasEmployeeShiftsPerm
+        color: employeeShiftsAccess.allowed ? "from-indigo-500 to-cyan-500" : "from-slate-400 to-slate-500",
+        onClick: () => employeeShiftsAccess.allowed && navigate('/employees-shifts'),
+        gradient: employeeShiftsAccess.allowed ? "bg-gradient-to-r from-indigo-500 to-cyan-500" : "bg-slate-200",
+        disabled: !employeeShiftsAccess.allowed
       },
       {
         title: "Leave Mgmt",
-        description: hasLeaveMgmtPerm ? "Review applications" : "No permission",
+        description: leaveMgmtAccess.allowed ? "Review applications" : "No permission",
         icon: FaUmbrellaBeach,
-        color: hasLeaveMgmtPerm ? "from-orange-500 to-red-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasLeaveMgmtPerm && navigate('/leave-management'),
-        gradient: hasLeaveMgmtPerm ? "bg-gradient-to-r from-orange-500 to-red-500" : "bg-slate-200",
-        disabled: !hasLeaveMgmtPerm
+        color: leaveMgmtAccess.allowed ? "from-orange-500 to-red-500" : "from-slate-400 to-slate-500",
+        onClick: () => leaveMgmtAccess.allowed && navigate('/leave-management'),
+        gradient: leaveMgmtAccess.allowed ? "bg-gradient-to-r from-orange-500 to-red-500" : "bg-slate-200",
+        disabled: !leaveMgmtAccess.allowed
       },
       {
         title: "Holiday Mgmt",
-        description: hasHolidayMgmtPerm ? "Configure company holidays" : "No permission",
+        description: holidayMgmtAccess.allowed ? "Configure company holidays" : "No permission",
         icon: FaCalendarAlt,
-        color: hasHolidayMgmtPerm ? "from-sky-500 to-indigo-500" : "from-slate-400 to-slate-500",
-        onClick: () => hasHolidayMgmtPerm && navigate('/holiday-management'),
-        gradient: hasHolidayMgmtPerm ? "bg-gradient-to-r from-sky-500 to-indigo-500" : "bg-slate-200",
-        disabled: !hasHolidayMgmtPerm
+        color: holidayMgmtAccess.allowed ? "from-sky-500 to-indigo-500" : "from-slate-400 to-slate-500",
+        onClick: () => holidayMgmtAccess.allowed && navigate('/holiday-management'),
+        gradient: holidayMgmtAccess.allowed ? "bg-gradient-to-r from-sky-500 to-indigo-500" : "bg-slate-200",
+        disabled: !holidayMgmtAccess.allowed
       },
       {
         title: "Holidays",
-        description: canViewHolidays ? "View company holiday calendars" : "Select company first",
+        description: holidaysAccess.allowed ? "View company holiday calendars" : "Select company first",
         icon: FaRegCalendarAlt,
-        color: canViewHolidays ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
-        onClick: () => canViewHolidays && navigate('/holidays'),
-        gradient: canViewHolidays ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
-        disabled: !canViewHolidays
+        color: holidaysAccess.allowed ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
+        onClick: () => holidaysAccess.allowed && navigate('/holidays'),
+        gradient: holidaysAccess.allowed ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
+        disabled: !holidaysAccess.allowed
       },
       {
         title: "Company Config",
-        description: hasCompanySetPerm ? "Manage settings & shifts" : "No permission",
+        description: companySettingsAccess.allowed ? "Manage settings & shifts" : "No permission",
         icon: FaCog, 
-        color: hasCompanySetPerm ? "from-slate-600 to-slate-800" : "from-slate-400 to-slate-500",
-        onClick: () => hasCompanySetPerm && navigate('/company-settings'),
-        gradient: hasCompanySetPerm ? "bg-gradient-to-r from-slate-600 to-slate-800" : "bg-slate-200",
-        disabled: !hasCompanySetPerm
+        color: companySettingsAccess.allowed ? "from-slate-600 to-slate-800" : "from-slate-400 to-slate-500",
+        onClick: () => companySettingsAccess.allowed && navigate('/company-settings'),
+        gradient: companySettingsAccess.allowed ? "bg-gradient-to-r from-slate-600 to-slate-800" : "bg-slate-200",
+        disabled: !companySettingsAccess.allowed
       },
       {
         title: "Create Company",
@@ -335,9 +337,8 @@ function HomePage() {
   };
 
   const quickActions = getQuickActions();
-  const isCompanyOwnerForCurrentCompany =
-    activeRole === 'company_owner' || company?.role === 'company_owner';
-  const canPunch = hasPermission(['att_punch', 'att_view_own']) && !isCompanyOwnerForCurrentCompany;
+  const punchActionAccess = checkActionAccess("attendance", "punch");
+  const canPunch = punchActionAccess.allowed;
 
   return (
     <div className="min-h-screen relative overflow-hidden">

@@ -22,7 +22,7 @@ import {
   FaClipboardList,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
-import { useAuth } from "../context/AuthContext";
+import usePermissionAccess from "../hooks/usePermissionAccess";
 
 const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -30,7 +30,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const { hasPermission, activeRole, company } = useAuth();
+  const { checkPageAccess, accessReasons } = usePermissionAccess();
 
   // Toggle section
   const toggleSection = (sectionName) => {
@@ -45,43 +45,43 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaHome,
       label: 'Home',
       path: '/home',
-      permission: null
+      pageKey: 'home'
     },
     {
       icon: FaClock,
       label: 'Attendance',
       path: '/attendance',
-      permission: ['att_punch', 'att_view_own']
+      pageKey: 'attendance'
     },
     {
       icon: FaCalendarAlt,
       label: 'My Shifts',
       path: '/my-shifts',
-      permission: ['att_punch', 'att_view_own']
+      pageKey: 'myShifts'
     },
     {
       icon: FaUmbrellaBeach,
       label: 'My Leaves',
       path: '/my-leaves',
-      permission: ['leave_apply', 'leave_view_own', 'leave_cancel_own']
+      pageKey: 'myLeaves'
     },
     {
       icon: FaFileInvoiceDollar,
       label: 'My Salary',
       path: '/my-salary',
-      permission: ['salary_view_own', 'salary_advance_view']
+      pageKey: 'mySalary'
     },
     {
       icon: FaEnvelope,
       label: 'My Invites',
       path: '/my-invites',
-      permission: null
+      pageKey: 'myInvites'
     },
     {
       icon: FaCalendarAlt,
       label: 'Holidays',
       path: '/holidays',
-      permission: null
+      pageKey: 'holidays'
     },
     {
       icon: FaBriefcase,
@@ -92,68 +92,67 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           icon: FaBuilding,
           label: 'Invites Management',
           path: '/company-invites',
-          permission: ['emp_invite', 'emp_invite_cancel_admin']
+          pageKey: 'companyInvites'
         },
         {
           icon: FaUsers,
           label: 'Employee Management',
           path: '/employee-management',
-          permission: ['emp_create', 'emp_view', 'emp_update', 'emp_delete', 'report_emp', 'export_emp']
+          pageKey: 'employeeManagement'
         },
         {
           icon: FaUserShield,
           label: 'Permissions',
           path: '/permission-management',
-          permission: ['pkg_create', 'pkg_view', 'pkg_update', 'pkg_delete', 'pkg_assign']
+          pageKey: 'permissionManagement'
         },
         {
           icon: FaClock,
           label: 'Attendance Management',
           path: '/attendance-management',
-          permission: ['att_view_all', 'att_review', 'att_edit', 'att_delete', 'att_method_assign', 'att_method_update', 'att_method_remove', 'report_att', 'export_att']
+          pageKey: 'attendanceManagement'
         },
         {
           icon: FaFileInvoiceDollar,
           label: 'Salary Management',
           path: '/salary-management',
-          permission: ['salary_view_all', 'salary_assign', 'salary_update', 'salary_delete'],
-          allowCompanyOwner: true
+          pageKey: 'salaryManagement'
         },
         {
           icon: FaTasks,
           label: 'Employee Shifts',
           path: '/employees-shifts',
-          permission: ['shift_view', 'shift_create', 'shift_update', 'shift_delete']
+          pageKey: 'employeesShifts'
         },
         {
           icon: FaUmbrellaBeach,
           label: 'Leave Management',
           path: '/leave-management',
-          permission: ['leave_view_all', 'leave_review', 'leave_cancel_admin', 'leave_type_create', 'leave_type_update', 'leave_type_delete']
+          pageKey: 'leaveManagement'
         },
         {
           icon: FaClipboardList,
           label: 'Leave Config',
           path: '/leave-config',
-          permission: ['leave_type_create', 'leave_type_update', 'leave_type_delete']
+          pageKey: 'leaveConfig'
         },
         {
           icon: FaChartLine,
           label: 'Leave Balance',
           path: '/leave-balance',
-          permission: ['leave_view_all', 'leave_review']
+          pageKey: 'leaveBalance'
         },
         {
           icon: FaCog,
           label: 'Company Settings',
           path: '/company-settings',
-          permission: ['cmp_update_own', 'cmp_delete', 'shift_create', 'shift_view', 'shift_update', 'shift_delete']
+          pageKey: 'companySettings'
         },
         {
           icon: FaCalendarAlt,
           label: 'Holiday Management',
           path: '/holiday-management',
-          permission: ['hd_create', 'hd_view_company', 'hd_update', 'hd_delete']
+          pageKey: 'holidayManagement'
         }
       ]
     },
@@ -161,7 +160,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       icon: FaCommentDots,
       label: 'Help',
       path: '/help',
-      permission: null
+      pageKey: 'help'
     }
   ];
 
@@ -169,27 +168,22 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
   };
 
-  const isCompanyOwnerForCurrentCompany =
-    activeRole === 'company_owner' || company?.role === 'company_owner';
+  const getItemAccess = (item) => checkPageAccess(item.pageKey);
 
-  const isAuthorizedItem = (item) => {
-    if (item.allowCompanyOwner && isCompanyOwnerForCurrentCompany) {
-      return true;
+  const getAccessMessage = (access) => {
+    if (access.reason === accessReasons.OWNER_RESTRICTED) {
+      return 'Disabled for company owner';
     }
 
-    return hasPermission(item.permission);
-  };
-
-  const isItemDisabled = (item) => {
-    if (['/attendance', '/my-shifts', '/my-leaves', '/my-salary', '/my-invites'].includes(item.path) && isCompanyOwnerForCurrentCompany) {
-      return true;
+    if (access.reason === accessReasons.NO_COMPANY) {
+      return 'Select a company first';
     }
 
-    if (item.path === '/holidays' && !company?.id && !isCompanyOwnerForCurrentCompany) {
-      return true;
+    if (access.reason === accessReasons.MISSING_CONFIG) {
+      return 'Permission config missing';
     }
 
-    return false;
+    return 'Access Denied - You don\'t have permission';
   };
 
   useEffect(() => {
@@ -214,11 +208,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
               {menuItems.map((item) => {
                 if (item.isSection) {
                   const isOpen = openSections[item.label];
-                  // SHOW ALL CHILDREN BUT WITH AUTHORIZATION DATA
                   const authorizedChildren = item.children;
-
-                  // Disable section itself if NO child is authorized
-                  const hasAnyChildAuthorized = authorizedChildren.some(child => isAuthorizedItem(child));
+                  const hasAnyChildAuthorized = authorizedChildren.some((child) => getItemAccess(child).allowed);
 
                   if (!hasAnyChildAuthorized) {
                     return (
@@ -261,13 +252,14 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                         <div className="ml-8 mt-1 space-y-1">
                           {authorizedChildren.map((child) => {
                             const isActive = isActiveRoute(child.path);
-                            const authorized = isAuthorizedItem(child);
+                            const access = getItemAccess(child);
 
-                            if (!authorized) {
+                            if (access.disabled) {
                               return (
                                 <div
                                   key={child.label}
                                   className="flex items-center px-3 py-2 rounded-xl opacity-50 cursor-not-allowed"
+                                  title={getAccessMessage(access)}
                                 >
                                   <div className="p-2 rounded-lg bg-gray-100 text-gray-400 mr-3">
                                     <child.icon className="w-3 h-3" />
@@ -311,15 +303,15 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 
                 // Regular menu item
                 const isActive = isActiveRoute(item.path);
-                const authorized = isAuthorizedItem(item);
-                const disabled = isItemDisabled(item);
+                const access = getItemAccess(item);
                 const Icon = item.icon;
 
-                if (!authorized || disabled) {
+                if (access.disabled) {
                   return (
                     <div
                       key={item.label}
                       className="flex items-center px-3 py-3 rounded-xl opacity-50 cursor-not-allowed mb-1"
+                      title={getAccessMessage(access)}
                     >
                       <div className="p-2 rounded-lg bg-gray-100 text-gray-400 mr-3">
                         <Icon className="w-4 h-4" />
@@ -376,11 +368,10 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 
   const renderMenuItem = (item, isExpandedState) => {
     const isActive = isActiveRoute(item.path);
-    const authorized = isAuthorizedItem(item);
-    const disabled = isItemDisabled(item);
+    const access = getItemAccess(item);
     const Icon = item.icon;
 
-    if (!authorized || disabled) {
+    if (access.disabled) {
       return (
         <div
           key={item.label}
@@ -391,10 +382,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           `}
           title={
             !isExpandedState
-              ? `${item.label} (${disabled ? 'Disabled for company owner' : 'Access Denied'})`
-              : disabled
-                ? 'Disabled for company owner'
-                : 'Access Denied - You don\'t have permission'
+              ? `${item.label} (${getAccessMessage(access)})`
+              : getAccessMessage(access)
           }
         >
           <div className={`
@@ -459,8 +448,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     const Icon = item.icon;
     const authorizedChildren = item.children;
 
-    // Disable section itself if NO child is authorized
-    const hasAnyChildAuthorized = authorizedChildren.some(child => isAuthorizedItem(child));
+    const hasAnyChildAuthorized = authorizedChildren.some((child) => getItemAccess(child).allowed);
 
     if (!hasAnyChildAuthorized) {
       return (
@@ -529,12 +517,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         {/* Section Children */}
         {isExpandedState && isOpen && (
           <div className="ml-8 mt-1 space-y-1">
-            {authorizedChildren.map((child) => {
+                          {authorizedChildren.map((child) => {
               const isActive = isActiveRoute(child.path);
               const ChildIcon = child.icon;
-              const authorized = isAuthorizedItem(child);
+              const access = getItemAccess(child);
 
-              if (!authorized) {
+              if (access.disabled) {
                 return (
                   <div
                     key={child.label}
@@ -544,7 +532,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                       cursor-not-allowed opacity-50
                       text-gray-400
                     `}
-                    title="Access Denied"
+                    title={getAccessMessage(access)}
                   >
                     <div className="p-2 rounded-lg bg-gray-100 text-gray-400">
                       <ChildIcon className="w-3 h-3" />
