@@ -227,7 +227,7 @@ function ActionMenu({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -6 }}
             transition={{ duration: 0.13 }}
-            className="absolute right-0 top-full z-30 mt-1.5 w-40 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="absolute right-0 top-full z-50 mt-1.5 w-40 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -801,7 +801,7 @@ const LeaveManagement = () => {
         </div>
 
         {/* ── Main Card ── */}
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl">
+        <div className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl">
           <div className="flex flex-col gap-1 border-b border-slate-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
             <div>
               <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
@@ -823,7 +823,7 @@ const LeaveManagement = () => {
           {/* ═══════════════════
             DESKTOP TABLE (md+)
           ═══════════════════ */}
-          <div className="hidden md:block overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto overflow-y-visible">
             <table className="w-full min-w-[500px]">
               <colgroup>
                 <col className="w-[35%] lg:w-[26%]" />

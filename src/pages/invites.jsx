@@ -464,8 +464,8 @@ export default function MyInvites() {
         {!loading && !error && invites.length > 0 && (
           <>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="overflow-x-auto">
+              className="hidden md:block bg-white rounded-2xl shadow-xl overflow-visible">
+              <div className="overflow-x-auto overflow-y-visible">
                 <table className="w-full text-sm text-left text-gray-700">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
@@ -534,7 +534,7 @@ export default function MyInvites() {
                             <AnimatePresence>
                               {activeActionMenu === invite.invite_id && (
                                 <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-10 overflow-hidden" onClick={e => e.stopPropagation()}>
+                                  className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden" onClick={e => e.stopPropagation()}>
                                   <button onClick={() => openModal(invite, 'view')} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 text-purple-600 flex items-center gap-3 transition-all duration-300"><FaEye size={14} /> View Details</button>
                                   {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
                                     <>

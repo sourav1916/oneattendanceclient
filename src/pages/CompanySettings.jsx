@@ -582,7 +582,7 @@ const CompanySettings = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.05 }}
-                                className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 hover:shadow-2xl transition-all duration-300"
+                                className="bg-white rounded-2xl shadow-xl overflow-visible border border-gray-100 hover:shadow-2xl transition-all duration-300"
                             >
                                 {/* Company Header */}
                                 <div className="relative h-24 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500">
@@ -624,7 +624,7 @@ const CompanySettings = () => {
                                                         initial={{ opacity: 0, scale: 0.95, y: -10 }} 
                                                         animate={{ opacity: 1, scale: 1, y: 0 }} 
                                                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                        className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-10 overflow-hidden"
+                                                        className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
                                                         onClick={e => e.stopPropagation()}
                                                     >
                                                         <button onClick={() => openViewModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all">

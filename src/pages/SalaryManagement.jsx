@@ -590,8 +590,8 @@ const SalaryManagement = () => {
       {!loading && employees.length > 0 && (
         <>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="hidden lg:block bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
+            className="hidden lg:block bg-white rounded-2xl shadow-xl overflow-visible">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="w-full text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>

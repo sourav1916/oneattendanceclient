@@ -338,7 +338,7 @@ const ActionMenu = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-0 top-9 z-30 min-w-[148px] rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
+            className="absolute right-0 top-9 z-50 min-w-[148px] rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
           >
             <button
               type="button"
@@ -996,9 +996,9 @@ const LeaveBalanceManagement = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="hidden overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 md:block"
+            className="hidden overflow-visible rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 md:block"
             >
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-visible">
                 <table className="w-full text-left text-sm text-slate-700">
                   <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     <tr>

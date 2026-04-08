@@ -183,7 +183,7 @@ const ActionMenu = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-0 top-9 z-30 min-w-[148px] rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
+            className="absolute right-0 top-9 z-50 min-w-[148px] rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
           >
             <button
               type="button"

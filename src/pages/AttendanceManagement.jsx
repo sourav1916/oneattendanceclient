@@ -626,9 +626,9 @@ const AttendanceManagement = ({ companyId }) => {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden"
+                  className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-visible"
                 >
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto overflow-y-visible">
                     <table className="w-full">
                       <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                         <tr>
@@ -715,7 +715,7 @@ const AttendanceManagement = ({ companyId }) => {
                                 </button>
 
                                 {activeActionMenu === attendance.id && (
-                                  <div className="absolute right-0 top-8 sm:top-10 z-10 w-40 rounded-xl border border-gray-200 bg-white p-1.5 sm:p-2 shadow-xl">
+                                  <div className="absolute right-0 top-8 sm:top-10 z-50 w-40 rounded-xl border border-gray-200 bg-white p-1.5 sm:p-2 shadow-xl">
                                     {attendance.status === 'pending' && (
                                       <>
                                         <button
