@@ -866,7 +866,7 @@ const EmployeeManagement = () => {
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
                             className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden ${
                                 modalType === MODAL_TYPES.DELETE_CONFIRM
-                                    ? 'max-w-lg min-h-[22rem] sm:min-h-[24rem] flex flex-col'
+                                    ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col'
                                     : 'max-w-4xl max-h-[90vh]'
                             }`}
                             onClick={e => e.stopPropagation()}

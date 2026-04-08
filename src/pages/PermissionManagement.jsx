@@ -679,7 +679,7 @@ const PermissionManagement = () => {
             <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
               className={`bg-white rounded-2xl shadow-2xl w-full overflow-y-auto ${
                 modalType === MODAL_TYPES.DELETE_CONFIRM
-                  ? 'max-w-lg min-h-[20rem] sm:min-h-[22rem] flex flex-col'
+                  ? 'max-w-lg max-h-[90vh] flex flex-col'
                   : 'max-w-4xl max-h-[90vh]'
               }`}
               onClick={e => e.stopPropagation()}

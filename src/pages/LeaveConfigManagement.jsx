@@ -348,7 +348,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
       initial={{ opacity: 0, scale: 0.92, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.92, y: 20 }}
-      className="flex w-full max-w-lg min-h-[20rem] sm:min-h-[22rem] flex-col justify-center rounded-2xl bg-white p-6 shadow-2xl sm:p-7"
+      className="flex w-full max-w-lg max-h-[90vh] flex-col justify-center overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-7"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-4 flex items-center justify-center">

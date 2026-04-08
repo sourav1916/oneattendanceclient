@@ -419,8 +419,8 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
   };
 
   return (
-    <Modal onClose={onClose} danger panelClassName="sm:max-w-lg sm:min-h-[22rem]">
-      <div className="flex min-h-[20rem] flex-col justify-center p-6 text-center">
+    <Modal onClose={onClose} danger panelClassName="sm:max-w-lg sm:max-h-[90vh]">
+      <div className="flex flex-col justify-center p-6 text-center">
         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5 text-red-500">
           <Icon.Trash />
         </div>

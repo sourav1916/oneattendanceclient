@@ -15,7 +15,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
-const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl min-h-[22rem] sm:min-h-[24rem] overflow-hidden flex flex-col";
+const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
 const pendingAttendanceAPI = {
     fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '') => {

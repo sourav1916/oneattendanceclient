@@ -29,7 +29,7 @@ const backdropVariants = {
   exit:    { opacity: 0 }
 };
 
-const CONFIRM_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-lg min-h-[22rem] sm:min-h-[24rem] overflow-hidden flex flex-col";
+const CONFIRM_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
 
 const isExpired = (date) => new Date(date) < new Date();
 

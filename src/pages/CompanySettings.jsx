@@ -1799,7 +1799,7 @@ const CompanySettings = () => {
                     >
                         <motion.div
                             variants={modalVariants}
-                            className="relative flex w-full max-w-lg min-h-[22rem] sm:min-h-[24rem] flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            className="relative flex w-full max-w-lg max-h-[90vh] flex-col bg-white rounded-2xl shadow-2xl overflow-y-auto"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="px-6 py-5 border-b border-gray-100">

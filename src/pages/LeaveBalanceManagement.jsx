@@ -1335,7 +1335,7 @@ const LeaveBalanceManagement = () => {
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               className={`w-full ${
                 modalMode === 'delete'
-                  ? 'max-w-lg min-h-[20rem] sm:min-h-[22rem] rounded-2xl flex flex-col'
+                  ? 'max-w-lg max-h-[90vh] rounded-2xl flex flex-col overflow-y-auto'
                   : 'max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl'
               } bg-white shadow-2xl`}
               onMouseDown={(event) => event.stopPropagation()}
