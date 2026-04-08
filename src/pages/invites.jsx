@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaClock, FaExclamationCircle, FaSpinner, FaEllipsisV, FaEye,
+  FaClock, FaExclamationCircle, FaSpinner, FaEye,
   FaCheckCircle, FaTimesCircle, FaEnvelope, FaPhone, FaCalendarAlt,
   FaSearch, FaBuilding, FaCheck, FaBan, FaUser, FaMapMarkerAlt,
   FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle
@@ -12,6 +12,7 @@ import Skeleton from "../components/SkeletonComponent";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 import { useAuth } from "../context/AuthContext";
 import ModalScrollLock from "../components/ModalScrollLock";
+import ActionMenu from "../components/ActionMenu";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -239,7 +240,6 @@ export default function MyInvites() {
 
   const openModal = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
   const closeModal = () => { setSelectedInvite(null); setModalType(null); };
-  const toggleActionMenu = (e, id) => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
 
   const handlePageChange = useCallback((newPage) => { if (newPage !== pagination.page) goToPage(newPage); }, [pagination.page, goToPage]);
 
@@ -529,22 +529,36 @@ export default function MyInvites() {
                           {visibleColumns.showExpires && (
                             <td className="px-6 py-4"><div className="flex items-center gap-2"><FaClock className="text-gray-400 text-xs" /><span className="text-sm">{formatDateSimple(invite.expires_at)}</span></div></td>
                           )}
-                          <td className="px-6 py-4 text-right relative">
-                            <button onClick={(e) => toggleActionMenu(e, invite.invite_id)} className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md"><FaEllipsisV className="text-gray-600" /></button>
-                            <AnimatePresence>
-                              {activeActionMenu === invite.invite_id && (
-                                <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden" onClick={e => e.stopPropagation()}>
-                                  <button onClick={() => openModal(invite, 'view')} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 text-purple-600 flex items-center gap-3 transition-all duration-300"><FaEye size={14} /> View Details</button>
-                                  {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
-                                    <>
-                                      <button onClick={() => openModal(invite, 'accept')} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300"><FaCheck size={14} /> Accept Invite</button>
-                                      <button onClick={() => openModal(invite, 'reject')} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300"><FaBan size={14} /> Reject Invite</button>
-                                    </>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                          <td className="px-6 py-4 text-right">
+                            <ActionMenu
+                              menuId={invite.invite_id}
+                              activeId={activeActionMenu}
+                              onToggle={(e, id) => {
+                                setActiveActionMenu((current) => (current === id ? null : id));
+                              }}
+                              actions={[
+                                {
+                                  label: 'View Details',
+                                  icon: <FaEye size={14} />,
+                                  onClick: () => openModal(invite, 'view'),
+                                  className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                },
+                                ...(invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) ? [
+                                  {
+                                    label: 'Accept Invite',
+                                    icon: <FaCheck size={14} />,
+                                    onClick: () => openModal(invite, 'accept'),
+                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                  },
+                                  {
+                                    label: 'Reject Invite',
+                                    icon: <FaBan size={14} />,
+                                    onClick: () => openModal(invite, 'reject'),
+                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                  }
+                                ] : [])
+                              ]}
+                            />
                           </td>
                         </motion.tr>
                       );

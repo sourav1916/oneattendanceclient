@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaUserCircle,
-    FaSearch, FaSpinner, FaEllipsisV,
+    FaSearch, FaSpinner,
     FaEnvelope, FaPhone, FaIdCard, FaCalendarAlt, FaBriefcase,
     FaDollarSign, FaUserTag, FaShieldAlt, FaBan, FaTrashAlt,
     FaInfoCircle, FaPlus, FaUserTie, FaUserCheck, FaRobot, FaHandPaper,
@@ -14,6 +14,7 @@ import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -511,11 +512,6 @@ const EmployeeManagement = () => {
         setAttendanceMethodsConfig({});
     };
 
-    const toggleActionMenu = (e, id) => {
-        e.stopPropagation();
-        setActiveActionMenu(activeActionMenu === id ? null : id);
-    };
-
     // ─── Form Handlers ───────────────────────────────────────────────────────
 
     const handleEdit = async (e) => {
@@ -779,22 +775,38 @@ const EmployeeManagement = () => {
                                             {visibleColumns.showJoiningDate && (
                                                 <td className="px-6 py-4"><div className="flex items-center gap-2"><FaCalendarAlt className="text-gray-400 text-xs" /><span>{formatDate(emp.joining_date)}</span></div></td>
                                             )}
-                                            <td className="px-6 py-4 text-right relative">
-                                                <button onClick={e => toggleActionMenu(e, emp.id)} className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
-                                                    <FaEllipsisV className="text-gray-600" />
-                                                </button>
-                                                <AnimatePresence>
-                                                    {activeActionMenu === emp.id && (
-                                                        <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                            className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                                                            onClick={e => e.stopPropagation()}
-                                                        >
-                                                            <button onClick={() => openViewModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300"><FaEye size={14} /> View Details</button>
-                                                            <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={14} /> Edit</button>
-                                                            <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={14} /> Delete</button>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
+                                            <td className="px-6 py-4 text-right">
+                                                <ActionMenu
+                                                    menuId={emp.id}
+                                                    activeId={activeActionMenu}
+                                                    onToggle={(e, id) => {
+                                                        setActiveActionMenu((current) => (current === id ? null : id));
+                                                    }}
+                                                    actions={[
+                                                        {
+                                                            label: 'View Details',
+                                                            icon: <FaEye size={14} />,
+                                                            onClick: () => openViewModal(emp),
+                                                            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                        },
+                                                        {
+                                                            label: 'Edit',
+                                                            icon: <FaEdit size={14} />,
+                                                            onClick: () => openEditModal(emp),
+                                                            disabled: updateEmployeeAccess.disabled,
+                                                            title: updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : '',
+                                                            className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                        },
+                                                        {
+                                                            label: 'Delete',
+                                                            icon: <FaTrash size={14} />,
+                                                            onClick: () => openDeleteModal(emp),
+                                                            disabled: deleteEmployeeAccess.disabled,
+                                                            title: deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : '',
+                                                            className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                        }
+                                                    ]}
+                                                />
                                             </td>
                                         </motion.tr>
                                     ))}

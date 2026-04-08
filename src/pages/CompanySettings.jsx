@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     FaBuilding, FaEdit, FaTrash, FaEye, FaTimes, FaCheck,
-    FaSearch, FaSpinner, FaEllipsisV, FaMapMarkerAlt,
+    FaSearch, FaSpinner, FaMapMarkerAlt,
     FaGlobe, FaCity, FaRoad, FaEnvelope, FaLink, FaMapPin,
     FaPlus, FaMinusCircle, FaUserCircle, FaCalendarAlt,
     FaIdCard, FaPhone, FaBriefcase, FaNetworkWired,
@@ -17,6 +17,7 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
 import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
+import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -417,11 +418,6 @@ const CompanySettings = () => {
         setSelectedCompany(null);
     };
     
-    const toggleActionMenu = (e, id) => {
-        e.stopPropagation();
-        setActiveActionMenu(activeActionMenu === id ? null : id);
-    };
-    
     // ─── Form Handlers ───────────────────────────────────────────────────────
     
     const handleCompanyCreated = async () => {
@@ -611,47 +607,69 @@ const CompanySettings = () => {
                                             <h3 className="text-xl font-bold text-gray-800">{company.name}</h3>
                                             <p className="text-sm text-gray-500">{company.legal_name}</p>
                                         </div>
-                                        <div className="relative">
-                                            <button 
-                                                onClick={e => toggleActionMenu(e, company.id)} 
-                                                className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300"
-                                            >
-                                                <FaEllipsisV className="text-gray-600" />
-                                            </button>
-                                            <AnimatePresence>
-                                                {activeActionMenu === company.id && (
-                                                    <motion.div 
-                                                        initial={{ opacity: 0, scale: 0.95, y: -10 }} 
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }} 
-                                                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                        className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                                                        onClick={e => e.stopPropagation()}
-                                                    >
-                                                        <button onClick={() => openViewModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all">
-                                                            <FaEye size={14} /> View Details
-                                                        </button>
-                                                        <button onClick={() => openEditModal(company)} disabled={updateCompanyAccess.disabled} title={updateCompanyAccess.disabled ? updateCompanyMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            <FaEdit size={14} /> Edit Company
-                                                        </button>
-                                                        <button onClick={() => openSettingsModal(company)} disabled={updateSettingsAccess.disabled} title={updateSettingsAccess.disabled ? updateSettingsMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 text-indigo-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            <FaCog size={14} /> System Settings
-                                                        </button>
-                                                        <button onClick={() => openBrandingModal(company)} disabled={updateBrandingAccess.disabled} title={updateBrandingAccess.disabled ? updateBrandingMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 text-pink-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            <FaPalette size={14} /> Branding
-                                                        </button>
-                                                        <button onClick={() => openSecurityModal(company)} disabled={updateSecurityAccess.disabled} title={updateSecurityAccess.disabled ? updateSecurityMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 text-red-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            <FaLock size={14} /> Security
-                                                        </button>
-                                                        <button onClick={() => openNotificationsModal(company)} disabled={updateNotificationsAccess.disabled} title={updateNotificationsAccess.disabled ? updateNotificationsMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-amber-50 text-yellow-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            <FaBell size={14} /> Notifications
-                                                        </button>
-                                                        <button onClick={() => openDeleteModal(company)} disabled={deleteCompanyAccess.disabled} title={deleteCompanyAccess.disabled ? deleteCompanyMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all border-t border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
-                                                            <FaTrash size={14} /> Delete Company
-                                                        </button>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
+                                        <ActionMenu
+                                            menuId={company.id}
+                                            activeId={activeActionMenu}
+                                            onToggle={(e, id) => {
+                                                setActiveActionMenu((current) => (current === id ? null : id));
+                                            }}
+                                            actions={[
+                                                {
+                                                    label: 'View Details',
+                                                    icon: <FaEye size={14} />,
+                                                    onClick: () => openViewModal(company),
+                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                },
+                                                {
+                                                    label: 'Edit Company',
+                                                    icon: <FaEdit size={14} />,
+                                                    onClick: () => openEditModal(company),
+                                                    disabled: updateCompanyAccess.disabled,
+                                                    title: updateCompanyAccess.disabled ? updateCompanyMessage : '',
+                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                },
+                                                {
+                                                    label: 'System Settings',
+                                                    icon: <FaCog size={14} />,
+                                                    onClick: () => openSettingsModal(company),
+                                                    disabled: updateSettingsAccess.disabled,
+                                                    title: updateSettingsAccess.disabled ? updateSettingsMessage : '',
+                                                    className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                                                },
+                                                {
+                                                    label: 'Branding',
+                                                    icon: <FaPalette size={14} />,
+                                                    onClick: () => openBrandingModal(company),
+                                                    disabled: updateBrandingAccess.disabled,
+                                                    title: updateBrandingAccess.disabled ? updateBrandingMessage : '',
+                                                    className: 'text-pink-600 hover:text-pink-700 hover:bg-pink-50'
+                                                },
+                                                {
+                                                    label: 'Security',
+                                                    icon: <FaLock size={14} />,
+                                                    onClick: () => openSecurityModal(company),
+                                                    disabled: updateSecurityAccess.disabled,
+                                                    title: updateSecurityAccess.disabled ? updateSecurityMessage : '',
+                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                },
+                                                {
+                                                    label: 'Notifications',
+                                                    icon: <FaBell size={14} />,
+                                                    onClick: () => openNotificationsModal(company),
+                                                    disabled: updateNotificationsAccess.disabled,
+                                                    title: updateNotificationsAccess.disabled ? updateNotificationsMessage : '',
+                                                    className: 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
+                                                },
+                                                {
+                                                    label: 'Delete Company',
+                                                    icon: <FaTrash size={14} />,
+                                                    onClick: () => openDeleteModal(company),
+                                                    disabled: deleteCompanyAccess.disabled,
+                                                    title: deleteCompanyAccess.disabled ? deleteCompanyMessage : '',
+                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                }
+                                            ]}
+                                        />
                                     </div>
                                     
                                     {/* Contact Info */}

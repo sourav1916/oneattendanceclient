@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaSearch, FaSpinner,
-  FaEllipsisV, FaShieldAlt, FaPlus, FaInfoCircle, FaCode,
+  FaShieldAlt, FaPlus, FaInfoCircle, FaCode,
   FaLayerGroup, FaTag, FaAlignLeft, FaBan, FaChevronLeft, FaChevronRight
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -404,7 +405,6 @@ const PermissionManagement = () => {
   };
   const openPermListModal = (pkg) => { setSelectedPackage(pkg); setModalType(MODAL_TYPES.PERM_LIST); setActiveActionMenu(null); };
   const closeModal = () => { setModalType(MODAL_TYPES.NONE); setSelectedPackage(null); setFormData(emptyForm); };
-  const toggleActionMenu = (e, id) => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
 
   // ─── Form handlers ────────────────────────────────────────────────────────
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -598,23 +598,38 @@ const PermissionManagement = () => {
                           </button>
                         ) : <span className="text-xs text-gray-400 italic">None</span>}
                       </td>
-                      <td className="px-6 py-4 text-right relative">
-                        <button onClick={e => toggleActionMenu(e, pkg.id)} className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
-                          <FaEllipsisV className="text-gray-600 text-xs" />
-                        </button>
-                        <AnimatePresence>
-                          {activeActionMenu === pkg.id && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                              className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <button onClick={() => openViewModal(pkg)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaEye size={12} /> View Details</button>
-                              <button onClick={() => openEditModal(pkg)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={12} /> Edit</button>
-                              <button onClick={() => openDeleteModal(pkg)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={12} /> Delete</button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                      <td className="px-6 py-4 text-right">
+                        <ActionMenu
+                          menuId={pkg.id}
+                          activeId={activeActionMenu}
+                          onToggle={(e, id) => {
+                            setActiveActionMenu((current) => (current === id ? null : id));
+                          }}
+                          actions={[
+                            {
+                              label: 'View Details',
+                              icon: <FaEye size={12} />,
+                              onClick: () => openViewModal(pkg),
+                              className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                            },
+                            {
+                              label: 'Edit',
+                              icon: <FaEdit size={12} />,
+                              onClick: () => openEditModal(pkg),
+                              disabled: updateAccess.disabled,
+                              title: updateAccess.disabled ? getAccessMessage(updateAccess) : '',
+                              className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                            },
+                            {
+                              label: 'Delete',
+                              icon: <FaTrash size={12} />,
+                              onClick: () => openDeleteModal(pkg),
+                              disabled: deleteAccess.disabled,
+                              title: deleteAccess.disabled ? getAccessMessage(deleteAccess) : '',
+                              className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                            }
+                          ]}
+                        />
                       </td>
                     </motion.tr>
                   ))}

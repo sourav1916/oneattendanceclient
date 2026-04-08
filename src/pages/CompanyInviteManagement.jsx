@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaUserTie, FaClock, FaExclamationCircle, FaSpinner, FaEllipsisV,
+  FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
   FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
   FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
   FaSearch, FaTimes, FaInfoCircle, FaUserCircle
@@ -13,6 +13,7 @@ import EditStaffModal from "../components/StaffModals/EditStaffModal";
 import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
 import ModalScrollLock from "../components/ModalScrollLock";
+import ActionMenu from "../components/ActionMenu";
 import usePermissionAccess from "../hooks/usePermissionAccess";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
@@ -217,7 +218,6 @@ export default function CompanyInvites() {
 
   const openModal       = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
   const closeModal      = ()              => { setSelectedInvite(null);   setModalType(null); };
-  const toggleActionMenu = (e, id)        => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === id ? null : id); };
 
   // Responsive columns
   const [visibleColumns, setVisibleColumns] = useState(() => ({
@@ -509,36 +509,40 @@ export default function CompanyInvites() {
                               </div>
                             </td>
                           )}
-                          <td className="px-6 py-4 text-right relative">
-                            <button onClick={(e) => toggleActionMenu(e, invite.token)}
-                              className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
-                              <FaEllipsisV className="text-gray-600" />
-                            </button>
-                            <AnimatePresence>
-                              {activeActionMenu === invite.token && (
-                                <motion.div initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                  className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                                  onClick={(e) => e.stopPropagation()}>
-                                  <button onClick={() => openModal(invite, "view")}
-                                    className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300">
-                                    <FaEye size={14} /> View Details
-                                  </button>
-                                  {invite.status === "pending" && !isExpired(invite.expires_at) && (
-                                    <>
-                                      <button onClick={() => handleEditClick(invite)} disabled={updateInviteAccess.disabled} title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
-                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <FaEdit size={14} /> Edit Invite
-                                      </button>
-                                      <button onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
-                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        <FaBan size={14} /> Cancel Invite
-                                      </button>
-                                    </>
-                                  )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                          <td className="px-6 py-4 text-right">
+                            <ActionMenu
+                              menuId={invite.token}
+                              activeId={activeActionMenu}
+                              onToggle={(e, id) => {
+                                setActiveActionMenu((current) => (current === id ? null : id));
+                              }}
+                              actions={[
+                                {
+                                  label: 'View Details',
+                                  icon: <FaEye size={14} />,
+                                  onClick: () => openModal(invite, "view"),
+                                  className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                },
+                                ...(invite.status === "pending" && !isExpired(invite.expires_at) ? [
+                                  {
+                                    label: 'Edit Invite',
+                                    icon: <FaEdit size={14} />,
+                                    onClick: () => handleEditClick(invite),
+                                    disabled: updateInviteAccess.disabled,
+                                    title: updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : "",
+                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                  },
+                                  {
+                                    label: 'Cancel Invite',
+                                    icon: <FaBan size={14} />,
+                                    onClick: () => !cancelInviteAccess.disabled && openModal(invite, "cancel"),
+                                    disabled: cancelInviteAccess.disabled,
+                                    title: cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : "",
+                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                  }
+                                ] : [])
+                              ]}
+                            />
                           </td>
                         </motion.tr>
                       );

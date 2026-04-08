@@ -13,6 +13,7 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import ActionMenu from '../components/ActionMenu';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -55,7 +56,6 @@ const attendanceAPI = {
 
     return response.json();
   }
-
 };
 
 // Helper Components
@@ -128,7 +128,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-2xl">
+        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-2xl z-10">
           <div className="flex justify-between items-center">
             <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
               <FaInfoCircle /> Attendance Details
@@ -279,47 +279,38 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
             <p className="text-xs text-gray-400 truncate">{attendance.employee?.designation}</p>
           </div>
         </div>
-        <div className="relative flex-shrink-0 ml-2">
-          <button
-            onClick={() => onToggleMenu(attendance.id)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition"
-          >
-            <FaEllipsisV size={16} className="text-gray-500" />
-          </button>
-
-          {activeMenuId === attendance.id && (
-            <div className="absolute right-0 top-10 z-10 w-40 rounded-xl border border-gray-200 bg-white shadow-lg">
-              {attendance.status === 'pending' && (
-                <>
-                  <button
-                    onClick={() => onApprove(attendance.id)}
-                    disabled={processingId === attendance.id || approveDisabled}
-                    title={approveDisabled ? reviewMessage : ''}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-t-xl transition"
-                  >
-                    {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => onReject(attendance.id)}
-                    disabled={processingId === attendance.id || rejectDisabled}
-                    title={rejectDisabled ? reviewMessage : ''}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-                  >
-                    {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
-                    Reject
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => onViewDetails(attendance)}
-                className="flex w-full items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-b-xl transition"
-              >
-                <FaEye size={12} />
-                View Details
-              </button>
-            </div>
-          )}
+        <div className="flex-shrink-0 ml-2">
+          <ActionMenu
+            menuId={attendance.id}
+            activeId={activeMenuId}
+            onToggle={onToggleMenu}
+            actions={[
+              ...(attendance.status === 'pending' ? [
+                {
+                  label: 'Approve',
+                  icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
+                  onClick: () => onApprove(attendance.id),
+                  disabled: processingId === attendance.id || approveDisabled,
+                  title: approveDisabled ? reviewMessage : '',
+                  className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                },
+                {
+                  label: 'Reject',
+                  icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
+                  onClick: () => onReject(attendance.id),
+                  disabled: processingId === attendance.id || rejectDisabled,
+                  title: rejectDisabled ? reviewMessage : '',
+                  className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                }
+              ] : []),
+              {
+                label: 'View Details',
+                icon: <FaEye size={12} />,
+                onClick: () => onViewDetails(attendance),
+                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              }
+            ]}
+          />
         </div>
       </div>
 
@@ -391,15 +382,13 @@ const AttendanceManagement = ({ companyId }) => {
     };
   }, []);
 
-  // Responsive breakpoints - more granular control
   const isMobile = windowWidth < 768;
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const isDesktop = windowWidth >= 1024;
 
-  // Show/hide columns based on screen width
-  const showPunchType = !isMobile; // Show on tablet and desktop
-  const showDateTime = !isMobile; // Show on tablet and desktop
-  const showMethod = isDesktop; // Show only on desktop
+  const showPunchType = !isMobile;
+  const showDateTime = !isMobile;
+  const showMethod = isDesktop;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -409,7 +398,6 @@ const AttendanceManagement = ({ companyId }) => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch attendances
   const fetchAttendances = useCallback(async (force = false) => {
     if (!resolvedCompanyId) {
       setError('Company ID is required');
@@ -469,7 +457,6 @@ const AttendanceManagement = ({ companyId }) => {
     fetchAttendances();
   }, [pagination.page, debouncedSearchTerm, fetchAttendances, goToPage]);
 
-  // Handle status update
   const handleStatusUpdate = async (punchId, action) => {
     if (action === 'reject' && !notes.trim()) {
       setSelectedAction({ punchId, action });
@@ -503,23 +490,12 @@ const AttendanceManagement = ({ companyId }) => {
     }
   };
 
-  // Handle page change
-  const handlePageChange = (page) => {
-    if (page !== pagination.page) {
-      goToPage(page);
-    }
-    setActiveActionMenu(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Handle view details
   const handleViewDetails = (attendance) => {
     setSelectedAttendance(attendance);
     setShowModal(true);
     setActiveActionMenu(null);
   };
 
-  // Format date
   const formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -548,253 +524,189 @@ const AttendanceManagement = ({ companyId }) => {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 sm:p-5 md:p-6"
-          >
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold flex items-center gap-2">
-                  <FaHistory className="text-purple-500 text-base sm:text-xl md:text-2xl" />
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Attendance Management
-                  </span>
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">Company ID: {resolvedCompanyId}</p>
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/pending-attendance')}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-amber-600 sm:text-sm"
-                >
-                  <FaClock />
-                  Pending Attendance
-                </button>
-                <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg justify-between sm:justify-start">
-                  <FaUserCheck className="text-purple-500 text-sm sm:text-base" />
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">
-                    Total: {pagination.total}
-                  </span>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 sm:p-5 md:p-6"
+        >
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <div>
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold flex items-center gap-2">
+                <FaHistory className="text-purple-500 text-base sm:text-xl md:text-2xl" />
+                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Attendance Management
+                </span>
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">Company ID: {resolvedCompanyId}</p>
+            </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => navigate('/pending-attendance')}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-amber-600 sm:text-sm"
+              >
+                <FaClock />
+                Pending Attendance
+              </button>
+              <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg justify-between sm:justify-start">
+                <FaUserCheck className="text-purple-500 text-sm sm:text-base" />
+                <span className="text-xs sm:text-sm font-medium text-gray-700">
+                  Total: {pagination.total}
+                </span>
               </div>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Search */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-5 md:mb-6"
-          >
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm sm:text-base" />
-              <input
-                type="text"
-                placeholder="Search by employee name, email, or code..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm sm:text-base"
-              />
-            </div>
-          </motion.div>
+        {/* Search */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-5 md:mb-6"
+        >
+          <div className="relative">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm sm:text-base" />
+            <input
+              type="text"
+              placeholder="Search by employee name, email, or code..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm sm:text-base"
+            />
+          </div>
+        </motion.div>
 
-          {/* Loading State */}
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <FaSpinner className="animate-spin text-purple-500 text-3xl sm:text-4xl" />
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
-              {error}
-            </div>
-          ) : attendances.length === 0 ? (
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-8 sm:p-10 md:p-12 text-center">
-              <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
-              <p className="text-gray-500 text-sm sm:text-base md:text-lg">No attendance records found</p>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1">Try adjusting your search</p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop/Tablet Table View - Shows on tablet and above */}
-              {!isMobile && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-visible"
-                >
-                  <div className="overflow-x-auto overflow-y-visible">
-                    <table className="w-full">
-                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                        <tr>
-                          <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Employee
-                          </th>
-                          {showPunchType && (
-                            <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              Type
-                            </th>
-                          )}
-                          {showDateTime && (
-                            <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              Date & Time
-                            </th>
-                          )}
-                          <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Status
-                          </th>
-                          {showMethod && (
-                            <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              Method
-                            </th>
-                          )}
-                          <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {attendances.map((attendance) => (
-                          <motion.tr
-                            key={attendance.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="hover:bg-gray-50 transition"
-                          >
-                            <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                              <div className="flex items-center gap-2 sm:gap-3">
-                                <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                  <FaUser className="text-purple-600 text-xs sm:text-sm md:text-base" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-gray-900 text-xs sm:text-sm md:text-base truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
-                                    {attendance.employee?.name}
-                                  </p>
-                                  <p className="text-xs text-gray-500 truncate max-w-[100px] sm:max-w-[130px] md:max-w-[180px]">
-                                    {attendance.employee?.code}
-                                  </p>
-                                </div>
+        {/* Loading State */}
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <FaSpinner className="animate-spin text-purple-500 text-3xl sm:text-4xl" />
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
+            {error}
+          </div>
+        ) : attendances.length === 0 ? (
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-8 sm:p-10 md:p-12 text-center">
+            <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
+            <p className="text-gray-500 text-sm sm:text-base md:text-lg">No attendance records found</p>
+            <p className="text-gray-400 text-xs sm:text-sm mt-1">Try adjusting your search</p>
+          </div>
+        ) : (
+          <>
+            {!isMobile && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-visible"
+              >
+                <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                      <tr>
+                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee</th>
+                        {showPunchType && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>}
+                        {showDateTime && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date & Time</th>}
+                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                        {showMethod && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>}
+                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {attendances.map((attendance) => (
+                        <motion.tr key={attendance.id} className="hover:bg-gray-50 transition">
+                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                                <FaUser className="text-purple-600" />
                               </div>
-                            </td>
-                            {showPunchType && (
-                              <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                <PunchTypeBadge type={attendance.punch_type} />
-                              </td>
-                            )}
-                            {showDateTime && (
-                              <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                <div className="text-xs sm:text-sm text-gray-900 whitespace-nowrap">
-                                  {formatDateTime(attendance.punch_time)}
-                                </div>
-                              </td>
-                            )}
-                            <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                              <StatusBadge status={attendance.status} />
-                            </td>
-                            {showMethod && (
-                              <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                <div className="text-xs sm:text-sm text-gray-900">
-                                  {attendance.attendance?.method || 'N/A'}
-                                </div>
-                              </td>
-                            )}
-                            <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                              <div className="relative flex justify-center">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleActionMenu(attendance.id)}
-                                  className="rounded-lg bg-gray-50 p-1.5 sm:p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
-                                  title="Actions"
-                                >
-                                  <FaEllipsisV size={14} className="sm:w-4 sm:h-4" />
-                                </button>
-
-                                {activeActionMenu === attendance.id && (
-                                  <div className="absolute right-0 top-8 sm:top-10 z-50 w-40 rounded-xl border border-gray-200 bg-white p-1.5 sm:p-2 shadow-xl">
-                                    {attendance.status === 'pending' && (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleStatusUpdate(attendance.id, 'approve')}
-                                          disabled={processingId === attendance.id || approveAccess.disabled}
-                                          title={approveAccess.disabled ? getAccessMessage(approveAccess) : ''}
-                                          className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-green-700 transition hover:bg-green-50 disabled:opacity-50"
-                                        >
-                                          {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
-                                          Approve
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleStatusUpdate(attendance.id, 'reject')}
-                                          disabled={processingId === attendance.id || rejectAccess.disabled}
-                                          title={rejectAccess.disabled ? getAccessMessage(rejectAccess) : ''}
-                                          className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-red-700 transition hover:bg-red-50 disabled:opacity-50"
-                                        >
-                                          {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
-                                          Reject
-                                        </button>
-                                      </>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleViewDetails(attendance)}
-                                      className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-blue-700 transition hover:bg-blue-50"
-                                    >
-                                      <FaEye size={12} />
-                                      View Details
-                                    </button>
-                                  </div>
-                                )}
+                              <div className="truncate max-w-[200px]">
+                                <p className="font-medium text-gray-900 text-sm">{attendance.employee?.name}</p>
+                                <p className="text-xs text-gray-500">{attendance.employee?.code}</p>
                               </div>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-
-                </motion.div>
-              )}
-              {/* Mobile Card View */}
-              {isMobile && (
-                <div className="space-y-3 sm:space-y-4">
-                  {attendances.map((attendance) => (
-                    <AttendanceCard
-                      key={attendance.id}
-                      attendance={attendance}
-                      onViewDetails={handleViewDetails}
-                      onApprove={(id) => handleStatusUpdate(id, 'approve')}
-                      onReject={(id) => handleStatusUpdate(id, 'reject')}
-                      processingId={processingId}
-                      onToggleMenu={toggleActionMenu}
-                      activeMenuId={activeActionMenu}
-                      approveDisabled={approveAccess.disabled}
-                      rejectDisabled={rejectAccess.disabled}
-                      reviewMessage={attendanceReviewMessage}
-                    />
-                  ))}
+                            </div>
+                          </td>
+                          {showPunchType && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4"><PunchTypeBadge type={attendance.punch_type} /></td>}
+                          {showDateTime && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm">{formatDateTime(attendance.punch_time)}</td>}
+                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4"><StatusBadge status={attendance.status} /></td>
+                          {showMethod && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-sm">{attendance.attendance?.method || 'N/A'}</td>}
+                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center">
+                            <ActionMenu
+                              menuId={attendance.id}
+                              activeId={activeActionMenu}
+                              onToggle={(e, id) => toggleActionMenu(id)}
+                              actions={[
+                                ...(attendance.status === 'pending' ? [
+                                  {
+                                    label: 'Approve',
+                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
+                                    onClick: () => handleStatusUpdate(attendance.id, 'approve'),
+                                    disabled: processingId === attendance.id || approveAccess.disabled,
+                                    title: approveAccess.disabled ? getAccessMessage(approveAccess) : '',
+                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                  },
+                                  {
+                                    label: 'Reject',
+                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
+                                    onClick: () => handleStatusUpdate(attendance.id, 'reject'),
+                                    disabled: processingId === attendance.id || rejectAccess.disabled,
+                                    title: rejectAccess.disabled ? getAccessMessage(rejectAccess) : '',
+                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                  }
+                                ] : []),
+                                {
+                                  label: 'View Details',
+                                  icon: <FaEye size={12} />,
+                                  onClick: () => handleViewDetails(attendance),
+                                  className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                }
+                              ]}
+                            />
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )}
-              {pagination.total > 0 && (
+              </motion.div>
+            )}
+
+            {isMobile && (
+              <div className="space-y-4">
+                {attendances.map((attendance) => (
+                  <AttendanceCard
+                    key={attendance.id}
+                    attendance={attendance}
+                    onViewDetails={handleViewDetails}
+                    onApprove={(id) => handleStatusUpdate(id, 'approve')}
+                    onReject={(id) => handleStatusUpdate(id, 'reject')}
+                    processingId={processingId}
+                    onToggleMenu={(e, id) => toggleActionMenu(id)}
+                    activeMenuId={activeActionMenu}
+                    approveDisabled={approveAccess.disabled}
+                    rejectDisabled={rejectAccess.disabled}
+                    reviewMessage={attendanceReviewMessage}
+                  />
+                ))}
+              </div>
+            )}
+
+            {pagination.total > 0 && (
+              <div className="mt-6">
                 <Pagination
                   currentPage={pagination.page}
                   totalItems={pagination.total}
                   itemsPerPage={pagination.limit}
                   onPageChange={goToPage}
                 />
-              )}
-            </>
-          )}
-        </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Details Modal */}
       <AnimatePresence>
         {showModal && selectedAttendance && (
           <AttendanceDetailsModal
@@ -804,19 +716,14 @@ const AttendanceManagement = ({ companyId }) => {
         )}
       </AnimatePresence>
 
-      {/* Notes Modal for Rejection */}
       <AnimatePresence>
         {showNotesModal && selectedAction && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
-            onClick={() => {
-              setShowNotesModal(false);
-              setSelectedAction(null);
-              setNotes('');
-            }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
           >
             <ModalScrollLock />
             <motion.div
@@ -826,24 +733,28 @@ const AttendanceManagement = ({ companyId }) => {
               className={NOTES_MODAL_CLASS}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-5 md:p-6 rounded-t-2xl">
-                <h2 className="text-base sm:text-lg md:text-xl font-semibold flex items-center gap-2">
+              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
                   <FaComment /> Rejection Notes
                 </h2>
               </div>
-              <div className="flex flex-1 flex-col p-4 sm:p-5 md:p-6">
-                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                  Please provide a reason for rejection
-                </label>
+              <div className="p-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Please provide a reason for rejection</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="min-h-[140px] w-full flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition"
                   placeholder="Enter rejection reason..."
                   autoFocus
                 />
-                <div className="mt-4 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:gap-3">
+                <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3">
+                  <button
+                    onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
+                  >
+                    Cancel
+                  </button>
                   <button
                     onClick={() => {
                       if (notes.trim()) {
@@ -852,21 +763,9 @@ const AttendanceManagement = ({ companyId }) => {
                         toast.warning('Please provide a reason for rejection');
                       }
                     }}
-                    disabled={rejectAccess.disabled}
-                    title={rejectAccess.disabled ? getAccessMessage(rejectAccess) : ''}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 sm:py-2 rounded-lg font-medium transition text-sm"
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium shadow-lg"
                   >
                     Submit Rejection
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowNotesModal(false);
-                      setSelectedAction(null);
-                      setNotes('');
-                    }}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-1.5 sm:py-2 rounded-lg font-medium transition text-sm"
-                  >
-                    Cancel
                   </button>
                 </div>
               </div>
@@ -874,8 +773,7 @@ const AttendanceManagement = ({ companyId }) => {
           </motion.div>
         )}
       </AnimatePresence>
-
-    </>
+    </div>
   );
 };
 

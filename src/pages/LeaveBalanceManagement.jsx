@@ -15,7 +15,6 @@ import {
   FaDollarSign,
   FaToggleOn,
   FaEye,
-  FaEllipsisV,
   FaSpinner,
   FaChevronDown,
 } from 'react-icons/fa';
@@ -23,6 +22,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 const ITEMS_PER_PAGE = 10;
@@ -307,78 +307,34 @@ const ActionMenu = ({
   editMessage = '',
   deleteMessage = '',
 }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (event) => {
-      if (ref.current && !ref.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        type="button"
-        onClick={() => setOpen((previous) => !previous)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-slate-100 hover:text-slate-700"
-      >
-        <FaEllipsisV size={13} />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: -4 }}
-            transition={{ duration: 0.12 }}
-            className="absolute right-0 top-9 z-50 min-w-[148px] rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                onView(balance);
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-600 transition hover:bg-slate-50"
-            >
-              <FaEye size={12} className="text-slate-400" /> View Details
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                onEdit(balance);
-              }}
-              disabled={editDisabled}
-              title={editDisabled ? editMessage : ''}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 transition hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaEdit size={12} /> Edit Balance
-            </button>
-            <div className="my-1 border-t border-gray-50" />
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                onDelete(balance);
-              }}
-              disabled={deleteDisabled}
-              title={deleteDisabled ? deleteMessage : ''}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaTrash size={12} /> Delete
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <SharedActionMenu
+      menuId={balance.id}
+      actions={[
+        {
+          label: 'View Details',
+          icon: <FaEye size={12} />,
+          onClick: () => onView(balance),
+          className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50'
+        },
+        {
+          label: 'Edit Balance',
+          icon: <FaEdit size={12} />,
+          onClick: () => onEdit(balance),
+          disabled: editDisabled,
+          title: editDisabled ? editMessage : '',
+          className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+        },
+        {
+          label: 'Delete',
+          icon: <FaTrash size={12} />,
+          onClick: () => onDelete(balance),
+          disabled: deleteDisabled,
+          title: deleteDisabled ? deleteMessage : '',
+          className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+        }
+      ]}
+    />
   );
 };
 

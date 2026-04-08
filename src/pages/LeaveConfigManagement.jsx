@@ -15,7 +15,6 @@ import {
   FaRegClock,
   FaCoins,
   FaUmbrellaBeach,
-  FaEllipsisV,
   FaEye,
   FaInfoCircle,
   FaToggleOn,
@@ -26,6 +25,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -157,64 +157,34 @@ const ActionMenu = ({
   editMessage = '',
   deleteMessage = '',
 }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   return (
-    <div ref={ref} className="relative flex justify-center">
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-slate-100 hover:text-slate-700"
-      >
-        <FaEllipsisV size={13} />
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: -4 }}
-            transition={{ duration: 0.12 }}
-            className="absolute right-0 top-9 z-50 min-w-[148px] rounded-xl border border-gray-100 bg-white py-1 shadow-xl"
-          >
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onView(record); }}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-slate-50"
-            >
-              <FaEye size={13} className="text-slate-400" /> View Details
-            </button>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onEdit(record); }}
-              disabled={editDisabled}
-              title={editDisabled ? editMessage : ''}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaEdit size={13} className="text-slate-400" /> Edit
-            </button>
-            <div className="mx-3 my-1 border-t border-gray-100" />
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onDelete(record); }}
-              disabled={deleteDisabled}
-              title={deleteDisabled ? deleteMessage : ''}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaTrash size={13} className="text-red-400" /> Delete
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <SharedActionMenu
+      menuId={record.id}
+      actions={[
+        {
+          label: 'View Details',
+          icon: <FaEye size={13} />,
+          onClick: () => onView(record),
+          className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50'
+        },
+        {
+          label: 'Edit',
+          icon: <FaEdit size={13} />,
+          onClick: () => onEdit(record),
+          disabled: editDisabled,
+          title: editDisabled ? editMessage : '',
+          className: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+        },
+        {
+          label: 'Delete',
+          icon: <FaTrash size={13} />,
+          onClick: () => onDelete(record),
+          disabled: deleteDisabled,
+          title: deleteDisabled ? deleteMessage : '',
+          className: 'text-red-500 hover:text-red-600 hover:bg-red-50'
+        }
+      ]}
+    />
   );
 };
 

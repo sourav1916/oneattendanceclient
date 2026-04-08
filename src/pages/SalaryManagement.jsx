@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaSearch, FaSpinner,
-  FaEllipsisV, FaPlus, FaInfoCircle, FaHistory, FaDollarSign,
+  FaPlus, FaInfoCircle, FaHistory, FaDollarSign,
   FaCalendarAlt, FaMoneyBillWave, FaChevronLeft, FaChevronRight,
   FaUsers, FaClock, FaGlobe, FaBan, FaUserCircle
 } from 'react-icons/fa';
@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -436,11 +437,6 @@ const SalaryManagement = () => {
     setHistoryData([]);
   };
 
-  const toggleActionMenu = (e, id) => {
-    e.stopPropagation();
-    setActiveActionMenu(activeActionMenu === id ? null : id);
-  };
-
   // ─── Form handlers ────────────────────────────────────────────────────────
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
@@ -648,30 +644,62 @@ const SalaryManagement = () => {
                             <span className="text-xs text-gray-400">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right relative">
-                          <button onClick={e => toggleActionMenu(e, emp.employee_id)} className="p-2 hover:bg-gray-100 rounded-xl transition-all duration-300 hover:shadow-md">
-                            <FaEllipsisV className="text-gray-600 text-xs" />
-                          </button>
-                          <AnimatePresence>
-                            {activeActionMenu === emp.employee_id && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                                onClick={e => e.stopPropagation()}
-                              >
-                                <button onClick={() => openViewModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-blue-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaEye size={12} /> View Details</button>
-                                <button onClick={() => openCreateModal(emp)} disabled={createAccess.disabled} title={createAccess.disabled ? createMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 text-emerald-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaPlus size={12} /> Assign Salary</button>
-                                {activeSalary && (
-                                  <>
-                                    <button onClick={() => openEditModal(emp, activeSalary)} disabled={updateAccess.disabled} title={updateAccess.disabled ? updateMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 text-amber-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={12} /> Edit Salary</button>
-                                    <button onClick={() => openReviseModal(emp)} disabled={reviseAccess.disabled} title={reviseAccess.disabled ? reviseMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50 text-purple-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaHistory size={12} /> Revise Salary</button>
-                                    <button onClick={() => openDeleteModal(emp, activeSalary)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={12} /> Delete Salary</button>
-                                  </>
-                                )}
-                                <button onClick={() => openHistoryModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 text-gray-600 flex items-center gap-3 transition-all duration-300 text-sm border-t border-gray-100"><FaHistory size={12} /> View History</button>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                        <td className="px-6 py-4 text-right">
+                          <ActionMenu
+                            menuId={emp.employee_id}
+                            activeId={activeActionMenu}
+                            onToggle={(e, id) => {
+                              setActiveActionMenu((current) => (current === id ? null : id));
+                            }}
+                            actions={[
+                              {
+                                label: 'View Details',
+                                icon: <FaEye size={12} />,
+                                onClick: () => openViewModal(emp),
+                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                              },
+                              {
+                                label: 'Assign Salary',
+                                icon: <FaPlus size={12} />,
+                                onClick: () => openCreateModal(emp),
+                                disabled: createAccess.disabled,
+                                title: createAccess.disabled ? createMessage : '',
+                                className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                              },
+                              ...(activeSalary ? [
+                                {
+                                  label: 'Edit Salary',
+                                  icon: <FaEdit size={12} />,
+                                  onClick: () => openEditModal(emp, activeSalary),
+                                  disabled: updateAccess.disabled,
+                                  title: updateAccess.disabled ? updateMessage : '',
+                                  className: 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                                },
+                                {
+                                  label: 'Revise Salary',
+                                  icon: <FaHistory size={12} />,
+                                  onClick: () => openReviseModal(emp),
+                                  disabled: reviseAccess.disabled,
+                                  title: reviseAccess.disabled ? reviseMessage : '',
+                                  className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                },
+                                {
+                                  label: 'Delete Salary',
+                                  icon: <FaTrash size={12} />,
+                                  onClick: () => openDeleteModal(emp, activeSalary),
+                                  disabled: deleteAccess.disabled,
+                                  title: deleteAccess.disabled ? deleteMessage : '',
+                                  className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                }
+                              ] : []),
+                              {
+                                label: 'View History',
+                                icon: <FaHistory size={12} />,
+                                onClick: () => openHistoryModal(emp),
+                                className: 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                              }
+                            ]}
+                          />
                         </td>
                       </motion.tr>
                     );
@@ -703,31 +731,61 @@ const SalaryManagement = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="relative">
-                      <button onClick={e => toggleActionMenu(e, emp.employee_id)} className="p-2 hover:bg-gray-100 rounded-xl transition-all">
-                        <FaEllipsisV className="text-gray-500 text-xs" />
-                      </button>
-                      <AnimatePresence>
-                        {activeActionMenu === emp.employee_id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <button onClick={() => openViewModal(emp)} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-blue-600 flex items-center gap-2 text-xs"><FaEye size={10} /> View Details</button>
-                            <button onClick={() => openCreateModal(emp)} disabled={createAccess.disabled} title={createAccess.disabled ? createMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-emerald-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaPlus size={10} /> Assign Salary</button>
-                            {activeSalary && (
-                              <>
-                                <button onClick={() => openEditModal(emp, activeSalary)} disabled={updateAccess.disabled} title={updateAccess.disabled ? updateMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-amber-50 text-amber-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={10} /> Edit</button>
-                                <button onClick={() => openReviseModal(emp)} disabled={reviseAccess.disabled} title={reviseAccess.disabled ? reviseMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-purple-50 text-purple-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaHistory size={10} /> Revise</button>
-                                <button onClick={() => openDeleteModal(emp, activeSalary)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={10} /> Delete</button>
-                              </>
-                            )}
-                            <button onClick={() => openHistoryModal(emp)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-gray-600 flex items-center gap-2 text-xs border-t border-gray-100"><FaHistory size={10} /> History</button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                    <ActionMenu
+                      menuId={emp.employee_id}
+                      activeId={activeActionMenu}
+                      onToggle={(e, id) => {
+                        setActiveActionMenu((current) => (current === id ? null : id));
+                      }}
+                      actions={[
+                        {
+                          label: 'View Details',
+                          icon: <FaEye size={10} />,
+                          onClick: () => openViewModal(emp),
+                          className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                        },
+                        {
+                          label: 'Assign Salary',
+                          icon: <FaPlus size={10} />,
+                          onClick: () => openCreateModal(emp),
+                          disabled: createAccess.disabled,
+                          title: createAccess.disabled ? createMessage : '',
+                          className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                        },
+                        ...(activeSalary ? [
+                          {
+                            label: 'Edit',
+                            icon: <FaEdit size={10} />,
+                            onClick: () => openEditModal(emp, activeSalary),
+                            disabled: updateAccess.disabled,
+                            title: updateAccess.disabled ? updateMessage : '',
+                            className: 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                          },
+                          {
+                            label: 'Revise',
+                            icon: <FaHistory size={10} />,
+                            onClick: () => openReviseModal(emp),
+                            disabled: reviseAccess.disabled,
+                            title: reviseAccess.disabled ? reviseMessage : '',
+                            className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                          },
+                          {
+                            label: 'Delete',
+                            icon: <FaTrash size={10} />,
+                            onClick: () => openDeleteModal(emp, activeSalary),
+                            disabled: deleteAccess.disabled,
+                            title: deleteAccess.disabled ? deleteMessage : '',
+                            className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                          }
+                        ] : []),
+                        {
+                          label: 'History',
+                          icon: <FaHistory size={10} />,
+                          onClick: () => openHistoryModal(emp),
+                          className: 'text-gray-600 hover:text-gray-700 hover:bg-gray-50'
+                        }
+                      ]}
+                    />
                   </div>
                   <div className="mt-4 pt-3 border-t border-gray-100">
                     <div className="flex justify-between items-center">

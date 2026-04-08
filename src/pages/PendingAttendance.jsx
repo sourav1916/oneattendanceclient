@@ -14,6 +14,7 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import ActionMenu from '../components/ActionMenu';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -236,44 +237,35 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                     </div>
                 </div>
                 <div className="relative flex-shrink-0 ml-2">
-                    <button
-                        onClick={() => onToggleMenu(attendance.id)}
-                        className="p-2 rounded-lg hover:bg-gray-100 transition"
-                    >
-                        <FaEllipsisV size={16} className="text-gray-500" />
-                    </button>
-
-                    {activeMenuId === attendance.id && (
-                        <div className="absolute right-0 top-10 z-10 w-40 rounded-xl border border-gray-200 bg-white shadow-lg">
-                            <>
-                                <button
-                                    onClick={() => onApprove(attendance.id)}
-                                    disabled={processingId === attendance.id || approveDisabled}
-                                    title={approveDisabled ? reviewMessage : ''}
-                                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-t-xl transition"
-                                >
-                                    {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
-                                    Approve
-                                </button>
-                                <button
-                                    onClick={() => onReject(attendance.id)}
-                                    disabled={processingId === attendance.id || rejectDisabled}
-                                    title={rejectDisabled ? reviewMessage : ''}
-                                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
-                                >
-                                    {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
-                                    Reject
-                                </button>
-                                <button
-                                    onClick={() => onViewDetails(attendance)}
-                                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-b-xl transition"
-                                >
-                                    <FaEye size={12} />
-                                    View Details
-                                </button>
-                            </>
-                        </div>
-                    )}
+                    <ActionMenu
+                        menuId={attendance.id}
+                        activeId={activeMenuId}
+                        onToggle={onToggleMenu}
+                        actions={[
+                            {
+                                label: 'Approve',
+                                icon: processingId === attendance.id ? FaSpinner : FaCheck,
+                                onClick: () => onApprove(attendance.id),
+                                disabled: processingId === attendance.id || approveDisabled,
+                                title: approveDisabled ? reviewMessage : '',
+                                className: 'text-green-600 hover:bg-green-50'
+                            },
+                            {
+                                label: 'Reject',
+                                icon: processingId === attendance.id ? FaSpinner : FaBan,
+                                onClick: () => onReject(attendance.id),
+                                disabled: processingId === attendance.id || rejectDisabled,
+                                title: rejectDisabled ? reviewMessage : '',
+                                className: 'text-red-600 hover:bg-red-50'
+                            },
+                            {
+                                label: 'View Details',
+                                icon: FaEye,
+                                onClick: () => onViewDetails(attendance),
+                                className: 'text-blue-600 hover:bg-blue-50'
+                            }
+                        ]}
+                    />
                 </div>
             </div>
 
@@ -658,47 +650,35 @@ const PendingAttendance = ({ companyId }) => {
                                                         )}
                                                         <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                                                             <div className="relative flex justify-center">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => toggleActionMenu(attendance.id)}
-                                                                    className="rounded-lg bg-gray-50 p-1.5 sm:p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
-                                                                    title="Actions"
-                                                                >
-                                                                    <FaEllipsisV size={14} className="sm:w-4 sm:h-4" />
-                                                                </button>
-
-                                                                {activeActionMenu === attendance.id && (
-                                                                    <div className="absolute right-0 top-8 sm:top-10 z-50 w-40 rounded-xl border border-gray-200 bg-white p-1.5 sm:p-2 shadow-xl">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleStatusUpdate(attendance.id, 'approve')}
-                                                                            disabled={processingId === attendance.id || approveAccess.disabled}
-                                                                            title={approveAccess.disabled ? pendingReviewMessage : ''}
-                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-green-700 transition hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        >
-                                                                            {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
-                                                                            Approve
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleStatusUpdate(attendance.id, 'reject')}
-                                                                            disabled={processingId === attendance.id || rejectAccess.disabled}
-                                                                            title={rejectAccess.disabled ? pendingReviewMessage : ''}
-                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-red-700 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        >
-                                                                            {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
-                                                                            Reject
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleViewDetails(attendance)}
-                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-blue-700 transition hover:bg-blue-50"
-                                                                        >
-                                                                            <FaEye size={12} />
-                                                                            View Details
-                                                                        </button>
-                                                                    </div>
-                                                                )}
+                                                                <ActionMenu
+                                                                    menuId={attendance.id}
+                                                                    activeId={activeActionMenu}
+                                                                    onToggle={toggleActionMenu}
+                                                                    actions={[
+                                                                        {
+                                                                            label: 'Approve',
+                                                                            icon: processingId === attendance.id ? FaSpinner : FaCheck,
+                                                                            onClick: () => handleStatusUpdate(attendance.id, 'approve'),
+                                                                            disabled: processingId === attendance.id || approveAccess.disabled,
+                                                                            title: approveAccess.disabled ? pendingReviewMessage : '',
+                                                                            className: 'text-green-700 hover:bg-green-50'
+                                                                        },
+                                                                        {
+                                                                            label: 'Reject',
+                                                                            icon: processingId === attendance.id ? FaSpinner : FaBan,
+                                                                            onClick: () => handleStatusUpdate(attendance.id, 'reject'),
+                                                                            disabled: processingId === attendance.id || rejectAccess.disabled,
+                                                                            title: rejectAccess.disabled ? pendingReviewMessage : '',
+                                                                            className: 'text-red-700 hover:bg-red-50'
+                                                                        },
+                                                                        {
+                                                                            label: 'View Details',
+                                                                            icon: FaEye,
+                                                                            onClick: () => handleViewDetails(attendance),
+                                                                            className: 'text-blue-700 hover:bg-blue-50'
+                                                                        }
+                                                                    ]}
+                                                                />
                                                             </div>
                                                         </td>
                                                     </motion.tr>

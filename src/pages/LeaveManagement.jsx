@@ -4,6 +4,7 @@ import apiCall from '../utils/api';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -204,71 +205,49 @@ function ActionMenu({
   const canAct = (l) => getNormalizedStatus(l) === 'pending';
   const canEdit = (l) =>
     ['pending'].includes(getNormalizedStatus(l));
-  const isOpen = activeId === menuId;
+  const actions = [
+    {
+      label: 'View Details',
+      icon: <FaEye size={13} />,
+      onClick: () => onView(leave),
+      className: 'text-violet-600 hover:text-violet-700 hover:bg-violet-50'
+    },
+    ...(canEdit(leave) ? [{
+      label: 'Edit Leave',
+      icon: <FaEdit size={13} />,
+      onClick: () => onEdit(leave),
+      disabled: editDisabled,
+      title: editDisabled ? editMessage : '',
+      className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+    }] : []),
+    ...(canAct(leave) ? [
+      {
+        label: 'Approve',
+        icon: <FaCheck size={13} />,
+        onClick: () => onApprove(leave),
+        disabled: approveDisabled,
+        title: approveDisabled ? reviewMessage : '',
+        className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+      },
+      {
+        label: 'Reject',
+        icon: <FaTrash size={13} />,
+        onClick: () => onReject(leave),
+        disabled: rejectDisabled,
+        title: rejectDisabled ? reviewMessage : '',
+        className: 'text-rose-600 hover:text-rose-700 hover:bg-rose-50'
+      }
+    ] : [])
+  ];
 
   return (
     <div className="relative" data-leave-action-menu>
-      <button
-        onClick={(e) => onToggle(e, menuId)}
-        className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-violet-300 hover:text-violet-600 active:scale-95"
-        title="More actions"
-      >
-        {/* Vertical three dots */}
-        <span className="flex flex-col items-center justify-center gap-[3px]">
-          <span className="w-[3px] h-[3px] rounded-full bg-current" />
-          <span className="w-[3px] h-[3px] rounded-full bg-current" />
-          <span className="w-[3px] h-[3px] rounded-full bg-current" />
-        </span>
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -6 }}
-            transition={{ duration: 0.13 }}
-            className="absolute right-0 top-full z-50 mt-1.5 w-40 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => onView(leave)}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-violet-600"
-            >
-              <span>👁</span> View Details
-            </button>
-            {canEdit(leave) && (
-              <button
-                onClick={() => onEdit(leave)}
-                disabled={editDisabled}
-                title={editDisabled ? editMessage : ''}
-                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span>✏️</span> Edit Leave
-              </button>
-            )}
-            {canAct(leave) && (
-              <>
-                <button
-                  onClick={() => onApprove(leave)}
-                  disabled={approveDisabled}
-                  title={approveDisabled ? reviewMessage : ''}
-                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span>✓</span> Approve
-                </button>
-                <button
-                  onClick={() => onReject(leave)}
-                  disabled={rejectDisabled}
-                  title={rejectDisabled ? reviewMessage : ''}
-                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span>✕</span> Reject
-                </button>
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SharedActionMenu
+        menuId={menuId}
+        activeId={activeId}
+        onToggle={onToggle}
+        actions={actions}
+      />
     </div>
   );
 }
