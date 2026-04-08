@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     FaBars,
-    FaBell,
     FaUserCircle,
     FaFingerprint,
     FaCaretDown,
@@ -14,22 +13,12 @@ import { useAuth } from "../context/AuthContext";
 const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded }) => {
     const { user, logout, activeRole } = useAuth();
     const [openDropdown, setOpenDropdown] = useState(false);
-    const [openNotifications, setOpenNotifications] = useState(false);
     const navigate = useNavigate();
 
     const handleLogout = () => {
         logout();
         navigate("/login");
     };
-
-    // Mock notifications data
-    const notifications = [
-        { id: 1, message: "New leave request from John Doe", time: "5 min ago", read: false },
-        { id: 2, message: "Your attendance has been approved", time: "1 hour ago", read: false },
-        { id: 3, message: "Payroll for March is ready", time: "2 hours ago", read: true },
-    ];
-
-    const unreadCount = notifications.filter(n => !n.read).length;
 
     // Determine if sidebar is open (for icon display)
     const isSidebarOpen = isMobile ? sidebarOpen : isDesktopSidebarExpanded;
@@ -81,63 +70,6 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
 
                     {/* Right section */}
                     <div className="flex items-center space-x-2 sm:space-x-3">
-                        {/* Notifications Bell with Badge */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setOpenNotifications(!openNotifications)}
-                                className="relative p-2 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-all duration-200"
-                                aria-label="Notifications"
-                            >
-                                <FaBell className="w-5 h-5" />
-                                {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                                        {unreadCount}
-                                    </span>
-                                )}
-                            </button>
-
-                            {/* Notifications Dropdown */}
-                            {openNotifications && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 z-40"
-                                        onClick={() => setOpenNotifications(false)}
-                                    />
-                                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
-                                        <div className="p-3 border-b border-gray-200 bg-gray-50">
-                                            <h3 className="font-semibold text-gray-800">Notifications</h3>
-                                        </div>
-                                        <div className="max-h-96 overflow-y-auto">
-                                            {notifications.length > 0 ? (
-                                                notifications.map((notification) => (
-                                                    <div
-                                                        key={notification.id}
-                                                        className={`
-                                                            p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer
-                                                            transition-colors duration-150
-                                                            ${!notification.read ? 'bg-blue-50' : ''}
-                                                        `}
-                                                    >
-                                                        <p className="text-sm text-gray-800">{notification.message}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="p-4 text-center text-gray-500">
-                                                    <p className="text-sm">No notifications</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="p-2 border-t border-gray-200 bg-gray-50">
-                                            <button className="w-full text-center text-xs text-blue-600 hover:text-blue-700 font-medium py-1">
-                                                View all notifications
-                                            </button>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
                         {/* User menu with modern dropdown style */}
                         <div className="relative inline-block">
                             <button
