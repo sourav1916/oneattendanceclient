@@ -10,7 +10,7 @@ import ModalScrollLock from "../ModalScrollLock";
 
 const GEOCODING_API = "https://nominatim.openstreetmap.org/reverse";
 
-function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
+function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled = false, submitTitle = '' }) {
   const [formData, setFormData] = useState({
     company_ip: [], // Changed to array
     name: "",
@@ -630,7 +630,9 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl order-1 sm:order-2"
+                disabled={submitDisabled}
+                title={submitDisabled ? submitTitle : ''}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl order-1 sm:order-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Update Company
               </button>

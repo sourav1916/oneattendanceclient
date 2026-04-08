@@ -14,6 +14,7 @@ import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ const InfoItem = ({ icon, label, value }) => (
 );
 
 const EmployeeManagement = () => {
+    const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [employees, setEmployees] = useState([]);
     const [constants, setConstants] = useState({
         employment_types: [],
@@ -99,6 +101,8 @@ const EmployeeManagement = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const updateEmployeeAccess = checkActionAccess('employeeManagement', 'update');
+    const deleteEmployeeAccess = checkActionAccess('employeeManagement', 'delete');
 
     const getIconForType = (key) => {
         const iconMap = {
@@ -421,6 +425,7 @@ const EmployeeManagement = () => {
     // ─── Modal Handlers ──────────────────────────────────────────────────────
 
     const openEditModal = async (employee) => {
+        if (updateEmployeeAccess.disabled) return;
         setConstantsLoading(true);
         setPermissionsLoading(true);
         try {
@@ -494,6 +499,7 @@ const EmployeeManagement = () => {
     };
 
     const openDeleteModal = (emp) => {
+        if (deleteEmployeeAccess.disabled) return;
         setSelectedEmployee(emp);
         setModalType(MODAL_TYPES.DELETE_CONFIRM);
         setActiveActionMenu(null);
@@ -784,8 +790,8 @@ const EmployeeManagement = () => {
                                                             onClick={e => e.stopPropagation()}
                                                         >
                                                             <button onClick={() => openViewModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all duration-300"><FaEye size={14} /> View Details</button>
-                                                            <button onClick={() => openEditModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300"><FaEdit size={14} /> Edit</button>
-                                                            <button onClick={() => openDeleteModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300"><FaTrash size={14} /> Delete</button>
+                                                            <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={14} /> Edit</button>
+                                                            <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={14} /> Delete</button>
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>
@@ -826,8 +832,8 @@ const EmployeeManagement = () => {
                                 </div>
                                 <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
                                     <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
-                                    <button onClick={() => openEditModal(emp)} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"><FaEdit size={16} /></button>
-                                    <button onClick={() => openDeleteModal(emp)} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110"><FaTrash size={16} /></button>
+                                    <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
+                                    <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                                 </div>
                             </motion.div>
                         ))}
@@ -1321,7 +1327,8 @@ const EmployeeManagement = () => {
                                                 type="submit"
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                disabled={loading || constantsLoading || permissionsLoading}
+                                                disabled={loading || constantsLoading || permissionsLoading || updateEmployeeAccess.disabled}
+                                                title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''}
                                                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {loading ? (
@@ -1378,7 +1385,7 @@ const EmployeeManagement = () => {
                                         </p>
                                         <div className="flex justify-center gap-4">
                                             <button onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
-                                            <button onClick={handleDelete} disabled={loading}
+                                            <button onClick={handleDelete} disabled={loading || deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''}
                                                 className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                                             >
                                                 {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={14} />}

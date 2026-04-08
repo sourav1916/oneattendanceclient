@@ -9,6 +9,7 @@ import {
     FaUsers, FaCog, FaDatabase, FaCloudUploadAlt,
     FaServer, FaLock, FaUnlockAlt, FaBell, FaEnvelopeOpen
 } from 'react-icons/fa';
+import { FaPalette } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -16,6 +17,7 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
 import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MODAL_TYPES = {
@@ -86,6 +88,7 @@ const SettingCard = ({ icon, title, description, onClick, className = "" }) => (
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 const CompanySettings = () => {
+    const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -168,6 +171,18 @@ const CompanySettings = () => {
         updatePagination,
         goToPage,
     } = usePagination(1, 10);
+    const updateCompanyAccess = checkActionAccess('companySettings', 'updateCompany');
+    const updateSettingsAccess = checkActionAccess('companySettings', 'updateSettings');
+    const updateBrandingAccess = checkActionAccess('companySettings', 'updateBranding');
+    const updateSecurityAccess = checkActionAccess('companySettings', 'updateSecurity');
+    const updateNotificationsAccess = checkActionAccess('companySettings', 'updateNotifications');
+    const deleteCompanyAccess = checkActionAccess('companySettings', 'delete');
+    const updateCompanyMessage = getAccessMessage(updateCompanyAccess);
+    const updateSettingsMessage = getAccessMessage(updateSettingsAccess);
+    const updateBrandingMessage = getAccessMessage(updateBrandingAccess);
+    const updateSecurityMessage = getAccessMessage(updateSecurityAccess);
+    const updateNotificationsMessage = getAccessMessage(updateNotificationsAccess);
+    const deleteCompanyMessage = getAccessMessage(deleteCompanyAccess);
     
     const isMounted = useRef(true);
     const fetchInProgress = useRef(false);
@@ -344,6 +359,7 @@ const CompanySettings = () => {
     };
     
     const openEditModal = async (company) => {
+        if (updateCompanyAccess.disabled) return;
         setSelectedCompany(company);
         await fetchCompanySettings(company.id);
         setModalType(MODAL_TYPES.EDIT);
@@ -358,12 +374,14 @@ const CompanySettings = () => {
     };
     
     const openDeleteModal = (company) => {
+        if (deleteCompanyAccess.disabled) return;
         setSelectedCompany(company);
         setModalType(MODAL_TYPES.DELETE_CONFIRM);
         setActiveActionMenu(null);
     };
     
     const openSettingsModal = async (company) => {
+        if (updateSettingsAccess.disabled) return;
         setSelectedCompany(company);
         await fetchCompanySettings(company.id);
         setModalType(MODAL_TYPES.SETTINGS);
@@ -371,6 +389,7 @@ const CompanySettings = () => {
     };
     
     const openBrandingModal = async (company) => {
+        if (updateBrandingAccess.disabled) return;
         setSelectedCompany(company);
         await fetchCompanySettings(company.id);
         setModalType(MODAL_TYPES.BRANDING);
@@ -378,6 +397,7 @@ const CompanySettings = () => {
     };
     
     const openSecurityModal = async (company) => {
+        if (updateSecurityAccess.disabled) return;
         setSelectedCompany(company);
         await fetchCompanySettings(company.id);
         setModalType(MODAL_TYPES.SECURITY);
@@ -385,6 +405,7 @@ const CompanySettings = () => {
     };
     
     const openNotificationsModal = async (company) => {
+        if (updateNotificationsAccess.disabled) return;
         setSelectedCompany(company);
         await fetchCompanySettings(company.id);
         setModalType(MODAL_TYPES.NOTIFICATIONS);
@@ -418,6 +439,7 @@ const CompanySettings = () => {
     };
     
     const handleCompanyDelete = async () => {
+        if (deleteCompanyAccess.disabled) return;
         if (!selectedCompany) return;
         const result = await deleteCompany(selectedCompany.id);
         if (result.success) {
@@ -429,6 +451,7 @@ const CompanySettings = () => {
     };
     
     const handleSettingsUpdate = async (settingsData) => {
+        if (updateSettingsAccess.disabled) return;
         const result = await updateCompanySettings('settings', settingsData);
         if (result.success) {
             setCompanySettings(prev => ({ ...prev, ...settingsData }));
@@ -436,6 +459,7 @@ const CompanySettings = () => {
     };
     
     const handleBrandingUpdate = async (brandingData) => {
+        if (updateBrandingAccess.disabled) return;
         const result = await updateCompanySettings('branding', brandingData);
         if (result.success) {
             setBrandingSettings(prev => ({ ...prev, ...brandingData }));
@@ -443,6 +467,7 @@ const CompanySettings = () => {
     };
     
     const handleSecurityUpdate = async (securityData) => {
+        if (updateSecurityAccess.disabled) return;
         const result = await updateCompanySettings('security', securityData);
         if (result.success) {
             setSecuritySettings(prev => ({ ...prev, ...securityData }));
@@ -450,6 +475,7 @@ const CompanySettings = () => {
     };
     
     const handleNotificationsUpdate = async (notificationsData) => {
+        if (updateNotificationsAccess.disabled) return;
         const result = await updateCompanySettings('notifications', notificationsData);
         if (result.success) {
             setNotificationSettings(prev => ({ ...prev, ...notificationsData }));
@@ -604,22 +630,22 @@ const CompanySettings = () => {
                                                         <button onClick={() => openViewModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 text-blue-600 flex items-center gap-3 transition-all">
                                                             <FaEye size={14} /> View Details
                                                         </button>
-                                                        <button onClick={() => openEditModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all">
+                                                        <button onClick={() => openEditModal(company)} disabled={updateCompanyAccess.disabled} title={updateCompanyAccess.disabled ? updateCompanyMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaEdit size={14} /> Edit Company
                                                         </button>
-                                                        <button onClick={() => openSettingsModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 text-indigo-600 flex items-center gap-3 transition-all">
+                                                        <button onClick={() => openSettingsModal(company)} disabled={updateSettingsAccess.disabled} title={updateSettingsAccess.disabled ? updateSettingsMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 text-indigo-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaCog size={14} /> System Settings
                                                         </button>
-                                                        <button onClick={() => openBrandingModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 text-pink-600 flex items-center gap-3 transition-all">
+                                                        <button onClick={() => openBrandingModal(company)} disabled={updateBrandingAccess.disabled} title={updateBrandingAccess.disabled ? updateBrandingMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 text-pink-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaPalette size={14} /> Branding
                                                         </button>
-                                                        <button onClick={() => openSecurityModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 text-red-600 flex items-center gap-3 transition-all">
+                                                        <button onClick={() => openSecurityModal(company)} disabled={updateSecurityAccess.disabled} title={updateSecurityAccess.disabled ? updateSecurityMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 text-red-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaLock size={14} /> Security
                                                         </button>
-                                                        <button onClick={() => openNotificationsModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-amber-50 text-yellow-600 flex items-center gap-3 transition-all">
+                                                        <button onClick={() => openNotificationsModal(company)} disabled={updateNotificationsAccess.disabled} title={updateNotificationsAccess.disabled ? updateNotificationsMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-amber-50 text-yellow-600 flex items-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaBell size={14} /> Notifications
                                                         </button>
-                                                        <button onClick={() => openDeleteModal(company)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all border-t border-gray-100">
+                                                        <button onClick={() => openDeleteModal(company)} disabled={deleteCompanyAccess.disabled} title={deleteCompanyAccess.disabled ? deleteCompanyMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all border-t border-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <FaTrash size={14} /> Delete Company
                                                         </button>
                                                     </motion.div>
@@ -695,6 +721,8 @@ const CompanySettings = () => {
                 onClose={closeModal}
                 onSuccess={handleCompanyUpdate}
                 company={selectedCompany}
+                submitDisabled={updateCompanyAccess.disabled}
+                submitTitle={updateCompanyAccess.disabled ? updateCompanyMessage : ''}
             />
             
             {/* VIEW MODAL */}
@@ -823,8 +851,10 @@ const CompanySettings = () => {
                                         onClick={() => {
                                             closeModal();
                                             openEditModal(selectedCompany);
-                                        }} 
-                                        className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-medium shadow-lg"
+                                        }}
+                                        disabled={updateCompanyAccess.disabled}
+                                        title={updateCompanyAccess.disabled ? updateCompanyMessage : ''}
+                                        className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all font-medium shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         <FaEdit className="inline mr-2" />
                                         Edit Company
@@ -1069,7 +1099,8 @@ const CompanySettings = () => {
                                     </button>
                                     <button
                                         onClick={() => handleSettingsUpdate(companySettings)}
-                                        disabled={loading}
+                                        disabled={loading || updateSettingsAccess.disabled}
+                                        title={updateSettingsAccess.disabled ? updateSettingsMessage : ''}
                                         className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
@@ -1250,7 +1281,8 @@ const CompanySettings = () => {
                                     </button>
                                     <button
                                         onClick={() => handleBrandingUpdate(brandingSettings)}
-                                        disabled={loading}
+                                        disabled={loading || updateBrandingAccess.disabled}
+                                        title={updateBrandingAccess.disabled ? updateBrandingMessage : ''}
                                         className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 text-white font-medium hover:from-pink-700 hover:to-rose-700 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
@@ -1535,7 +1567,8 @@ const CompanySettings = () => {
                                     </button>
                                     <button
                                         onClick={() => handleSecurityUpdate(securitySettings)}
-                                        disabled={loading}
+                                        disabled={loading || updateSecurityAccess.disabled}
+                                        title={updateSecurityAccess.disabled ? updateSecurityMessage : ''}
                                         className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-medium hover:from-red-700 hover:to-orange-700 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
@@ -1744,7 +1777,8 @@ const CompanySettings = () => {
                                     </button>
                                     <button
                                         onClick={() => handleNotificationsUpdate(notificationSettings)}
-                                        disabled={loading}
+                                        disabled={loading || updateNotificationsAccess.disabled}
+                                        title={updateNotificationsAccess.disabled ? updateNotificationsMessage : ''}
                                         className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-600 to-amber-600 text-white font-medium hover:from-yellow-700 hover:to-amber-700 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
                                     >
                                         {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
@@ -1804,7 +1838,8 @@ const CompanySettings = () => {
                                     </button>
                                     <button 
                                         onClick={handleCompanyDelete} 
-                                        disabled={loading}
+                                        disabled={loading || deleteCompanyAccess.disabled}
+                                        title={deleteCompanyAccess.disabled ? deleteCompanyMessage : ''}
                                         className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all font-medium disabled:opacity-50 shadow-lg"
                                     >
                                         {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={14} />}
@@ -1819,8 +1854,5 @@ const CompanySettings = () => {
         </div>
     );
 };
-
-// Missing import for FaPalette
-import { FaPalette } from 'react-icons/fa';
 
 export default CompanySettings;

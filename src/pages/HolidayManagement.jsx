@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ==================== ICONS (inline SVG to avoid FA sizing issues) ====================
 const Icon = {
@@ -250,7 +251,7 @@ const Modal = ({ children, onClose, danger = false }) => (
 );
 
 // ==================== CREATE HOLIDAY MODAL ====================
-const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialName }) => {
+const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialName, submitDisabled = false, submitTitle = '' }) => {
   const [name, setName] = useState(initialName || '');
   const [isOptional, setIsOptional] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -319,7 +320,8 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || submitDisabled}
+          title={submitDisabled ? submitTitle : ''}
           className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? <><Icon.Spinner /> Creating…</> : <><Icon.Plus /> Create Holiday{selectedDates.length > 1 ? 's' : ''}</>}
@@ -330,7 +332,7 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
 };
 
 // ==================== UPDATE HOLIDAY MODAL ====================
-const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
+const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess, submitDisabled = false, submitTitle = '' }) => {
   const [name, setName] = useState(holiday.name || '');
   const [isOptional, setIsOptional] = useState(holiday.is_optional === 1);
   const [loading, setLoading] = useState(false);
@@ -387,7 +389,8 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || submitDisabled}
+          title={submitDisabled ? submitTitle : ''}
           className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {loading ? <><Icon.Spinner /> Updating…</> : <><Icon.Check /> Save Changes</>}
@@ -398,7 +401,7 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess }) => {
 };
 
 // ==================== DELETE CONFIRMATION MODAL ====================
-const DeleteModal = ({ holiday, onClose, onDeleteSuccess }) => {
+const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false, submitTitle = '' }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -435,7 +438,8 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess }) => {
           </button>
           <button
             onClick={handleDelete}
-            disabled={loading}
+            disabled={loading || submitDisabled}
+            title={submitDisabled ? submitTitle : ''}
             className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-100 disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <><Icon.Spinner /> Deleting…</> : 'Delete'}
@@ -447,7 +451,18 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess }) => {
 };
 
 // ==================== ACTION MENU ====================
-const ActionMenu = ({ date, holidayInfo, onAction, onClose }) => {
+const ActionMenu = ({
+  date,
+  holidayInfo,
+  onAction,
+  onClose,
+  createDisabled = false,
+  updateDisabled = false,
+  deleteDisabled = false,
+  createMessage = '',
+  updateMessage = '',
+  deleteMessage = '',
+}) => {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -472,7 +487,9 @@ const ActionMenu = ({ date, holidayInfo, onAction, onClose }) => {
       {canCreate && (
         <button
           onClick={() => { onAction(date, holidayInfo, 'create'); onClose(); }}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+          disabled={createDisabled}
+          title={createDisabled ? createMessage : ''}
+          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="w-7 h-7 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center flex-shrink-0">
             <Icon.Plus />
@@ -484,7 +501,9 @@ const ActionMenu = ({ date, holidayInfo, onAction, onClose }) => {
         <>
           <button
             onClick={() => { onAction(date, holidayInfo, 'update'); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+            disabled={updateDisabled}
+            title={updateDisabled ? updateMessage : ''}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="w-7 h-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
               <Icon.Edit />
@@ -494,7 +513,9 @@ const ActionMenu = ({ date, holidayInfo, onAction, onClose }) => {
           <div className="mx-3 h-px bg-gray-100" />
           <button
             onClick={() => { onAction(date, holidayInfo, 'delete'); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+            disabled={deleteDisabled}
+            title={deleteDisabled ? deleteMessage : ''}
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="w-7 h-7 rounded-lg bg-red-100 text-red-500 flex items-center justify-center flex-shrink-0">
               <Icon.Trash />
@@ -508,7 +529,21 @@ const ActionMenu = ({ date, holidayInfo, onAction, onClose }) => {
 };
 
 // ==================== CALENDAR CELL ====================
-const CalendarCell = ({ date, dayNumber, isCurrentMonth, isToday, holidayInfo, onAction, onMonthNavigate }) => {
+const CalendarCell = ({
+  date,
+  dayNumber,
+  isCurrentMonth,
+  isToday,
+  holidayInfo,
+  onAction,
+  onMonthNavigate,
+  createDisabled,
+  updateDisabled,
+  deleteDisabled,
+  createMessage,
+  updateMessage,
+  deleteMessage,
+}) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const config = getHolidayConfig(holidayInfo);
 
@@ -553,6 +588,12 @@ const CalendarCell = ({ date, dayNumber, isCurrentMonth, isToday, holidayInfo, o
                   holidayInfo={holidayInfo}
                   onAction={onAction}
                   onClose={() => setMenuOpen(false)}
+                  createDisabled={createDisabled}
+                  updateDisabled={updateDisabled}
+                  deleteDisabled={deleteDisabled}
+                  createMessage={createMessage}
+                  updateMessage={updateMessage}
+                  deleteMessage={deleteMessage}
                 />
               )}
             </AnimatePresence>
@@ -587,6 +628,7 @@ const CalendarCell = ({ date, dayNumber, isCurrentMonth, isToday, holidayInfo, o
 
 // ==================== MAIN COMPONENT ====================
 const HolidayManagementCalendar = () => {
+  const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [currentDate, setCurrentDate] = useState(() => toCalendarDate(new Date()) || new Date());
   const [allHolidays, setAllHolidays] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -598,6 +640,12 @@ const HolidayManagementCalendar = () => {
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
   const today = useMemo(() => toCalendarDate(new Date()) || new Date(), []);
+  const createAccess = checkActionAccess('holidayManagement', 'create');
+  const updateAccess = checkActionAccess('holidayManagement', 'update');
+  const deleteAccess = checkActionAccess('holidayManagement', 'delete');
+  const createMessage = getAccessMessage(createAccess);
+  const updateMessage = getAccessMessage(updateAccess);
+  const deleteMessage = getAccessMessage(deleteAccess);
 
   // Fetch holidays for current month
   useEffect(() => {
@@ -644,6 +692,9 @@ const HolidayManagementCalendar = () => {
   }, [allHolidays, currentYear, currentMonth]);
 
   const handleAction = useCallback((date, holiday, action) => {
+    if (action === 'create' && createAccess.disabled) return;
+    if (action === 'update' && updateAccess.disabled) return;
+    if (action === 'delete' && deleteAccess.disabled) return;
     if (action === 'create') {
       setModalData({ dates: [date], initialName: holiday?.name || '' });
       setActiveModal('create');
@@ -654,7 +705,7 @@ const HolidayManagementCalendar = () => {
       setModalData(holiday);
       setActiveModal('delete');
     }
-  }, []);
+  }, [createAccess.disabled, deleteAccess.disabled, updateAccess.disabled]);
 
   const closeModal = useCallback(() => { setActiveModal(null); setModalData(null); }, []);
 
@@ -795,6 +846,12 @@ const HolidayManagementCalendar = () => {
                   {...cell}
                   onAction={handleAction}
                   onMonthNavigate={handleMonthNavigate}
+                  createDisabled={createAccess.disabled}
+                  updateDisabled={updateAccess.disabled}
+                  deleteDisabled={deleteAccess.disabled}
+                  createMessage={createMessage}
+                  updateMessage={updateMessage}
+                  deleteMessage={deleteMessage}
                 />
               ))}
             </div>
@@ -842,6 +899,8 @@ const HolidayManagementCalendar = () => {
             initialName={modalData.initialName}
             onClose={closeModal}
             onCreateSuccess={handleRefresh}
+            submitDisabled={createAccess.disabled}
+            submitTitle={createAccess.disabled ? createMessage : ''}
           />
         )}
         {activeModal === 'update' && modalData && (
@@ -849,6 +908,8 @@ const HolidayManagementCalendar = () => {
             holiday={modalData}
             onClose={closeModal}
             onUpdateSuccess={handleRefresh}
+            submitDisabled={updateAccess.disabled}
+            submitTitle={updateAccess.disabled ? updateMessage : ''}
           />
         )}
         {activeModal === 'delete' && modalData && (
@@ -856,6 +917,8 @@ const HolidayManagementCalendar = () => {
             holiday={modalData}
             onClose={closeModal}
             onDeleteSuccess={handleRefresh}
+            submitDisabled={deleteAccess.disabled}
+            submitTitle={deleteAccess.disabled ? deleteMessage : ''}
           />
         )}
       </AnimatePresence>

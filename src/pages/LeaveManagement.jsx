@@ -4,6 +4,7 @@ import apiCall from '../utils/api';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (d) =>
@@ -184,7 +185,21 @@ function Spinner() {
 }
 
 // ─── Action Menu (Three-dot vertical) ─────────────────────────────────────────
-function ActionMenu({ leave, activeId, menuId, onToggle, onView, onEdit, onApprove, onReject }) {
+function ActionMenu({
+  leave,
+  activeId,
+  menuId,
+  onToggle,
+  onView,
+  onEdit,
+  onApprove,
+  onReject,
+  editDisabled = false,
+  approveDisabled = false,
+  rejectDisabled = false,
+  editMessage = '',
+  reviewMessage = '',
+}) {
   const getNormalizedStatus = (l) => String(l?.status || '').toLowerCase();
   const canAct = (l) => getNormalizedStatus(l) === 'pending';
   const canEdit = (l) =>
@@ -224,7 +239,9 @@ function ActionMenu({ leave, activeId, menuId, onToggle, onView, onEdit, onAppro
             {canEdit(leave) && (
               <button
                 onClick={() => onEdit(leave)}
-                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
+                disabled={editDisabled}
+                title={editDisabled ? editMessage : ''}
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span>✏️</span> Edit Leave
               </button>
@@ -233,13 +250,17 @@ function ActionMenu({ leave, activeId, menuId, onToggle, onView, onEdit, onAppro
               <>
                 <button
                   onClick={() => onApprove(leave)}
-                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50"
+                  disabled={approveDisabled}
+                  title={approveDisabled ? reviewMessage : ''}
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-emerald-600 transition hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>✓</span> Approve
                 </button>
                 <button
                   onClick={() => onReject(leave)}
-                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                  disabled={rejectDisabled}
+                  title={rejectDisabled ? reviewMessage : ''}
+                  className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>✕</span> Reject
                 </button>
@@ -261,6 +282,11 @@ function MobileLeaveCard({
   onEdit,
   onApprove,
   onReject,
+  editDisabled,
+  approveDisabled,
+  rejectDisabled,
+  editMessage,
+  reviewMessage,
 }) {
   return (
     <motion.div
@@ -286,6 +312,11 @@ function MobileLeaveCard({
                 onEdit={onEdit}
                 onApprove={onApprove}
                 onReject={onReject}
+                editDisabled={editDisabled}
+                approveDisabled={approveDisabled}
+                rejectDisabled={rejectDisabled}
+                editMessage={editMessage}
+                reviewMessage={reviewMessage}
               />
             </div>
           </div>
@@ -352,6 +383,7 @@ function MobileLeaveCard({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 const LeaveManagement = () => {
+  const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -371,6 +403,11 @@ const LeaveManagement = () => {
   const [editForm, setEditForm] = useState({});
   const [deletedAttachments, setDeletedAttachments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const updateAccess = checkActionAccess('leaveManagement', 'update');
+  const approveAccess = checkActionAccess('leaveManagement', 'approve');
+  const rejectAccess = checkActionAccess('leaveManagement', 'reject');
+  const updateMessage = getAccessMessage(updateAccess);
+  const reviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
 
   const searchTimer = useRef(null);
   // Track the last fetch params to avoid duplicate calls
@@ -503,6 +540,7 @@ const LeaveManagement = () => {
   }, []);
 
   const handleEdit = useCallback((leave) => {
+    if (updateAccess.disabled) return;
     setActiveActionMenu(null);
     setEditLeave(leave);
     setEditForm({
@@ -514,19 +552,21 @@ const LeaveManagement = () => {
       reason: leave.reason || '',
     });
     setDeletedAttachments([]);
-  }, []);
+  }, [updateAccess.disabled]);
 
   const handleApproveOpen = useCallback((leave) => {
+    if (approveAccess.disabled) return;
     setActiveActionMenu(null);
     setApproveLeave(leave);
     setApproveRemarks('');
-  }, []);
+  }, [approveAccess.disabled]);
 
   const handleRejectOpen = useCallback((leave) => {
+    if (rejectAccess.disabled) return;
     setActiveActionMenu(null);
     setRejectLeave(leave);
     setRejectRemarks('');
-  }, []);
+  }, [rejectAccess.disabled]);
 
   // ── Approve ────────────────────────────────────────────────────────────────
   const submitApprove = async () => {
@@ -900,6 +940,11 @@ const LeaveManagement = () => {
                             onEdit={handleEdit}
                             onApprove={handleApproveOpen}
                             onReject={handleRejectOpen}
+                            editDisabled={updateAccess.disabled}
+                            approveDisabled={approveAccess.disabled}
+                            rejectDisabled={rejectAccess.disabled}
+                            editMessage={updateMessage}
+                            reviewMessage={reviewMessage}
                           />
                         </div>
                       </Td>
@@ -946,6 +991,11 @@ const LeaveManagement = () => {
                   onEdit={handleEdit}
                   onApprove={handleApproveOpen}
                   onReject={handleRejectOpen}
+                  editDisabled={updateAccess.disabled}
+                  approveDisabled={approveAccess.disabled}
+                  rejectDisabled={rejectAccess.disabled}
+                  editMessage={updateMessage}
+                  reviewMessage={reviewMessage}
                 />
               ))
             )}
@@ -1088,7 +1138,8 @@ const LeaveManagement = () => {
               </button>
               <button
                 onClick={submitApprove}
-                disabled={submitting}
+                disabled={submitting || approveAccess.disabled}
+                title={approveAccess.disabled ? reviewMessage : ''}
                 className="px-5 py-2 rounded-xl bg-emerald-500 text-white text-sm font-bold hover:bg-emerald-600 transition disabled:opacity-50 flex items-center gap-2"
               >
                 {submitting && <Spinner />} Approve
@@ -1139,7 +1190,8 @@ const LeaveManagement = () => {
               </button>
               <button
                 onClick={submitReject}
-                disabled={submitting}
+                disabled={submitting || rejectAccess.disabled}
+                title={rejectAccess.disabled ? reviewMessage : ''}
                 className="px-5 py-2 rounded-xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 transition disabled:opacity-50 flex items-center gap-2"
               >
                 {submitting && <Spinner />} Reject
@@ -1190,7 +1242,8 @@ const LeaveManagement = () => {
               </button>
               <button
                 onClick={submitEdit}
-                disabled={submitting}
+                disabled={submitting || updateAccess.disabled}
+                title={updateAccess.disabled ? updateMessage : ''}
                 className="px-5 py-2 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 transition disabled:opacity-50 flex items-center gap-2"
               >
                 {submitting && <Spinner />} Save Changes

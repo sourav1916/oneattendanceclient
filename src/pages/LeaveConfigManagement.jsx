@@ -26,6 +26,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -146,7 +147,16 @@ const ToggleSwitch = ({ checked, onChange, label, sublabel }) => (
 
 // ─── 3-dot Action Menu ────────────────────────────────────────────────────────
 
-const ActionMenu = ({ record, onView, onEdit, onDelete }) => {
+const ActionMenu = ({
+  record,
+  onView,
+  onEdit,
+  onDelete,
+  editDisabled = false,
+  deleteDisabled = false,
+  editMessage = '',
+  deleteMessage = '',
+}) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -185,7 +195,9 @@ const ActionMenu = ({ record, onView, onEdit, onDelete }) => {
             <button
               type="button"
               onClick={() => { setOpen(false); onEdit(record); }}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-slate-50"
+              disabled={editDisabled}
+              title={editDisabled ? editMessage : ''}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaEdit size={13} className="text-slate-400" /> Edit
             </button>
@@ -193,7 +205,9 @@ const ActionMenu = ({ record, onView, onEdit, onDelete }) => {
             <button
               type="button"
               onClick={() => { setOpen(false); onDelete(record); }}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 transition hover:bg-red-50"
+              disabled={deleteDisabled}
+              title={deleteDisabled ? deleteMessage : ''}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaTrash size={13} className="text-red-400" /> Delete
             </button>
@@ -239,7 +253,7 @@ const InfoItem = ({ label, value }) => (
   </div>
 );
 
-const ViewDetailsModal = ({ record, onClose, onEdit }) => {
+const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editTitle = '' }) => {
   if (!record) return null;
   return (
     <AnimatePresence>
@@ -307,7 +321,9 @@ const ViewDetailsModal = ({ record, onClose, onEdit }) => {
               <button
                 type="button"
                 onClick={() => { onClose(); onEdit(record); }}
-                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-2.5 text-sm font-medium text-white transition hover:from-violet-700 hover:to-indigo-700"
+                disabled={editDisabled}
+                title={editDisabled ? editTitle : ''}
+                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-2.5 text-sm font-medium text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <FaEdit className="mr-1.5 inline" /> Edit
               </button>
@@ -321,7 +337,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit }) => {
 
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
-const DeleteModal = ({ leaveType, onConfirm, onClose, loading }) => (
+const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = false, submitTitle = '' }) => (
   <motion.div
     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
@@ -348,7 +364,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading }) => (
         <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50">
           Cancel
         </button>
-        <button type="button" onClick={onConfirm} disabled={loading} className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60">
+        <button type="button" onClick={onConfirm} disabled={loading || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed">
           {loading ? 'Deleting…' : 'Delete'}
         </button>
       </div>
@@ -358,7 +374,16 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading }) => (
 
 // ─── Form Modal ───────────────────────────────────────────────────────────────
 
-const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualTypeOptions, existingCodes }) => {
+const FormModal = ({
+  editRecord,
+  onClose,
+  onSaved,
+  leaveTypeOptions,
+  accrualTypeOptions,
+  existingCodes,
+  submitDisabled = false,
+  submitTitle = '',
+}) => {
   const isEdit = !!editRecord;
   const [form, setForm] = useState(isEdit ? { ...editRecord } : { ...DEFAULT_FORM });
   const [saving, setSaving] = useState(false);
@@ -563,7 +588,7 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualType
             <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-medium text-gray-600 transition hover:bg-gray-50">
               Cancel
             </button>
-            <button type="button" onClick={handleSubmit} disabled={saving} className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-medium text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60">
+            <button type="button" onClick={handleSubmit} disabled={saving || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 text-sm font-medium text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed">
               {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Leave Type'}
             </button>
           </div>
@@ -579,6 +604,7 @@ const FormModal = ({ editRecord, onClose, onSaved, leaveTypeOptions, accrualType
 const ITEMS_PER_PAGE = 10;
 
 const LeaveConfigManagement = () => {
+  const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -597,6 +623,12 @@ const LeaveConfigManagement = () => {
   const fetchInProgress = useRef(false);
 
   const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
+  const createAccess = checkActionAccess('leaveConfig', 'create');
+  const updateAccess = checkActionAccess('leaveConfig', 'update');
+  const deleteAccess = checkActionAccess('leaveConfig', 'delete');
+  const createMessage = getAccessMessage(createAccess);
+  const updateMessage = getAccessMessage(updateAccess);
+  const deleteMessage = getAccessMessage(deleteAccess);
 
   // Responsive column visibility
   const [windowWidth, setWindowWidth] = useState(
@@ -727,6 +759,21 @@ const LeaveConfigManagement = () => {
     }
   };
 
+  const openCreateModal = () => {
+    if (createAccess.disabled) return;
+    setFormModal({ open: true, record: null });
+  };
+
+  const openEditModal = (record) => {
+    if (updateAccess.disabled) return;
+    setFormModal({ open: true, record });
+  };
+
+  const openDeleteModal = (record) => {
+    if (deleteAccess.disabled) return;
+    setDeleteModal({ open: true, record });
+  };
+
   // Responsive: progressively hide columns so the table NEVER overflows
   // At 768px only Code, Name, Type, Max Balance, Actions remain (5 cols = fits fine)
   const showStatus = windowWidth >= 1140;
@@ -771,8 +818,10 @@ const LeaveConfigManagement = () => {
             </div>
             <button
               type="button"
-              onClick={() => setFormModal({ open: true, record: null })}
-              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-indigo-700 active:scale-95"
+              onClick={openCreateModal}
+              disabled={createAccess.disabled}
+              title={createAccess.disabled ? createMessage : ''}
+              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <FaPlus size={12} /> New Leave Type
             </button>
@@ -868,8 +917,12 @@ const LeaveConfigManagement = () => {
                       <ActionMenu
                         record={record}
                         onView={(r) => setViewModal({ open: true, record: r })}
-                        onEdit={(r) => setFormModal({ open: true, record: r })}
-                        onDelete={(r) => setDeleteModal({ open: true, record: r })}
+                        onEdit={openEditModal}
+                        onDelete={openDeleteModal}
+                        editDisabled={updateAccess.disabled}
+                        deleteDisabled={deleteAccess.disabled}
+                        editMessage={updateMessage}
+                        deleteMessage={deleteMessage}
                       />
                     </td>
                   </motion.tr>
@@ -904,8 +957,12 @@ const LeaveConfigManagement = () => {
                     <ActionMenu
                       record={record}
                       onView={(r) => setViewModal({ open: true, record: r })}
-                      onEdit={(r) => setFormModal({ open: true, record: r })}
-                      onDelete={(r) => setDeleteModal({ open: true, record: r })}
+                      onEdit={openEditModal}
+                      onDelete={openDeleteModal}
+                      editDisabled={updateAccess.disabled}
+                      deleteDisabled={deleteAccess.disabled}
+                      editMessage={updateMessage}
+                      deleteMessage={deleteMessage}
                     />
                   </div>
                 </div>
@@ -970,8 +1027,10 @@ const LeaveConfigManagement = () => {
             {!debouncedSearch && (
               <button
                 type="button"
-                onClick={() => setFormModal({ open: true, record: null })}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700"
+                onClick={openCreateModal}
+                disabled={createAccess.disabled}
+                title={createAccess.disabled ? createMessage : ''}
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <FaPlus size={12} /> Create Leave Type
               </button>
@@ -987,7 +1046,9 @@ const LeaveConfigManagement = () => {
             key="view-modal"
             record={viewModal.record}
             onClose={() => setViewModal({ open: false, record: null })}
-            onEdit={(r) => setFormModal({ open: true, record: r })}
+            onEdit={openEditModal}
+            editDisabled={updateAccess.disabled}
+            editTitle={updateMessage}
           />
         )}
         {formModal.open && (
@@ -1002,6 +1063,8 @@ const LeaveConfigManagement = () => {
               setFormModal({ open: false, record: null });
               loadRecords(pagination.page, debouncedSearch, false);
             }}
+            submitDisabled={formModal.record ? updateAccess.disabled : createAccess.disabled}
+            submitTitle={formModal.record ? updateMessage : createMessage}
           />
         )}
         {deleteModal.open && (
@@ -1011,6 +1074,8 @@ const LeaveConfigManagement = () => {
             onClose={() => setDeleteModal({ open: false, record: null })}
             onConfirm={handleDelete}
             loading={deleting}
+            submitDisabled={deleteAccess.disabled}
+            submitTitle={deleteMessage}
           />
         )}
       </AnimatePresence>

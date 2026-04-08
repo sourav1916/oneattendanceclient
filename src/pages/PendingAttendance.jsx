@@ -13,6 +13,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 const pendingAttendanceAPI = {
     fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '') => {
@@ -200,7 +201,7 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
 };
 
 // Card View Component for Mobile
-const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, processingId, onToggleMenu, activeMenuId }) => {
+const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, processingId, onToggleMenu, activeMenuId, approveDisabled, rejectDisabled, reviewMessage }) => {
     const formatTime = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -245,7 +246,8 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                             <>
                                 <button
                                     onClick={() => onApprove(attendance.id)}
-                                    disabled={processingId === attendance.id}
+                                    disabled={processingId === attendance.id || approveDisabled}
+                                    title={approveDisabled ? reviewMessage : ''}
                                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50 rounded-t-xl transition"
                                 >
                                     {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
@@ -253,7 +255,8 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                                 </button>
                                 <button
                                     onClick={() => onReject(attendance.id)}
-                                    disabled={processingId === attendance.id}
+                                    disabled={processingId === attendance.id || rejectDisabled}
+                                    title={rejectDisabled ? reviewMessage : ''}
                                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
                                 >
                                     {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
@@ -296,6 +299,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
 
 // Main Component
 const PendingAttendance = ({ companyId }) => {
+    const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [attendances, setAttendances] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -316,6 +320,9 @@ const PendingAttendance = ({ companyId }) => {
     const lastRequestKeyRef = useRef('');
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const itemsPerPage = pagination.limit;
+    const approveAccess = checkActionAccess('pendingAttendance', 'approve');
+    const rejectAccess = checkActionAccess('pendingAttendance', 'reject');
+    const pendingReviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
 
     // Handle window resize with debounce
     useEffect(() => {
@@ -411,6 +418,8 @@ const PendingAttendance = ({ companyId }) => {
 
     // Handle status update
     const handleStatusUpdate = async (punchId, action) => {
+        const access = action === 'approve' ? approveAccess : rejectAccess;
+        if (access.disabled) return;
         if (action === 'reject' && !notes.trim()) {
             setSelectedAction({ punchId, action });
             setShowNotesModal(true);
@@ -661,8 +670,9 @@ const PendingAttendance = ({ companyId }) => {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleStatusUpdate(attendance.id, 'approve')}
-                                                                            disabled={processingId === attendance.id}
-                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-green-700 transition hover:bg-green-50 disabled:opacity-50"
+                                                                            disabled={processingId === attendance.id || approveAccess.disabled}
+                                                                            title={approveAccess.disabled ? pendingReviewMessage : ''}
+                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-green-700 transition hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                         >
                                                                             {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />}
                                                                             Approve
@@ -670,8 +680,9 @@ const PendingAttendance = ({ companyId }) => {
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => handleStatusUpdate(attendance.id, 'reject')}
-                                                                            disabled={processingId === attendance.id}
-                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                                                                            disabled={processingId === attendance.id || rejectAccess.disabled}
+                                                                            title={rejectAccess.disabled ? pendingReviewMessage : ''}
+                                                                            className="flex w-full items-center gap-2 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-red-700 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                                                         >
                                                                             {processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />}
                                                                             Reject
@@ -710,6 +721,9 @@ const PendingAttendance = ({ companyId }) => {
                                             processingId={processingId}
                                             onToggleMenu={toggleActionMenu}
                                             activeMenuId={activeActionMenu}
+                                            approveDisabled={approveAccess.disabled}
+                                            rejectDisabled={rejectAccess.disabled}
+                                            reviewMessage={pendingReviewMessage}
                                         />
                                     ))}
                                 </div>
@@ -785,7 +799,9 @@ const PendingAttendance = ({ companyId }) => {
                                                 toast.warning('Please provide a reason for rejection');
                                             }
                                         }}
-                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 sm:py-2 rounded-lg font-medium transition text-sm"
+                                        disabled={rejectAccess.disabled}
+                                        title={rejectAccess.disabled ? pendingReviewMessage : ''}
+                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 sm:py-2 rounded-lg font-medium transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Submit Rejection
                                     </button>

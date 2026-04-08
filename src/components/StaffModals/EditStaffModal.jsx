@@ -15,7 +15,7 @@ import ModalScrollLock from "../ModalScrollLock";
 
 
 
-function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
+function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled = false, submitTitle = "" }) {
   const [users, setUsers] = useState([]);
   const [permissionPackages, setPermissionPackages] = useState([]);
 
@@ -805,7 +805,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSubmit}
-                disabled={isSubmitting || isLoading}
+                disabled={isSubmitting || isLoading || submitDisabled}
+                title={submitDisabled ? submitTitle : ""}
                 className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-indigo-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isSubmitting ? (

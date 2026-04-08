@@ -81,6 +81,9 @@ const PERMISSION_ACCESS_CONFIG = {
     leaveBalance: {
       permissions: ["leave_view_all", "leave_review"],
     },
+    pendingAttendance: {
+      permissions: ["att_view_all", "att_review"],
+    },
     companySettings: {
       permissions: ["cmp_update_own", "cmp_delete", "shift_create", "shift_view", "shift_update", "shift_delete"],
     },
@@ -127,7 +130,9 @@ const PERMISSION_ACCESS_CONFIG = {
     },
     companyInvites: {
       create: { permissions: "emp_invite" },
+      update: { permissions: "emp_invite" },
       cancel: { permissions: "emp_invite_cancel_admin" },
+      read: { permissions: ["emp_invite", "emp_invite_cancel_admin"] },
     },
     employeeManagement: {
       create: { permissions: "emp_create" },
@@ -147,6 +152,8 @@ const PERMISSION_ACCESS_CONFIG = {
     attendanceManagement: {
       read: { permissions: "att_view_all" },
       review: { permissions: "att_review" },
+      approve: { permissions: "att_review" },
+      reject: { permissions: "att_review" },
       edit: { permissions: "att_edit" },
       delete: { permissions: "att_delete" },
       assignMethod: { permissions: "att_method_assign" },
@@ -156,6 +163,10 @@ const PERMISSION_ACCESS_CONFIG = {
       export: { permissions: "export_att" },
     },
     salaryManagement: {
+      create: {
+        permissions: "salary_assign",
+        allowCompanyOwner: true,
+      },
       read: {
         permissions: "salary_view_all",
         allowCompanyOwner: true,
@@ -165,6 +176,10 @@ const PERMISSION_ACCESS_CONFIG = {
         allowCompanyOwner: true,
       },
       update: {
+        permissions: "salary_update",
+        allowCompanyOwner: true,
+      },
+      revise: {
         permissions: "salary_update",
         allowCompanyOwner: true,
       },
@@ -182,14 +197,30 @@ const PERMISSION_ACCESS_CONFIG = {
     leaveManagement: {
       read: { permissions: "leave_view_all" },
       review: { permissions: "leave_review" },
+      approve: { permissions: "leave_review" },
+      reject: { permissions: "leave_review" },
+      update: { permissions: "leave_review" },
       cancel: { permissions: "leave_cancel_admin" },
     },
     leaveConfig: {
       create: { permissions: "leave_type_create" },
+      read: { permissions: ["leave_type_create", "leave_type_update", "leave_type_delete"] },
       update: { permissions: "leave_type_update" },
       delete: { permissions: "leave_type_delete" },
     },
+    leaveBalance: {
+      create: { permissions: ["leave_view_all", "leave_review"] },
+      update: { permissions: ["leave_view_all", "leave_review"] },
+      delete: { permissions: ["leave_view_all", "leave_review"] },
+      read: { permissions: ["leave_view_all", "leave_review"] },
+    },
     companySettings: {
+      read: { permissions: ["cmp_update_own", "cmp_delete", "shift_create", "shift_view", "shift_update", "shift_delete"] },
+      updateCompany: { permissions: "cmp_update_own" },
+      updateSettings: { permissions: "cmp_update_own" },
+      updateBranding: { permissions: "cmp_update_own" },
+      updateSecurity: { permissions: "cmp_update_own" },
+      updateNotifications: { permissions: "cmp_update_own" },
       update: { permissions: "cmp_update_own" },
       delete: { permissions: "cmp_delete" },
       shiftCreate: { permissions: "shift_create" },
@@ -202,6 +233,12 @@ const PERMISSION_ACCESS_CONFIG = {
       read: { permissions: "hd_view_company" },
       update: { permissions: "hd_update" },
       delete: { permissions: "hd_delete" },
+    },
+    pendingAttendance: {
+      read: { permissions: "att_view_all" },
+      review: { permissions: "att_review" },
+      approve: { permissions: "att_review" },
+      reject: { permissions: "att_review" },
     },
     workspace: {
       addStaff: { permissions: ["emp_create", "emp_invite"] },
@@ -236,6 +273,22 @@ const buildAccessResult = (allowed, reason, permissions = []) => ({
   reason,
   permissions,
 });
+
+const getAccessMessage = (access) => {
+  if (access.reason === ACCESS_REASONS.OWNER_RESTRICTED) {
+    return "Disabled for company owner";
+  }
+
+  if (access.reason === ACCESS_REASONS.NO_COMPANY) {
+    return "Select a company first";
+  }
+
+  if (access.reason === ACCESS_REASONS.MISSING_CONFIG) {
+    return "Permission config missing";
+  }
+
+  return "You don't have permission for this action";
+};
 
 export const usePermissionAccess = () => {
   const { permissions = [], userDetails, activeRole, company } = useAuth();
@@ -346,6 +399,7 @@ export const usePermissionAccess = () => {
     hasAllPermissions: (requiredPermissions) => matchPermissions(requiredPermissions, "all"),
     checkPageAccess,
     checkActionAccess,
+    getAccessMessage,
   };
 };
 

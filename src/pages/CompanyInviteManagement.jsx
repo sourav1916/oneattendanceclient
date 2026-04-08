@@ -13,6 +13,7 @@ import EditStaffModal from "../components/StaffModals/EditStaffModal";
 import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
 import ModalScrollLock from "../components/ModalScrollLock";
+import usePermissionAccess from "../hooks/usePermissionAccess";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -76,6 +77,7 @@ const InfoItem = ({ icon, label, value }) => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function CompanyInvites() {
+  const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [invites, setInvites]               = useState([]);
   const [loading, setLoading]               = useState(true);
   const [processingId, setProcessingId]     = useState(null);
@@ -92,6 +94,9 @@ export default function CompanyInvites() {
   const fetchInProgress = useRef(false);
 
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+  const createInviteAccess = checkActionAccess("companyInvites", "create");
+  const updateInviteAccess = checkActionAccess("companyInvites", "update");
+  const cancelInviteAccess = checkActionAccess("companyInvites", "cancel");
 
   const company_id = JSON.parse(localStorage.getItem("company"))?.id;
 
@@ -195,6 +200,7 @@ export default function CompanyInvites() {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEditClick = (invite) => {
+    if (updateInviteAccess.disabled) return;
     setEditingInvite(invite);
     setIsEditModalOpen(true);
     setActiveActionMenu(null);
@@ -333,7 +339,7 @@ export default function CompanyInvites() {
               className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
               Keep
             </button>
-            <button onClick={() => onConfirm(invite.token)} disabled={processingId === invite.token}
+            <button onClick={() => onConfirm(invite.token)} disabled={processingId === invite.token || cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
               {processingId === invite.token && <FaSpinner className="animate-spin" />}
               Cancel Invite
@@ -369,10 +375,12 @@ export default function CompanyInvites() {
             </div>
 
             <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-              onClick={() => setOpenCreateInviteModal(true)}
+              onClick={() => !createInviteAccess.disabled && setOpenCreateInviteModal(true)}
+              disabled={createInviteAccess.disabled}
+              title={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
               className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
                          text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
-                         transition-all duration-300 flex items-center gap-2 overflow-hidden">
+                         transition-all duration-300 flex items-center gap-2 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
               <div className="relative z-10">
                 <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
                   fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -393,6 +401,8 @@ export default function CompanyInvites() {
               setOpenCreateInviteModal(false);
               fetchInvites(pagination.page, debouncedSearchTerm, false);
             }}
+            submitDisabled={createInviteAccess.disabled}
+            submitTitle={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
           />
         </motion.div>
 
@@ -514,12 +524,12 @@ export default function CompanyInvites() {
                                   </button>
                                   {invite.status === "pending" && !isExpired(invite.expires_at) && (
                                     <>
-                                      <button onClick={() => handleEditClick(invite)}
-                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300">
+                                      <button onClick={() => handleEditClick(invite)} disabled={updateInviteAccess.disabled} title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
+                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 text-green-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
                                         <FaEdit size={14} /> Edit Invite
                                       </button>
-                                      <button onClick={() => openModal(invite, "cancel")}
-                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300">
+                                      <button onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
+                                        className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
                                         <FaBan size={14} /> Cancel Invite
                                       </button>
                                     </>
@@ -583,12 +593,12 @@ export default function CompanyInvites() {
                       </button>
                       {invite.status === "pending" && !isExpired(invite.expires_at) && (
                         <>
-                          <button onClick={() => handleEditClick(invite)}
-                            className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110">
+                          <button onClick={() => handleEditClick(invite)} disabled={updateInviteAccess.disabled} title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
+                            className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                             <FaEdit size={16} />
                           </button>
-                          <button onClick={() => openModal(invite, "cancel")}
-                            className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110">
+                          <button onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
+                            className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                             <FaBan size={16} />
                           </button>
                         </>
@@ -621,6 +631,8 @@ export default function CompanyInvites() {
           onClose={() => { setIsEditModalOpen(false); setEditingInvite(null); }}
           onSuccess={handleEditSuccess}
           staffData={editingInvite}
+          submitDisabled={updateInviteAccess.disabled}
+          submitTitle={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
         />
       </div>
     </div>

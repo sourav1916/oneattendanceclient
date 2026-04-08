@@ -23,6 +23,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 const ITEMS_PER_PAGE = 10;
 const YEAR_OPTIONS = [2024, 2025, 2026, 2027];
@@ -296,7 +297,16 @@ const PaidBadge = ({ isPaid, compact = false }) => (
   )
 );
 
-const ActionMenu = ({ balance, onEdit, onDelete, onView }) => {
+const ActionMenu = ({
+  balance,
+  onEdit,
+  onDelete,
+  onView,
+  editDisabled = false,
+  deleteDisabled = false,
+  editMessage = '',
+  deleteMessage = '',
+}) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -346,7 +356,9 @@ const ActionMenu = ({ balance, onEdit, onDelete, onView }) => {
                 setOpen(false);
                 onEdit(balance);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 transition hover:bg-blue-50"
+              disabled={editDisabled}
+              title={editDisabled ? editMessage : ''}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-blue-600 transition hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaEdit size={12} /> Edit Balance
             </button>
@@ -357,7 +369,9 @@ const ActionMenu = ({ balance, onEdit, onDelete, onView }) => {
                 setOpen(false);
                 onDelete(balance);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 transition hover:bg-red-50"
+              disabled={deleteDisabled}
+              title={deleteDisabled ? deleteMessage : ''}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaTrash size={12} /> Delete
             </button>
@@ -397,7 +411,16 @@ const DetailItem = ({ label, value, className = '' }) => (
   </div>
 );
 
-const MobileBalanceCard = ({ balance, onEdit, onDelete, onView }) => {
+const MobileBalanceCard = ({
+  balance,
+  onEdit,
+  onDelete,
+  onView,
+  editDisabled,
+  deleteDisabled,
+  editMessage,
+  deleteMessage,
+}) => {
   const lowBalance = isLowBalance(balance.remaining);
 
   return (
@@ -426,7 +449,16 @@ const MobileBalanceCard = ({ balance, onEdit, onDelete, onView }) => {
 
         <div className="flex shrink-0 items-center gap-2">
           <PaidBadge isPaid={balance.is_paid} compact />
-          <ActionMenu balance={balance} onEdit={onEdit} onDelete={onDelete} onView={onView} />
+          <ActionMenu
+            balance={balance}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onView={onView}
+            editDisabled={editDisabled}
+            deleteDisabled={deleteDisabled}
+            editMessage={editMessage}
+            deleteMessage={deleteMessage}
+          />
         </div>
       </div>
 
@@ -483,6 +515,7 @@ const MobileBalanceCard = ({ balance, onEdit, onDelete, onView }) => {
 };
 
 const LeaveBalanceManagement = () => {
+  const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [balances, setBalances] = useState([]);
   const [filteredBalances, setFilteredBalances] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -505,6 +538,12 @@ const LeaveBalanceManagement = () => {
   const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
 
   const { pagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
+  const createAccess = checkActionAccess('leaveBalance', 'create');
+  const updateAccess = checkActionAccess('leaveBalance', 'update');
+  const deleteAccess = checkActionAccess('leaveBalance', 'delete');
+  const createMessage = getAccessMessage(createAccess);
+  const updateMessage = getAccessMessage(updateAccess);
+  const deleteMessage = getAccessMessage(deleteAccess);
 
   const [formData, setFormData] = useState({
     employee_id: '',
@@ -702,6 +741,9 @@ const LeaveBalanceManagement = () => {
   }, [goToPage, pagination.page, totalPages]);
 
   const openModal = (mode, balance = null) => {
+    if (mode === 'assign' && createAccess.disabled) return;
+    if (mode === 'edit' && updateAccess.disabled) return;
+    if (mode === 'delete' && deleteAccess.disabled) return;
     setModalMode(mode);
 
     if (balance) {
@@ -853,7 +895,9 @@ const LeaveBalanceManagement = () => {
               whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => openModal('assign')}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 sm:w-auto"
+              disabled={createAccess.disabled}
+              title={createAccess.disabled ? createMessage : ''}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto"
             >
               <FaPlus size={12} /> Assign Balance
             </motion.button>
@@ -939,7 +983,9 @@ const LeaveBalanceManagement = () => {
               <button
                 type="button"
                 onClick={() => openModal('assign')}
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700"
+                disabled={createAccess.disabled}
+                title={createAccess.disabled ? createMessage : ''}
+                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <FaPlus size={12} /> Assign Balance
               </button>
@@ -1051,6 +1097,10 @@ const LeaveBalanceManagement = () => {
                                 onEdit={(record) => openModal('edit', record)}
                                 onDelete={(record) => openModal('delete', record)}
                                 onView={(record) => setViewModal({ open: true, balance: record })}
+                                editDisabled={updateAccess.disabled}
+                                deleteDisabled={deleteAccess.disabled}
+                                editMessage={updateMessage}
+                                deleteMessage={deleteMessage}
                               />
                             </td>
                           </motion.tr>
@@ -1078,6 +1128,10 @@ const LeaveBalanceManagement = () => {
                     onEdit={(record) => openModal('edit', record)}
                     onDelete={(record) => openModal('delete', record)}
                     onView={(record) => setViewModal({ open: true, balance: record })}
+                    editDisabled={updateAccess.disabled}
+                    deleteDisabled={deleteAccess.disabled}
+                    editMessage={updateMessage}
+                    deleteMessage={deleteMessage}
                   />
                 ))
               )}
@@ -1247,7 +1301,9 @@ const LeaveBalanceManagement = () => {
                       closeViewModal();
                       openModal('edit', viewModal.balance);
                     }}
-                    className="flex-1 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700"
+                    disabled={updateAccess.disabled}
+                    title={updateAccess.disabled ? updateMessage : ''}
+                    className="flex-1 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <FaEdit className="mr-2 inline" size={12} />
                     Edit Balance
@@ -1309,8 +1365,9 @@ const LeaveBalanceManagement = () => {
                     <button
                       type="button"
                       onClick={handleAction}
-                      disabled={saving}
-                      className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60"
+                      disabled={saving || deleteAccess.disabled}
+                      title={deleteAccess.disabled ? deleteMessage : ''}
+                      className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {saving ? 'Deleting...' : 'Delete'}
                     </button>
@@ -1426,7 +1483,8 @@ const LeaveBalanceManagement = () => {
                       <button
                         type="button"
                         onClick={handleAction}
-                        disabled={saving || !formData.employee_id || !formData.leave_config_id}
+                        disabled={saving || !formData.employee_id || !formData.leave_config_id || (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)}
+                        title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
                         className="flex-[2] rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {saving ? (

@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ const SALARY_TYPE_LABELS = {
 
 // ─── Salary Form Body Component ───────────────────────────────────────────────
 const SalaryFormBody = ({
-  onSubmit, isEdit = false, formData, onInputChange, loading, onClose, title
+  onSubmit, isEdit = false, formData, onInputChange, loading, onClose, submitDisabled = false, submitTitle = ''
 }) => (
   <form onSubmit={onSubmit} className="p-4 sm:p-6">
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -116,7 +117,7 @@ const SalaryFormBody = ({
 
     <div className="flex justify-end gap-3 pt-6 mt-4 border-t">
       <button type="button" onClick={onClose} className="px-4 sm:px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">Cancel</button>
-      <button type="submit" disabled={loading}
+      <button type="submit" disabled={loading || submitDisabled} title={submitDisabled ? submitTitle : ''}
         className="px-4 sm:px-6 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl text-sm">
         {loading ? <FaSpinner className="animate-spin" /> : <FaCheck size={12} />}
         {isEdit ? 'Update Salary' : 'Assign Salary'}
@@ -127,6 +128,7 @@ const SalaryFormBody = ({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const SalaryManagement = () => {
+  const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
@@ -141,6 +143,14 @@ const SalaryManagement = () => {
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
   const fetchInProgress = useRef(false);
   const initialFetchDone = useRef(false);
+  const createAccess = checkActionAccess('salaryManagement', 'create');
+  const updateAccess = checkActionAccess('salaryManagement', 'update');
+  const reviseAccess = checkActionAccess('salaryManagement', 'revise');
+  const deleteAccess = checkActionAccess('salaryManagement', 'delete');
+  const createMessage = getAccessMessage(createAccess);
+  const updateMessage = getAccessMessage(updateAccess);
+  const reviseMessage = getAccessMessage(reviseAccess);
+  const deleteMessage = getAccessMessage(deleteAccess);
 
   const emptyForm = { employee_id: '', salary_type: 'monthly', base_amount: '', currency: 'usd', effective_from: '' };
   const [formData, setFormData] = useState(emptyForm);
@@ -170,7 +180,7 @@ const SalaryManagement = () => {
       const params = new URLSearchParams({ 
         page: page.toString(), 
         limit: pagination.limit.toString(),
-        history: 'true'
+        history: 'false'
       });
       if (debouncedSearch) params.append('search', debouncedSearch);
 
@@ -308,6 +318,7 @@ const SalaryManagement = () => {
 
   // ─── Modal handlers ───────────────────────────────────────────────────────
   const openCreateModal = (employee) => {
+    if (createAccess.disabled) return;
     setSelectedEmployee(employee);
     setFormData({ 
       employee_id: employee.employee_id, 
@@ -321,6 +332,7 @@ const SalaryManagement = () => {
   };
 
   const openEditModal = (employee, salary) => {
+    if (updateAccess.disabled) return;
     setSelectedEmployee(employee);
     setSelectedSalary(salary);
     setFormData({
@@ -335,6 +347,7 @@ const SalaryManagement = () => {
   };
 
   const openReviseModal = (employee) => {
+    if (reviseAccess.disabled) return;
     const activeSalary = employee.salary?.find(s => s.is_active === 1);
     setSelectedEmployee(employee);
     setFormData({ 
@@ -362,6 +375,7 @@ const SalaryManagement = () => {
   };
 
   const openDeleteModal = (employee, salary) => {
+    if (deleteAccess.disabled) return;
     setSelectedEmployee(employee);
     setSelectedSalary(salary);
     setModalType(MODAL_TYPES.DELETE_CONFIRM);
@@ -600,12 +614,12 @@ const SalaryManagement = () => {
                                 onClick={e => e.stopPropagation()}
                               >
                                 <button onClick={() => openViewModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-blue-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaEye size={12} /> View Details</button>
-                                <button onClick={() => openCreateModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 text-emerald-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaPlus size={12} /> Assign Salary</button>
+                                <button onClick={() => openCreateModal(emp)} disabled={createAccess.disabled} title={createAccess.disabled ? createMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 text-emerald-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaPlus size={12} /> Assign Salary</button>
                                 {activeSalary && (
                                   <>
-                                    <button onClick={() => openEditModal(emp, activeSalary)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 text-amber-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaEdit size={12} /> Edit Salary</button>
-                                    <button onClick={() => openReviseModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50 text-purple-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaHistory size={12} /> Revise Salary</button>
-                                    <button onClick={() => openDeleteModal(emp, activeSalary)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 text-sm"><FaTrash size={12} /> Delete Salary</button>
+                                    <button onClick={() => openEditModal(emp, activeSalary)} disabled={updateAccess.disabled} title={updateAccess.disabled ? updateMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-amber-50 hover:to-yellow-50 text-amber-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={12} /> Edit Salary</button>
+                                    <button onClick={() => openReviseModal(emp)} disabled={reviseAccess.disabled} title={reviseAccess.disabled ? reviseMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-purple-50 hover:to-violet-50 text-purple-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaHistory size={12} /> Revise Salary</button>
+                                    <button onClick={() => openDeleteModal(emp, activeSalary)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-red-50 hover:to-rose-50 text-red-600 flex items-center gap-3 transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={12} /> Delete Salary</button>
                                   </>
                                 )}
                                 <button onClick={() => openHistoryModal(emp)} className="w-full text-left px-4 py-3 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 text-gray-600 flex items-center gap-3 transition-all duration-300 text-sm border-t border-gray-100"><FaHistory size={12} /> View History</button>
@@ -655,12 +669,12 @@ const SalaryManagement = () => {
                             onClick={e => e.stopPropagation()}
                           >
                             <button onClick={() => openViewModal(emp)} className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-blue-600 flex items-center gap-2 text-xs"><FaEye size={10} /> View Details</button>
-                            <button onClick={() => openCreateModal(emp)} className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-emerald-600 flex items-center gap-2 text-xs"><FaPlus size={10} /> Assign Salary</button>
+                            <button onClick={() => openCreateModal(emp)} disabled={createAccess.disabled} title={createAccess.disabled ? createMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 text-emerald-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaPlus size={10} /> Assign Salary</button>
                             {activeSalary && (
                               <>
-                                <button onClick={() => openEditModal(emp, activeSalary)} className="w-full text-left px-4 py-2.5 hover:bg-amber-50 text-amber-600 flex items-center gap-2 text-xs"><FaEdit size={10} /> Edit</button>
-                                <button onClick={() => openReviseModal(emp)} className="w-full text-left px-4 py-2.5 hover:bg-purple-50 text-purple-600 flex items-center gap-2 text-xs"><FaHistory size={10} /> Revise</button>
-                                <button onClick={() => openDeleteModal(emp, activeSalary)} className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-600 flex items-center gap-2 text-xs"><FaTrash size={10} /> Delete</button>
+                                <button onClick={() => openEditModal(emp, activeSalary)} disabled={updateAccess.disabled} title={updateAccess.disabled ? updateMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-amber-50 text-amber-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={10} /> Edit</button>
+                                <button onClick={() => openReviseModal(emp)} disabled={reviseAccess.disabled} title={reviseAccess.disabled ? reviseMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-purple-50 text-purple-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaHistory size={10} /> Revise</button>
+                                <button onClick={() => openDeleteModal(emp, activeSalary)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''} className="w-full text-left px-4 py-2.5 hover:bg-red-50 text-red-600 flex items-center gap-2 text-xs disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={10} /> Delete</button>
                               </>
                             )}
                             <button onClick={() => openHistoryModal(emp)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-gray-600 flex items-center gap-2 text-xs border-t border-gray-100"><FaHistory size={10} /> History</button>
@@ -830,7 +844,7 @@ const SalaryManagement = () => {
                             </div>
                             <div className="flex justify-end gap-3 pt-6 mt-4 border-t">
                               <button type="button" onClick={closeModal} className="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all font-medium text-sm">Cancel</button>
-                              <button type="submit" disabled={loading}
+                              <button type="submit" disabled={loading || reviseAccess.disabled} title={reviseAccess.disabled ? reviseMessage : ''}
                                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 flex items-center gap-2 transition-all font-medium disabled:opacity-50 shadow-lg text-sm">
                                 {loading ? <FaSpinner className="animate-spin" /> : <FaCheck size={12} />}
                                 Revise Salary
@@ -916,6 +930,8 @@ const SalaryManagement = () => {
                   <SalaryFormBody
                     onSubmit={handleCreate} isEdit={false} formData={formData}
                     onInputChange={handleInputChange} loading={loading} onClose={closeModal}
+                    submitDisabled={createAccess.disabled}
+                    submitTitle={createAccess.disabled ? createMessage : ''}
                   />
                 </>
               )}
@@ -956,7 +972,7 @@ const SalaryManagement = () => {
                     </div>
                     <div className="flex justify-end gap-3 pt-6 mt-4 border-t">
                       <button type="button" onClick={closeModal} className="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100">Cancel</button>
-                      <button type="submit" disabled={loading} className="px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 flex items-center gap-2 disabled:opacity-50">
+                      <button type="submit" disabled={loading || updateAccess.disabled} title={updateAccess.disabled ? updateMessage : ''} className="px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 flex items-center gap-2 disabled:opacity-50">
                         {loading ? <FaSpinner className="animate-spin" /> : <FaCheck />} Update Salary
                       </button>
                     </div>
@@ -982,7 +998,7 @@ const SalaryManagement = () => {
                     </p>
                     <div className="flex justify-center gap-3">
                       <button onClick={closeModal} className="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100">Cancel</button>
-                      <button onClick={handleDelete} disabled={loading} className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 disabled:opacity-50">
+                      <button onClick={handleDelete} disabled={loading || deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''} className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 disabled:opacity-50">
                         {loading ? <FaSpinner className="animate-spin" /> : <FaTrash />} Delete
                       </button>
                     </div>
