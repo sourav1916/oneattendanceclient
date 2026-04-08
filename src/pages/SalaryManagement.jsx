@@ -43,6 +43,21 @@ const SALARY_TYPE_LABELS = {
     monthly: 'Monthly', hourly: 'Hourly', yearly: 'Yearly', weekly: 'Weekly', daily: 'Daily'
 };
 
+const SALARY_LIST_CACHE_TTL = 5000;
+const salaryListRequestCache = new Map();
+
+const getSalaryListCacheKey = ({ companyId, page, limit, search }) =>
+  `${companyId ?? 'none'}|${page}|${limit}|${search || ''}`;
+
+const getCachedSalaryListRequest = (key) => {
+  const cached = salaryListRequestCache.get(key);
+  if (!cached) return null;
+  if (cached.data && cached.expiresAt > Date.now()) return { type: 'data', value: cached.data };
+  if (cached.promise) return { type: 'promise', value: cached.promise };
+  salaryListRequestCache.delete(key);
+  return null;
+};
+
 // ─── Salary Form Body Component ───────────────────────────────────────────────
 const SalaryFormBody = ({
   onSubmit, isEdit = false, formData, onInputChange, loading, onClose, submitDisabled = false, submitTitle = ''
@@ -177,16 +192,47 @@ const SalaryManagement = () => {
     try {
       const company = JSON.parse(localStorage.getItem('company'));
       const companyId = company?.id ?? null;
-      const params = new URLSearchParams({ 
-        page: page.toString(), 
-        limit: pagination.limit.toString(),
-        history: 'false'
+      const requestKey = getSalaryListCacheKey({
+        companyId,
+        page,
+        limit: pagination.limit,
+        search: debouncedSearch,
       });
-      if (debouncedSearch) params.append('search', debouncedSearch);
+      const cachedRequest = getCachedSalaryListRequest(requestKey);
 
-      const res = await apiCall(`/salary/employees-salaries?${params}`, 'GET', null, companyId);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
+      let result;
+
+      if (cachedRequest?.type === 'data') {
+        result = cachedRequest.value;
+      } else {
+        const requestPromise = cachedRequest?.type === 'promise'
+          ? cachedRequest.value
+          : (async () => {
+              const params = new URLSearchParams({
+                page: page.toString(),
+                limit: pagination.limit.toString()
+              });
+              if (debouncedSearch) params.append('search', debouncedSearch);
+
+              const res = await apiCall(`/salary/employees-salaries?${params}`, 'GET', null, companyId);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              const json = await res.json();
+              salaryListRequestCache.set(requestKey, {
+                data: json,
+                expiresAt: Date.now() + SALARY_LIST_CACHE_TTL,
+              });
+              return json;
+            })().catch((error) => {
+              salaryListRequestCache.delete(requestKey);
+              throw error;
+            });
+
+        if (!cachedRequest) {
+          salaryListRequestCache.set(requestKey, { promise: requestPromise });
+        }
+
+        result = await requestPromise;
+      }
       
       if (result.success) {
         setEmployees(result.data);
