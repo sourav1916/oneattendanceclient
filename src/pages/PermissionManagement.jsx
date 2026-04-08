@@ -677,7 +677,11 @@ const PermissionManagement = () => {
           >
             <ModalScrollLock />
             <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              className={`bg-white rounded-2xl shadow-2xl w-full overflow-y-auto ${
+                modalType === MODAL_TYPES.DELETE_CONFIRM
+                  ? 'max-w-lg min-h-[20rem] sm:min-h-[22rem] flex flex-col'
+                  : 'max-w-4xl max-h-[90vh]'
+              }`}
               onClick={e => e.stopPropagation()}
             >
               {/* VIEW */}
@@ -872,7 +876,7 @@ const PermissionManagement = () => {
                     <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2"><FaTrash /> Confirm Delete</h2>
                     <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={16} /></button>
                   </div>
-                  <div className="p-4 sm:p-6 text-center">
+                  <div className="flex flex-1 flex-col justify-center p-4 sm:p-6 text-center">
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', duration: 0.5 }}
                       className="w-16 sm:w-24 h-16 sm:h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <FaTrash className="text-2xl sm:text-4xl text-red-600" />
@@ -881,7 +885,7 @@ const PermissionManagement = () => {
                     <p className="text-sm text-gray-500 mb-6 px-2">
                       You are about to delete <span className="font-semibold text-red-600">{selectedPackage.package_name}</span>. This action cannot be undone.
                     </p>
-                    <div className="flex justify-center gap-3 sm:gap-4">
+                    <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row sm:gap-4">
                       <button onClick={closeModal} className="px-4 sm:px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">Cancel</button>
                       <button onClick={handleDelete} disabled={loading || deleteAccess.disabled} title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : ''}
                         className="px-4 sm:px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl text-sm">

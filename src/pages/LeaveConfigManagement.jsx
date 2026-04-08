@@ -348,7 +348,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
       initial={{ opacity: 0, scale: 0.92, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.92, y: 20 }}
-      className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+      className="flex w-full max-w-lg min-h-[20rem] sm:min-h-[22rem] flex-col justify-center rounded-2xl bg-white p-6 shadow-2xl sm:p-7"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="mb-4 flex items-center justify-center">
@@ -360,7 +360,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
       <p className="mb-6 text-center text-sm text-gray-500">
         Are you sure you want to delete <span className="font-semibold text-gray-700">"{leaveType?.name}"</span>? This cannot be undone.
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-col-reverse gap-3 sm:flex-row">
         <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50">
           Cancel
         </button>

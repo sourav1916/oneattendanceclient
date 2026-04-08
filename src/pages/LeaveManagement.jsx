@@ -117,7 +117,7 @@ function SkelRow({ cols = 5 }) {
   );
 }
 
-function Modal({ open, onClose, title, footer, children, maxW = 'max-w-lg' }) {
+function Modal({ open, onClose, title, footer, children, maxW = 'max-w-lg', minH = '' }) {
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => {
@@ -139,7 +139,7 @@ function Modal({ open, onClose, title, footer, children, maxW = 'max-w-lg' }) {
             exit={{ opacity: 0, y: 10, scale: 0.97 }}
             transition={{ duration: 0.18 }}
             onClick={(e) => e.stopPropagation()}
-            className={`relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${maxW}`}
+            className={`relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${maxW} ${minH}`}
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-5 sm:px-6">
               <h3 className="pr-3 text-sm font-bold text-slate-800 sm:text-base">{title}</h3>
@@ -1179,7 +1179,8 @@ const LeaveManagement = () => {
           open={!!rejectLeave}
           onClose={() => setRejectLeave(null)}
           title="❌ Reject Leave"
-          maxW="max-w-4xl"
+          maxW="max-w-2xl"
+          minH="min-h-[24rem]"
           footer={
             <>
               <button

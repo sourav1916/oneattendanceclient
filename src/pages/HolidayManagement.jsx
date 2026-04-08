@@ -228,7 +228,7 @@ const getHolidayConfig = (holiday) => {
 };
 
 // ==================== MODAL WRAPPER ====================
-const Modal = ({ children, onClose, danger = false }) => (
+const Modal = ({ children, onClose, danger = false, panelClassName = 'sm:max-w-md' }) => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -242,7 +242,7 @@ const Modal = ({ children, onClose, danger = false }) => (
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 40, scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden"
+      className={`bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden ${panelClassName}`}
       onClick={e => e.stopPropagation()}
     >
       {children}
@@ -419,8 +419,8 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
   };
 
   return (
-    <Modal onClose={onClose} danger>
-      <div className="p-6 text-center">
+    <Modal onClose={onClose} danger panelClassName="sm:max-w-lg sm:min-h-[22rem]">
+      <div className="flex min-h-[20rem] flex-col justify-center p-6 text-center">
         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5 text-red-500">
           <Icon.Trash />
         </div>
@@ -429,7 +429,7 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
         <p className="text-base font-bold text-gray-800 mb-1">"{holiday.name}"</p>
         <p className="text-xs text-gray-400 mb-7">{holiday.date} · This cannot be undone</p>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-xl font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition-all"

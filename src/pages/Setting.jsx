@@ -809,7 +809,7 @@ const SettingsPage = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6"
+              className="flex w-full max-w-lg min-h-[20rem] sm:min-h-[22rem] flex-col justify-center rounded-2xl bg-white p-6 shadow-xl sm:p-7"
             >
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
                 Delete Company

@@ -1335,13 +1335,13 @@ const LeaveBalanceManagement = () => {
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               className={`w-full ${
                 modalMode === 'delete'
-                  ? 'max-w-sm rounded-2xl'
+                  ? 'max-w-lg min-h-[20rem] sm:min-h-[22rem] rounded-2xl flex flex-col'
                   : 'max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl'
               } bg-white shadow-2xl`}
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (
-                <div className="p-6">
+                <div className="flex flex-1 flex-col justify-center p-6">
                   <div className="mb-4 flex items-center justify-center">
                     <div className="rounded-full bg-red-100 p-4">
                       <FaTrash className="text-2xl text-red-500" />
@@ -1353,7 +1353,7 @@ const LeaveBalanceManagement = () => {
                   <p className="mb-6 text-center text-sm text-gray-500">
                     Are you sure you want to delete this leave balance? This cannot be undone.
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row">
                     <button
                       type="button"
                       onClick={closeModal}

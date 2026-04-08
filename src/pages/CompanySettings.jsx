@@ -741,7 +741,6 @@ const CompanySettings = () => {
                             className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
                             <div className="px-6 py-5 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -882,7 +881,6 @@ const CompanySettings = () => {
                             className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
                             <div className="px-6 py-5 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -1129,7 +1127,6 @@ const CompanySettings = () => {
                             className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="relative h-2 bg-gradient-to-r from-pink-500 to-rose-500" />
                             <div className="px-6 py-5 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -1311,7 +1308,6 @@ const CompanySettings = () => {
                             className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="relative h-2 bg-gradient-to-r from-red-500 to-orange-500" />
                             <div className="px-6 py-5 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -1597,7 +1593,6 @@ const CompanySettings = () => {
                             className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="relative h-2 bg-gradient-to-r from-yellow-500 to-amber-500" />
                             <div className="px-6 py-5 border-b border-gray-100">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -1804,10 +1799,9 @@ const CompanySettings = () => {
                     >
                         <motion.div
                             variants={modalVariants}
-                            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            className="relative flex w-full max-w-lg min-h-[22rem] sm:min-h-[24rem] flex-col bg-white rounded-2xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="relative h-2 bg-gradient-to-r from-red-500 to-rose-500" />
                             <div className="px-6 py-5 border-b border-gray-100">
                                 <div className="flex items-center gap-3">
                                     <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center">
@@ -1820,7 +1814,7 @@ const CompanySettings = () => {
                                 </div>
                             </div>
                             
-                            <div className="p-6 text-center">
+                            <div className="flex flex-1 flex-col justify-center p-6 text-center">
                                 <div className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <FaTrash className="text-4xl text-red-600" />
                                 </div>
@@ -1829,7 +1823,7 @@ const CompanySettings = () => {
                                     You are about to permanently delete <span className="font-semibold text-red-600">{selectedCompany.name}</span>.<br />
                                     This will remove all associated data including employees, attendance records, and leave requests.
                                 </p>
-                                <div className="flex justify-center gap-4">
+                                <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row sm:gap-4">
                                     <button 
                                         onClick={closeModal} 
                                         className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all font-medium"

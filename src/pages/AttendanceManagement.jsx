@@ -14,6 +14,8 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
+const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl min-h-[22rem] sm:min-h-[24rem] overflow-hidden flex flex-col";
+
 const attendanceAPI = {
   fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '') => {
     const queryParams = new URLSearchParams({
@@ -821,7 +823,7 @@ const AttendanceManagement = ({ companyId }) => {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              className={NOTES_MODAL_CLASS}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-5 md:p-6 rounded-t-2xl">
@@ -829,7 +831,7 @@ const AttendanceManagement = ({ companyId }) => {
                   <FaComment /> Rejection Notes
                 </h2>
               </div>
-              <div className="p-4 sm:p-5 md:p-6">
+              <div className="flex flex-1 flex-col p-4 sm:p-5 md:p-6">
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Please provide a reason for rejection
                 </label>
@@ -837,11 +839,11 @@ const AttendanceManagement = ({ companyId }) => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
+                  className="min-h-[140px] w-full flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition text-sm"
                   placeholder="Enter rejection reason..."
                   autoFocus
                 />
-                <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:gap-3">
                   <button
                     onClick={() => {
                       if (notes.trim()) {

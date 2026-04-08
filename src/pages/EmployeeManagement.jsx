@@ -864,13 +864,16 @@ const EmployeeManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden ${
+                                modalType === MODAL_TYPES.DELETE_CONFIRM
+                                    ? 'max-w-lg min-h-[22rem] sm:min-h-[24rem] flex flex-col'
+                                    : 'max-w-4xl max-h-[90vh]'
+                            }`}
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}
                             {modalType === MODAL_TYPES.VIEW && selectedEmployee && (
                                 <>
-                                    <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
@@ -981,7 +984,6 @@ const EmployeeManagement = () => {
                             {/* EDIT MODAL */}
                             {modalType === MODAL_TYPES.EDIT && (
                                 <>
-                                    <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
@@ -1351,7 +1353,6 @@ const EmployeeManagement = () => {
                             {/* DELETE MODAL */}
                             {modalType === MODAL_TYPES.DELETE_CONFIRM && selectedEmployee && (
                                 <>
-                                    <div className="relative h-2 bg-gradient-to-r from-red-500 via-rose-500 to-red-600" />
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
@@ -1373,7 +1374,7 @@ const EmployeeManagement = () => {
                                             </motion.button>
                                         </div>
                                     </div>
-                                    <div className="p-6 text-center">
+                                    <div className="flex flex-1 flex-col justify-center p-6 text-center">
                                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
                                             className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
                                         >
@@ -1383,7 +1384,7 @@ const EmployeeManagement = () => {
                                         <p className="text-gray-500 mb-6">
                                             You are about to delete <span className="font-semibold text-red-600">{selectedEmployee.name}</span>. This action cannot be undone.
                                         </p>
-                                        <div className="flex justify-center gap-4">
+                                        <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row sm:gap-4">
                                             <button onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
                                             <button onClick={handleDelete} disabled={loading || deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''}
                                                 className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"

@@ -777,7 +777,11 @@ const SalaryManagement = () => {
           >
             <ModalScrollLock />
             <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+              className={`bg-white rounded-2xl shadow-2xl w-full overflow-y-auto ${
+                modalType === MODAL_TYPES.DELETE_CONFIRM
+                  ? 'max-w-lg min-h-[20rem] sm:min-h-[22rem] flex flex-col'
+                  : 'max-w-2xl max-h-[90vh]'
+              }`}
               onClick={e => e.stopPropagation()}
             >
               {/* VIEW / REVISE MODAL */}
@@ -1033,7 +1037,7 @@ const SalaryManagement = () => {
                     <h2 className="text-base sm:text-xl font-semibold flex items-center gap-2"><FaTrash /> Confirm Delete</h2>
                     <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl"><FaTimes size={16} /></button>
                   </div>
-                  <div className="p-4 sm:p-6 text-center">
+                  <div className="flex flex-1 flex-col justify-center p-4 sm:p-6 text-center">
                     <div className="w-16 sm:w-20 h-16 sm:h-20 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <FaTrash className="text-2xl sm:text-3xl text-red-600" />
                     </div>
@@ -1042,7 +1046,7 @@ const SalaryManagement = () => {
                       You are about to delete the salary record for <span className="font-semibold text-red-600">{selectedEmployee.name}</span>:<br />
                       {formatCurrency(selectedSalary.base_amount, selectedSalary.currency)} ({SALARY_TYPE_LABELS[selectedSalary.salary_type]})
                     </p>
-                    <div className="flex justify-center gap-3">
+                    <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row">
                       <button onClick={closeModal} className="px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100">Cancel</button>
                       <button onClick={handleDelete} disabled={loading || deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''} className="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 flex items-center gap-2 disabled:opacity-50">
                         {loading ? <FaSpinner className="animate-spin" /> : <FaTrash />} Delete

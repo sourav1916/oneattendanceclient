@@ -401,9 +401,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
           >
-            {/* Gradient Header */}
-            <div className="relative h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-
             <div className="px-6 py-5 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">

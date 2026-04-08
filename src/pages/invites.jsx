@@ -27,6 +27,8 @@ const backdropVariants = {
   exit: { opacity: 0 }
 };
 
+const CONFIRM_MODAL_CLASS = 'bg-white rounded-2xl shadow-2xl w-full max-w-lg min-h-[22rem] sm:min-h-[24rem] overflow-hidden flex flex-col';
+
 const isExpired = (date) => new Date(date) < new Date();
 
 const getStatusBadge = (status, expiresAt) => {
@@ -360,13 +362,13 @@ export default function MyInvites() {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className={CONFIRM_MODAL_CLASS}
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaCheckCircle /> Accept Invitation</h2>
           <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
         </div>
-        <div className="p-6 text-center">
+        <div className="flex flex-1 flex-col justify-center p-6 text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
             className="w-24 h-24 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaCheckCircle className="text-4xl text-green-600" />
@@ -376,7 +378,7 @@ export default function MyInvites() {
             You are about to accept the invitation from <span className="font-semibold text-green-600">{invite.company?.name}</span>.
             This will add you to their organization.
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
             <button onClick={onClose} className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
             <button onClick={() => onConfirm(invite.invite_token)} disabled={processingId === invite.invite_token}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
@@ -394,20 +396,20 @@ export default function MyInvites() {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className={CONFIRM_MODAL_CLASS}
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaBan /> Reject Invitation</h2>
           <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
         </div>
-        <div className="p-6 text-center">
+        <div className="flex flex-1 flex-col justify-center p-6 text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
             className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <FaBan className="text-4xl text-red-600" />
           </motion.div>
           <p className="text-xl text-gray-700 mb-2 font-semibold">Reject Invitation?</p>
           <p className="text-gray-500 mb-6">Are you sure you want to reject the invitation from <span className="font-semibold text-red-600">{invite.company?.name}</span>? This action cannot be undone.</p>
-          <div className="flex gap-4">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
             <button onClick={onClose} className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
             <button onClick={() => onConfirm(invite.invite_token)} disabled={processingId === invite.invite_token}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">

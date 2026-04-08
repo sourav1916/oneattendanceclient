@@ -142,7 +142,6 @@ const ShiftDetailModal = ({ shift, onClose }) => {
                     className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
                     <div className="px-6 py-5 border-b border-gray-100">
                         <div className="flex items-center justify-between">
