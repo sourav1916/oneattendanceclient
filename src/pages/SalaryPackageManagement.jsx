@@ -14,8 +14,15 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ModalScrollLock from "../components/ModalScrollLock";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
+    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
+};
 
 const backdropVariants = {
     hidden: { opacity: 0 },
@@ -23,11 +30,7 @@ const backdropVariants = {
     exit: { opacity: 0 }
 };
 
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.9, y: 20 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.5 } },
-    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
-};
+const CONFIRM_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -67,30 +70,27 @@ const formatDate = (s) => {
 
 const SummaryCard = ({ icon, label, value, color, delay = 0 }) => {
     const colorMap = {
-        blue: 'from-blue-500 to-blue-600',
+        blue: 'from-blue-500 to-indigo-600',
         green: 'from-green-500 to-emerald-600',
-        purple: 'from-purple-500 to-purple-600',
+        purple: 'from-purple-500 to-pink-600',
         orange: 'from-orange-500 to-amber-500',
-    };
-    const textMap = {
-        blue: 'text-blue-700',
-        green: 'text-green-700',
-        purple: 'text-purple-700',
-        orange: 'text-orange-700',
+        red: 'from-red-500 to-rose-600',
     };
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay, duration: 0.4 }}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex items-center gap-3 hover:shadow-lg transition-all duration-300"
+            className={`bg-gradient-to-r ${colorMap[color]} rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
         >
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colorMap[color]} flex items-center justify-center flex-shrink-0`}>
-                <span className="text-white text-sm">{icon}</span>
-            </div>
-            <div className="min-w-0">
-                <p className="text-xs text-gray-500 font-medium truncate">{label}</p>
-                <p className={`text-lg font-bold ${textMap[color]}`}>{value}</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-xs opacity-80">{label}</p>
+                    <p className="text-2xl font-bold">{value}</p>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    {icon}
+                </div>
             </div>
         </motion.div>
     );
@@ -104,123 +104,121 @@ const PackageDetailModal = ({ pkg, onClose }) => {
     const deductionItems = pkg.items.filter(i => i.type === 'deduction');
     const contributionItems = pkg.items.filter(i => i.type?.includes('employer'));
 
+    const InfoItem = ({ icon, label, value }) => (
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+                {icon}{label}
+            </label>
+            <div className="text-gray-800 font-medium">{value}</div>
+        </div>
+    );
+
     return (
         <AnimatePresence>
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="px-6 py-5 border-b border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <FaEye className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-gray-900">Package Details</h2>
-                                    <p className="text-xs text-gray-400">Component breakdown</p>
-                                </div>
-                            </div>
-                            <motion.button
-                                whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
-                                onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                            >
-                                <FaTimes className="text-gray-400" />
-                            </motion.button>
-                        </div>
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <FaBriefcase /> Package Details
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                            <FaTimes size={20} />
+                        </button>
                     </div>
 
-                    <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar space-y-5">
-
+                    <div className="p-6">
                         {/* Package Profile */}
-                        <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                                <FaBriefcase className="text-white text-xl" />
+                        <div className="flex items-center gap-6 pb-6 border-b">
+                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl">
+                                <FaBriefcase className="text-white text-4xl" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-gray-900 text-lg truncate">{pkg.name}</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{pkg.description || 'No description'}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-xs font-mono text-blue-600 bg-blue-100 px-2 py-0.5 rounded-lg border border-blue-200">{pkg.code}</span>
-                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                                        {pkg.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800">{pkg.name}</h3>
+                                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                    <FaCog className="text-blue-500" size={14} />Code: {pkg.code}
+                                </p>
+                                {pkg.description && (
+                                    <p className="text-gray-500 text-sm mt-2">{pkg.description}</p>
+                                )}
                             </div>
                         </div>
 
                         {/* Stats Row */}
-                        <div className="grid grid-cols-3 gap-3">
-                            <div className="bg-green-50 border border-green-100 rounded-xl p-3 text-center">
-                                <p className="text-lg font-bold text-green-700">{earningItems.length}</p>
-                                <p className="text-xs text-green-500">Earnings</p>
-                            </div>
-                            <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
-                                <p className="text-lg font-bold text-red-600">{deductionItems.length}</p>
-                                <p className="text-xs text-red-400">Deductions</p>
-                            </div>
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 text-center">
-                                <p className="text-lg font-bold text-blue-700">{contributionItems.length}</p>
-                                <p className="text-xs text-blue-400">Contributions</p>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                            <InfoItem icon={<FaCheckCircle className="text-green-500" />} label="Earnings" value={earningItems.length} />
+                            <InfoItem icon={<FaTimes className="text-red-500" />} label="Deductions" value={deductionItems.length} />
+                            <InfoItem icon={<FaCog className="text-blue-500" />} label="Employer Contributions" value={contributionItems.length} />
+                        </div>
+
+                        {/* Status & Dates */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <InfoItem 
+                                icon={<FaToggleOn className="text-green-500" />} 
+                                label="Status" 
+                                value={
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                        {pkg.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                } 
+                            />
+                            <InfoItem icon={<FaCalendarAlt className="text-purple-500" />} label="Created" value={formatDate(pkg.created_at)} />
                         </div>
 
                         {/* Components List */}
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <FaLayerGroup className="text-blue-400" /> Components ({pkg.items.length})
-                            </p>
-                            <div className="space-y-2">
-                                {[...pkg.items]
-                                    .sort((a, b) => a.display_order - b.display_order)
-                                    .map((item, i) => (
-                                        <motion.div
-                                            key={item.component_id}
-                                            initial={{ opacity: 0, x: -10 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: i * 0.05 }}
-                                            className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200"
-                                        >
-                                            <div className="flex items-center gap-2.5">
-                                                <span className="w-5 h-5 bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-md flex items-center justify-center font-bold flex-shrink-0">
-                                                    {item.display_order}
-                                                </span>
-                                                <div>
-                                                    <p className="text-sm font-semibold text-gray-800">{item.name}</p>
-                                                    <p className="text-xs text-gray-400 font-mono">{item.code}</p>
+                        {pkg.items.length > 0 && (
+                            <div className="mt-6">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                                    <FaLayerGroup className="text-blue-500" /> Components ({pkg.items.length})
+                                </label>
+                                <div className="space-y-2">
+                                    {[...pkg.items]
+                                        .sort((a, b) => a.display_order - b.display_order)
+                                        .map((item, i) => (
+                                            <motion.div
+                                                key={item.component_id}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: i * 0.05 }}
+                                                className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200"
+                                            >
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-md flex items-center justify-center font-bold flex-shrink-0">
+                                                        {item.display_order}
+                                                    </span>
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-gray-800">{item.name}</p>
+                                                        <p className="text-xs text-gray-400 font-mono">{item.code}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 flex-shrink-0">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getTypeStyle(item.type)}`}>
-                                                    {getTypeLabel(item.type)}
-                                                </span>
-                                                <span className="text-sm font-bold text-blue-600">
-                                                    {formatCalcValue(item.calc_type, item.calc_value)}
-                                                </span>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getTypeStyle(item.type)}`}>
+                                                        {getTypeLabel(item.type)}
+                                                    </span>
+                                                    <span className="text-sm font-bold text-blue-600">
+                                                        {formatCalcValue(item.calc_type, item.calc_value)}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl p-3">
-                            <FaInfoCircle />
-                            <span>Package ID: #{pkg.id} · Created {formatDate(pkg.created_at)}</span>
-                        </div>
+                        )}
                     </div>
 
-                    <div className="px-6 pb-5 pt-2">
+                    <div className="px-6 pb-6">
                         <button onClick={onClose}
-                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium text-sm">
+                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
                             Close
                         </button>
                     </div>
@@ -293,74 +291,63 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="px-6 py-5 border-b border-gray-100 flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <FaBriefcase className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-gray-900">{isEdit ? 'Edit Package' : 'Create Package'}</h2>
-                                    <p className="text-xs text-gray-400">{isEdit ? `Editing: ${pkg.code}` : 'Configure salary components'}</p>
-                                </div>
-                            </div>
-                            <motion.button
-                                whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
-                                onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                            >
-                                <FaTimes className="text-gray-400" />
-                            </motion.button>
-                        </div>
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            {isEdit ? <FaEdit /> : <FaPlus />} {isEdit ? 'Edit Package' : 'Create Package'}
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                            <FaTimes size={20} />
+                        </button>
                     </div>
 
-                    <div className="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
+                    <div className="p-6 space-y-4 flex-1 overflow-y-auto">
                         <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Package Name *</label>
+                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Package Name *</label>
                             <input
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="e.g. New Employee Package"
-                                className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all ${errors.name ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                             />
                             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                         </div>
 
                         {!isEdit && (
                             <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Package Code *</label>
+                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Package Code *</label>
                                 <input
                                     value={code}
                                     onChange={e => setCode(e.target.value.toUpperCase())}
                                     placeholder="e.g. PKG_001"
-                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all ${errors.code ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                                 />
                                 {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
                             </div>
                         )}
 
                         <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Description</label>
+                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Description</label>
                             <textarea
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
                                 placeholder="Optional description..."
                                 rows={2}
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all resize-none"
+                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                            <label className="text-xs font-semibold text-gray-600 mb-2 block">
                                 Components * <span className="text-blue-500 normal-case font-normal">({selectedComponents.length} selected)</span>
                             </label>
                             {errors.components && <p className="text-xs text-red-500 mb-2">{errors.components}</p>}
@@ -397,26 +384,26 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
 
                         {sortedSelected.length > 0 && (
                             <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Display Order</label>
+                                <label className="text-xs font-semibold text-gray-600 mb-2 block">Display Order</label>
                                 <div className="space-y-1.5">
                                     {sortedSelected.map((sel, idx) => {
                                         const comp = availableComponents.find(c => c.id === sel.component_id);
                                         if (!comp) return null;
                                         return (
                                             <div key={sel.component_id} className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-2.5 border border-gray-200">
-                                                <span className="w-5 h-5 bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-md flex items-center justify-center font-bold flex-shrink-0">{idx}</span>
+                                                <span className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-md flex items-center justify-center font-bold flex-shrink-0">{idx + 1}</span>
                                                 <span className="flex-1 text-sm font-medium text-gray-800 truncate">{comp.name}</span>
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border flex-shrink-0 ${getTypeStyle(comp.type)}`}>
                                                     {formatCalcValue(comp.calc_type, comp.calc_value)}
                                                 </span>
                                                 <div className="flex gap-1 flex-shrink-0">
                                                     <button onClick={() => moveComponent(sel.component_id, -1)} disabled={idx === 0}
-                                                        className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 disabled:opacity-30 transition-all">
-                                                        <FaArrowUp size={9} className="text-gray-500" />
+                                                        className="w-7 h-7 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 disabled:opacity-30 transition-all">
+                                                        <FaArrowUp size={10} className="text-gray-500" />
                                                     </button>
                                                     <button onClick={() => moveComponent(sel.component_id, 1)} disabled={idx === sortedSelected.length - 1}
-                                                        className="w-6 h-6 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 disabled:opacity-30 transition-all">
-                                                        <FaArrowDown size={9} className="text-gray-500" />
+                                                        className="w-7 h-7 rounded-md bg-white border border-gray-200 flex items-center justify-center hover:bg-blue-50 hover:border-blue-200 disabled:opacity-30 transition-all">
+                                                        <FaArrowDown size={10} className="text-gray-500" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -427,15 +414,15 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                         )}
                     </div>
 
-                    <div className="px-6 pb-5 pt-4 border-t border-gray-100 flex gap-3 flex-shrink-0">
+                    <div className="px-6 pb-6 pt-4 border-t border-gray-100 flex gap-3">
                         <button onClick={onClose}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium text-sm">
+                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">
                             Cancel
                         </button>
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={handleSubmit} disabled={saving}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-60"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? <FaSpinner className="animate-spin" /> : <FaCheck />}
                             {saving ? 'Saving...' : isEdit ? 'Update Package' : 'Create Package'}
@@ -449,47 +436,53 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
 
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
-const DeleteModal = ({ pkg, onClose, onConfirm }) => {
-    const [deleting, setDeleting] = useState(false);
-    const handleDelete = async () => {
-        setDeleting(true);
-        try { await onConfirm(pkg.id); } finally { setDeleting(false); }
-    };
+const DeleteModal = ({ pkg, onClose, onConfirm, deleting }) => {
     return (
         <AnimatePresence>
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className={CONFIRM_MODAL_CLASS}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="p-6 text-center">
-                        <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-red-100">
-                            <FaExclamationTriangle className="text-red-500 text-xl" />
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">Delete Package?</h3>
-                        <p className="text-sm text-gray-500 mb-1">You are about to delete</p>
-                        <p className="text-base font-semibold text-gray-800 mb-4">"{pkg.name}"</p>
-                        <p className="text-xs text-red-500 bg-red-50 rounded-xl p-2.5 mb-5 border border-red-100">This action cannot be undone.</p>
-                        <div className="flex gap-3">
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <FaTrash /> Delete Package
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                            <FaTimes size={20} />
+                        </button>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center p-6 text-center">
+                        <motion.div
+                            initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
+                            className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                        >
+                            <FaExclamationTriangle className="text-4xl text-red-600" />
+                        </motion.div>
+                        <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
+                        <p className="text-gray-500 mb-6">
+                            You are about to delete the package{" "}
+                            <span className="font-semibold text-red-600">{pkg?.name}</span>.
+                            This action cannot be undone.
+                        </p>
+                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
                             <button onClick={onClose}
-                                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-medium text-sm">
-                                Cancel
+                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
+                                Keep
                             </button>
-                            <motion.button
-                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                                onClick={handleDelete} disabled={deleting}
-                                className="flex-1 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 transition-all font-medium text-sm flex items-center justify-center gap-2 shadow-md"
-                            >
-                                {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-                                {deleting ? 'Deleting...' : 'Delete'}
-                            </motion.button>
+                            <button onClick={() => onConfirm(pkg.id)} disabled={deleting}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+                                {deleting && <FaSpinner className="animate-spin" />}
+                                Delete Package
+                            </button>
                         </div>
                     </div>
                 </motion.div>
@@ -513,41 +506,43 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle 
             onClick={() => onView(pkg)}
             className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
-            <div className="flex items-start justify-between gap-2.5 mb-2.5">
+            <div className="flex items-start justify-between gap-2.5 mb-3">
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300">
-                        <FaBriefcase className="text-white text-xs" />
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                        <FaBriefcase className="text-white text-lg" />
                     </div>
                     <div className="min-w-0">
-                        <h3 className="font-bold text-gray-800 truncate text-sm">{pkg.name}</h3>
-                        <p className="text-[10px] text-gray-500 mt-0.5 font-mono">{pkg.code}</p>
+                        <h3 className="font-bold text-gray-800 truncate">{pkg.name}</h3>
+                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{pkg.code}</p>
+                        {pkg.description && (
+                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{pkg.description}</p>
+                        )}
                     </div>
                 </div>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                     {pkg.is_active ? 'Active' : 'Inactive'}
                 </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-2.5">
-                <div className="bg-green-50 border border-green-100 rounded-xl p-1.5 text-center">
-                    <p className="text-xs font-bold text-green-700">{earningCount}</p>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-green-700">{earningCount}</p>
                     <p className="text-xs text-green-500">Earnings</p>
                 </div>
-                <div className="bg-red-50 border border-red-100 rounded-xl p-1.5 text-center">
-                    <p className="text-xs font-bold text-red-600">{deductionCount}</p>
+                <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-red-600">{deductionCount}</p>
                     <p className="text-xs text-red-400">Deductions</p>
                 </div>
-            </div>
-
-            <div className="mb-2.5">
-                <p className="text-xs font-bold text-purple-700">{pkg.items.length} items</p>
-                {pkg.description && (
-                    <p className="mt-1 text-[10px] text-gray-400 line-clamp-2">{pkg.description}</p>
-                )}
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-blue-700">{contributionCount}</p>
+                    <p className="text-xs text-blue-400">Contributions</p>
+                </div>
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto" onClick={e => e.stopPropagation()}>
-                <span className="text-xs text-gray-400">{contributionCount} contrib</span>
+                <span className="text-xs text-gray-400">
+                    {pkg.items.length} components
+                </span>
                 <span className="text-xs text-gray-400">{formatDate(pkg.created_at)}</span>
                 <ActionMenu
                     menuId={`card-${pkg.id}`}
@@ -585,6 +580,7 @@ const SalaryPackages = () => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [viewMode, setViewMode] = useState('card');
@@ -593,14 +589,13 @@ const SalaryPackages = () => {
     const [editPkg, setEditPkg] = useState(null);
     const [deletePkg, setDeletePkg] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [windowWidth, setWindowWidth] = useState(() =>
         typeof window !== 'undefined' ? window.innerWidth : 1440
     );
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
-    const initialFetchDone = useRef(false);
-    const isInitialLoad = useRef(true);
 
     // Debounce search
     useEffect(() => {
@@ -608,6 +603,7 @@ const SalaryPackages = () => {
         return () => clearTimeout(t);
     }, [searchTerm]);
 
+    // Handle window resize
     useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
@@ -615,25 +611,17 @@ const SalaryPackages = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    useEffect(() => {
-        if (!isInitialLoad.current) {
-            if (pagination.page !== 1) goToPage(1);
-            else fetchPackages(1);
-        }
-    }, [debouncedSearch]);
-
-    const fetchPackages = useCallback(async (page = pagination.page) => {
+    const fetchPackages = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
-        setLoading(true);
+        if (resetLoading) setLoading(true);
+
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const params = new URLSearchParams({ page, limit: pagination.limit });
-            if (debouncedSearch) params.append('search', debouncedSearch);
+            let url = `/salary/components/packages?page=${page}&limit=${pagination.limit}`;
+            if (search) url += `&search=${search}`;
 
-            const response = await apiCall(
-                `/salary/components/packages?${params}`, 'GET', null, company?.id
-            );
+            const response = await apiCall(url, 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) {
                 setPackages(result.data || []);
@@ -649,18 +637,18 @@ const SalaryPackages = () => {
             }
         } catch (e) {
             console.error(e);
-            toast.error(e.message || 'Failed to fetch packages');
+            toast.error(e.message || 'Failed to load packages');
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
-            isInitialLoad.current = false;
+            setIsInitialLoad(false);
         }
     }, [pagination.page, pagination.limit, debouncedSearch, updatePagination]);
 
     const fetchComponents = useCallback(async () => {
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components', 'GET', null, company?.id);
+            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) setAvailableComponents(result.data || []);
         } catch (e) {
@@ -668,42 +656,35 @@ const SalaryPackages = () => {
         }
     }, []);
 
-    useEffect(() => {
-        if (!initialFetchDone.current) {
-            fetchPackages(1);
-            fetchComponents();
-            initialFetchDone.current = true;
-        }
-    }, [fetchPackages, fetchComponents]);
-
-    useEffect(() => {
-        if (initialFetchDone.current && !fetchInProgress.current) {
-            fetchPackages(pagination.page);
-        }
-    }, [pagination.page]);
-
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
-    const showTableView = viewMode === 'table';
-    const showCardView = viewMode === 'card';
-    const showCode = windowWidth >= 480;
-    const showEarnings = windowWidth >= 560;
-    const showDeductions = windowWidth >= 640;
-    const showDescription = windowWidth >= 640;
-    const showContributions = windowWidth >= 1024;
-    const showStatus = windowWidth >= 900;
-    const showCreated = windowWidth >= 1200;
-    const tableMinWidth = windowWidth < 480
-        ? 360
-        : windowWidth < 640
-            ? 500
-            : windowWidth < 900
-                ? 640
-                : windowWidth < 1200
-                    ? 820
-                    : 980;
+    // Search trigger
+    useEffect(() => {
+        if (!isInitialLoad) {
+            if (pagination.page !== 1) goToPage(1);
+            else fetchPackages(1, debouncedSearch, true);
+        }
+    }, [debouncedSearch]);
+
+    useEffect(() => {
+        if (!isInitialLoad && !fetchInProgress.current) {
+            fetchPackages(pagination.page, debouncedSearch, true);
+        }
+    }, [pagination.page]);
+
+    useEffect(() => {
+        const company = JSON.parse(localStorage.getItem('company'));
+        if (company && isInitialLoad) {
+            fetchPackages(1, "", true);
+            fetchComponents();
+        } else if (!company) {
+            toast.error("Company ID not found. Please ensure you're logged in as a company.");
+            setLoading(false);
+            setIsInitialLoad(false);
+        }
+    }, []);
 
     const handleSave = async (body, isEdit) => {
         try {
@@ -715,23 +696,26 @@ const SalaryPackages = () => {
             toast.success(isEdit ? 'Package updated successfully' : 'Package created successfully');
             setShowForm(false);
             setEditPkg(null);
-            fetchPackages(1);
+            fetchPackages(1, debouncedSearch, true);
         } catch (e) {
             toast.error(e.message || 'Something went wrong');
         }
     };
 
     const handleDelete = async (pkgId) => {
+        setDeleting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const response = await apiCall('/salary/components/delete-package', 'POST', { package_id: pkgId }, company?.id);
             const result = await response.json();
             if (!result.success) throw new Error(result.message);
-            toast.success('Package deleted');
+            toast.success('Package deleted successfully');
             setDeletePkg(null);
-            fetchPackages(1);
+            fetchPackages(1, debouncedSearch, true);
         } catch (e) {
             toast.error(e.message || 'Delete failed');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -741,145 +725,173 @@ const SalaryPackages = () => {
     const activePackages = packages.filter(p => p.is_active).length;
     const totalComponents = packages.reduce((s, p) => s + (p.items?.length || 0), 0);
 
-    // ─── Render ──────────────────────────────────────────────────────────────
+    // Responsive column visibility - matching the pattern from other pages
+    const showCode = windowWidth >= 480;
+    const showEarnings = windowWidth >= 560;
+    const showDeductions = windowWidth >= 640;
+    const showTotal = windowWidth >= 480;
+    const showStatus = windowWidth >= 768;
+    const showCreated = windowWidth >= 1024;
+
+    if (isInitialLoad && loading) return <SkeletonComponent />;
 
     return (
-        <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
+        <div className="min-h-screen p-3 md:p-6 font-sans">
+            <div className="max-w-7xl mx-auto">
 
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
-            >
-                <div>
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+                >
                     <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                         Salary Packages
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">Manage and configure salary component packages</p>
-                </div>
-                <motion.button
-                    whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                    onClick={openCreate}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-sm font-semibold"
-                >
-                    <FaPlus size={11} /> Create Package
-                </motion.button>
-            </motion.div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+                            <FaBriefcase className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium text-gray-700">{pagination.total}</span>
+                            <span className="text-gray-500">packages</span>
+                        </div>
 
-            {/* Search */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="mb-4"
-            >
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search packages by name or code..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-10 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
-                    />
-                    <FaSearch className="absolute left-4 top-4 text-gray-400 text-lg" />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors">
-                            <FaTimes />
-                        </button>
-                    )}
-                </div>
-            </motion.div>
-
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                <SummaryCard icon={<FaBriefcase />} label="Total Packages" value={pagination.total} color="blue" delay={0.1} />
-                <SummaryCard icon={<FaCheckCircle />} label="Active" value={activePackages} color="green" delay={0.15} />
-                <SummaryCard icon={<FaLayerGroup />} label="Components" value={totalComponents} color="purple" delay={0.2} />
-                <SummaryCard icon={<FaCog />} label="Avg / Package" value={packages.length ? (totalComponents / packages.length).toFixed(1) : '0'} color="orange" delay={0.25} />
-            </div>
-
-            {/* View Toggle + Count */}
-            {!loading && packages.length > 0 && (
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-500">
-                        <span className="font-semibold text-gray-800">{packages.length}</span> of{' '}
-                        <span className="font-semibold text-gray-800">{pagination.total}</span> packages
-                        {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
-                    </p>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                </div>
-            )}
-
-            {/* Loading */}
-            {loading && <SkeletonComponent />}
-
-            {/* Empty State */}
-            {!loading && packages.length === 0 && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
-                >
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FaBriefcase className="text-4xl text-gray-300" />
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={openCreate}
+                            className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
+                                       text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
+                                       transition-all duration-300 flex items-center gap-2 overflow-hidden"
+                        >
+                            <div className="relative z-10">
+                                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+                            <span className="relative z-10 text-sm">Create Package</span>
+                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
+                                           transition-transform duration-700 bg-gradient-to-r
+                                           from-transparent via-white/20 to-transparent" />
+                        </motion.button>
                     </div>
-                    <p className="text-xl font-semibold text-gray-600">No packages found</p>
-                    <p className="text-gray-400 mt-2 text-sm">
-                        {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Create your first salary package to get started'}
-                    </p>
-                    {debouncedSearch ? (
-                        <button onClick={() => setSearchTerm('')}
-                            className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
-                            Clear Search
-                        </button>
-                    ) : (
-                        <button onClick={openCreate}
-                            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-semibold text-sm">
-                            <FaPlus size={11} /> Create Package
-                        </button>
-                    )}
                 </motion.div>
-            )}
 
-            {/* Grid View */}
-            {!loading && packages.length > 0 && showCardView && (
-                <ManagementGrid viewMode={viewMode}>
-                    {packages.map((pkg, index) => (
-                        <PackageCard
-                            key={pkg.id}
-                            pkg={pkg}
-                            index={index}
-                            onView={setSelectedPkg}
-                            onEdit={openEdit}
-                            onDelete={setDeletePkg}
+                {/* Summary Cards */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
+                >
+                    <SummaryCard icon={<FaBriefcase />} label="Total Packages" value={pagination.total} color="blue" delay={0.05} />
+                    <SummaryCard icon={<FaCheckCircle />} label="Active" value={activePackages} color="green" delay={0.1} />
+                    <SummaryCard icon={<FaLayerGroup />} label="Components" value={totalComponents} color="purple" delay={0.15} />
+                    <SummaryCard icon={<FaCog />} label="Avg / Package" value={packages.length ? (totalComponents / packages.length).toFixed(1) : '0'} color="orange" delay={0.2} />
+                </motion.div>
+
+                {/* Search */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="mb-6"
+                >
+                    <div className="relative">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                        <input
+                            type="text"
+                            placeholder="Search packages by name or code..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
                         />
-                    ))}
-                </ManagementGrid>
-            )}
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <FaTimes />
+                            </button>
+                        )}
+                    </div>
+                </motion.div>
 
-            {/* List View */}
-            {!loading && packages.length > 0 && showTableView && (
-                <>
-                    {/* Desktop Table */}
+                {/* View Toggle & Count */}
+                {!loading && packages.length > 0 && (
+                    <div className="flex justify-between items-center mb-6">
+                        <p className="text-sm text-gray-500">
+                            <span className="font-semibold text-gray-800">{packages.length}</span> of{' '}
+                            <span className="font-semibold text-gray-800">{pagination.total}</span> packages
+                            {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
+                        </p>
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                    </div>
+                )}
+
+                {/* Loading skeleton */}
+                {loading && !packages.length && <SkeletonComponent />}
+
+                {/* Empty State */}
+                {!loading && packages.length === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
+                    >
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaBriefcase className="text-4xl text-gray-300" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-600">No packages found</p>
+                        <p className="text-gray-400 mt-2 text-sm">
+                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Create your first salary package to get started'}
+                        </p>
+                        {debouncedSearch ? (
+                            <button onClick={() => setSearchTerm('')}
+                                className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
+                                Clear Search
+                            </button>
+                        ) : (
+                            <button onClick={openCreate}
+                                className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all text-sm font-medium">
+                                Create Package
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* Grid View */}
+                {!loading && packages.length > 0 && viewMode === "card" && (
+                    <ManagementGrid viewMode={viewMode}>
+                        {packages.map((pkg, index) => (
+                            <PackageCard
+                                key={pkg.id}
+                                pkg={pkg}
+                                index={index}
+                                onView={setSelectedPkg}
+                                onEdit={openEdit}
+                                onDelete={setDeletePkg}
+                                activeId={activeActionMenu}
+                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                            />
+                        ))}
+                    </ManagementGrid>
+                )}
+
+                {/* Table View */}
+                {!loading && packages.length > 0 && viewMode === "table" && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full text-sm text-left text-gray-700" style={{ minWidth: `${tableMinWidth}px` }}>
+                            <table className="w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Package</th>
                                         {showCode && <th className="px-6 py-4">Code</th>}
                                         {showEarnings && <th className="px-6 py-4">Earnings</th>}
                                         {showDeductions && <th className="px-6 py-4">Deductions</th>}
-                                        {showContributions && <th className="px-6 py-4">Contributions</th>}
-                                        <th className="px-6 py-4">Total</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        {showTotal && <th className="px-6 py-4">Total</th>}
+                                        {showStatus && <th className="px-6 py-4">Status</th>}
                                         {showCreated && <th className="px-6 py-4">Created</th>}
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
@@ -888,64 +900,62 @@ const SalaryPackages = () => {
                                     {packages.map((pkg, index) => {
                                         const earningCount = pkg.items.filter(i => i.type === 'earning').length;
                                         const deductionCount = pkg.items.filter(i => i.type === 'deduction').length;
-                                        const contributionCount = pkg.items.filter(i => i.type?.includes('employer')).length;
                                         return (
                                             <motion.tr
                                                 key={pkg.id}
-                                                initial={{ opacity: 0, y: 10 }}
+                                                initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.04 }}
+                                                transition={{ delay: index * 0.05 }}
                                                 className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
                                                 onClick={() => setSelectedPkg(pkg)}
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                                            <FaBriefcase className="text-white text-xs" />
+                                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                            <FaBriefcase className="text-white text-sm" />
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold text-gray-800">{pkg.name}</p>
-                                                            {showDescription && pkg.description && (
-                                                                <p className="text-xs text-gray-400 truncate max-w-[160px]">{pkg.description}</p>
+                                                            {pkg.description && (
+                                                                <p className="text-xs text-gray-400 truncate max-w-[200px]">{pkg.description}</p>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
                                                 {showCode && (
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold border border-blue-100">
+                                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold border border-blue-100">
                                                             {pkg.code}
                                                         </span>
                                                     </td>
                                                 )}
                                                 {showEarnings && (
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">{earningCount}</span>
+                                                        <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">{earningCount}</span>
                                                     </td>
                                                 )}
                                                 {showDeductions && (
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{deductionCount}</span>
+                                                        <span className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{deductionCount}</span>
                                                     </td>
                                                 )}
-                                                {showContributions && (
+                                                {showTotal && (
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">{contributionCount}</span>
+                                                        <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{pkg.items.length}</span>
                                                     </td>
                                                 )}
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{pkg.items.length}</span>
-                                                </td>
                                                 {showStatus && (
                                                     <td className="px-6 py-4">
-                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                                             {pkg.is_active ? 'Active' : 'Inactive'}
                                                         </span>
                                                     </td>
                                                 )}
-                                                {showCreated && <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>}
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-end gap-2">
+                                                {showCreated && (
+                                                    <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>
+                                                )}
+                                                <td className="px-6 py-4 text-right">
+                                                    <div onClick={e => e.stopPropagation()}>
                                                         <ActionMenu
                                                             menuId={`table-${pkg.id}`}
                                                             activeId={activeActionMenu}
@@ -980,63 +990,58 @@ const SalaryPackages = () => {
                             </table>
                         </div>
                     </motion.div>
+                )}
 
-                </>
-            )}
-
-            {/* Pagination */}
-            {!loading && packages.length > 0 && (
-                <Pagination
-                    currentPage={pagination.page}
-                    totalItems={pagination.total}
-                    itemsPerPage={pagination.limit}
-                    onPageChange={handlePageChange}
-                    variant="default"
-                    showInfo={true}
-                />
-            )}
-
-            {/* Detail Modal */}
-            <AnimatePresence>
-                {selectedPkg && (
-                    <PackageDetailModal
-                        pkg={selectedPkg}
-                        onClose={() => setSelectedPkg(null)}
+                {/* Pagination */}
+                {!loading && packages.length > 0 && (
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalItems={pagination.total}
+                        itemsPerPage={pagination.limit}
+                        onPageChange={handlePageChange}
+                        variant="default"
+                        showInfo={true}
                     />
                 )}
-            </AnimatePresence>
 
-            {/* Form Modal */}
-            <AnimatePresence>
-                {showForm && (
-                    <PackageFormModal
-                        pkg={editPkg}
-                        availableComponents={availableComponents}
-                        onClose={() => { setShowForm(false); setEditPkg(null); }}
-                        onSave={handleSave}
-                    />
-                )}
-            </AnimatePresence>
+                {/* Modals */}
+                <AnimatePresence>
+                    {selectedPkg && (
+                        <PackageDetailModal
+                            pkg={selectedPkg}
+                            onClose={() => setSelectedPkg(null)}
+                        />
+                    )}
+                </AnimatePresence>
 
-            {/* Delete Modal */}
-            <AnimatePresence>
-                {deletePkg && (
-                    <DeleteModal
-                        pkg={deletePkg}
-                        onClose={() => setDeletePkg(null)}
-                        onConfirm={handleDelete}
-                    />
-                )}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {showForm && (
+                        <PackageFormModal
+                            pkg={editPkg}
+                            availableComponents={availableComponents}
+                            onClose={() => { setShowForm(false); setEditPkg(null); }}
+                            onSave={handleSave}
+                        />
+                    )}
+                </AnimatePresence>
+
+                <AnimatePresence>
+                    {deletePkg && (
+                        <DeleteModal
+                            pkg={deletePkg}
+                            onClose={() => setDeletePkg(null)}
+                            onConfirm={handleDelete}
+                            deleting={deleting}
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-                @media (min-width: 475px) {
-                    .xs\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                }
             `}</style>
         </div>
     );

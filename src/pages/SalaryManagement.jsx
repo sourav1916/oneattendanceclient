@@ -1,16 +1,14 @@
-// SalaryManagement.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     FaClock, FaCalendarAlt, FaChevronLeft, FaChevronRight,
     FaUserCircle, FaSpinner, FaBriefcase, FaCheckCircle,
     FaTimesCircle, FaSearch, FaTimes, FaChartBar,
-    FaMoon, FaSun, FaInfoCircle, FaAngleDown,
-    FaEnvelope, FaPhone, FaIdCard, FaUserTag,
-    FaDollarSign, FaHandPaper, FaRobot, FaEye,
-    FaListUl, FaTh, FaShieldAlt, FaPlus, FaEdit,
+    FaInfoCircle, FaEnvelope, FaPhone, FaIdCard, FaUserTag,
+    FaDollarSign, FaHandPaper, FaTag, FaEye,
+    FaTh, FaListUl, FaShieldAlt, FaPlus, FaEdit,
     FaTrash, FaHistory, FaMoneyBillWave, FaPercentage,
     FaCalculator, FaCalendarPlus, FaCalendarCheck,
-    FaExchangeAlt, FaSave, FaTimes as FaTimesClose
+    FaExchangeAlt, FaSave, FaBan, FaExclamationCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
@@ -20,26 +18,20 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { toast } from 'react-toastify';
+import ModalScrollLock from "../components/ModalScrollLock";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants & Helpers ─────────────────────────────────────────────────────
 
-const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
-
-
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
+    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
+};
 
 const backdropVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
     exit: { opacity: 0 }
-};
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.9, y: 20 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.5 } },
-    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
 };
 
 const AVATAR_GRADIENTS = [
@@ -70,7 +62,34 @@ const formatDate = (s) => {
     return new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
+const formatDateFull = (date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+        year: "numeric", month: "short", day: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
+};
+
+const formatDisplay = (str) => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+
+const getStatusBadge = (effectiveTo) => {
+    const isActive = !effectiveTo || new Date(effectiveTo) > new Date();
+    if (isActive) {
+        return { icon: FaCheckCircle, text: "Active", className: "bg-green-100 text-green-800 border border-green-200" };
+    }
+    return { icon: FaTimesCircle, text: "Expired", className: "bg-gray-100 text-gray-800 border border-gray-200" };
+};
+
 // ─── Sub Components ───────────────────────────────────────────────────────────
+
+const InfoItem = ({ icon, label, value }) => (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+            {icon}{label}
+        </label>
+        <div className="text-gray-800 font-medium">{value}</div>
+    </div>
+);
 
 const SalaryBadge = ({ type, value }) => {
     const colors = {
@@ -86,25 +105,6 @@ const SalaryBadge = ({ type, value }) => {
     );
 };
 
-const StatCard = ({ icon, label, value, color, currency }) => {
-    const colors = {
-        green: 'bg-green-50 border-green-200 text-green-700',
-        blue: 'bg-blue-50 border-blue-200 text-blue-700',
-        purple: 'bg-purple-50 border-purple-200 text-purple-700',
-        orange: 'bg-orange-50 border-orange-200 text-orange-700',
-        red: 'bg-red-50 border-red-200 text-red-700'
-    };
-    return (
-        <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${colors[color]}`}>
-            <div className="text-xl">{icon}</div>
-            <div>
-                <p className="text-xs opacity-75">{label}</p>
-                <p className="text-lg font-bold">{typeof value === 'number' ? formatCurrency(value, currency) : value}</p>
-            </div>
-        </div>
-    );
-};
-
 const ComponentRow = ({ component, currency }) => {
     const typeColors = {
         earning: 'bg-green-50 border-green-100',
@@ -114,7 +114,7 @@ const ComponentRow = ({ component, currency }) => {
     return (
         <div className={`flex items-center justify-between p-3 rounded-xl border ${typeColors[component.type] || 'bg-gray-50 border-gray-100'}`}>
             <div className="flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-gray-800 text-sm">{component.name}</p>
                     <span className="text-xs text-gray-400 font-mono">{component.code}</span>
                     {component.is_overridden === 1 && (
@@ -138,122 +138,95 @@ const ComponentRow = ({ component, currency }) => {
 const SalaryDetailModal = ({ salary, onClose }) => {
     if (!salary) return null;
 
+    const status = getStatusBadge(salary.effective_to);
+    const StatusIcon = status.icon;
+
     return (
         <AnimatePresence>
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="px-6 py-5 border-b border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <FaMoneyBillWave className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-gray-900">Salary Details</h2>
-                                    <p className="text-xs text-gray-400">
-                                        {formatDate(salary.effective_from)} - {formatDate(salary.effective_to)}
-                                    </p>
-                                </div>
-                            </div>
-                            <motion.button
-                                whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
-                                onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                            >
-                                <FaTimes className="text-gray-400" />
-                            </motion.button>
-                        </div>
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <FaMoneyBillWave /> Salary Details
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                            <FaTimes size={20} />
+                        </button>
                     </div>
 
-                    <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar space-y-5">
+                    <div className="p-6">
                         {/* Employee Info */}
-                        <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
-                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md`}>
-                                <span className="text-white font-bold text-lg">{getInitials(salary.employee?.name)}</span>
+                        <div className="flex items-center gap-6 pb-6 border-b">
+                            <div className={`bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} p-4 rounded-2xl`}>
+                                <FaUserCircle className="text-white text-5xl" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-gray-900 text-lg truncate">{salary.employee?.name}</h3>
-                                <p className="text-sm text-gray-500">{salary.employee?.employee_code}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{salary.employee?.email}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-xs text-gray-400">Package</p>
-                                <p className="font-semibold text-gray-800">{salary.package?.name}</p>
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800">{salary.employee?.name || "No name"}</h3>
+                                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                    <FaIdCard className="text-blue-500" size={14} />{salary.employee?.employee_code}
+                                </p>
+                                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                    <FaEnvelope className="text-green-500" size={14} />{salary.employee?.email}
+                                </p>
                             </div>
                         </div>
 
                         {/* Salary Summary Cards */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <StatCard 
-                                icon={<FaDollarSign />} 
-                                label="Base Amount" 
-                                value={salary.base_amount} 
-                                color="blue"
-                                currency={salary.currency}
-                            />
-                            <StatCard 
-                                icon={<FaCalculator />} 
-                                label="Gross Salary" 
-                                value={salary.gross_salary} 
-                                color="green"
-                                currency={salary.currency}
-                            />
-                            <StatCard 
-                                icon={<FaChartBar />} 
-                                label="Total Deductions" 
-                                value={salary.total_deductions} 
-                                color="red"
-                                currency={salary.currency}
-                            />
-                            <StatCard 
-                                icon={<FaMoneyBillWave />} 
-                                label="Net Salary" 
-                                value={salary.net_salary} 
-                                color="purple"
-                                currency={salary.currency}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                            <InfoItem icon={<FaDollarSign className="text-blue-500" />} label="Base Amount" value={formatCurrency(salary.base_amount, salary.currency)} />
+                            <InfoItem icon={<FaCalculator className="text-purple-500" />} label="Gross Salary" value={formatCurrency(salary.gross_salary, salary.currency)} />
+                            <InfoItem icon={<FaChartBar className="text-orange-500" />} label="Total Deductions" value={formatCurrency(salary.total_deductions, salary.currency)} />
+                            <InfoItem icon={<FaMoneyBillWave className="text-emerald-500" />} label="Net Salary" value={formatCurrency(salary.net_salary, salary.currency)} />
+                            <InfoItem icon={<FaBriefcase className="text-indigo-500" />} label="Salary Package" value={salary.package?.name || "N/A"} />
+                            <InfoItem icon={<FaTag className="text-rose-500" />} label="Status" value={
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                                    <StatusIcon size={12} />{status.text}
+                                </span>
+                            } />
+                            <InfoItem icon={<FaCalendarAlt className="text-cyan-500" />} label="Effective From" value={formatDateFull(salary.effective_from)} />
+                            <InfoItem icon={<FaCalendarCheck className="text-yellow-500" />} label="Effective To" value={formatDateFull(salary.effective_to)} />
                         </div>
 
                         {/* CTC Info */}
-                        <div className="bg-gray-50 rounded-xl p-4">
+                        <div className="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm font-semibold text-gray-600">CTC (Cost to Company)</span>
+                                <span className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+                                    <FaChartBar className="text-blue-500" /> CTC (Cost to Company)
+                                </span>
                                 <span className="text-xl font-bold text-gray-800">{formatCurrency(salary.ctc, salary.currency)}</span>
                             </div>
                             <div className="flex justify-between items-center mt-2">
-                                <span className="text-sm font-semibold text-gray-600">Employer Contributions</span>
+                                <span className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+                                    <FaHandPaper className="text-purple-500" /> Employer Contributions
+                                </span>
                                 <span className="text-lg font-semibold text-purple-600">{formatCurrency(salary.employer_contributions, salary.currency)}</span>
                             </div>
                         </div>
 
                         {/* Components Breakdown */}
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <FaCalculator className="text-blue-400" /> Salary Components
-                            </p>
-                            <div className="space-y-2">
-                                {salary.components?.map((comp, idx) => (
-                                    <ComponentRow key={idx} component={comp} currency={salary.currency} />
-                                ))}
+                        {salary.components?.length > 0 && (
+                            <div className="mt-6">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                                    <FaCalculator className="text-green-500" /> Salary Components
+                                </label>
+                                <div className="space-y-2">
+                                    {salary.components.map((comp, idx) => (
+                                        <ComponentRow key={idx} component={comp} currency={salary.currency} />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="px-6 pb-5 pt-2">
-                        <button onClick={onClose}
-                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium text-sm">
-                            Close
-                        </button>
+                        )}
                     </div>
                 </motion.div>
             </motion.div>
@@ -263,7 +236,7 @@ const SalaryDetailModal = ({ salary, onClose }) => {
 
 // ─── Assign Salary Modal (Updated with Overrides) ─────────────────────────────────────
 
-const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
+const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitTitle }) => {
     const [employees, setEmployees] = useState([]);
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
@@ -283,7 +256,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
         overrides: []
     });
 
-    // Override form state
     const [overrideForm, setOverrideForm] = useState({
         component_id: '',
         calc_type: 'percentage',
@@ -353,7 +325,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
             const result = await response.json();
             if (result.success && result.data?.currency_types) {
                 setCurrencies(result.data.currency_types);
-                // Set default to first item if current default isn't in the list
                 const keys = result.data.currency_types.map(c => c.key);
                 setFormData(prev => ({
                     ...prev,
@@ -371,7 +342,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
         emp.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Override CRUD operations
     const addOverride = () => {
         if (!overrideForm.component_id || !overrideForm.calc_value) {
             toast.warning('Please fill component and value');
@@ -399,7 +369,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
             });
         }
 
-        // Reset override form
         setOverrideForm({
             component_id: '',
             calc_type: 'percentage',
@@ -430,8 +399,32 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
         setFormData({ ...formData, overrides: updated });
     };
 
+    const resetForm = () => {
+        setSelectedEmployee(null);
+        setSearchTerm('');
+        setFormData({
+            component_package_id: packages[0]?.id || '',
+            base_amount: '',
+            currency: 'USD',
+            effective_from: '',
+            effective_to: '',
+            overrides: []
+        });
+        setOverrideForm({
+            component_id: '',
+            calc_type: 'percentage',
+            calc_value: '',
+            effective_from: '',
+            effective_to: '',
+            reason: ''
+        });
+        setShowOverrideForm(false);
+        setEditingOverride(null);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (submitDisabled) return;
         if (!selectedEmployee) {
             toast.warning('Please select an employee');
             return;
@@ -475,30 +468,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
         }
     };
 
-    const resetForm = () => {
-        setSelectedEmployee(null);
-        setSearchTerm('');
-        setFormData({
-            component_package_id: packages[0]?.id || '',
-            base_amount: '',
-            currency: 'USD',
-            effective_from: '',
-            effective_to: '',
-            overrides: []
-        });
-        setOverrideForm({
-            component_id: '',
-            calc_type: 'percentage',
-            calc_value: '',
-            effective_from: '',
-            effective_to: '',
-            reason: ''
-        });
-        setShowOverrideForm(false);
-        setEditingOverride(null);
-    };
-
-
     if (!isOpen) return null;
 
     return (
@@ -506,33 +475,30 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
                     className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="px-6 py-5 border-b border-gray-100">
+                    <div className="sticky top-0 px-6 py-5 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-md">
                                     <FaPlus className="text-white text-sm" />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-bold text-gray-900">Assign Salary</h2>
-                                    <p className="text-xs text-gray-400">Assign salary to an employee with component overrides</p>
+                                    <h2 className="text-lg font-bold">Assign Salary</h2>
+                                    <p className="text-xs text-white/80">Assign salary to an employee with component overrides</p>
                                 </div>
                             </div>
-                            <motion.button
-                                whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
-                                onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                            >
-                                <FaTimes className="text-gray-400" />
-                            </motion.button>
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                                <FaTimes size={20} />
+                            </button>
                         </div>
                     </div>
 
@@ -546,7 +512,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                     placeholder="Search employee by name, code or email..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
                                     disabled={!!selectedEmployee}
                                 />
                                 <FaSearch className="absolute left-3 top-3.5 text-gray-400 text-sm" />
@@ -555,7 +521,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                             {!selectedEmployee && (
                                 <div className="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
                                     {loading ? (
-                                        <div className="p-4 text-center text-gray-400">Loading...</div>
+                                        <div className="p-4 text-center text-gray-400"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>
                                     ) : filteredEmployees.length === 0 ? (
                                         <div className="p-4 text-center text-gray-400">No employees found</div>
                                     ) : (
@@ -572,7 +538,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-semibold text-gray-800 text-sm">{emp.name}</p>
                                                     <p className="text-xs text-gray-400">{emp.employee_code} • {emp.email}</p>
-                                                    <p className="text-xs text-gray-400 capitalize">{emp.designation?.replace(/_/g, ' ')}</p>
+                                                    <p className="text-xs text-gray-400 capitalize">{formatDisplay(emp.designation)}</p>
                                                 </div>
                                             </button>
                                         ))
@@ -608,7 +574,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                             <select
                                 value={formData.component_package_id}
                                 onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                             >
                                 {packages.length === 0 ? (
                                     <option value="">Loading packages...</option>
@@ -629,7 +595,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                 <select
                                     value={formData.currency}
                                     onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                                 >
                                     {currencies.length > 0
                                         ? currencies.map(c => (
@@ -645,7 +611,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                     placeholder="Enter amount"
                                     value={formData.base_amount}
                                     onChange={(e) => setFormData({ ...formData, base_amount: e.target.value })}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                                 />
                             </div>
                         </div>
@@ -658,7 +624,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                     type="date"
                                     value={formData.effective_from}
                                     onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                                 />
                             </div>
                             <div>
@@ -667,7 +633,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                     type="date"
                                     value={formData.effective_to}
                                     onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
@@ -708,7 +674,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                         return (
                                             <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                                                 <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
                                                         <span className={`text-xs px-1.5 py-0.5 rounded ${
                                                             override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
@@ -765,7 +731,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                     </div>
 
                                     <div className="space-y-3">
-                                        {/* Component Selection */}
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
                                             <select
@@ -782,7 +747,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                             </select>
                                         </div>
 
-                                        {/* Calculation Type & Value */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Calculation Type</label>
@@ -809,7 +773,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                             </div>
                                         </div>
 
-                                        {/* Override Effective Dates */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Effective From</label>
@@ -831,7 +794,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                             </div>
                                         </div>
 
-                                        {/* Reason */}
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
                                             <input
@@ -843,7 +805,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                                             />
                                         </div>
 
-                                        {/* Action Buttons */}
                                         <div className="flex gap-2 pt-2">
                                             <button
                                                 type="button"
@@ -892,8 +853,9 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
                             </button>
                             <button
                                 type="submit"
-                                disabled={submitting}
-                                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                disabled={submitting || submitDisabled}
+                                title={submitDisabled ? submitTitle : ""}
+                                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                 {submitting ? 'Assigning...' : 'Assign Salary'}
@@ -905,47 +867,57 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
         </AnimatePresence>
     );
 };
+
 // ─── Delete Confirmation Modal ───────────────────────────────────────────────
 
-const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary }) => {
-    if (!isOpen) return null;
+const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }) => {
+    if (!isOpen || !salary) return null;
 
     return (
         <AnimatePresence>
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="p-6 text-center">
-                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaTrash className="text-red-500 text-2xl" />
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">Delete Salary Record</h3>
-                        <p className="text-gray-500 text-sm">
-                            Are you sure you want to delete the salary record for <br />
-                            <span className="font-semibold text-gray-700">{salary?.employee?.name}</span>?
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <FaTrash /> Delete Salary Record
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                            <FaTimes size={20} />
+                        </button>
+                    </div>
+                    <div className="flex flex-1 flex-col justify-center p-6 text-center">
+                        <motion.div
+                            initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
+                            className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                        >
+                            <FaBan className="text-4xl text-red-600" />
+                        </motion.div>
+                        <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
+                        <p className="text-gray-500 mb-6">
+                            You are about to delete the salary record for{" "}
+                            <span className="font-semibold text-red-600">{salary.employee?.name}</span>.
+                            This action cannot be undone.
                         </p>
-                        <p className="text-xs text-red-500 mt-2">This action cannot be undone.</p>
-                        <div className="flex gap-3 mt-6">
-                            <button
-                                onClick={onClose}
-                                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
-                            >
-                                Cancel
+                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
+                            <button onClick={onClose}
+                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
+                                Keep
                             </button>
-                            <button
-                                onClick={onConfirm}
-                                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-all"
-                            >
-                                Delete
+                            <button onClick={onConfirm} disabled={processingId === salary.salary_id}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+                                {processingId === salary.salary_id && <FaSpinner className="animate-spin" />}
+                                Delete Record
                             </button>
                         </div>
                     </div>
@@ -958,45 +930,49 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary }) => {
 // ─── Salary Card (Grid) ──────────────────────────────────────────────────────
 
 const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onToggle }) => {
-    const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
-    
+    const status = getStatusBadge(salary.effective_to);
+    const StatusIcon = status.icon;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            onClick={() => onClick(salary)}
             className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+            onClick={() => onClick(salary)}
         >
-            <div className="flex items-start justify-between gap-2.5 mb-2.5">
+            <div className="flex items-start justify-between gap-2.5 mb-3">
                 <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                        <span className="text-white font-bold text-xs">{getInitials(salary.employee?.name)}</span>
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                        <span className="text-white font-bold text-sm">{getInitials(salary.employee?.name)}</span>
                     </div>
                     <div className="min-w-0">
-                        <h3 className="font-bold text-gray-800 truncate text-sm">{salary.employee?.name}</h3>
-                        <p className="text-[10px] text-gray-500 mt-0.5">{salary.employee?.employee_code}</p>
+                        <h3 className="font-bold text-gray-800 truncate">{salary.employee?.name}</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">{salary.employee?.employee_code}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{salary.employee?.email}</p>
                     </div>
                 </div>
-                {isActive && (
-                    <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-semibold border border-green-200">Active</span>
-                )}
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                    <StatusIcon size={10} />{status.text}
+                </span>
             </div>
 
-            <p className="text-[10px] text-gray-400 mb-2.5 truncate">{salary.package?.name}</p>
+            <p className="text-xs text-gray-400 mb-3 truncate flex items-center gap-1">
+                <FaBriefcase className="text-purple-500" size={10} /> {salary.package?.name}
+            </p>
 
-            <div className="grid grid-cols-2 gap-2 mb-2.5">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-1.5 text-center">
-                    <p className="text-xs font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
                     <p className="text-xs text-blue-500">Base</p>
                 </div>
-                <div className="bg-purple-50 border border-purple-100 rounded-xl p-1.5 text-center">
-                    <p className="text-xs font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
                     <p className="text-xs text-purple-500">Net</p>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between mb-2.5 text-[10px] text-gray-400">
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
                 <span className="flex items-center gap-1">
                     <FaCalendarPlus size={9} />
                     {formatDate(salary.effective_from)}
@@ -1007,18 +983,20 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
                 </span>
             </div>
 
-            <div className="flex flex-wrap gap-1 mb-2.5">
+            <div className="flex flex-wrap gap-1 mb-3">
                 {salary.components?.slice(0, 2).map((comp, idx) => (
                     <SalaryBadge key={idx} type={comp.type} value={comp.code} />
                 ))}
-                <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[11px] font-semibold border border-green-100">
-                    {salary.components?.length || 0} items
-                </span>
+                {(salary.components?.length || 0) > 2 && (
+                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
+                        +{salary.components.length - 2} more
+                    </span>
+                )}
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
                 <span className="text-xs text-gray-400">
-                    {salary.components?.length > 2 ? `+${salary.components.length - 2} more` : ' '}
+                    {formatCurrency(salary.ctc, salary.currency)} CTC
                 </span>
                 <div onClick={e => e.stopPropagation()}>
                     <ActionMenu
@@ -1052,6 +1030,7 @@ const SalaryManagement = () => {
     const [salaries, setSalaries] = useState([]);
     const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [processingId, setProcessingId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [viewMode, setViewMode] = useState('table');
@@ -1061,13 +1040,18 @@ const SalaryManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [salaryToDelete, setSalaryToDelete] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
-    const [windowWidth, setWindowWidth] = useState(() =>
-        typeof window !== 'undefined' ? window.innerWidth : 1440
-    );
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [visibleColumns, setVisibleColumns] = useState(() => ({
+        showEmployee: true,
+        showPackage: window.innerWidth >= 1024,
+        showBaseAmount: window.innerWidth >= 480,
+        showNetSalary: window.innerWidth >= 590,
+        showEffectivePeriod: window.innerWidth >= 1280,
+        showStatus: window.innerWidth >= 768,
+    }));
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 12);
+    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
-    const initialFetchDone = useRef(false);
 
     // Debounce search
     useEffect(() => {
@@ -1075,29 +1059,35 @@ const SalaryManagement = () => {
         return () => clearTimeout(t);
     }, [searchTerm]);
 
+    // Responsive columns
     useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
+        let t;
+        const onResize = () => {
+            clearTimeout(t);
+            t = setTimeout(() =>
+                setVisibleColumns({
+                    showEmployee: true,
+                    showPackage: window.innerWidth >= 1024,
+                    showBaseAmount: window.innerWidth >= 480,
+                    showNetSalary: window.innerWidth >= 590,
+                    showEffectivePeriod: window.innerWidth >= 1280,
+                    showStatus: window.innerWidth >= 768,
+                }), 150);
+        };
+        window.addEventListener("resize", onResize);
+        return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
     }, []);
 
-    useEffect(() => {
-        if (initialFetchDone.current) {
-            if (pagination.page !== 1) goToPage(1);
-            else fetchSalaries(1);
-        }
-    }, [debouncedSearch, showHistory]);
-
-    const fetchSalaries = useCallback(async (page = pagination.page) => {
+    const fetchSalaries = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
-        setLoading(true);
+        if (resetLoading) setLoading(true);
+
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             let url = `/salary/employees-salaries?page=${page}&limit=${pagination.limit}`;
             if (showHistory) url += '&history=true';
-            if (debouncedSearch) url += `&search=${debouncedSearch}`;
+            if (search) url += `&search=${search}`;
 
             const response = await apiCall(url, 'GET', null, company?.id);
             const result = await response.json();
@@ -1111,253 +1101,243 @@ const SalaryManagement = () => {
                     total_pages: Math.ceil((result.total || 0) / pagination.limit),
                     is_last_page: result.page >= Math.ceil((result.total || 0) / pagination.limit)
                 });
+            } else {
+                throw new Error(result.message || "Failed to fetch salaries");
             }
         } catch (e) {
+            toast.error(e.message || "Failed to load salary records.");
             console.error(e);
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
-            initialFetchDone.current = true;
+            setIsInitialLoad(false);
         }
     }, [pagination.page, pagination.limit, debouncedSearch, showHistory, updatePagination]);
-
-    useEffect(() => {
-        fetchSalaries(1);
-    }, []);
-
-    useEffect(() => {
-        if (initialFetchDone.current && !fetchInProgress.current) {
-            fetchSalaries(pagination.page);
-        }
-    }, [pagination.page]);
 
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
-    const showEmployeeCode = windowWidth >= 1100;
-    const showPackage = windowWidth >= 1360;
-    const showBaseAmount = windowWidth >= 480;
-    const showNetSalary = windowWidth >= 590;
-    const showEffectivePeriod = windowWidth >= 1520;
-    const showStatus = windowWidth >= 1720;
-    const tableMinWidth = windowWidth < 480
-        ? 320
-        : windowWidth < 590
-            ? 420
-            : windowWidth < 900
-                ? 560
-                : windowWidth < 1280
-                    ? 720
-                    : windowWidth < 1520
-                        ? 860
-                        : 980;
-    const visibleColumns = {
-        showEmployee: true,
-        showEmployeeCode,
-        showPackage,
-        showBaseAmount,
-        showNetSalary,
-        showEffectivePeriod,
-        showStatus,
-    };
-    const showTableView = viewMode === 'table';
-    const showCardView = viewMode === 'card';
+    // Search and history triggers
+    useEffect(() => {
+        if (!isInitialLoad) {
+            if (pagination.page !== 1) goToPage(1);
+            else fetchSalaries(1, debouncedSearch, true);
+        }
+    }, [debouncedSearch, showHistory]);
+
+    useEffect(() => {
+        if (!isInitialLoad && !fetchInProgress.current) {
+            fetchSalaries(pagination.page, debouncedSearch, true);
+        }
+    }, [pagination.page]);
+
+    useEffect(() => {
+        const company = JSON.parse(localStorage.getItem('company'));
+        if (company && isInitialLoad) {
+            fetchSalaries(1, "", true);
+        } else if (!company) {
+            toast.error("Company ID not found. Please ensure you're logged in as a company.");
+            setLoading(false);
+            setIsInitialLoad(false);
+        }
+    }, []);
 
     const handleDeleteSalary = async () => {
         if (!salaryToDelete) return;
+        setProcessingId(salaryToDelete.salary_id);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const response = await apiCall('/salary/delete-salary', 'DELETE', { salary_id: salaryToDelete.salary_id }, company?.id);
             const result = await response.json();
             if (result.success) {
-                toast.success('Salary record deleted.');
-                fetchSalaries(pagination.page);
+                toast.success('Salary record deleted successfully.');
+                fetchSalaries(pagination.page, debouncedSearch, false);
                 setShowDeleteModal(false);
                 setSalaryToDelete(null);
             } else {
-                toast.error(result.message || 'Failed to delete salary');
+                throw new Error(result.message || 'Failed to delete salary');
             }
         } catch (error) {
             console.error('Error deleting salary:', error);
-            toast.error('Failed to delete salary');
+            toast.error(error.message || 'Failed to delete salary');
+        } finally {
+            setProcessingId(null);
         }
     };
 
+    const stats = {
+        total: meta?.total || 0,
+        avgBase: salaries.length > 0 
+            ? salaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / salaries.length 
+            : 0,
+        totalCTC: salaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
+        activeCount: salaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
+        currency: salaries[0]?.currency || 'USD'
+    };
+
+    if (isInitialLoad && loading) return <SkeletonComponent />;
+
     return (
-        <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
-            >
-                <div>
+        <div className="min-h-screen p-3 md:p-6 font-sans">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+                >
                     <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
                         Salary Management
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">Manage employee salaries and compensation</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setShowHistory(!showHistory)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                            showHistory 
-                                ? 'bg-purple-600 text-white shadow-md' 
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                        }`}
-                    >
-                        <FaHistory /> History
-                    </button>
-                    <button
-                        onClick={() => setShowAssignModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl text-sm font-medium hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
-                    >
-                        <FaPlus /> Assign Salary
-                    </button>
-                </div>
-            </motion.div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+                            <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="font-medium text-gray-700">{stats.total}</span>
+                            <span className="text-gray-500">salaries</span>
+                        </div>
 
-            {/* Search */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="mb-4"
-            >
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search by employee name, code, or email..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-10 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none shadow-lg transition-all"
-                    />
-                    <FaSearch className="absolute left-4 top-4 text-gray-400 text-lg" />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors">
-                            <FaTimes />
+                        <button
+                            onClick={() => setShowHistory(!showHistory)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                                showHistory 
+                                    ? 'bg-purple-600 text-white shadow-md' 
+                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <FaHistory /> History
                         </button>
-                    )}
-                </div>
-            </motion.div>
 
-            {/* Stats Summary */}
-            {!loading && salaries.length > 0 && (
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
-                >
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Total Employees</p>
-                        <p className="text-2xl font-bold">{meta?.total || 0}</p>
-                    </div>
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Avg Base Salary</p>
-                        <p className="text-2xl font-bold">
-                            {formatCurrency(
-                                salaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / (salaries.length || 1),
-                                salaries[0]?.currency || 'USD'
-                            )}
-                        </p>
-                    </div>
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Total CTC</p>
-                        <p className="text-2xl font-bold">
-                            {formatCurrency(
-                                salaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
-                                salaries[0]?.currency || 'USD'
-                            )}
-                        </p>
-                    </div>
-                    <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Active Salaries</p>
-                        <p className="text-2xl font-bold">
-                            {salaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length}
-                        </p>
+                        <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setShowAssignModal(true)}
+                            className="group relative px-6 py-2.5 bg-gradient-to-r from-green-600 via-green-600 to-emerald-600
+                                       text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
+                                       transition-all duration-300 flex items-center gap-2 overflow-hidden"
+                        >
+                            <div className="relative z-10">
+                                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+                            <span className="relative z-10 text-sm">Assign Salary</span>
+                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
+                                           transition-transform duration-700 bg-gradient-to-r
+                                           from-transparent via-white/20 to-transparent" />
+                        </motion.button>
                     </div>
                 </motion.div>
-            )}
 
-            {/* View Toggle */}
-            {!loading && salaries.length > 0 && (
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-500">
-                        <span className="font-semibold text-gray-800">{salaries.length}</span> of{' '}
-                        <span className="font-semibold text-gray-800">{meta?.total || 0}</span> salary records
-                        {debouncedSearch && <span className="ml-1 text-green-600">· "{debouncedSearch}"</span>}
-                        {showHistory && <span className="ml-1 text-purple-600">· Showing history</span>}
-                    </p>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                </div>
-            )}
-
-            {/* Loading */}
-            {loading && <SkeletonComponent />}
-
-            {/* Empty State */}
-            {!loading && salaries.length === 0 && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
-                >
-                    <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FaMoneyBillWave className="text-4xl text-gray-300" />
-                    </div>
-                    <p className="text-xl font-semibold text-gray-600">No salary records found</p>
-                    <p className="text-gray-400 mt-2 text-sm">
-                        {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Assign Salary" to get started'}
-                    </p>
-                    {debouncedSearch && (
-                        <button onClick={() => setSearchTerm('')}
-                            className="mt-4 px-4 py-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all text-sm font-medium">
-                            Clear Search
-                        </button>
-                    )}
-                    {!debouncedSearch && (
-                        <button onClick={() => setShowAssignModal(true)}
-                            className="mt-4 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium">
-                            Assign Salary
-                        </button>
-                    )}
-                </motion.div>
-            )}
-
-            {/* Card View */}
-            {showCardView && (
-                <ManagementGrid viewMode={viewMode}>
-                    {salaries.map((salary, index) => (
-                        <SalaryCard
-                            key={salary.salary_id}
-                            salary={salary}
-                            index={index}
-                            onClick={(s) => setSelectedSalary(s)}
-                            onView={(s) => setSelectedSalary(s)}
-                            onDelete={(s) => {
-                                setSalaryToDelete(s);
-                                setShowDeleteModal(true);
-                            }}
-                            activeId={activeActionMenu}
-                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                        />
-                    ))}
-                </ManagementGrid>
-            )}
-
-            {/* Table View */}
-            {!loading && salaries.length > 0 && showTableView && (
-                <>
-                    {/* Desktop Table */}
+                {/* Stats Summary */}
+                {!loading && salaries.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-2xl bg-white shadow-xl overflow-visible mb-4"
+                        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
+                    >
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
+                            <p className="text-xs opacity-80">Total Employees</p>
+                            <p className="text-2xl font-bold">{stats.total}</p>
+                        </div>
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
+                            <p className="text-xs opacity-80">Avg Base Salary</p>
+                            <p className="text-2xl font-bold">{formatCurrency(stats.avgBase, stats.currency)}</p>
+                        </div>
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 text-white shadow-lg">
+                            <p className="text-xs opacity-80">Total CTC</p>
+                            <p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, stats.currency)}</p>
+                        </div>
+                        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
+                            <p className="text-xs opacity-80">Active Salaries</p>
+                            <p className="text-2xl font-bold">{stats.activeCount}</p>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Search */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="mb-6"
+                >
+                    <div className="relative">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                        <input
+                            type="text"
+                            placeholder="Search by employee name, code or email..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none shadow-lg transition-all"
+                        />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <FaTimes />
+                            </button>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* View Toggle & Info */}
+                {!loading && salaries.length > 0 && (
+                    <div className="flex justify-between items-center mb-6">
+                        <p className="text-sm text-gray-500">
+                            <span className="font-semibold text-gray-800">{salaries.length}</span> of{' '}
+                            <span className="font-semibold text-gray-800">{stats.total}</span> salary records
+                            {debouncedSearch && <span className="ml-1 text-green-600">· "{debouncedSearch}"</span>}
+                            {showHistory && <span className="ml-1 text-purple-600">· Showing history</span>}
+                        </p>
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="green" />
+                    </div>
+                )}
+
+                {/* Loading skeleton */}
+                {loading && !salaries.length && <SkeletonComponent />}
+
+                {/* Empty State */}
+                {!loading && salaries.length === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
+                    >
+                        <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaMoneyBillWave className="text-4xl text-gray-300" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-600">No salary records found</p>
+                        <p className="text-gray-400 mt-2 text-sm">
+                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Assign Salary" to get started'}
+                        </p>
+                        {debouncedSearch && (
+                            <button onClick={() => setSearchTerm('')}
+                                className="mt-4 px-4 py-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all text-sm font-medium">
+                                Clear Search
+                            </button>
+                        )}
+                        {!debouncedSearch && (
+                            <button onClick={() => setShowAssignModal(true)}
+                                className="mt-4 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium">
+                                Assign Salary
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* Table View */}
+                {!loading && salaries.length > 0 && viewMode === "table" && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-2xl shadow-xl overflow-visible"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full text-sm text-left text-gray-700" style={{ minWidth: `${tableMinWidth}px` }}>
+                            <table className="w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         {visibleColumns.showEmployee && <th className="px-6 py-4">Employee</th>}
@@ -1371,35 +1351,41 @@ const SalaryManagement = () => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
                                     {salaries.map((salary, index) => {
+                                        const status = getStatusBadge(salary.effective_to);
+                                        const StatusIcon = status.icon;
                                         const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
+                                        
                                         return (
                                             <motion.tr
                                                 key={salary.salary_id}
-                                                initial={{ opacity: 0, y: 10 }}
+                                                initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
+                                                transition={{ delay: index * 0.05 }}
+                                                className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 cursor-pointer"
                                                 onClick={() => setSelectedSalary(salary)}
                                             >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0`}>
-                                                            <span className="text-white font-bold text-xs">{getInitials(salary.employee?.name)}</span>
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-semibold text-gray-800">{salary.employee?.name}</p>
-                                                            {visibleColumns.showEmployeeCode && (
+                                                {visibleColumns.showEmployee && (
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center text-white font-semibold`}>
+                                                                {getInitials(salary.employee?.name)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-gray-800">{salary.employee?.name || "No name"}</p>
+                                                                <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                                    <FaEnvelope className="text-gray-400" size={10} />{salary.employee?.email}
+                                                                </p>
                                                                 <p className="text-xs text-gray-400 font-mono">{salary.employee?.employee_code}</p>
-                                                            )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                    </td>
+                                                )}
                                                 {visibleColumns.showPackage && (
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
-                                                        {salary.package?.name}
-                                                    </span>
-                                                </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
+                                                            {salary.package?.name}
+                                                        </span>
+                                                    </td>
                                                 )}
                                                 {visibleColumns.showBaseAmount && (
                                                     <td className="px-6 py-4 font-semibold text-gray-700">
@@ -1408,45 +1394,45 @@ const SalaryManagement = () => {
                                                 )}
                                                 {visibleColumns.showNetSalary && (
                                                     <td className="px-6 py-4">
-                                                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">
+                                                        <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">
                                                             {formatCurrency(salary.net_salary, salary.currency)}
                                                         </span>
                                                     </td>
                                                 )}
                                                 {visibleColumns.showEffectivePeriod && (
-                                                <td className="px-6 py-4 text-xs">
-                                                    {formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}
-                                                </td>
+                                                    <td className="px-6 py-4 text-xs">
+                                                        {formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}
+                                                    </td>
                                                 )}
                                                 {visibleColumns.showStatus && (
-                                                <td className="px-6 py-4">
-                                                    {isActive ? (
-                                                        <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Active</span>
-                                                    ) : (
-                                                        <span className="px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold">Expired</span>
-                                                    )}
-                                                </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                                                            <StatusIcon size={12} />{status.text}
+                                                        </span>
+                                                    </td>
                                                 )}
                                                 <td className="px-6 py-4 text-right">
-                                                    <ActionMenu
-                                                        menuId={`table-${salary.salary_id}`}
-                                                        activeId={activeActionMenu}
-                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                        actions={[
-                                                            {
-                                                                label: 'View Details',
-                                                                icon: <FaEye size={13} />,
-                                                                onClick: () => setSelectedSalary(salary),
-                                                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                            },
-                                                            {
-                                                                label: 'Delete',
-                                                                icon: <FaTrash size={13} />,
-                                                                onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
-                                                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                            }
-                                                        ]}
-                                                    />
+                                                    <div onClick={e => e.stopPropagation()}>
+                                                        <ActionMenu
+                                                            menuId={`table-${salary.salary_id}`}
+                                                            activeId={activeActionMenu}
+                                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                            actions={[
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={13} />,
+                                                                    onClick: () => setSelectedSalary(salary),
+                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                                },
+                                                                {
+                                                                    label: 'Delete',
+                                                                    icon: <FaTrash size={13} />,
+                                                                    onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
+                                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                                }
+                                                            ]}
+                                                        />
+                                                    </div>
                                                 </td>
                                             </motion.tr>
                                         );
@@ -1455,128 +1441,67 @@ const SalaryManagement = () => {
                             </table>
                         </div>
                     </motion.div>
+                )}
 
-                </>
-            )}
+                {/* Card View */}
+                {!loading && salaries.length > 0 && viewMode === "card" && (
+                    <ManagementGrid viewMode={viewMode}>
+                        {salaries.map((salary, index) => (
+                            <SalaryCard
+                                key={salary.salary_id}
+                                salary={salary}
+                                index={index}
+                                onClick={(s) => setSelectedSalary(s)}
+                                onView={(s) => setSelectedSalary(s)}
+                                onDelete={(s) => {
+                                    setSalaryToDelete(s);
+                                    setShowDeleteModal(true);
+                                }}
+                                activeId={activeActionMenu}
+                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                            />
+                        ))}
+                    </ManagementGrid>
+                )}
 
-            {/* Card View */}
-            {false && (
-                <ManagementGrid viewMode={viewMode}>
-                        {salaries.map((salary, index) => {
-                            const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
-                            return (
-                                <motion.div
-                                    key={salary.salary_id}
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() => setSelectedSalary(salary)}
-                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 cursor-pointer hover:shadow-lg transition-all duration-200"
-                                >
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md`}>
-                                            <span className="text-white font-bold">{getInitials(salary.employee?.name)}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800 truncate">{salary.employee?.name}</h3>
-                                                    <p className="text-xs text-gray-500">{salary.employee?.employee_code}</p>
-                                                </div>
-                                                {isActive && (
-                                                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Active</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                {/* Pagination */}
+                {!loading && salaries.length > 0 && (
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalItems={pagination.total}
+                        itemsPerPage={pagination.limit}
+                        onPageChange={handlePageChange}
+                        variant="default"
+                        showInfo={true}
+                    />
+                )}
 
-                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                        <div className="bg-blue-50 rounded-xl p-2 text-center border border-blue-100">
-                                            <p className="text-sm font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
-                                            <p className="text-xs text-blue-500">Base</p>
-                                        </div>
-                                        <div className="bg-purple-50 rounded-xl p-2 text-center border border-purple-100">
-                                            <p className="text-sm font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
-                                            <p className="text-xs text-purple-500">Net</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between text-xs text-gray-400">
-                                        <span>{formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}</span>
-                                        <div onClick={e => e.stopPropagation()}>
-                                            <ActionMenu
-                                                menuId={`mobile-${salary.salary_id}`}
-                                                activeId={activeActionMenu}
-                                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                actions={[
-                                                    {
-                                                        label: 'View Details',
-                                                        icon: <FaEye size={13} />,
-                                                        onClick: () => setSelectedSalary(salary),
-                                                        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                    },
-                                                    {
-                                                        label: 'Delete',
-                                                        icon: <FaTrash size={13} />,
-                                                        onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
-                                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                    }
-                                                ]}
-                                            />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                </ManagementGrid>
-            )}
-
-            {/* Pagination */}
-            {!loading && salaries.length > 0 && (
-                <Pagination
-                    currentPage={pagination.page}
-                    totalItems={pagination.total}
-                    itemsPerPage={pagination.limit}
-                    onPageChange={handlePageChange}
-                    variant="default"
-                    showInfo={true}
+                {/* Modals */}
+                <SalaryDetailModal
+                    salary={selectedSalary}
+                    onClose={() => setSelectedSalary(null)}
                 />
-            )}
 
-            {/* Modals */}
-            <SalaryDetailModal
-                salary={selectedSalary}
-                onClose={() => setSelectedSalary(null)}
-            />
+                <AssignSalaryModal
+                    isOpen={showAssignModal}
+                    onClose={() => setShowAssignModal(false)}
+                    onSuccess={() => {
+                        fetchSalaries(1, "", true);
+                        setShowAssignModal(false);
+                    }}
+                />
 
-            <AssignSalaryModal
-                isOpen={showAssignModal}
-                onClose={() => setShowAssignModal(false)}
-                onSuccess={() => {
-                    fetchSalaries(1);
-                    setShowAssignModal(false);
-                }}
-            />
-
-            <DeleteConfirmModal
-                isOpen={showDeleteModal}
-                onClose={() => {
-                    setShowDeleteModal(false);
-                    setSalaryToDelete(null);
-                }}
-                onConfirm={handleDeleteSalary}
-                salary={salaryToDelete}
-            />
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-                @media (min-width: 475px) {
-                    .xs\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                }
-            `}</style>
+                <DeleteConfirmModal
+                    isOpen={showDeleteModal}
+                    onClose={() => {
+                        setShowDeleteModal(false);
+                        setSalaryToDelete(null);
+                    }}
+                    onConfirm={handleDeleteSalary}
+                    salary={salaryToDelete}
+                    processingId={processingId}
+                />
+            </div>
         </div>
     );
 };
