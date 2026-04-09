@@ -394,10 +394,10 @@ const LeaveManagement = () => {
   const rejectAccess = checkActionAccess('leaveManagement', 'reject');
   const updateMessage = getAccessMessage(updateAccess);
   const reviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
-  const showDuration = windowWidth >= 1024;
-  const showDays = windowWidth >= 1160;
-  const showApplied = windowWidth >= 1360;
-  const showApprovedBy = windowWidth >= 1540;
+  const showDuration = windowWidth >= 768;
+  const showDays = windowWidth >= 640;
+  const showApplied = windowWidth >= 1024;
+  const showApprovedBy = windowWidth >= 1280;
   const leaveColumnCount =
     4 +
     Number(showDuration) +
@@ -828,12 +828,11 @@ const LeaveManagement = () => {
             DESKTOP TABLE (md+)
           ═══════════════════ */}
           <div className={`${viewMode === 'table' ? 'block' : 'hidden'} overflow-x-auto overflow-y-visible`}>
-            <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
+            <table className="w-full text-sm text-left text-gray-700">
               <colgroup>
                 <col className="w-[35%] lg:w-[26%]" />
                 <col className="w-[30%] lg:w-[22%]" />
                 <col className="w-[18%] lg:w-[14%]" />
-                <col className="hidden lg:table-column lg:w-[16%]" />
                 <col className="hidden lg:table-column lg:w-[8%]" />
                 <col className="hidden xl:table-column xl:w-[10%]" />
                 <col className="hidden xl:table-column xl:w-[12%]" />

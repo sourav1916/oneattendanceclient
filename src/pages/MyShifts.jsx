@@ -78,14 +78,6 @@ const SummaryCard = ({ icon, label, value, color, delay = 0 }) => {
         red: 'from-red-500 to-rose-600',
         indigo: 'from-indigo-500 to-indigo-600',
     };
-    const bgMap = {
-        blue: 'bg-blue-50',
-        green: 'bg-green-50',
-        purple: 'bg-purple-50',
-        orange: 'bg-orange-50',
-        red: 'bg-red-50',
-        indigo: 'bg-indigo-50',
-    };
     const textMap = {
         blue: 'text-blue-700',
         green: 'text-green-700',
@@ -128,7 +120,6 @@ const AttendanceBadge = ({ pct }) => {
 const ShiftDetailModal = ({ shift, onClose }) => {
     if (!shift) return null;
     const workedH = parseFloat(shift.worked_hours || 0);
-    const isFullDay = workedH >= 8;
 
     return (
         <AnimatePresence>
@@ -234,6 +225,26 @@ const MyShifts = () => {
     const [selectedShift, setSelectedShift] = useState(null);
     const [viewMode, setViewMode] = useState('table'); // 'table' | 'card'
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+    // Handle window resize with debounce
+    useEffect(() => {
+        let timeoutId;
+        const handleResize = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => setWindowWidth(window.innerWidth), 150);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timeoutId);
+        };
+    }, []);
+
+    const showClockOut = windowWidth >= 768;
+    const showBreak = windowWidth >= 1024;
+    const showWorked = windowWidth >= 1024;
+    const showStatus = windowWidth >= 640;
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -467,16 +478,16 @@ const MyShifts = () => {
                         className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                            <table className="w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Date</th>
                                         <th className="px-6 py-4">Clock In</th>
-                                        <th className="px-6 py-4">Clock Out</th>
-                                        <th className="px-6 py-4">Break</th>
-                                        <th className="px-6 py-4">Worked</th>
+                                        {showClockOut && <th className="px-6 py-4">Clock Out</th>}
+                                        {showBreak && <th className="px-6 py-4">Break</th>}
+                                        {showWorked && <th className="px-6 py-4">Worked</th>}
                                         <th className="px-6 py-4">Hours</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        {showStatus && <th className="px-6 py-4">Status</th>}
                                         <th className="px-6 py-4 text-right">Details</th>
                                     </tr>
                                 </thead>
@@ -500,24 +511,28 @@ const MyShifts = () => {
                                                     {formatTime(shift.start_time)}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className="flex items-center gap-1.5 text-red-700 font-medium">
-                                                    <FaStop size={9} className="text-red-400" />
-                                                    {formatTime(shift.end_time)}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-500">{formatDuration(shift.break_minutes)}</td>
-                                            <td className="px-6 py-4 text-gray-600">{formatDuration(shift.worked_minutes)}</td>
+                                            {showClockOut && (
+                                                <td className="px-6 py-4">
+                                                    <span className="flex items-center gap-1.5 text-red-700 font-medium">
+                                                        <FaStop size={9} className="text-red-400" />
+                                                        {formatTime(shift.end_time)}
+                                                    </span>
+                                                </td>
+                                            )}
+                                            {showBreak && <td className="px-6 py-4 text-gray-500">{formatDuration(shift.break_minutes)}</td>}
+                                            {showWorked && <td className="px-6 py-4 text-gray-600">{formatDuration(shift.worked_minutes)}</td>}
                                             <td className="px-6 py-4">
                                                 <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100">
                                                     {formatHours(shift.worked_hours)}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${shift.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                                                    {shift.is_active ? 'Active' : 'Done'}
-                                                </span>
-                                            </td>
+                                            {showStatus && (
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${shift.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                                                        {shift.is_active ? 'Active' : 'Done'}
+                                                    </span>
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     onClick={e => { e.stopPropagation(); setSelectedShift(shift); }}

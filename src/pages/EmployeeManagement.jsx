@@ -631,7 +631,7 @@ const EmployeeManagement = () => {
         showEmail: window.innerWidth >= 1100,
         showPhone: window.innerWidth >= 1440,
         showType: window.innerWidth >= 1100,
-        showStatus: window.innerWidth >= 768,
+        showStatus: window.innerWidth >= 640,
         showJoiningDate: window.innerWidth >= 1280,
     }));
 
@@ -646,7 +646,7 @@ const EmployeeManagement = () => {
                 showEmail: window.innerWidth >= 1100,
                 showPhone: window.innerWidth >= 1440,
                 showType: window.innerWidth >= 1100,
-                showStatus: window.innerWidth >= 768,
+                showStatus: window.innerWidth >= 640,
                 showJoiningDate: window.innerWidth >= 1280,
             }), 150);
         };
@@ -746,7 +746,7 @@ const EmployeeManagement = () => {
                         className="bg-white rounded-2xl shadow-xl overflow-visible"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                            <table className="w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         {visibleColumns.showEmployeeCode && <th className="px-6 py-4">Employee Code</th>}

@@ -806,12 +806,12 @@ const LeaveBalanceManagement = () => {
     [balances]
   );
 
-  const showEmployee = windowWidth >= 1100;
-  const showCode = windowWidth >= 900;
-  const showYear = windowWidth >= 1100;
-  const showUsed = windowWidth >= 1280;
-  const showPaid = windowWidth >= 1420;
-  const showMax = windowWidth >= 1600;
+  const showEmployee = windowWidth >= 540;
+  const showCode = windowWidth >= 768;
+  const showYear = windowWidth >= 1024;
+  const showUsed = windowWidth >= 640;
+  const showPaid = windowWidth >= 1280;
+  const showMax = windowWidth >= 1440;
   const desktopColumnCount =
     4 +
     Number(showEmployee) +
@@ -966,7 +966,7 @@ const LeaveBalanceManagement = () => {
             className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl bg-white shadow-xl`}
           >
             <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
+                <table className="w-full text-sm text-left text-gray-700">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
                       {showEmployee && <th className="px-6 py-4">Employee</th>}

@@ -747,11 +747,12 @@ const LeaveConfigManagement = () => {
   };
 
   // Responsive: progressively hide lower-priority columns as the viewport narrows
-  const showCarryFwd = windowWidth >= 1024;
-  const showAccrual = windowWidth >= 1200;
-  const showHalfDay = windowWidth >= 1320;
-  const showWeekends = windowWidth >= 1440;
-  const showStatus = windowWidth >= 1560;
+  const showMaxBalance = windowWidth >= 540;
+  const showCarryFwd = windowWidth >= 768;
+  const showAccrual = windowWidth >= 1024;
+  const showHalfDay = windowWidth >= 1200;
+  const showWeekends = windowWidth >= 1320;
+  const showStatus = windowWidth >= 1440;
 
   if (loading && records.length === 0) {
     return (
@@ -840,13 +841,13 @@ const LeaveConfigManagement = () => {
             className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl bg-white shadow-xl overflow-visible`}
           >
             <div className="overflow-x-auto overflow-y-visible">
-            <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
+            <table className="w-full text-left text-sm text-gray-700">
               <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                 <tr>
                   <th className="px-6 py-4">Code</th>
                   <th className="px-6 py-4">Name</th>
                   <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Max Balance</th>
+                  {showMaxBalance && <th className="px-6 py-4">Max Balance</th>}
                   {showCarryFwd && <th className="px-6 py-4">Carry Fwd</th>}
                   {showAccrual && <th className="px-6 py-4">Accrual</th>}
                   {showHalfDay && <th className="px-6 py-4">Half Day</th>}
@@ -871,7 +872,7 @@ const LeaveConfigManagement = () => {
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-800">{record.name}</td>
                     <td className="px-6 py-4"><PaidBadge isPaid={record.is_paid} /></td>
-                    <td className="px-6 py-4 text-gray-600">{record.max_balance} days</td>
+                    {showMaxBalance && <td className="px-6 py-4 text-gray-600">{record.max_balance} days</td>}
                     {showCarryFwd && <td className="px-6 py-4 text-gray-600">{record.carry_forward_limit} days</td>}
                     {showAccrual && (
                       <td className="px-6 py-4">

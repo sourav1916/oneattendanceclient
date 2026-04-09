@@ -574,9 +574,9 @@ const MyLeave = () => {
   );
   const [visibleColumns, setVisibleColumns] = useState(() => ({
     showLeaveType: true,
-    showStartDate: window.innerWidth >= 480,
-    showEndDate: window.innerWidth >= 640,
-    showDuration: window.innerWidth >= 768,
+    showStartDate: window.innerWidth >= 540,
+    showEndDate: window.innerWidth >= 768,
+    showDuration: window.innerWidth >= 640,
     showStatus: true,
     showAppliedOn: window.innerWidth >= 1024,
   }));
@@ -664,9 +664,9 @@ const MyLeave = () => {
       timer = setTimeout(() => {
         setVisibleColumns({
           showLeaveType: true,
-          showStartDate: window.innerWidth >= 480,
-          showEndDate: window.innerWidth >= 640,
-          showDuration: window.innerWidth >= 768,
+          showStartDate: window.innerWidth >= 540,
+          showEndDate: window.innerWidth >= 768,
+          showDuration: window.innerWidth >= 640,
           showStatus: true,
           showAppliedOn: window.innerWidth >= 1024,
         });
@@ -859,7 +859,7 @@ const MyLeave = () => {
             <>
               {viewMode === 'table' && (
                 <div className="overflow-x-auto overflow-y-visible">
-                  <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                  <table className="w-full text-sm text-left text-gray-700">
                     <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                       <tr>
                         {visibleColumns.showLeaveType && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Leave Type</th>}

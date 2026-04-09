@@ -9,11 +9,14 @@ import {
     FaListUl, FaTh, FaShieldAlt
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ModalScrollLock from "../components/ModalScrollLock";
+import ActionMenu from '../components/ActionMenu';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -22,16 +25,16 @@ const MONTHS = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
+    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
+};
+
 const backdropVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
     exit: { opacity: 0 }
-};
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.9, y: 20 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.5 } },
-    exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,6 +62,15 @@ const AVATAR_GRADIENTS = [
 ];
 
 const avatarGradient = (id) => AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
+
+const InfoItem = ({ icon, label, value }) => (
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+            {icon}{label}
+        </label>
+        <div className="text-gray-800 font-medium">{value}</div>
+    </div>
+);
 
 // ─── Sub Components ───────────────────────────────────────────────────────────
 
@@ -135,99 +147,90 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
             <motion.div
                 variants={backdropVariants}
                 initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 onClick={onClose}
             >
+                <ModalScrollLock />
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
-
-                    {/* Modal Header */}
-                    <div className="px-6 py-5 border-b border-gray-100">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <FaEye className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold text-gray-900">Employee Details</h2>
-                                    <p className="text-xs text-gray-400">{MONTHS[s.month - 1]} {s.year} Summary</p>
-                                </div>
-                            </div>
-                            <motion.button
-                                whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }}
-                                onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                            >
-                                <FaTimes className="text-gray-400" />
-                            </motion.button>
-                        </div>
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                            <FaUserCircle /> Employee Details
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                            <FaTimes size={20} />
+                        </button>
                     </div>
 
-                    <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar space-y-5">
-
+                    <div className="p-6">
                         {/* Employee Profile */}
-                        <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
-                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md`}>
-                                <span className="text-white font-bold text-lg">{getInitials(u.name)}</span>
+                        <div className="flex items-center gap-6 pb-6 border-b">
+                            <div className={`bg-gradient-to-br ${avatarGradient(employee.employee_id)} p-4 rounded-2xl`}>
+                                <FaUserCircle className="text-white text-5xl" />
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-gray-900 text-lg truncate">{u.name}</h3>
-                                <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
-                                    <FaBriefcase className="text-blue-400 flex-shrink-0" size={11} />
-                                    {designationLabel(employee.designation)}
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800">{u.name}</h3>
+                                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                    <FaIdCard className="text-blue-500" size={14} />{employee.employee_code}
                                 </p>
-                                <div className="flex items-center gap-2 mt-2">
-                                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColor}`}>
-                                        {employee.status}
-                                    </span>
-                                    <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded-lg">
-                                        {employee.employee_code}
-                                    </span>
-                                </div>
+                                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                    <FaBriefcase className="text-purple-500" size={14} />{designationLabel(employee.designation)}
+                                </p>
                             </div>
                         </div>
 
                         {/* Contact Info */}
-                        <div className="bg-gray-50 rounded-xl p-4 space-y-1">
-                            <InfoRow icon={<FaEnvelope className="text-blue-400" size={11} />} label="Email" value={u.email} />
-                            <InfoRow icon={<FaPhone className="text-green-400" size={11} />} label="Phone" value={u.phone} />
-                            <InfoRow icon={<FaCalendarAlt className="text-rose-400" size={11} />} label="Joined" value={formatDate(employee.joining_date)} />
-                            <InfoRow icon={<FaUserTag className="text-purple-400" size={11} />} label="Type" value={designationLabel(employee.employment_type)} />
-                            <InfoRow icon={<FaDollarSign className="text-emerald-400" size={11} />} label="Salary" value={designationLabel(employee.salary_type)} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                            <InfoItem icon={<FaEnvelope className="text-blue-500" />} label="Email" value={u.email} />
+                            <InfoItem icon={<FaPhone className="text-green-500" />} label="Phone" value={u.phone || 'N/A'} />
+                            <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joined Date" value={formatDate(employee.joining_date)} />
+                            <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Employment Type" value={designationLabel(employee.employment_type)} />
+                            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={designationLabel(employee.salary_type)} />
+                            <InfoItem 
+                                icon={<FaShieldAlt className="text-orange-500" />} 
+                                label="Status" 
+                                value={
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
+                                        {employee.status}
+                                    </span>
+                                } 
+                            />
                         </div>
 
                         {/* Monthly Stats */}
-                        <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                <FaChartBar className="text-blue-400" />Monthly Breakdown
-                            </p>
-                            <div className="grid grid-cols-5 gap-2">
-                                <StatPill value={s.worked_days} label="Worked" color="green" />
-                                <StatPill value={s.leave_days} label="Leave" color="purple" />
-                                <StatPill value={s.holidays} label="Holiday" color="blue" />
-                                <StatPill value={s.absent_days} label="Absent" color="red" />
-                                <StatPill value={formatHours(s.total_work_hours)} label="Hours" color="orange" />
+                        <div className="mt-6">
+                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                                <FaChartBar className="text-blue-500" /> Monthly Breakdown ({MONTHS[s.month - 1]} {s.year})
+                            </label>
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                <StatPill value={s.worked_days} label="Worked Days" color="green" />
+                                <StatPill value={s.leave_days} label="Leave Days" color="purple" />
+                                <StatPill value={s.holidays} label="Holidays" color="blue" />
+                                <StatPill value={s.absent_days} label="Absent Days" color="red" />
+                                <StatPill value={formatHours(s.total_work_hours)} label="Total Hours" color="orange" />
                             </div>
                         </div>
 
                         {/* Attendance Rate */}
-                        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-                            <div className="flex justify-between items-center mb-2">
+                        <div className="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                            <div className="flex justify-between items-center mb-3">
                                 <span className="text-sm font-semibold text-gray-700">Attendance Rate</span>
                                 <AttendanceBadge pct={s.attendance_percentage} />
                             </div>
                             <MiniStatBar worked={s.worked_days} total={s.total_days_in_month} pct={s.attendance_percentage} />
-                            <p className="text-xs text-gray-400 mt-2">Avg {formatHours(s.average_hours_per_day)} / working day</p>
+                            <p className="text-xs text-gray-500 mt-3">
+                                Average {formatHours(s.average_hours_per_day)} / working day
+                            </p>
                         </div>
                     </div>
 
-                    <div className="px-6 pb-5 pt-2">
+                    <div className="px-6 pb-6">
                         <button onClick={onClose}
-                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium text-sm">
+                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
                             Close
                         </button>
                     </div>
@@ -263,15 +266,18 @@ const EmployeeCard = ({ employee, index, onClick }) => {
                 <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-800 truncate text-sm">{u.name}</h3>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{designationLabel(employee.designation)}</p>
-                    <span className={`mt-1 inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColor}`}>
-                        {employee.status}
-                    </span>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColor}`}>
+                            {employee.status}
+                        </span>
+                        <span className="text-xs text-gray-400 font-mono">{employee.employee_code}</span>
+                    </div>
                 </div>
                 <AttendanceBadge pct={s.attendance_percentage} />
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-1.5 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-green-700">{s.worked_days}</p>
                     <p className="text-xs text-green-500">Worked</p>
@@ -291,7 +297,9 @@ const EmployeeCard = ({ employee, index, onClick }) => {
 
             {/* Footer */}
             <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-xs text-gray-400 font-mono">{employee.employee_code}</span>
+                <span className="text-xs text-gray-400">
+                    {s.leave_days} leaves · {s.holidays} holidays
+                </span>
                 <span className="text-xs text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     View <FaEye size={10} />
                 </span>
@@ -312,13 +320,16 @@ const EmployeesShifts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [viewMode, setViewMode] = useState('card');
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [viewMode, setViewMode] = useState('table');
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [windowWidth, setWindowWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1440
+    );
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
-    const initialFetchDone = useRef(false);
-    const isInitialLoad = useRef(true);
 
     // Debounce search
     useEffect(() => {
@@ -326,25 +337,25 @@ const EmployeesShifts = () => {
         return () => clearTimeout(t);
     }, [searchTerm]);
 
+    // Handle window resize
     useEffect(() => {
-        if (!isInitialLoad.current) {
-            if (pagination.page !== 1) goToPage(1);
-            else fetchEmployees(1);
-        }
-    }, [debouncedSearch]);
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
-    const fetchEmployees = useCallback(async (page = pagination.page) => {
+    const fetchEmployees = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
-        setLoading(true);
+        if (resetLoading) setLoading(true);
+
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const params = new URLSearchParams({ month, year, page, limit: pagination.limit });
-            if (debouncedSearch) params.append('search', debouncedSearch);
+            let url = `/shifts/employees-shifts?month=${month}&year=${year}&page=${page}&limit=${pagination.limit}`;
+            if (search) url += `&search=${search}`;
 
-            const response = await apiCall(
-                `/shifts/employees-shifts?${params}`, 'GET', null, company?.id
-            );
+            const response = await apiCall(url, 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) {
                 setEmployees(result.data || []);
@@ -361,232 +372,259 @@ const EmployeesShifts = () => {
             }
         } catch (e) {
             console.error(e);
+            toast.error(e.message || 'Failed to load employee shifts');
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
-            isInitialLoad.current = false;
+            setIsInitialLoad(false);
         }
     }, [month, year, pagination.page, pagination.limit, debouncedSearch, updatePagination]);
-
-    useEffect(() => {
-        if (!initialFetchDone.current) {
-            fetchEmployees(1);
-            initialFetchDone.current = true;
-        }
-    }, [fetchEmployees]);
-
-    useEffect(() => {
-        if (initialFetchDone.current) {
-            fetchEmployees(1);
-        }
-    }, [month, year]);
-
-    useEffect(() => {
-        if (initialFetchDone.current && !fetchInProgress.current) {
-            fetchEmployees(pagination.page);
-        }
-    }, [pagination.page]);
-
-    const navigateMonth = (dir) => {
-        let m = month + dir, y = year;
-        if (m > 12) { m = 1; y++; }
-        if (m < 1) { m = 12; y--; }
-        setMonth(m); setYear(y);
-    };
 
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
+    const toggleActionMenu = useCallback((id) => {
+        setActiveActionMenu((current) => (current === id ? null : id));
+    }, []);
+
+    // Search and month/year triggers
+    useEffect(() => {
+        if (!isInitialLoad) {
+            if (pagination.page !== 1) goToPage(1);
+            else fetchEmployees(1, debouncedSearch, true);
+        }
+    }, [debouncedSearch]);
+
+    useEffect(() => {
+        if (!isInitialLoad && !fetchInProgress.current) {
+            fetchEmployees(pagination.page, debouncedSearch, true);
+        }
+    }, [pagination.page]);
+
+    useEffect(() => {
+        if (!isInitialLoad) {
+            fetchEmployees(1, debouncedSearch, true);
+        }
+    }, [month, year]);
+
+    useEffect(() => {
+        const company = JSON.parse(localStorage.getItem('company'));
+        if (company && isInitialLoad) {
+            fetchEmployees(1, "", true);
+        } else if (!company) {
+            toast.error("Company ID not found. Please ensure you're logged in as a company.");
+            setLoading(false);
+            setIsInitialLoad(false);
+        }
+    }, []);
+
+    const navigateMonth = (dir) => {
+        let m = month + dir, y = year;
+        if (m > 12) { m = 1; y++; }
+        if (m < 1) { m = 12; y--; }
+        setMonth(m);
+        setYear(y);
+    };
+
     const designationLabel = (v) =>
         v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
 
-    // ─── Render ──────────────────────────────────────────────────────────────
+    // Responsive column visibility - Optimized for tablet (670-900px)
+    // Mobile: < 500px - only Employee, Attendance, Actions
+    // Tablet: 500px - 768px - Employee, Worked, Attendance, Status, Actions
+    // Tablet Large: 768px - 900px - Employee, Designation, Worked, Hours, Attendance, Status, Actions
+    // Desktop: > 900px - all columns
+    const showDesignation = windowWidth >= 768;
+    const showWorked = windowWidth >= 500;
+    const showHours = windowWidth >= 768;
+    const showLeave = windowWidth >= 1024;
+    const showAbsent = windowWidth >= 1024;
+    const showAttendance = windowWidth >= 500;
+    const showStatus = windowWidth >= 640;
+
+    if (isInitialLoad && loading) return <SkeletonComponent />;
 
     return (
-        <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
+        <div className="min-h-screen p-3 md:p-6 font-sans">
+            <div className="max-w-7xl mx-auto">
 
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
-            >
-                <div>
+                {/* Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+                >
                     <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
                         Employee Shifts
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">Monitor attendance across all employees</p>
-                </div>
-                {meta && (
-                    <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 flex items-center gap-2">
-                        <FaUserCircle className="text-blue-400" />
-                        {pagination.total} employees
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+                            <FaUserCircle className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium text-gray-700">{pagination.total}</span>
+                            <span className="text-gray-500">employees</span>
+                        </div>
                     </div>
-                )}
-            </motion.div>
+                </motion.div>
 
-            {/* Search */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="mb-4"
-            >
-                <div className="relative">
-                    <input
-                        type="text"
-                        placeholder="Search by name, email, or employee code..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-10 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all"
-                    />
-                    <FaSearch className="absolute left-4 top-4 text-gray-400 text-lg" />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors">
-                            <FaTimes />
-                        </button>
-                    )}
-                </div>
-            </motion.div>
-
-            {/* Month Navigator */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mb-6"
-            >
-                <div className="flex items-center justify-between bg-white rounded-2xl shadow-md border border-gray-100 p-3 md:p-4">
-                    <motion.button
-                        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                        onClick={() => navigateMonth(-1)}
-                        className="w-9 h-9 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl flex items-center justify-center transition-all border border-gray-200"
-                    >
-                        <FaChevronLeft size={12} />
-                    </motion.button>
-
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={() => setMonthPickerOpen(o => !o)}
-                            className="flex items-center gap-2 font-bold text-gray-800 text-base md:text-xl hover:text-blue-600 transition-colors"
-                        >
-                            {MONTHS[month - 1]} {year}
-                            <FaAngleDown className={`text-sm transition-transform ${monthPickerOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {meta?.is_current_month && (
-                            <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full mt-1">Current Month</span>
+                {/* Search */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="mb-4"
+                >
+                    <div className="relative">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                        <input
+                            type="text"
+                            placeholder="Search by name, email, or employee code..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all"
+                        />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <FaTimes />
+                            </button>
                         )}
                     </div>
-
-                    <motion.button
-                        whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                        onClick={() => navigateMonth(1)}
-                        disabled={month === now.getMonth() + 1 && year === now.getFullYear()}
-                        className="w-9 h-9 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl flex items-center justify-center transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        <FaChevronRight size={12} />
-                    </motion.button>
-                </div>
-
-                <AnimatePresence>
-                    {monthPickerOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 grid grid-cols-4 gap-2"
-                        >
-                            {MONTHS.map((m, i) => (
-                                <button
-                                    key={m}
-                                    onClick={() => { setMonth(i + 1); setMonthPickerOpen(false); }}
-                                    className={`py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${month === i + 1 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'}`}
-                                >
-                                    {m.slice(0, 3)}
-                                </button>
-                            ))}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-
-            {/* View Toggle */}
-            {!loading && employees.length > 0 && (
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-500">
-                        <span className="font-semibold text-gray-800">{employees.length}</span> of{' '}
-                        <span className="font-semibold text-gray-800">{pagination.total}</span> employees
-                        {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
-                    </p>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                </div>
-            )}
-
-            {/* Loading */}
-            {loading && <SkeletonComponent />}
-
-            {/* Empty State */}
-            {!loading && employees.length === 0 && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
-                >
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FaUserCircle className="text-4xl text-gray-300" />
-                    </div>
-                    <p className="text-xl font-semibold text-gray-600">No employees found</p>
-                    <p className="text-gray-400 mt-2 text-sm">
-                        {debouncedSearch ? `No results for "${debouncedSearch}"` : `No shifts recorded for ${MONTHS[month - 1]} ${year}`}
-                    </p>
-                    {debouncedSearch && (
-                        <button onClick={() => setSearchTerm('')}
-                            className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
-                            Clear Search
-                        </button>
-                    )}
                 </motion.div>
-            )}
 
-            {/* Grid View */}
-            {!loading && employees.length > 0 && viewMode === 'card' && (
-                <ManagementGrid viewMode={viewMode}>
-                    {employees.map((emp, index) => (
-                        <EmployeeCard
-                            key={emp.employee_id}
-                            employee={emp}
-                            index={index}
-                            onClick={() => setSelectedEmployee(emp)}
-                        />
-                    ))}
-                </ManagementGrid>
-            )}
+                {/* Month Navigator */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="mb-6"
+                >
+                    <div className="flex items-center justify-between bg-white rounded-2xl shadow-md border border-gray-100 p-3 md:p-4">
+                        <motion.button
+                            whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                            onClick={() => navigateMonth(-1)}
+                            className="w-9 h-9 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl flex items-center justify-center transition-all border border-gray-200"
+                        >
+                            <FaChevronLeft size={12} />
+                        </motion.button>
 
-            {/* List View */}
-            {!loading && employees.length > 0 && viewMode === 'table' && (
-                <>
-                    {/* Desktop Table */}
+                        <div className="flex flex-col items-center">
+                            <button
+                                onClick={() => setMonthPickerOpen(o => !o)}
+                                className="flex items-center gap-2 font-bold text-gray-800 text-base md:text-xl hover:text-blue-600 transition-colors"
+                            >
+                                {MONTHS[month - 1]} {year}
+                                <FaAngleDown className={`text-sm transition-transform ${monthPickerOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {meta?.is_current_month && (
+                                <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full mt-1">Current Month</span>
+                            )}
+                        </div>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                            onClick={() => navigateMonth(1)}
+                            disabled={month === now.getMonth() + 1 && year === now.getFullYear()}
+                            className="w-9 h-9 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl flex items-center justify-center transition-all border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            <FaChevronRight size={12} />
+                        </motion.button>
+                    </div>
+
+                    <AnimatePresence>
+                        {monthPickerOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 grid grid-cols-4 gap-2"
+                            >
+                                {MONTHS.map((m, i) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => { setMonth(i + 1); setMonthPickerOpen(false); }}
+                                        className={`py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${month === i + 1 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'}`}
+                                    >
+                                        {m.slice(0, 3)}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+
+                {/* View Toggle & Count */}
+                {!loading && employees.length > 0 && (
+                    <div className="flex justify-between items-center mb-6">
+                        <p className="text-sm text-gray-500">
+                            <span className="font-semibold text-gray-800">{employees.length}</span> of{' '}
+                            <span className="font-semibold text-gray-800">{pagination.total}</span> employees
+                            {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
+                        </p>
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                    </div>
+                )}
+
+                {/* Loading skeleton */}
+                {loading && !employees.length && <SkeletonComponent />}
+
+                {/* Empty State */}
+                {!loading && employees.length === 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
+                    >
+                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaUserCircle className="text-4xl text-gray-300" />
+                        </div>
+                        <p className="text-xl font-semibold text-gray-600">No employees found</p>
+                        <p className="text-gray-400 mt-2 text-sm">
+                            {debouncedSearch ? `No results for "${debouncedSearch}"` : `No shifts recorded for ${MONTHS[month - 1]} ${year}`}
+                        </p>
+                        {debouncedSearch && (
+                            <button onClick={() => setSearchTerm('')}
+                                className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
+                                Clear Search
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+
+                {/* Grid View */}
+                {!loading && employees.length > 0 && viewMode === "card" && (
+                    <ManagementGrid viewMode={viewMode}>
+                        {employees.map((emp, index) => (
+                            <EmployeeCard
+                                key={emp.employee_id}
+                                employee={emp}
+                                index={index}
+                                onClick={() => setSelectedEmployee(emp)}
+                            />
+                        ))}
+                    </ManagementGrid>
+                )}
+
+                {/* Table View */}
+                {!loading && employees.length > 0 && viewMode === "table" && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                            <table className="w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Employee</th>
-                                        <th className="px-6 py-4">Designation</th>
-                                        <th className="px-6 py-4">Worked</th>
-                                        <th className="px-6 py-4">Hours</th>
-                                        <th className="px-6 py-4">Leave</th>
-                                        <th className="px-6 py-4">Absent</th>
-                                        <th className="px-6 py-4">Attendance</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4 text-right">Details</th>
+                                        {showDesignation && <th className="px-6 py-4">Designation</th>}
+                                        {showWorked && <th className="px-6 py-4">Worked</th>}
+                                        {showHours && <th className="px-6 py-4">Hours</th>}
+                                        {showLeave && <th className="px-6 py-4">Leave</th>}
+                                        {showAbsent && <th className="px-6 py-4">Absent</th>}
+                                        {showAttendance && <th className="px-6 py-4">Attendance</th>}
+                                        {showStatus && <th className="px-6 py-4">Status</th>}
+                                        <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -594,65 +632,92 @@ const EmployeesShifts = () => {
                                         const s = emp.summary;
                                         const u = emp.user;
                                         const statusColor = emp.status === 'active'
-                                            ? 'bg-green-50 text-green-700 border-green-200'
-                                            : 'bg-gray-100 text-gray-500 border-gray-200';
+                                            ? 'bg-green-100 text-green-800 border-green-200'
+                                            : 'bg-gray-100 text-gray-600 border-gray-200';
 
                                         return (
                                             <motion.tr
                                                 key={emp.employee_id}
-                                                initial={{ opacity: 0, y: 10 }}
+                                                initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.04 }}
+                                                transition={{ delay: index * 0.05 }}
                                                 className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
                                                 onClick={() => setSelectedEmployee(emp)}
                                             >
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}>
-                                                            <span className="text-white font-bold text-xs">{getInitials(u.name)}</span>
+                                                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+                                                            {getInitials(u.name)}
                                                         </div>
-                                                        <div>
-                                                            <p className="font-semibold text-gray-800">{u.name}</p>
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">{u.name}</p>
+                                                            <p className="text-xs text-gray-500 flex items-center gap-1">
+                                                                <FaEnvelope className="text-gray-400 flex-shrink-0" size={10} />
+                                                                <span className="truncate max-w-[120px] md:max-w-none">{u.email}</span>
+                                                            </p>
                                                             <p className="text-xs text-gray-400 font-mono">{emp.employee_code}</p>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100">
-                                                        {designationLabel(emp.designation)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 font-semibold text-gray-700">{s.worked_days}d</td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-100">
-                                                        {formatHours(s.total_work_hours)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-purple-600 font-medium">{s.leave_days}d</td>
-                                                <td className="px-6 py-4 text-red-500 font-medium">{s.absent_days}d</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full ${s.attendance_percentage >= 80 ? 'bg-green-400' : s.attendance_percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                                                                style={{ width: `${Math.min(s.attendance_percentage, 100)}%` }}
-                                                            />
+                                                {showDesignation && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100 whitespace-nowrap">
+                                                            {designationLabel(emp.designation)}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                {showWorked && (
+                                                    <td className="px-6 py-4 font-semibold text-gray-700">{s.worked_days}d</td>
+                                                )}
+                                                {showHours && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-100 whitespace-nowrap">
+                                                            {formatHours(s.total_work_hours)}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                {showLeave && (
+                                                    <td className="px-6 py-4 text-purple-600 font-medium">{s.leave_days}d</td>
+                                                )}
+                                                {showAbsent && (
+                                                    <td className="px-6 py-4 text-red-500 font-medium">{s.absent_days}d</td>
+                                                )}
+                                                {showAttendance && (
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
+                                                                <div
+                                                                    className={`h-full rounded-full ${s.attendance_percentage >= 80 ? 'bg-green-400' : s.attendance_percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                                                                    style={{ width: `${Math.min(s.attendance_percentage, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <AttendanceBadge pct={s.attendance_percentage} />
                                                         </div>
-                                                        <AttendanceBadge pct={s.attendance_percentage} />
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColor}`}>
-                                                        {emp.status}
-                                                    </span>
-                                                </td>
+                                                    </td>
+                                                )}
+                                                {showStatus && (
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
+                                                            {emp.status}
+                                                        </span>
+                                                    </td>
+                                                )}
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={e => { e.stopPropagation(); setSelectedEmployee(emp); }}
-                                                        className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm hover:shadow-md"
-                                                    >
-                                                        View
-                                                    </button>
+                                                    <div onClick={e => e.stopPropagation()} className="flex justify-end">
+                                                        <ActionMenu
+                                                            menuId={emp.employee_id}
+                                                            activeId={activeActionMenu}
+                                                            onToggle={(e, id) => toggleActionMenu(id)}
+                                                            actions={[
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={14} />,
+                                                                    onClick: () => setSelectedEmployee(emp),
+                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                                }
+                                                            ]}
+                                                        />
+                                                    </div>
                                                 </td>
                                             </motion.tr>
                                         );
@@ -661,41 +726,30 @@ const EmployeesShifts = () => {
                             </table>
                         </div>
                     </motion.div>
+                )}
 
-                </>
-            )}
-
-            {/* Pagination */}
-            {!loading && employees.length > 0 && (
-                <Pagination
-                    currentPage={pagination.page}
-                    totalItems={pagination.total}
-                    itemsPerPage={pagination.limit}
-                    onPageChange={handlePageChange}
-                    variant="default"
-                    showInfo={true}
-                />
-            )}
-
-            {/* Detail Modal */}
-            <AnimatePresence>
-                {selectedEmployee && (
-                    <EmployeeDetailModal
-                        employee={selectedEmployee}
-                        onClose={() => setSelectedEmployee(null)}
+                {/* Pagination */}
+                {!loading && employees.length > 0 && (
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalItems={pagination.total}
+                        itemsPerPage={pagination.limit}
+                        onPageChange={handlePageChange}
+                        variant="default"
+                        showInfo={true}
                     />
                 )}
-            </AnimatePresence>
 
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-                @media (min-width: 475px) {
-                    .xs\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                }
-            `}</style>
+                {/* Detail Modal */}
+                <AnimatePresence>
+                    {selectedEmployee && (
+                        <EmployeeDetailModal
+                            employee={selectedEmployee}
+                            onClose={() => setSelectedEmployee(null)}
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 };

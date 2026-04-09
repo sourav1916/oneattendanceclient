@@ -225,9 +225,9 @@ export default function CompanyInvites() {
   // Responsive columns
   const [visibleColumns, setVisibleColumns] = useState(() => ({
     showUser:        true,
-    showDesignation: window.innerWidth >= 768,
+    showDesignation: window.innerWidth >= 540,
     showEmployment:  window.innerWidth >= 1024,
-    showStatus:      window.innerWidth >= 768,
+    showStatus:      window.innerWidth >= 640,
     showExpires:     window.innerWidth >= 1280
   }));
 
@@ -238,9 +238,9 @@ export default function CompanyInvites() {
       t = setTimeout(() =>
         setVisibleColumns({
           showUser:        true,
-          showDesignation: window.innerWidth >= 768,
+          showDesignation: window.innerWidth >= 540,
           showEmployment:  window.innerWidth >= 1024,
-          showStatus:      window.innerWidth >= 768,
+          showStatus:      window.innerWidth >= 640,
           showExpires:     window.innerWidth >= 1280
         }), 150);
     };
@@ -453,7 +453,7 @@ export default function CompanyInvites() {
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 className="bg-white rounded-2xl shadow-xl overflow-visible">
                 <div className="overflow-x-auto overflow-y-visible">
-                  <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                  <table className="w-full text-sm text-left text-gray-700">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
                       {visibleColumns.showUser        && <th className="px-6 py-4">User</th>}

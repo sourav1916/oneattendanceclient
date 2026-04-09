@@ -438,6 +438,9 @@ const AttendanceHistory = () => {
   }, [debouncedSearch, goToPage, pagination.page]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
+  const isTinyViewport = windowWidth < 450;
+  const showDay = windowWidth >= 480;
+  const showWorked = windowWidth >= 640;
   const showClockOut = windowWidth >= 1024;
   const showLocation = windowWidth >= 1280;
   const showApiStatus = windowWidth >= 1440;
@@ -545,14 +548,14 @@ const AttendanceHistory = () => {
             className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl bg-white shadow-xl`}
           >
               <div className="overflow-x-auto overflow-y-visible">
-              <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
+              <table className="w-full text-left text-sm text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
                     <th className="px-5 py-4">Date</th>
-                    <th className="px-5 py-4">Day</th>
+                    {showDay && <th className="px-5 py-4">Day</th>}
                     <th className="px-5 py-4">Clock In</th>
                     {showClockOut && <th className="px-5 py-4">Clock Out</th>}
-                    <th className="px-5 py-4">Worked</th>
+                    {showWorked && <th className="px-5 py-4">Worked</th>}
                     <th className="px-5 py-4">Status</th>
                     {showLocation && <th className="px-5 py-4">Location</th>}
                     {showApiStatus && <th className="px-5 py-4">Approval</th>}
@@ -574,7 +577,7 @@ const AttendanceHistory = () => {
                         className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                       >
                         <td className="px-5 py-4 font-medium text-gray-800">{formatDateFull(record.date)}</td>
-                        <td className="px-5 py-4 text-gray-400">{record.day}</td>
+                        {showDay && <td className="px-5 py-4 text-gray-400">{record.day}</td>}
                         <td className="px-5 py-4">
                           <span className="inline-flex items-center gap-1">
                             <FaSignInAlt className="text-emerald-500" />
@@ -589,7 +592,7 @@ const AttendanceHistory = () => {
                             </span>
                           </td>
                         )}
-                        <td className="px-5 py-4 text-gray-600">{record.worked_hours}</td>
+                        {showWorked && <td className="px-5 py-4 text-gray-600">{record.worked_hours}</td>}
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
                             <StatusIcon size={11} />

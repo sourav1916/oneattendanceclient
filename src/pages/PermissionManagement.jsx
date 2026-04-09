@@ -211,9 +211,9 @@ const PermissionManagement = () => {
     }
   }, [debouncedSearch]);
 
-  const showGroupCode = windowWidth >= 1100;
+  const showGroupCode = windowWidth >= 540;
   const showDescription = windowWidth >= 1024;
-  const showPermissionCount = windowWidth >= 1320;
+  const showPermissionCount = windowWidth >= 768;
 
   // ─── API Calls ────────────────────────────────────────────────────────────
   const fetchAllPermissions = useCallback(async () => {
@@ -580,7 +580,7 @@ const PermissionManagement = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
               className="bg-white rounded-2xl shadow-xl overflow-visible">
                 <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                <table className="w-full text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
                     <th className="px-6 py-4">Package Name</th>
