@@ -66,6 +66,10 @@ const PERMISSION_ACCESS_CONFIG = {
       permissions: ["salary_view_all", "salary_assign", "salary_update", "salary_delete"],
       allowCompanyOwner: true,
     },
+    salaryPackageManagement: {
+      permissions: ["salary_view_all", "salary_assign", "salary_update", "salary_delete"],
+      allowCompanyOwner: true,
+    },
     employeesShifts: {
       permissions: ["shift_view", "shift_create", "shift_update", "shift_delete"],
     },
@@ -193,6 +197,24 @@ const PERMISSION_ACCESS_CONFIG = {
       },
     },
     salaryComponentsManagement: {
+      create: {
+        permissions: "salary_assign",
+        allowCompanyOwner: true,
+      },
+      read: {
+        permissions: "salary_view_all",
+        allowCompanyOwner: true,
+      },
+      update: {
+        permissions: "salary_update",
+        allowCompanyOwner: true,
+      },
+      delete: {
+        permissions: "salary_delete",
+        allowCompanyOwner: true,
+      },
+    },
+    salaryPackageManagement: {
       create: {
         permissions: "salary_assign",
         allowCompanyOwner: true,

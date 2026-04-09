@@ -10,6 +10,7 @@ import {
   FaUserShield,
   FaUmbrellaBeach,
   FaFileInvoiceDollar,
+  FaLayerGroup,
   FaChartLine,
   FaEnvelope,
   FaBuilding,
@@ -123,6 +124,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           label: 'Salary Components',
           path: '/salary-components-management',
           pageKey: 'salaryComponentsManagement'
+        },
+        {
+          icon: FaLayerGroup,
+          label: 'Salary Packages',
+          path: '/salary-package-management',
+          pageKey: 'salaryPackageManagement'
         },
         {
           icon: FaTasks,
