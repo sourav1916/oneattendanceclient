@@ -17,6 +17,7 @@ const Pagination = ({
     
     const isFirstPage = currentPage === 1;
     const isLastPage = currentPage === totalPages;
+    const canShowPageStrip = variant !== 'minimal' && totalPages > 1;
 
     const handlePrevious = () => {
         if (!isFirstPage) {
@@ -69,80 +70,103 @@ const Pagination = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className={`mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-6 py-4 rounded-2xl shadow-lg ${className}`}
+            className={`mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_-26px_rgba(15,23,42,0.35)] ${className}`.trim()}
         >
-            {showInfo && totalItems > 0 && (
-                <div className="text-sm text-gray-600">
-                    Showing{' '}
-                    <span className="font-semibold text-blue-600">{startItem}</span> to{' '}
-                    <span className="font-semibold text-blue-600">{endItem}</span> of{' '}
-                    <span className="font-semibold text-blue-600">{totalItems}</span> results
+            <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div className="min-w-0">
+                    {showInfo && totalItems > 0 ? (
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+                            <span className="font-medium text-slate-500">Showing</span>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                {startItem} - {endItem}
+                            </span>
+                            <span className="font-medium text-slate-500">of</span>
+                            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                {totalItems}
+                            </span>
+                            <span className="font-medium text-slate-500">results</span>
+                        </div>
+                    ) : (
+                        <div className="text-sm font-medium text-slate-500">
+                            Page <span className="text-slate-800">{currentPage}</span> of{' '}
+                            <span className="text-slate-800">{totalPages}</span>
+                        </div>
+                    )}
                 </div>
-            )}
 
-            <div className="flex gap-2">
-                <button
-                    onClick={handlePrevious}
-                    disabled={isFirstPage}
-                    className={`
-                        px-4 py-2 rounded-xl border flex items-center gap-2 transition-all duration-300
-                        ${isFirstPage
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'
-                        }
-                    `}
-                >
-                    <FaChevronLeft size={12} />
-                    Previous
-                </button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex items-center justify-center gap-2">
+                        <button
+                            onClick={handlePrevious}
+                            disabled={isFirstPage}
+                            className={`
+                                inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200
+                                ${isFirstPage
+                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950'
+                                }
+                            `}
+                            aria-label="Previous page"
+                        >
+                            <FaChevronLeft size={11} />
+                            <span>Prev</span>
+                        </button>
 
-                {variant !== 'minimal' && totalPages <= 10 ? (
-                    <div className="flex gap-1">
-                        {getPageNumbers().map((page, index) => (
-                            page === '...' ? (
-                                <span
-                                    key={`dots-${index}`}
-                                    className="px-4 py-2 text-gray-500"
-                                >
-                                    ...
-                                </span>
-                            ) : (
-                                <button
-                                    key={page}
-                                    onClick={() => handlePageClick(page)}
-                                    className={`
-                                        px-4 py-2 rounded-xl transition-all duration-300 font-medium
-                                        ${currentPage === page
-                                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
-                                            : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                                        }
-                                    `}
-                                >
-                                    {page}
-                                </button>
-                            )
-                        ))}
+                        <button
+                            onClick={handleNext}
+                            disabled={isLastPage}
+                            className={`
+                                inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200
+                                ${isLastPage
+                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
+                                    : 'border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950'
+                                }
+                            `}
+                            aria-label="Next page"
+                        >
+                            <span>Next</span>
+                            <FaChevronRight size={11} />
+                        </button>
                     </div>
-                ) : variant !== 'minimal' && (
-                    <span className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl min-w-[40px] text-center font-semibold shadow-md">
-                        {currentPage}
-                    </span>
-                )}
 
-                <button
-                    onClick={handleNext}
-                    disabled={isLastPage}
-                    className={`
-                        px-4 py-2 rounded-xl border flex items-center gap-2 transition-all duration-300
-                        ${isLastPage
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-white text-gray-700 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'
-                        }
-                    `}
-                >
-                    Next
-                    <FaChevronRight size={12} />
-                </button>
+                    {canShowPageStrip && (
+                        <div className="max-w-full overflow-x-auto">
+                            <div className="flex min-w-max items-center gap-1.5 rounded-xl bg-slate-50 p-1">
+                                {totalPages <= 10 ? (
+                                    getPageNumbers().map((page, index) => (
+                                        page === '...' ? (
+                                            <span
+                                                key={`dots-${index}`}
+                                                className="px-3 py-2 text-sm font-semibold tracking-wide text-slate-400"
+                                            >
+                                                ...
+                                            </span>
+                                        ) : (
+                                            <button
+                                                key={page}
+                                                onClick={() => handlePageClick(page)}
+                                                className={`
+                                                    min-w-10 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200
+                                                    ${currentPage === page
+                                                        ? 'bg-slate-900 text-white shadow-md'
+                                                        : 'text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm'
+                                                    }
+                                                `}
+                                                aria-current={currentPage === page ? 'page' : undefined}
+                                            >
+                                                {page}
+                                            </button>
+                                        )
+                                    ))
+                                ) : (
+                                    <span className="min-w-10 rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-md">
+                                        {currentPage}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </motion.div>
     );
