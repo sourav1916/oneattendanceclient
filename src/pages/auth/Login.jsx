@@ -144,44 +144,39 @@ const Login = () => {
     try {
       setLoadingAction("verify-otp");
 
-      // Get location coordinates first
-      toast.info("Verifying your location... 📍", { autoClose: 2000 });
+      // Try location, but do not block login if it is unavailable on mobile.
+      toast.info("Checking location if available...", { autoClose: 1500 });
       
-      let location;
+      let location = null;
       try {
-        const position = await new Promise((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error("Geolocation is not supported by your browser"));
-          } else {
+        if ("geolocation" in navigator) {
+          const position = await new Promise((resolve, reject) => {
             navigator.geolocation.getCurrentPosition(resolve, reject, {
               enableHighAccuracy: true,
-              timeout: 10000,
+              timeout: 8000,
               maximumAge: 0
             });
-          }
-        });
-        location = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        };
+          });
+          location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+        }
       } catch (err) {
-        console.error("Location error:", err);
-        let errorMsg = "Location access is required for secure login. Please enable location permissions.";
-        if (err.code === 1) errorMsg = "Location permission denied. Please allow location access to continue.";
-        else if (err.code === 2) errorMsg = "Location unavailable. Please check your GPS settings.";
-        else if (err.code === 3) errorMsg = "Location request timed out. Please try again.";
-        
-        toast.error(errorMsg);
-        setLoadingAction(null);
-        return;
+        console.warn("Location unavailable, continuing login without coordinates:", err);
       }
 
-      const res = await apiCall('/auth/login/verify-otp', 'POST', { 
-        email, 
-        otp: otpString,
-        latitude: location.latitude,
-        longitude: location.longitude
-      });
+      const payload = {
+        email,
+        otp: otpString
+      };
+
+      if (location) {
+        payload.latitude = location.latitude;
+        payload.longitude = location.longitude;
+      }
+
+      const res = await apiCall('/auth/login/verify-otp', 'POST', payload);
       const data = await res.json();
       
       if (!res.ok) throw new Error(data.message || "OTP verification failed");
