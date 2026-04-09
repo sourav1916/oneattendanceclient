@@ -546,7 +546,7 @@ const MyShifts = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.04 }}
                             onClick={() => setSelectedShift(shift)}
-                            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
                         >
                             <div className="flex items-start justify-between gap-3 mb-4">
                                 <div className="flex items-start gap-3">
@@ -565,7 +565,7 @@ const MyShifts = () => {
 
                             <div className="text-2xl font-bold text-blue-600 mb-4">{formatHours(shift.worked_hours)}</div>
 
-                            <div className="grid grid-cols-2 gap-2.5 text-xs">
+                            <div className="grid grid-cols-2 gap-2.5 text-xs mb-3">
                                 <div className="rounded-xl bg-gray-50 p-2.5">
                                     <span className="text-gray-400 flex items-center gap-1"><FaPlay size={8} className="text-green-500" />In</span>
                                     <div className="font-semibold text-green-700 mt-1">{formatTime(shift.start_time)}</div>
@@ -578,6 +578,10 @@ const MyShifts = () => {
                                     <span className="text-gray-400 flex items-center gap-1"><FaMoon size={8} className="text-purple-400" />Break</span>
                                     <div className="font-semibold text-gray-600 mt-1">{formatDuration(shift.break_minutes)}</div>
                                 </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-gray-100 text-xs font-mono text-gray-300 truncate">
+                                {shift.shift_code || shift.id}
                             </div>
                         </motion.div>
                     ))}

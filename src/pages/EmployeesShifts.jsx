@@ -253,7 +253,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             onClick={onClick}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
         >
             {/* Top */}
             <div className="flex items-start gap-3 mb-4">
@@ -290,7 +290,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
             <MiniStatBar worked={s.worked_days} total={s.total_days_in_month} pct={s.attendance_percentage} />
 
             {/* Footer */}
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-xs text-gray-400 font-mono">{employee.employee_code}</span>
                 <span className="text-xs text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     View <FaEye size={10} />

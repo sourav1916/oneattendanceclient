@@ -968,55 +968,58 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
             onClick={() => onClick(salary)}
             className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
-            <div className="flex items-start gap-3 mb-4">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                    <span className="text-white font-bold text-base">{getInitials(salary.employee?.name)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 truncate text-sm">{salary.employee?.name}</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">{salary.employee?.employee_code}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{salary.package?.name}</p>
+            <div className="flex items-start justify-between gap-2.5 mb-2.5">
+                <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                        <span className="text-white font-bold text-xs">{getInitials(salary.employee?.name)}</span>
+                    </div>
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-gray-800 truncate text-sm">{salary.employee?.name}</h3>
+                        <p className="text-[10px] text-gray-500 mt-0.5">{salary.employee?.employee_code}</p>
+                    </div>
                 </div>
                 {isActive && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Active</span>
+                    <span className="px-2 py-0.5 bg-green-50 text-green-700 rounded-full text-xs font-semibold border border-green-200">Active</span>
                 )}
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
+            <p className="text-[10px] text-gray-400 mb-2.5 truncate">{salary.package?.name}</p>
+
+            <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-1.5 text-center">
+                    <p className="text-xs font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
                     <p className="text-xs text-blue-500">Base</p>
                 </div>
-                <div className="bg-purple-50 border border-purple-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-1.5 text-center">
+                    <p className="text-xs font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
                     <p className="text-xs text-purple-500">Net</p>
-                </div>
-                <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-green-700">{salary.components?.length || 0}</p>
-                    <p className="text-xs text-green-500">Items</p>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
+            <div className="flex items-center justify-between mb-2.5 text-[10px] text-gray-400">
                 <span className="flex items-center gap-1">
-                    <FaCalendarPlus size={10} />
+                    <FaCalendarPlus size={9} />
                     {formatDate(salary.effective_from)}
                 </span>
                 <span className="flex items-center gap-1">
-                    <FaCalendarCheck size={10} />
+                    <FaCalendarCheck size={9} />
                     {formatDate(salary.effective_to)}
                 </span>
             </div>
 
-            <div className="flex items-center justify-between border-t border-gray-100 pt-3">
-                <div className="flex gap-1">
-                    {salary.components?.slice(0, 2).map((comp, idx) => (
-                        <SalaryBadge key={idx} type={comp.type} value={comp.code} />
-                    ))}
-                    {salary.components?.length > 2 && (
-                        <span className="text-xs text-gray-400">+{salary.components.length - 2}</span>
-                    )}
-                </div>
+            <div className="flex flex-wrap gap-1 mb-2.5">
+                {salary.components?.slice(0, 2).map((comp, idx) => (
+                    <SalaryBadge key={idx} type={comp.type} value={comp.code} />
+                ))}
+                <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[11px] font-semibold border border-green-100">
+                    {salary.components?.length || 0} items
+                </span>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
+                <span className="text-xs text-gray-400">
+                    {salary.components?.length > 2 ? `+${salary.components.length - 2} more` : ' '}
+                </span>
                 <div onClick={e => e.stopPropagation()}>
                     <ActionMenu
                         menuId={`card-${salary.salary_id}`}

@@ -14,6 +14,8 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -266,7 +268,7 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100"
+      className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100 h-full flex flex-col"
     >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -314,7 +316,7 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
         </div>
       </div>
 
-      <div className="space-y-2 text-sm">
+      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">Punch Type:</span>
           <PunchTypeBadge type={attendance.punch_type} />
@@ -355,6 +357,7 @@ const AttendanceManagement = ({ companyId }) => {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [viewMode, setViewMode] = useState('table');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const navigate = useNavigate();
 
@@ -579,6 +582,12 @@ const AttendanceManagement = ({ companyId }) => {
           </div>
         </motion.div>
 
+        {!loading && attendances.length > 0 && (
+          <div className="flex justify-end mb-4 sm:mb-5 md:mb-6">
+            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+          </div>
+        )}
+
         {/* Loading State */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
@@ -596,7 +605,7 @@ const AttendanceManagement = ({ companyId }) => {
           </div>
         ) : (
           <>
-            {!isMobile && (
+            {viewMode === 'table' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -673,8 +682,8 @@ const AttendanceManagement = ({ companyId }) => {
               </motion.div>
             )}
 
-            {isMobile && (
-              <div className="space-y-4">
+            {viewMode === 'card' && (
+              <ManagementGrid viewMode={viewMode}>
                 {attendances.map((attendance) => (
                   <AttendanceCard
                     key={attendance.id}
@@ -690,7 +699,7 @@ const AttendanceManagement = ({ companyId }) => {
                     reviewMessage={attendanceReviewMessage}
                   />
                 ))}
-              </div>
+              </ManagementGrid>
             )}
 
             {pagination.total > 0 && (

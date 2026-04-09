@@ -739,14 +739,14 @@ const SalaryComponents = () => {
                                 onClick={() => setSelectedComponent(comp)}
                                 className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                             >
-                                <div className="flex items-start justify-between gap-3 mb-4">
+                                <div className="flex items-start justify-between gap-2.5 mb-2.5">
                                     <div className="flex items-start gap-3">
-                                        <div className={`w-12 h-12 bg-gradient-to-br ${tc.gradient} rounded-2xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                                            <FaMoneyBillWave className="text-white text-base" />
+                                        <div className={`w-10 h-10 bg-gradient-to-br ${tc.gradient} rounded-2xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                                            <FaMoneyBillWave className="text-white text-xs" />
                                         </div>
                                         <div className="min-w-0">
                                             <h3 className="font-bold text-gray-800 truncate text-sm">{comp.name}</h3>
-                                            <p className="text-xs text-gray-500 mt-0.5 font-mono">{comp.code}</p>
+                                            <p className="text-[10px] text-gray-500 mt-0.5 font-mono">{comp.code}</p>
                                         </div>
                                     </div>
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${comp.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
@@ -754,30 +754,31 @@ const SalaryComponents = () => {
                                     </span>
                                 </div>
 
-                                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border mb-3 ${tc.bg} ${tc.text} ${tc.border}`}>{formatTypeLabel(comp.type)}</span>
+                                <div className="mb-2.5">
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${tc.bg} ${tc.text} ${tc.border}`}>
+                                        {formatTypeLabel(comp.type)}
+                                    </span>
+                                </div>
 
-                                <div className="text-2xl font-bold text-indigo-600 mb-4">{formatCalcValue(comp.calc_type, comp.calc_value)}</div>
+                                <div className="text-lg font-bold text-indigo-600 mb-2.5">{formatCalcValue(comp.calc_type, comp.calc_value)}</div>
 
-                                <div className="grid grid-cols-2 gap-2.5 mb-4 text-xs">
-                                    <div className="rounded-xl bg-gray-50 p-2.5">
-                                        <span className="text-gray-400">Calc Type</span>
+                                <div className="grid grid-cols-2 gap-2 mb-2.5 text-xs">
+                                    <div className="rounded-xl bg-gray-50 p-1.5">
+                                        <span className="text-gray-400">Calc</span>
                                         <div className="font-semibold text-gray-700 capitalize mt-1">{comp.calc_type}</div>
                                     </div>
-                                    <div className="rounded-xl bg-gray-50 p-2.5">
-                                        <span className="text-gray-400">Taxable</span>
+                                    <div className="rounded-xl bg-gray-50 p-1.5">
+                                        <span className="text-gray-400">Tax</span>
                                         <div className={`font-semibold mt-1 ${comp.is_taxable ? 'text-orange-600' : 'text-gray-400'}`}>{comp.is_taxable ? 'Yes' : 'No'}</div>
                                     </div>
-                                    <div className="rounded-xl bg-gray-50 p-2.5">
-                                        <span className="text-gray-400">Statutory</span>
+                                    <div className="rounded-xl bg-gray-50 p-1.5 col-span-2">
+                                        <span className="text-gray-400">Stat</span>
                                         <div className={`font-semibold mt-1 ${comp.is_statutory ? 'text-blue-600' : 'text-gray-400'}`}>{comp.is_statutory ? 'Yes' : 'No'}</div>
-                                    </div>
-                                    <div className="rounded-xl bg-gray-50 p-2.5">
-                                        <span className="text-gray-400">Type</span>
-                                        <div className="font-semibold text-gray-700 mt-1">{formatTypeLabel(comp.type)}</div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-2 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto" onClick={e => e.stopPropagation()}>
+                                    <span className="text-xs text-gray-400">{comp.is_taxable || comp.is_statutory ? 'Configured component' : 'Basic component'}</span>
                                     <ActionMenu
                                         menuId={`grid-${comp.id}`}
                                         activeId={activeActionMenu}

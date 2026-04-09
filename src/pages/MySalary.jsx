@@ -706,12 +706,12 @@ export const EmployeesSalaries = () => {
                         return (
                             <motion.div
                                 key={emp.employee_id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => setSelectedRecord(emp)}
-                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-                            >
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            onClick={() => setSelectedRecord(emp)}
+                            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
+                        >
                                 {/* Avatar + Name */}
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className={`w-11 h-11 rounded-2xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
@@ -747,7 +747,7 @@ export const EmployeesSalaries = () => {
                                     {sal && <ActiveBadge isActive={!!sal.is_active} />}
                                 </div>
 
-                                <div className="mt-2 text-xs font-mono text-gray-300 truncate">{emp.employee_code}</div>
+                                <div className="mt-3 pt-3 border-t border-gray-100 text-xs font-mono text-gray-300 truncate">{emp.employee_code}</div>
                             </motion.div>
                         );
                     })}

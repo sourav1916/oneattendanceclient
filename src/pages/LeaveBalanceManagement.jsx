@@ -388,7 +388,7 @@ const MobileBalanceCard = ({
       key={getBalanceKey(balance)}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+      className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full flex flex-col"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -441,7 +441,7 @@ const MobileBalanceCard = ({
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+      <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 mt-auto">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Remaining Balance</p>

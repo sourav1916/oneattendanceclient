@@ -513,72 +513,67 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle 
             onClick={() => onView(pkg)}
             className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
-            {/* Top */}
-            <div className="flex items-start gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <FaBriefcase className="text-white text-base" />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 truncate text-sm">{pkg.name}</h3>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">{pkg.code}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                            {pkg.is_active ? 'Active' : 'Inactive'}
-                        </span>
+            <div className="flex items-start justify-between gap-2.5 mb-2.5">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300">
+                        <FaBriefcase className="text-white text-xs" />
+                    </div>
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-gray-800 truncate text-sm">{pkg.name}</h3>
+                        <p className="text-[10px] text-gray-500 mt-0.5 font-mono">{pkg.code}</p>
                     </div>
                 </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+                    {pkg.is_active ? 'Active' : 'Inactive'}
+                </span>
             </div>
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-1.5 mb-4">
-                <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-green-700">{earningCount}</p>
+            <div className="grid grid-cols-2 gap-2 mb-2.5">
+                <div className="bg-green-50 border border-green-100 rounded-xl p-1.5 text-center">
+                    <p className="text-xs font-bold text-green-700">{earningCount}</p>
                     <p className="text-xs text-green-500">Earnings</p>
                 </div>
-                <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-red-600">{deductionCount}</p>
+                <div className="bg-red-50 border border-red-100 rounded-xl p-1.5 text-center">
+                    <p className="text-xs font-bold text-red-600">{deductionCount}</p>
                     <p className="text-xs text-red-400">Deductions</p>
-                </div>
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-blue-700">{pkg.items.length}</p>
-                    <p className="text-xs text-blue-400">Total</p>
                 </div>
             </div>
 
-            {pkg.description && (
-                <p className="text-xs text-gray-400 mb-3 truncate">{pkg.description}</p>
-            )}
+            <div className="mb-2.5">
+                <p className="text-xs font-bold text-purple-700">{pkg.items.length} items</p>
+                {pkg.description && (
+                    <p className="mt-1 text-[10px] text-gray-400 line-clamp-2">{pkg.description}</p>
+                )}
+            </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto" onClick={e => e.stopPropagation()}>
+                <span className="text-xs text-gray-400">{contributionCount} contrib</span>
                 <span className="text-xs text-gray-400">{formatDate(pkg.created_at)}</span>
-                <div onClick={e => e.stopPropagation()}>
-                    <ActionMenu
-                        menuId={`card-${pkg.id}`}
-                        activeId={activeId}
-                        onToggle={onToggle}
-                        actions={[
-                            {
-                                label: 'View Details',
-                                icon: <FaEye size={13} />,
-                                onClick: () => onView(pkg),
-                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                            },
-                            {
-                                label: 'Edit',
-                                icon: <FaEdit size={13} />,
-                                onClick: () => onEdit(pkg),
-                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                            },
-                            {
-                                label: 'Delete',
-                                icon: <FaTrash size={13} />,
-                                onClick: () => onDelete(pkg),
-                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                            }
-                        ]}
-                    />
-                </div>
+                <ActionMenu
+                    menuId={`card-${pkg.id}`}
+                    activeId={activeId}
+                    onToggle={onToggle}
+                    actions={[
+                        {
+                            label: 'View Details',
+                            icon: <FaEye size={13} />,
+                            onClick: () => onView(pkg),
+                            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                        },
+                        {
+                            label: 'Edit',
+                            icon: <FaEdit size={13} />,
+                            onClick: () => onEdit(pkg),
+                            className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                        },
+                        {
+                            label: 'Delete',
+                            icon: <FaTrash size={13} />,
+                            onClick: () => onDelete(pkg),
+                            className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                        }
+                    ]}
+                />
             </div>
         </motion.div>
     );
