@@ -487,6 +487,9 @@ const LeaveBalanceManagement = () => {
   const [selectedBalance, setSelectedBalance] = useState(null);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState('table');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1440
+  );
 
   // State for searchable selects
   const [employees, setEmployees] = useState([]);
@@ -684,6 +687,13 @@ const LeaveBalanceManagement = () => {
     goToPage(1);
   }, [searchTerm, selectedYear, goToPage]);
 
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const totalPages = Math.max(1, Math.ceil(filteredBalances.length / ITEMS_PER_PAGE));
 
   useEffect(() => {
@@ -796,12 +806,12 @@ const LeaveBalanceManagement = () => {
     [balances]
   );
 
-  const showEmployee = viewMode === 'table';
-  const showCode = viewMode === 'table';
-  const showYear = viewMode === 'table';
-  const showUsed = viewMode === 'table';
-  const showPaid = viewMode === 'table';
-  const showMax = viewMode === 'table';
+  const showEmployee = windowWidth >= 1100;
+  const showCode = windowWidth >= 900;
+  const showYear = windowWidth >= 1100;
+  const showUsed = windowWidth >= 1280;
+  const showPaid = windowWidth >= 1420;
+  const showMax = windowWidth >= 1600;
   const desktopColumnCount =
     4 +
     Number(showEmployee) +
@@ -953,28 +963,28 @@ const LeaveBalanceManagement = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50`}
+              className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl`}
             >
               <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full min-w-[1460px] text-left text-sm text-slate-700">
-                  <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <table className="w-full min-w-[1460px] text-left text-sm text-gray-700">
+                  <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
-                      {showEmployee && <th className="px-5 py-4">Employee</th>}
-                      <th className="px-5 py-4">Leave Type</th>
-                      {showCode && <th className="px-5 py-4">Code</th>}
-                      {showYear && <th className="px-5 py-4">Year</th>}
-                      <th className="px-5 py-4">Allocated</th>
-                      {showUsed && <th className="px-5 py-4">Used</th>}
-                      <th className="px-5 py-4">Remaining</th>
-                      {showPaid && <th className="px-5 py-4">Paid</th>}
-                      {showMax && <th className="px-5 py-4">Max</th>}
-                      <th className="px-5 py-4 text-center">Actions</th>
+                      {showEmployee && <th className="px-6 py-4">Employee</th>}
+                      <th className="px-6 py-4">Leave Type</th>
+                      {showCode && <th className="px-6 py-4">Code</th>}
+                      {showYear && <th className="px-6 py-4">Year</th>}
+                      <th className="px-6 py-4">Allocated</th>
+                      {showUsed && <th className="px-6 py-4">Used</th>}
+                      <th className="px-6 py-4">Remaining</th>
+                      {showPaid && <th className="px-6 py-4">Paid</th>}
+                      {showMax && <th className="px-6 py-4">Max</th>}
+                      <th className="px-6 py-4 text-center">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-gray-200">
                     {loading ? (
                       <tr>
-                        <td colSpan={desktopColumnCount} className="px-5 py-14 text-center">
+                        <td colSpan={desktopColumnCount} className="px-6 py-14 text-center">
                           <div className="flex flex-col items-center gap-3">
                             <FaSpinner className="text-2xl text-violet-500 animate-spin" />
                             <span className="font-medium text-slate-500">Refreshing leave balances...</span>
@@ -991,10 +1001,10 @@ const LeaveBalanceManagement = () => {
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.03 }}
-                            className="transition duration-150 hover:bg-slate-50/60"
+                            className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                           >
                             {showEmployee && (
-                              <td className="px-5 py-4">
+                              <td className="px-6 py-4">
                                 <div>
                                   <div className="font-semibold text-slate-800">{balance.employee_name}</div>
                                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
@@ -1007,26 +1017,26 @@ const LeaveBalanceManagement = () => {
                                 </div>
                               </td>
                             )}
-                            <td className="px-5 py-4">
+                            <td className="px-6 py-4">
                               <div className="font-semibold text-slate-800">{balance.name}</div>
                               <div className="mt-1 truncate text-[11px] text-slate-400">{balance.email}</div>
                             </td>
                             {showCode && (
-                              <td className="px-5 py-4">
+                              <td className="px-6 py-4">
                                 <span className="inline-flex items-center justify-center rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">
                                   {balance.type}
                                 </span>
                               </td>
                             )}
-                            {showYear && <td className="px-5 py-4 font-medium text-slate-600">{balance.year}</td>}
-                            <td className="px-5 py-4">
+                            {showYear && <td className="px-6 py-4 font-medium text-slate-600">{balance.year}</td>}
+                            <td className="px-6 py-4">
                               <span className="text-base font-bold text-slate-800">{formatDays(balance.total_allocated)}</span>
                               <span className="ml-1 text-[10px] font-bold uppercase text-slate-400">days</span>
                             </td>
                             {showUsed && (
-                              <td className="px-5 py-4 font-semibold text-orange-600">{formatDays(balance.used)}</td>
+                              <td className="px-6 py-4 font-semibold text-orange-600">{formatDays(balance.used)}</td>
                             )}
-                            <td className="px-5 py-4">
+                            <td className="px-6 py-4">
                               <div className="flex min-w-[132px] flex-col gap-1.5">
                                 <div className={`text-sm font-bold ${lowBalance ? 'text-rose-600' : 'text-emerald-600'}`}>
                                   {formatDays(balance.remaining)} <span className="text-[10px] uppercase">left</span>
@@ -1041,14 +1051,14 @@ const LeaveBalanceManagement = () => {
                               </div>
                             </td>
                             {showPaid && (
-                              <td className="px-5 py-4">
+                              <td className="px-6 py-4">
                                 <PaidBadge isPaid={balance.is_paid} />
                               </td>
                             )}
                             {showMax && (
-                              <td className="px-5 py-4 font-medium text-slate-500">{formatDays(balance.max_balance)}</td>
+                              <td className="px-6 py-4 font-medium text-slate-500">{formatDays(balance.max_balance)}</td>
                             )}
-                            <td className="px-5 py-4">
+                            <td className="px-6 py-4">
                               <ActionMenu
                                 balance={balance}
                                 onEdit={(record) => openModal('edit', record)}

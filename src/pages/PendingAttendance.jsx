@@ -310,6 +310,9 @@ const PendingAttendance = ({ companyId }) => {
     const [selectedAction, setSelectedAction] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [viewMode, setViewMode] = useState('table');
+    const [windowWidth, setWindowWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1440
+    );
     const navigate = useNavigate();
 
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
@@ -321,9 +324,9 @@ const PendingAttendance = ({ companyId }) => {
     const rejectAccess = checkActionAccess('pendingAttendance', 'reject');
     const pendingReviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
 
-    const showEmail = viewMode === 'table';
-    const showMethod = viewMode === 'table';
-    const showDateTime = viewMode === 'table';
+    const showEmail = windowWidth >= 1024;
+    const showMethod = windowWidth >= 1280;
+    const showDateTime = windowWidth >= 1440;
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -332,6 +335,13 @@ const PendingAttendance = ({ companyId }) => {
 
         return () => clearTimeout(timer);
     }, [searchTerm]);
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Fetch pending attendances
     const fetchPendingAttendances = useCallback(async (force = false) => {

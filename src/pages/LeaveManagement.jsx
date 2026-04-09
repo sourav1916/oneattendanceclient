@@ -91,7 +91,7 @@ function Avatar({ name }) {
 function Th({ children, className = '' }) {
   return (
     <th
-      className={`px-4 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 border-b border-slate-100 bg-white whitespace-nowrap ${className}`}
+      className={`px-6 py-4 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap ${className}`}
     >
       {children}
     </th>
@@ -100,7 +100,7 @@ function Th({ children, className = '' }) {
 
 function Td({ children, className = '' }) {
   return (
-    <td className={`px-4 py-3.5 text-sm border-b border-slate-50 align-middle ${className}`}>
+    <td className={`px-6 py-4 text-sm text-gray-700 align-middle ${className}`}>
       {children}
     </td>
   );
@@ -371,6 +371,9 @@ const LeaveManagement = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [viewMode, setViewMode] = useState('table');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1440
+  );
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
 
   // Modal states
@@ -391,6 +394,16 @@ const LeaveManagement = () => {
   const rejectAccess = checkActionAccess('leaveManagement', 'reject');
   const updateMessage = getAccessMessage(updateAccess);
   const reviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
+  const showDuration = windowWidth >= 1024;
+  const showDays = windowWidth >= 1160;
+  const showApplied = windowWidth >= 1360;
+  const showApprovedBy = windowWidth >= 1540;
+  const leaveColumnCount =
+    4 +
+    Number(showDuration) +
+    Number(showDays) +
+    Number(showApplied) +
+    Number(showApprovedBy);
 
   const searchTimer = useRef(null);
   // Track the last fetch params to avoid duplicate calls
@@ -399,9 +412,13 @@ const LeaveManagement = () => {
 
   useEffect(() => {
     isMounted.current = true;
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
     return () => {
       isMounted.current = false;
       clearTimeout(searchTimer.current);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
@@ -788,20 +805,20 @@ const LeaveManagement = () => {
         </div>
 
         {/* ── Main Card ── */}
-        <div className="overflow-visible rounded-2xl border border-slate-200 shadow-sm sm:rounded-3xl">
-          <div className="flex flex-col gap-1 border-b border-slate-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+        <div className="overflow-visible rounded-2xl border border-gray-100 bg-white shadow-xl">
+          <div className="flex flex-col gap-1 border-b border-gray-200 bg-gradient-to-r from-gray-100 to-gray-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
             <div>
-              <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+              <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                 Requests
               </h2>
-              <p className="mt-0.5 text-[9px] sm:text-xs text-slate-500">
+              <p className="mt-0.5 text-[9px] sm:text-xs text-gray-500">
                 {statusFilter
                   ? `Filtered by ${statusFilter}`
                   : 'All leave requests'}
               </p>
             </div>
             {!loading && leaves.length > 0 && (
-              <div className="text-[9px] sm:text-[11px] font-medium text-slate-400">
+              <div className="text-[9px] sm:text-[11px] font-medium text-gray-500">
                 {visibleFrom} to {visibleTo} of {totalItems}
               </div>
             )}
@@ -811,7 +828,7 @@ const LeaveManagement = () => {
             DESKTOP TABLE (md+)
           ═══════════════════ */}
           <div className={`${viewMode === 'table' ? 'block' : 'hidden'} overflow-x-auto overflow-y-visible`}>
-            <table className="w-full min-w-[500px]">
+            <table className="w-full min-w-[500px] text-left text-sm text-gray-700">
               <colgroup>
                 <col className="w-[35%] lg:w-[26%]" />
                 <col className="w-[30%] lg:w-[22%]" />
@@ -822,24 +839,24 @@ const LeaveManagement = () => {
                 <col className="hidden xl:table-column xl:w-[12%]" />
                 <col className="w-[60px]" />
               </colgroup>
-              <thead>
+              <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                 <tr>
                   <Th>Employee</Th>
                   <Th>Leave Type</Th>
                   <Th>Status</Th>
-                  <Th className="hidden lg:table-cell">Duration</Th>
-                  <Th className="hidden lg:table-cell">Days</Th>
-                  <Th className="hidden xl:table-cell">Applied</Th>
-                  <Th className="hidden xl:table-cell">Approved By</Th>
+                  {showDuration && <Th>Duration</Th>}
+                  {showDays && <Th>Days</Th>}
+                  {showApplied && <Th>Applied</Th>}
+                  {showApprovedBy && <Th>Approved By</Th>}
                   <Th className="text-right">Actions</Th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => <SkelRow key={i} cols={8} />)
+                  Array.from({ length: 5 }).map((_, i) => <SkelRow key={i} cols={leaveColumnCount} />)
                 ) : leaves.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-20 text-center">
+                    <td colSpan={leaveColumnCount} className="py-20 text-center">
                       <div className="text-4xl mb-3 opacity-30">📭</div>
                       <div className="text-slate-600 font-bold text-sm">No leaves found</div>
                       <div className="text-slate-400 text-xs mt-1">
@@ -849,7 +866,10 @@ const LeaveManagement = () => {
                   </tr>
                 ) : (
                   leaves.map((leave) => (
-                    <tr key={leave.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr
+                      key={leave.id}
+                      className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                    >
                       <Td>
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Avatar name={leave.employee_name} />
@@ -885,37 +905,45 @@ const LeaveManagement = () => {
                       <Td>
                         <StatusBadge status={leave.status} />
                       </Td>
-                      <Td className="hidden lg:table-cell">
-                        <div className="text-xs font-semibold text-slate-700">
+                      {showDuration && (
+                        <Td>
+                        <div className="text-xs font-semibold text-gray-700">
                           {fmt(leave.start_date)}
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-gray-400">
                           → {fmt(leave.end_date)}
                         </div>
-                      </Td>
-                      <Td className="hidden lg:table-cell">
-                        <span className="bg-violet-50 text-violet-600 text-xs font-bold px-2.5 py-1 rounded-lg inline-block">
-                          {parseFloat(leave.total_days)}d
-                        </span>
-                      </Td>
-                      <Td className="hidden xl:table-cell">
-                        <span className="text-xs text-slate-600 font-medium">
+                        </Td>
+                      )}
+                      {showDays && (
+                        <Td>
+                          <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                            {parseFloat(leave.total_days)}d
+                          </span>
+                        </Td>
+                      )}
+                      {showApplied && (
+                        <Td>
+                        <span className="text-xs font-medium text-gray-600">
                           {fmt(leave.applied_at?.split(' ')[0])}
                         </span>
-                      </Td>
-                      <Td className="hidden xl:table-cell">
-                        <div className="text-xs text-slate-600 font-medium truncate">
+                        </Td>
+                      )}
+                      {showApprovedBy && (
+                        <Td>
+                        <div className="truncate text-xs font-medium text-gray-600">
                           {leave.approved_by_name || '—'}
                         </div>
                         {leave.approval_remarks && (
                           <div
-                            className="text-xs text-slate-400 italic truncate max-w-[120px]"
+                            className="max-w-[120px] truncate text-xs italic text-gray-400"
                             title={leave.approval_remarks}
                           >
                             "{leave.approval_remarks}"
                           </div>
                         )}
-                      </Td>
+                        </Td>
+                      )}
                       <Td className="text-right">
                         <div className="flex justify-end">
                           <ActionMenu

@@ -593,6 +593,9 @@ const SalaryPackages = () => {
     const [editPkg, setEditPkg] = useState(null);
     const [deletePkg, setDeletePkg] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [windowWidth, setWindowWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1440
+    );
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -604,6 +607,13 @@ const SalaryPackages = () => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm), 500);
         return () => clearTimeout(t);
     }, [searchTerm]);
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if (!isInitialLoad.current) {
@@ -675,6 +685,10 @@ const SalaryPackages = () => {
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
+
+    const showDescription = windowWidth >= 1024;
+    const showContributions = windowWidth >= 1200;
+    const showCreated = windowWidth >= 1440;
 
     const handleSave = async (body, isEdit) => {
         try {
@@ -848,10 +862,10 @@ const SalaryPackages = () => {
                                         <th className="px-6 py-4">Code</th>
                                         <th className="px-6 py-4">Earnings</th>
                                         <th className="px-6 py-4">Deductions</th>
-                                        <th className="px-6 py-4">Contributions</th>
+                                        {showContributions && <th className="px-6 py-4">Contributions</th>}
                                         <th className="px-6 py-4">Total</th>
                                         <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4">Created</th>
+                                        {showCreated && <th className="px-6 py-4">Created</th>}
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -893,9 +907,11 @@ const SalaryPackages = () => {
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{deductionCount}</span>
                                                 </td>
+                                                {showContributions && (
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">{contributionCount}</span>
                                                 </td>
+                                                )}
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{pkg.items.length}</span>
                                                 </td>
@@ -904,7 +920,7 @@ const SalaryPackages = () => {
                                                         {pkg.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>
+                                                {showCreated && <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-end gap-2">
                                                         <ActionMenu

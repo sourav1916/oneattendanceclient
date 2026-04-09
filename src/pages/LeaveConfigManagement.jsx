@@ -593,6 +593,9 @@ const LeaveConfigManagement = () => {
   const [deleteModal, setDeleteModal] = useState({ open: false, record: null });
   const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState('table');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1440
+  );
   const constantsLoadedRef = useRef(false);
   const initialFetchStartedRef = useRef(false);
   const fetchInProgress = useRef(false);
@@ -611,6 +614,13 @@ const LeaveConfigManagement = () => {
     }, 500);
     return () => clearTimeout(t);
   }, [searchTerm]);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Fetch constants for leave type options - Guarded for single execution
   useEffect(() => {
@@ -736,13 +746,12 @@ const LeaveConfigManagement = () => {
     setDeleteModal({ open: true, record });
   };
 
-  // Responsive: progressively hide columns so the table NEVER overflows
-  // At 768px only Code, Name, Type, Max Balance, Actions remain (5 cols = fits fine)
-  const showStatus = viewMode === 'table';
-  const showCarryFwd = viewMode === 'table';
-  const showAccrual = viewMode === 'table';
-  const showHalfDay = viewMode === 'table';
-  const showWeekends = viewMode === 'table';
+  // Responsive: progressively hide lower-priority columns as the viewport narrows
+  const showCarryFwd = windowWidth >= 1024;
+  const showAccrual = windowWidth >= 1200;
+  const showHalfDay = windowWidth >= 1320;
+  const showWeekends = windowWidth >= 1440;
+  const showStatus = windowWidth >= 1560;
 
   if (loading && records.length === 0) {
     return (
@@ -828,60 +837,60 @@ const LeaveConfigManagement = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl`}
+            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl overflow-visible`}
           >
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full min-w-[1100px] text-left text-sm text-gray-700">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
+              <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                 <tr>
-                  <th className="px-5 py-4">Code</th>
-                  <th className="px-5 py-4">Name</th>
-                  <th className="px-5 py-4">Type</th>
-                  <th className="px-5 py-4">Max Balance</th>
-                  {showCarryFwd && <th className="px-5 py-4">Carry Fwd</th>}
-                  {showAccrual && <th className="px-5 py-4">Accrual</th>}
-                  {showHalfDay && <th className="px-5 py-4">Half Day</th>}
-                  {showWeekends && <th className="px-5 py-4">Weekends</th>}
-                  {showStatus && <th className="px-5 py-4">Status</th>}
-                  <th className="px-5 py-4 text-center">Actions</th>
+                  <th className="px-6 py-4">Code</th>
+                  <th className="px-6 py-4">Name</th>
+                  <th className="px-6 py-4">Type</th>
+                  <th className="px-6 py-4">Max Balance</th>
+                  {showCarryFwd && <th className="px-6 py-4">Carry Fwd</th>}
+                  {showAccrual && <th className="px-6 py-4">Accrual</th>}
+                  {showHalfDay && <th className="px-6 py-4">Half Day</th>}
+                  {showWeekends && <th className="px-6 py-4">Weekends</th>}
+                  {showStatus && <th className="px-6 py-4">Status</th>}
+                  <th className="px-6 py-4 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-200">
                 {records.map((record, index) => (
                   <motion.tr
                     key={record.id}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className="transition duration-150 hover:bg-slate-50/60"
+                    className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                   >
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
                         {record.code}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-medium text-gray-800">{record.name}</td>
-                    <td className="px-5 py-4"><PaidBadge isPaid={record.is_paid} /></td>
-                    <td className="px-5 py-4 text-gray-600">{record.max_balance} days</td>
-                    {showCarryFwd && <td className="px-5 py-4 text-gray-600">{record.carry_forward_limit} days</td>}
+                    <td className="px-6 py-4 font-medium text-gray-800">{record.name}</td>
+                    <td className="px-6 py-4"><PaidBadge isPaid={record.is_paid} /></td>
+                    <td className="px-6 py-4 text-gray-600">{record.max_balance} days</td>
+                    {showCarryFwd && <td className="px-6 py-4 text-gray-600">{record.carry_forward_limit} days</td>}
                     {showAccrual && (
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <span className="capitalize text-gray-600">{record.accrual_type}</span>
                         {record.accrual_type !== 'none' && (
                           <span className="ml-1 text-xs text-gray-400">({record.accrual_rate}d)</span>
                         )}
                       </td>
                     )}
-                    {showHalfDay && <td className="px-5 py-4"><BoolCell value={record.allow_half_day} /></td>}
+                    {showHalfDay && <td className="px-6 py-4"><BoolCell value={record.allow_half_day} /></td>}
                     {showWeekends && (
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <span className={`text-xs font-medium ${record.exclude_weekends ? 'text-amber-600' : 'text-gray-400'}`}>
                           {record.exclude_weekends ? 'Excluded' : 'Included'}
                         </span>
                       </td>
                     )}
-                    {showStatus && <td className="px-5 py-4"><ActiveBadge isActive={record.is_active} /></td>}
-                    <td className="px-5 py-4">
+                    {showStatus && <td className="px-6 py-4"><ActiveBadge isActive={record.is_active} /></td>}
+                    <td className="px-6 py-4">
                       <ActionMenu
                         record={record}
                         onView={(r) => setViewModal({ open: true, record: r })}

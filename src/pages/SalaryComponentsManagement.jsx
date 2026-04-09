@@ -450,6 +450,9 @@ const SalaryComponents = () => {
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [windowWidth, setWindowWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1440
+    );
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -498,6 +501,13 @@ const SalaryComponents = () => {
         }
     }, [pagination.page]);
 
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const handleSave = async (payload) => {
         setSaving(true);
         try {
@@ -541,6 +551,10 @@ const SalaryComponents = () => {
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
+
+    const showCalc = windowWidth >= 1024;
+    const showFlags = windowWidth >= 1200;
+    const showStatus = windowWidth >= 1400;
 
     // Summary counts
     const earningCount = components.filter(c => c.type === 'earning').length;
@@ -631,10 +645,10 @@ const SalaryComponents = () => {
                                         <th className="px-6 py-4">Code</th>
                                         <th className="px-6 py-4">Name</th>
                                         <th className="px-6 py-4">Type</th>
-                                        <th className="px-6 py-4">Calc</th>
+                                        {showCalc && <th className="px-6 py-4">Calc</th>}
                                         <th className="px-6 py-4">Value</th>
-                                        <th className="px-6 py-4">Flags</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        {showFlags && <th className="px-6 py-4">Flags</th>}
+                                        {showStatus && <th className="px-6 py-4">Status</th>}
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -663,12 +677,13 @@ const SalaryComponents = () => {
                                                         {formatTypeLabel(comp.type)}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-gray-500 capitalize">{comp.calc_type}</td>
+                                                {showCalc && <td className="px-6 py-4 text-gray-500 capitalize">{comp.calc_type}</td>}
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold border border-indigo-100">
                                                         {formatCalcValue(comp.calc_type, comp.calc_value)}
                                                     </span>
                                                 </td>
+                                                {showFlags && (
                                                 <td className="px-6 py-4">
                                                     <div className="flex gap-1">
                                                         {comp.is_taxable && (
@@ -682,11 +697,14 @@ const SalaryComponents = () => {
                                                         )}
                                                     </div>
                                                 </td>
+                                                )}
+                                                {showStatus && (
                                                 <td className="px-6 py-4">
                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${comp.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
                                                         {comp.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                 </td>
+                                                )}
                                                 <td className="px-6 py-4 text-right">
                                                     <ActionMenu
                                                         menuId={`table-${comp.id}`}

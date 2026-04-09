@@ -351,6 +351,9 @@ const AttendanceHistory = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('table');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1440
+  );
   const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
   const initialFetchStartedRef = useRef(false);
   const fetchInProgressRef = useRef(false);
@@ -360,6 +363,13 @@ const AttendanceHistory = () => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
     return () => clearTimeout(t);
   }, [searchTerm]);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // ── Resize ───────────────────────────────────────────────────────────────
   // ── Fetch from real API ───────────────────────────────────────────────────
@@ -428,9 +438,9 @@ const AttendanceHistory = () => {
   }, [debouncedSearch, goToPage, pagination.page]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
-  const showClockOut = viewMode === 'table';
-  const showLocation = viewMode === 'table';
-  const showApiStatus = viewMode === 'table';
+  const showClockOut = windowWidth >= 1024;
+  const showLocation = windowWidth >= 1280;
+  const showApiStatus = windowWidth >= 1440;
 
   const openDetails = (record) => {
     setSelectedRecord(record);

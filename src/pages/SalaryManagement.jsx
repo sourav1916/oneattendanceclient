@@ -1061,6 +1061,9 @@ const SalaryManagement = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [salaryToDelete, setSalaryToDelete] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [windowWidth, setWindowWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1440
+    );
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 12);
     const fetchInProgress = useRef(false);
@@ -1071,6 +1074,13 @@ const SalaryManagement = () => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm), 500);
         return () => clearTimeout(t);
     }, [searchTerm]);
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         if (initialFetchDone.current) {
@@ -1124,6 +1134,10 @@ const SalaryManagement = () => {
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
+
+    const showPackage = windowWidth >= 900;
+    const showEffectivePeriod = windowWidth >= 1200;
+    const showStatus = windowWidth >= 1400;
 
     const handleDeleteSalary = async () => {
         if (!salaryToDelete) return;
@@ -1322,11 +1336,11 @@ const SalaryManagement = () => {
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Employee</th>
-                                        <th className="px-6 py-4">Package</th>
+                                        {showPackage && <th className="px-6 py-4">Package</th>}
                                         <th className="px-6 py-4">Base Amount</th>
                                         <th className="px-6 py-4">Net Salary</th>
-                                        <th className="px-6 py-4">Effective Period</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        {showEffectivePeriod && <th className="px-6 py-4">Effective Period</th>}
+                                        {showStatus && <th className="px-6 py-4">Status</th>}
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -1353,11 +1367,13 @@ const SalaryManagement = () => {
                                                         </div>
                                                     </div>
                                                 </td>
+                                                {showPackage && (
                                                 <td className="px-6 py-4">
                                                     <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
                                                         {salary.package?.name}
                                                     </span>
                                                 </td>
+                                                )}
                                                 <td className="px-6 py-4 font-semibold text-gray-700">
                                                     {formatCurrency(salary.base_amount, salary.currency)}
                                                 </td>
@@ -1366,9 +1382,12 @@ const SalaryManagement = () => {
                                                         {formatCurrency(salary.net_salary, salary.currency)}
                                                     </span>
                                                 </td>
+                                                {showEffectivePeriod && (
                                                 <td className="px-6 py-4 text-xs">
                                                     {formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}
                                                 </td>
+                                                )}
+                                                {showStatus && (
                                                 <td className="px-6 py-4">
                                                     {isActive ? (
                                                         <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Active</span>
@@ -1376,6 +1395,7 @@ const SalaryManagement = () => {
                                                         <span className="px-2.5 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold">Expired</span>
                                                     )}
                                                 </td>
+                                                )}
                                                 <td className="px-6 py-4 text-right">
                                                     <ActionMenu
                                                         menuId={`table-${salary.salary_id}`}
