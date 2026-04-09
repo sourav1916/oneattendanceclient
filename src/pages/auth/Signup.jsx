@@ -132,7 +132,7 @@ const Signup = () => {
 
     try {
       setLoadingAction("request-otp");
-      const res = await apiCall('/otp/signup/request-otp', 'POST', {
+      const res = await apiCall('/auth/signup/request-otp', 'POST', {
         email: email,
         phone: phone,
       });
@@ -166,7 +166,7 @@ const Signup = () => {
 
     try {
       setLoadingAction("verify-otp");
-      const res = await apiCall('/otp/signup/verify-otp', 'POST', {
+      const res = await apiCall('/auth/signup/verify-otp', 'POST', {
         email: email,
         otp: otpString
       });
@@ -201,7 +201,7 @@ const Signup = () => {
 
     try {
       setLoadingAction("create-account");
-      const res = await apiCall('/otp/signup/complete', 'POST', {
+      const res = await apiCall('/auth/signup/complete', 'POST', {
         name: fullName,
         email: email,
         password: password,
@@ -232,7 +232,7 @@ const Signup = () => {
 
     try {
       setLoadingAction("resend-otp");
-      const res = await apiCall('/otp/signup/request-otp', 'POST', {
+      const res = await apiCall('/auth/signup/request-otp', 'POST', {
         email: email,
         phone: phone,
       });

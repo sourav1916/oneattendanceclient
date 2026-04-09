@@ -116,7 +116,7 @@ const Login = () => {
 
     try {
       setLoadingAction("request-otp");
-      const res = await apiCall('/otp/login/request-otp', 'POST', { email, password });
+      const res = await apiCall('/auth/login/request-otp', 'POST', { email, password });
       const data = await res.json();
       
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
@@ -143,7 +143,7 @@ const Login = () => {
 
     try {
       setLoadingAction("verify-otp");
-      const res = await apiCall('/otp/login/verify-otp', 'POST', { email, otp: otpString });
+      const res = await apiCall('/auth/login/verify-otp', 'POST', { email, otp: otpString });
       const data = await res.json();
       
       if (!res.ok) throw new Error(data.message || "OTP verification failed");
@@ -166,7 +166,7 @@ const Login = () => {
 
     try {
       setLoadingAction("resend-otp");
-      const res = await apiCall('/otp/login/request-otp', 'POST', { email, password });
+      const res = await apiCall('/auth/login/request-otp', 'POST', { email, password });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");

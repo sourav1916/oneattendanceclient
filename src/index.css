@@ -77,3 +77,13 @@
   display: none;
   /* Chrome, Safari, Opera */
 }
+
+/* Table responsiveness: allow existing horizontal scroll wrappers to work consistently */
+.overflow-x-auto > table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
