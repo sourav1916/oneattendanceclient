@@ -5,12 +5,14 @@ import {
     FaTimesCircle, FaExclamationTriangle, FaTimes,
     FaChartBar, FaEdit, FaTrash, FaInfoCircle,
     FaListUl, FaTh, FaPercentage, FaDollarSign,
-    FaBuilding, FaBalanceScale, FaTag, FaToggleOn, FaToggleOff
+    FaBuilding, FaBalanceScale, FaTag, FaToggleOn, FaToggleOff, FaEye
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
+import ActionMenu from '../components/ActionMenu';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -445,16 +447,11 @@ const SalaryComponents = () => {
     const [formModal, setFormModal] = useState(null); // null | { mode: 'create'|'edit', data }
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [viewMode, setViewMode] = useState('list');
-    const [toast, setToast] = useState(null);
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
     const initialFetchDone = useRef(false);
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
 
     const fetchComponents = useCallback(async (page = pagination.page) => {
         if (fetchInProgress.current) return;
@@ -479,7 +476,7 @@ const SalaryComponents = () => {
             } else throw new Error(result.message || 'Failed to fetch');
         } catch (e) {
             console.error(e);
-            showToast(e.message || 'Failed to fetch components', 'error');
+            toast.error(e.message || 'Failed to fetch components');
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
@@ -510,12 +507,12 @@ const SalaryComponents = () => {
             );
             const result = await response.json();
             if (result.success) {
-                showToast(isEdit ? 'Component updated!' : 'Component created!');
+                toast.success(isEdit ? 'Component updated!' : 'Component created!');
                 setFormModal(null);
                 fetchComponents(1);
             } else throw new Error(result.message || 'Save failed');
         } catch (e) {
-            showToast(e.message || 'Failed to save', 'error');
+            toast.error(e.message || 'Failed to save');
         } finally {
             setSaving(false);
         }
@@ -528,12 +525,12 @@ const SalaryComponents = () => {
             const response = await apiCall('/salary/components/delete', 'POST', { id }, company?.id);
             const result = await response.json();
             if (result.success) {
-                showToast('Component deleted!');
+                toast.success('Component deleted!');
                 setDeleteTarget(null);
                 fetchComponents(1);
             } else throw new Error(result.message || 'Delete failed');
         } catch (e) {
-            showToast(e.message || 'Failed to delete', 'error');
+            toast.error(e.message || 'Failed to delete');
         } finally {
             setDeleting(false);
         }
@@ -551,21 +548,6 @@ const SalaryComponents = () => {
 
     return (
         <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
-
-            {/* Toast */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -40, x: '-50%' }}
-                        animate={{ opacity: 1, y: 0, x: '-50%' }}
-                        exit={{ opacity: 0, y: -40, x: '-50%' }}
-                        className={`fixed top-4 left-1/2 z-[100] px-4 py-3 rounded-xl shadow-xl text-sm font-semibold flex items-center gap-2 ${toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'}`}
-                    >
-                        {toast.type === 'error' ? <FaTimesCircle /> : <FaCheckCircle />}
-                        {toast.msg}
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Header */}
             <motion.div
@@ -717,20 +699,31 @@ const SalaryComponents = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={e => { e.stopPropagation(); setFormModal({ mode: 'edit', data: comp }); }}
-                                                            className="px-2.5 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm hover:shadow-md flex items-center gap-1"
-                                                        >
-                                                            <FaEdit size={10} /> Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={e => { e.stopPropagation(); setDeleteTarget(comp); }}
-                                                            className="px-2.5 py-1.5 bg-red-50 text-red-600 border border-red-200 text-xs rounded-lg hover:bg-red-100 transition-all flex items-center gap-1"
-                                                        >
-                                                            <FaTrash size={10} />
-                                                        </button>
-                                                    </div>
+                                                    <ActionMenu
+                                                        menuId={`table-${comp.id}`}
+                                                        activeId={activeActionMenu}
+                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                        actions={[
+                                                            {
+                                                                label: 'View Details',
+                                                                icon: <FaEye size={13} />,
+                                                                onClick: () => setSelectedComponent(comp),
+                                                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                            },
+                                                            {
+                                                                label: 'Edit',
+                                                                icon: <FaEdit size={13} />,
+                                                                onClick: () => setFormModal({ mode: 'edit', data: comp }),
+                                                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                            },
+                                                            {
+                                                                label: 'Delete',
+                                                                icon: <FaTrash size={13} />,
+                                                                onClick: () => setDeleteTarget(comp),
+                                                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                            }
+                                                        ]}
+                                                    />
                                                 </td>
                                             </motion.tr>
                                         );
@@ -770,15 +763,32 @@ const SalaryComponents = () => {
                                             {comp.is_taxable && <span className="px-1.5 py-0.5 bg-orange-50 text-orange-600 border border-orange-200 rounded text-xs">Tax</span>}
                                             {comp.is_statutory && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs">Stat</span>}
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={e => { e.stopPropagation(); setFormModal({ mode: 'edit', data: comp }); }}
-                                                className="px-2.5 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-lg flex items-center gap-1">
-                                                <FaEdit size={10} /> Edit
-                                            </button>
-                                            <button onClick={e => { e.stopPropagation(); setDeleteTarget(comp); }}
-                                                className="px-2.5 py-1.5 bg-red-50 text-red-500 border border-red-200 text-xs rounded-lg">
-                                                <FaTrash size={10} />
-                                            </button>
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <ActionMenu
+                                                menuId={`mobile-${comp.id}`}
+                                                activeId={activeActionMenu}
+                                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                actions={[
+                                                    {
+                                                        label: 'View Details',
+                                                        icon: <FaEye size={13} />,
+                                                        onClick: () => setSelectedComponent(comp),
+                                                        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                    },
+                                                    {
+                                                        label: 'Edit',
+                                                        icon: <FaEdit size={13} />,
+                                                        onClick: () => setFormModal({ mode: 'edit', data: comp }),
+                                                        className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                    },
+                                                    {
+                                                        label: 'Delete',
+                                                        icon: <FaTrash size={13} />,
+                                                        onClick: () => setDeleteTarget(comp),
+                                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                    }
+                                                ]}
+                                            />
                                         </div>
                                     </div>
                                 </motion.div>
@@ -835,14 +845,31 @@ const SalaryComponents = () => {
                                 </div>
 
                                 <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                                    <button onClick={() => setFormModal({ mode: 'edit', data: comp })}
-                                        className="flex-1 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-lg flex items-center justify-center gap-1">
-                                        <FaEdit size={9} /> Edit
-                                    </button>
-                                    <button onClick={() => setDeleteTarget(comp)}
-                                        className="px-3 py-1.5 bg-red-50 text-red-500 border border-red-200 text-xs rounded-lg">
-                                        <FaTrash size={9} />
-                                    </button>
+                                    <ActionMenu
+                                        menuId={`grid-${comp.id}`}
+                                        activeId={activeActionMenu}
+                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                        actions={[
+                                            {
+                                                label: 'View Details',
+                                                icon: <FaEye size={13} />,
+                                                onClick: () => setSelectedComponent(comp),
+                                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                            },
+                                            {
+                                                label: 'Edit',
+                                                icon: <FaEdit size={13} />,
+                                                onClick: () => setFormModal({ mode: 'edit', data: comp }),
+                                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                            },
+                                            {
+                                                label: 'Delete',
+                                                icon: <FaTrash size={13} />,
+                                                onClick: () => setDeleteTarget(comp),
+                                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                            }
+                                        ]}
+                                    />
                                 </div>
                             </motion.div>
                         );

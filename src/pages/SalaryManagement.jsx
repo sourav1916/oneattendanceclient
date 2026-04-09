@@ -16,6 +16,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
+import ActionMenu from '../components/ActionMenu';
+import { toast } from 'react-toastify';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -370,7 +372,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
     // Override CRUD operations
     const addOverride = () => {
         if (!overrideForm.component_id || !overrideForm.calc_value) {
-            alert('Please fill component and value');
+            toast.warning('Please fill component and value');
             return;
         }
 
@@ -429,11 +431,11 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedEmployee) {
-            alert('Please select an employee');
+            toast.warning('Please select an employee');
             return;
         }
         if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
-            alert('Please fill all required fields');
+            toast.warning('Please fill all required fields');
             return;
         }
 
@@ -456,15 +458,16 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess }) => {
             const response = await apiCall('/salary/assign-salary', 'POST', payload, company?.id);
             const result = await response.json();
             if (result.success) {
+                toast.success('Salary assigned successfully!');
                 onSuccess();
                 onClose();
                 resetForm();
             } else {
-                alert(result.message || 'Failed to assign salary');
+                toast.error(result.message || 'Failed to assign salary');
             }
         } catch (error) {
             console.error('Error assigning salary:', error);
-            alert('Failed to assign salary');
+            toast.error('Failed to assign salary');
         } finally {
             setSubmitting(false);
         }
@@ -952,7 +955,7 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary }) => {
 
 // ─── Salary Card (Grid) ──────────────────────────────────────────────────────
 
-const SalaryCard = ({ salary, index, onClick, onDelete }) => {
+const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onToggle }) => {
     const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
     
     return (
@@ -1008,12 +1011,27 @@ const SalaryCard = ({ salary, index, onClick, onDelete }) => {
                         <span className="text-xs text-gray-400">+{salary.components.length - 2}</span>
                     )}
                 </div>
-                <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(salary); }}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                >
-                    <FaTrash size={12} />
-                </button>
+                <div onClick={e => e.stopPropagation()}>
+                    <ActionMenu
+                        menuId={`card-${salary.salary_id}`}
+                        activeId={activeId}
+                        onToggle={onToggle}
+                        actions={[
+                            {
+                                label: 'View Details',
+                                icon: <FaEye size={13} />,
+                                onClick: () => onView(salary),
+                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                            },
+                            {
+                                label: 'Delete',
+                                icon: <FaTrash size={13} />,
+                                onClick: () => onDelete(salary),
+                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                            }
+                        ]}
+                    />
+                </div>
             </div>
         </motion.div>
     );
@@ -1033,6 +1051,7 @@ const SalaryManagement = () => {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [salaryToDelete, setSalaryToDelete] = useState(null);
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 12);
     const fetchInProgress = useRef(false);
@@ -1104,15 +1123,16 @@ const SalaryManagement = () => {
             const response = await apiCall('/salary/delete-salary', 'DELETE', { salary_id: salaryToDelete.salary_id }, company?.id);
             const result = await response.json();
             if (result.success) {
+                toast.success('Salary record deleted.');
                 fetchSalaries(pagination.page);
                 setShowDeleteModal(false);
                 setSalaryToDelete(null);
             } else {
-                alert(result.message || 'Failed to delete salary');
+                toast.error(result.message || 'Failed to delete salary');
             }
         } catch (error) {
             console.error('Error deleting salary:', error);
-            alert('Failed to delete salary');
+            toast.error('Failed to delete salary');
         }
     };
 
@@ -1280,10 +1300,13 @@ const SalaryManagement = () => {
                             salary={salary}
                             index={index}
                             onClick={(s) => setSelectedSalary(s)}
+                            onView={(s) => setSelectedSalary(s)}
                             onDelete={(s) => {
                                 setSalaryToDelete(s);
                                 setShowDeleteModal(true);
                             }}
+                            activeId={activeActionMenu}
+                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                         />
                     ))}
                 </div>
@@ -1358,12 +1381,25 @@ const SalaryManagement = () => {
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); setSalaryToDelete(salary); setShowDeleteModal(true); }}
-                                                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
+                                                    <ActionMenu
+                                                        menuId={`table-${salary.salary_id}`}
+                                                        activeId={activeActionMenu}
+                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                        actions={[
+                                                            {
+                                                                label: 'View Details',
+                                                                icon: <FaEye size={13} />,
+                                                                onClick: () => setSelectedSalary(salary),
+                                                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                            },
+                                                            {
+                                                                label: 'Delete',
+                                                                icon: <FaTrash size={13} />,
+                                                                onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
+                                                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                            }
+                                                        ]}
+                                                    />
                                                 </td>
                                             </motion.tr>
                                         );
@@ -1416,12 +1452,27 @@ const SalaryManagement = () => {
 
                                     <div className="flex items-center justify-between text-xs text-gray-400">
                                         <span>{formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}</span>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); setSalaryToDelete(salary); setShowDeleteModal(true); }}
-                                            className="text-red-400 hover:text-red-600"
-                                        >
-                                            <FaTrash />
-                                        </button>
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <ActionMenu
+                                                menuId={`mobile-${salary.salary_id}`}
+                                                activeId={activeActionMenu}
+                                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                actions={[
+                                                    {
+                                                        label: 'View Details',
+                                                        icon: <FaEye size={13} />,
+                                                        onClick: () => setSelectedSalary(salary),
+                                                        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                    },
+                                                    {
+                                                        label: 'Delete',
+                                                        icon: <FaTrash size={13} />,
+                                                        onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
+                                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                    }
+                                                ]}
+                                            />
+                                        </div>
                                     </div>
                                 </motion.div>
                             );

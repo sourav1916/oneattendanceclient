@@ -7,9 +7,11 @@ import {
     FaEye, FaSearch, FaCheckCircle, FaInfoCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
+import ActionMenu from '../components/ActionMenu';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -496,7 +498,7 @@ const DeleteModal = ({ pkg, onClose, onConfirm }) => {
 
 // ─── Package Card (Grid) ──────────────────────────────────────────────────────
 
-const PackageCard = ({ pkg, index, onView, onEdit, onDelete }) => {
+const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle }) => {
     const earningCount = pkg.items.filter(i => i.type === 'earning').length;
     const deductionCount = pkg.items.filter(i => i.type === 'deduction').length;
     const contributionCount = pkg.items.filter(i => i.type?.includes('employer')).length;
@@ -548,22 +550,32 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete }) => {
             {/* Footer */}
             <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400">{formatDate(pkg.created_at)}</span>
-                <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                        onClick={e => { e.stopPropagation(); onEdit(pkg); }}
-                        className="w-7 h-7 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center transition-all border border-blue-100"
-                    >
-                        <FaEdit size={11} />
-                    </button>
-                    <button
-                        onClick={e => { e.stopPropagation(); onDelete(pkg); }}
-                        className="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-all border border-red-100"
-                    >
-                        <FaTrash size={11} />
-                    </button>
-                    <span className="text-xs text-blue-600 font-semibold flex items-center gap-1">
-                        View <FaEye size={10} />
-                    </span>
+                <div onClick={e => e.stopPropagation()}>
+                    <ActionMenu
+                        menuId={`card-${pkg.id}`}
+                        activeId={activeId}
+                        onToggle={onToggle}
+                        actions={[
+                            {
+                                label: 'View Details',
+                                icon: <FaEye size={13} />,
+                                onClick: () => onView(pkg),
+                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                            },
+                            {
+                                label: 'Edit',
+                                icon: <FaEdit size={13} />,
+                                onClick: () => onEdit(pkg),
+                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                            },
+                            {
+                                label: 'Delete',
+                                icon: <FaTrash size={13} />,
+                                onClick: () => onDelete(pkg),
+                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                            }
+                        ]}
+                    />
                 </div>
             </div>
         </motion.div>
@@ -583,17 +595,12 @@ const SalaryPackages = () => {
     const [showForm, setShowForm] = useState(false);
     const [editPkg, setEditPkg] = useState(null);
     const [deletePkg, setDeletePkg] = useState(null);
-    const [toast, setToast] = useState(null);
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
     const initialFetchDone = useRef(false);
     const isInitialLoad = useRef(true);
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type });
-        setTimeout(() => setToast(null), 3000);
-    };
 
     // Debounce search
     useEffect(() => {
@@ -635,6 +642,7 @@ const SalaryPackages = () => {
             }
         } catch (e) {
             console.error(e);
+            toast.error(e.message || 'Failed to fetch packages');
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
@@ -678,12 +686,12 @@ const SalaryPackages = () => {
             const response = await apiCall(endpoint, 'POST', body, company?.id);
             const result = await response.json();
             if (!result.success) throw new Error(result.message);
-            showToast(isEdit ? 'Package updated successfully' : 'Package created successfully');
+            toast.success(isEdit ? 'Package updated successfully' : 'Package created successfully');
             setShowForm(false);
             setEditPkg(null);
             fetchPackages(1);
         } catch (e) {
-            showToast(e.message || 'Something went wrong', 'error');
+            toast.error(e.message || 'Something went wrong');
         }
     };
 
@@ -693,11 +701,11 @@ const SalaryPackages = () => {
             const response = await apiCall('/salary/components/delete-package', 'POST', { package_id: pkgId }, company?.id);
             const result = await response.json();
             if (!result.success) throw new Error(result.message);
-            showToast('Package deleted');
+            toast.success('Package deleted');
             setDeletePkg(null);
             fetchPackages(1);
         } catch (e) {
-            showToast(e.message || 'Delete failed', 'error');
+            toast.error(e.message || 'Delete failed');
         }
     };
 
@@ -711,21 +719,6 @@ const SalaryPackages = () => {
 
     return (
         <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
-
-            {/* Toast */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-medium ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
-                    >
-                        {toast.type === 'success' ? <FaCheck size={12} /> : <FaExclamationTriangle size={12} />}
-                        {toast.msg}
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Header */}
             <motion.div
@@ -930,24 +923,31 @@ const SalaryPackages = () => {
                                                 <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <button
-                                                            onClick={e => { e.stopPropagation(); openEdit(pkg); }}
-                                                            className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 transition-all border border-blue-100 flex items-center gap-1"
-                                                        >
-                                                            <FaEdit size={10} /> Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={e => { e.stopPropagation(); setDeletePkg(pkg); }}
-                                                            className="px-3 py-1.5 bg-red-50 text-red-500 text-xs rounded-lg hover:bg-red-100 transition-all border border-red-100 flex items-center gap-1"
-                                                        >
-                                                            <FaTrash size={10} /> Delete
-                                                        </button>
-                                                        <button
-                                                            onClick={e => { e.stopPropagation(); setSelectedPkg(pkg); }}
-                                                            className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm hover:shadow-md"
-                                                        >
-                                                            View
-                                                        </button>
+                                                        <ActionMenu
+                                                            menuId={`table-${pkg.id}`}
+                                                            activeId={activeActionMenu}
+                                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                            actions={[
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={13} />,
+                                                                    onClick: () => setSelectedPkg(pkg),
+                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                                },
+                                                                {
+                                                                    label: 'Edit',
+                                                                    icon: <FaEdit size={13} />,
+                                                                    onClick: () => openEdit(pkg),
+                                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                                },
+                                                                {
+                                                                    label: 'Delete',
+                                                                    icon: <FaTrash size={13} />,
+                                                                    onClick: () => setDeletePkg(pkg),
+                                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                                }
+                                                            ]}
+                                                        />
                                                     </div>
                                                 </td>
                                             </motion.tr>
@@ -1012,19 +1012,32 @@ const SalaryPackages = () => {
 
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs text-gray-400">{formatDate(pkg.created_at)}</span>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={e => { e.stopPropagation(); openEdit(pkg); }}
-                                                className="px-2.5 py-1 bg-blue-50 text-blue-600 text-xs rounded-lg border border-blue-100 flex items-center gap-1"
-                                            >
-                                                <FaEdit size={10} /> Edit
-                                            </button>
-                                            <button
-                                                onClick={e => { e.stopPropagation(); setDeletePkg(pkg); }}
-                                                className="px-2.5 py-1 bg-red-50 text-red-500 text-xs rounded-lg border border-red-100 flex items-center gap-1"
-                                            >
-                                                <FaTrash size={10} /> Delete
-                                            </button>
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <ActionMenu
+                                                menuId={`mobile-${pkg.id}`}
+                                                activeId={activeActionMenu}
+                                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                actions={[
+                                                    {
+                                                        label: 'View Details',
+                                                        icon: <FaEye size={13} />,
+                                                        onClick: () => setSelectedPkg(pkg),
+                                                        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                    },
+                                                    {
+                                                        label: 'Edit',
+                                                        icon: <FaEdit size={13} />,
+                                                        onClick: () => openEdit(pkg),
+                                                        className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                    },
+                                                    {
+                                                        label: 'Delete',
+                                                        icon: <FaTrash size={13} />,
+                                                        onClick: () => setDeletePkg(pkg),
+                                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                    }
+                                                ]}
+                                            />
                                         </div>
                                     </div>
                                 </motion.div>
