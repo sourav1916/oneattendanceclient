@@ -474,8 +474,8 @@ export default function MyInvites() {
             {viewMode === "table" && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                 className="bg-white rounded-2xl shadow-xl overflow-visible">
-                <div className="overflow-x-auto overflow-y-visible">
-                  <table className="w-full min-w-[1050px] text-sm text-left text-gray-700">
+              <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
                       {visibleColumns.showCompany && <th className="px-6 py-4">Company</th>}
@@ -493,7 +493,7 @@ export default function MyInvites() {
                       const StatusIcon = status.icon;
                       return (
                         <motion.tr key={`invite-${invite.invite_id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300">
+                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
                           {visibleColumns.showCompany && (
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">

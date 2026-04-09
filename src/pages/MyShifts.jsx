@@ -464,10 +464,10 @@ const MyShifts = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
                     >
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[1000px] w-full text-sm text-left text-gray-700">
+                        <div className="overflow-x-auto overflow-y-visible">
+                            <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Date</th>
@@ -480,16 +480,16 @@ const MyShifts = () => {
                                         <th className="px-6 py-4 text-right">Details</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-200">
                                     {shifts.map((shift, index) => (
                                         <motion.tr
                                             key={shift.id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.04 }}
-                                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 cursor-pointer"
-                                            onClick={() => setSelectedShift(shift)}
-                                        >
+                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
+                                                onClick={() => setSelectedShift(shift)}
+                                            >
                                             <td className="px-6 py-4">
                                                 <div className="font-semibold text-gray-800">{formatShortDate(shift.start_time)}</div>
                                                 <div className="text-xs text-gray-400">{new Date(shift.start_time).toLocaleDateString('en-US', { weekday: 'short' })}</div>

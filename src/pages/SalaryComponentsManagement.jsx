@@ -552,9 +552,21 @@ const SalaryComponents = () => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
-    const showCalc = windowWidth >= 1024;
-    const showFlags = windowWidth >= 1200;
-    const showStatus = windowWidth >= 1400;
+    const showTableView = viewMode === 'table';
+    const showCardView = viewMode === 'card';
+    const showCode = windowWidth >= 480;
+    const showCalc = windowWidth >= 640;
+    const showFlags = windowWidth >= 900;
+    const showStatus = windowWidth >= 1200;
+    const tableMinWidth = windowWidth < 480
+        ? 360
+        : windowWidth < 640
+            ? 480
+            : windowWidth < 900
+                ? 620
+                : windowWidth < 1200
+                    ? 800
+                    : 980;
 
     // Summary counts
     const earningCount = components.filter(c => c.type === 'earning').length;
@@ -629,20 +641,20 @@ const SalaryComponents = () => {
             )}
 
             {/* List View */}
-            {!loading && components.length > 0 && viewMode === 'table' && (
+            {!loading && components.length > 0 && showTableView && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
                     >
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[1100px] w-full text-sm text-left text-gray-700">
+                        <div className="overflow-x-auto overflow-y-visible">
+                            <table className="w-full text-sm text-left text-gray-700" style={{ minWidth: `${tableMinWidth}px` }}>
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
-                                        <th className="px-6 py-4">Code</th>
+                                        {showCode && <th className="px-6 py-4">Code</th>}
                                         <th className="px-6 py-4">Name</th>
                                         <th className="px-6 py-4">Type</th>
                                         {showCalc && <th className="px-6 py-4">Calc</th>}
@@ -652,7 +664,7 @@ const SalaryComponents = () => {
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-200">
                                     {components.map((comp, index) => {
                                         const tc = getTypeConfig(comp.type);
                                         return (
@@ -661,14 +673,16 @@ const SalaryComponents = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 cursor-pointer"
-                                                onClick={() => setSelectedComponent(comp)}
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold border border-gray-200 font-mono">
-                                                        {comp.code}
-                                                    </span>
-                                                </td>
+                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
+                                            onClick={() => setSelectedComponent(comp)}
+                                        >
+                                                {showCode && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold border border-gray-200 font-mono">
+                                                            {comp.code}
+                                                        </span>
+                                                    </td>
+                                                )}
                                                 <td className="px-6 py-4">
                                                     <div className="font-semibold text-gray-800">{comp.name}</div>
                                                 </td>
@@ -744,7 +758,7 @@ const SalaryComponents = () => {
             )}
 
             {/* Grid View */}
-            {!loading && components.length > 0 && viewMode === 'card' && (
+            {!loading && components.length > 0 && showCardView && (
                 <ManagementGrid viewMode={viewMode}>
                     {components.map((comp, index) => {
                         const tc = getTypeConfig(comp.type);

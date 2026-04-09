@@ -686,9 +686,24 @@ const SalaryPackages = () => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
-    const showDescription = windowWidth >= 1024;
-    const showContributions = windowWidth >= 1200;
-    const showCreated = windowWidth >= 1440;
+    const showTableView = viewMode === 'table';
+    const showCardView = viewMode === 'card';
+    const showCode = windowWidth >= 480;
+    const showEarnings = windowWidth >= 560;
+    const showDeductions = windowWidth >= 640;
+    const showDescription = windowWidth >= 640;
+    const showContributions = windowWidth >= 1024;
+    const showStatus = windowWidth >= 900;
+    const showCreated = windowWidth >= 1200;
+    const tableMinWidth = windowWidth < 480
+        ? 360
+        : windowWidth < 640
+            ? 500
+            : windowWidth < 900
+                ? 640
+                : windowWidth < 1200
+                    ? 820
+                    : 980;
 
     const handleSave = async (body, isEdit) => {
         try {
@@ -829,7 +844,7 @@ const SalaryPackages = () => {
             )}
 
             {/* Grid View */}
-            {!loading && packages.length > 0 && viewMode === 'card' && (
+            {!loading && packages.length > 0 && showCardView && (
                 <ManagementGrid viewMode={viewMode}>
                     {packages.map((pkg, index) => (
                         <PackageCard
@@ -845,23 +860,23 @@ const SalaryPackages = () => {
             )}
 
             {/* List View */}
-            {!loading && packages.length > 0 && viewMode === 'table' && (
+            {!loading && packages.length > 0 && showTableView && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
                     >
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[1200px] w-full text-sm text-left text-gray-700">
+                        <div className="overflow-x-auto overflow-y-visible">
+                            <table className="w-full text-sm text-left text-gray-700" style={{ minWidth: `${tableMinWidth}px` }}>
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Package</th>
-                                        <th className="px-6 py-4">Code</th>
-                                        <th className="px-6 py-4">Earnings</th>
-                                        <th className="px-6 py-4">Deductions</th>
+                                        {showCode && <th className="px-6 py-4">Code</th>}
+                                        {showEarnings && <th className="px-6 py-4">Earnings</th>}
+                                        {showDeductions && <th className="px-6 py-4">Deductions</th>}
                                         {showContributions && <th className="px-6 py-4">Contributions</th>}
                                         <th className="px-6 py-4">Total</th>
                                         <th className="px-6 py-4">Status</th>
@@ -869,7 +884,7 @@ const SalaryPackages = () => {
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-200">
                                     {packages.map((pkg, index) => {
                                         const earningCount = pkg.items.filter(i => i.type === 'earning').length;
                                         const deductionCount = pkg.items.filter(i => i.type === 'deduction').length;
@@ -880,7 +895,7 @@ const SalaryPackages = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 cursor-pointer"
+                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
                                                 onClick={() => setSelectedPkg(pkg)}
                                             >
                                                 <td className="px-6 py-4">
@@ -890,36 +905,44 @@ const SalaryPackages = () => {
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold text-gray-800">{pkg.name}</p>
-                                                            {pkg.description && (
+                                                            {showDescription && pkg.description && (
                                                                 <p className="text-xs text-gray-400 truncate max-w-[160px]">{pkg.description}</p>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold border border-blue-100">
-                                                        {pkg.code}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">{earningCount}</span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{deductionCount}</span>
-                                                </td>
+                                                {showCode && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold border border-blue-100">
+                                                            {pkg.code}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                {showEarnings && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">{earningCount}</span>
+                                                    </td>
+                                                )}
+                                                {showDeductions && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{deductionCount}</span>
+                                                    </td>
+                                                )}
                                                 {showContributions && (
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">{contributionCount}</span>
-                                                </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">{contributionCount}</span>
+                                                    </td>
                                                 )}
                                                 <td className="px-6 py-4">
                                                     <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{pkg.items.length}</span>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                                                        {pkg.is_active ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </td>
+                                                {showStatus && (
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                                                            {pkg.is_active ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                )}
                                                 {showCreated && <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-end gap-2">

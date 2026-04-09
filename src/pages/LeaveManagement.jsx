@@ -805,7 +805,7 @@ const LeaveManagement = () => {
         </div>
 
         {/* ── Main Card ── */}
-        <div className="overflow-visible rounded-2xl border border-gray-100 bg-white shadow-xl">
+        <div className="rounded-2xl bg-white shadow-xl overflow-visible">
           <div className="flex flex-col gap-1 border-b border-gray-200 bg-gradient-to-r from-gray-100 to-gray-200 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
             <div>
               <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -828,7 +828,7 @@ const LeaveManagement = () => {
             DESKTOP TABLE (md+)
           ═══════════════════ */}
           <div className={`${viewMode === 'table' ? 'block' : 'hidden'} overflow-x-auto overflow-y-visible`}>
-            <table className="w-full min-w-[500px] text-left text-sm text-gray-700">
+            <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
               <colgroup>
                 <col className="w-[35%] lg:w-[26%]" />
                 <col className="w-[30%] lg:w-[22%]" />

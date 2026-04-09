@@ -542,11 +542,11 @@ const AttendanceHistory = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`${viewMode === 'table' ? 'overflow-hidden' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl`}
+            className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl bg-white shadow-xl`}
           >
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1050px] text-left text-sm text-gray-700">
-                <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
+              <div className="overflow-x-auto overflow-y-visible">
+              <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
+                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
                     <th className="px-5 py-4">Date</th>
                     <th className="px-5 py-4">Day</th>
@@ -560,7 +560,7 @@ const AttendanceHistory = () => {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-200">
                   {records.map((record, index) => {
                     const style = getStatusBadge(record.status);
                     const StatusIcon = style.icon;
@@ -571,7 +571,7 @@ const AttendanceHistory = () => {
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.03 }}
-                        className="transition duration-150 hover:bg-slate-50/60"
+                        className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                       >
                         <td className="px-5 py-4 font-medium text-gray-800">{formatDateFull(record.date)}</td>
                         <td className="px-5 py-4 text-gray-400">{record.day}</td>

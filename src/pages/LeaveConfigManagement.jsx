@@ -837,10 +837,10 @@ const LeaveConfigManagement = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl overflow-visible`}
+            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl bg-white shadow-xl overflow-visible`}
           >
             <div className="overflow-x-auto overflow-y-visible">
-            <table className="w-full min-w-[1100px] text-left text-sm text-gray-700">
+            <table className="w-full min-w-[980px] text-left text-sm text-gray-700">
               <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                 <tr>
                   <th className="px-6 py-4">Code</th>

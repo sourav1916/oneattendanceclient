@@ -625,11 +625,12 @@ const EmployeeManagement = () => {
     // ─── Responsive Columns ──────────────────────────────────────────────────
 
     const [visibleColumns, setVisibleColumns] = useState(() => ({
-        showEmployeeCode: true, showName: true,
+        showEmployeeCode: window.innerWidth >= 1280,
+        showName: true,
         showDesignation: window.innerWidth >= 768,
-        showEmail: window.innerWidth >= 1024,
-        showPhone: window.innerWidth >= 1280,
-        showType: window.innerWidth >= 1024,
+        showEmail: window.innerWidth >= 1100,
+        showPhone: window.innerWidth >= 1440,
+        showType: window.innerWidth >= 1100,
         showStatus: window.innerWidth >= 768,
         showJoiningDate: window.innerWidth >= 1280,
     }));
@@ -639,11 +640,12 @@ const EmployeeManagement = () => {
         const onResize = () => {
             clearTimeout(t);
             t = setTimeout(() => setVisibleColumns({
-                showEmployeeCode: true, showName: true,
+                showEmployeeCode: window.innerWidth >= 1280,
+                showName: true,
                 showDesignation: window.innerWidth >= 768,
-                showEmail: window.innerWidth >= 1024,
-                showPhone: window.innerWidth >= 1280,
-                showType: window.innerWidth >= 1024,
+                showEmail: window.innerWidth >= 1100,
+                showPhone: window.innerWidth >= 1440,
+                showType: window.innerWidth >= 1100,
                 showStatus: window.innerWidth >= 768,
                 showJoiningDate: window.innerWidth >= 1280,
             }), 150);
@@ -744,7 +746,7 @@ const EmployeeManagement = () => {
                         className="bg-white rounded-2xl shadow-xl overflow-visible"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full min-w-[1200px] text-sm text-left text-gray-700">
+                            <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         {visibleColumns.showEmployeeCode && <th className="px-6 py-4">Employee Code</th>}

@@ -549,6 +549,9 @@ export const EmployeesSalaries = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedRecord, setSelectedRecord] = useState(null);
     const [viewMode, setViewMode] = useState('card');
+    const [windowWidth, setWindowWidth] = useState(() =>
+        typeof window !== 'undefined' ? window.innerWidth : 1440
+    );
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -609,6 +612,13 @@ export const EmployeesSalaries = () => {
     }, [fetchEmployees]);
 
     useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
         if (initialFetchDone.current && !fetchInProgress.current) {
             fetchEmployees(pagination.page);
         }
@@ -617,6 +627,24 @@ export const EmployeesSalaries = () => {
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
+
+    const renderedViewMode = viewMode;
+    const showDesignation = windowWidth >= 768;
+    const showCurrency = windowWidth >= 900;
+    const showType = windowWidth >= 1100;
+    const showEffectiveFrom = windowWidth >= 1280;
+    const showStatus = windowWidth >= 1440;
+    const tableMinWidth = windowWidth < 640
+        ? 420
+        : windowWidth < 900
+            ? 600
+            : windowWidth < 1100
+                ? 760
+                : windowWidth < 1280
+                    ? 900
+                    : windowWidth < 1440
+                        ? 960
+                        : 980;
 
     // ─── Render ──────────────────────────────────────────────────────────────
 
@@ -698,8 +726,8 @@ export const EmployeesSalaries = () => {
             )}
 
             {/* Grid View */}
-            {!loading && employees.length > 0 && viewMode === 'card' && (
-                <ManagementGrid viewMode={viewMode}>
+            {!loading && employees.length > 0 && renderedViewMode === 'card' && (
+                <ManagementGrid viewMode={renderedViewMode}>
                     {employees.map((emp, index) => {
                         const sal = emp.salary;
                         const CurrIcon = getCurrencyIcon(sal?.currency);
@@ -755,28 +783,28 @@ export const EmployeesSalaries = () => {
             )}
 
             {/* List View */}
-            {!loading && employees.length > 0 && viewMode === 'table' && (
+            {!loading && employees.length > 0 && renderedViewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
                     >
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[1050px] w-full text-sm text-left text-gray-700">
+                        <div className="overflow-x-auto overflow-y-visible">
+                            <table className="w-full text-sm text-left text-gray-700" style={{ minWidth: `${tableMinWidth}px` }}>
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Employee</th>
-                                        <th className="px-6 py-4">Designation</th>
+                                        {showDesignation && <th className="px-6 py-4">Designation</th>}
                                         <th className="px-6 py-4">Salary</th>
-                                        <th className="px-6 py-4">Currency</th>
-                                        <th className="px-6 py-4">Type</th>
-                                        <th className="px-6 py-4">Effective From</th>
-                                        <th className="px-6 py-4">Status</th>
+                                        {showCurrency && <th className="px-6 py-4">Currency</th>}
+                                        {showType && <th className="px-6 py-4">Type</th>}
+                                        {showEffectiveFrom && <th className="px-6 py-4">Effective From</th>}
+                                        {showStatus && <th className="px-6 py-4">Status</th>}
                                         <th className="px-6 py-4 text-right">Details</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-200">
                                     {employees.map((emp, index) => {
                                         const sal = emp.salary;
                                         const CurrIcon = getCurrencyIcon(sal?.currency);
@@ -786,7 +814,7 @@ export const EmployeesSalaries = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-amber-50 hover:to-rose-50 transition-all duration-200 cursor-pointer"
+                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
                                                 onClick={() => setSelectedRecord(emp)}
                                             >
                                                 <td className="px-6 py-4">
@@ -800,11 +828,13 @@ export const EmployeesSalaries = () => {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100">
-                                                        {formatDisplay(emp.designation)}
-                                                    </span>
-                                                </td>
+                                                {showDesignation && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-100">
+                                                            {formatDisplay(emp.designation)}
+                                                        </span>
+                                                    </td>
+                                                )}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-6 h-6 bg-gradient-to-br from-amber-400 to-rose-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -815,22 +845,30 @@ export const EmployeesSalaries = () => {
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="font-mono text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded-lg">
-                                                        {sal?.currency?.toUpperCase() || '—'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
-                                                        {formatDisplay(sal?.salary_type)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-500 text-sm">
-                                                    {sal ? formatDate(sal.effective_from) : '—'}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {sal ? <ActiveBadge isActive={!!sal.is_active} /> : '—'}
-                                                </td>
+                                                {showCurrency && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="font-mono text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded-lg">
+                                                            {sal?.currency?.toUpperCase() || '—'}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                {showType && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
+                                                            {formatDisplay(sal?.salary_type)}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                {showEffectiveFrom && (
+                                                    <td className="px-6 py-4 text-gray-500 text-sm">
+                                                        {sal ? formatDate(sal.effective_from) : '—'}
+                                                    </td>
+                                                )}
+                                                {showStatus && (
+                                                    <td className="px-6 py-4">
+                                                        {sal ? <ActiveBadge isActive={!!sal.is_active} /> : '—'}
+                                                    </td>
+                                                )}
                                                 <td className="px-6 py-4 text-right">
                                                     <button
                                                         onClick={e => { e.stopPropagation(); setSelectedRecord(emp); }}

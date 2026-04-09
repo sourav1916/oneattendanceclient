@@ -1135,9 +1135,34 @@ const SalaryManagement = () => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
-    const showPackage = windowWidth >= 900;
-    const showEffectivePeriod = windowWidth >= 1200;
-    const showStatus = windowWidth >= 1400;
+    const showEmployeeCode = windowWidth >= 1100;
+    const showPackage = windowWidth >= 1360;
+    const showBaseAmount = windowWidth >= 480;
+    const showNetSalary = windowWidth >= 590;
+    const showEffectivePeriod = windowWidth >= 1520;
+    const showStatus = windowWidth >= 1720;
+    const tableMinWidth = windowWidth < 480
+        ? 320
+        : windowWidth < 590
+            ? 420
+            : windowWidth < 900
+                ? 560
+                : windowWidth < 1280
+                    ? 720
+                    : windowWidth < 1520
+                        ? 860
+                        : 980;
+    const visibleColumns = {
+        showEmployee: true,
+        showEmployeeCode,
+        showPackage,
+        showBaseAmount,
+        showNetSalary,
+        showEffectivePeriod,
+        showStatus,
+    };
+    const showTableView = viewMode === 'table';
+    const showCardView = viewMode === 'card';
 
     const handleDeleteSalary = async () => {
         if (!salaryToDelete) return;
@@ -1302,7 +1327,7 @@ const SalaryManagement = () => {
             )}
 
             {/* Card View */}
-            {!loading && salaries.length > 0 && viewMode === 'card' && (
+            {showCardView && (
                 <ManagementGrid viewMode={viewMode}>
                     {salaries.map((salary, index) => (
                         <SalaryCard
@@ -1323,28 +1348,28 @@ const SalaryManagement = () => {
             )}
 
             {/* Table View */}
-            {!loading && salaries.length > 0 && viewMode === 'table' && (
+            {!loading && salaries.length > 0 && showTableView && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
+                        className="rounded-2xl bg-white shadow-xl overflow-visible mb-4"
                     >
-                        <div className="overflow-x-auto">
-                            <table className="min-w-[980px] w-full text-sm text-left text-gray-700">
+                        <div className="overflow-x-auto overflow-y-visible">
+                            <table className="w-full text-sm text-left text-gray-700" style={{ minWidth: `${tableMinWidth}px` }}>
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
-                                        <th className="px-6 py-4">Employee</th>
-                                        {showPackage && <th className="px-6 py-4">Package</th>}
-                                        <th className="px-6 py-4">Base Amount</th>
-                                        <th className="px-6 py-4">Net Salary</th>
-                                        {showEffectivePeriod && <th className="px-6 py-4">Effective Period</th>}
-                                        {showStatus && <th className="px-6 py-4">Status</th>}
+                                        {visibleColumns.showEmployee && <th className="px-6 py-4">Employee</th>}
+                                        {visibleColumns.showPackage && <th className="px-6 py-4">Package</th>}
+                                        {visibleColumns.showBaseAmount && <th className="px-6 py-4">Base Amount</th>}
+                                        {visibleColumns.showNetSalary && <th className="px-6 py-4">Net Salary</th>}
+                                        {visibleColumns.showEffectivePeriod && <th className="px-6 py-4">Effective Period</th>}
+                                        {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
                                         <th className="px-6 py-4 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-200">
                                     {salaries.map((salary, index) => {
                                         const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
                                         return (
@@ -1353,7 +1378,7 @@ const SalaryManagement = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 cursor-pointer"
+                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
                                                 onClick={() => setSelectedSalary(salary)}
                                             >
                                                 <td className="px-6 py-4">
@@ -1363,31 +1388,37 @@ const SalaryManagement = () => {
                                                         </div>
                                                         <div>
                                                             <p className="font-semibold text-gray-800">{salary.employee?.name}</p>
-                                                            <p className="text-xs text-gray-400 font-mono">{salary.employee?.employee_code}</p>
+                                                            {visibleColumns.showEmployeeCode && (
+                                                                <p className="text-xs text-gray-400 font-mono">{salary.employee?.employee_code}</p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                {showPackage && (
+                                                {visibleColumns.showPackage && (
                                                 <td className="px-6 py-4">
                                                     <span className="px-2.5 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-100">
                                                         {salary.package?.name}
                                                     </span>
                                                 </td>
                                                 )}
-                                                <td className="px-6 py-4 font-semibold text-gray-700">
-                                                    {formatCurrency(salary.base_amount, salary.currency)}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">
-                                                        {formatCurrency(salary.net_salary, salary.currency)}
-                                                    </span>
-                                                </td>
-                                                {showEffectivePeriod && (
+                                                {visibleColumns.showBaseAmount && (
+                                                    <td className="px-6 py-4 font-semibold text-gray-700">
+                                                        {formatCurrency(salary.base_amount, salary.currency)}
+                                                    </td>
+                                                )}
+                                                {visibleColumns.showNetSalary && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-2 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">
+                                                            {formatCurrency(salary.net_salary, salary.currency)}
+                                                        </span>
+                                                    </td>
+                                                )}
+                                                {visibleColumns.showEffectivePeriod && (
                                                 <td className="px-6 py-4 text-xs">
                                                     {formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}
                                                 </td>
                                                 )}
-                                                {showStatus && (
+                                                {visibleColumns.showStatus && (
                                                 <td className="px-6 py-4">
                                                     {isActive ? (
                                                         <span className="px-2.5 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Active</span>
@@ -1425,9 +1456,12 @@ const SalaryManagement = () => {
                         </div>
                     </motion.div>
 
-                    {false && (<>
-                    {/* Mobile Cards */}
-                    <div className="flex flex-col gap-3 md:hidden mb-4">
+                </>
+            )}
+
+            {/* Card View */}
+            {false && (
+                <ManagementGrid viewMode={viewMode}>
                         {salaries.map((salary, index) => {
                             const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
                             return (
@@ -1494,9 +1528,7 @@ const SalaryManagement = () => {
                                 </motion.div>
                             );
                         })}
-                    </div>
-                    </>)}
-                </>
+                </ManagementGrid>
             )}
 
             {/* Pagination */}

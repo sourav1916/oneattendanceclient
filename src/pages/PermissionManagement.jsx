@@ -186,12 +186,22 @@ const PermissionManagement = () => {
   const createAccess = checkActionAccess('permissionManagement', 'create');
   const updateAccess = checkActionAccess('permissionManagement', 'update');
   const deleteAccess = checkActionAccess('permissionManagement', 'delete');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1440
+  );
 
   // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
     return () => clearTimeout(t);
   }, [searchTerm]);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Reset page on new search
   useEffect(() => {
@@ -200,6 +210,10 @@ const PermissionManagement = () => {
       else fetchPackages(1);
     }
   }, [debouncedSearch]);
+
+  const showGroupCode = windowWidth >= 1100;
+  const showDescription = windowWidth >= 1024;
+  const showPermissionCount = windowWidth >= 1320;
 
   // ─── API Calls ────────────────────────────────────────────────────────────
   const fetchAllPermissions = useCallback(async () => {
@@ -565,18 +579,18 @@ const PermissionManagement = () => {
           {viewMode === 'table' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
               className="bg-white rounded-2xl shadow-xl overflow-visible">
-              <div className="overflow-x-auto overflow-y-visible">
+                <div className="overflow-x-auto overflow-y-visible">
                 <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
                     <th className="px-6 py-4">Package Name</th>
-                    <th className="px-6 py-4">Group Code</th>
-                    <th className="px-6 py-4 hidden lg:table-cell">Description</th>
-                    <th className="px-6 py-4 text-center">Permissions</th>
+                    {showGroupCode && <th className="px-6 py-4">Group Code</th>}
+                    {showDescription && <th className="px-6 py-4">Description</th>}
+                    {showPermissionCount && <th className="px-6 py-4 text-center">Permissions</th>}
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-200">
                   {packages.map((pkg, index) => (
                     <motion.tr key={pkg.id}
                       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
@@ -584,21 +598,29 @@ const PermissionManagement = () => {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl flex-shrink-0"><FaShieldAlt className="text-white text-xs" /></div>
-                          <span className="font-semibold text-gray-800 truncate max-w-[160px]">{pkg.package_name}</span>
+                          <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-xl flex-shrink-0 shadow-sm"><FaShieldAlt className="text-white text-xs" /></div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-gray-800 truncate max-w-[160px] block">{pkg.package_name}</span>
+                            <span className="text-[11px] text-gray-400">Permission package</span>
+                          </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
-                          <FaCode size={9} />{pkg.group_code}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 hidden lg:table-cell">
+                      {showGroupCode && (
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
+                            <FaCode size={9} />{pkg.group_code}
+                          </span>
+                        </td>
+                      )}
+                      {showDescription && (
+                        <td className="px-6 py-4">
                         <span className="text-gray-500 text-xs line-clamp-2 max-w-[220px] block">
                           {pkg.description || <span className="italic text-gray-300">—</span>}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
+                        </td>
+                      )}
+                      {showPermissionCount && (
+                        <td className="px-6 py-4 text-center">
                         {(pkg.permissions?.length || 0) > 0 ? (
                           <button onClick={() => openPermListModal(pkg)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-blue-700 text-xs font-bold hover:from-blue-100 hover:to-purple-100 hover:border-blue-400 hover:shadow-md transition-all duration-200 group">
@@ -606,7 +628,8 @@ const PermissionManagement = () => {
                             {pkg.permissions.length} permission{pkg.permissions.length !== 1 ? 's' : ''}
                           </button>
                         ) : <span className="text-xs text-gray-400 italic">None</span>}
-                      </td>
+                        </td>
+                      )}
                       <td className="px-6 py-4 text-right">
                         <ActionMenu
                           menuId={pkg.id}

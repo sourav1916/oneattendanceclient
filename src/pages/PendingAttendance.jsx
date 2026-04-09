@@ -566,11 +566,11 @@ const PendingAttendance = ({ companyId }) => {
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-visible"
+                                    className="bg-white rounded-2xl shadow-xl overflow-visible"
                                 >
                                     <div className="overflow-x-auto overflow-y-visible">
-                                        <table className="w-full min-w-[1100px]">
-                                            <thead className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
+                                        <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                                            <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                                 <tr>
                                                     <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                                         Employee
@@ -604,7 +604,7 @@ const PendingAttendance = ({ companyId }) => {
                                                         key={attendance.id}
                                                         initial={{ opacity: 0 }}
                                                         animate={{ opacity: 1 }}
-                                                        className="hover:bg-amber-50/30 transition"
+                                                        className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                                                     >
                                                         <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                                                             <div className="flex items-center gap-2 sm:gap-3">

@@ -10,7 +10,6 @@ import {
   FaTimes,
   FaTrash,
   FaCalendarCheck,
-  FaEllipsisV,
   FaInfoCircle,
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +17,9 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ActionMenu from '../components/ActionMenu';
 
 const getCompanyId = () => {
   try {
@@ -137,8 +139,6 @@ const LeaveBalanceCard = ({ type, balance }) => {
 
 // Leave Card Component for Mobile
 const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
-  const [showMenu, setShowMenu] = useState(false);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -153,55 +153,38 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
             Applied: {formatDate(leave.applied_at)}
           </p>
         </div>
-        <div className="relative">
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className="rounded-lg p-2 transition hover:bg-gray-100"
-          >
-            <FaEllipsisV className="text-gray-500" size={14} />
-          </button>
-          {showMenu && (
-            <div className="absolute right-0 top-8 z-10 w-36 rounded-xl border border-gray-200 bg-white shadow-lg">
-              <button
-                onClick={() => {
-                  onViewDetails(leave);
-                  setShowMenu(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-t-xl px-4 py-2 text-sm text-blue-600 transition hover:bg-blue-50"
-              >
-                <FaEye size={12} /> View Details
-              </button>
-              {leave.status === 'pending' && (
-                <>
-                  <button
-                    onClick={() => {
-                      onEdit(leave);
-                      setShowMenu(false);
-                    }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-purple-600 transition hover:bg-purple-50"
-                  >
-                    <FaEdit size={12} /> Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      onDelete(leave.id);
-                      setShowMenu(false);
-                    }}
-                    disabled={deletingId === leave.id}
-                    className="flex w-full items-center gap-2 rounded-b-xl px-4 py-2 text-sm text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-                  >
-                    {deletingId === leave.id ? (
+        <ActionMenu
+          menuId={`leave-card-${leave.id}`}
+          actions={[
+            {
+              label: 'View Details',
+              icon: <FaEye size={12} />,
+              onClick: () => onViewDetails(leave),
+              className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+            },
+            ...(leave.status === 'pending'
+              ? [
+                  {
+                    label: 'Edit',
+                    icon: <FaEdit size={12} />,
+                    onClick: () => onEdit(leave),
+                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                  },
+                  {
+                    label: 'Delete',
+                    icon: deletingId === leave.id ? (
                       <FaSpinner className="animate-spin" size={12} />
                     ) : (
                       <FaTrash size={12} />
-                    )}
-                    Delete
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                    ),
+                    onClick: () => onDelete(leave.id),
+                    disabled: deletingId === leave.id,
+                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                  },
+                ]
+              : []),
+          ]}
+        />
       </div>
 
       <div className="space-y-2 border-t border-gray-100 pt-3">
@@ -586,11 +569,19 @@ const MyLeave = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
+  const [viewMode, setViewMode] = useState(() =>
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table'
+  );
+  const [visibleColumns, setVisibleColumns] = useState(() => ({
+    showLeaveType: true,
+    showStartDate: window.innerWidth >= 480,
+    showEndDate: window.innerWidth >= 640,
+    showDuration: window.innerWidth >= 768,
+    showStatus: true,
+    showAppliedOn: window.innerWidth >= 1024,
+  }));
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
   const [resultMeta, setResultMeta] = useState({ total: 0, total_pages: 1 });
-  const [isMobileViewport, setIsMobileViewport] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
-  );
   const [viewLeave, setViewLeave] = useState(null);
   const [editLeave, setEditLeave] = useState(null);
   const [showApply, setShowApply] = useState(false);
@@ -667,10 +658,27 @@ const MyLeave = () => {
   }, [pagination.page, isInitialLoad, loadLeaves]);
 
   useEffect(() => {
-    const handleResize = () => setIsMobileViewport(window.innerWidth < 768);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    let timer;
+    const onResize = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setVisibleColumns({
+          showLeaveType: true,
+          showStartDate: window.innerWidth >= 480,
+          showEndDate: window.innerWidth >= 640,
+          showDuration: window.innerWidth >= 768,
+          showStatus: true,
+          showAppliedOn: window.innerWidth >= 1024,
+        });
+      }, 150);
+    };
+
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   // Calculate statistics
@@ -795,6 +803,10 @@ const MyLeave = () => {
           </motion.div>
         )}
 
+        <div className="mb-4 flex justify-end">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -831,7 +843,7 @@ const MyLeave = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="overflow-hidden rounded-2xl bg-white shadow-md"
+          className="rounded-2xl bg-white shadow-xl overflow-visible"
         >
           {loading ? (
             <div className="flex justify-center py-16">
@@ -845,68 +857,73 @@ const MyLeave = () => {
             </div>
           ) : (
             <>
-              {/* Desktop Table View */}
-              {!isMobileViewport && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              {viewMode === 'table' && (
+                <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
+                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Leave Type</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Start Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">End Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applied On</th>
+                        {visibleColumns.showLeaveType && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Leave Type</th>}
+                        {visibleColumns.showStartDate && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Start Date</th>}
+                        {visibleColumns.showEndDate && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">End Date</th>}
+                        {visibleColumns.showDuration && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>}
+                        {visibleColumns.showStatus && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>}
+                        {visibleColumns.showAppliedOn && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applied On</th>}
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {filteredLeaves.map((leave) => (
-                        <tr key={leave.id} className="transition hover:bg-gray-50">
+                        <tr key={leave.id} className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50">
+                          {visibleColumns.showLeaveType && (
+                            <td className="px-4 py-3">
+                              <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
+                              <p className="mt-1 text-xs text-gray-500">{leave.total_days} day(s)</p>
+                            </td>
+                          )}
+                          {visibleColumns.showStartDate && <td className="px-4 py-3 text-sm">{formatDate(leave.start_date)}</td>}
+                          {visibleColumns.showEndDate && <td className="px-4 py-3 text-sm">{formatDate(leave.end_date)}</td>}
+                          {visibleColumns.showDuration && (
+                            <td className="px-4 py-3 text-sm">
+                              {leave.total_days} day(s)
+                              {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
+                            </td>
+                          )}
+                          {visibleColumns.showStatus && <td className="px-4 py-3"><StatusBadge status={leave.status} /></td>}
+                          {visibleColumns.showAppliedOn && <td className="px-4 py-3 text-sm">{formatDateTime(leave.applied_at)}</td>}
                           <td className="px-4 py-3">
-                            <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
-                            <p className="mt-1 text-xs text-gray-500">{leave.total_days} day(s)</p>
-                          </td>
-                          <td className="px-4 py-3 text-sm">{formatDate(leave.start_date)}</td>
-                          <td className="px-4 py-3 text-sm">{formatDate(leave.end_date)}</td>
-                          <td className="px-4 py-3 text-sm">
-                            {leave.total_days} day(s)
-                            {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
-                          </td>
-                          <td className="px-4 py-3"><StatusBadge status={leave.status} /></td>
-                          <td className="px-4 py-3 text-sm">{formatDateTime(leave.applied_at)}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex justify-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => setViewLeave(leave)}
-                                className="rounded-lg bg-blue-50 px-3 py-1.5 text-sm text-blue-600 transition hover:bg-blue-100"
-                              >
-                                <FaEye className="inline mr-1" size={12} /> View
-                              </button>
-                              {leave.status === 'pending' && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditLeave(leave)}
-                                    className="rounded-lg bg-purple-50 px-3 py-1.5 text-sm text-purple-600 transition hover:bg-purple-100"
-                                  >
-                                    <FaEdit className="inline mr-1" size={12} /> Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeLeave(leave.id)}
-                                    disabled={deletingId === leave.id}
-                                    className="rounded-lg bg-red-50 px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-100 disabled:opacity-50"
-                                  >
-                                    {deletingId === leave.id ? (
-                                      <FaSpinner className="inline animate-spin" size={12} />
-                                    ) : (
-                                      <><FaTrash className="inline mr-1" size={12} /> Delete</>
-                                    )}
-                                  </button>
-                                </>
-                              )}
+                            <div className="flex justify-center">
+                              <ActionMenu
+                                menuId={`leave-table-${leave.id}`}
+                                actions={[
+                                  {
+                                    label: 'View Details',
+                                    icon: <FaEye size={12} />,
+                                    onClick: () => setViewLeave(leave),
+                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+                                  },
+                                  ...(leave.status === 'pending'
+                                    ? [
+                                        {
+                                          label: 'Edit',
+                                          icon: <FaEdit size={12} />,
+                                          onClick: () => setEditLeave(leave),
+                                          className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                                        },
+                                        {
+                                          label: 'Delete',
+                                          icon: deletingId === leave.id ? (
+                                            <FaSpinner className="animate-spin" size={12} />
+                                          ) : (
+                                            <FaTrash size={12} />
+                                          ),
+                                          onClick: () => removeLeave(leave.id),
+                                          disabled: deletingId === leave.id,
+                                          className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                                        },
+                                      ]
+                                    : []),
+                                ]}
+                              />
                             </div>
                           </td>
                         </tr>
@@ -916,9 +933,8 @@ const MyLeave = () => {
                 </div>
               )}
 
-              {/* Mobile Card View */}
-              {isMobileViewport && (
-                <div className="space-y-3 p-4">
+              {viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode} className="p-3 sm:p-4">
                   <AnimatePresence>
                     {filteredLeaves.map((leave) => (
                       <LeaveCard
@@ -931,7 +947,7 @@ const MyLeave = () => {
                       />
                     ))}
                   </AnimatePresence>
-                </div>
+                </ManagementGrid>
               )}
             </>
           )}
@@ -950,8 +966,8 @@ const MyLeave = () => {
               totalItems={resultMeta.total || leaves.length}
               itemsPerPage={pagination.limit}
               onPageChange={handlePageChange}
-              variant={isMobileViewport ? 'minimal' : 'default'}
-              showInfo={!isMobileViewport}
+              variant={viewMode === 'card' ? 'minimal' : 'default'}
+              showInfo={viewMode !== 'card'}
             />
           </motion.div>
         )}
