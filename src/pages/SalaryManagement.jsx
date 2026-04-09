@@ -59,6 +59,9 @@ const getCachedSalaryListRequest = (key) => {
   return null;
 };
 
+const getEmployeeKey = (emp, index) =>
+  emp?.employee_id ?? emp?.id ?? emp?.employee_code ?? `employee-${index}`;
+
 // ─── Salary Form Body Component ───────────────────────────────────────────────
 const SalaryFormBody = ({
   onSubmit, isEdit = false, formData, onInputChange, loading, onClose, submitDisabled = false, submitTitle = ''
@@ -602,8 +605,9 @@ const SalaryManagement = () => {
                 <tbody className="divide-y divide-gray-100">
                   {employees.map((emp, index) => {
                     const activeSalary = getActiveSalary(emp);
+                    const employeeKey = getEmployeeKey(emp, index);
                     return (
-                      <motion.tr key={emp.employee_id}
+                      <motion.tr key={employeeKey}
                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
                         className="hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 transition-all duration-300"
                       >
@@ -713,8 +717,9 @@ const SalaryManagement = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
             {employees.map((emp, index) => {
               const activeSalary = getActiveSalary(emp);
+              const employeeKey = getEmployeeKey(emp, index);
               return (
-                <motion.div key={emp.employee_id}
+                <motion.div key={employeeKey}
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
                   className="bg-white rounded-2xl shadow-xl p-4 sm:p-5 border border-gray-100 hover:shadow-2xl transition-all duration-300"
                 >

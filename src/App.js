@@ -19,6 +19,7 @@ import AttendanceHistory from "./pages/AttendanceHistory";
 import MyShifts from "./pages/MyShifts";
 import MySalary from "./pages/MySalary";
 import SalaryManagement from "./pages/SalaryManagement";
+import SalaryComponentsManagement from "./pages/SalaryComponentsManagement";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
@@ -76,6 +77,7 @@ function AppContent() {
         <Route path="/my-salary"element={<ProtectedRoute><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management"element={<ProtectedRoute><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/salary-management"element={<ProtectedRoute><MainLayout><SalaryManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/salary-components-management"element={<ProtectedRoute><MainLayout><SalaryComponentsManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/employees-shifts"element={<ProtectedRoute><MainLayout><EmployeesShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-management"element={<ProtectedRoute><MainLayout><LeaveManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/pending-attendance"element={<ProtectedRoute><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />

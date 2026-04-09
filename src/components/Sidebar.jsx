@@ -119,6 +119,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           pageKey: 'salaryManagement'
         },
         {
+          icon: FaCalculator,
+          label: 'Salary Components',
+          path: '/salary-components-management',
+          pageKey: 'salaryComponentsManagement'
+        },
+        {
           icon: FaTasks,
           label: 'Employee Shifts',
           path: '/employees-shifts',
