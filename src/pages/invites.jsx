@@ -4,7 +4,8 @@ import {
   FaClock, FaExclamationCircle, FaSpinner, FaEye,
   FaCheckCircle, FaTimesCircle, FaEnvelope, FaPhone, FaCalendarAlt,
   FaSearch, FaBuilding, FaCheck, FaBan, FaUser, FaMapMarkerAlt,
-  FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle
+  FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle,
+  FaTh, FaListUl
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -13,6 +14,8 @@ import Pagination, { usePagination } from "../components/PaginationComponent";
 import { useAuth } from "../context/AuthContext";
 import ModalScrollLock from "../components/ModalScrollLock";
 import ActionMenu from "../components/ActionMenu";
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -115,6 +118,7 @@ export default function MyInvites() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [viewMode, setViewMode] = useState("table");
 
   const fetchInProgress = useRef(false);
   const initialFetchDone = useRef(false);
@@ -448,6 +452,11 @@ export default function MyInvites() {
           </div>
         </motion.div>
 
+        {/* View Toggle */}
+        <div className="flex justify-end mb-6">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {/* Loading State */}
         {loading && !invites.length && <Skeleton />}
 
@@ -460,13 +469,13 @@ export default function MyInvites() {
           </motion.div>
         )}
 
-        {/* Table View (Desktop) */}
         {!loading && !error && invites.length > 0 && (
           <>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="hidden md:block bg-white rounded-2xl shadow-xl overflow-visible">
-              <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full text-sm text-left text-gray-700">
+            {viewMode === "table" && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="bg-white rounded-2xl shadow-xl overflow-visible">
+                <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full min-w-[1050px] text-sm text-left text-gray-700">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
                       {visibleColumns.showCompany && <th className="px-6 py-4">Company</th>}
@@ -565,17 +574,18 @@ export default function MyInvites() {
                     })}
                   </tbody>
                 </table>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            )}
 
-            {/* Card View (Mobile) */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            {viewMode === "card" && (
+              <ManagementGrid viewMode={viewMode}>
               {invites.map((invite, index) => {
                 const status = getStatusBadge(invite.status, invite.expires_at);
                 const StatusIcon = status.icon;
                 return (
                   <motion.div key={`card-${invite.invite_id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
+                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
                       {invite.company?.logo_url ? (
                         <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="logo" className="w-12 h-12 rounded-2xl object-cover border border-purple-200 bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
@@ -610,7 +620,8 @@ export default function MyInvites() {
                   </motion.div>
                 );
               })}
-            </div>
+              </ManagementGrid>
+            )}
 
             <Pagination
               currentPage={pagination.page}

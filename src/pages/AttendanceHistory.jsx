@@ -18,12 +18,16 @@ import {
   FaTimes,
   FaTimesCircle,
   FaCoffee,
-  FaWifi
+  FaWifi,
+  FaTh,
+  FaListUl
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import apiCall from '../utils/api';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
 
@@ -346,9 +350,7 @@ const AttendanceHistory = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  );
+  const [viewMode, setViewMode] = useState('table');
   const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
   const initialFetchStartedRef = useRef(false);
   const fetchInProgressRef = useRef(false);
@@ -360,12 +362,6 @@ const AttendanceHistory = () => {
   }, [searchTerm]);
 
   // ── Resize ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // ── Fetch from real API ───────────────────────────────────────────────────
   const fetchAttendance = useCallback(async () => {
     if (fetchInProgressRef.current) return;
@@ -432,10 +428,9 @@ const AttendanceHistory = () => {
   }, [debouncedSearch, goToPage, pagination.page]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
-  const isTinyViewport = windowWidth < 390;
-  const showClockOut = windowWidth >= 768;
-  const showLocation = windowWidth >= 1024;
-  const showApiStatus = windowWidth >= 1280;
+  const showClockOut = viewMode === 'table';
+  const showLocation = viewMode === 'table';
+  const showApiStatus = viewMode === 'table';
 
   const openDetails = (record) => {
     setSelectedRecord(record);
@@ -513,6 +508,11 @@ const AttendanceHistory = () => {
         </motion.div>
 
         {/* ── Error ──────────────────────────────────────────────────────── */}
+        {/* View Toggle */}
+        <div className="flex justify-end mb-6">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-red-700">
             <FaExclamationCircle />
@@ -532,10 +532,10 @@ const AttendanceHistory = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="hidden overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl md:block"
+            className={`${viewMode === 'table' ? 'overflow-hidden' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl`}
           >
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-gray-700">
+              <table className="w-full min-w-[1050px] text-left text-sm text-gray-700">
                 <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                   <tr>
                     <th className="px-5 py-4">Date</th>
@@ -617,7 +617,7 @@ const AttendanceHistory = () => {
 
         {/* ── Mobile Cards ────────────────────────────────────────────────── */}
         {records.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:hidden">
+          <ManagementGrid viewMode={viewMode}>
             {records.map((record) => {
               const style = getStatusBadge(record.status);
               const StatusIcon = style.icon;
@@ -627,7 +627,7 @@ const AttendanceHistory = () => {
                   key={record.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="min-w-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-md max-[390px]:p-3"
+                  className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group max-[390px]:p-4"
                 >
                   <div className="mb-3 flex items-start justify-between gap-2 max-[390px]:flex-col">
                     <div className="min-w-0">
@@ -681,7 +681,7 @@ const AttendanceHistory = () => {
                 </motion.div>
               );
             })}
-          </div>
+          </ManagementGrid>
         )}
 
         {/* ── Empty State ─────────────────────────────────────────────────── */}

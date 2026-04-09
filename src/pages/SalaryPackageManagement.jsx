@@ -12,6 +12,8 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -590,7 +592,7 @@ const SalaryPackages = () => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('card');
     const [selectedPkg, setSelectedPkg] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [editPkg, setEditPkg] = useState(null);
@@ -782,20 +784,7 @@ const SalaryPackages = () => {
                         <span className="font-semibold text-gray-800">{pagination.total}</span> packages
                         {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
                     </p>
-                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaTh size={13} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaListUl size={13} />
-                        </button>
-                    </div>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             )}
 
@@ -831,8 +820,8 @@ const SalaryPackages = () => {
             )}
 
             {/* Grid View */}
-            {!loading && packages.length > 0 && viewMode === 'grid' && (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+            {!loading && packages.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
                     {packages.map((pkg, index) => (
                         <PackageCard
                             key={pkg.id}
@@ -843,11 +832,11 @@ const SalaryPackages = () => {
                             onDelete={setDeletePkg}
                         />
                     ))}
-                </div>
+                </ManagementGrid>
             )}
 
             {/* List View */}
-            {!loading && packages.length > 0 && viewMode === 'list' && (
+            {!loading && packages.length > 0 && viewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
@@ -857,7 +846,7 @@ const SalaryPackages = () => {
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
                     >
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="min-w-[1200px] w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Package</th>
@@ -958,92 +947,6 @@ const SalaryPackages = () => {
                         </div>
                     </motion.div>
 
-                    {/* Mobile List Cards */}
-                    <div className="flex flex-col gap-3 md:hidden mb-4">
-                        {packages.map((pkg, index) => {
-                            const earningCount = pkg.items.filter(i => i.type === 'earning').length;
-                            const deductionCount = pkg.items.filter(i => i.type === 'deduction').length;
-                            const contributionCount = pkg.items.filter(i => i.type?.includes('employer')).length;
-                            return (
-                                <motion.div
-                                    key={pkg.id}
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() => setSelectedPkg(pkg)}
-                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 cursor-pointer hover:shadow-lg transition-all duration-200"
-                                >
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-md">
-                                            <FaBriefcase className="text-white text-base" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800 truncate">{pkg.name}</h3>
-                                                    {pkg.description && <p className="text-xs text-gray-400 mt-0.5 truncate">{pkg.description}</p>}
-                                                </div>
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border flex-shrink-0 ${pkg.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                                                    {pkg.is_active ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </div>
-                                            <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100 mt-1 inline-block">{pkg.code}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-4 gap-1.5 mb-3">
-                                        <div className="bg-green-50 rounded-xl p-2 text-center border border-green-100">
-                                            <p className="text-sm font-bold text-green-700">{earningCount}</p>
-                                            <p className="text-xs text-green-500">Earn</p>
-                                        </div>
-                                        <div className="bg-red-50 rounded-xl p-2 text-center border border-red-100">
-                                            <p className="text-sm font-bold text-red-600">{deductionCount}</p>
-                                            <p className="text-xs text-red-400">Deduct</p>
-                                        </div>
-                                        <div className="bg-blue-50 rounded-xl p-2 text-center border border-blue-100">
-                                            <p className="text-sm font-bold text-blue-700">{contributionCount}</p>
-                                            <p className="text-xs text-blue-400">Contrib</p>
-                                        </div>
-                                        <div className="bg-purple-50 rounded-xl p-2 text-center border border-purple-100">
-                                            <p className="text-sm font-bold text-purple-700">{pkg.items.length}</p>
-                                            <p className="text-xs text-purple-400">Total</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs text-gray-400">{formatDate(pkg.created_at)}</span>
-                                        <div onClick={e => e.stopPropagation()}>
-                                            <ActionMenu
-                                                menuId={`mobile-${pkg.id}`}
-                                                activeId={activeActionMenu}
-                                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                actions={[
-                                                    {
-                                                        label: 'View Details',
-                                                        icon: <FaEye size={13} />,
-                                                        onClick: () => setSelectedPkg(pkg),
-                                                        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                    },
-                                                    {
-                                                        label: 'Edit',
-                                                        icon: <FaEdit size={13} />,
-                                                        onClick: () => openEdit(pkg),
-                                                        className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                                    },
-                                                    {
-                                                        label: 'Delete',
-                                                        icon: <FaTrash size={13} />,
-                                                        onClick: () => setDeletePkg(pkg),
-                                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                    }
-                                                ]}
-                                            />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
                 </>
             )}
 

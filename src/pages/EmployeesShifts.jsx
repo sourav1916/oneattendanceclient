@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -310,7 +312,7 @@ const EmployeesShifts = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('card');
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
@@ -518,20 +520,7 @@ const EmployeesShifts = () => {
                         <span className="font-semibold text-gray-800">{pagination.total}</span> employees
                         {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
                     </p>
-                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaTh size={13} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaListUl size={13} />
-                        </button>
-                    </div>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             )}
 
@@ -562,8 +551,8 @@ const EmployeesShifts = () => {
             )}
 
             {/* Grid View */}
-            {!loading && employees.length > 0 && viewMode === 'grid' && (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+            {!loading && employees.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
                     {employees.map((emp, index) => (
                         <EmployeeCard
                             key={emp.employee_id}
@@ -572,11 +561,11 @@ const EmployeesShifts = () => {
                             onClick={() => setSelectedEmployee(emp)}
                         />
                     ))}
-                </div>
+                </ManagementGrid>
             )}
 
             {/* List View */}
-            {!loading && employees.length > 0 && viewMode === 'list' && (
+            {!loading && employees.length > 0 && viewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
@@ -586,7 +575,7 @@ const EmployeesShifts = () => {
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
                     >
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="min-w-[1100px] w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Employee</th>
@@ -673,69 +662,6 @@ const EmployeesShifts = () => {
                         </div>
                     </motion.div>
 
-                    {/* Mobile List Cards */}
-                    <div className="flex flex-col gap-3 md:hidden mb-4">
-                        {employees.map((emp, index) => {
-                            const s = emp.summary;
-                            const u = emp.user;
-                            const statusColor = emp.status === 'active'
-                                ? 'bg-green-50 text-green-700 border-green-200'
-                                : 'bg-gray-100 text-gray-500 border-gray-200';
-
-                            return (
-                                <motion.div
-                                    key={emp.employee_id}
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() => setSelectedEmployee(emp)}
-                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 cursor-pointer hover:shadow-lg transition-all duration-200"
-                                >
-                                    <div className="flex items-start gap-3 mb-3">
-                                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md`}>
-                                            <span className="text-white font-bold">{getInitials(u.name)}</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <h3 className="font-bold text-gray-800 truncate">{u.name}</h3>
-                                                    <p className="text-xs text-gray-500">{designationLabel(emp.designation)}</p>
-                                                </div>
-                                                <AttendanceBadge pct={s.attendance_percentage} />
-                                            </div>
-                                            <p className="text-xs text-gray-400 font-mono mt-1 bg-gray-50 px-2 py-0.5 rounded-lg inline-block">{emp.employee_code}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-4 gap-1.5 mb-3">
-                                        <div className="bg-green-50 rounded-xl p-2 text-center border border-green-100">
-                                            <p className="text-sm font-bold text-green-700">{s.worked_days}</p>
-                                            <p className="text-xs text-green-500">Worked</p>
-                                        </div>
-                                        <div className="bg-blue-50 rounded-xl p-2 text-center border border-blue-100">
-                                            <p className="text-sm font-bold text-blue-700">{formatHours(s.total_work_hours)}</p>
-                                            <p className="text-xs text-blue-500">Hours</p>
-                                        </div>
-                                        <div className="bg-purple-50 rounded-xl p-2 text-center border border-purple-100">
-                                            <p className="text-sm font-bold text-purple-700">{s.leave_days}</p>
-                                            <p className="text-xs text-purple-500">Leave</p>
-                                        </div>
-                                        <div className="bg-red-50 rounded-xl p-2 text-center border border-red-100">
-                                            <p className="text-sm font-bold text-red-600">{s.absent_days}</p>
-                                            <p className="text-xs text-red-400">Absent</p>
-                                        </div>
-                                    </div>
-
-                                    <MiniStatBar worked={s.worked_days} total={s.total_days_in_month} pct={s.attendance_percentage} />
-
-                                    <div className="flex items-center justify-between mt-2">
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColor}`}>{emp.status}</span>
-                                        <span className="text-xs text-gray-400">{u.email}</span>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
                 </>
             )}
 

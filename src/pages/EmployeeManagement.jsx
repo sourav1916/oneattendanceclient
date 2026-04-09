@@ -5,7 +5,8 @@ import {
     FaEnvelope, FaPhone, FaIdCard, FaCalendarAlt, FaBriefcase,
     FaDollarSign, FaUserTag, FaShieldAlt, FaBan, FaTrashAlt,
     FaInfoCircle, FaPlus, FaUserTie, FaUserCheck, FaRobot, FaHandPaper,
-    FaCamera, FaMapMarkerAlt, FaWifi, FaFingerprint, FaNetworkWired, FaSave
+    FaCamera, FaMapMarkerAlt, FaWifi, FaFingerprint, FaNetworkWired, FaSave,
+    FaTh, FaListUl
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
@@ -15,6 +16,8 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -77,6 +80,7 @@ const EmployeeManagement = () => {
     const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [viewMode, setViewMode] = useState('table');
 
     const [formData, setFormData] = useState({
         name: '', designation: '', email: '', phone: '',
@@ -718,6 +722,11 @@ const EmployeeManagement = () => {
                 </div>
             </motion.div>
 
+            {/* View Toggle */}
+            <div className="flex justify-end mb-6">
+                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+            </div>
+
             {loading && !employees.length && <SkeletonComponent />}
 
             {!loading && employees.length === 0 && (
@@ -730,12 +739,12 @@ const EmployeeManagement = () => {
 
             {!loading && employees.length > 0 && (
                 <>
-                    {/* Desktop Table */}
+                    {viewMode === 'table' && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                        className="hidden md:block bg-white rounded-2xl shadow-xl overflow-visible"
+                        className="bg-white rounded-2xl shadow-xl overflow-visible"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="w-full min-w-[1200px] text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         {visibleColumns.showEmployeeCode && <th className="px-6 py-4">Employee Code</th>}
@@ -814,12 +823,13 @@ const EmployeeManagement = () => {
                             </table>
                         </div>
                     </motion.div>
+                    )}
 
-                    {/* Mobile Cards */}
-                    <div className="grid grid-cols-1 gap-4 md:hidden">
+                    {viewMode === 'card' && (
+                    <ManagementGrid viewMode={viewMode}>
                         {employees.map((emp, index) => (
                             <motion.div key={emp.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300"
+                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                             >
                                 <div className="flex items-start gap-4">
                                     <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
@@ -849,7 +859,8 @@ const EmployeeManagement = () => {
                                 </div>
                             </motion.div>
                         ))}
-                    </div>
+                    </ManagementGrid>
+                )}
 
                     {/* Pagination */}
                     <Pagination

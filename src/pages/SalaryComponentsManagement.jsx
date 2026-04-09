@@ -13,6 +13,8 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -446,7 +448,7 @@ const SalaryComponents = () => {
     const [selectedComponent, setSelectedComponent] = useState(null);
     const [formModal, setFormModal] = useState(null); // null | { mode: 'create'|'edit', data }
     const [deleteTarget, setDeleteTarget] = useState(null);
-    const [viewMode, setViewMode] = useState('list');
+    const [viewMode, setViewMode] = useState('table');
     const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
@@ -584,20 +586,7 @@ const SalaryComponents = () => {
                     <p className="text-sm text-gray-500">
                         Showing <span className="font-semibold text-gray-800">{components.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> components
                     </p>
-                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaListUl size={13} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaTh size={13} />
-                        </button>
-                    </div>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             )}
 
@@ -626,7 +615,7 @@ const SalaryComponents = () => {
             )}
 
             {/* List View */}
-            {!loading && components.length > 0 && viewMode === 'list' && (
+            {!loading && components.length > 0 && viewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
@@ -636,7 +625,7 @@ const SalaryComponents = () => {
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
                     >
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="min-w-[1100px] w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Code</th>
@@ -733,74 +722,12 @@ const SalaryComponents = () => {
                         </div>
                     </motion.div>
 
-                    {/* Mobile List */}
-                    <div className="flex flex-col gap-3 md:hidden mb-4">
-                        {components.map((comp, index) => {
-                            const tc = getTypeConfig(comp.type);
-                            return (
-                                <motion.div
-                                    key={comp.id}
-                                    initial={{ opacity: 0, y: 15 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() => setSelectedComponent(comp)}
-                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 active:scale-98 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold border border-gray-200 font-mono">{comp.code}</span>
-                                            <span>
-                                                <p className="font-bold text-gray-800 text-sm">{comp.name}</p>
-                                            </span>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded-lg text-xs font-bold border ${tc.bg} ${tc.text} ${tc.border}`}>
-                                            {formatCalcValue(comp.calc_type, comp.calc_value)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${tc.bg} ${tc.text} ${tc.border}`}>{formatTypeLabel(comp.type)}</span>
-                                            {comp.is_taxable && <span className="px-1.5 py-0.5 bg-orange-50 text-orange-600 border border-orange-200 rounded text-xs">Tax</span>}
-                                            {comp.is_statutory && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs">Stat</span>}
-                                        </div>
-                                        <div onClick={e => e.stopPropagation()}>
-                                            <ActionMenu
-                                                menuId={`mobile-${comp.id}`}
-                                                activeId={activeActionMenu}
-                                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                actions={[
-                                                    {
-                                                        label: 'View Details',
-                                                        icon: <FaEye size={13} />,
-                                                        onClick: () => setSelectedComponent(comp),
-                                                        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                    },
-                                                    {
-                                                        label: 'Edit',
-                                                        icon: <FaEdit size={13} />,
-                                                        onClick: () => setFormModal({ mode: 'edit', data: comp }),
-                                                        className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                                    },
-                                                    {
-                                                        label: 'Delete',
-                                                        icon: <FaTrash size={13} />,
-                                                        onClick: () => setDeleteTarget(comp),
-                                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                    }
-                                                ]}
-                                            />
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
                 </>
             )}
 
             {/* Grid View */}
-            {!loading && components.length > 0 && viewMode === 'grid' && (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-4">
+            {!loading && components.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
                     {components.map((comp, index) => {
                         const tc = getTypeConfig(comp.type);
                         return (
@@ -810,41 +737,47 @@ const SalaryComponents = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: index * 0.04 }}
                                 onClick={() => setSelectedComponent(comp)}
-                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className={`w-9 h-9 bg-gradient-to-br ${tc.gradient} rounded-xl flex items-center justify-center shadow-md`}>
-                                        <FaMoneyBillWave className="text-white text-sm" />
+                                <div className="flex items-start justify-between gap-3 mb-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className={`w-12 h-12 bg-gradient-to-br ${tc.gradient} rounded-2xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                                            <FaMoneyBillWave className="text-white text-base" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="font-bold text-gray-800 truncate text-sm">{comp.name}</h3>
+                                            <p className="text-xs text-gray-500 mt-0.5 font-mono">{comp.code}</p>
+                                        </div>
                                     </div>
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${comp.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
                                         {comp.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                 </div>
 
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-mono font-bold border border-gray-200">{comp.code}</span>
-                                </div>
-                                <p className="font-bold text-gray-800 text-base mb-0.5">{comp.name}</p>
                                 <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border mb-3 ${tc.bg} ${tc.text} ${tc.border}`}>{formatTypeLabel(comp.type)}</span>
 
-                                <div className="text-2xl font-bold text-indigo-600 mb-3">{formatCalcValue(comp.calc_type, comp.calc_value)}</div>
+                                <div className="text-2xl font-bold text-indigo-600 mb-4">{formatCalcValue(comp.calc_type, comp.calc_value)}</div>
 
-                                <div className="space-y-1.5 text-xs mb-3">
-                                    <div className="flex justify-between">
+                                <div className="grid grid-cols-2 gap-2.5 mb-4 text-xs">
+                                    <div className="rounded-xl bg-gray-50 p-2.5">
                                         <span className="text-gray-400">Calc Type</span>
-                                        <span className="font-semibold text-gray-600 capitalize">{comp.calc_type}</span>
+                                        <div className="font-semibold text-gray-700 capitalize mt-1">{comp.calc_type}</div>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="rounded-xl bg-gray-50 p-2.5">
                                         <span className="text-gray-400">Taxable</span>
-                                        <span className={`font-semibold ${comp.is_taxable ? 'text-orange-600' : 'text-gray-400'}`}>{comp.is_taxable ? 'Yes' : 'No'}</span>
+                                        <div className={`font-semibold mt-1 ${comp.is_taxable ? 'text-orange-600' : 'text-gray-400'}`}>{comp.is_taxable ? 'Yes' : 'No'}</div>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="rounded-xl bg-gray-50 p-2.5">
                                         <span className="text-gray-400">Statutory</span>
-                                        <span className={`font-semibold ${comp.is_statutory ? 'text-blue-600' : 'text-gray-400'}`}>{comp.is_statutory ? 'Yes' : 'No'}</span>
+                                        <div className={`font-semibold mt-1 ${comp.is_statutory ? 'text-blue-600' : 'text-gray-400'}`}>{comp.is_statutory ? 'Yes' : 'No'}</div>
+                                    </div>
+                                    <div className="rounded-xl bg-gray-50 p-2.5">
+                                        <span className="text-gray-400">Type</span>
+                                        <div className="font-semibold text-gray-700 mt-1">{formatTypeLabel(comp.type)}</div>
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between pt-2 border-t border-gray-100" onClick={e => e.stopPropagation()}>
                                     <ActionMenu
                                         menuId={`grid-${comp.id}`}
                                         activeId={activeActionMenu}
@@ -874,7 +807,7 @@ const SalaryComponents = () => {
                             </motion.div>
                         );
                     })}
-                </div>
+                </ManagementGrid>
             )}
 
             {/* Pagination */}

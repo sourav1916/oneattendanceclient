@@ -13,6 +13,8 @@ import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -546,7 +548,7 @@ export const EmployeesSalaries = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedRecord, setSelectedRecord] = useState(null);
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('card');
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -669,14 +671,7 @@ export const EmployeesSalaries = () => {
                         <span className="font-semibold text-gray-800">{pagination.total}</span>
                         {debouncedSearch && <span className="ml-1 text-amber-600">· "{debouncedSearch}"</span>}
                     </p>
-                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                        {['grid', 'list'].map(m => (
-                            <button key={m} onClick={() => setViewMode(m)}
-                                className={`p-2 rounded-lg transition-all text-xs font-semibold px-3 ${viewMode === m ? 'bg-gradient-to-r from-amber-600 to-rose-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}>
-                                {m === 'grid' ? 'Grid' : 'List'}
-                            </button>
-                        ))}
-                    </div>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             )}
 
@@ -703,8 +698,8 @@ export const EmployeesSalaries = () => {
             )}
 
             {/* Grid View */}
-            {!loading && employees.length > 0 && viewMode === 'grid' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+            {!loading && employees.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
                     {employees.map((emp, index) => {
                         const sal = emp.salary;
                         const CurrIcon = getCurrencyIcon(sal?.currency);
@@ -756,11 +751,11 @@ export const EmployeesSalaries = () => {
                             </motion.div>
                         );
                     })}
-                </div>
+                </ManagementGrid>
             )}
 
             {/* List View */}
-            {!loading && employees.length > 0 && viewMode === 'list' && (
+            {!loading && employees.length > 0 && viewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
@@ -768,7 +763,7 @@ export const EmployeesSalaries = () => {
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
                     >
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="min-w-[1050px] w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Employee</th>
@@ -852,6 +847,7 @@ export const EmployeesSalaries = () => {
                         </div>
                     </motion.div>
 
+                    {false && (<>
                     {/* Mobile Cards */}
                     <div className="flex flex-col gap-3 md:hidden mb-4">
                         {employees.map((emp, index) => {
@@ -893,6 +889,7 @@ export const EmployeesSalaries = () => {
                             );
                         })}
                     </div>
+                    </>)}
                 </>
             )}
 

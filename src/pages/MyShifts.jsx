@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -230,7 +232,7 @@ const MyShifts = () => {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(false);
     const [selectedShift, setSelectedShift] = useState(null);
-    const [viewMode, setViewMode] = useState('list'); // 'list' | 'grid'
+    const [viewMode, setViewMode] = useState('table'); // 'table' | 'card'
     const [monthPickerOpen, setMonthPickerOpen] = useState(false);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
@@ -432,20 +434,7 @@ const MyShifts = () => {
                     <p className="text-sm text-gray-500">
                         Showing <span className="font-semibold text-gray-800">{shifts.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> shifts
                     </p>
-                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaListUl size={13} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaTh size={13} />
-                        </button>
-                    </div>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             )}
 
@@ -468,7 +457,7 @@ const MyShifts = () => {
             )}
 
             {/* List View */}
-            {!loading && shifts.length > 0 && viewMode === 'list' && (
+            {!loading && shifts.length > 0 && viewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
@@ -478,7 +467,7 @@ const MyShifts = () => {
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
                     >
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="min-w-[1000px] w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Date</th>
@@ -544,54 +533,12 @@ const MyShifts = () => {
                         </div>
                     </motion.div>
 
-                    {/* Mobile List */}
-                    <div className="flex flex-col gap-3 md:hidden mb-4">
-                        {shifts.map((shift, index) => (
-                            <motion.div
-                                key={shift.id}
-                                initial={{ opacity: 0, y: 15 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => setSelectedShift(shift)}
-                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 active:scale-98 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                            >
-                                <div className="flex items-start justify-between mb-3">
-                                    <div>
-                                        <p className="font-bold text-gray-800">{formatShortDate(shift.start_time)}</p>
-                                        <p className="text-xs text-gray-400">{new Date(shift.start_time).toLocaleDateString('en-US', { weekday: 'long' })}</p>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-sm font-bold border border-blue-100">
-                                            {formatHours(shift.worked_hours)}
-                                        </span>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${shift.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                                            {shift.is_active ? 'Active' : 'Done'}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="bg-green-50 rounded-xl p-2.5 text-center border border-green-100">
-                                        <p className="text-xs text-green-600 font-medium mb-0.5">In</p>
-                                        <p className="text-sm font-bold text-green-700">{formatTime(shift.start_time)}</p>
-                                    </div>
-                                    <div className="bg-red-50 rounded-xl p-2.5 text-center border border-red-100">
-                                        <p className="text-xs text-red-500 font-medium mb-0.5">Out</p>
-                                        <p className="text-sm font-bold text-red-600">{formatTime(shift.end_time)}</p>
-                                    </div>
-                                    <div className="bg-gray-50 rounded-xl p-2.5 text-center border border-gray-100">
-                                        <p className="text-xs text-gray-500 font-medium mb-0.5">Break</p>
-                                        <p className="text-sm font-bold text-gray-700">{formatDuration(shift.break_minutes)}</p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
                 </>
             )}
 
             {/* Grid View */}
-            {!loading && shifts.length > 0 && viewMode === 'grid' && (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-4">
+            {!loading && shifts.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
                     {shifts.map((shift, index) => (
                         <motion.div
                             key={shift.id}
@@ -599,39 +546,42 @@ const MyShifts = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.04 }}
                             onClick={() => setSelectedShift(shift)}
-                            className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                         >
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                                    <FaClock className="text-white text-sm" />
+                            <div className="flex items-start justify-between gap-3 mb-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                                        <FaClock className="text-white text-base" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-bold text-gray-800 text-sm">{formatShortDate(shift.start_time)}</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">{new Date(shift.start_time).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                                    </div>
                                 </div>
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${shift.is_active ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
                                     {shift.is_active ? 'Active' : 'Done'}
                                 </span>
                             </div>
 
-                            <p className="font-bold text-gray-800 text-base">{formatShortDate(shift.start_time)}</p>
-                            <p className="text-xs text-gray-400 mb-3">{new Date(shift.start_time).toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                            <div className="text-2xl font-bold text-blue-600 mb-4">{formatHours(shift.worked_hours)}</div>
 
-                            <div className="text-2xl font-bold text-blue-600 mb-3">{formatHours(shift.worked_hours)}</div>
-
-                            <div className="space-y-1.5 text-xs">
-                                <div className="flex justify-between">
+                            <div className="grid grid-cols-2 gap-2.5 text-xs">
+                                <div className="rounded-xl bg-gray-50 p-2.5">
                                     <span className="text-gray-400 flex items-center gap-1"><FaPlay size={8} className="text-green-500" />In</span>
-                                    <span className="font-semibold text-green-700">{formatTime(shift.start_time)}</span>
+                                    <div className="font-semibold text-green-700 mt-1">{formatTime(shift.start_time)}</div>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="rounded-xl bg-gray-50 p-2.5">
                                     <span className="text-gray-400 flex items-center gap-1"><FaStop size={8} className="text-red-400" />Out</span>
-                                    <span className="font-semibold text-red-600">{formatTime(shift.end_time)}</span>
+                                    <div className="font-semibold text-red-600 mt-1">{formatTime(shift.end_time)}</div>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="rounded-xl bg-gray-50 p-2.5 col-span-2">
                                     <span className="text-gray-400 flex items-center gap-1"><FaMoon size={8} className="text-purple-400" />Break</span>
-                                    <span className="font-semibold text-gray-600">{formatDuration(shift.break_minutes)}</span>
+                                    <div className="font-semibold text-gray-600 mt-1">{formatDuration(shift.break_minutes)}</div>
                                 </div>
                             </div>
                         </motion.div>
                     ))}
-                </div>
+                </ManagementGrid>
             )}
 
             {/* Pagination */}

@@ -17,6 +17,8 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { toast } from 'react-toastify';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -967,7 +969,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
             className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
             <div className="flex items-start gap-3 mb-4">
-                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md`}>
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
                     <span className="text-white font-bold text-base">{getInitials(salary.employee?.name)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -980,7 +982,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
                 )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
                     <p className="text-xs text-blue-500">Base</p>
@@ -988,6 +990,10 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
                 <div className="bg-purple-50 border border-purple-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
                     <p className="text-xs text-purple-500">Net</p>
+                </div>
+                <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
+                    <p className="text-sm font-bold text-green-700">{salary.components?.length || 0}</p>
+                    <p className="text-xs text-green-500">Items</p>
                 </div>
             </div>
 
@@ -1002,7 +1008,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
                 </span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-t border-gray-100 pt-3">
                 <div className="flex gap-1">
                     {salary.components?.slice(0, 2).map((comp, idx) => (
                         <SalaryBadge key={idx} type={comp.type} value={comp.code} />
@@ -1045,7 +1051,7 @@ const SalaryManagement = () => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('table');
     const [showHistory, setShowHistory] = useState(false);
     const [selectedSalary, setSelectedSalary] = useState(null);
     const [showAssignModal, setShowAssignModal] = useState(false);
@@ -1242,20 +1248,7 @@ const SalaryManagement = () => {
                         {debouncedSearch && <span className="ml-1 text-green-600">· "{debouncedSearch}"</span>}
                         {showHistory && <span className="ml-1 text-purple-600">· Showing history</span>}
                     </p>
-                    <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaTh size={13} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <FaListUl size={13} />
-                        </button>
-                    </div>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             )}
 
@@ -1291,9 +1284,9 @@ const SalaryManagement = () => {
                 </motion.div>
             )}
 
-            {/* Grid View */}
-            {!loading && salaries.length > 0 && viewMode === 'grid' && (
-                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+            {/* Card View */}
+            {!loading && salaries.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
                     {salaries.map((salary, index) => (
                         <SalaryCard
                             key={salary.salary_id}
@@ -1309,11 +1302,11 @@ const SalaryManagement = () => {
                             onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                         />
                     ))}
-                </div>
+                </ManagementGrid>
             )}
 
-            {/* List View */}
-            {!loading && salaries.length > 0 && viewMode === 'list' && (
+            {/* Table View */}
+            {!loading && salaries.length > 0 && viewMode === 'table' && (
                 <>
                     {/* Desktop Table */}
                     <motion.div
@@ -1322,7 +1315,7 @@ const SalaryManagement = () => {
                         className="hidden md:block bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-4"
                     >
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left text-gray-700">
+                            <table className="min-w-[980px] w-full text-sm text-left text-gray-700">
                                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
                                         <th className="px-6 py-4">Employee</th>
@@ -1409,7 +1402,8 @@ const SalaryManagement = () => {
                         </div>
                     </motion.div>
 
-                    {/* Mobile List Cards */}
+                    {false && (<>
+                    {/* Mobile Cards */}
                     <div className="flex flex-col gap-3 md:hidden mb-4">
                         {salaries.map((salary, index) => {
                             const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
@@ -1478,6 +1472,7 @@ const SalaryManagement = () => {
                             );
                         })}
                     </div>
+                    </>)}
                 </>
             )}
 

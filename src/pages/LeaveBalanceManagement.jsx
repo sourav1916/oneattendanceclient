@@ -17,6 +17,8 @@ import {
   FaEye,
   FaSpinner,
   FaChevronDown,
+  FaTh,
+  FaListUl,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -24,6 +26,8 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 const ITEMS_PER_PAGE = 10;
 const YEAR_OPTIONS = [2024, 2025, 2026, 2027];
@@ -384,7 +388,7 @@ const MobileBalanceCard = ({
       key={getBalanceKey(balance)}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-slate-100 bg-white p-5 shadow-lg shadow-slate-200/40"
+      className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -482,9 +486,7 @@ const LeaveBalanceManagement = () => {
   const [modalMode, setModalMode] = useState('assign');
   const [selectedBalance, setSelectedBalance] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1280
-  );
+  const [viewMode, setViewMode] = useState('table');
 
   // State for searchable selects
   const [employees, setEmployees] = useState([]);
@@ -506,12 +508,6 @@ const LeaveBalanceManagement = () => {
     leave_config_id: '',
     total_allocated: 0,
   });
-
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Fetch employees with search
   const fetchEmployees = useCallback(async (search = '') => {
@@ -800,12 +796,12 @@ const LeaveBalanceManagement = () => {
     [balances]
   );
 
-  const showEmployee = windowWidth >= 1360;
-  const showCode = windowWidth >= 1180;
-  const showYear = windowWidth >= 920;
-  const showUsed = windowWidth >= 1040;
-  const showPaid = windowWidth >= 1260;
-  const showMax = windowWidth >= 1460;
+  const showEmployee = viewMode === 'table';
+  const showCode = viewMode === 'table';
+  const showYear = viewMode === 'table';
+  const showUsed = viewMode === 'table';
+  const showPaid = viewMode === 'table';
+  const showMax = viewMode === 'table';
   const desktopColumnCount =
     4 +
     Number(showEmployee) +
@@ -949,13 +945,18 @@ const LeaveBalanceManagement = () => {
           </motion.div>
         ) : (
           <>
+            {/* View Toggle */}
+            <div className="mb-6 flex justify-end">
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+            </div>
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-            className="hidden overflow-visible rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 md:block"
+              className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50`}
             >
               <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full text-left text-sm text-slate-700">
+                <table className="w-full min-w-[1460px] text-left text-sm text-slate-700">
                   <thead className="bg-slate-50/80 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     <tr>
                       {showEmployee && <th className="px-5 py-4">Employee</th>}
@@ -1068,7 +1069,7 @@ const LeaveBalanceManagement = () => {
               </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            <div className={`${viewMode === 'card' ? 'grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4' : 'hidden'}`}>
               {loading ? (
                 <div className="rounded-3xl border border-slate-100 bg-white px-6 py-14 text-center shadow-lg shadow-slate-200/40">
                   <div className="flex flex-col items-center gap-3">

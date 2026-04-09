@@ -7,7 +7,8 @@ import {
     FaInfoCircle, FaEye, FaSpinner, FaChevronLeft,
     FaChevronRight, FaHourglassStart, FaHourglassEnd, FaCheck,
     FaBan, FaComment, FaHistory, FaUserCheck,
-    FaEllipsisV, FaFilter, FaCalendarAlt, FaEnvelope, FaIdCard
+    FaEllipsisV, FaFilter, FaCalendarAlt, FaEnvelope, FaIdCard,
+    FaTh, FaListUl
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -15,6 +16,8 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -221,7 +224,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-lg p-4 border border-amber-100"
+            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -306,7 +309,7 @@ const PendingAttendance = ({ companyId }) => {
     const [showNotesModal, setShowNotesModal] = useState(false);
     const [selectedAction, setSelectedAction] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+    const [viewMode, setViewMode] = useState('table');
     const navigate = useNavigate();
 
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
@@ -318,29 +321,9 @@ const PendingAttendance = ({ companyId }) => {
     const rejectAccess = checkActionAccess('pendingAttendance', 'reject');
     const pendingReviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
 
-    // Handle window resize with debounce
-    useEffect(() => {
-        let timeoutId;
-        const handleResize = () => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => setWindowWidth(window.innerWidth), 150);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            clearTimeout(timeoutId);
-        };
-    }, []);
-
-    // Responsive breakpoints
-    const isMobile = windowWidth < 768;
-    const isTablet = windowWidth >= 768 && windowWidth < 1024;
-    const isDesktop = windowWidth >= 1024;
-
-    // Show/hide columns based on screen width
-    const showEmail = isDesktop;
-    const showMethod = isDesktop;
-    const showDateTime = !isMobile;
+    const showEmail = viewMode === 'table';
+    const showMethod = viewMode === 'table';
+    const showDateTime = viewMode === 'table';
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -529,6 +512,11 @@ const PendingAttendance = ({ companyId }) => {
                         </div>
                     </motion.div>
 
+                    {/* View Toggle */}
+                    <div className="flex justify-end mb-4 sm:mb-5 md:mb-6">
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                    </div>
+
                     {/* Search */}
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
@@ -564,15 +552,14 @@ const PendingAttendance = ({ companyId }) => {
                         </div>
                     ) : (
                         <>
-                            {/* Desktop/Tablet Table View */}
-                            {!isMobile && (
+                            {viewMode === 'table' && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-visible"
                                 >
                                     <div className="overflow-x-auto overflow-y-visible">
-                                        <table className="w-full">
+                                        <table className="w-full min-w-[1100px]">
                                             <thead className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200">
                                                 <tr>
                                                     <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -690,9 +677,8 @@ const PendingAttendance = ({ companyId }) => {
 
                                 </motion.div>
                             )}
-                            {/* Mobile Card View */}
-                            {isMobile && (
-                                <div className="space-y-3 sm:space-y-4">
+                            {viewMode === 'card' && (
+                                <ManagementGrid viewMode={viewMode}>
                                     {attendances.map((attendance) => (
                                         <PendingAttendanceCard
                                             key={attendance.id}
@@ -708,7 +694,7 @@ const PendingAttendance = ({ companyId }) => {
                                             reviewMessage={pendingReviewMessage}
                                         />
                                     ))}
-                                </div>
+                                </ManagementGrid>
                             )}
                             {pagination.total > 0 && (
                                 <Pagination

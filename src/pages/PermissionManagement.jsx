@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaSearch, FaSpinner,
   FaShieldAlt, FaPlus, FaInfoCircle, FaCode,
-  FaLayerGroup, FaTag, FaAlignLeft, FaBan, FaChevronLeft, FaChevronRight
+  FaLayerGroup, FaTag, FaAlignLeft, FaBan, FaChevronLeft, FaChevronRight,
+  FaTh, FaListUl
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -11,6 +12,8 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -170,6 +173,7 @@ const PermissionManagement = () => {
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [viewMode, setViewMode] = useState('table');
 
   const { pagination, updatePagination, goToPage } = usePagination(1, 6);
   const permsFetched = useRef(false);
@@ -499,6 +503,11 @@ const PermissionManagement = () => {
         </div>
       </motion.div>
 
+      {/* View Toggle */}
+      <div className="flex justify-end mb-6">
+        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+      </div>
+
       {/* Loading skeleton */}
       {loading && packages.length === 0 && (
         <>
@@ -551,13 +560,13 @@ const PermissionManagement = () => {
         </motion.div>
       )}
 
-      {/* Desktop Table + Mobile Cards */}
       {!loading && packages.length > 0 && (
         <>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="hidden md:block bg-white rounded-2xl shadow-xl overflow-visible">
-            <div className="overflow-x-auto overflow-y-visible">
-              <table className="w-full text-sm text-left text-gray-700">
+          {viewMode === 'table' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="bg-white rounded-2xl shadow-xl overflow-visible">
+              <div className="overflow-x-auto overflow-y-visible">
+                <table className="w-full min-w-[980px] text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
                     <th className="px-6 py-4">Package Name</th>
@@ -635,14 +644,16 @@ const PermissionManagement = () => {
                   ))}
                 </tbody>
               </table>
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
+          )}
 
-          <div className="grid grid-cols-1 gap-4 md:hidden">
+          {viewMode === 'card' && (
+            <ManagementGrid viewMode={viewMode}>
             {packages.map((pkg, index) => (
               <motion.div key={pkg.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-2xl shadow-xl p-5 border border-gray-100 hover:shadow-2xl transition-all duration-300"
+                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className="flex items-start gap-4">
                   <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl flex-shrink-0"><FaShieldAlt className="text-white text-xl" /></div>
@@ -673,7 +684,8 @@ const PermissionManagement = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
+            </ManagementGrid>
+          )}
 
           <Pagination
             currentPage={pagination.page} totalItems={pagination.total}

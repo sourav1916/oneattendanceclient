@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaEye, FaEdit, FaCheck, FaTrash, FaTh, FaListUl } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
 import { toast } from 'react-toastify';
@@ -6,6 +7,8 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (d) =>
@@ -271,7 +274,7 @@ function MobileLeaveCard({
     <motion.div
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative overflow-visible rounded-2xl border border-slate-100 bg-white p-3 shadow-sm"
+      className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
     >
       {/* Header row: Avatar + Name + Menu */}
       <div className="flex items-start gap-2">
@@ -367,6 +370,7 @@ const LeaveManagement = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [viewMode, setViewMode] = useState('table');
   const { pagination, updatePagination, goToPage } = usePagination(1, 10);
 
   // Modal states
@@ -779,8 +783,12 @@ const LeaveManagement = () => {
           ))}
         </div>
 
+        <div className="mb-4 flex justify-end">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {/* ── Main Card ── */}
-        <div className="overflow-visible rounded-2xl border border-slate-200 bg-white shadow-sm sm:rounded-3xl">
+        <div className="overflow-visible rounded-2xl border border-slate-200 shadow-sm sm:rounded-3xl">
           <div className="flex flex-col gap-1 border-b border-slate-100 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
             <div>
               <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
@@ -802,7 +810,7 @@ const LeaveManagement = () => {
           {/* ═══════════════════
             DESKTOP TABLE (md+)
           ═══════════════════ */}
-          <div className="hidden md:block overflow-x-auto overflow-y-visible">
+          <div className={`${viewMode === 'table' ? 'block' : 'hidden'} overflow-x-auto overflow-y-visible`}>
             <table className="w-full min-w-[500px]">
               <colgroup>
                 <col className="w-[35%] lg:w-[26%]" />
@@ -938,7 +946,7 @@ const LeaveManagement = () => {
             MOBILE CARDS (< md)
             Optimized for 280px-400px
           ═══════════════════ */}
-          <div className="grid grid-cols-1 gap-3 p-3 md:hidden sm:p-4">
+          <ManagementGrid viewMode={viewMode} className="p-3 sm:p-4">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="space-y-2.5 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
@@ -978,7 +986,7 @@ const LeaveManagement = () => {
                 />
               ))
             )}
-          </div>
+          </ManagementGrid>
         </div>
 
         {/* ── Pagination ── */}

@@ -4,7 +4,7 @@ import {
   FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
   FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
   FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
-  FaSearch, FaTimes, FaInfoCircle, FaUserCircle
+  FaSearch, FaTimes, FaInfoCircle, FaUserCircle, FaTh, FaListUl
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
@@ -14,6 +14,8 @@ import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
 import ModalScrollLock from "../components/ModalScrollLock";
 import ActionMenu from "../components/ActionMenu";
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
@@ -89,6 +91,7 @@ export default function CompanyInvites() {
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [searchTerm, setSearchTerm]         = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [viewMode, setViewMode]             = useState("table");
   const [isEditModalOpen, setIsEditModalOpen]   = useState(false);
   const [editingInvite, setEditingInvite]       = useState(null);
   const [isInitialLoad, setIsInitialLoad]       = useState(true);
@@ -424,6 +427,11 @@ export default function CompanyInvites() {
           </div>
         </motion.div>
 
+        {/* View Toggle */}
+        <div className="flex justify-end mb-6">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {/* Loading skeleton */}
         {loading && !invites.length && <Skeleton />}
 
@@ -439,13 +447,13 @@ export default function CompanyInvites() {
           </motion.div>
         )}
 
-        {/* Table (Desktop) */}
         {!loading && invites.length > 0 && (
           <>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="hidden md:block bg-white rounded-2xl shadow-xl overflow-visible">
-              <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full text-sm text-left text-gray-700">
+            {viewMode === "table" && (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="bg-white rounded-2xl shadow-xl overflow-visible">
+                <div className="overflow-x-auto overflow-y-visible">
+                  <table className="w-full min-w-[1050px] text-sm text-left text-gray-700">
                   <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                     <tr>
                       {visibleColumns.showUser        && <th className="px-6 py-4">User</th>}
@@ -549,18 +557,19 @@ export default function CompanyInvites() {
                     })}
                   </tbody>
                 </table>
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            )}
 
-            {/* Cards (Mobile) */}
-            <div className="grid grid-cols-1 gap-4 md:hidden">
+            {viewMode === "card" && (
+              <ManagementGrid viewMode={viewMode}>
               {invites.map((invite, index) => {
                 const status     = getStatusBadge(invite.status, invite.expires_at);
                 const StatusIcon = status.icon;
                 return (
                   <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
+                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
                       <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
                         <FaUserCircle className="text-white text-3xl" />
@@ -613,7 +622,8 @@ export default function CompanyInvites() {
                   </motion.div>
                 );
               })}
-            </div>
+              </ManagementGrid>
+            )}
 
             <Pagination
               currentPage={pagination.page}

@@ -20,6 +20,8 @@ import {
   FaToggleOn,
   FaToggleOff,
   FaSpinner,
+  FaTh,
+  FaListUl,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -27,6 +29,8 @@ import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -588,6 +592,7 @@ const LeaveConfigManagement = () => {
   const [viewModal, setViewModal] = useState({ open: false, record: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, record: null });
   const [deleting, setDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState('table');
   const constantsLoadedRef = useRef(false);
   const initialFetchStartedRef = useRef(false);
   const fetchInProgress = useRef(false);
@@ -599,19 +604,6 @@ const LeaveConfigManagement = () => {
   const createMessage = getAccessMessage(createAccess);
   const updateMessage = getAccessMessage(updateAccess);
   const deleteMessage = getAccessMessage(deleteAccess);
-
-  // Responsive column visibility
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  );
-
-
-  // Window resize listener
-  useEffect(() => {
-    const handler = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -746,11 +738,11 @@ const LeaveConfigManagement = () => {
 
   // Responsive: progressively hide columns so the table NEVER overflows
   // At 768px only Code, Name, Type, Max Balance, Actions remain (5 cols = fits fine)
-  const showStatus = windowWidth >= 1140;
-  const showCarryFwd = windowWidth >= 1060;
-  const showAccrual = windowWidth >= 960;
-  const showHalfDay = windowWidth >= 880;
-  const showWeekends = windowWidth >= 800;
+  const showStatus = viewMode === 'table';
+  const showCarryFwd = viewMode === 'table';
+  const showAccrual = viewMode === 'table';
+  const showHalfDay = viewMode === 'table';
+  const showWeekends = viewMode === 'table';
 
   if (loading && records.length === 0) {
     return (
@@ -818,6 +810,11 @@ const LeaveConfigManagement = () => {
         </motion.div>
 
         {/* ── Error ── */}
+        {/* View Toggle */}
+        <div className="flex justify-end mb-6">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-red-700 text-sm">
             <FaExclamationCircle />
@@ -831,9 +828,10 @@ const LeaveConfigManagement = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="hidden rounded-2xl border border-gray-100 bg-white shadow-xl md:block"
+            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl border border-gray-100 bg-white shadow-xl`}
           >
-            <table className="w-full text-left text-sm text-gray-700">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[1100px] text-left text-sm text-gray-700">
               <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                 <tr>
                   <th className="px-5 py-4">Code</th>
@@ -899,18 +897,19 @@ const LeaveConfigManagement = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </motion.div>
         )}
 
         {records.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:hidden">
+          <ManagementGrid viewMode={viewMode}>
             {records.map((record, index) => (
               <motion.div
                 key={record.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="rounded-2xl border border-gray-100 bg-white p-5 shadow-md"
+                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -971,7 +970,7 @@ const LeaveConfigManagement = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
+          </ManagementGrid>
         )}
 
         {/* ── Pagination ── */}
