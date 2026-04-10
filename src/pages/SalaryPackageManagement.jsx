@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    FaPlus, FaEdit, FaTrash, FaCog, FaChevronDown,
+    FaPlus, FaEdit, FaTrash, FaCog, FaCalendarAlt,
     FaTimes, FaCheck, FaSpinner, FaBriefcase,
     FaListUl, FaTh, FaExclamationTriangle,
     FaLayerGroup, FaArrowUp, FaArrowDown,
-    FaEye, FaSearch, FaCheckCircle, FaInfoCircle
+    FaEye, FaSearch, FaCheckCircle, FaToggleOn
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
