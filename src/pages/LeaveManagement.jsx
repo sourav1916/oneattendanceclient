@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FaEye, FaEdit, FaCheck, FaTrash, FaEllipsisV, FaSpinner, FaTimes, FaPlus, FaCloudUploadAlt } from 'react-icons/fa';
+import { FaEye, FaEdit, FaCheck, FaTrash, FaSpinner, FaTimes, FaPlus, FaCloudUploadAlt } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
 import { toast } from 'react-toastify';
@@ -8,6 +8,7 @@ import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ActionMenu from '../components/ActionMenu';
 
 // ─── Modal Variants ────────────────────────────────────────────────────────────
 const modalVariants = {
@@ -126,62 +127,29 @@ const InfoItem = ({ icon, label, value }) => (
     </div>
 );
 
-// ─── Custom Action Menu ─────────────────────────────────────────────────────
-function CustomActionMenu({
-    leave,
-    onView,
-    onEdit,
-    onApprove,
-    onReject,
-    editDisabled = false,
-    approveDisabled = false,
-    rejectDisabled = false,
-    editMessage = '',
-    reviewMessage = '',
-}) {
-    const menuRef = useRef(null);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-
-    const canAct = leave?.status === 'pending';
-    const canEdit = leave?.status === 'pending';
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownOpen && menuRef.current && !menuRef.current.contains(event.target)) {
-                setDropdownOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [dropdownOpen]);
-
-    const handleToggle = () => setDropdownOpen(!dropdownOpen);
-
-    const handleAction = (action) => {
-        setDropdownOpen(false);
-        action();
-    };
-
-    const actions = [
+// ─── Shared ActionMenu action builder ──────────────────────────────────────────
+function buildLeaveActions({ leave, onView, onEdit, onApprove, onReject, editDisabled, approveDisabled, rejectDisabled, editMessage, reviewMessage }) {
+    const isPending = leave?.status === 'pending';
+    return [
         {
             label: 'View Details',
             icon: <FaEye size={13} />,
-            onClick: () => handleAction(() => onView(leave)),
+            onClick: () => onView(leave),
             className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
         },
-        ...(canEdit ? [{
-            label: 'Edit Leave',
-            icon: <FaEdit size={13} />,
-            onClick: () => handleAction(() => onEdit(leave)),
-            disabled: editDisabled,
-            title: editDisabled ? editMessage : '',
-            className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-        }] : []),
-        ...(canAct ? [
+        ...(isPending ? [
+            {
+                label: 'Edit Leave',
+                icon: <FaEdit size={13} />,
+                onClick: () => onEdit(leave),
+                disabled: editDisabled,
+                title: editDisabled ? editMessage : '',
+                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+            },
             {
                 label: 'Approve',
                 icon: <FaCheck size={13} />,
-                onClick: () => handleAction(() => onApprove(leave)),
+                onClick: () => onApprove(leave),
                 disabled: approveDisabled,
                 title: approveDisabled ? reviewMessage : '',
                 className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
@@ -189,54 +157,13 @@ function CustomActionMenu({
             {
                 label: 'Reject',
                 icon: <FaTrash size={13} />,
-                onClick: () => handleAction(() => onReject(leave)),
+                onClick: () => onReject(leave),
                 disabled: rejectDisabled,
                 title: rejectDisabled ? reviewMessage : '',
                 className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
             }
         ] : [])
     ];
-
-    if (actions.length === 0) return null;
-
-    return (
-        <div className="relative" ref={menuRef}>
-            <button
-                onClick={handleToggle}
-                className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center hover:bg-gray-100 hover:border-gray-300 transition-all duration-200"
-            >
-                <FaEllipsisV size={12} className="text-gray-500" />
-            </button>
-
-            <AnimatePresence>
-                {dropdownOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
-                    >
-                        <div className="py-1">
-                            {actions.map((action, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={action.onClick}
-                                    disabled={action.disabled}
-                                    title={action.title}
-                                    className={`w-full px-4 py-2.5 text-left text-sm font-medium flex items-center gap-3 transition-all duration-200 ${action.disabled ? 'opacity-50 cursor-not-allowed' : action.className || 'text-gray-700 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <span className="flex-shrink-0">{action.icon}</span>
-                                    <span>{action.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
 }
 
 // ─── Mobile Leave Card ─────────────────────────────────────────────────────────
@@ -263,17 +190,9 @@ function MobileLeaveCard({
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="font-bold text-gray-800 text-sm truncate">{leave.employee_name}</h3>
-                        <CustomActionMenu
-                            leave={leave}
-                            onView={onView}
-                            onEdit={onEdit}
-                            onApprove={onApprove}
-                            onReject={onReject}
-                            editDisabled={editDisabled}
-                            approveDisabled={approveDisabled}
-                            rejectDisabled={rejectDisabled}
-                            editMessage={editMessage}
-                            reviewMessage={reviewMessage}
+                        <ActionMenu
+                            menuId={leave.id}
+                            actions={buildLeaveActions({ leave, onView, onEdit, onApprove, onReject, editDisabled, approveDisabled, rejectDisabled, editMessage, reviewMessage })}
                         />
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{leave.employee_code}</p>
@@ -353,6 +272,10 @@ const LeaveManagement = () => {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const toggleActionMenu = useCallback((id) => {
+        setActiveActionMenu((prev) => (prev === id ? null : id));
+    }, []);
 
     // Modal states
     const [detailLeave, setDetailLeave] = useState(null);
@@ -850,17 +773,22 @@ const LeaveManagement = () => {
                                                 </td>
                                             )}
                                             <td className="px-6 py-4 text-right">
-                                                <CustomActionMenu
-                                                    leave={leave}
-                                                    onView={handleView}
-                                                    onEdit={handleEdit}
-                                                    onApprove={handleApproveOpen}
-                                                    onReject={handleRejectOpen}
-                                                    editDisabled={updateAccess.disabled}
-                                                    approveDisabled={approveAccess.disabled}
-                                                    rejectDisabled={rejectAccess.disabled}
-                                                    editMessage={updateMessage}
-                                                    reviewMessage={reviewMessage}
+                                                <ActionMenu
+                                                    menuId={leave.id}
+                                                    activeId={activeActionMenu}
+                                                    onToggle={(e, id) => toggleActionMenu(id)}
+                                                    actions={buildLeaveActions({
+                                                        leave,
+                                                        onView: handleView,
+                                                        onEdit: handleEdit,
+                                                        onApprove: handleApproveOpen,
+                                                        onReject: handleRejectOpen,
+                                                        editDisabled: updateAccess.disabled,
+                                                        approveDisabled: approveAccess.disabled,
+                                                        rejectDisabled: rejectAccess.disabled,
+                                                        editMessage: updateMessage,
+                                                        reviewMessage,
+                                                    })}
                                                 />
                                             </td>
                                         </motion.tr>
