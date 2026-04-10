@@ -243,11 +243,11 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                     <ActionMenu
                         menuId={attendance.id}
                         activeId={activeMenuId}
-                        onToggle={onToggleMenu}
+                        onToggle={(e, id) => onToggleMenu(id)}
                         actions={[
                             {
                                 label: 'Approve',
-                                icon: processingId === attendance.id ? FaSpinner : FaCheck,
+                                icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
                                 onClick: () => onApprove(attendance.id),
                                 disabled: processingId === attendance.id || approveDisabled,
                                 title: approveDisabled ? reviewMessage : '',
@@ -255,7 +255,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                             },
                             {
                                 label: 'Reject',
-                                icon: processingId === attendance.id ? FaSpinner : FaBan,
+                                icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
                                 onClick: () => onReject(attendance.id),
                                 disabled: processingId === attendance.id || rejectDisabled,
                                 title: rejectDisabled ? reviewMessage : '',
@@ -263,7 +263,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                             },
                             {
                                 label: 'View Details',
-                                icon: FaEye,
+                                icon: <FaEye size={12} />,
                                 onClick: () => onViewDetails(attendance),
                                 className: 'text-blue-600 hover:bg-blue-50'
                             }
@@ -650,7 +650,7 @@ const PendingAttendance = ({ companyId }) => {
                                                                 <ActionMenu
                                                                     menuId={attendance.id}
                                                                     activeId={activeActionMenu}
-                                                                    onToggle={toggleActionMenu}
+                                                                    onToggle={(e, id) => toggleActionMenu(id)}
                                                                     actions={[
                                                                         {
                                                                             label: 'Approve',

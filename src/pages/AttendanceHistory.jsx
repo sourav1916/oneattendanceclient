@@ -8,19 +8,19 @@ import {
   FaExclamationCircle,
   FaEye,
   FaHistory,
-  FaHourglassEnd,
+  FaTimesCircle,
   FaHourglassStart,
   FaMapMarkerAlt,
   FaSearch,
   FaSignInAlt,
   FaSignOutAlt,
-  FaStickyNote,
-  FaTimes,
-  FaTimesCircle,
   FaCoffee,
   FaWifi,
-  FaTh,
-  FaListUl
+  FaTimes,
+  FaListUl,
+  FaSpinner,
+  FaCheck,
+  FaBan
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
@@ -28,14 +28,14 @@ import ModalScrollLock from '../components/ModalScrollLock';
 import apiCall from '../utils/api';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ActionMenu from '../components/ActionMenu';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
 
-const FETCH_LIMIT = 200;
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
-const fetchAttendanceAPI = async ({ companyId }) => {
-  const response = await apiCall(`/attendance/my?page=1&limit=${FETCH_LIMIT}`, 'GET', null, companyId);
+const fetchAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE }) => {
+  const response = await apiCall(`/attendance/my?page=${page}&limit=${limit}`, 'GET', null, companyId);
 
   if (!response.ok) {
     throw new Error(`Server error: ${response.status} ${response.statusText}`);
@@ -91,7 +91,7 @@ const deriveDailyRecords = (punches) => {
       // Derive status
       let status = 'Absent';
       if (inPunch && outPunch) status = 'Present';
-      else if (inPunch) status = 'Present'; // clocked in, not yet out
+      else if (inPunch) status = 'Present';
 
       // Location from first available punch
       const locPunch = inPunch || sorted[0];
@@ -105,22 +105,22 @@ const deriveDailyRecords = (punches) => {
       const mode = sorted[0]?.attendance?.mode || '-';
 
       // API-level status (pending / approved / rejected)
-      const apiStatus = sorted[0]?.status || '-';
+      const apiStatus = sorted[0]?.status || 'pending';
 
       return {
-        id: sorted[0]?.id,
+        id: sorted[0]?.id || date,
         date,
-        day: new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' }),
+        day: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
         clock_in: inPunch ? formatTimestamp(inPunch.punch_time) : '--:-- --',
         clock_out: outPunch ? formatTimestamp(outPunch.punch_time) : '--:-- --',
         status,
         api_status: apiStatus,
-        location,
+        location: location || 'N/A',
         worked_hours: workedHours,
         breaks: breakStarts.length,
         method,
         mode,
-        punches: sorted, // raw punches for detail modal
+        punches: sorted,
       };
     })
     .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -130,7 +130,8 @@ const deriveDailyRecords = (punches) => {
 
 const formatTimestamp = (iso) => {
   if (!iso) return '--:-- --';
-  return new Date(iso).toLocaleTimeString('en-US', {
+  const date = new Date(iso);
+  return date.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
@@ -139,7 +140,8 @@ const formatTimestamp = (iso) => {
 
 const formatDateFull = (dateStr) => {
   if (!dateStr) return 'N/A';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -148,9 +150,11 @@ const formatDateFull = (dateStr) => {
 
 const formatDateTimeFull = (iso) => {
   if (!iso) return 'N/A';
-  return new Date(iso).toLocaleString('en-US', {
+  const date = new Date(iso);
+  return date.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
@@ -179,12 +183,12 @@ const getStatusBadge = (status) => {
 const getApiStatusBadge = (status) => {
   switch (status?.toLowerCase()) {
     case 'approved':
-      return 'bg-green-100 text-green-700 border border-green-200';
+      return { icon: FaCheckCircle, className: 'bg-green-100 text-green-700 border border-green-200', text: 'Approved' };
     case 'rejected':
-      return 'bg-red-100 text-red-700 border border-red-200';
+      return { icon: FaBan, className: 'bg-red-100 text-red-700 border border-red-200', text: 'Rejected' };
     case 'pending':
     default:
-      return 'bg-yellow-100 text-yellow-700 border border-yellow-200';
+      return { icon: FaClock, className: 'bg-yellow-100 text-yellow-700 border border-yellow-200', text: 'Pending' };
   }
 };
 
@@ -223,6 +227,8 @@ const DetailsModal = ({ record, onClose }) => {
 
   const statusStyle = getStatusBadge(record.status);
   const StatusIcon = statusStyle.icon;
+  const apiStatusStyle = getApiStatusBadge(record.api_status);
+  const ApiStatusIcon = apiStatusStyle.icon;
 
   return (
     <AnimatePresence>
@@ -265,8 +271,9 @@ const DetailsModal = ({ record, onClose }) => {
                     <StatusIcon size={11} />
                     {record.status}
                   </span>
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium capitalize ${getApiStatusBadge(record.api_status)}`}>
-                    {record.api_status}
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium capitalize ${apiStatusStyle.className}`}>
+                    <ApiStatusIcon size={11} />
+                    {apiStatusStyle.text}
                   </span>
                 </div>
               </div>
@@ -293,6 +300,9 @@ const DetailsModal = ({ record, onClose }) => {
                 <div className="space-y-2">
                   {record.punches.map((punch) => {
                     const { label, color, icon: PunchIcon } = punchTypeLabel(punch.punch_type);
+                    const punchStatusStyle = getApiStatusBadge(punch.status);
+                    const PunchStatusIcon = punchStatusStyle.icon;
+                    
                     return (
                       <div
                         key={punch.id}
@@ -301,8 +311,9 @@ const DetailsModal = ({ record, onClose }) => {
                         <div className="flex flex-wrap items-center gap-2">
                           <PunchIcon className={`text-sm ${color}`} />
                           <span className="text-sm font-medium text-gray-700">{label}</span>
-                          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${getApiStatusBadge(punch.status)}`}>
-                            {punch.status}
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${punchStatusStyle.className}`}>
+                            <PunchStatusIcon size={8} />
+                            {punchStatusStyle.text}
                           </span>
                         </div>
                         <span className="break-words text-sm text-gray-500">{formatDateTimeFull(punch.punch_time)}</span>
@@ -343,7 +354,6 @@ const SkeletonLoader = () => (
 
 const AttendanceHistory = () => {
   const [records, setRecords] = useState([]);
-  const [allRecords, setAllRecords] = useState([]); // client-side search pool
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -354,8 +364,9 @@ const AttendanceHistory = () => {
   const [windowWidth, setWindowWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1440
   );
+  const [activeActionMenu, setActiveActionMenu] = useState(null);
   const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
-  const initialFetchStartedRef = useRef(false);
+  const [totalRecords, setTotalRecords] = useState(0);
   const fetchInProgressRef = useRef(false);
 
   // ── Debounce search ──────────────────────────────────────────────────────
@@ -371,8 +382,7 @@ const AttendanceHistory = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ── Resize ───────────────────────────────────────────────────────────────
-  // ── Fetch from real API ───────────────────────────────────────────────────
+  // ── Fetch from API with server-side pagination ───────────────────────────
   const fetchAttendance = useCallback(async () => {
     if (fetchInProgressRef.current) return;
     fetchInProgressRef.current = true;
@@ -383,10 +393,21 @@ const AttendanceHistory = () => {
       const company = JSON.parse(localStorage.getItem('company'));
       const result = await fetchAttendanceAPI({
         companyId: company?.id,
+        page: pagination.page,
+        limit: pagination.limit
       });
 
       const daily = deriveDailyRecords(result.data || []);
-      setAllRecords(daily);
+      setRecords(daily);
+      setTotalRecords(result.total || 0);
+      
+      updatePagination({
+        page: result.page || pagination.page,
+        limit: result.limit || pagination.limit,
+        total: result.total || 0,
+        total_pages: result.total_pages || 1,
+        is_last_page: result.page === result.total_pages
+      });
     } catch (err) {
       setError(err.message);
       toast.error(err.message || 'Failed to load attendance.');
@@ -394,48 +415,36 @@ const AttendanceHistory = () => {
       fetchInProgressRef.current = false;
       setLoading(false);
     }
-
-  }, []);
+  }, [pagination.page, pagination.limit, updatePagination]);
 
   useEffect(() => {
-    if (initialFetchStartedRef.current) return;
-    initialFetchStartedRef.current = true;
     fetchAttendance();
-  }, [fetchAttendance]);
+  }, [fetchAttendance, pagination.page]);
 
-  // ── Client-side search + pagination ──────────────────────────────────────
-  const filteredRecords = useMemo(() => {
-    if (!debouncedSearch) {
-      return allRecords;
-    }
-
-    const query = debouncedSearch.toLowerCase();
-    return allRecords.filter(
-      (record) =>
-        record.date.includes(debouncedSearch)
-        || record.status.toLowerCase().includes(query)
-        || record.location?.toLowerCase().includes(query)
-        || record.day.toLowerCase().includes(query)
-    );
-  }, [allRecords, debouncedSearch]);
-
-  useEffect(() => {
-    const startIndex = (pagination.page - 1) * pagination.limit;
-    setRecords(filteredRecords.slice(startIndex, startIndex + pagination.limit));
-    updatePagination({
-      page: pagination.page,
-      limit: pagination.limit,
-      total: filteredRecords.length,
-      total_pages: Math.ceil(filteredRecords.length / pagination.limit) || 1,
-      is_last_page: pagination.page >= (Math.ceil(filteredRecords.length / pagination.limit) || 1)
-    });
-  }, [filteredRecords, pagination.page, pagination.limit, updatePagination]);
-
+  // Reset to page 1 when search changes
   useEffect(() => {
     if (pagination.page !== 1) {
       goToPage(1);
+    } else {
+      fetchAttendance();
     }
-  }, [debouncedSearch, goToPage, pagination.page]);
+  }, [debouncedSearch]);
+
+  // Filter records client-side for search
+  const filteredRecords = useMemo(() => {
+    if (!debouncedSearch) {
+      return records;
+    }
+
+    const query = debouncedSearch.toLowerCase();
+    return records.filter(
+      (record) =>
+        record.date.includes(debouncedSearch) ||
+        record.status.toLowerCase().includes(query) ||
+        record.location?.toLowerCase().includes(query) ||
+        record.day.toLowerCase().includes(query)
+    );
+  }, [records, debouncedSearch]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
   const isTinyViewport = windowWidth < 450;
@@ -455,14 +464,26 @@ const AttendanceHistory = () => {
     setSelectedRecord(null);
   };
 
+  const toggleActionMenu = (menuId) => {
+    setActiveActionMenu((current) => (current === menuId ? null : menuId));
+  };
+
+  // Handle actions
+  const handleViewDetails = (record) => {
+    openDetails(record);
+    setActiveActionMenu(null);
+  };
+
   // ── Initial skeleton ──────────────────────────────────────────────────────
-  if (loading && allRecords.length === 0) {
+  if (loading && records.length === 0) {
     return (
       <div className="mx-auto min-h-screen max-w-7xl p-3 sm:p-6">
         <SkeletonLoader />
       </div>
     );
   }
+
+  const displayRecords = filteredRecords;
 
   return (
     <div className="min-h-screen p-3 font-sans md:p-6">
@@ -482,13 +503,13 @@ const AttendanceHistory = () => {
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end sm:gap-3">
             {loading && (
               <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-600 shadow-sm sm:px-4 sm:text-xs">
-                <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-400" />
-                Syncing…
+                <FaSpinner className="animate-spin" size={12} />
+                Loading...
               </span>
             )}
             <div className="rounded-full bg-white px-4 py-2 text-xs text-gray-600 shadow-md sm:px-5 sm:text-sm">
               <FaCalendarAlt className="mr-2 inline text-slate-400" />
-              {pagination.total} record{pagination.total !== 1 ? 's' : ''}
+              {totalRecords} record{totalRecords !== 1 ? 's' : ''}
             </div>
           </div>
         </motion.div>
@@ -521,11 +542,6 @@ const AttendanceHistory = () => {
         </motion.div>
 
         {/* ── Error ──────────────────────────────────────────────────────── */}
-        {/* View Toggle */}
-        <div className="flex justify-end mb-6">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-        </div>
-
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-red-700">
             <FaExclamationCircle />
@@ -540,14 +556,19 @@ const AttendanceHistory = () => {
           </div>
         )}
 
+        {/* View Toggle */}
+        <div className="flex justify-end mb-6">
+          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+        </div>
+
         {/* ── Desktop Table ───────────────────────────────────────────────── */}
-        {records.length > 0 && (
+        {displayRecords.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl bg-white shadow-xl`}
           >
-              <div className="overflow-x-auto overflow-y-visible">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="w-full text-left text-sm text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
@@ -559,14 +580,16 @@ const AttendanceHistory = () => {
                     <th className="px-5 py-4">Status</th>
                     {showLocation && <th className="px-5 py-4">Location</th>}
                     {showApiStatus && <th className="px-5 py-4">Approval</th>}
-                    <th className="px-5 py-4 text-center">Action</th>
+                    <th className="px-5 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y divide-gray-200">
-                  {records.map((record, index) => {
+                  {displayRecords.map((record, index) => {
                     const style = getStatusBadge(record.status);
                     const StatusIcon = style.icon;
+                    const apiStatusStyle = getApiStatusBadge(record.api_status);
+                    const ApiStatusIcon = apiStatusStyle.icon;
 
                     return (
                       <motion.tr
@@ -604,20 +627,26 @@ const AttendanceHistory = () => {
                         )}
                         {showApiStatus && (
                           <td className="px-5 py-4">
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${getApiStatusBadge(record.api_status)}`}>
-                              {record.api_status}
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${apiStatusStyle.className}`}>
+                              <ApiStatusIcon size={10} />
+                              {apiStatusStyle.text}
                             </span>
                           </td>
                         )}
                         <td className="px-5 py-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => openDetails(record)}
-                            className="rounded-xl bg-slate-50 px-3 py-1.5 text-slate-600 shadow-sm transition hover:bg-slate-100 hover:text-slate-900"
-                          >
-                            <FaEye className="mr-1 inline text-xs" />
-                            View
-                          </button>
+                          <ActionMenu
+                            menuId={record.id}
+                            activeId={activeActionMenu}
+                            onToggle={(e, id) => toggleActionMenu(id)}
+                            actions={[
+                              {
+                                label: 'View Details',
+                                icon: <FaEye size={14} />,
+                                onClick: () => handleViewDetails(record),
+                                className: 'text-blue-700 hover:bg-blue-50'
+                              }
+                            ]}
+                          />
                         </td>
                       </motion.tr>
                     );
@@ -629,11 +658,13 @@ const AttendanceHistory = () => {
         )}
 
         {/* ── Mobile Cards ────────────────────────────────────────────────── */}
-        {records.length > 0 && (
+        {displayRecords.length > 0 && (
           <ManagementGrid viewMode={viewMode}>
-            {records.map((record) => {
+            {displayRecords.map((record) => {
               const style = getStatusBadge(record.status);
               const StatusIcon = style.icon;
+              const apiStatusStyle = getApiStatusBadge(record.api_status);
+              const ApiStatusIcon = apiStatusStyle.icon;
 
               return (
                 <motion.div
@@ -647,25 +678,26 @@ const AttendanceHistory = () => {
                       <h3 className="break-words font-bold text-gray-800">{formatDateFull(record.date)}</h3>
                       <p className="text-xs text-gray-400">{record.day}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 max-[390px]:w-full max-[390px]:flex-row max-[390px]:items-center max-[390px]:justify-between">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${style.className}`}>
                         <StatusIcon size={11} />
                         {record.status}
                       </span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${getApiStatusBadge(record.api_status)}`}>
-                        {record.api_status}
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${apiStatusStyle.className}`}>
+                        <ApiStatusIcon size={8} />
+                        {apiStatusStyle.text}
                       </span>
                     </div>
                   </div>
 
                   <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600 max-[390px]:text-xs">
                     <div className="flex min-w-0 items-center gap-1">
-                      <FaSignInAlt className="text-emerald-500" />
-                      {record.clock_in}
+                      <FaSignInAlt className="text-emerald-500 shrink-0" />
+                      <span className="truncate">{record.clock_in}</span>
                     </div>
                     <div className="flex min-w-0 items-center gap-1">
-                      <FaSignOutAlt className="text-red-400" />
-                      {record.clock_out}
+                      <FaSignOutAlt className="text-red-400 shrink-0" />
+                      <span className="truncate">{record.clock_out}</span>
                     </div>
                     <div className="col-span-2 flex min-w-0 items-start gap-1">
                       <FaMapMarkerAlt className="mt-0.5 shrink-0 text-gray-400" />
@@ -698,7 +730,7 @@ const AttendanceHistory = () => {
         )}
 
         {/* ── Empty State ─────────────────────────────────────────────────── */}
-        {!loading && records.length === 0 && (
+        {!loading && displayRecords.length === 0 && (
           <motion.div
             initial={{ scale: 0.96 }}
             animate={{ scale: 1 }}
@@ -713,10 +745,10 @@ const AttendanceHistory = () => {
         )}
 
         {/* ── Pagination ──────────────────────────────────────────────────── */}
-        {pagination.total > 0 && (
+        {totalRecords > 0 && (
           <Pagination
             currentPage={pagination.page}
-            totalItems={pagination.total}
+            totalItems={totalRecords}
             itemsPerPage={pagination.limit}
             onPageChange={goToPage}
             variant={isTinyViewport ? 'minimal' : 'default'}

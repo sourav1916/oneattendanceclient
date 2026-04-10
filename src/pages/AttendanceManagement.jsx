@@ -285,7 +285,7 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
           <ActionMenu
             menuId={attendance.id}
             activeId={activeMenuId}
-            onToggle={onToggleMenu}
+            onToggle={(e, id) => onToggleMenu(id)}
             actions={[
               ...(attendance.status === 'pending' ? [
                 {

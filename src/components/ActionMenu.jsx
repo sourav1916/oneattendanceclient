@@ -113,48 +113,51 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
         )}
       </div>
 
-      {isMenuOpen && createPortal(
+      {createPortal(
         <AnimatePresence>
-          <motion.div
-            ref={menuRef}
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            style={{
-              position: 'absolute',
-              top: `${refinedTop}px`,
-              left: `${refinedLeft}px`,
-              zIndex: 9999,
-              width: `${menuWidth}px`,
-            }}
-            className="overflow-hidden rounded-2xl border border-gray-100 bg-white/80 p-1.5 shadow-2xl backdrop-blur-xl ring-1 ring-black/5"
-          >
-            {actions.map((action, index) => (
-              <button
-                key={index}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!action.disabled) {
-                    action.onClick();
-                    closeMenu();
-                  }
-                }}
-                disabled={action.disabled}
-                title={action.title || ''}
-                className={`
-                  flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-all duration-200
-                  ${action.disabled 
-                    ? 'cursor-not-allowed opacity-50 grayscale text-gray-400' 
-                    : `hover:bg-gray-50 hover:pl-4 ${action.className || 'text-gray-700 hover:text-purple-600'}`
-                  }
-                `}
-              >
-                {action.icon && <span className="flex-shrink-0 opacity-80">{action.icon}</span>}
-                <span className="truncate">{action.label}</span>
-              </button>
-            ))}
-          </motion.div>
+          {isMenuOpen && (
+            <motion.div
+              key={`action-menu-${menuId || 'default'}`}
+              ref={menuRef}
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              style={{
+                position: 'absolute',
+                top: `${refinedTop}px`,
+                left: `${refinedLeft}px`,
+                zIndex: 9999,
+                width: `${menuWidth}px`,
+              }}
+              className="overflow-hidden rounded-2xl border border-gray-100 bg-white/80 p-1.5 shadow-2xl backdrop-blur-xl ring-1 ring-black/5"
+            >
+              {actions.map((action, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!action.disabled) {
+                      action.onClick();
+                      closeMenu();
+                    }
+                  }}
+                  disabled={action.disabled}
+                  title={action.title || ''}
+                  className={`
+                    flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-semibold transition-all duration-200
+                    ${action.disabled 
+                      ? 'cursor-not-allowed opacity-50 grayscale text-gray-400' 
+                      : `hover:bg-gray-50 hover:pl-4 ${action.className || 'text-gray-700 hover:text-purple-600'}`
+                    }
+                  `}
+                >
+                  {action.icon && <span className="flex-shrink-0 opacity-80">{action.icon}</span>}
+                  <span className="truncate">{action.label}</span>
+                </button>
+              ))}
+            </motion.div>
+          )}
         </AnimatePresence>,
         document.body
       )}
