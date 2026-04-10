@@ -163,14 +163,14 @@ const PackageDetailModal = ({ pkg, onClose }) => {
 
                         {/* Status & Dates */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <InfoItem 
-                                icon={<FaToggleOn className="text-green-500" />} 
-                                label="Status" 
+                            <InfoItem
+                                icon={<FaToggleOn className="text-green-500" />}
+                                label="Status"
                                 value={
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                         {pkg.is_active ? 'Active' : 'Inactive'}
                                     </span>
-                                } 
+                                }
                             />
                             <InfoItem icon={<FaCalendarAlt className="text-purple-500" />} label="Created" value={formatDate(pkg.created_at)} />
                         </div>
@@ -689,10 +689,15 @@ const SalaryPackages = () => {
     const handleSave = async (body, isEdit) => {
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const endpoint = isEdit ? '/salary/components/update-package' : '/salary/components/create-package';
-            const response = await apiCall(endpoint, 'POST', body, company?.id);
+            const [endpoint, method] = isEdit
+                ? ['/salary/components/update-package', 'PUT']
+                : ['/salary/components/create-package', 'POST'];
+
+            const response = await apiCall(endpoint, method, body, company?.id);
             const result = await response.json();
+
             if (!result.success) throw new Error(result.message);
+
             toast.success(isEdit ? 'Package updated successfully' : 'Package created successfully');
             setShowForm(false);
             setEditPkg(null);
