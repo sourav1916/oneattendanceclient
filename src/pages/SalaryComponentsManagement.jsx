@@ -131,32 +131,32 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                             <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Component Type" value={formatTypeLabel(component.type)} />
                             <InfoItem icon={<FaPercentage className="text-indigo-500" />} label="Calculation Type" value={<span className="capitalize">{component.calc_type}</span>} />
                             <InfoItem icon={<FaChartBar className="text-emerald-500" />} label="Value" value={formatCalcValue(component.calc_type, component.calc_value)} />
-                            <InfoItem 
-                                icon={<FaBalanceScale className="text-orange-500" />} 
-                                label="Taxable" 
+                            <InfoItem
+                                icon={<FaBalanceScale className="text-orange-500" />}
+                                label="Taxable"
                                 value={
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${component.is_taxable ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                         {component.is_taxable ? 'Taxable' : 'Non-Taxable'}
                                     </span>
-                                } 
+                                }
                             />
-                            <InfoItem 
-                                icon={<FaBuilding className="text-blue-500" />} 
-                                label="Statutory" 
+                            <InfoItem
+                                icon={<FaBuilding className="text-blue-500" />}
+                                label="Statutory"
                                 value={
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${component.is_statutory ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                         {component.is_statutory ? 'Statutory' : 'Non-Statutory'}
                                     </span>
-                                } 
+                                }
                             />
-                            <InfoItem 
-                                icon={<FaToggleOn className="text-green-500" />} 
-                                label="Status" 
+                            <InfoItem
+                                icon={<FaToggleOn className="text-green-500" />}
+                                label="Status"
                                 value={
                                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${component.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                                         {component.is_active ? 'Active' : 'Inactive'}
                                     </span>
-                                } 
+                                }
                             />
                         </div>
 
@@ -572,27 +572,43 @@ const SalaryComponents = () => {
         setSaving(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
+
             const isEdit = !!payload.id;
+
+            const endpoint = `/salary/components/${isEdit ? 'update' : 'create'}`;
+            const method = isEdit ? 'PUT' : 'POST'; // ✅ FIXED
+
+            console.log('API DEBUG =>', { endpoint, method, payload });
+
             const response = await apiCall(
-                `/salary/components/${isEdit ? 'update' : 'create'}`,
-                'POST',
+                endpoint,
+                method, // ✅ dynamic method
                 payload,
                 company?.id
             );
+
             const result = await response.json();
+
             if (result.success) {
-                toast.success(isEdit ? 'Component updated successfully!' : 'Component created successfully!');
+                toast.success(
+                    isEdit
+                        ? 'Component updated successfully!'
+                        : 'Component created successfully!'
+                );
+
                 setFormModal(null);
                 fetchComponents(1, debouncedSearch, true);
             } else {
                 throw new Error(result.message || 'Save failed');
             }
+
         } catch (e) {
             toast.error(e.message || 'Failed to save component');
         } finally {
             setSaving(false);
         }
     };
+
 
     const handleDelete = async (id) => {
         setDeleting(true);
