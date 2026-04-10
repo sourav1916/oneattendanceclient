@@ -89,6 +89,10 @@ const PERMISSION_ACCESS_CONFIG = {
     leaveBalance: {
       permissions: ["leave_view_all", "leave_review"],
     },
+    payrollManagement: {
+      permissions: ["salary_view_all", "salary_assign", "salary_update", "salary_delete"],
+      allowCompanyOwner: true,
+    },
     pendingAttendance: {
       permissions: ["att_view_all", "att_review"],
     },
@@ -283,6 +287,16 @@ const PERMISSION_ACCESS_CONFIG = {
       review: { permissions: "att_review" },
       approve: { permissions: "att_review" },
       reject: { permissions: "att_review" },
+    },
+    payrollManagement: {
+      read: {
+        permissions: "salary_view_all",
+        allowCompanyOwner: true,
+      },
+      create: {
+        permissions: "salary_assign",
+        allowCompanyOwner: true,
+      },
     },
     workspace: {
       addStaff: { permissions: ["emp_create", "emp_invite"] },
