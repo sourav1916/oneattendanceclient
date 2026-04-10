@@ -22,22 +22,30 @@ export const AuthProvider = ({ children }) => {
   const initialized = useRef(false);
 
   // ✅ LOGOUT
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("company");
+  const logout = async () => {
+    try {
+      // Call the logout API to invalidate the session on the server
+      await apiCall('/auth/logout', 'POST');
+    } catch (error) {
+      console.error("Logout API failed:", error);
+    } finally {
+      // Always clear local data regardless of API success
+      localStorage.removeItem("token");
+      localStorage.removeItem("company");
 
-    setUser(null);
-    setEmployee(null);
-    setCompany(null);
-    setCompanies([]);
-    setPermissions([]);
-    setUserDetails(null);
-    setAttendanceMethods([]);
-    setActiveRole(null);
+      setUser(null);
+      setEmployee(null);
+      setCompany(null);
+      setCompanies([]);
+      setPermissions([]);
+      setUserDetails(null);
+      setAttendanceMethods([]);
+      setActiveRole(null);
 
-    setMustSelectCompany(false);
-    setShowCompanySelection(false);
-    setLoading(false);
+      setMustSelectCompany(false);
+      setShowCompanySelection(false);
+      setLoading(false);
+    }
   };
 
   // ✅ FETCH PROFILE

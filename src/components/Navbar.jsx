@@ -15,8 +15,8 @@ const Navbar = ({ toggleSidebar, isMobile, sidebarOpen, isDesktopSidebarExpanded
     const [openDropdown, setOpenDropdown] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate("/login");
     };
 
