@@ -585,12 +585,12 @@ const LeaveManagement = () => {
 
             // Add deleted attachments
             deletedAttachments.forEach(id => {
-                formData.append('deleted_attachments[]', id);
+                formData.append('deleted_attachments', id);
             });
 
             // Add new attachments
             newAttachments.forEach(file => {
-                formData.append('attachments[]', file);
+                formData.append('attachments', file);
             });
 
             const response = await apiCall('/leave/application-update', 'PUT', formData, getCompanyId(), {
