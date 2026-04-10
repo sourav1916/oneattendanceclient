@@ -583,7 +583,7 @@ const SalaryPackages = () => {
     const [deleting, setDeleting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [viewMode, setViewMode] = useState('card');
+    const [viewMode, setViewMode] = useState('table');
     const [selectedPkg, setSelectedPkg] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [editPkg, setEditPkg] = useState(null);

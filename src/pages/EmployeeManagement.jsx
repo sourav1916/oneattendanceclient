@@ -3,7 +3,7 @@ import {
     FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaUserCircle,
     FaSearch, FaSpinner,
     FaEnvelope, FaPhone, FaIdCard, FaCalendarAlt, FaBriefcase,
-    FaDollarSign, FaUserTag, FaShieldAlt, FaBan, FaTrashAlt,
+    FaDollarSign, FaUserTag, FaShieldAlt, FaUser, FaTrashAlt,
     FaInfoCircle, FaPlus, FaUserTie, FaUserCheck, FaRobot, FaHandPaper,
     FaCamera, FaMapMarkerAlt, FaWifi, FaFingerprint, FaNetworkWired, FaSave,
     FaTh, FaListUl
@@ -742,127 +742,143 @@ const EmployeeManagement = () => {
             {!loading && employees.length > 0 && (
                 <>
                     {viewMode === 'table' && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible"
-                    >
-                        <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full text-sm text-left text-gray-700">
-                                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                                    <tr>
-                                        {visibleColumns.showEmployeeCode && <th className="px-6 py-4">Employee Code</th>}
-                                        {visibleColumns.showName && <th className="px-6 py-4">Name</th>}
-                                        {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
-                                        {visibleColumns.showEmail && <th className="px-6 py-4">Email</th>}
-                                        {visibleColumns.showPhone && <th className="px-6 py-4">Phone</th>}
-                                        {visibleColumns.showType && <th className="px-6 py-4">Type</th>}
-                                        {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
-                                        {visibleColumns.showJoiningDate && <th className="px-6 py-4">Joining Date</th>}
-                                        <th className="px-6 py-4 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {employees.map((emp, index) => (
-                                        <motion.tr key={emp.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
-                                        >
-                                            {visibleColumns.showEmployeeCode && <td className="px-6 py-4 font-mono text-xs font-medium text-gray-600">{emp.employee_code}</td>}
-                                            {visibleColumns.showName && <td className="px-6 py-4 font-semibold">{emp.name}</td>}
-                                            {visibleColumns.showDesignation && (
-                                                <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{getDesignationDisplay(emp.designation)}</span></td>
-                                            )}
-                                            {visibleColumns.showEmail && (
-                                                <td className="px-6 py-4"><div className="flex items-center gap-2"><FaEnvelope className="text-gray-400 text-xs" /><span className="truncate max-w-[150px]">{emp.email}</span></div></td>
-                                            )}
-                                            {visibleColumns.showPhone && (
-                                                <td className="px-6 py-4"><div className="flex items-center gap-2"><FaPhone className="text-gray-400 text-xs" /><span>{emp.phone}</span></div></td>
-                                            )}
-                                            {visibleColumns.showType && (
-                                                <td className="px-6 py-4"><span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">{getEmploymentTypeDisplay(emp.employment_type)}</span></td>
-                                            )}
-                                            {visibleColumns.showStatus && (
-                                                <td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span></td>
-                                            )}
-                                            {visibleColumns.showJoiningDate && (
-                                                <td className="px-6 py-4"><div className="flex items-center gap-2"><FaCalendarAlt className="text-gray-400 text-xs" /><span>{formatDate(emp.joining_date)}</span></div></td>
-                                            )}
-                                            <td className="px-6 py-4 text-right">
-                                                <ActionMenu
-                                                    menuId={emp.id}
-                                                    activeId={activeActionMenu}
-                                                    onToggle={(e, id) => {
-                                                        setActiveActionMenu((current) => (current === id ? null : id));
-                                                    }}
-                                                    actions={[
-                                                        {
-                                                            label: 'View Details',
-                                                            icon: <FaEye size={14} />,
-                                                            onClick: () => openViewModal(emp),
-                                                            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                        },
-                                                        {
-                                                            label: 'Edit',
-                                                            icon: <FaEdit size={14} />,
-                                                            onClick: () => openEditModal(emp),
-                                                            disabled: updateEmployeeAccess.disabled,
-                                                            title: updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : '',
-                                                            className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                                        },
-                                                        {
-                                                            label: 'Delete',
-                                                            icon: <FaTrash size={14} />,
-                                                            onClick: () => openDeleteModal(emp),
-                                                            disabled: deleteEmployeeAccess.disabled,
-                                                            title: deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : '',
-                                                            className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                        }
-                                                    ]}
-                                                />
-                                            </td>
-                                        </motion.tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                            className="bg-white rounded-2xl shadow-xl overflow-visible"
+                        >
+                            <div className="overflow-x-auto overflow-y-visible">
+                                <table className="w-full text-sm text-left text-gray-700">
+                                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                                        <tr>
+                                            {visibleColumns.showEmployeeCode && <th className="px-6 py-4">Employee Code</th>}
+                                            {visibleColumns.showName && <th className="px-6 py-4">Name</th>}
+                                            {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
+                                            {visibleColumns.showEmail && <th className="px-6 py-4">Email</th>}
+                                            {visibleColumns.showPhone && <th className="px-6 py-4">Phone</th>}
+                                            {visibleColumns.showType && <th className="px-6 py-4">Type</th>}
+                                            {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
+                                            {visibleColumns.showJoiningDate && <th className="px-6 py-4">Joining Date</th>}
+                                            <th className="px-6 py-4 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {employees.map((emp, index) => (
+                                            <motion.tr key={emp.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                                            >
+                                                {visibleColumns.showEmployeeCode && <td className="px-6 py-4 font-mono text-xs font-medium text-gray-600">{emp.employee_code}</td>}
+                                                {visibleColumns.showName && (
+                                                    <td className="px-6 py-4 font-semibold">
+                                                        <div className="flex items-center gap-3">
+
+                                                            {/* Avatar Circle */}
+                                                            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-100">
+                                                                <FaUser className="text-purple-500 text-sm" />
+                                                            </div>
+
+                                                            {/* Name */}
+                                                            <span className="text-gray-800 font-medium">
+                                                                {emp.name}
+                                                            </span>
+
+                                                        </div>
+                                                    </td>
+                                                )}
+                                                {visibleColumns.showDesignation && (
+                                                    <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{getDesignationDisplay(emp.designation)}</span></td>
+                                                )}
+                                                {visibleColumns.showEmail && (
+                                                    <td className="px-6 py-4"><div className="flex items-center gap-2"><FaEnvelope className="text-gray-400 text-xs" /><span className="truncate max-w-[150px]">{emp.email}</span></div></td>
+                                                )}
+                                                {visibleColumns.showPhone && (
+                                                    <td className="px-6 py-4"><div className="flex items-center gap-2"><FaPhone className="text-gray-400 text-xs" /><span>{emp.phone}</span></div></td>
+                                                )}
+                                                {visibleColumns.showType && (
+                                                    <td className="px-6 py-4"><span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">{getEmploymentTypeDisplay(emp.employment_type)}</span></td>
+                                                )}
+                                                {visibleColumns.showStatus && (
+                                                    <td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span></td>
+                                                )}
+                                                {visibleColumns.showJoiningDate && (
+                                                    <td className="px-6 py-4"><div className="flex items-center gap-2"><FaCalendarAlt className="text-gray-400 text-xs" /><span>{formatDate(emp.joining_date)}</span></div></td>
+                                                )}
+                                                <td className="px-6 py-4 text-right">
+                                                    <ActionMenu
+                                                        menuId={emp.id}
+                                                        activeId={activeActionMenu}
+                                                        onToggle={(e, id) => {
+                                                            setActiveActionMenu((current) => (current === id ? null : id));
+                                                        }}
+                                                        actions={[
+                                                            {
+                                                                label: 'View Details',
+                                                                icon: <FaEye size={14} />,
+                                                                onClick: () => openViewModal(emp),
+                                                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                            },
+                                                            {
+                                                                label: 'Edit',
+                                                                icon: <FaEdit size={14} />,
+                                                                onClick: () => openEditModal(emp),
+                                                                disabled: updateEmployeeAccess.disabled,
+                                                                title: updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : '',
+                                                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                            },
+                                                            {
+                                                                label: 'Delete',
+                                                                icon: <FaTrash size={14} />,
+                                                                onClick: () => openDeleteModal(emp),
+                                                                disabled: deleteEmployeeAccess.disabled,
+                                                                title: deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : '',
+                                                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                            }
+                                                        ]}
+                                                    />
+                                                </td>
+                                            </motion.tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </motion.div>
                     )}
 
                     {viewMode === 'card' && (
-                    <ManagementGrid viewMode={viewMode}>
-                        {employees.map((emp, index) => (
-                            <motion.div key={emp.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-                            >
-                                <div className="flex items-start gap-4">
-                                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
-                                        <FaUserCircle className="text-white text-3xl" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex justify-between items-start">
-                                            <h3 className="font-bold text-lg text-gray-800 truncate">{emp.name}</h3>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span>
+                        <ManagementGrid viewMode={viewMode}>
+                            {employees.map((emp, index) => (
+                                <motion.div key={emp.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                >
+                                    <div className="flex items-start gap-4">
+                                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
+                                            <FaUserCircle className="text-white text-3xl" />
                                         </div>
-                                        <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-lg inline-block">{emp.employee_code}</p>
-                                        <div className="mt-3 space-y-2">
-                                            <p className="text-sm text-gray-600 flex items-center gap-2"><FaBriefcase className="text-blue-500" />{getDesignationDisplay(emp.designation)}</p>
-                                            <p className="text-xs text-gray-500 flex items-center gap-2"><FaEnvelope className="text-gray-400" />{emp.email}</p>
-                                            <p className="text-xs text-gray-500 flex items-center gap-2"><FaPhone className="text-gray-400" />{emp.phone}</p>
-                                            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                                                <span className="text-xs text-gray-500 flex items-center gap-1"><FaUserTag className="text-purple-500" />{getEmploymentTypeDisplay(emp.employment_type)}</span>
-                                                <span className="text-xs text-gray-500 flex items-center gap-1"><FaCalendarAlt className="text-green-500" />Joined: {formatDate(emp.joining_date)}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="font-bold text-lg text-gray-800 truncate">{emp.name}</h3>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-lg inline-block">{emp.employee_code}</p>
+                                            <div className="mt-3 space-y-2">
+                                                <p className="text-sm text-gray-600 flex items-center gap-2"><FaBriefcase className="text-blue-500" />{getDesignationDisplay(emp.designation)}</p>
+                                                <p className="text-xs text-gray-500 flex items-center gap-2"><FaEnvelope className="text-gray-400" />{emp.email}</p>
+                                                <p className="text-xs text-gray-500 flex items-center gap-2"><FaPhone className="text-gray-400" />{emp.phone}</p>
+                                                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                                                    <span className="text-xs text-gray-500 flex items-center gap-1"><FaUserTag className="text-purple-500" />{getEmploymentTypeDisplay(emp.employment_type)}</span>
+                                                    <span className="text-xs text-gray-500 flex items-center gap-1"><FaCalendarAlt className="text-green-500" />Joined: {formatDate(emp.joining_date)}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                                    <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
-                                    <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
-                                    <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </ManagementGrid>
-                )}
+                                    <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
+                                        <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
+                                        <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
+                                        <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </ManagementGrid>
+                    )}
 
                     {/* Pagination */}
                     <Pagination
@@ -889,11 +905,10 @@ const EmployeeManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden ${
-                                modalType === MODAL_TYPES.DELETE_CONFIRM
+                            className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
                                     ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col'
                                     : 'max-w-4xl max-h-[90vh]'
-                            }`}
+                                }`}
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}
