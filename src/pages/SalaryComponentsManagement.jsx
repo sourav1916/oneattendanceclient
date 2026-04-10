@@ -335,11 +335,10 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                             {[
                                 { key: 'is_taxable', label: 'Taxable', sub: 'Subject to tax', color: 'orange' },
                                 { key: 'is_statutory', label: 'Statutory', sub: 'Govt. regulated', color: 'blue' },
-                                { key: 'is_active', label: 'Active', sub: 'Currently active', color: 'green' },
                             ].map(toggle => {
                                 const colorMap = { orange: 'from-orange-500 to-amber-500', blue: 'from-blue-500 to-indigo-500', green: 'from-green-500 to-emerald-500' };
                                 const isOn = form[toggle.key];
