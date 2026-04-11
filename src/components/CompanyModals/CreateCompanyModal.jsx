@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
-import apiCall from "../../utils/api";
+import apiCall, { uploadFile } from "../../utils/api";
 import {
   FaBuilding, FaTimes, FaCheck, FaSpinner,
   FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
@@ -39,6 +39,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
   const [showPreview, setShowPreview] = useState(false);
   const [ipInputValue, setIpInputValue] = useState("");
   const [isAddressAutoDetected, setIsAddressAutoDetected] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef(null);
   const autoDetectTimeoutRef = useRef(null);
 
@@ -213,11 +214,21 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
   };
 
   // Handlers
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      setIsUploadingLogo(true);
+      try {
+        const url = await uploadFile(file);
+        setCompanyForm(prev => ({ ...prev, logo_url: url }));
+        setLogoFile(file);
+        setLogoPreview(url); // Use the returned URL for preview
+        toast.success("Logo uploaded successfully!");
+      } catch (error) {
+        toast.error(error.message || "Failed to upload logo");
+      } finally {
+        setIsUploadingLogo(false);
+      }
     }
   };
 
@@ -288,24 +299,15 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
         return;
       }
 
-      const formData = new FormData();
-
       // Send company_ips as JSON array of strings
       const ipsToSend = ipMode === 'manual' ? companyForm.company_ips : [];
-      formData.append('company_ips', JSON.stringify(ipsToSend));
+      
+      const payload = {
+        ...companyForm,
+        company_ips: ipsToSend
+      };
 
-      Object.keys(companyForm).forEach(key => {
-        if (key === 'logo_url' || key === 'company_ips') return;
-        if (companyForm[key] !== null && companyForm[key] !== undefined && companyForm[key] !== "") {
-          formData.append(key, companyForm[key]);
-        }
-      });
-
-      if (logoFile) {
-        formData.append('logo_url', logoFile);
-      }
-
-      const res = await apiCall('/company/create', 'POST', formData);
+      const res = await apiCall('/company/create', 'POST', payload);
       const result = await res.json();
 
       if (!result.success) {
@@ -422,9 +424,11 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
                       name="logo_url"
                       accept="image/*"
                       onChange={handleFileChange}
-                      className="flex-1 border border-gray-200 p-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 text-sm"
+                      disabled={isUploadingLogo}
+                      className="flex-1 border border-gray-200 p-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 text-sm disabled:opacity-50"
                     />
-                    {logoPreview && (
+                    {isUploadingLogo && <FaSpinner className="w-5 h-5 text-indigo-600 animate-spin" />}
+                    {logoPreview && !isUploadingLogo && (
                       <>
                         <button
                           type="button"

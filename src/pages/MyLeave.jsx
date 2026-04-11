@@ -14,7 +14,7 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import apiCall from '../utils/api';
+import apiCall, { uploadFile } from '../utils/api';
 import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ManagementGrid from '../components/ManagementGrid';
@@ -48,10 +48,11 @@ const isAllowedAttachment = (file) => {
 
 const isImageAttachment = (file) => {
   if (!file) return false;
+  const url = typeof file === 'string' ? file : (file.url || file.file_url || '');
+  const name = file.name || file.original_name || (url ? url.split('/').pop() : '');
   const fileType = String(file.type || file.file_type || '').toLowerCase();
-  const fileName = file.name || file.original_name || (file.file_url ? file.file_url.split('/').pop() : '');
-  const fileExtension = getFileExtension(fileName);
-  return fileType.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension);
+  const fileExtension = getFileExtension(name);
+  return fileType.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension) || (url && /\.(jpg|jpeg|png|webp|gif)$/i.test(url));
 };
 
 const request = async (endpoint, method = 'GET', body = null) => {
@@ -269,9 +270,10 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
     deleted_attachments: [],
   });
   const [saving, setSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [attachmentPreviews, setAttachmentPreviews] = useState([]);
 
-  const handleAttachmentChange = (event) => {
+  const handleAttachmentChange = async (event) => {
     const selectedFiles = Array.from(event.target.files || []);
     const validFiles = selectedFiles.filter(isAllowedAttachment);
     const invalidFiles = selectedFiles.filter((file) => !isAllowedAttachment(file));
@@ -280,10 +282,28 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
       toast.error('Only JPG/JPEG images and PDF files are allowed');
     }
 
-    setForm((prev) => ({
-      ...prev,
-      attachments: validFiles,
-    }));
+    if (validFiles.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = validFiles.map(file => uploadFile(file).then(url => ({
+        url,
+        name: file.name,
+        type: file.type,
+        size: file.size
+      })));
+      const uploadedFiles = await Promise.all(uploadPromises);
+      
+      setForm((prev) => ({
+        ...prev,
+        attachments: [...prev.attachments, ...uploadedFiles],
+      }));
+      toast.success(`${uploadedFiles.length} file(s) uploaded successfully`);
+    } catch (error) {
+      toast.error("Failed to upload one or more files");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   useEffect(() => {
@@ -316,59 +336,42 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
   }, [initialLeave, open]);
 
   useEffect(() => {
-    const nextPreviews = form.attachments.map((file) => ({
-      key: `${file.name}-${file.lastModified}-${file.size}`,
-      file,
-      isImage: isImageAttachment(file),
-      url: isImageAttachment(file) ? URL.createObjectURL(file) : null,
+    const nextPreviews = form.attachments.map((att) => ({
+      key: att.url || `${att.name}-${att.size}`,
+      name: att.name,
+      isImage: isImageAttachment(att),
+      url: att.url,
     }));
 
     setAttachmentPreviews(nextPreviews);
-
-    return () => {
-      nextPreviews.forEach((preview) => {
-        if (preview.url) {
-          URL.revokeObjectURL(preview.url);
-        }
-      });
-    };
   }, [form.attachments]);
 
   const submit = async (event) => {
     event.preventDefault();
     setSaving(true);
     try {
-      let body;
-      let method;
-      let endpoint;
+      const payload = {
+        leave_config_id: form.leave_config_id,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        is_half_day: form.is_half_day ? 1 : 0,
+        reason: form.reason,
+        attachments: form.attachments.map(a => a.url),
+      };
+
+      if (form.is_half_day) payload.half_day_type = form.half_day_type;
 
       if (initialLeave) {
         method = 'PUT';
         endpoint = '/leave/application-update';
-        body = new FormData();
-        body.append('id', String(initialLeave.id));
-        body.append('leave_config_id', String(Number(form.leave_config_id)));
-        body.append('start_date', form.start_date);
-        body.append('end_date', form.end_date);
-        body.append('is_half_day', form.is_half_day ? '1' : '0');
-        body.append('reason', form.reason);
-        body.append('deleted_attachments', JSON.stringify(form.deleted_attachments));
-        if (form.is_half_day) body.append('half_day_type', form.half_day_type);
-        form.attachments.forEach((file) => body.append('attachments', file));
+        payload.id = initialLeave.id;
+        payload.deleted_attachments = form.deleted_attachments;
       } else {
         method = 'POST';
         endpoint = '/leave/apply';
-        body = new FormData();
-        body.append('leave_config_id', form.leave_config_id);
-        body.append('start_date', form.start_date);
-        body.append('end_date', form.end_date);
-        body.append('is_half_day', form.is_half_day ? '1' : '0');
-        body.append('reason', form.reason);
-        if (form.is_half_day) body.append('half_day_type', form.half_day_type);
-        form.attachments.forEach((file) => body.append('attachments', file));
       }
 
-      await request(endpoint, method, body);
+      await request(endpoint, method, payload);
 
       toast.success(initialLeave ? 'Leave updated successfully' : 'Leave application submitted successfully');
       onSuccess();
@@ -506,8 +509,15 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
             multiple
             accept=".pdf,.jpg,.jpeg,.png,.webp"
             onChange={handleAttachmentChange}
-            className="w-full"
+            disabled={isUploading}
+            className="w-full text-sm"
           />
+          {isUploading && (
+            <div className="mt-2 flex items-center gap-2 text-purple-600">
+              <FaSpinner className="animate-spin text-sm" />
+              <span className="text-xs font-medium">Uploading files...</span>
+            </div>
+          )}
           <p className="mt-1 text-xs text-gray-400">Accepted formats: PDF, JPG, PNG, WEBP</p>
         </div>
 
@@ -518,12 +528,12 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
               {attachmentPreviews.map((preview, index) => (
                 <div key={preview.key} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
                   <div className="relative aspect-square bg-white">
-                    {preview.isImage && preview.url ? (
-                      <img src={preview.url} alt={preview.file.name} className="h-full w-full object-cover" />
+                    {preview.isImage ? (
+                      <img src={preview.url} alt={preview.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center text-gray-500">
                         <FaPaperclip className="text-lg" />
-                        <span className="line-clamp-2 break-all text-xs font-medium">{preview.file.name}</span>
+                        <span className="line-clamp-2 break-all text-xs font-medium">{preview.name}</span>
                       </div>
                     )}
                     <button
@@ -541,7 +551,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
                     </button>
                   </div>
                   <div className="border-t border-gray-200 px-2 py-1.5">
-                    <p className="truncate text-xs text-gray-600">{preview.file.name}</p>
+                    <p className="truncate text-xs text-gray-600">{preview.name}</p>
                   </div>
                 </div>
               ))}

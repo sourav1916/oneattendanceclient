@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaEye, FaEdit, FaCheck, FaTrash, FaSpinner, FaTimes, FaPlus, FaCloudUploadAlt } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-import apiCall from '../utils/api';
+import apiCall, { uploadFile } from '../utils/api';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
@@ -290,6 +290,7 @@ const LeaveManagement = () => {
     const [deletedAttachments, setDeletedAttachments] = useState([]);
     const [newAttachments, setNewAttachments] = useState([]);
     const [submitting, setSubmitting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
 
     const updateAccess = checkActionAccess('leaveManagement', 'update');
     const approveAccess = checkActionAccess('leaveManagement', 'approve');
@@ -471,9 +472,22 @@ const LeaveManagement = () => {
     };
 
     // ── Edit with Attachments ─────────────────────────────────────────────────
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const files = Array.from(e.target.files);
-        setNewAttachments(prev => [...prev, ...files]);
+        setIsUploading(true);
+        try {
+            const uploadPromises = files.map(file => uploadFile(file).then(url => ({
+                url,
+                name: file.name
+            })));
+            const uploaded = await Promise.all(uploadPromises);
+            setNewAttachments(prev => [...prev, ...uploaded]);
+            toast.success("Files uploaded successfully");
+        } catch (error) {
+            toast.error("Failed to upload one or more files");
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const removeNewAttachment = (index) => {
@@ -494,31 +508,22 @@ const LeaveManagement = () => {
 
         setSubmitting(true);
         try {
-            const formData = new FormData();
-            formData.append('id', editLeave.id);
-            formData.append('leave_config_id', editForm.leave_config_id);
-            formData.append('start_date', editForm.start_date);
-            formData.append('end_date', editForm.end_date);
-            formData.append('is_half_day', editForm.is_half_day);
-            formData.append('reason', editForm.reason || '');
+            const payload = {
+                id: editLeave.id,
+                leave_config_id: editForm.leave_config_id,
+                start_date: editForm.start_date,
+                end_date: editForm.end_date,
+                is_half_day: editForm.is_half_day,
+                reason: editForm.reason || '',
+                deleted_attachments: deletedAttachments,
+                attachments: newAttachments.map(a => a.url)
+            };
 
             if (editForm.is_half_day === 1) {
-                formData.append('half_day_type', editForm.half_day_type);
+                payload.half_day_type = editForm.half_day_type;
             }
 
-            // Add deleted attachments
-            deletedAttachments.forEach(id => {
-                formData.append('deleted_attachments', id);
-            });
-
-            // Add new attachments
-            newAttachments.forEach(file => {
-                formData.append('attachments', file);
-            });
-
-            const response = await apiCall('/leave/application-update', 'PUT', formData, getCompanyId(), {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const response = await apiCall('/leave/application-update', 'PUT', payload, getCompanyId());
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to update leave');
             toast.success('Leave updated successfully');
@@ -1203,10 +1208,10 @@ const LeaveManagement = () => {
                                     {/* Add New Attachments */}
                                     <div>
                                         <label className="text-xs font-semibold text-gray-600 mb-2 block">Add New Attachments</label>
-                                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 transition-all bg-gray-50 hover:bg-gray-100">
+                                        <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl transition-all bg-gray-50 ${isUploading ? 'opacity-50 cursor-wait' : 'cursor-pointer hover:border-blue-400 hover:bg-gray-100'}`}>
                                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                <FaCloudUploadAlt className="text-2xl text-gray-400 mb-2" />
-                                                <p className="text-xs text-gray-500">Click to upload or drag and drop</p>
+                                                {isUploading ? <FaSpinner className="text-2xl text-blue-500 animate-spin mb-2" /> : <FaCloudUploadAlt className="text-2xl text-gray-400 mb-2" />}
+                                                <p className="text-xs text-gray-500">{isUploading ? 'Uploading files...' : 'Click to upload or drag and drop'}</p>
                                                 <p className="text-xs text-gray-400 mt-1">PNG, JPG, PDF (Max 5MB)</p>
                                             </div>
                                             <input
@@ -1214,6 +1219,7 @@ const LeaveManagement = () => {
                                                 multiple
                                                 accept="image/*,application/pdf"
                                                 onChange={handleFileChange}
+                                                disabled={isUploading}
                                                 className="hidden"
                                             />
                                         </label>
@@ -1224,27 +1230,30 @@ const LeaveManagement = () => {
                                         <div>
                                             <label className="text-xs font-semibold text-gray-600 mb-2 block">New Attachments ({newAttachments.length})</label>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {newAttachments.map((file, idx) => (
-                                                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200">
-                                                        {file.type.startsWith('image/') ? (
-                                                            <img
-                                                                src={URL.createObjectURL(file)}
-                                                                alt={file.name}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                                                <span className="text-xs text-gray-500">📄 {file.name.slice(0, 10)}...</span>
-                                                            </div>
-                                                        )}
-                                                        <button
-                                                            onClick={() => removeNewAttachment(idx)}
-                                                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 transition-all"
-                                                        >
-                                                            ×
-                                                        </button>
-                                                    </div>
-                                                ))}
+                                                {newAttachments.map((file, idx) => {
+                                                    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(file.url);
+                                                    return (
+                                                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200">
+                                                            {isImage ? (
+                                                                <img
+                                                                    src={file.url}
+                                                                    alt={file.name}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                                                    <span className="text-xs text-gray-400 px-2 text-center break-words">📄 {file.name.slice(0, 15)}</span>
+                                                                </div>
+                                                            )}
+                                                            <button
+                                                                onClick={() => removeNewAttachment(idx)}
+                                                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 transition-all"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}

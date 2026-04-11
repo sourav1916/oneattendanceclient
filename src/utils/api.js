@@ -50,4 +50,29 @@ export const apiCall = async (endpoint, method = 'GET', body = null, companyId =
   }
 };
 
+/**
+ * Common file upload utility
+ * @param {File} file - The file to upload
+ * @returns {Promise<string>} - The URL of the uploaded file
+ */
+export const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch('https://upload.onesaas.in/api/upload', {
+    method: 'POST',
+    headers: {
+      'key': 'onedevelopers'
+    },
+    body: formData
+  });
+
+  const result = await response.json();
+  if (result.success && result.url) {
+    return result.url;
+  }
+  throw new Error(result.message || 'Upload failed');
+};
+
 export default apiCall;
+
