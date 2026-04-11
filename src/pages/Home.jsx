@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import apiCall from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import usePermissionAccess from "../hooks/usePermissionAccess";
@@ -10,19 +10,12 @@ import {
   FaArrowRight,
   FaClock,
   FaBuilding,
-  FaCheck,
   FaEnvelope,
   FaUserPlus,
-  FaStore,
-  FaChartLine,
   FaFingerprint,
   FaUserCheck,
-  FaPlusCircle,
-  FaTimes,
-  FaUserCircle,
   FaCalendarAlt,
   FaRegCalendarAlt,
-  FaExchangeAlt,
   FaCog,
   FaUmbrellaBeach,
   FaFileInvoiceDollar,
@@ -32,20 +25,15 @@ import {
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/StaffModals/AddStaffModal";
 import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
-import ModalScrollLock from "../components/ModalScrollLock";
 
 
 
 function HomePage() {
-  const { user, loading, company, companies, selectCompany, refreshUser } = useAuth();
+  const { user, loading, company, refreshUser } = useAuth();
   const { checkPageAccess, checkActionAccess } = usePermissionAccess();
   const navigate = useNavigate();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
-  const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
-  const [isSwitching, setIsSwitching] = useState(false);
-  const [selectedCompanyForSwitch, setSelectedCompanyForSwitch] = useState(null);
-  const [userCompanies, setUserCompanies] = useState([]);
 
   // Show loading state
   if (loading) {
@@ -91,17 +79,10 @@ function HomePage() {
           const memberCompanies = response.data.companies?.companies || [];
           const userCompaniesData = [...ownedCompanies, ...memberCompanies];
 
-          // Only one company → auto select
-          if (userCompaniesData.length === 1) {
+          // Multiple companies or single company -> set and proceed
+          if (userCompaniesData.length >= 1) {
             localStorage.setItem("company", JSON.stringify(userCompaniesData[0]));
             setOpenAddStaffModal(true);
-            return;
-          }
-
-          // Multiple companies → open company switcher
-          if (userCompaniesData.length > 1) {
-            setUserCompanies(userCompaniesData);
-            setShowCompanySwitcher(true);
             return;
           }
 
@@ -118,16 +99,6 @@ function HomePage() {
     setOpenAddStaffModal(true);
   };
 
-  const handleSwitchCompany = async (selectedCompany) => {
-    setSelectedCompanyForSwitch(selectedCompany);
-    setIsSwitching(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    selectCompany(selectedCompany);
-    await refreshUser();
-    setIsSwitching(false);
-    setShowCompanySwitcher(false);
-    setSelectedCompanyForSwitch(null);
-  };
 
   // Get current time for greeting
   const getGreeting = () => {
@@ -406,31 +377,6 @@ function HomePage() {
 
           {/* Right Column: Compact Context (Prev Styled) */}
           <div className="md:w-[32%] p-8 flex flex-col justify-start items-center lg:items-end gap-3 relative z-10 border-t md:border-t-0 md:border-l border-slate-100 bg-slate-50/20">
-            <button
-              onClick={() => setShowCompanySwitcher(true)}
-              className="group flex items-center gap-3 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200"
-            >
-              {company?.logo_url ? (
-                <img 
-                  src={company.logo_url.startsWith('http') ? company.logo_url : `https://api-attendance.onesaas.in${company.logo_url}`} 
-                  alt="Company Logo" 
-                  className="w-8 h-8 rounded-xl object-cover border border-slate-200 bg-white"
-                  onError={(e) => {
-                    e.target.onerror = null; 
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                  }}
-                />
-              ) : null}
-              <div className={`w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl items-center justify-center ${company?.logo_url ? 'hidden' : 'flex'}`}>
-                <FaStore className="w-4 h-4 text-white" />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Company</p>
-                <p className="text-sm font-bold text-slate-800 leading-tight">{company?.name || 'Select Company'}</p>
-              </div>
-              <FaExchangeAlt className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-600 transition-colors ml-1" />
-            </button>
 
             <div className="flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200">
               <FaRegCalendarAlt className="w-3 h-3 text-indigo-500" />
@@ -476,107 +422,6 @@ function HomePage() {
         </motion.div>
       </div>
 
-      {/* Fullscreen Company Switcher Modal */}
-      <AnimatePresence>
-        {showCompanySwitcher && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
-            onClick={() => !isSwitching && setShowCompanySwitcher(false)}
-          >
-            <ModalScrollLock />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-4xl max-h-[90vh] mx-4 overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-xl font-bold text-white">Switch Company</h2>
-                      <p className="text-indigo-100 text-sm mt-1">Select a company to continue working with</p>
-                    </div>
-                    <button
-                      onClick={() => !isSwitching && setShowCompanySwitcher(false)}
-                      className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
-                    >
-                      <FaTimes className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="max-h-[60vh] overflow-y-auto p-4">
-                  {companies.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                      <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
-                        <FaBuilding className="w-8 h-8 text-indigo-500" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-2">No Companies Found</h3>
-                      <p className="text-sm text-slate-500 max-w-xs">You are not associated with any company yet.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {companies.map((comp) => (
-                        <motion.button
-                          key={comp.id}
-                          whileHover={{ x: 5 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleSwitchCompany(comp)}
-                          disabled={isSwitching}
-                          className={`w-full text-left p-4 rounded-2xl transition-all duration-200 flex items-center justify-between ${company?.id === comp.id ? 'bg-indigo-50 border-2 border-indigo-200' : 'bg-slate-50 border border-slate-200 hover:border-indigo-300'}`}
-                        >
-                          <div className="flex items-center gap-4 flex-1">
-                            {comp?.logo_url ? (
-                              <img 
-                                src={comp.logo_url.startsWith('http') ? comp.logo_url : `https://api-attendance.onesaas.in${comp.logo_url}`} 
-                                alt="Company Logo" 
-                                className="w-12 h-12 rounded-xl object-cover shadow-sm bg-white border border-indigo-100 shrink-0"
-                                onError={(e) => {
-                                  e.target.onerror = null; 
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
-                            <div className={`w-12 h-12 rounded-xl items-center justify-center shrink-0 ${company?.id === comp.id ? 'bg-indigo-600 text-white' : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600'} ${comp?.logo_url ? 'hidden' : 'flex'}`}>
-                              <FaBuilding className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-slate-800">{comp.name}</p>
-                              <p className="text-xs text-slate-500 mt-0.5 capitalize">{comp.role ? comp.role.replace(/_/g, ' ') : 'Member'}</p>
-                            </div>
-                          </div>
-                          {company?.id === comp.id && (
-                            <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
-                              <FaCheck className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-                        </motion.button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4 border-t border-slate-200 bg-slate-50">
-                  <button
-                    onClick={() => { setShowCompanySwitcher(false); setOpenCreateCompanyModal(true); }}
-                    className="w-full text-center py-2.5 text-indigo-600 font-medium text-sm hover:text-indigo-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <FaUserPlus className="w-4 h-4" />
-                    Create New Company
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Modals */}
       <AddStaffModal
