@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
+import { useAuth } from "../context/AuthContext";
 
 const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -9,29 +10,25 @@ const MainLayout = ({ children }) => {
   const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(true);
   const sidebarRef = useRef(null);
 
+  // ── Pull company data from your auth context ──
+  // Adjust these destructured names to match what your AuthContext actually exposes
+  const { company, companies, switchCompany } = useAuth();
+
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      
-      if (!mobile) {
-        setSidebarOpen(false);
-      }
+      if (!mobile) setSidebarOpen(false);
     };
-    
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // ✅ CLICK OUTSIDE COLLAPSE (DESKTOP)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // If we're on desktop, sidebar is NOT collapsed, and click is NOT on the sidebar/toggle
       if (!isMobile && !desktopSidebarCollapsed) {
         if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-          // Check if click was on a toggle button (usually in Navbar)
           const isToggleButton = event.target.closest('button[data-sidebar-toggle="true"]');
           if (!isToggleButton) {
             setDesktopSidebarCollapsed(true);
@@ -39,7 +36,6 @@ const MainLayout = ({ children }) => {
         }
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobile, desktopSidebarCollapsed]);
@@ -54,26 +50,17 @@ const MainLayout = ({ children }) => {
   };
 
   const handleOverlayClick = () => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
+    if (isMobile) setSidebarOpen(false);
   };
 
   const handleSidebarHover = (hovered) => {
-    if (!isMobile) {
-      setSidebarHovered(hovered);
-    }
+    if (!isMobile) setSidebarHovered(hovered);
   };
 
   const isSidebarExpanded = () => {
     if (isMobile) return false;
     if (sidebarHovered) return true;
     return !desktopSidebarCollapsed;
-  };
-
-  const getSidebarState = () => {
-    if (isMobile) return sidebarOpen;
-    return !desktopSidebarCollapsed || sidebarHovered;
   };
 
   const getContentMargin = () => {
@@ -83,16 +70,19 @@ const MainLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Navbar 
+      <Navbar
         toggleSidebar={toggleSidebar}
         isMobile={isMobile}
         sidebarOpen={sidebarOpen}
         isDesktopSidebarExpanded={!desktopSidebarCollapsed || sidebarHovered}
+        company={company}
+        companies={companies}
+        onCompanySwitch={switchCompany}
       />
-      
+
       <div className="flex relative">
         <div ref={sidebarRef} className="z-30">
-          <Sidebar 
+          <Sidebar
             isMobile={isMobile}
             sidebarOpen={sidebarOpen}
             toggleSidebar={toggleSidebar}
@@ -102,20 +92,19 @@ const MainLayout = ({ children }) => {
         </div>
 
         {isMobile && sidebarOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-20 transition-opacity duration-300"
             onClick={handleOverlayClick}
             style={{ top: '64px' }}
           />
         )}
 
-        {/* Main Content */}
-        <main 
+        <main
           className={`
             flex-1 transition-all duration-300 ease-out
             ${getContentMargin()}
             min-h-[calc(100vh-64px)]
-            max-w-full;
+            max-w-full
           `}
           style={{
             padding: isMobile ? '0px' : '1rem',
