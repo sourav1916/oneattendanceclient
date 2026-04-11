@@ -48,10 +48,12 @@ function getInitials(name) {
     if (!name) return '?';
     return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
+
 function formatDate(str) {
     if (!str) return '—';
     return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
+
 function formatDateTime(str) {
     if (!str) return '—';
     return new Date(str).toLocaleString('en-IN', {
@@ -59,12 +61,43 @@ function formatDateTime(str) {
         hour: '2-digit', minute: '2-digit'
     });
 }
+
+// FIXED: Parse IPs to handle both object and string formats
 function parseIPs(ips) {
-    if (!ips || !ips.length) return [];
-    const v = ips[0];
-    if (!v || v === '[]' || v === '') return [];
-    if (Array.isArray(v)) return v;
-    try { const p = JSON.parse(v); return Array.isArray(p) ? p : [v]; } catch { return [v]; }
+    if (!ips) return [];
+    
+    // If it's not an array, try to parse or handle as string
+    if (!Array.isArray(ips)) {
+        if (typeof ips === 'string') {
+            try {
+                const parsed = JSON.parse(ips);
+                if (Array.isArray(parsed)) {
+                    ips = parsed;
+                } else {
+                    return [];
+                }
+            } catch {
+                // Not JSON, treat as single string
+                return [ips];
+            }
+        } else {
+            return [];
+        }
+    }
+    
+    if (ips.length === 0) return [];
+    
+    // Check if first item has ip_v4 property (object format from API)
+    if (ips[0] && typeof ips[0] === 'object' && ips[0].ip_v4) {
+        return ips.map(item => item.ip_v4).filter(Boolean);
+    }
+    
+    // Handle array of strings
+    if (typeof ips[0] === 'string') {
+        return ips;
+    }
+    
+    return [];
 }
 
 // ─── Small Reusable Components ────────────────────────────────────────────────
@@ -74,7 +107,7 @@ const InfoItem = ({ icon, label, value }) => (
         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
             {icon} {label}
         </label>
-        <div className="text-gray-800 font-semibold text-sm break-words">{value}</div>
+        <div className="text-gray-800 font-semibold text-sm break-words">{value || '—'}</div>
     </div>
 );
 
@@ -160,11 +193,11 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                                 <span className="w-1 h-3 bg-blue-500 rounded-full" /> Address Details
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaRoad className="text-blue-400" />}         label="Address Line 1" value={company.address_line1 || '—'} />
-                                <InfoItem icon={<FaRoad className="text-blue-400" />}         label="Address Line 2" value={company.address_line2 || '—'} />
-                                <InfoItem icon={<FaCity className="text-blue-400" />}         label="City"           value={company.city || '—'} />
-                                <InfoItem icon={<FaGlobe className="text-blue-400" />}        label="State"          value={company.state || '—'} />
-                                <InfoItem icon={<FaMapMarkerAlt className="text-blue-400" />} label="Postal Code"    value={company.postal_code || '—'} />
+                                <InfoItem icon={<FaRoad className="text-blue-400" />}         label="Address Line 1" value={company.address_line1} />
+                                <InfoItem icon={<FaRoad className="text-blue-400" />}         label="Address Line 2" value={company.address_line2} />
+                                <InfoItem icon={<FaCity className="text-blue-400" />}         label="City"           value={company.city} />
+                                <InfoItem icon={<FaGlobe className="text-blue-400" />}        label="State"          value={company.state} />
+                                <InfoItem icon={<FaMapMarkerAlt className="text-blue-400" />} label="Postal Code"    value={company.postal_code} />
                                 <InfoItem icon={<FaGlobe className="text-blue-400" />}        label="Country"        value={company.country || 'India'} />
                             </div>
                         </div>
@@ -175,8 +208,8 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                                 <span className="w-1 h-3 bg-indigo-500 rounded-full" /> Location & Network
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude"  value={company.latitude  || '—'} />
-                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Longitude" value={company.longitude || '—'} />
+                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude"  value={company.latitude} />
+                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Longitude" value={company.longitude} />
                                 <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                                     <label className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
                                         <FaNetworkWired /> IP Addresses
@@ -202,8 +235,8 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <InfoItem icon={<FaHistory className="text-gray-400" />}    label="Created"     value={formatDateTime(company.created_at)} />
                                 <InfoItem icon={<FaHistory className="text-gray-400" />}    label="Updated"     value={formatDateTime(company.updated_at)} />
-                                <InfoItem icon={<FaUserCheck className="text-gray-400" />}  label="Created By"  value={company.created_by?.name || '—'} />
-                                <InfoItem icon={<FaUserCheck className="text-gray-400" />}  label="Updated By"  value={company.updated_by?.name || '—'} />
+                                <InfoItem icon={<FaUserCheck className="text-gray-400" />}  label="Created By"  value={company.created_by?.name} />
+                                <InfoItem icon={<FaUserCheck className="text-gray-400" />}  label="Updated By"  value={company.updated_by?.name} />
                             </div>
                         </div>
                     </div>

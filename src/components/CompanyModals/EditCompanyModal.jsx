@@ -2,15 +2,16 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { 
-  FaBuilding, FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
+  FaBuilding, FaTimes, FaCheck, FaSpinner,
+  FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
   FaEnvelope, FaMapPin, FaLink, FaPlus, FaMinusCircle,
-  FaEye, FaTrash
+  FaEye, FaTrash, FaCrosshairs
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
 
-const GEOCODING_API = "https://nominatim.openstreetmap.org/reverse";
+const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
 
-function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled = false, submitTitle = '' }) {
+function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
   const [formData, setFormData] = useState({
     company_ips: [],
     name: "",
@@ -34,7 +35,82 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
   const [addressMode, setAddressMode] = useState('manual');
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [ipInputValue, setIpInputValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddressAutoDetected, setIsAddressAutoDetected] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Parse IPs from company data (handles both object and string formats)
+  const parseCompanyIPs = (companyData) => {
+    if (!companyData.company_ips) return [];
+    
+    let ipArray = [];
+    if (Array.isArray(companyData.company_ips)) {
+      if (companyData.company_ips.length > 0) {
+        // Check if it's array of objects with ip_v4
+        if (companyData.company_ips[0] && typeof companyData.company_ips[0] === 'object' && companyData.company_ips[0].ip_v4) {
+          ipArray = companyData.company_ips.map(item => item.ip_v4).filter(Boolean);
+        } else if (typeof companyData.company_ips[0] === 'string') {
+          ipArray = companyData.company_ips;
+        }
+      }
+    } else if (typeof companyData.company_ips === 'string') {
+      try {
+        const parsed = JSON.parse(companyData.company_ips);
+        if (Array.isArray(parsed)) {
+          if (parsed[0] && typeof parsed[0] === 'object' && parsed[0].ip_v4) {
+            ipArray = parsed.map(item => item.ip_v4).filter(Boolean);
+          } else {
+            ipArray = parsed;
+          }
+        }
+      } catch {
+        ipArray = companyData.company_ips.split(',').map(ip => ip.trim()).filter(ip => ip);
+      }
+    }
+    
+    return ipArray;
+  };
+
+  // Load company data when modal opens
+  useEffect(() => {
+    if (company && isOpen) {
+      const ipArray = parseCompanyIPs(company);
+      
+      const data = {
+        company_ips: ipArray,
+        name: company.name || "",
+        legal_name: company.legal_name || "",
+        logo_url: company.logo_url || "",
+        address_line1: company.address_line1 || "",
+        address_line2: company.address_line2 || "",
+        city: company.city || "",
+        state: company.state || "",
+        postal_code: company.postal_code || "",
+        country: company.country || "India",
+        latitude: company.latitude || "",
+        longitude: company.longitude || ""
+      };
+      setFormData(data);
+      setOriginalData(data);
+      setIpMode(ipArray.length > 0 ? 'manual' : 'auto');
+      setAddressMode('manual');
+      setIsAddressAutoDetected(false);
+      setLogoPreview(null);
+      setLogoFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [company, isOpen]);
+
+  // Cleanup object URL
+  useEffect(() => {
+    return () => {
+      if (logoPreview) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -56,7 +132,6 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
     }
   };
 
-  // Add IP to list
   const handleAddIp = () => {
     if (ipInputValue.trim()) {
       const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -78,7 +153,6 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
     }
   };
 
-  // Remove IP from list
   const handleRemoveIp = (ipToRemove) => {
     setFormData(prev => ({
       ...prev,
@@ -93,119 +167,147 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
     }
   };
 
-  useEffect(() => {
-    if (company) {
-      // Parse company_ips if it's a string, otherwise use as is
-      let ipArray = [];
-      if (company.company_ips) {
-        if (Array.isArray(company.company_ips)) {
-          ipArray = company.company_ips;
-        } else if (typeof company.company_ips === 'string') {
-          try {
-            ipArray = JSON.parse(company.company_ips);
-          } catch {
-            ipArray = company.company_ips.split(',').map(ip => ip.trim()).filter(ip => ip);
-          }
-        }
-      }
-      
-      const data = {
-        company_ips: ipArray,
-        name: company.name || "",
-        legal_name: company.legal_name || "",
-        logo_url: company.logo_url || "",
-        address_line1: company.address_line1 || "",
-        address_line2: company.address_line2 || "",
-        city: company.city || "",
-        state: company.state || "",
-        postal_code: company.postal_code || "",
-        country: company.country || "India",
-        latitude: company.latitude || "",
-        longitude: company.longitude || ""
-      };
-      setFormData(data);
-      setOriginalData(data);
-      setIpMode(ipArray.length > 0 ? 'manual' : 'auto');
-    }
-  }, [company]);
-
-  useEffect(() => {
-    return () => {
-      if (logoPreview) {
-        URL.revokeObjectURL(logoPreview);
-      }
-    };
-  }, [logoPreview]);
-
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleAddressModeChange = (mode) => {
-    setAddressMode(mode);
-    if (mode === 'auto') {
-      if ("geolocation" in navigator) {
-        setIsGeocoding(true);
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            
-            try {
-              const params = new URLSearchParams({
-                lat: lat.toString(),
-                lon: lon.toString(),
-                format: 'json',
-                addressdetails: 1
-              });
-              const response = await fetch(`${GEOCODING_API}?${params}`, {
-                headers: {
-                  'Accept': 'application/json',
-                  'User-Agent': 'AttendanceApp/1.0'
-                }
-              });
-              const data = await response.json();
-              if (data && data.address) {
-                setFormData(prev => ({
-                  ...prev,
-                  latitude: lat.toString(),
-                  longitude: lon.toString(),
-                  address_line1: data.address.road || data.address.suburb || data.address.neighbourhood || "",
-                  city: data.address.city || data.address.town || data.address.county || "",
-                  state: data.address.state || "",
-                  postal_code: data.address.postcode || ""
-                }));
-                toast.success("📍 Location and address auto-detected!");
-              } else {
-                setFormData(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
-                toast.info("📍 Coordinates detected, but could not resolve address.");
-              }
-            } catch (err) {
-              console.error("Reverse geocoding error:", err);
-              setFormData(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
-              toast.info("📍 Coordinates detected, but could not resolve address.");
-            } finally {
-              setIsGeocoding(false);
-            }
-          },
-          (error) => {
-            console.error("Geolocation error:", error);
-            toast.error("Failed to get current location");
-            setIsGeocoding(false);
-            setAddressMode('manual');
-          }
-        );
-      } else {
-        toast.error("Geolocation is not supported by your browser");
-        setAddressMode('manual');
-      }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (addressMode === 'auto' && !isAddressAutoDetected) {
+      setAddressMode('manual');
+      setIsAddressAutoDetected(false);
     }
   };
 
-  const handleSubmit = () => {
+  // Auto-detect address from current location
+  const handleAddressModeChange = (mode) => {
+    if (mode === 'manual') {
+      setAddressMode('manual');
+      setIsAddressAutoDetected(false);
+      return;
+    }
+
+    if (!("geolocation" in navigator)) {
+      toast.info("Geolocation is not supported by your browser. Please use manual address entry.");
+      return;
+    }
+
+    setIsGeocoding(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        setAddressMode('auto');
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        
+        try {
+          const params = new URLSearchParams({
+            lat: lat.toString(),
+            lon: lon.toString(),
+            format: 'json',
+            addressdetails: 1
+          });
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'AttendanceApp/1.0'
+            }
+          });
+          const data = await response.json();
+          
+          if (data && data.address) {
+            const address = data.address;
+            setFormData(prev => ({
+              ...prev,
+              latitude: lat.toString(),
+              longitude: lon.toString(),
+              address_line1: [address.house_number, address.road].filter(Boolean).join(' ').trim() || 
+                            [address.neighbourhood, address.suburb].filter(Boolean).join(', ').trim() || "",
+              address_line2: [address.neighbourhood, address.suburb, address.hamlet, address.locality, address.village]
+                .filter(Boolean).join(', ').trim(),
+              city: address.city || address.town || address.village || address.county || "",
+              state: address.state || "",
+              postal_code: address.postcode || "",
+              country: address.country || "India"
+            }));
+            setIsAddressAutoDetected(true);
+            toast.success("📍 Location and address auto-detected successfully!");
+          } else {
+            setFormData(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
+            toast.info("📍 Coordinates detected, but could not resolve full address.");
+          }
+        } catch (err) {
+          console.error("Reverse geocoding error:", err);
+          setFormData(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
+          toast.info("📍 Coordinates detected, but could not resolve address.");
+        } finally {
+          setIsGeocoding(false);
+        }
+      },
+      (error) => {
+        setAddressMode('manual');
+        if (error?.code === 1) {
+          toast.info("Location access denied. You can continue with manual address entry.");
+        } else if (error?.code === 2) {
+          toast.info("Current location unavailable. Please use manual address entry.");
+        } else if (error?.code === 3) {
+          toast.info("Location lookup timed out. Please use manual address entry.");
+        } else {
+          toast.info("Unable to get current location. Please use manual address entry.");
+        }
+        setIsGeocoding(false);
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
+  // Manual geocoding from address
+  const handleManualGeocode = async () => {
+    const addressString = [
+      formData.address_line1,
+      formData.city,
+      formData.state,
+      formData.postal_code,
+      formData.country
+    ].filter(Boolean).join(", ");
+
+    if (addressString.split(", ").length < 2) {
+      toast.warning("Please enter at least address line and city to get coordinates");
+      return;
+    }
+
+    setIsGeocoding(true);
+
+    try {
+      const params = new URLSearchParams({
+        q: addressString,
+        format: 'json',
+        limit: 1,
+        addressdetails: 1
+      });
+
+      const response = await fetch(`${GEOCODING_API}?${params}`, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'AttendanceApp/1.0'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        setFormData(prev => ({ ...prev, latitude: lat, longitude: lon }));
+        toast.success("📍 Location coordinates found!");
+      } else {
+        toast.warning("Could not find coordinates for this address");
+      }
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      toast.error("Failed to get coordinates");
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
+  const handleSubmit = async () => {
     const changedFields = {};
     
     // Check for IP changes
@@ -213,15 +315,20 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
     const currentIpArray = formData.company_ips || [];
     
     if (ipMode === 'manual') {
-      if (JSON.stringify(originalIpArray) !== JSON.stringify(currentIpArray)) {
+      if (JSON.stringify(originalIpArray.sort()) !== JSON.stringify(currentIpArray.sort())) {
         changedFields.company_ips = currentIpArray;
       }
+    } else if (ipMode === 'auto' && originalIpArray.length > 0) {
+      // Switching from manual to auto - clear IPs
+      changedFields.company_ips = [];
     }
     
     // Check other fields
     Object.keys(formData).forEach(key => {
       if (key !== 'logo_url' && key !== 'company_ips' && formData[key] !== originalData[key]) {
-        changedFields[key] = formData[key];
+        if (formData[key] || originalData[key]) { // Only include if there's a change
+          changedFields[key] = formData[key];
+        }
       }
     });
 
@@ -235,7 +342,15 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
       return;
     }
 
-    onSuccess(company.id, changedFields);
+    setIsSubmitting(true);
+    try {
+      await onSuccess(company.id, changedFields);
+      onClose();
+    } catch (error) {
+      console.error("Update error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -252,9 +367,9 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col"
+            className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
           >
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6 sticky top-0 bg-white z-10 pb-4">
               <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -263,7 +378,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Company</h2>
             </div>
 
-            <div className="grid grid-cols-1 overflow-y-auto md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2 mt-2">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-gray-100 pb-2">
                   <FaBuilding className="w-4 h-4" />
@@ -314,7 +429,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                       onChange={handleFileChange}
                       className="flex-1 border border-gray-200 p-2 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 text-sm"
                     />
-                    {logoPreview && (
+                    {(logoPreview || formData.logo_url) && (
                       <>
                         <button
                           type="button"
@@ -336,7 +451,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                     )}
                   </div>
                   
-                  {showPreview && logoPreview && (
+                  {showPreview && (logoPreview || formData.logo_url) && (
                     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4" onClick={() => setShowPreview(false)}>
                       <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -346,7 +461,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                           <FaTimes className="w-4 h-4 text-gray-600" />
                         </button>
                         <img 
-                          src={logoPreview} 
+                          src={logoPreview || formData.logo_url} 
                           alt="Logo Preview" 
                           className="max-w-full max-h-[80vh] object-contain rounded-xl"
                         />
@@ -354,32 +469,26 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                     </div>
                   )}
                   
-                  {logoPreview && (
+                  {(logoPreview || formData.logo_url) && (
                     <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
                       <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                         <img 
-                          src={logoPreview} 
+                          src={logoPreview || formData.logo_url} 
                           alt="Logo preview" 
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-700">{logoFile?.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(logoFile?.size / 1024).toFixed(2)} KB
+                        <p className="text-sm font-medium text-gray-700">
+                          {logoFile?.name || (formData.logo_url ? "Current logo" : "")}
                         </p>
+                        {logoFile && (
+                          <p className="text-xs text-gray-500">
+                            {(logoFile.size / 1024).toFixed(2)} KB
+                          </p>
+                        )}
                       </div>
-                      <button
-                        onClick={handleRemoveLogo}
-                        className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
-                      >
-                        <FaTrash className="w-3.5 h-3.5 text-red-500" />
-                      </button>
                     </div>
-                  )}
-                  
-                  {!logoPreview && formData.logo_url && (
-                    <p className="text-xs text-gray-500 pl-2 mt-1">Current logo exists. Select new file to replace.</p>
                   )}
                 </div>
               </div>
@@ -455,11 +564,11 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                     <p className="text-xs text-gray-500 mt-2">Add IP addresses one by one or comma-separated. Supports IPv4 addresses only.</p>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500 pt-1">The system will automatically record the valid network IP via connection headers. An empty array [] will be sent to backend.</p>
+                  <p className="text-xs text-gray-500 pt-1">The system will automatically record the valid network IP via connection headers.</p>
                 )}
               </div>
 
-              {/* Address toggle header - same as before */}
+              {/* Address toggle header */}
               <div className="md:col-span-2 mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                   <FaMapMarkerAlt className="w-4 h-4" />
@@ -492,7 +601,6 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                 </div>
               </div>
 
-              {/* Rest of the address fields remain the same */}
               <div className="md:col-span-2 space-y-1">
                 <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
                   <FaRoad className="w-3 h-3 text-indigo-500" />
@@ -503,8 +611,8 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="Street address, P.O. box"
                   value={formData.address_line1}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
 
@@ -518,8 +626,8 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="Apartment, suite, unit, etc."
                   value={formData.address_line2}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
 
@@ -533,8 +641,8 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="City"
                   value={formData.city}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
 
@@ -548,8 +656,8 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="State"
                   value={formData.state}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
 
@@ -563,8 +671,8 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="Postal Code"
                   value={formData.postal_code}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
 
@@ -575,9 +683,10 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                 </label>
                 <input
                   name="country"
-                  value="India"
-                  readOnly
-                  className="w-full border border-gray-200 p-2.5 rounded-xl bg-gray-50 text-gray-600 text-sm"
+                  value={formData.country}
+                  onChange={handleChange}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
 
@@ -590,7 +699,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
               
               <div className="space-y-1">
                 <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
-                  <FaMapPin className="w-3 h-3 text-indigo-500" />
+                  <FaCrosshairs className="w-3 h-3 text-indigo-500" />
                   Latitude
                 </label>
                 <input
@@ -598,14 +707,14 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="Latitude"
                   value={formData.latitude}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
               
               <div className="space-y-1">
                 <label className="flex items-center gap-1 text-sm font-medium text-gray-700">
-                  <FaMapPin className="w-3 h-3 text-indigo-500" />
+                  <FaCrosshairs className="w-3 h-3 text-indigo-500" />
                   Longitude
                 </label>
                 <input
@@ -613,26 +722,60 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                   placeholder="Longitude"
                   value={formData.longitude}
                   onChange={handleChange}
-                  disabled={addressMode === 'auto'}
-                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${addressMode === 'auto' ? 'bg-gray-50 text-gray-500' : ''}`}
+                  disabled={addressMode === 'auto' && !isAddressAutoDetected}
+                  className={`w-full border border-gray-200 p-2.5 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm ${(addressMode === 'auto' && !isAddressAutoDetected) ? 'bg-gray-50 text-gray-500' : ''}`}
                 />
               </div>
+
+              {/* Manual Geocode Button */}
+              {addressMode === 'manual' && (
+                <div className="md:col-span-2">
+                  <button
+                    type="button"
+                    onClick={handleManualGeocode}
+                    disabled={isGeocoding}
+                    className="w-full py-2.5 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors font-medium text-sm flex items-center justify-center gap-2"
+                  >
+                    {isGeocoding ? (
+                      <>
+                        <FaSpinner className="w-4 h-4 animate-spin" />
+                        Getting Coordinates...
+                      </>
+                    ) : (
+                      <>
+                        <FaMapPin className="w-4 h-4" />
+                        Get Coordinates from Address
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8 sticky bottom-0 bg-white pt-4 border-t border-gray-100">
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 order-2 sm:order-1"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-all duration-200 order-2 sm:order-1 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={submitDisabled}
-                title={submitDisabled ? submitTitle : ''}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl order-1 sm:order-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Update Company
+                {isSubmitting ? (
+                  <>
+                    <FaSpinner className="w-4 h-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <FaCheck className="w-4 h-4" />
+                    Update Company
+                  </>
+                )}
               </button>
             </div>
           </motion.div>
