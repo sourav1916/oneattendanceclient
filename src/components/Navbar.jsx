@@ -13,6 +13,9 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from "../context/AuthContext";
 
+const formatRole = (role) =>
+    role?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'User';
+
 const CompanyLogo = ({ company, size = 8 }) => {
     const [imgError, setImgError] = useState(false);
     const sizeClass = `w-${size} h-${size}`;
@@ -77,11 +80,19 @@ const CompanySwitcherModal = ({ companies = [], currentCompany, onSwitch, onClos
                                 >
                                     <CompanyLogo company={company} size={9} />
                                     <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-medium truncate ${isActive ? 'text-indigo-700' : 'text-gray-800'}`}>
-                                            {company.name}
-                                        </p>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className={`text-sm font-medium truncate ${isActive ? 'text-indigo-700' : 'text-gray-800'}`}>
+                                                {company.name}
+                                            </p>
+                                            {company.role && (
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-tight
+                                                    ${isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                                                    {formatRole(company.role)}
+                                                </span>
+                                            )}
+                                        </div>
                                         {company.branch && (
-                                            <p className="text-xs text-gray-400 truncate">{company.branch}</p>
+                                            <p className="text-xs text-gray-400 truncate mt-0.5">{company.branch}</p>
                                         )}
                                     </div>
                                     {isActive && (
@@ -118,8 +129,7 @@ const Navbar = ({
 
     const isSidebarOpen = isMobile ? sidebarOpen : isDesktopSidebarExpanded;
 
-    const formatRole = (role) =>
-        role?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'User';
+
 
     return (
         <>
