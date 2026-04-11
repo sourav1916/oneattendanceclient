@@ -384,15 +384,33 @@ const MyShifts = () => {
                             exit={{ opacity: 0, y: -10 }}
                             className="mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 grid grid-cols-4 gap-2"
                         >
-                            {MONTHS.map((m, i) => (
-                                <button
-                                    key={m}
-                                    onClick={() => { setMonth(i + 1); setMonthPickerOpen(false); }}
-                                    className={`py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${month === i + 1 ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md' : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'}`}
-                                >
-                                    {m.slice(0, 3)}
-                                </button>
-                            ))}
+                            {MONTHS.map((m, i) => {
+                                const isFuture = year === now.getFullYear()
+                                    ? i + 1 > now.getMonth() + 1
+                                    : year > now.getFullYear();
+                                const isSelected = month === i + 1;
+
+                                return (
+                                    <button
+                                        key={m}
+                                        onClick={() => {
+                                            if (isFuture) return;
+                                            setMonth(i + 1);
+                                            setMonthPickerOpen(false);
+                                        }}
+                                        disabled={isFuture}
+                                        className={`py-2 rounded-xl text-xs font-semibold transition-all duration-200
+                ${isSelected
+                                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                                                : isFuture
+                                                    ? 'text-gray-300 cursor-not-allowed'
+                                                    : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
+                                            }`}
+                                    >
+                                        {m.slice(0, 3)}
+                                    </button>
+                                );
+                            })}
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -498,9 +516,9 @@ const MyShifts = () => {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.04 }}
-                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
-                                                onClick={() => setSelectedShift(shift)}
-                                            >
+                                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
+                                            onClick={() => setSelectedShift(shift)}
+                                        >
                                             <td className="px-6 py-4">
                                                 <div className="font-semibold text-gray-800">{formatShortDate(shift.start_time)}</div>
                                                 <div className="text-xs text-gray-400">{new Date(shift.start_time).toLocaleDateString('en-US', { weekday: 'short' })}</div>
