@@ -234,6 +234,652 @@ const SalaryDetailModal = ({ salary, onClose }) => {
     );
 };
 
+
+// ─── Edit Salary Modal ────────────────────────────────────────────────────────
+
+const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
+    const [availableComponents, setAvailableComponents] = useState([]);
+    const [currencies, setCurrencies] = useState([]);
+    const [submitting, setSubmitting] = useState(false);
+    const [showOverrideForm, setShowOverrideForm] = useState(false);
+    const [editingOverride, setEditingOverride] = useState(null);
+
+    const [formData, setFormData] = useState({
+        base_amount: '',
+        currency: 'USD',
+        effective_from: '',
+        effective_to: '',
+        overrides: []
+    });
+
+    const [overrideForm, setOverrideForm] = useState({
+        component_id: '', calc_type: 'percentage', calc_value: '',
+        effective_from: '', effective_to: '', reason: ''
+    });
+
+    useEffect(() => {
+        if (isOpen && salary) {
+            setFormData({
+                base_amount: salary.base_amount || '',
+                currency: salary.currency || 'USD',
+                effective_from: salary.effective_from ? salary.effective_from.split('T')[0] : '',
+                effective_to: salary.effective_to ? salary.effective_to.split('T')[0] : '',
+                overrides: (salary.components || [])
+                    .filter(c => c.is_overridden === 1)
+                    .map(c => ({
+                        component_id: c.id,
+                        calc_type: c.calc_type,
+                        calc_value: c.calc_value,
+                        effective_from: salary.effective_from ? salary.effective_from.split('T')[0] : '',
+                        effective_to: salary.effective_to ? salary.effective_to.split('T')[0] : '',
+                        reason: c.reason || ''
+                    }))
+            });
+            loadComponents();
+            loadCurrencies();
+        }
+    }, [isOpen, salary]);
+
+    const loadComponents = async () => {
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) setAvailableComponents(result.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const loadCurrencies = async () => {
+        try {
+            const response = await apiCall('/constants/?type=currency', 'GET');
+            const result = await response.json();
+            if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
+        } catch (e) { console.error(e); }
+    };
+
+    const addOverride = () => {
+        if (!overrideForm.component_id || !overrideForm.calc_value) {
+            toast.warning('Please fill component and value'); return;
+        }
+        const newOverride = {
+            component_id: parseInt(overrideForm.component_id),
+            calc_type: overrideForm.calc_type,
+            calc_value: parseFloat(overrideForm.calc_value),
+            effective_from: overrideForm.effective_from || formData.effective_from,
+            effective_to: overrideForm.effective_to || null,
+            reason: overrideForm.reason || ''
+        };
+        if (editingOverride !== null) {
+            const updated = [...formData.overrides];
+            updated[editingOverride] = newOverride;
+            setFormData({ ...formData, overrides: updated });
+            setEditingOverride(null);
+        } else {
+            setFormData({ ...formData, overrides: [...formData.overrides, newOverride] });
+        }
+        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
+        setShowOverrideForm(false);
+    };
+
+    const editOverride = (index) => {
+        const o = formData.overrides[index];
+        setOverrideForm({
+            component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value,
+            effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || ''
+        });
+        setEditingOverride(index);
+        setShowOverrideForm(true);
+    };
+
+    const removeOverride = (index) => {
+        setFormData({ ...formData, overrides: formData.overrides.filter((_, i) => i !== index) });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.base_amount || !formData.effective_from) {
+            toast.warning('Please fill all required fields'); return;
+        }
+        setSubmitting(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const payload = {
+                salary_id: salary.salary_id,
+                base_amount: parseFloat(formData.base_amount),
+                currency: formData.currency.toLowerCase(),
+                effective_from: formData.effective_from,
+                effective_to: formData.effective_to || null,
+                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
+            };
+            const response = await apiCall('/salary/update-salary', 'PUT', payload, company?.id);
+            const result = await response.json();
+            if (result.success) {
+                toast.success('Salary updated successfully!');
+                onSuccess();
+                onClose();
+            } else {
+                toast.error(result.message || 'Failed to update salary');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to update salary');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (!isOpen || !salary) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={onClose}>
+                <ModalScrollLock />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+                    className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    onClick={e => e.stopPropagation()}>
+
+                    {/* Header */}
+                    <div className="sticky top-0 px-6 py-5 border-b bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-2xl">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <FaEdit className="text-white text-sm" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold">Edit Salary</h2>
+                                    <p className="text-xs text-white/80">{salary.employee?.name} · {salary.employee?.employee_code}</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
+                                <FaTimes size={20} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-4">
+                        {/* Base Amount + Currency */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
+                            <div className="flex gap-2">
+                                <select value={formData.currency}
+                                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+                                    {currencies.length > 0
+                                        ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>)
+                                        : <option value="USD">$ USD</option>}
+                                </select>
+                                <input type="number" placeholder="Enter amount" value={formData.base_amount}
+                                    onChange={e => setFormData({ ...formData, base_amount: e.target.value })}
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
+                            </div>
+                        </div>
+
+                        {/* Effective Dates */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
+                                <input type="date" value={formData.effective_from}
+                                    onChange={e => setFormData({ ...formData, effective_from: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
+                                <input type="date" value={formData.effective_to}
+                                    onChange={e => setFormData({ ...formData, effective_to: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
+                                <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
+                            </div>
+                        </div>
+
+                        {/* Component Overrides */}
+                        <div className="border-t border-gray-200 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <FaCalculator className="text-blue-500" /> Component Overrides
+                                </label>
+                                <button type="button"
+                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                    className="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all flex items-center gap-1">
+                                    <FaPlus size={10} /> Add Override
+                                </button>
+                            </div>
+
+                            {formData.overrides.length > 0 && (
+                                <div className="space-y-2 mb-3">
+                                    {formData.overrides.map((override, idx) => {
+                                        const component = availableComponents.find(c => c.id === override.component_id);
+                                        return (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                        </span>
+                                                    </div>
+                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-blue-500"><FaEdit size={12} /></button>
+                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {showOverrideForm && (
+                                <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold text-blue-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
+                                            <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                                <option value="">Select component</option>
+                                                {availableComponents.map(comp => (
+                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calc Type</label>
+                                                <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                                    <option value="percentage">Percentage (%)</option>
+                                                    <option value="fixed">Fixed Amount</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
+                                                <input type="number" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
+                                                    value={overrideForm.calc_value} onChange={e => setOverrideForm({ ...overrideForm, calc_value: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
+                                                <input type="date" value={overrideForm.effective_from} onChange={e => setOverrideForm({ ...overrideForm, effective_from: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
+                                                <input type="date" value={overrideForm.effective_to} onChange={e => setOverrideForm({ ...overrideForm, effective_to: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
+                                            <input type="text" placeholder="e.g., Special HRA" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                        </div>
+                                        <div className="flex gap-2 pt-1">
+                                            <button type="button" onClick={addOverride}
+                                                className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all">
+                                                {editingOverride !== null ? 'Update' : 'Add'}
+                                            </button>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }}
+                                                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-4 border-t border-gray-100">
+                            <button type="button" onClick={onClose}
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting}
+                                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                                {submitting ? 'Saving...' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </form>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
+// ─── Revise Salary Modal ──────────────────────────────────────────────────────
+
+const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
+    const [packages, setPackages] = useState([]);
+    const [availableComponents, setAvailableComponents] = useState([]);
+    const [currencies, setCurrencies] = useState([]);
+    const [submitting, setSubmitting] = useState(false);
+    const [showOverrideForm, setShowOverrideForm] = useState(false);
+    const [editingOverride, setEditingOverride] = useState(null);
+
+    const [formData, setFormData] = useState({
+        component_package_id: '',
+        base_amount: '',
+        currency: 'USD',
+        effective_from: '',
+        effective_to: '',
+        overrides: []
+    });
+
+    const [overrideForm, setOverrideForm] = useState({
+        component_id: '', calc_type: 'percentage', calc_value: '',
+        effective_from: '', effective_to: '', reason: ''
+    });
+
+    useEffect(() => {
+        if (isOpen && salary) {
+            setFormData({
+                component_package_id: salary.package?.id || '',
+                base_amount: salary.base_amount || '',
+                currency: salary.currency || 'USD',
+                effective_from: '',
+                effective_to: '',
+                overrides: []
+            });
+            loadPackages();
+            loadComponents();
+            loadCurrencies();
+        }
+    }, [isOpen, salary]);
+
+    const loadPackages = async () => {
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) setPackages(result.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const loadComponents = async () => {
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) setAvailableComponents(result.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const loadCurrencies = async () => {
+        try {
+            const response = await apiCall('/constants/?type=currency', 'GET');
+            const result = await response.json();
+            if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
+        } catch (e) { console.error(e); }
+    };
+
+    const addOverride = () => {
+        if (!overrideForm.component_id || !overrideForm.calc_value) {
+            toast.warning('Please fill component and value'); return;
+        }
+        const newOverride = {
+            component_id: parseInt(overrideForm.component_id),
+            calc_type: overrideForm.calc_type,
+            calc_value: parseFloat(overrideForm.calc_value),
+            effective_from: overrideForm.effective_from || formData.effective_from,
+            effective_to: overrideForm.effective_to || null,
+            reason: overrideForm.reason || ''
+        };
+        if (editingOverride !== null) {
+            const updated = [...formData.overrides];
+            updated[editingOverride] = newOverride;
+            setFormData({ ...formData, overrides: updated });
+            setEditingOverride(null);
+        } else {
+            setFormData({ ...formData, overrides: [...formData.overrides, newOverride] });
+        }
+        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
+        setShowOverrideForm(false);
+    };
+
+    const editOverride = (index) => {
+        const o = formData.overrides[index];
+        setOverrideForm({
+            component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value,
+            effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || ''
+        });
+        setEditingOverride(index);
+        setShowOverrideForm(true);
+    };
+
+    const removeOverride = (index) => {
+        setFormData({ ...formData, overrides: formData.overrides.filter((_, i) => i !== index) });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
+            toast.warning('Please fill all required fields'); return;
+        }
+        setSubmitting(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const payload = {
+                employee_id: salary.employee?.id,
+                component_package_id: parseInt(formData.component_package_id),
+                base_amount: parseFloat(formData.base_amount),
+                currency: formData.currency.toLowerCase(),
+                effective_from: formData.effective_from,
+                effective_to: formData.effective_to || null,
+                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
+            };
+            const response = await apiCall('/salary/revise-salary', 'POST', payload, company?.id);
+            const result = await response.json();
+            if (result.success) {
+                toast.success('Salary revised successfully!');
+                onSuccess();
+                onClose();
+            } else {
+                toast.error(result.message || 'Failed to revise salary');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to revise salary');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (!isOpen || !salary) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={onClose}>
+                <ModalScrollLock />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+                    className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    onClick={e => e.stopPropagation()}>
+
+                    {/* Header */}
+                    <div className="sticky top-0 px-6 py-5 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-2xl">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <FaExchangeAlt className="text-white text-sm" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold">Revise Salary</h2>
+                                    <p className="text-xs text-white/80">{salary.employee?.name} · Creates a new salary record</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto space-y-4">
+
+                        {/* Info Banner */}
+                        <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-100 rounded-xl">
+                            <FaInfoCircle className="text-purple-500 mt-0.5 flex-shrink-0" size={14} />
+                            <p className="text-xs text-purple-700">
+                                Revising salary creates a <span className="font-semibold">new salary record</span> for this employee. The previous record will remain in history.
+                            </p>
+                        </div>
+
+                        {/* Package */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
+                            <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })}
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
+                                <option value="">Select package</option>
+                                {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                            </select>
+                        </div>
+
+                        {/* Base Amount + Currency */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">New Base Amount *</label>
+                            <div className="flex gap-2">
+                                <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
+                                    {currencies.length > 0
+                                        ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>)
+                                        : <option value="USD">$ USD</option>}
+                                </select>
+                                <input type="number" placeholder="Enter new base amount" value={formData.base_amount}
+                                    onChange={e => setFormData({ ...formData, base_amount: e.target.value })}
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
+                            </div>
+                            {salary.base_amount && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Current: {formatCurrency(salary.base_amount, salary.currency)}
+                                    {formData.base_amount && parseFloat(formData.base_amount) !== salary.base_amount && (
+                                        <span className={`ml-2 font-semibold ${parseFloat(formData.base_amount) > salary.base_amount ? 'text-green-600' : 'text-red-600'}`}>
+                                            {parseFloat(formData.base_amount) > salary.base_amount ? '▲' : '▼'}
+                                            {Math.abs(((parseFloat(formData.base_amount) - salary.base_amount) / salary.base_amount) * 100).toFixed(1)}%
+                                        </span>
+                                    )}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Effective Dates */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
+                                <input type="date" value={formData.effective_from}
+                                    onChange={e => setFormData({ ...formData, effective_from: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
+                                <input type="date" value={formData.effective_to}
+                                    onChange={e => setFormData({ ...formData, effective_to: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
+                                <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
+                            </div>
+                        </div>
+
+                        {/* Overrides — identical pattern, purple accent */}
+                        <div className="border-t border-gray-200 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <FaCalculator className="text-purple-500" /> Component Overrides
+                                </label>
+                                <button type="button"
+                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                    className="px-3 py-1.5 text-sm bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-all flex items-center gap-1">
+                                    <FaPlus size={10} /> Add Override
+                                </button>
+                            </div>
+
+                            {formData.overrides.length > 0 && (
+                                <div className="space-y-2 mb-3">
+                                    {formData.overrides.map((override, idx) => {
+                                        const component = availableComponents.find(c => c.id === override.component_id);
+                                        return (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-purple-100 text-purple-700' : 'bg-pink-100 text-pink-700'}`}>
+                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                        </span>
+                                                    </div>
+                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-purple-500"><FaEdit size={12} /></button>
+                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {showOverrideForm && (
+                                <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold text-purple-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
+                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                                            <option value="">Select component</option>
+                                            {availableComponents.map(comp => <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>)}
+                                        </select>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                                                <option value="percentage">Percentage (%)</option>
+                                                <option value="fixed">Fixed Amount</option>
+                                            </select>
+                                            <input type="number" placeholder="Value" value={overrideForm.calc_value}
+                                                onChange={e => setOverrideForm({ ...overrideForm, calc_value: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input type="date" value={overrideForm.effective_from} onChange={e => setOverrideForm({ ...overrideForm, effective_from: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                            <input type="date" value={overrideForm.effective_to} onChange={e => setOverrideForm({ ...overrideForm, effective_to: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                        </div>
+                                        <input type="text" placeholder="Reason (optional)" value={overrideForm.reason}
+                                            onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                        <div className="flex gap-2 pt-1">
+                                            <button type="button" onClick={addOverride}
+                                                className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                                {editingOverride !== null ? 'Update' : 'Add'}
+                                            </button>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }}
+                                                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-3 pt-4 border-t border-gray-100">
+                            <button type="button" onClick={onClose}
+                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting}
+                                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                {submitting ? <FaSpinner className="animate-spin" /> : <FaExchangeAlt />}
+                                {submitting ? 'Revising...' : 'Revise Salary'}
+                            </button>
+                        </div>
+                    </form>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
 // ─── Assign Salary Modal (Updated with Overrides) ─────────────────────────────────────
 
 const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitTitle }) => {
@@ -517,7 +1163,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 />
                                 <FaSearch className="absolute left-3 top-3.5 text-gray-400 text-sm" />
                             </div>
-                            
+
                             {!selectedEmployee && (
                                 <div className="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
                                     {loading ? (
@@ -676,9 +1322,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                                                            override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                                                        }`}>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                                                            }`}>
                                                             {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
                                                         </span>
                                                     </div>
@@ -1007,13 +1652,25 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
                             {
                                 label: 'View Details',
                                 icon: <FaEye size={13} />,
-                                onClick: () => onView(salary),
+                                onClick: () => setSelectedSalary(salary),
                                 className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                            },
+                            {
+                                label: 'Edit Salary',
+                                icon: <FaEdit size={13} />,
+                                onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); },
+                                className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                            },
+                            {
+                                label: 'Revise Salary',
+                                icon: <FaExchangeAlt size={13} />,
+                                onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); },
+                                className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
                             },
                             {
                                 label: 'Delete',
                                 icon: <FaTrash size={13} />,
-                                onClick: () => onDelete(salary),
+                                onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
                                 className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
                             }
                         ]}
@@ -1049,6 +1706,10 @@ const SalaryManagement = () => {
         showEffectivePeriod: window.innerWidth >= 1280,
         showStatus: window.innerWidth >= 768,
     }));
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showReviseModal, setShowReviseModal] = useState(false);
+    const [salaryToEdit, setSalaryToEdit] = useState(null);
+    const [salaryToRevise, setSalaryToRevise] = useState(null);
 
     const { pagination, updatePagination, goToPage } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -1168,8 +1829,8 @@ const SalaryManagement = () => {
 
     const stats = {
         total: meta?.total || 0,
-        avgBase: salaries.length > 0 
-            ? salaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / salaries.length 
+        avgBase: salaries.length > 0
+            ? salaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / salaries.length
             : 0,
         totalCTC: salaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
         activeCount: salaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
@@ -1193,11 +1854,10 @@ const SalaryManagement = () => {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => setShowHistory(!showHistory)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                                showHistory 
-                                    ? 'bg-purple-600 text-white shadow-md' 
-                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showHistory
+                                ? 'bg-purple-600 text-white shadow-md'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                }`}
                         >
                             <FaHistory /> History
                         </button>
@@ -1345,7 +2005,7 @@ const SalaryManagement = () => {
                                         const status = getStatusBadge(salary.effective_to);
                                         const StatusIcon = status.icon;
                                         const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
-                                        
+
                                         return (
                                             <motion.tr
                                                 key={salary.salary_id}
@@ -1416,6 +2076,18 @@ const SalaryManagement = () => {
                                                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                                 },
                                                                 {
+                                                                    label: 'Edit Salary',
+                                                                    icon: <FaEdit size={13} />,
+                                                                    onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); },
+                                                                    className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                                                                },
+                                                                {
+                                                                    label: 'Revise Salary',
+                                                                    icon: <FaExchangeAlt size={13} />,
+                                                                    onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); },
+                                                                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                                                },
+                                                                {
                                                                     label: 'Delete',
                                                                     icon: <FaTrash size={13} />,
                                                                     onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
@@ -1480,6 +2152,19 @@ const SalaryManagement = () => {
                         fetchSalaries(1, "", true);
                         setShowAssignModal(false);
                     }}
+                />
+                <EditSalaryModal
+                    isOpen={showEditModal}
+                    onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }}
+                    onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)}
+                    salary={salaryToEdit}
+                />
+
+                <ReviseSalaryModal
+                    isOpen={showReviseModal}
+                    onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }}
+                    onSuccess={() => fetchSalaries(1, "", true)}
+                    salary={salaryToRevise}
                 />
 
                 <DeleteConfirmModal
