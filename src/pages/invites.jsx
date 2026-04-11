@@ -340,15 +340,11 @@ export default function MyInvites() {
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
                 <FaInfoCircle className="text-purple-500" /> Permissions
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
                 {invite.permissions.map((perm, idx) => (
                   <motion.div key={`perm-${perm.id}-${invite.invite_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
                     className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
                     <span className="font-medium text-gray-700">{perm.name}</span>
-                    {perm.is_allowed === 1 || perm.is_allowed === true
-                      ? <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1"><FaCheck size={10} /> Allowed</span>
-                      : <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium flex items-center gap-1"><FaBan size={10} /> Denied</span>
-                    }
                   </motion.div>
                 ))}
               </div>
