@@ -894,7 +894,7 @@ const EmployeeManagement = () => {
                                                                 className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                                                             },
                                                             {
-                                                                label: 'Holiday manage',
+                                                                label: 'Weekend Manage',
                                                                 icon: <FaCalendarAlt size={14} />,
                                                                 onClick: () => openWeekendModal(emp),
                                                                 disabled: !updateEmployeeAccess.enabled && updateEmployeeAccess.disabled, // Using same permission as edit for now
@@ -1540,8 +1540,8 @@ const EmployeeManagement = () => {
                                                     <FaCalendarAlt className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-gray-900">Holiday / Weekend Management</h2>
-                                                    <p className="text-sm text-gray-500 mt-0.5">Configure weekly holidays for <span className="font-semibold text-gray-700">{selectedEmployee.name}</span></p>
+                                                    <h2 className="text-xl font-bold text-gray-900">Weekend Management</h2>
+                                                    <p className="text-sm text-gray-500 mt-0.5">Configure weekend for <span className="font-semibold text-gray-700">{selectedEmployee.name}</span></p>
                                                 </div>
                                             </div>
                                             <motion.button

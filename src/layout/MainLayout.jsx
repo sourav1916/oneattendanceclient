@@ -12,7 +12,7 @@ const MainLayout = ({ children }) => {
 
   // ── Pull company data from your auth context ──
   // Adjust these destructured names to match what your AuthContext actually exposes
-  const { company, companies, switchCompany } = useAuth();
+  const { company, companies, selectCompany } = useAuth();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -77,7 +77,7 @@ const MainLayout = ({ children }) => {
         isDesktopSidebarExpanded={!desktopSidebarCollapsed || sidebarHovered}
         company={company}
         companies={companies}
-        onCompanySwitch={switchCompany}
+        onCompanySwitch={selectCompany}
       />
 
       <div className="flex relative">
