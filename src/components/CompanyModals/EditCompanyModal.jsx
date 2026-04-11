@@ -12,7 +12,7 @@ const GEOCODING_API = "https://nominatim.openstreetmap.org/reverse";
 
 function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled = false, submitTitle = '' }) {
   const [formData, setFormData] = useState({
-    company_ip: [], // Changed to array
+    company_ips: [],
     name: "",
     legal_name: "",
     logo_url: "",
@@ -72,7 +72,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
       
       setFormData(prev => ({
         ...prev,
-        company_ip: [...prev.company_ip, ...validIps]
+        company_ips: [...prev.company_ips, ...validIps]
       }));
       setIpInputValue("");
     }
@@ -82,7 +82,7 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
   const handleRemoveIp = (ipToRemove) => {
     setFormData(prev => ({
       ...prev,
-      company_ip: prev.company_ip.filter(ip => ip !== ipToRemove)
+      company_ips: prev.company_ips.filter(ip => ip !== ipToRemove)
     }));
   };
 
@@ -95,22 +95,22 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
 
   useEffect(() => {
     if (company) {
-      // Parse company_ip if it's a string, otherwise use as is
+      // Parse company_ips if it's a string, otherwise use as is
       let ipArray = [];
-      if (company.company_ip) {
-        if (Array.isArray(company.company_ip)) {
-          ipArray = company.company_ip;
-        } else if (typeof company.company_ip === 'string') {
+      if (company.company_ips) {
+        if (Array.isArray(company.company_ips)) {
+          ipArray = company.company_ips;
+        } else if (typeof company.company_ips === 'string') {
           try {
-            ipArray = JSON.parse(company.company_ip);
+            ipArray = JSON.parse(company.company_ips);
           } catch {
-            ipArray = company.company_ip.split(',').map(ip => ip.trim()).filter(ip => ip);
+            ipArray = company.company_ips.split(',').map(ip => ip.trim()).filter(ip => ip);
           }
         }
       }
       
       const data = {
-        company_ip: ipArray,
+        company_ips: ipArray,
         name: company.name || "",
         legal_name: company.legal_name || "",
         logo_url: company.logo_url || "",
@@ -209,20 +209,18 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
     const changedFields = {};
     
     // Check for IP changes
-    const originalIpArray = originalData.company_ip || [];
-    const currentIpArray = formData.company_ip || [];
+    const originalIpArray = originalData.company_ips || [];
+    const currentIpArray = formData.company_ips || [];
     
     if (ipMode === 'manual') {
       if (JSON.stringify(originalIpArray) !== JSON.stringify(currentIpArray)) {
-        changedFields.company_ip = currentIpArray;
+        changedFields.company_ips = currentIpArray;
       }
-    } else if (ipMode === 'auto' && originalIpArray.length > 0) {
-      changedFields.company_ip = [];
     }
     
     // Check other fields
     Object.keys(formData).forEach(key => {
-      if (key !== 'logo_url' && key !== 'company_ip' && formData[key] !== originalData[key]) {
+      if (key !== 'logo_url' && key !== 'company_ips' && formData[key] !== originalData[key]) {
         changedFields[key] = formData[key];
       }
     });
@@ -437,9 +435,9 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company, submitDisabled 
                       </button>
                     </div>
                     
-                    {formData.company_ip.length > 0 && (
+                    {formData.company_ips.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-3">
-                        {formData.company_ip.map((ip, index) => (
+                        {formData.company_ips.map((ip, index) => (
                           <div key={index} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded-lg">
                             <span className="text-sm text-gray-700 font-mono">{ip}</span>
                             <button

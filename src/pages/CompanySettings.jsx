@@ -370,8 +370,8 @@ const CompanyManagement = () => {
             Object.keys(changedFields).forEach(key => {
                 if (key === 'logo_url' && changedFields[key] instanceof File) {
                     formData.append('logo_url', changedFields[key]);
-                } else if (key === 'company_ip') {
-                    formData.append('company_ip', JSON.stringify(changedFields[key]));
+                } else if (key === 'company_ips') {
+                    formData.append('company_ips', JSON.stringify(changedFields[key]));
                 } else {
                     formData.append(key, changedFields[key]);
                 }

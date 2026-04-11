@@ -27,6 +27,7 @@ const MODAL_TYPES = {
     EDIT: 'EDIT',
     VIEW: 'VIEW',
     DELETE_CONFIRM: 'DELETE_CONFIRM',
+    WEEKEND_MANAGE: 'WEEKEND_MANAGE',
 };
 
 const modalVariants = {
@@ -87,6 +88,15 @@ const EmployeeManagement = () => {
         employee_code: '', employment_type: '', salary_type: '',
         joining_date: '', status: '', permission_package_id: null,
         attendance_methods: []
+    });
+    const [weekendConfig, setWeekendConfig] = useState({
+        monday: 'none',
+        tuesday: 'none',
+        wednesday: 'none',
+        thursday: 'none',
+        friday: 'none',
+        saturday: 'none',
+        sunday: 'none'
     });
 
     const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
@@ -510,6 +520,29 @@ const EmployeeManagement = () => {
         setActiveActionMenu(null);
     };
 
+    const openWeekendModal = (employee) => {
+        setSelectedEmployee(employee);
+        
+        // Initialize weekend config from employee data if available
+        const initialConfig = {
+            monday: 'none', tuesday: 'none', wednesday: 'none', thursday: 'none',
+            friday: 'none', saturday: 'none', sunday: 'none'
+        };
+
+        if (employee.weekends && Array.isArray(employee.weekends)) {
+            employee.weekends.forEach(w => {
+                const day = w.day.toLowerCase();
+                if (initialConfig.hasOwnProperty(day)) {
+                    initialConfig[day] = w.type.toLowerCase();
+                }
+            });
+        }
+
+        setWeekendConfig(initialConfig);
+        setModalType(MODAL_TYPES.WEEKEND_MANAGE);
+        setActiveActionMenu(null);
+    };
+
     const closeModal = () => {
         setModalType(MODAL_TYPES.NONE);
         setSelectedEmployee(null);
@@ -562,6 +595,42 @@ const EmployeeManagement = () => {
             closeModal();
         } else {
             toast.error(result.error || 'Failed to delete employee');
+        }
+    };
+
+    const handleWeekendSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedEmployee) return;
+
+        setLoading(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            
+            // Format weekends for payload: only include those with type 'half' or 'full'
+            const weekends = Object.entries(weekendConfig)
+                .filter(([, type]) => type !== 'none')
+                .map(([day, type]) => ({ day, type }));
+
+            const payload = {
+                employee_id: selectedEmployee.id,
+                weekends: weekends
+            };
+
+            const response = await apiCall('/employees/weekends/manage', 'PUT', payload, company?.id);
+            const result = await response.json();
+
+            if (result.success) {
+                toast.success('Weekend configuration updated successfully!');
+                employeeListRequestCache.clear();
+                await fetchEmployees(pagination.page, false);
+                closeModal();
+            } else {
+                throw new Error(result.message || 'Failed to update weekend configuration');
+            }
+        } catch (e) {
+            toast.error(e.message || 'Failed to update weekend configuration');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -825,6 +894,14 @@ const EmployeeManagement = () => {
                                                                 className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                                                             },
                                                             {
+                                                                label: 'Holiday manage',
+                                                                icon: <FaCalendarAlt size={14} />,
+                                                                onClick: () => openWeekendModal(emp),
+                                                                disabled: !updateEmployeeAccess.enabled && updateEmployeeAccess.disabled, // Using same permission as edit for now
+                                                                title: updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : '',
+                                                                className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                                            },
+                                                            {
                                                                 label: 'Delete',
                                                                 icon: <FaTrash size={14} />,
                                                                 onClick: () => openDeleteModal(emp),
@@ -873,6 +950,7 @@ const EmployeeManagement = () => {
                                     <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
                                         <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
                                         <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
+                                        <button onClick={() => openWeekendModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaCalendarAlt size={16} /></button>
                                         <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                                     </div>
                                 </motion.div>
@@ -1007,6 +1085,30 @@ const EmployeeManagement = () => {
                                                                             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Auto</span>
                                                                         )}
                                                                     </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {selectedEmployee.weekends?.length > 0 && (
+                                                <div className="col-span-2 mt-4">
+                                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><FaCalendarAlt className="text-purple-500" /> Weekly Holidays</label>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {selectedEmployee.weekends.map((w, idx) => (
+                                                            <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                                                                className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200"
+                                                            >
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="font-medium text-gray-700 capitalize">{w.day}</span>
+                                                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                                        w.type?.toLowerCase() === 'full' 
+                                                                        ? 'bg-indigo-100 text-indigo-700' 
+                                                                        : 'bg-blue-100 text-blue-700'
+                                                                    }`}>
+                                                                        {w.type?.toLowerCase() === 'full' ? 'Full Day' : 'Half Day'}
+                                                                    </span>
                                                                 </div>
                                                             </motion.div>
                                                         ))}
@@ -1348,6 +1450,44 @@ const EmployeeManagement = () => {
                                                                 })}
                                                             </div>
                                                         </motion.div>
+                                                        
+                                                        <motion.div
+                                                            initial={{ y: 20, opacity: 0 }}
+                                                            animate={{ y: 0, opacity: 1 }}
+                                                            transition={{ delay: 0.45 }}
+                                                            className="space-y-3"
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                                                                    <FaCalendarAlt className="w-4 h-4 text-purple-500" />
+                                                                    Weekly Holidays
+                                                                </label>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openWeekendModal(selectedEmployee)}
+                                                                    className="text-xs text-purple-600 hover:text-purple-700 font-semibold bg-purple-50 px-3 py-1 rounded-lg transition-colors border border-purple-100"
+                                                                >
+                                                                    Manage
+                                                                </button>
+                                                            </div>
+
+                                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                                                {selectedEmployee?.weekends?.length > 0 ? (
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {selectedEmployee.weekends.map((w, idx) => (
+                                                                            <span key={idx} className="text-xs px-2 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 flex items-center gap-1">
+                                                                                <span className="capitalize font-semibold">{w.day.substring(0, 3)}:</span>
+                                                                                <span className={w.type?.toLowerCase() === 'full' ? 'text-indigo-600' : 'text-blue-600'}>
+                                                                                    {w.type?.toLowerCase() === 'full' ? 'Full' : 'Half'}
+                                                                                </span>
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-xs text-gray-400 italic">No weekends configured</p>
+                                                                )}
+                                                            </div>
+                                                        </motion.div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1384,6 +1524,94 @@ const EmployeeManagement = () => {
                                                         Update Employee
                                                     </>
                                                 )}
+                                            </motion.button>
+                                        </div>
+                                    </form>
+                                </>
+                            )}
+
+                            {/* WEEKEND MANAGE MODAL */}
+                            {modalType === MODAL_TYPES.WEEKEND_MANAGE && selectedEmployee && (
+                                <>
+                                    <div className="px-6 py-5 border-b border-gray-100">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200">
+                                                    <FaCalendarAlt className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-xl font-bold text-gray-900">Holiday / Weekend Management</h2>
+                                                    <p className="text-sm text-gray-500 mt-0.5">Configure weekly holidays for <span className="font-semibold text-gray-700">{selectedEmployee.name}</span></p>
+                                                </div>
+                                            </div>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                                whileTap={{ scale: 0.9 }}
+                                                onClick={closeModal}
+                                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                            >
+                                                <FaTimes className="w-5 h-5 text-gray-400" />
+                                            </motion.button>
+                                        </div>
+                                    </div>
+                                    <form onSubmit={handleWeekendSubmit} className="p-6">
+                                        <div className="space-y-4 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
+                                            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                                                <div key={day} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md hover:border-purple-200">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-purple-600 font-bold uppercase text-xs group-hover:bg-purple-50">
+                                                            {day.substring(0, 3)}
+                                                        </div>
+                                                        <span className="capitalize font-medium text-gray-700">{day}</span>
+                                                    </div>
+                                                    
+                                                    <div className="flex bg-white p-1 rounded-xl shadow-inner border border-gray-200">
+                                                        {[
+                                                            { value: 'none', label: 'Working', color: 'bg-gray-100 text-gray-600' },
+                                                            { value: 'half', label: 'Half Day', color: 'bg-blue-500 text-white' },
+                                                            { value: 'full', label: 'Full Day', color: 'bg-indigo-600 text-white' }
+                                                        ].map((opt) => {
+                                                            const isActive = weekendConfig[day] === opt.value;
+                                                            return (
+                                                                <button
+                                                                    key={opt.value}
+                                                                    type="button"
+                                                                    onClick={() => setWeekendConfig(prev => ({ ...prev, [day]: opt.value }))}
+                                                                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                                                                        isActive 
+                                                                        ? `${opt.color} shadow-lg scale-105 ring-2 ring-white` 
+                                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                                    }`}
+                                                                >
+                                                                    {opt.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 mt-6 -mx-6 -mb-6">
+                                            <motion.button
+                                                type="button"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={closeModal}
+                                                disabled={loading}
+                                                className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white transition-all duration-200 text-sm"
+                                            >
+                                                Cancel
+                                            </motion.button>
+                                            <motion.button
+                                                type="submit"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                disabled={loading}
+                                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-purple-200 flex items-center gap-2"
+                                            >
+                                                {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                                                Save Configuration
                                             </motion.button>
                                         </div>
                                     </form>
