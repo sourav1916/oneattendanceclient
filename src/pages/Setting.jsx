@@ -4,6 +4,7 @@ import {
   FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog,
   FaMoon, FaSun, FaBars, FaTimes, FaSave, FaSpinner
 } from "react-icons/fa";
+import { FiLogOut } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
@@ -58,6 +59,79 @@ const SettingsPage = () => {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [originalProfile, setOriginalProfile] = useState({});
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  {/* ---- Active Sessions Card ---- */ }
+
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [loggingOutId, setLoggingOutId] = useState(null);
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === "security") fetchSessions();
+  }, [activeTab]);
+
+  const fetchSessions = async () => {
+    setLoadingSessions(true);
+    try {
+      const response = await apiCall('/auth/sessions', 'GET');
+      const data = await response.json();
+      setSessions(data.sessions || []);
+    } catch {
+      toast.error("Failed to load sessions");
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const forceLogout = async (sessionId) => {
+    setLoggingOutId(sessionId);
+    try {
+      const response = await apiCall('/auth/logout-session', 'POST', { session_id: sessionId });
+      const data = await response.json(); // ← add this
+      if (data.success) {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+        toast.success("Device logged out");
+      } else {
+        toast.error(data.message || "Failed to logout session");
+      }
+    } catch {
+      toast.error("Failed to logout session");
+    } finally {
+      setLoggingOutId(null);
+    }
+  };
+
+  const forceLogoutAll = async () => {
+    setLoggingOutAll(true);
+    try {
+      const response = await apiCall('/auth/logout-all', 'POST');
+      const data = await response.json(); // ← add this
+      if (data.success) {
+        setSessions((prev) => prev.filter((s) => s.is_current));
+        toast.success("All other devices logged out");
+      } else {
+        toast.error(data.message || "Failed to logout all");
+      }
+    } catch {
+      toast.error("Failed to logout all sessions");
+    } finally {
+      setLoggingOutAll(false);
+    }
+  };
+  const getDeviceIcon = (name) => {
+    const n = name.toLowerCase();
+    if (n.includes("ios") || n.includes("safari")) return "🍎";
+    if (n.includes("android") || n.includes("mobile")) return "📱";
+    return "💻";
+  };
+
+  const timeAgo = (dateStr) => {
+    const diff = Math.floor((Date.now() - new Date(dateStr + " UTC")) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
 
   useEffect(() => {
     loadActiveCompany();
@@ -341,7 +415,7 @@ const SettingsPage = () => {
 
   if (loading) {
     return (
-      <Skeleton/>
+      <Skeleton />
     );
   }
 
@@ -517,12 +591,12 @@ const SettingsPage = () => {
               {activeCompany && companies.length > 0 && (
                 <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-center gap-4">
                   {activeCompany.logo_url ? (
-                    <img 
-                      src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`} 
-                      alt="Company Logo" 
+                    <img
+                      src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`}
+                      alt="Company Logo"
                       className="w-14 h-14 rounded-xl object-cover border border-indigo-200 shadow-sm bg-white shrink-0 hidden sm:block"
                       onError={(e) => {
-                        e.target.onerror = null; 
+                        e.target.onerror = null;
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
                       }}
@@ -666,58 +740,154 @@ const SettingsPage = () => {
             </div>
           )}
 
-          {/* Security Tab - Responsive */}
           {activeTab === "security" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Security Settings</h2>
+            <>
+              {/* Change Password Card */}
+              <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Security Settings</h2>
 
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-medium text-gray-900 text-sm sm:text-base mb-3">Change Password</h3>
-                  <div className="space-y-3">
-                    <input
-                      type="password"
-                      placeholder="Current Password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                      disabled={isUpdatingPassword}
-                    />
-                    <input
-                      type="password"
-                      placeholder="New Password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                      disabled={isUpdatingPassword}
-                    />
-                    <input
-                      type="password"
-                      placeholder="Confirm New Password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                      disabled={isUpdatingPassword}
-                    />
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-medium text-gray-900 text-sm sm:text-base mb-3">Change Password</h3>
+                    <div className="space-y-3">
+                      <input
+                        type="password"
+                        placeholder="Current Password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                        disabled={isUpdatingPassword}
+                      />
+                      <input
+                        type="password"
+                        placeholder="New Password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                        disabled={isUpdatingPassword}
+                      />
+                      <input
+                        type="password"
+                        placeholder="Confirm New Password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                        disabled={isUpdatingPassword}
+                      />
+                    </div>
                   </div>
+
+                  <button
+                    onClick={handlePasswordUpdate}
+                    disabled={isUpdatingPassword}
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isUpdatingPassword ? (
+                      <>
+                        <FaSpinner className="w-4 h-4 animate-spin inline mr-2" />
+                        Updating...
+                      </>
+                    ) : (
+                      'Update Password'
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Sessions Card */}
+              <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6 mt-4">
+                {/* Header */}
+                <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Active Sessions</h3>
+                    <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      {sessions.length} device{sessions.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <button
+                    onClick={forceLogoutAll}
+                    disabled={loggingOutAll || sessions.filter((s) => !s.is_current).length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loggingOutAll ? (
+                      <FaSpinner className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FiLogOut className="w-3 h-3" />
+                    )}
+                    Logout All Other Devices
+                  </button>
                 </div>
 
-                <button
-                  onClick={handlePasswordUpdate}
-                  disabled={isUpdatingPassword}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isUpdatingPassword ? (
-                    <>
-                      <FaSpinner className="w-4 h-4 animate-spin inline mr-2" />
-                      Updating...
-                    </>
-                  ) : (
-                    'Update Password'
-                  )}
-                </button>
+                {/* List */}
+                {loadingSessions ? (
+                  <div className="flex items-center justify-center py-8 text-gray-400 text-sm gap-2">
+                    <FaSpinner className="animate-spin w-4 h-4" /> Loading sessions...
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all flex-wrap
+                ${session.is_current
+                            ? "bg-indigo-50/60 border-indigo-200"
+                            : "bg-gray-50 border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30"
+                          }`}
+                      >
+                        {/* Left: icon + info */}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0
+                  ${session.device_name.toLowerCase().includes("ios") ? "bg-pink-100"
+                              : session.device_name.toLowerCase().includes("android") ? "bg-green-100"
+                                : "bg-indigo-100"}`}>
+                            {getDeviceIcon(session.device_name)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-semibold text-gray-800 truncate">{session.device_name}</span>
+                              {session.is_current && (
+                                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                  This Device
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-xs text-gray-500">{session.ip_address}</span>
+                              {session.location?.latitude && (
+                                <span className="text-xs text-gray-400">
+                                  📍 {parseFloat(session.location.latitude).toFixed(3)}, {parseFloat(session.location.longitude).toFixed(3)}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-400 mt-0.5">
+                              Last active {timeAgo(session.last_active)} · Signed in {timeAgo(session.login_at)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right: action */}
+                        {session.is_current ? (
+                          <span className="text-xs text-indigo-500 font-semibold px-2">✓ Active</span>
+                        ) : (
+                          <button
+                            onClick={() => forceLogout(session.id)}
+                            disabled={loggingOutId === session.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-500 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                          >
+                            {loggingOutId === session.id ? (
+                              <FaSpinner className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <FiLogOut className="w-3 h-3" />
+                            )}
+                            Logout
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           )}
 
           {/* Preferences Tab - Responsive */}
