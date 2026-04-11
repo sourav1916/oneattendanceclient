@@ -198,10 +198,19 @@ const Navbar = ({
                                             bg-emerald-400 border-2 border-white rounded-full"></div>
 
                                         {/* ── Mobile: company swap badge ── */}
-                                        <button
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={(e) => {
                                                 e.stopPropagation(); // don't open user dropdown
                                                 setShowCompanySwitcher(true);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setShowCompanySwitcher(true);
+                                                }
                                             }}
                                             className="md:hidden absolute -top-2 -left-2
                                                 w-5 h-5 rounded-full
@@ -209,12 +218,12 @@ const Navbar = ({
                                                 bg-indigo-900/80 backdrop-blur-sm
                                                 border border-white/30
                                                 hover:bg-indigo-700 transition-colors
-                                                shadow-md"
+                                                shadow-md cursor-pointer"
                                             aria-label="Switch company"
                                             title="Switch company"
                                         >
                                             <FaExchangeAlt className="w-2.5 h-2.5 text-white" />
-                                        </button>
+                                        </span>
                                     </div>
 
                                     <div className="hidden md:block text-left max-w-[120px]">
