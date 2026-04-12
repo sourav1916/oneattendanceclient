@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import apiCall, { uploadFile } from "../../utils/api";
+import { getPreciseLocation } from "../../utils/geolocation";
 import {
   FaBuilding, FaTimes, FaCheck, FaSpinner,
   FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
@@ -77,91 +78,45 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
     };
   }, [logoPreview]);
 
-  // Handle auto-detection of address from coordinates
-  const autoDetectAddress = async (lat, lon) => {
-    setIsGeocoding(true);
-    try {
-      const params = new URLSearchParams({
-        lat: lat.toString(),
-        lon: lon.toString(),
-        format: 'json',
-        addressdetails: 1
-      });
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'AttendanceApp/1.0'
-        }
-      });
-      const data = await response.json();
-
-      if (data && data.address) {
-        const address = data.address;
-        setCompanyForm(prev => ({
-          ...prev,
-          address_line1: [address.house_number, address.road].filter(Boolean).join(' ').trim() || 
-                        [address.neighbourhood, address.suburb].filter(Boolean).join(', ').trim() || "",
-          address_line2: [address.neighbourhood, address.suburb, address.hamlet, address.locality, address.village]
-            .filter(Boolean).join(', ').trim(),
-          city: address.city || address.town || address.village || address.county || "",
-          state: address.state || "",
-          postal_code: address.postcode || "",
-          country: address.country || "India",
-          latitude: lat.toString(),
-          longitude: lon.toString()
-        }));
-        setIsAddressAutoDetected(true);
-        toast.success("📍 Location and address auto-detected successfully!");
-      } else {
-        setCompanyForm(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
-        toast.info("📍 Coordinates detected, but could not resolve full address.");
-      }
-    } catch (err) {
-      console.error("Reverse geocoding error:", err);
-      setCompanyForm(prev => ({ ...prev, latitude: lat.toString(), longitude: lon.toString() }));
-      toast.info("📍 Coordinates detected, but could not resolve address.");
-    } finally {
-      setIsGeocoding(false);
-    }
-  };
-
   // Handle address mode change (auto-detect)
-  const handleAddressModeChange = (mode) => {
+  const handleAddressModeChange = async (mode) => {
     if (mode === 'manual') {
       setAddressMode('manual');
       setIsAddressAutoDetected(false);
       return;
     }
 
-    if (!("geolocation" in navigator)) {
-      toast.info("Geolocation is not supported by your browser. Please use manual address entry.");
-      return;
-    }
-
     setIsGeocoding(true);
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        setAddressMode('auto');
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-        await autoDetectAddress(lat, lon);
-      },
-      (error) => {
-        setAddressMode('manual');
-        if (error?.code === 1) {
-          toast.info("Location access denied. You can continue with manual address entry.");
-        } else if (error?.code === 2) {
-          toast.info("Current location unavailable. Please use manual address entry.");
-        } else if (error?.code === 3) {
-          toast.info("Location lookup timed out. Please use manual address entry.");
-        } else {
-          toast.info("Unable to get current location. Please use manual address entry.");
-        }
-        setIsGeocoding(false);
-      },
-      { timeout: 10000, enableHighAccuracy: true }
-    );
+    try {
+      const position = await getPreciseLocation({ fetchAddress: true });
+      setAddressMode('auto');
+      
+      const formUpdate = {
+        latitude: position.latitude.toString(),
+        longitude: position.longitude.toString()
+      };
+
+      if (position.address) {
+        formUpdate.address_line1 = position.address.line1;
+        formUpdate.address_line2 = position.address.line2;
+        formUpdate.city = position.address.city;
+        formUpdate.state = position.address.state;
+        formUpdate.postal_code = position.address.postal_code;
+        formUpdate.country = position.address.country;
+        setIsAddressAutoDetected(true);
+        toast.success("📍 Location and address auto-detected successfully!");
+      } else {
+        toast.info("📍 Coordinates detected, but could not resolve full address.");
+      }
+      
+      setCompanyForm(prev => ({ ...prev, ...formUpdate }));
+    } catch (error) {
+      setAddressMode('manual');
+      toast.info((error.message || "Unable to get current location.") + " Please use manual address entry.");
+    } finally {
+      setIsGeocoding(false);
+    }
   };
 
   // Manual geocoding from address (for manual mode)

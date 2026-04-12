@@ -398,19 +398,14 @@ const CompanyManagement = () => {
 
     const handleEditSuccess = async (id, changedFields) => {
         try {
-            const formData = new FormData();
-            formData.append('id', id);
-            Object.keys(changedFields).forEach(key => {
-                if (key === 'logo_url' && changedFields[key] instanceof File) {
-                    formData.append('logo_url', changedFields[key]);
-                } else if (key === 'company_ips') {
-                    formData.append('company_ips', JSON.stringify(changedFields[key]));
-                } else {
-                    formData.append(key, changedFields[key]);
-                }
-            });
-            const res    = await apiCall('/company/update', 'PUT', formData);
+            const payload = {
+                id: id,
+                ...changedFields
+            };
+            
+            const res    = await apiCall('/company/update', 'PUT', payload);
             const result = await res.json();
+            
             if (result.success) {
                 toast.success('Company updated successfully!');
                 setEditModalTarget(null);

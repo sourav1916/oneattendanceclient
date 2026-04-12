@@ -190,25 +190,12 @@ const SettingsPage = () => {
         return;
       }
 
-      const hasFile = Object.values(updatedData).some(val => val instanceof File);
-
-      let payload;
-      if (hasFile) {
-        payload = new FormData();
-        payload.append('id', companyId);
-        Object.entries(updatedData).forEach(([key, value]) => {
-          if (value !== "" && value !== null && value !== undefined) {
-            payload.append(key, value);
-          }
-        });
-      } else {
-        payload = {
-          id: companyId,
-          ...Object.fromEntries(
-            Object.entries(updatedData).filter(([_, value]) => value !== "" && value !== null && value !== undefined)
-          )
-        };
-      }
+      const payload = {
+        id: companyId,
+        ...Object.fromEntries(
+          Object.entries(updatedData).filter(([_, value]) => value !== "" && value !== null && value !== undefined)
+        )
+      };
 
       const response = await apiCall('/company/edit', 'PUT', payload);
 
