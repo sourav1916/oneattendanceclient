@@ -9,6 +9,7 @@ import {
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
 import Pagination, { usePagination } from "../components/PaginationComponent";
+import TimeFilter from "../components/TimeFilter";
 import EditStaffModal from "../components/StaffModals/EditStaffModal";
 import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
@@ -96,6 +97,7 @@ export default function CompanyInvites() {
   const [editingInvite, setEditingInvite]       = useState(null);
   const [isInitialLoad, setIsInitialLoad]       = useState(true);
   const [openCreateInviteModal, setOpenCreateInviteModal] = useState(false);
+  const inviteTimeParamsRef = useRef({});
 
   const fetchInProgress = useRef(false);
 
@@ -114,7 +116,7 @@ export default function CompanyInvites() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchInvites = useCallback(
-    async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true) => {
+    async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true, timeParams = inviteTimeParamsRef.current) => {
       if (fetchInProgress.current) return;
       fetchInProgress.current = true;
       if (resetLoading) setLoading(true);
@@ -123,6 +125,11 @@ export default function CompanyInvites() {
         const company = JSON.parse(localStorage.getItem("company"));
         const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
         if (search) params.append("search", search);
+        Object.entries(timeParams || {}).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && String(value).trim() !== "") {
+            params.append(key, String(value));
+          }
+        });
 
         const response = await apiCall(`/company/invites/list?${params.toString()}`, 'GET', null, company?.id);
         if (!response.ok) throw new Error("Failed to fetch invites");
@@ -166,6 +173,12 @@ export default function CompanyInvites() {
     (newPage) => { if (newPage !== pagination.page) goToPage(newPage); },
     [pagination.page, goToPage]
   );
+
+  const handleTimeFetch = useCallback((params) => {
+    const nextParams = params || {};
+    inviteTimeParamsRef.current = nextParams;
+    return fetchInvites(1, debouncedSearchTerm, true, nextParams);
+  }, [debouncedSearchTerm, fetchInvites]);
 
   useEffect(() => {
     if (!isInitialLoad && !fetchInProgress.current) {
@@ -437,7 +450,8 @@ export default function CompanyInvites() {
         </motion.div>
 
         {/* View Toggle */}
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end gap-2 mb-6">
+          <TimeFilter onFetch={handleTimeFetch} />
           <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
         </div>
 
