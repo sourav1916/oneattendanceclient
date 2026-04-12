@@ -141,8 +141,8 @@ const Navbar = ({
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={toggleSidebar}
-                                className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50
-                                    ${isSidebarOpen ? 'text-white bg-white/20' : 'text-white/80 hover:text-white hover:bg-white/20'}`}
+                                className={`p-2 rounded-lg transition-all duration-200 focus:outline-none
+                                    ${isSidebarOpen ? 'text-white' : 'text-white/80 hover:text-white hover:bg-white/20'}`}
                                 data-sidebar-toggle="true"
                                 aria-label="Toggle menu"
                             >
@@ -155,9 +155,9 @@ const Navbar = ({
                                 className="flex items-center gap-1 rounded-lg transition-opacity duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-white/50"
                                 aria-label="Go to home"
                             >
-                                <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm shadow-inner">
-                                    <FaFingerprint className="h-6 w-6 text-white" />
-                                </div>
+                                {/* <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-sm shadow-inner">
+                                    <FaFingerprint className="h-5 w-5 text-white" />
+                                </div> */}
                                 <div>
                                     <span className="text-xl font-bold text-white tracking-tight">
                                         One<span className="font-light text-white/90">Attendance</span>
