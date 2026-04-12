@@ -365,7 +365,7 @@ const AttendanceManagement = ({ companyId }) => {
   const previousSearchRef = useRef('');
   const lastRequestKeyRef = useRef('');
 
-  const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const itemsPerPage = pagination.limit;
   const approveAccess = checkActionAccess('attendanceManagement', 'approve');
   const rejectAccess = checkActionAccess('attendanceManagement', 'reject');
@@ -709,6 +709,7 @@ const AttendanceManagement = ({ companyId }) => {
                   totalItems={pagination.total}
                   itemsPerPage={pagination.limit}
                   onPageChange={goToPage}
+                  onLimitChange={changeLimit}
                 />
               </div>
             )}

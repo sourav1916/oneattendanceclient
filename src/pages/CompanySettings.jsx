@@ -319,7 +319,7 @@ const CompanyManagement = () => {
     const [editModalTarget, setEditModalTarget] = useState(null);
     const [windowWidth, setWindowWidth]         = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
 
     useEffect(() => {
@@ -344,12 +344,21 @@ const CompanyManagement = () => {
             const result = await res.json();
             if (result.success) {
                 setCompanies(result.data || []);
+                const currentPage = Number(result.pagination?.page ?? result.current_page ?? result.page ?? page);
+                const perPage = Number(result.pagination?.limit ?? result.per_page ?? result.limit ?? pagination.limit);
+                const total = Number(result.pagination?.total ?? result.total ?? result.meta?.total ?? result.count ?? 0);
+                const totalPages = Number(
+                    result.pagination?.total_pages ??
+                    result.meta?.total_pages ??
+                    result.last_page ??
+                    Math.max(1, Math.ceil(total / perPage))
+                );
                 updatePagination({
-                    page:         result.pagination?.page         || page,
-                    limit:        result.pagination?.limit        || pagination.limit,
-                    total:        result.pagination?.total        || 0,
-                    total_pages:  result.pagination?.total_pages  || 1,
-                    is_last_page: result.pagination?.is_last_page ?? true,
+                    page: currentPage,
+                    limit: perPage,
+                    total,
+                    total_pages: totalPages,
+                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages),
                 });
             } else {
                 throw new Error(result.message || 'Failed to fetch companies');
@@ -374,7 +383,7 @@ const CompanyManagement = () => {
         if (!isInitialLoad && !fetchInProgress.current) {
             fetchCompanies(pagination.page, debouncedSearch, true);
         }
-    }, [pagination.page]);
+    }, [pagination.page, pagination.limit, debouncedSearch]);
 
     useEffect(() => {
         fetchCompanies(1, '', true);
@@ -708,14 +717,14 @@ const CompanyManagement = () => {
                 )}
 
                 {/* Pagination */}
-                {!loading && companies.length > 0 && (
+                {!loading && (companies.length > 0 || pagination.total > 0) && (
                     <Pagination
                         currentPage={pagination.page}
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={(p) => { if (p !== pagination.page) goToPage(p); }}
-                        variant="default"
                         showInfo={true}
+                        onLimitChange={changeLimit}
                     />
                 )}
             </div>

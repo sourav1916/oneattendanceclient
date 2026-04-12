@@ -227,7 +227,7 @@ const MyPayroll = () => {
     const [searchTerm, setSearchTerm]   = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 12);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 12);
     const fetchInProgress  = useRef(false);
     const initialFetchDone = useRef(false);
     const isInitialLoad    = useRef(true);
@@ -308,12 +308,28 @@ const MyPayroll = () => {
             if (result.success) {
                 setPayrollData(result.data || []);
                 setEmployee(result.employee || null);
+                const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
+                const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
+                const total = Number(
+                    result.pagination?.total ??
+                    result.meta?.total ??
+                    result.total ??
+                    result.data?.length ??
+                    0
+                );
+                const totalPages = Number(
+                    result.pagination?.total_pages ??
+                    result.meta?.total_pages ??
+                    result.total_pages ??
+                    result.last_page ??
+                    Math.max(1, Math.ceil(total / perPage))
+                );
                 updatePagination({
-                    page:        result.pagination?.page        || page,
-                    limit:       result.pagination?.limit       || pagination.limit,
-                    total:       result.total                   || result.data?.length || 0,
-                    total_pages: result.pagination?.total_pages || 1,
-                    is_last_page: result.pagination?.is_last_page ?? true
+                    page: currentPage,
+                    limit: perPage,
+                    total,
+                    total_pages: totalPages,
+                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages)
                 });
             } else {
                 throw new Error(result.message || 'Failed to fetch payroll');
@@ -338,7 +354,7 @@ const MyPayroll = () => {
         if (!isInitialLoad.current && !fetchInProgress.current && initialFetchDone.current) {
             fetchPayroll(pagination.page, true);
         }
-    }, [pagination.page]);
+    }, [pagination.page, pagination.limit, debouncedSearch]);
 
     // ─── Summary Stats ──────────────────────────────────────────────────────────
 
@@ -665,8 +681,8 @@ const MyPayroll = () => {
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
                         showInfo={true}
+                        onLimitChange={changeLimit}
                     />
                 </>
             )}

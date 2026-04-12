@@ -123,7 +123,7 @@ export default function MyInvites() {
   const fetchInProgress = useRef(false);
   const initialFetchDone = useRef(false);
 
-  const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const { refreshUser } = useAuth();
 
   // Debounce search
@@ -152,12 +152,21 @@ export default function MyInvites() {
       const result = await response.json();
       if (result.success) {
         setInvites(result.data || []);
+        const currentPage = Number(result.current_page ?? result.page ?? page);
+        const perPage = Number(result.per_page ?? result.limit ?? pagination.limit);
+        const total = Number(result.total ?? result.meta?.total ?? 0);
+        const totalPages = Number(
+          result.last_page ??
+          result.total_pages ??
+          result.meta?.total_pages ??
+          Math.max(1, Math.ceil(total / perPage))
+        );
         updatePagination({
-          page: result.current_page || page,
-          limit: result.per_page || pagination.limit,
-          total: result.total || 0,
-          total_pages: result.last_page || Math.ceil((result.total || 0) / pagination.limit),
-          is_last_page: result.current_page === result.last_page
+          page: currentPage,
+          limit: perPage,
+          total,
+          total_pages: totalPages,
+          is_last_page: result.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages)
         });
         setError(null);
       } else {
@@ -186,7 +195,7 @@ export default function MyInvites() {
     if (!isInitialLoad && !fetchInProgress.current && initialFetchDone.current) {
       fetchInvites(pagination.page, true);
     }
-  }, [pagination.page]); // eslint-disable-line
+  }, [pagination.page, pagination.limit, debouncedSearchTerm, statusFilter]); // eslint-disable-line
 
   // Reset on filters
   useEffect(() => {
@@ -618,14 +627,16 @@ export default function MyInvites() {
               </ManagementGrid>
             )}
 
-            <Pagination
-              currentPage={pagination.page}
-              totalItems={pagination.total}
-              itemsPerPage={pagination.limit}
-              onPageChange={handlePageChange}
-              variant="default"
-              showInfo={true}
-            />
+            {!loading && (invites.length > 0 || pagination.total > 0) && (
+              <Pagination
+                currentPage={pagination.page}
+                totalItems={pagination.total}
+                itemsPerPage={pagination.limit}
+                onPageChange={handlePageChange}
+                showInfo={true}
+                onLimitChange={changeLimit}
+              />
+            )}
           </>
         )}
 

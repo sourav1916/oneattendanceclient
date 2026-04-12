@@ -365,7 +365,7 @@ const AttendanceHistory = () => {
     typeof window !== 'undefined' ? window.innerWidth : 1440
   );
   const [activeActionMenu, setActiveActionMenu] = useState(null);
-  const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
   const [totalRecords, setTotalRecords] = useState(0);
   const fetchInProgressRef = useRef(false);
 
@@ -751,8 +751,8 @@ const AttendanceHistory = () => {
             totalItems={totalRecords}
             itemsPerPage={pagination.limit}
             onPageChange={goToPage}
-            variant={isTinyViewport ? 'minimal' : 'default'}
             showInfo={!isTinyViewport}
+            onLimitChange={changeLimit}
           />
         )}
       </div>

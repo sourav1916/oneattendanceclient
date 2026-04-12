@@ -99,7 +99,7 @@ export default function CompanyInvites() {
 
   const fetchInProgress = useRef(false);
 
-  const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const createInviteAccess = checkActionAccess("companyInvites", "create");
   const updateInviteAccess = checkActionAccess("companyInvites", "update");
   const cancelInviteAccess = checkActionAccess("companyInvites", "cancel");
@@ -162,7 +162,7 @@ export default function CompanyInvites() {
     if (!isInitialLoad && !fetchInProgress.current) {
       fetchInvites(pagination.page, debouncedSearchTerm, true);
     }
-  }, [pagination.page]); // eslint-disable-line
+  }, [pagination.page, pagination.limit, debouncedSearchTerm]); // eslint-disable-line
 
   useEffect(() => {
     if (!isInitialLoad) {
@@ -630,8 +630,8 @@ export default function CompanyInvites() {
               totalItems={pagination.total}
               itemsPerPage={pagination.limit}
               onPageChange={handlePageChange}
-              variant="default"
               showInfo={true}
+              onLimitChange={changeLimit}
             />
           </>
         )}

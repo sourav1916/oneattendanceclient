@@ -105,6 +105,7 @@ const EmployeeManagement = () => {
         pagination,
         updatePagination,
         goToPage,
+        changeLimit,
     } = usePagination(1, 20);
 
     const constantsFetched = useRef(false);
@@ -964,7 +965,7 @@ const EmployeeManagement = () => {
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
+                        onLimitChange={changeLimit}
                         showInfo={true}
                     />
                 </>

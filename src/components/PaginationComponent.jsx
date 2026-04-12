@@ -1,43 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { 
+    FaChevronLeft, 
+    FaChevronRight, 
+    FaAngleDoubleLeft, 
+    FaAngleDoubleRight,
+    FaLevelDownAlt 
+} from 'react-icons/fa';
 
 const Pagination = ({
     currentPage,
     totalItems,
     itemsPerPage,
     onPageChange,
+    onLimitChange,
+    availableLimits = [10, 20, 50, 100],
     className = '',
     showInfo = true,
-    variant = 'default' // 'default', 'compact', 'minimal'
 }) => {
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+    const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, totalItems);
     
-    const isFirstPage = currentPage === 1;
-    const isLastPage = currentPage === totalPages;
-    const canShowPageStrip = variant !== 'minimal' && totalPages > 1;
+    const [jumpPage, setJumpPage] = useState('');
 
-    const handlePrevious = () => {
-        if (!isFirstPage) {
-            onPageChange(currentPage - 1);
+    useEffect(() => {
+        setJumpPage(`${currentPage}-${totalPages}`);
+    }, [currentPage, totalPages]);
+
+    const handleJump = (e) => {
+        e.preventDefault();
+        const page = parseInt(jumpPage);
+        if (page && page >= 1 && page <= totalPages) {
+            onPageChange(page);
+        } else {
+            setJumpPage(`${currentPage}-${totalPages}`);
         }
     };
 
-    const handleNext = () => {
-        if (!isLastPage) {
-            onPageChange(currentPage + 1);
-        }
-    };
-
-    const handlePageClick = (page) => {
-        onPageChange(page);
-    };
-
-    // Generate page numbers to display
     const getPageNumbers = () => {
-        const delta = variant === 'compact' ? 1 : 2;
+        const delta = 2;
         const range = [];
         const rangeWithDots = [];
         let l;
@@ -67,114 +69,132 @@ const Pagination = ({
 
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className={`mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_-26px_rgba(15,23,42,0.35)] ${className}`.trim()}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`flex flex-col lg:flex-row items-center justify-between gap-4 w-full bg-white p-4 rounded-xl border border-slate-200 mt-6 ${className}`.trim()}
         >
-            <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                <div className="min-w-0">
-                    {showInfo && totalItems > 0 ? (
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
-                            <span className="font-medium text-slate-500">Showing</span>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                {startItem} - {endItem}
-                            </span>
-                            <span className="font-medium text-slate-500">of</span>
-                            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                                {totalItems}
-                            </span>
-                            <span className="font-medium text-slate-500">results</span>
-                        </div>
-                    ) : (
-                        <div className="text-sm font-medium text-slate-500">
-                            Page <span className="text-slate-800">{currentPage}</span> of{' '}
-                            <span className="text-slate-800">{totalPages}</span>
-                        </div>
-                    )}
-                </div>
+            {/* Left: Showing Info */}
+            <div className="flex-shrink-0">
+                {showInfo && (
+                    <p className="text-sm text-slate-600 font-medium">
+                        Showing <span className="text-slate-900 font-semibold">{startItem} to {endItem}</span> of <span className="text-slate-900 font-semibold">{totalItems} results</span>
+                    </p>
+                )}
+            </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="flex items-center justify-center gap-2">
-                        <button
-                            onClick={handlePrevious}
-                            disabled={isFirstPage}
-                            className={`
-                                inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200
-                                ${isFirstPage
-                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950'
-                                }
-                            `}
-                            aria-label="Previous page"
+            {/* Middle Left: Show Limit Dropdown */}
+            {onLimitChange && (
+                <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-500 font-medium">Show:</span>
+                    <div className="relative">
+                        <select
+                            value={itemsPerPage}
+                            onChange={(e) => onLimitChange(Number(e.target.value))}
+                            className="appearance-none bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-sm font-semibold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer"
                         >
-                            <FaChevronLeft size={11} />
-                            <span>Prev</span>
-                        </button>
-
-                        <button
-                            onClick={handleNext}
-                            disabled={isLastPage}
-                            className={`
-                                inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold transition-all duration-200
-                                ${isLastPage
-                                    ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                                    : 'border-slate-200 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-950'
-                                }
-                            `}
-                            aria-label="Next page"
-                        >
-                            <span>Next</span>
-                            <FaChevronRight size={11} />
-                        </button>
+                            {availableLimits.map(limit => (
+                                <option key={limit} value={limit}>{limit}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <FaChevronLeft className="rotate-[270deg]" size={10} />
+                        </div>
                     </div>
-
-                    {canShowPageStrip && (
-                        <div className="max-w-full overflow-x-auto">
-                            <div className="flex min-w-max items-center gap-1.5 rounded-xl bg-slate-50 p-1">
-                                {totalPages <= 10 ? (
-                                    getPageNumbers().map((page, index) => (
-                                        page === '...' ? (
-                                            <span
-                                                key={`dots-${index}`}
-                                                className="px-3 py-2 text-sm font-semibold tracking-wide text-slate-400"
-                                            >
-                                                ...
-                                            </span>
-                                        ) : (
-                                            <button
-                                                key={page}
-                                                onClick={() => handlePageClick(page)}
-                                                className={`
-                                                    min-w-10 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200
-                                                    ${currentPage === page
-                                                        ? 'bg-slate-900 text-white shadow-md'
-                                                        : 'text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-sm'
-                                                    }
-                                                `}
-                                                aria-current={currentPage === page ? 'page' : undefined}
-                                            >
-                                                {page}
-                                            </button>
-                                        )
-                                    ))
-                                ) : (
-                                    <span className="min-w-10 rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white shadow-md">
-                                        {currentPage}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </div>
+            )}
+
+            {/* Center: Pagination Controls */}
+            <div className="flex items-center gap-1">
+                {/* First Page */}
+                <button
+                    onClick={() => onPageChange(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-100 text-slate-400 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    title="First Page"
+                >
+                    <FaAngleDoubleLeft size={12} />
+                </button>
+
+                {/* Previous Page */}
+                <button
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-slate-100 text-slate-400 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    title="Previous Page"
+                >
+                    <FaChevronLeft size={12} />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-1 px-1">
+                    {getPageNumbers().map((page, idx) => (
+                        page === '...' ? (
+                            <span key={`dots-${idx}`} className="px-2 text-slate-400">...</span>
+                        ) : (
+                            <button
+                                key={page}
+                                onClick={() => onPageChange(page)}
+                                className={`
+                                    min-w-[36px] h-9 rounded-lg text-sm font-bold transition-all
+                                    ${currentPage === page
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-600'
+                                    }
+                                `}
+                            >
+                                {page}
+                            </button>
+                        )
+                    ))}
+                </div>
+
+                {/* Next Page */}
+                <button
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-slate-100 text-slate-400 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    title="Next Page"
+                >
+                    <FaChevronRight size={12} />
+                </button>
+
+                {/* Last Page */}
+                <button
+                    onClick={() => onPageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-slate-100 text-slate-400 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    title="Last Page"
+                >
+                    <FaAngleDoubleRight size={12} />
+                </button>
+            </div>
+
+            {/* Right: Go to Page */}
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 font-medium">Go to:</span>
+                <form onSubmit={handleJump} className="relative group">
+                    <input
+                        type="text"
+                        value={jumpPage}
+                        onChange={(e) => setJumpPage(e.target.value)}
+                        className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-10 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-center"
+                    />
+                    <button
+                        type="submit"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-all opacity-0 group-focus-within:opacity-100"
+                    >
+                        <FaLevelDownAlt size={10} className="rotate-90" />
+                    </button>
+                </form>
+                <span className="text-sm text-slate-500 font-medium">of <span className="text-slate-900 font-bold">{totalPages}</span> pages</span>
             </div>
         </motion.div>
     );
 };
 
 // Hook for pagination logic
-export const usePagination = (initialPage = 1, initialLimit = 20) => {
-    const [pagination, setPagination] = React.useState({
+export const usePagination = (initialPage = 1, initialLimit = 10) => {
+    const [pagination, setPagination] = useState({
         page: initialPage,
         limit: initialLimit,
         total: 0,
@@ -182,33 +202,32 @@ export const usePagination = (initialPage = 1, initialLimit = 20) => {
         is_last_page: true
     });
 
-    const updatePagination = React.useCallback((data) => {
-        setPagination({
-            page: data.page || pagination.page,
-            limit: data.limit || pagination.limit,
-            total: data.total || pagination.total,
-            total_pages: data.total_pages || pagination.total_pages,
-            is_last_page: data.is_last_page ?? (data.page === data.total_pages)
+    const updatePagination = useCallback((data) => {
+        setPagination(prev => {
+            const page = data.page || prev.page;
+            const limit = data.limit || prev.limit;
+            const total = data.total ?? prev.total;
+            const total_pages = data.total_pages || Math.ceil(total / limit) || 1;
+            
+            return {
+                page,
+                limit,
+                total,
+                total_pages,
+                is_last_page: data.is_last_page ?? (page >= total_pages)
+            };
         });
-    }, [pagination.page, pagination.limit, pagination.total, pagination.total_pages]);
+    }, []);
 
-    const goToPage = React.useCallback((page) => {
+    const goToPage = useCallback((page) => {
         setPagination(prev => ({ ...prev, page }));
     }, []);
 
-    const goToNextPage = React.useCallback(() => {
-        if (!pagination.is_last_page) {
-            setPagination(prev => ({ ...prev, page: prev.page + 1 }));
-        }
-    }, [pagination.is_last_page]);
+    const changeLimit = useCallback((limit) => {
+        setPagination(prev => ({ ...prev, limit, page: 1 }));
+    }, []);
 
-    const goToPrevPage = React.useCallback(() => {
-        if (pagination.page > 1) {
-            setPagination(prev => ({ ...prev, page: prev.page - 1 }));
-        }
-    }, [pagination.page]);
-
-    const resetPagination = React.useCallback(() => {
+    const resetPagination = useCallback(() => {
         setPagination({
             page: initialPage,
             limit: initialLimit,
@@ -222,8 +241,7 @@ export const usePagination = (initialPage = 1, initialLimit = 20) => {
         pagination,
         updatePagination,
         goToPage,
-        goToNextPage,
-        goToPrevPage,
+        changeLimit,
         resetPagination
     };
 };

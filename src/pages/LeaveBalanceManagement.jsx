@@ -498,7 +498,7 @@ const LeaveBalanceManagement = () => {
   const [leaveConfigs, setLeaveConfigs] = useState([]);
   const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
 
-  const { pagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
+  const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
   const createAccess = checkActionAccess('leaveBalance', 'create');
   const updateAccess = checkActionAccess('leaveBalance', 'update');
   const deleteAccess = checkActionAccess('leaveBalance', 'delete');
@@ -694,7 +694,8 @@ const LeaveBalanceManagement = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBalances.length / ITEMS_PER_PAGE));
+  const totalItems = filteredBalances.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
 
   useEffect(() => {
     if (pagination.page > totalPages) {
@@ -769,10 +770,10 @@ const LeaveBalanceManagement = () => {
   const paginatedData = useMemo(
     () =>
       filteredBalances.slice(
-        (pagination.page - 1) * ITEMS_PER_PAGE,
-        pagination.page * ITEMS_PER_PAGE
+        (pagination.page - 1) * pagination.limit,
+        pagination.page * pagination.limit
       ),
-    [filteredBalances, pagination.page]
+    [filteredBalances, pagination.page, pagination.limit]
   );
 
   const stats = useMemo(
@@ -1104,14 +1105,14 @@ const LeaveBalanceManagement = () => {
               )}
             </div>
 
-            {filteredBalances.length > 0 && (
+            {totalItems > 0 && (
               <Pagination
                 currentPage={pagination.page}
-                totalItems={filteredBalances.length}
-                itemsPerPage={ITEMS_PER_PAGE}
+                totalItems={totalItems}
+                itemsPerPage={pagination.limit}
                 onPageChange={handlePageChange}
-                variant="default"
                 showInfo={true}
+                onLimitChange={changeLimit}
               />
             )}
           </>

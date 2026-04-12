@@ -488,7 +488,7 @@ const SalaryComponents = () => {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1440);
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
 
     // Debounce search
@@ -555,7 +555,7 @@ const SalaryComponents = () => {
         if (!isInitialLoad && !fetchInProgress.current) {
             fetchComponents(pagination.page, debouncedSearch, true);
         }
-    }, [pagination.page]);
+    }, [pagination.page, pagination.limit, debouncedSearch]);
 
     useEffect(() => {
         const company = JSON.parse(localStorage.getItem('company'));
@@ -994,8 +994,8 @@ const SalaryComponents = () => {
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
                         showInfo={true}
+                        onLimitChange={changeLimit}
                     />
                 )}
 

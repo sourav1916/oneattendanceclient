@@ -175,7 +175,7 @@ const PermissionManagement = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [viewMode, setViewMode] = useState('table');
 
-  const { pagination, updatePagination, goToPage } = usePagination(1, 6);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 6);
   const permsFetched = useRef(false);
   const isInitialLoad = useRef(true);
   const fetchInProgress = useRef(false);
@@ -713,7 +713,7 @@ const PermissionManagement = () => {
           <Pagination
             currentPage={pagination.page} totalItems={pagination.total}
             itemsPerPage={pagination.limit} onPageChange={handlePageChange}
-            variant="default" showInfo={true}
+            showInfo={true} onLimitChange={changeLimit}
           />
         </>
       )}

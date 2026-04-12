@@ -272,7 +272,7 @@ const LeaveManagement = () => {
     const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1440);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const toggleActionMenu = useCallback((id) => {
         setActiveActionMenu((prev) => (prev === id ? null : id));
@@ -338,16 +338,23 @@ const LeaveManagement = () => {
             }
 
             const rows = result.data || [];
-            const total = Number(result.meta?.total ?? rows.length ?? 0);
-            const totalPages = Number(result.meta?.total_pages ?? Math.max(1, Math.ceil(total / pagination.limit)));
+            const currentPage = Number(result.meta?.page ?? result.page ?? page);
+            const perPage = Number(result.meta?.limit ?? result.limit ?? pagination.limit);
+            const total = Number(result.meta?.total ?? result.total ?? rows.length ?? 0);
+            const totalPages = Number(
+                result.meta?.total_pages ??
+                result.total_pages ??
+                result.last_page ??
+                Math.max(1, Math.ceil(total / perPage))
+            );
 
             setLeaves(rows);
             updatePagination({
-                page: page,
-                limit: pagination.limit,
+                page: currentPage,
+                limit: perPage,
                 total: total,
                 total_pages: totalPages,
-                is_last_page: page >= totalPages,
+                is_last_page: result.meta?.is_last_page ?? result.is_last_page ?? (currentPage >= totalPages),
             });
         } catch (error) {
             toast.error(error.message || 'Failed to load leaves');
@@ -363,7 +370,7 @@ const LeaveManagement = () => {
         if (!isInitialLoad && !fetchInProgress.current) {
             fetchLeaves(pagination.page, debouncedSearch, statusFilter, true);
         }
-    }, [pagination.page]);
+    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter]);
 
     // Trigger fetch on search change
     useEffect(() => {
@@ -827,14 +834,14 @@ const LeaveManagement = () => {
                 )}
 
                 {/* Pagination */}
-                {!loading && leaves.length > 0 && (
+                {!loading && (leaves.length > 0 || pagination.total > 0) && (
                     <Pagination
                         currentPage={pagination.page}
                         totalItems={totalItems}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
                         showInfo={true}
+                        onLimitChange={changeLimit}
                     />
                 )}
 

@@ -107,6 +107,7 @@ const PayrollManagement = () => {
         pagination,
         updatePagination,
         goToPage,
+        changeLimit,
     } = usePagination(1, 20);
 
     const isMounted = useRef(true);
@@ -738,8 +739,8 @@ const PayrollManagement = () => {
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
                         showInfo={true}
+                        onLimitChange={changeLimit}
                     />
                 </>
             )}

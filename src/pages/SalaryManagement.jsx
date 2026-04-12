@@ -1740,7 +1740,7 @@ const SalaryManagement = () => {
     const [salaryToEdit, setSalaryToEdit] = useState(null);
     const [salaryToRevise, setSalaryToRevise] = useState(null);
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
 
     // Debounce search
@@ -1784,12 +1784,26 @@ const SalaryManagement = () => {
             if (result.success) {
                 setSalaries(result.data || []);
                 setMeta(result);
+                const total = Number(
+                    result.pagination?.total ??
+                    result.meta?.total ??
+                    result.total ??
+                    result.data?.length ??
+                    0
+                );
+                const pageCount = Number(
+                    result.pagination?.total_pages ??
+                    result.meta?.total_pages ??
+                    Math.max(1, Math.ceil(total / pagination.limit))
+                );
+                const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
+                const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
                 updatePagination({
-                    page: result.page || page,
-                    limit: result.limit || pagination.limit,
-                    total: result.total || 0,
-                    total_pages: Math.ceil((result.total || 0) / pagination.limit),
-                    is_last_page: result.page >= Math.ceil((result.total || 0) / pagination.limit)
+                    page: currentPage,
+                    limit: perPage,
+                    total,
+                    total_pages: pageCount,
+                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= pageCount)
                 });
             } else {
                 throw new Error(result.message || "Failed to fetch salaries");
@@ -1820,7 +1834,7 @@ const SalaryManagement = () => {
         if (!isInitialLoad && !fetchInProgress.current) {
             fetchSalaries(pagination.page, debouncedSearch, true);
         }
-    }, [pagination.page]);
+    }, [pagination.page, pagination.limit]);
 
     useEffect(() => {
         const company = JSON.parse(localStorage.getItem('company'));
@@ -2163,7 +2177,7 @@ const SalaryManagement = () => {
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
+                        onLimitChange={changeLimit}
                         showInfo={true}
                     />
                 )}

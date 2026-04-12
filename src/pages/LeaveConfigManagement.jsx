@@ -600,7 +600,7 @@ const LeaveConfigManagement = () => {
   const initialFetchStartedRef = useRef(false);
   const fetchInProgress = useRef(false);
 
-  const { pagination, updatePagination, goToPage } = usePagination(1, ITEMS_PER_PAGE);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
   const createAccess = checkActionAccess('leaveConfig', 'create');
   const updateAccess = checkActionAccess('leaveConfig', 'update');
   const deleteAccess = checkActionAccess('leaveConfig', 'delete');
@@ -655,7 +655,7 @@ const LeaveConfigManagement = () => {
       const company = JSON.parse(localStorage.getItem('company'));
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: ITEMS_PER_PAGE.toString()
+        limit: pagination.limit.toString()
       });
       if (search) params.append("search", search);
 
@@ -669,12 +669,20 @@ const LeaveConfigManagement = () => {
       if (result.success) {
         const fetchedRecords = result.data || [];
         setRecords(fetchedRecords);
+        const currentPage = Number(result.current_page ?? result.page ?? page);
+        const perPage = Number(result.per_page ?? result.limit ?? pagination.limit);
+        const total = Number(result.total ?? fetchedRecords.length ?? 0);
+        const totalPages = Number(
+          result.last_page ??
+          result.total_pages ??
+          Math.max(1, Math.ceil(total / perPage))
+        );
         updatePagination({
-          page: result.current_page || page,
-          limit: result.per_page || ITEMS_PER_PAGE,
-          total: result.total ?? fetchedRecords.length,
-          total_pages: result.last_page || Math.ceil((result.total || fetchedRecords.length) / ITEMS_PER_PAGE),
-          is_last_page: result.current_page === result.last_page || (result.current_page >= (result.last_page || 1))
+          page: currentPage,
+          limit: perPage,
+          total,
+          total_pages: totalPages,
+          is_last_page: result.is_last_page ?? (currentPage >= totalPages)
         });
       }
     } catch (err) {
@@ -685,13 +693,13 @@ const LeaveConfigManagement = () => {
       setIsInitialLoad(false);
       fetchInProgress.current = false;
     }
-  }, [pagination.page, debouncedSearch, updatePagination]);
+  }, [pagination.page, pagination.limit, debouncedSearch, updatePagination]);
 
   useEffect(() => {
     if (!isInitialLoad && !fetchInProgress.current) {
       loadRecords(pagination.page, debouncedSearch, true);
     }
-  }, [pagination.page]); // eslint-disable-line
+  }, [pagination.page, pagination.limit, debouncedSearch]); // eslint-disable-line
 
   useEffect(() => {
     if (!isInitialLoad) {
@@ -984,14 +992,14 @@ const LeaveConfigManagement = () => {
         )}
 
         {/* ── Pagination ── */}
-        {records.length > 0 && (
+        {!loading && (records.length > 0 || pagination.total > 0) && (
           <Pagination
             currentPage={pagination.page}
             totalItems={pagination.total || records.length}
-            itemsPerPage={ITEMS_PER_PAGE}
+            itemsPerPage={pagination.limit}
             onPageChange={handlePageChange}
-            variant="default"
             showInfo={true}
+            onLimitChange={changeLimit}
           />
         )}
 

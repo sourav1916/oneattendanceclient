@@ -318,7 +318,7 @@ const PendingAttendance = ({ companyId }) => {
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
     const previousSearchRef = useRef('');
     const lastRequestKeyRef = useRef('');
-    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const itemsPerPage = pagination.limit;
     const approveAccess = checkActionAccess('pendingAttendance', 'approve');
     const rejectAccess = checkActionAccess('pendingAttendance', 'reject');
@@ -712,6 +712,7 @@ const PendingAttendance = ({ companyId }) => {
                                     totalItems={pagination.total}
                                     itemsPerPage={pagination.limit}
                                     onPageChange={goToPage}
+                                    onLimitChange={changeLimit}
                                 />
                             )}
                         </>

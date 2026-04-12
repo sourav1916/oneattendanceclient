@@ -328,7 +328,7 @@ const EmployeesShifts = () => {
         typeof window !== 'undefined' ? window.innerWidth : 1440
     );
 
-    const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
 
     // Debounce search
@@ -360,12 +360,21 @@ const EmployeesShifts = () => {
             if (result.success) {
                 setEmployees(result.data || []);
                 setMeta(result.meta || null);
+                const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
+                const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
+                const total = Number(result.pagination?.total ?? result.meta?.total ?? result.total ?? (result.data?.length || 0));
+                const totalPages = Number(
+                    result.pagination?.total_pages ??
+                    result.meta?.total_pages ??
+                    result.last_page ??
+                    Math.max(1, Math.ceil(total / perPage))
+                );
                 updatePagination({
-                    page: result.pagination?.page || page,
-                    limit: result.pagination?.limit || pagination.limit,
-                    total: result.pagination?.total || 0,
-                    total_pages: result.pagination?.total_pages || 1,
-                    is_last_page: result.pagination?.is_last_page ?? true
+                    page: currentPage,
+                    limit: perPage,
+                    total,
+                    total_pages: totalPages,
+                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages)
                 });
             } else {
                 throw new Error(result.message || 'Failed to fetch employee shifts');
@@ -400,7 +409,7 @@ const EmployeesShifts = () => {
         if (!isInitialLoad && !fetchInProgress.current) {
             fetchEmployees(pagination.page, debouncedSearch, true);
         }
-    }, [pagination.page]);
+    }, [pagination.page, pagination.limit, debouncedSearch]);
 
     useEffect(() => {
         if (!isInitialLoad) {
@@ -729,14 +738,14 @@ const EmployeesShifts = () => {
                 )}
 
                 {/* Pagination */}
-                {!loading && employees.length > 0 && (
+                {!loading && (employees.length > 0 || pagination.total > 0) && (
                     <Pagination
                         currentPage={pagination.page}
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
                         onPageChange={handlePageChange}
-                        variant="default"
                         showInfo={true}
+                        onLimitChange={changeLimit}
                     />
                 )}
 

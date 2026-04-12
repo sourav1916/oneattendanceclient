@@ -603,7 +603,7 @@ const MyLeave = () => {
     showStatus: true,
     showAppliedOn: window.innerWidth >= 1024,
   }));
-  const { pagination, updatePagination, goToPage } = usePagination(1, 10);
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const [resultMeta, setResultMeta] = useState({ total: 0, total_pages: 1 });
   const [viewLeave, setViewLeave] = useState(null);
   const [editLeave, setEditLeave] = useState(null);
@@ -989,8 +989,8 @@ const MyLeave = () => {
               totalItems={resultMeta.total || leaves.length}
               itemsPerPage={pagination.limit}
               onPageChange={handlePageChange}
-              variant={viewMode === 'card' ? 'minimal' : 'default'}
               showInfo={viewMode !== 'card'}
+              onLimitChange={changeLimit}
             />
           </motion.div>
         )}
