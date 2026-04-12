@@ -20,6 +20,7 @@ import { BiReset } from "react-icons/bi";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
+import { getPreciseLocation } from "../../utils/geolocation";
 
 
 const Signup = () => {
@@ -201,12 +202,26 @@ const Signup = () => {
 
     try {
       setLoadingAction("create-account");
-      const res = await apiCall('/auth/signup/complete', 'POST', {
+      let locationData = null;
+      try {
+        locationData = await getPreciseLocation();
+      } catch (err) {
+        console.warn("Precise location unavailable during signup:", err);
+      }
+
+      const payload = {
         name: fullName,
         email: email,
         password: password,
         phone: phone
-      });
+      };
+
+      if (locationData) {
+        payload.latitude = locationData.latitude;
+        payload.longitude = locationData.longitude;
+      }
+
+      const res = await apiCall('/auth/signup/complete', 'POST', payload);
 
       const data = await res.json();
       console.log(JSON.stringify(data));
