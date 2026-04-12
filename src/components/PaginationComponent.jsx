@@ -25,16 +25,16 @@ const Pagination = ({
     const [jumpPage, setJumpPage] = useState('');
 
     useEffect(() => {
-        setJumpPage(`${currentPage}-${totalPages}`);
-    }, [currentPage, totalPages]);
+        setJumpPage(String(currentPage));
+    }, [currentPage]);
 
     const handleJump = (e) => {
         e.preventDefault();
-        const page = parseInt(jumpPage);
+        const page = Number.parseInt(jumpPage, 10);
         if (page && page >= 1 && page <= totalPages) {
             onPageChange(page);
         } else {
-            setJumpPage(`${currentPage}-${totalPages}`);
+            setJumpPage(String(currentPage));
         }
     };
 
@@ -174,10 +174,13 @@ const Pagination = ({
                 <span className="text-sm text-slate-500 font-medium">Go to:</span>
                 <form onSubmit={handleJump} className="relative group">
                     <input
-                        type="text"
+                        type="number"
+                        min={1}
+                        max={totalPages}
                         value={jumpPage}
                         onChange={(e) => setJumpPage(e.target.value)}
-                        className="w-24 bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-10 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-center"
+                        placeholder="Page No"
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-10 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-center"
                     />
                     <button
                         type="submit"

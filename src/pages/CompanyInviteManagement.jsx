@@ -130,12 +130,21 @@ export default function CompanyInvites() {
         const result = await response.json();
         if (result.success) {
           setInvites(result.data || []);
+          const currentPage = Number(result.current_page ?? result.page ?? result.meta?.page ?? page);
+          const perPage = Number(result.per_page ?? result.limit ?? result.meta?.limit ?? pagination.limit);
+          const total = Number(result.total ?? result.meta?.total ?? result.data?.length ?? 0);
+          const totalPages = Number(
+            result.last_page ??
+            result.total_pages ??
+            result.meta?.total_pages ??
+            Math.max(1, Math.ceil(total / perPage))
+          );
           updatePagination({
-            page:        result.current_page || page,
-            limit:       result.per_page     || pagination.limit,
-            total:       result.total        || 0,
-            total_pages: result.last_page    || Math.ceil((result.total || 0) / pagination.limit),
-            is_last_page: result.current_page === result.last_page
+            page: currentPage,
+            limit: perPage,
+            total,
+            total_pages: totalPages,
+            is_last_page: result.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages)
           });
         } else {
           throw new Error(result.message || "Failed to fetch invites");
@@ -625,14 +634,16 @@ export default function CompanyInvites() {
               </ManagementGrid>
             )}
 
-            <Pagination
-              currentPage={pagination.page}
-              totalItems={pagination.total}
-              itemsPerPage={pagination.limit}
-              onPageChange={handlePageChange}
-              showInfo={true}
-              onLimitChange={changeLimit}
-            />
+            {!loading && (invites.length > 0 || pagination.total > 0) && (
+              <Pagination
+                currentPage={pagination.page}
+                totalItems={pagination.total || invites.length}
+                itemsPerPage={pagination.limit}
+                onPageChange={handlePageChange}
+                showInfo={true}
+                onLimitChange={changeLimit}
+              />
+            )}
           </>
         )}
 
