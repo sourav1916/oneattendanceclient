@@ -9,6 +9,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
+import { DatePickerField } from '../components/DatePicker';
 
 // ─── Modal Variants ────────────────────────────────────────────────────────────
 const modalVariants = {
@@ -1117,22 +1118,24 @@ const LeaveManagement = () => {
                                     {/* Start Date */}
                                     <div>
                                         <label className="text-xs font-semibold text-gray-600 mb-1 block">Start Date *</label>
-                                        <input
-                                            type="date"
+                                        <DatePickerField
                                             value={editForm.start_date || ''}
-                                            onChange={(e) => setEditForm(f => ({ ...f, start_date: e.target.value }))}
-                                            className={INPUT}
+                                            onChange={(value) => setEditForm(f => ({ ...f, start_date: value }))}
+                                            placeholder="Select start date"
+                                            buttonClassName={INPUT}
+                                            popoverClassName="mt-2"
                                         />
                                     </div>
 
                                     {/* End Date */}
                                     <div>
                                         <label className="text-xs font-semibold text-gray-600 mb-1 block">End Date *</label>
-                                        <input
-                                            type="date"
+                                        <DatePickerField
                                             value={editForm.end_date || ''}
-                                            onChange={(e) => setEditForm(f => ({ ...f, end_date: e.target.value }))}
-                                            className={INPUT}
+                                            onChange={(value) => setEditForm(f => ({ ...f, end_date: value }))}
+                                            placeholder="Select end date"
+                                            buttonClassName={INPUT}
+                                            popoverClassName="mt-2"
                                         />
                                     </div>
 

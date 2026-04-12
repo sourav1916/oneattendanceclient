@@ -20,6 +20,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
+import { DatePickerField } from '../components/DatePicker';
 
 const getCompanyId = () => {
   try {
@@ -406,11 +407,23 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-xs text-gray-500">Start Date</label>
-            <input type="date" className="w-full rounded-lg border px-3 py-2" value={form.start_date} onChange={(e) => setForm((prev) => ({ ...prev, start_date: e.target.value }))} required />
+            <DatePickerField
+              value={form.start_date}
+              onChange={(value) => setForm((prev) => ({ ...prev, start_date: value }))}
+              placeholder="Select start date"
+              buttonClassName="w-full rounded-lg border px-3 py-2 text-left bg-white"
+              popoverClassName="mt-2"
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs text-gray-500">End Date</label>
-            <input type="date" className="w-full rounded-lg border px-3 py-2" value={form.end_date} onChange={(e) => setForm((prev) => ({ ...prev, end_date: e.target.value }))} required />
+            <DatePickerField
+              value={form.end_date}
+              onChange={(value) => setForm((prev) => ({ ...prev, end_date: value }))}
+              placeholder="Select end date"
+              buttonClassName="w-full rounded-lg border px-3 py-2 text-left bg-white"
+              popoverClassName="mt-2"
+            />
           </div>
         </div>
 
