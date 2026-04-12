@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       const res = await apiCall('/users/profile-role', 'GET');
 
       if (!res.ok) {
-        logout();
+        logout(); // For any problem of response it gonna logout
         return;
       }
 

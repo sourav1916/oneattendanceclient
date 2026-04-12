@@ -912,31 +912,58 @@ const LeaveManagement = () => {
                                     )}
 
                                     {/* Attachments */}
-                                    {detailLeave.attachments && detailLeave.attachments.length > 0 && (
+                                    {detailLeave.attachments && (Array.isArray(detailLeave.attachments) || typeof detailLeave.attachments === 'string') && (
                                         <div className="mt-4">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
-                                                Attachments ({detailLeave.attachments.length})
-                                            </label>
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                {detailLeave.attachments.map((att) => (
-                                                    <a
-                                                        key={att.id}
-                                                        href={att.file_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="group relative aspect-square rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300"
-                                                    >
-                                                        <img
-                                                            src={att.file_url}
-                                                            alt="attachment"
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <span className="text-white text-xs font-medium">View</span>
+                                            {(() => {
+                                                let atts = detailLeave.attachments;
+                                                if (typeof atts === 'string') {
+                                                    try { atts = JSON.parse(atts); } catch { atts = []; }
+                                                }
+                                                if (!Array.isArray(atts) || atts.length === 0) return null;
+
+                                                return (
+                                                    <>
+                                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 block">
+                                                            Attachments ({atts.length})
+                                                        </label>
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                            {atts.map((att, idx) => {
+                                                                const url = typeof att === 'string' ? att : att.file_url;
+                                                                if (!url) return null;
+                                                                const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
+
+                                                                return (
+                                                                    <a
+                                                                        key={att.id || idx}
+                                                                        href={url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="group relative aspect-square rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300 bg-gray-50 flex items-center justify-center"
+                                                                    >
+                                                                        {isImage ? (
+                                                                            <img
+                                                                                src={url}
+                                                                                alt="attachment"
+                                                                                className="w-full h-full object-cover"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                                                <span className="text-3xl mb-1">📄</span>
+                                                                                <span className="text-[10px] text-gray-500 truncate w-full px-1">
+                                                                                    {att.file_type ? att.file_type.split('/')[1].toUpperCase() : 'VIEW FILE'}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                            <span className="text-white text-xs font-medium">View</span>
+                                                                        </div>
+                                                                    </a>
+                                                                );
+                                                            })}
                                                         </div>
-                                                    </a>
-                                                ))}
-                                            </div>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     )}
                                 </div>
@@ -1168,11 +1195,13 @@ const LeaveManagement = () => {
                                         <div>
                                             <label className="text-xs font-semibold text-gray-600 mb-2 block">Current Attachments</label>
                                             <div className="grid grid-cols-3 gap-2">
-                                                {editLeave.attachments.map((att) => {
+                                                {editLeave.attachments.map((att, idx) => {
                                                     const isDeleted = deletedAttachments.includes(att.id);
+                                                    const url = att.file_url;
+                                                    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
                                                     return (
                                                         <div
-                                                            key={att.id}
+                                                            key={att.id || idx}
                                                             onClick={() => {
                                                                 if (isDeleted) {
                                                                     setDeletedAttachments(prev => prev.filter(id => id !== att.id));
@@ -1180,14 +1209,23 @@ const LeaveManagement = () => {
                                                                     setDeletedAttachments(prev => [...prev, att.id]);
                                                                 }
                                                             }}
-                                                            className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${isDeleted ? 'border-red-500 opacity-50' : 'border-gray-200 hover:border-red-300'
+                                                            className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all flex items-center justify-center bg-gray-50 ${isDeleted ? 'border-red-500 opacity-50' : 'border-gray-200 hover:border-red-300'
                                                                 }`}
                                                         >
-                                                            <img
-                                                                src={att.file_url}
-                                                                alt="attachment"
-                                                                className="w-full h-full object-cover"
-                                                            />
+                                                            {isImage ? (
+                                                                <img
+                                                                    src={url}
+                                                                    alt="attachment"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                                    <span className="text-2xl mb-1">📄</span>
+                                                                    <span className="text-[10px] text-gray-400 font-bold uppercase">
+                                                                        {att.file_type ? att.file_type.split('/')[1] : 'FILE'}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                             {isDeleted && (
                                                                 <div className="absolute inset-0 bg-red-500/60 flex items-center justify-center text-white text-xs font-bold">
                                                                     Remove
@@ -1198,7 +1236,7 @@ const LeaveManagement = () => {
                                                 })}
                                             </div>
                                             {deletedAttachments.length > 0 && (
-                                                <p className="text-xs text-red-500 mt-2">
+                                                <p className="text-xs text-red-500 mt-2 font-medium">
                                                     ⚠ {deletedAttachments.length} attachment(s) will be deleted
                                                 </p>
                                             )}
@@ -1233,7 +1271,7 @@ const LeaveManagement = () => {
                                                 {newAttachments.map((file, idx) => {
                                                     const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(file.url);
                                                     return (
-                                                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200">
+                                                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50">
                                                             {isImage ? (
                                                                 <img
                                                                     src={file.url}
@@ -1241,13 +1279,16 @@ const LeaveManagement = () => {
                                                                     className="w-full h-full object-cover"
                                                                 />
                                                             ) : (
-                                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                                                    <span className="text-xs text-gray-400 px-2 text-center break-words">📄 {file.name.slice(0, 15)}</span>
+                                                                <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                                                                    <span className="text-2xl mb-1">📄</span>
+                                                                    <span className="text-[10px] text-gray-400 font-bold truncate w-full px-1">
+                                                                        {file.name.split('.').pop().toUpperCase()}
+                                                                    </span>
                                                                 </div>
                                                             )}
                                                             <button
                                                                 onClick={() => removeNewAttachment(idx)}
-                                                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 transition-all"
+                                                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs hover:bg-red-600 shadow-md transition-all z-10"
                                                             >
                                                                 ×
                                                             </button>

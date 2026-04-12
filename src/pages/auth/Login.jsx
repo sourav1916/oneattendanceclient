@@ -16,6 +16,7 @@ import { BiReset } from "react-icons/bi";
 import { useAuth } from "../../context/AuthContext";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
+import { getPreciseLocation } from "../../utils/geolocation";
 
 const Login = () => {
   const { user, login, selectCompany, companies, mustSelectCompany, showCompanySelection, setShowCompanySelection } = useAuth();
@@ -144,26 +145,14 @@ const Login = () => {
     try {
       setLoadingAction("verify-otp");
 
-      // Try location, but do not block login if it is unavailable on mobile.
-      toast.info("Checking location if available...", { autoClose: 1500 });
+      // Fetch precise location if possible
+      toast.info("Capturing precise location...", { autoClose: 1500 });
       
-      let location = null;
+      let locationData = null;
       try {
-        if ("geolocation" in navigator) {
-          const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 8000,
-              maximumAge: 0
-            });
-          });
-          location = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          };
-        }
+        locationData = await getPreciseLocation();
       } catch (err) {
-        console.warn("Location unavailable, continuing login without coordinates:", err);
+        console.warn("Precise location unavailable, continuing login without coordinates:", err);
       }
 
       const payload = {
@@ -171,9 +160,10 @@ const Login = () => {
         otp: otpString
       };
 
-      if (location) {
-        payload.latitude = location.latitude;
-        payload.longitude = location.longitude;
+      if (locationData) {
+        payload.latitude = locationData.latitude;
+        payload.longitude = locationData.longitude;
+        payload.location_accuracy = locationData.accuracy; // Pass accuracy for record-keeping
       }
 
       const res = await apiCall('/auth/login/verify-otp', 'POST', payload);

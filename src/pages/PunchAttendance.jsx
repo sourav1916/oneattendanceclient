@@ -8,6 +8,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
+import { getPreciseLocation } from '../utils/geolocation';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -96,16 +97,6 @@ const PunchAttendance = () => {
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const getIcon = (key) => ATTENDANCE_ICONS[key] || FaFingerprint;
 
-  const getCurrentLocation = () =>
-    new Promise((resolve, reject) => {
-      if (!navigator.geolocation) { reject(new Error('Geolocation not supported')); return; }
-      navigator.geolocation.getCurrentPosition(
-        p => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
-        e => reject(e),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    });
-
   const getPublicIP = async () => {
     try {
       const r = await fetch('https://api.ipify.org?format=json');
@@ -121,7 +112,7 @@ const PunchAttendance = () => {
       const method  = activeTab || 'gps';
       const mode    = activeMode || 'manual';
       const payload = { attendance_method: method, attendance_mode: mode };
-      if (method === 'gps') { const loc = await getCurrentLocation(); Object.assign(payload, loc); }
+      if (method === 'gps') { const loc = await getPreciseLocation(); Object.assign(payload, loc); }
       if (method === 'ip')  { payload.ip_address = await getPublicIP(); }
       const response = await apiCall(endpoint, 'POST', payload, company?.id);
       const data = await response.json();

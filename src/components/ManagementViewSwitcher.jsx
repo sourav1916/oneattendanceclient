@@ -34,8 +34,6 @@ export default function ManagementViewSwitcher({
   onChange,
   accent = 'blue',
   className = '',
-  tableLabel = 'Table',
-  cardLabel = 'Grid',
 }) {
   const colors = accentMap[accent] || accentMap.blue;
 
@@ -52,11 +50,9 @@ export default function ManagementViewSwitcher({
       <div className="inline-flex items-center gap-1 bg-white p-1 rounded-2xl shadow-lg border border-gray-100">
         <button type="button" onClick={() => onChange('table')} className={buttonClass('table')}>
           <TableIcon size={14} />
-          {tableLabel}
         </button>
         <button type="button" onClick={() => onChange('card')} className={buttonClass('card')}>
           <CardIcon size={14} />
-          {cardLabel}
         </button>
       </div>
     </div>
