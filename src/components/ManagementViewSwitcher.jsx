@@ -47,7 +47,7 @@ export default function ManagementViewSwitcher({
 
   return (
     <div className={`flex justify-end ${className}`.trim()}>
-      <div className="inline-flex items-center gap-1 bg-white p-1 rounded-2xl shadow-lg border border-gray-100">
+      <div className="inline-flex items-center gap-1 p-1">
         <button type="button" onClick={() => onChange('table')} className={buttonClass('table')}>
           <TableIcon size={14} />
         </button>

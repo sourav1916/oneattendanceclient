@@ -528,7 +528,7 @@ const CompanyManagement = () => {
                         className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
+                                <thead className="xsm:hidden bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold tracking-wider">Company</th>
                                         {showLegal    && <th className="px-5 py-4 font-semibold tracking-wider">Legal Name</th>}

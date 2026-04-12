@@ -842,7 +842,7 @@ const LeaveConfigManagement = () => {
           >
             <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full text-left text-sm text-gray-700">
-              <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+              <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                 <tr>
                   <th className="px-6 py-4">Code</th>
                   <th className="px-6 py-4">Name</th>

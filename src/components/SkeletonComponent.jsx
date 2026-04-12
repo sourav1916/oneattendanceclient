@@ -24,7 +24,7 @@ export default function Skeleton() {
                 <div className="hidden lg:block bg-white rounded-2xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="xsm:hidden bg-gray-50 border-b border-gray-200">
                                 <tr>
                                     <th className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div></th>
                                     <th className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div></th>

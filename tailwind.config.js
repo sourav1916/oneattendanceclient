@@ -12,7 +12,7 @@ module.exports = {
       screens: {
         'xsm': {               // Only applies from 280px to 400px
           'min': '280px',
-          'max': '400px'
+          'max': '480px'
         },
       },
       colors: {

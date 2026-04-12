@@ -870,7 +870,7 @@ const MyLeave = () => {
               {viewMode === 'table' && (
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
-                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                    <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                       <tr>
                         {visibleColumns.showLeaveType && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Leave Type</th>}
                         {visibleColumns.showStartDate && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Start Date</th>}

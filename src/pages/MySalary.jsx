@@ -456,7 +456,7 @@ const MyPayroll = () => {
                         >
                             <div className="overflow-x-auto overflow-y-visible">
                                 <table className="w-full text-sm text-left text-gray-700">
-                                    <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                                    <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                         <tr>
                                             {visibleColumns.showPeriod      && <th className="px-6 py-4">Period</th>}
                                             {visibleColumns.showEarnings    && <th className="px-6 py-4">Earnings</th>}
