@@ -303,7 +303,7 @@ const SettingsPage = () => {
         ...changedFields
       };
 
-      const response = await apiCall('/users/details/edit-profile', 'PUT', payload);
+      const response = await apiCall('/users/details/update-profile', 'PUT', payload);
 
       const result = await response.json();
 

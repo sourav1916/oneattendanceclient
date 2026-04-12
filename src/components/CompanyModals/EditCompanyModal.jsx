@@ -332,19 +332,28 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={onClose}
         >
           <ModalScrollLock />
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+            className="bg-white backdrop-blur-xl relative w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 mb-6 sticky top-0 bg-white z-10 pb-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors absolute right-4 top-4 z-20"
+              aria-label="Close edit company modal"
+            >
+              <FaTimes className="w-5 h-5 text-gray-400" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6 pr-12 sticky top-0 bg-white z-10 pb-4">
               <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
+                <FaBuilding className="w-5 h-5 text-white" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Company</h2>
             </div>

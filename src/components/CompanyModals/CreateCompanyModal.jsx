@@ -311,16 +311,27 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={onClose}
         >
           <ModalScrollLock />
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+            className="bg-white backdrop-blur-xl relative w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors absolute right-4 top-4 z-20 text-gray-500 hover:text-gray-700"
+              aria-label="Close create company modal"
+            >
+              <FaTimes className="w-5 h-5 text-gray-400" />
+            </button>
+
             {/* Header */}
-            <div className="flex items-center gap-3 mb-6 sticky top-0 bg-white z-10 pb-4">
+            <div className="flex items-center gap-3 mb-6 pr-12 sticky top-0 bg-white z-10 pb-4">
               <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
                 <FaBuilding className="w-5 h-5 text-white" />
               </div>
