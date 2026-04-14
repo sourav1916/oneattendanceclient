@@ -177,9 +177,9 @@ const s = {
   dropdown: {
     position: "absolute",
     top: "calc(100% + 6px)",
-    left: 0,
-    width: 180,
-    maxHeight: 200,
+    right:0 ,
+    width: 250,
+    maxHeight: 400,
     overflow: "scroll",
     scrollBehavior: "smooth",
     scrollbarWidth: "none",
