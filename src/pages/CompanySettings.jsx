@@ -7,7 +7,7 @@ import {
     FaBuilding, FaMapMarkerAlt, FaGlobe, FaSearch,
     FaClock, FaNetworkWired, FaUserCheck, FaRoad, FaCity,
     FaCrosshairs, FaHistory, FaLink, FaMapPin, FaEnvelope,
-    FaCheck, FaMinusCircle, FaWifi
+    FaCheck, FaMinusCircle, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -20,6 +20,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ModalScrollLock from '../components/ModalScrollLock';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
 import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
+import ManageMoreCompanyModal from '../components/CompanyModals/ManageMoreCompanyModal';
 
 // ─── Variants ─────────────────────────────────────────────────────────────────
 
@@ -317,6 +318,7 @@ const CompanyManagement = () => {
     const [detailTarget, setDetailTarget]       = useState(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalTarget, setEditModalTarget] = useState(null);
+    const [manageMoreTarget, setManageMoreTarget] = useState(null);
     const [windowWidth, setWindowWidth]         = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -424,6 +426,26 @@ const CompanyManagement = () => {
             }
         } catch (e) {
             toast.error(e.message || 'Failed to update company');
+        }
+    };
+
+    const handleManageMoreSuccess = async (payload) => {
+        try {
+            if (payload?.id) {
+                try {
+                    const stored = JSON.parse(localStorage.getItem('company'));
+                    if (stored?.id === payload.id) {
+                        localStorage.setItem('company', JSON.stringify({ ...stored, ...payload }));
+                    }
+                } catch {
+                    // ignore cache update failures
+                }
+            }
+
+            setManageMoreTarget(null);
+            fetchCompanies(pagination.page, debouncedSearch, true);
+        } catch (e) {
+            toast.error(e.message || 'Failed to refresh company data');
         }
     };
 
@@ -626,6 +648,7 @@ const CompanyManagement = () => {
                                                         actions={[
                                                             { label: 'View Details', icon: <FaEye size={13} />,   onClick: () => setDetailTarget(company),    className: 'text-blue-600 hover:bg-blue-50' },
                                                             { label: 'Edit',         icon: <FaEdit size={13} />,  onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                                            { label: 'Manage More', icon: <FaCog size={13} />, onClick: () => setManageMoreTarget(company), className: 'text-slate-700 hover:bg-slate-100' },
                                                             { label: 'Delete',       icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company),    className: 'text-red-500 hover:bg-red-50' },
                                                         ]}
                                                     />
@@ -706,6 +729,7 @@ const CompanyManagement = () => {
                                             actions={[
                                                 { label: 'View Details', icon: <FaEye size={13} />,   onClick: () => setDetailTarget(company),    className: 'text-blue-600 hover:bg-blue-50' },
                                                 { label: 'Edit',         icon: <FaEdit size={13} />,  onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                                { label: 'Manage More', icon: <FaCog size={13} />, onClick: () => setManageMoreTarget(company), className: 'text-slate-700 hover:bg-slate-100' },
                                                 { label: 'Delete',       icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company),    className: 'text-red-500 hover:bg-red-50' },
                                             ]}
                                         />
@@ -764,6 +788,13 @@ const CompanyManagement = () => {
                 company={editModalTarget}
                 onClose={() => setEditModalTarget(null)}
                 onSuccess={handleEditSuccess}
+            />
+
+            <ManageMoreCompanyModal
+                isOpen={!!manageMoreTarget}
+                company={manageMoreTarget}
+                onClose={() => setManageMoreTarget(null)}
+                onSuccess={handleManageMoreSuccess}
             />
         </div>
     );
