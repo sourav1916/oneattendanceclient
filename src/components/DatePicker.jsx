@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FaCheck, FaUndo } from "react-icons/fa";
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -77,7 +78,7 @@ function filterPresets(presets, mode) {
 
 // ── Calendar grid ─────────────────────────────────────────────────────
 function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle,
-  rangeStart, rangeEnd, onRangeClick }) {
+  rangeStart, rangeEnd, onRangeClick, onSinglePick }) {
 
   const [hoverDate, setHoverDate] = useState(null);
   const today = startOfDay(new Date());
@@ -127,7 +128,10 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
         key={d}
         className={getDayClass(date)}
         onClick={() => {
-          if (mode === "single") onSelectSingle(date);
+          if (mode === "single") {
+            onSelectSingle(date);
+            onSinglePick?.(date);
+          }
           else onRangeClick(date);
         }}
         onMouseEnter={() => mode === "range" && setHoverDate(date)}
@@ -199,8 +203,8 @@ export default function DatePicker({
   const today = startOfDay(new Date());
   const tabs = [
     { key: "quick", label: "Quick select" },
-    ...(mode !== "range" ? [{ key: "single", label: "Single date" }] : []),
-    ...(mode !== "single" ? [{ key: "range", label: "Date range" }] : []),
+    { key: "single", label: "Single date" },
+    ...(mode === "single" ? [] : [{ key: "range", label: "Date range" }]),
   ];
 
   function handleRangeClick(date) {
@@ -332,6 +336,9 @@ export default function DatePicker({
             onViewChange={setViewDate}
             selectedSingle={selectedSingle}
             onSelectSingle={setSelectedSingle}
+            onSinglePick={(date) => {
+              onApply?.({ type: "single", date });
+            }}
           />
         )}
 
@@ -390,6 +397,15 @@ export function DatePickerField({
   const [open, setOpen] = useState(false);
   const selectedDate = parseDateValue(value);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   return (
     <div className={`relative ${wrapperClassName}`.trim()}>
       <button
@@ -405,35 +421,44 @@ export function DatePickerField({
         <span className="flex-shrink-0 text-[10px] text-gray-400">▾</span>
       </button>
 
-      {open && (
-        <div className={`absolute left-0 right-0 top-full z-30 mt-1.5 ${popoverClassName}`.trim()}>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 shadow-sm hover:bg-white hover:text-gray-700"
+      {open &&
+        createPortal(
+          <div
+            data-datepicker-portal="true"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              className={`relative w-[min(100%,19rem)] ${popoverClassName}`.trim()}
+              onClick={(e) => e.stopPropagation()}
             >
-              Close
-            </button>
-            <DatePicker
-              mode={mode}
-              initialTab={initialTab}
-              initialSingle={selectedDate}
-              onApply={(result) => {
-                if (result?.type === "single") {
-                  onChange?.(toIsoDate(result.date));
-                } else if (result?.type === "range") {
-                  onChange?.({
-                    start: toIsoDate(result.start),
-                    end: toIsoDate(result.end),
-                  });
-                }
-                setOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 shadow-sm hover:bg-white hover:text-gray-700"
+              >
+                Close
+              </button>
+              <DatePicker
+                mode={mode}
+                initialTab={initialTab}
+                initialSingle={selectedDate}
+                onApply={(result) => {
+                  if (result?.type === "single") {
+                    onChange?.(toIsoDate(result.date));
+                  } else if (result?.type === "range") {
+                    onChange?.({
+                      start: toIsoDate(result.start),
+                      end: toIsoDate(result.end),
+                    });
+                  }
+                  setOpen(false);
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -445,7 +470,7 @@ export function DateRangePickerField({
   buttonClassName = "",
   wrapperClassName = "",
   popoverClassName = "",
-  initialTab = "range",
+  initialTab = "single",
 }) {
   const [open, setOpen] = useState(false);
   const startValue = value?.start || value?.start_date || value?.from || "";
@@ -453,8 +478,19 @@ export function DateRangePickerField({
   const startDate = parseDateValue(startValue);
   const endDate = parseDateValue(endValue);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   const displayValue = startDate && endDate
-    ? `${fmt(startDate)} to ${fmt(endDate)}`
+    ? sameDay(startDate, endDate)
+      ? fmt(startDate)
+      : `${fmt(startDate)} to ${fmt(endDate)}`
     : startDate
       ? `${fmt(startDate)} to ...`
       : placeholder;
@@ -474,34 +510,49 @@ export function DateRangePickerField({
         <span className="flex-shrink-0 text-[10px] text-gray-400">▾</span>
       </button>
 
-      {open && (
-        <div className={`absolute left-0 right-0 top-full z-30 mt-1.5 ${popoverClassName}`.trim()}>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 shadow-sm hover:bg-white hover:text-gray-700"
+      {open &&
+        createPortal(
+          <div
+            data-datepicker-portal="true"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              className={`relative w-[min(100%,19rem)] ${popoverClassName}`.trim()}
+              onClick={(e) => e.stopPropagation()}
             >
-              Close
-            </button>
-            <DatePicker
-              mode="range"
-              initialTab={initialTab}
-              initialRangeStart={startDate}
-              initialRangeEnd={endDate}
-              onApply={(result) => {
-                if (result?.type === "range") {
-                  onChange?.({
-                    start: toIsoDate(result.start),
-                    end: toIsoDate(result.end),
-                  });
-                }
-                setOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 shadow-sm hover:bg-white hover:text-gray-700"
+              >
+                Close
+              </button>
+              <DatePicker
+                mode="both"
+                initialTab={initialTab}
+                initialRangeStart={startDate}
+                initialRangeEnd={endDate}
+                onApply={(result) => {
+                  if (result?.type === "range") {
+                    onChange?.({
+                      start: toIsoDate(result.start),
+                      end: toIsoDate(result.end),
+                    });
+                  } else if (result?.type === "single") {
+                    const iso = toIsoDate(result.date);
+                    onChange?.({
+                      start: iso,
+                      end: iso,
+                    });
+                  }
+                  setOpen(false);
+                }}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

@@ -560,7 +560,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-140px)] overflow-y-auto px-6 py-6">
+            <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
               <div className="space-y-6">
                 {selectedUser && (
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">

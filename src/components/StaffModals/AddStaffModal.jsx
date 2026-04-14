@@ -427,14 +427,14 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-140px)] overflow-y-auto px-6 py-6">
+            <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
               <div className="space-y-6">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <FaSearch className="h-4 w-4 text-indigo-500" />
                     Find User
                   </label>
-                  <div className="flex items-center flex-row gap-3">
+                  <div className="flex items-center flex-col gap-3 lg:flex-row">
                     <input
                       type="email"
                       value={emailQuery}
@@ -452,7 +452,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       type="button"
                       onClick={handleSearchUser}
                       disabled={isSearchingUser}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
                     >
                       {isSearchingUser ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSearch className="h-4 w-4" />}
                       Find User
