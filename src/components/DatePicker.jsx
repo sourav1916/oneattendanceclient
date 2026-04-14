@@ -278,7 +278,7 @@ export default function DatePicker({
   }, [presets, quickKey, tab]);
 
   return (
-    <div className="w-[min(calc(100vw-0.5rem),19rem)] sm:w-[19rem] max-w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden font-sans max-h-[calc(100vh-6rem)] flex flex-col">
+    <div className="w-[min(calc(100vw-0.5rem),19rem)] w-full max-w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden font-sans max-h-[calc(100vh-6rem)] flex flex-col">
       {/* Header */}
       <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-100">
         <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Selected</p>
