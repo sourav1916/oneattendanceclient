@@ -152,7 +152,7 @@ const Navbar = ({
                             <button
                                 type="button"
                                 onClick={() => navigate('/home')}
-                                className="flex items-center gap-1 rounded-lg transition-opacity duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                className="flex items-center gap-1 rounded-lg transition-opacity duration-200 hover:opacity-90 focus:outline-none"
                                 aria-label="Go to home"
                             >
                                 {/* <div className="bg-white/20 p-1.5 rounded-xl backdrop-blur-sm shadow-inner">
@@ -173,7 +173,6 @@ const Navbar = ({
                             <button
                                 onClick={() => setShowCompanySwitcher(true)}
                                 className="hidden md:flex items-center gap-2.5 px-3 py-1.5
-                                    hover:bg-white/20 backdrop-blur-sm
                                     transition-all duration-200 group"
                             >
                                 <CompanyLogo company={company} size={6} />

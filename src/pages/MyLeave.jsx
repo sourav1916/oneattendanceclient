@@ -11,6 +11,7 @@ import {
   FaTrash,
   FaCalendarCheck,
   FaInfoCircle,
+  FaUpload
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -166,24 +167,24 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
             },
             ...(leave.status === 'pending'
               ? [
-                  {
-                    label: 'Edit',
-                    icon: <FaEdit size={12} />,
-                    onClick: () => onEdit(leave),
-                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
-                  },
-                  {
-                    label: 'Delete',
-                    icon: deletingId === leave.id ? (
-                      <FaSpinner className="animate-spin" size={12} />
-                    ) : (
-                      <FaTrash size={12} />
-                    ),
-                    onClick: () => onDelete(leave.id),
-                    disabled: deletingId === leave.id,
-                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                  },
-                ]
+                {
+                  label: 'Edit',
+                  icon: <FaEdit size={12} />,
+                  onClick: () => onEdit(leave),
+                  className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                },
+                {
+                  label: 'Delete',
+                  icon: deletingId === leave.id ? (
+                    <FaSpinner className="animate-spin" size={12} />
+                  ) : (
+                    <FaTrash size={12} />
+                  ),
+                  onClick: () => onDelete(leave.id),
+                  disabled: deletingId === leave.id,
+                  className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                },
+              ]
               : []),
           ]}
         />
@@ -226,7 +227,7 @@ const Modal = ({ open, title, onClose, children }) => {
         paddingRight: document.body.style.paddingRight,
         height: document.body.style.height
       };
-      
+
       document.body.style.overflow = 'hidden';
       document.body.style.height = '100vh';
       document.documentElement.style.overflow = 'hidden';
@@ -294,7 +295,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
         size: file.size
       })));
       const uploadedFiles = await Promise.all(uploadPromises);
-      
+
       setForm((prev) => ({
         ...prev,
         attachments: [...prev.attachments, ...uploadedFiles],
@@ -463,12 +464,12 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
                   <div key={file.id} className={`group relative overflow-hidden rounded-xl border transition-all ${marked ? 'border-red-200 opacity-60' : 'border-gray-200'}`}>
                     <div className="aspect-square bg-gray-50 flex items-center justify-center">
                       {isImage ? (
-                        <img 
-                          src={file.file_url} 
-                          alt={file.original_name} 
+                        <img
+                          src={file.file_url}
+                          alt={file.original_name}
                           className="h-full w-full object-cover"
                           onError={(e) => {
-                            e.target.onerror = null; 
+                            e.target.onerror = null;
                             e.target.src = 'https://placehold.co/100x100?text=Error';
                           }}
                         />
@@ -479,7 +480,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
                         </div>
                       )}
                     </div>
-                    
+
                     <button
                       type="button"
                       onClick={() =>
@@ -504,7 +505,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
                         </>
                       )}
                     </button>
-                    
+
                     <div className="bg-gray-50 px-2 py-1 text-[10px] text-gray-500 truncate border-t">
                       {file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}
                     </div>
@@ -515,62 +516,100 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
           </div>
         )}
 
+        {/* ── Modern File Upload ── */}
         <div>
-          <label className="mb-1 block text-xs text-gray-500">Add Attachments</label>
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.jpg,.jpeg,.png,.webp"
-            onChange={handleAttachmentChange}
-            disabled={isUploading}
-            className="w-full text-sm"
-          />
-          {isUploading && (
-            <div className="mt-2 flex items-center gap-2 text-purple-600">
-              <FaSpinner className="animate-spin text-sm" />
-              <span className="text-xs font-medium">Uploading files...</span>
-            </div>
-          )}
-          <p className="mt-1 text-xs text-gray-400">Accepted formats: PDF, JPG, PNG, WEBP</p>
-        </div>
+          <label className="mb-2 block text-xs text-gray-500">Add Attachments</label>
 
-        {attachmentPreviews.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">Selected Attachments Preview</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {attachmentPreviews.map((preview, index) => (
-                <div key={preview.key} className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                  <div className="relative aspect-square bg-white">
-                    {preview.isImage ? (
-                      <img src={preview.url} alt={preview.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 text-center text-gray-500">
-                        <FaPaperclip className="text-lg" />
-                        <span className="line-clamp-2 break-all text-xs font-medium">{preview.name}</span>
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          attachments: prev.attachments.filter((_, currentIndex) => currentIndex !== index),
-                        }))
-                      }
-                      className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white transition hover:bg-black/75"
-                      title="Remove attachment"
-                    >
-                      <FaTimes size={10} />
-                    </button>
-                  </div>
-                  <div className="border-t border-gray-200 px-2 py-1.5">
-                    <p className="truncate text-xs text-gray-600">{preview.name}</p>
-                  </div>
-                </div>
+          {/* Drop Zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50'); }}
+            onDragLeave={(e) => e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50');
+              const dt = e.dataTransfer;
+              if (dt?.files) handleAttachmentChange({ target: { files: dt.files } });
+            }}
+            className="relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 text-center transition-colors hover:border-purple-300 hover:bg-purple-50/40"
+          >
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              onChange={handleAttachmentChange}
+              disabled={isUploading}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+
+            {/* Upload icon */}
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white">
+              <FaUpload className="text-sm text-gray-400" />
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-gray-700">
+                Drop files here or <span className="text-purple-600">click to browse</span>
+              </p>
+              <p className="mt-0.5 text-xs text-gray-400">Upload supporting documents</p>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {['PDF', 'JPG', 'PNG', 'WEBP'].map((fmt) => (
+                <span key={fmt} className="rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-gray-500">
+                  {fmt}
+                </span>
               ))}
             </div>
           </div>
-        )}
+
+          {/* Uploading indicator */}
+          {isUploading && (
+            <div className="mt-2 flex items-center gap-2 text-purple-600">
+              <FaSpinner className="animate-spin text-xs" />
+              <span className="text-xs font-medium">Uploading files…</span>
+            </div>
+          )}
+
+          {/* Preview Grid */}
+          {attachmentPreviews.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {attachmentPreviews.map((preview, index) => (
+                <div key={preview.key} className="group relative aspect-square overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                  {/* Thumbnail */}
+                  <div className="h-full w-full">
+                    {preview.isImage ? (
+                      <img src={preview.url} alt={preview.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 p-2 text-center">
+                        <FaPaperclip className="text-lg text-orange-400" />
+                        <span className="line-clamp-2 break-all text-[10px] text-gray-500">{preview.name}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* File name footer */}
+                  <div className="absolute bottom-0 left-0 right-0 truncate border-t border-gray-200 bg-white/90 px-1.5 py-1 text-[9px] text-gray-500 backdrop-blur-sm">
+                    {preview.name}
+                  </div>
+
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        attachments: prev.attachments.filter((_, i) => i !== index),
+                      }))
+                    }
+                    className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <FaTimes size={8} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3 pt-4">
           <button type="submit" disabled={saving} className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 py-2 font-medium text-white disabled:opacity-50">
@@ -926,24 +965,24 @@ const MyLeave = () => {
                                   },
                                   ...(leave.status === 'pending'
                                     ? [
-                                        {
-                                          label: 'Edit',
-                                          icon: <FaEdit size={12} />,
-                                          onClick: () => setEditLeave(leave),
-                                          className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
-                                        },
-                                        {
-                                          label: 'Delete',
-                                          icon: deletingId === leave.id ? (
-                                            <FaSpinner className="animate-spin" size={12} />
-                                          ) : (
-                                            <FaTrash size={12} />
-                                          ),
-                                          onClick: () => removeLeave(leave.id),
-                                          disabled: deletingId === leave.id,
-                                          className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                                        },
-                                      ]
+                                      {
+                                        label: 'Edit',
+                                        icon: <FaEdit size={12} />,
+                                        onClick: () => setEditLeave(leave),
+                                        className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                                      },
+                                      {
+                                        label: 'Delete',
+                                        icon: deletingId === leave.id ? (
+                                          <FaSpinner className="animate-spin" size={12} />
+                                        ) : (
+                                          <FaTrash size={12} />
+                                        ),
+                                        onClick: () => removeLeave(leave.id),
+                                        disabled: deletingId === leave.id,
+                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                                      },
+                                    ]
                                     : []),
                                 ]}
                               />
@@ -1055,12 +1094,12 @@ const MyLeave = () => {
                       >
                         <div className="relative aspect-square flex items-center justify-center">
                           {isImage ? (
-                            <img 
-                              src={file.file_url} 
-                              alt={file.original_name} 
+                            <img
+                              src={file.file_url}
+                              alt={file.original_name}
                               className="h-full w-full object-cover transition-transform group-hover:scale-105"
                               onError={(e) => {
-                                e.target.onerror = null; 
+                                e.target.onerror = null;
                                 e.target.src = 'https://placehold.co/100x100?text=Error';
                               }}
                             />
