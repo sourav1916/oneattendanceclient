@@ -10,17 +10,13 @@ import {
   FaUserShield,
   FaUmbrellaBeach,
   FaFileInvoiceDollar,
-  FaLayerGroup,
-  FaChartLine,
   FaEnvelope,
   FaBuilding,
   FaBriefcase,
   FaCalculator,
-  FaProjectDiagram,
   FaTasks,
   FaClock,
   FaCalendarAlt,
-  FaClipboardList,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import usePermissionAccess from "../hooks/usePermissionAccess";
@@ -121,18 +117,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         },
         {
           icon: FaCalculator,
-          label: 'Salary Components',
-          path: '/salary-components-management',
-          pageKey: 'salaryComponentsManagement'
-        },
-        {
-          icon: FaLayerGroup,
-          label: 'Salary Packages',
-          path: '/salary-package-management',
-          pageKey: 'salaryPackageManagement'
-        },
-        {
-          icon: FaCalculator,
           label: 'Payroll Management',
           path: '/payroll-management',
           pageKey: 'payrollManagement'
@@ -148,18 +132,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           label: 'Leave Management',
           path: '/leave-management',
           pageKey: 'leaveManagement'
-        },
-        {
-          icon: FaClipboardList,
-          label: 'Leave Config',
-          path: '/leave-config',
-          pageKey: 'leaveConfig'
-        },
-        {
-          icon: FaChartLine,
-          label: 'Leave Balance',
-          path: '/leave-balance',
-          pageKey: 'leaveBalance'
         },
         {
           icon: FaCog,
