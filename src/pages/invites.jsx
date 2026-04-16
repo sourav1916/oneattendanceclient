@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaClock, FaExclamationCircle, FaSpinner, FaEye,
@@ -570,7 +570,8 @@ export default function MyInvites() {
                       const StatusIcon = status.icon;
                       return (
                         <motion.tr key={`invite-${invite.invite_id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                          onClick={() => openModal(invite, 'view')}
+                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer">
                           {visibleColumns.showCompany && (
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
@@ -662,6 +663,7 @@ export default function MyInvites() {
                 const StatusIcon = status.icon;
                 return (
                   <motion.div key={`card-${invite.invite_id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+                    onClick={() => openModal(invite, 'view')}
                     className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
                       {invite.company?.logo_url ? (
@@ -686,11 +688,11 @@ export default function MyInvites() {
                       </div>
                     </div>
                     <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                      <button onClick={() => openModal(invite, 'view')} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); openModal(invite, 'view'); }} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
                       {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
                         <>
-                          <button onClick={() => openModal(invite, 'accept')} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"><FaCheck size={16} /></button>
-                          <button onClick={() => openModal(invite, 'reject')} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110"><FaBan size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); openModal(invite, 'accept'); }} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"><FaCheck size={16} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); openModal(invite, 'reject'); }} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110"><FaBan size={16} /></button>
                         </>
                       )}
                     </div>
