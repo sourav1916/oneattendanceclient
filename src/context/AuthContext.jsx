@@ -18,6 +18,9 @@ export const AuthProvider = ({ children }) => {
   const [activeRole, setActiveRole] = useState(null);
   const [userDetails, setUserDetails] = useState(null);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
   const initialized = useRef(false);
 
@@ -192,6 +195,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("company", JSON.stringify(selectedCompany));
     setMustSelectCompany(false);
     setShowCompanySelection(false);
+    triggerRefresh();
   };
 
   // ✅ GET CURRENT COMPANY
@@ -257,6 +261,8 @@ export const AuthProvider = ({ children }) => {
     userDetails,
     attendanceMethods,
     activeRole,
+    refreshKey,
+    triggerRefresh,
   };
 
   return (

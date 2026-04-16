@@ -12,7 +12,7 @@ const MainLayout = ({ children }) => {
 
   // ── Pull company data from your auth context ──
   // Adjust these destructured names to match what your AuthContext actually exposes
-  const { company, companies, selectCompany } = useAuth();
+  const { company, companies, selectCompany, refreshKey } = useAuth();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -111,7 +111,7 @@ const MainLayout = ({ children }) => {
             transition: 'margin-left 0.3s ease-out'
           }}
         >
-          <div className="max-w-full">
+          <div className="max-w-full" key={refreshKey}>
             {children}
           </div>
         </main>
