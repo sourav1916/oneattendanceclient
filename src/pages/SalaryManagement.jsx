@@ -1321,20 +1321,24 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <input
-                                    type="date"
+                                <DatePickerField
                                     value={formData.effective_from}
-                                    onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    onChange={(value) => setFormData({ ...formData, effective_from: value })}
+                                    placeholder="Select effective from"
+                                    mode="single"
+                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left"
+                                    popoverClassName="mt-2"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <input
-                                    type="date"
+                                <DatePickerField
                                     value={formData.effective_to}
-                                    onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
+                                    onChange={(value) => setFormData({ ...formData, effective_to: value })}
+                                    placeholder="Select effective to"
+                                    mode="single"
+                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left"
+                                    popoverClassName="mt-2"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
@@ -1480,6 +1484,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                     value={overrideForm.effective_from}
                                                     onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })}
                                                     placeholder="Effective from"
+                                                    mode="single"
                                                     buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm text-left"
                                                     popoverClassName="mt-2"
                                                 />
@@ -1490,6 +1495,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                     value={overrideForm.effective_to}
                                                     onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })}
                                                     placeholder="Effective to"
+                                                    mode="single"
                                                     buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm text-left"
                                                     popoverClassName="mt-2"
                                                 />
