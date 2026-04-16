@@ -197,7 +197,7 @@ const SettingsPage = () => {
         )
       };
 
-      const response = await apiCall('/company/edit', 'PUT', payload);
+      const response = await apiCall('/company/update', 'PUT', payload);
 
       const result = await response.json();
       if (!response.ok || !result.success) {
