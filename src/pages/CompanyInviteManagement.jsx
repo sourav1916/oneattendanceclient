@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
   FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
   FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
-  FaSearch, FaTimes, FaInfoCircle, FaUserCircle, FaTh, FaListUl
+  FaSearch, FaTimes, FaShieldAlt, FaUserCircle, FaTh, FaListUl,FaChevronDown,FaUserCheck
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
@@ -256,71 +256,145 @@ export default function CompanyInvites() {
   }, []);
 
   // ── View Modal ─────────────────────────────────────────────────────────────
-  const ViewModal = ({ invite, onClose }) => (
-    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}>
-      <ModalScrollLock />
-      <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
-          <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
-        </div>
-        <div className="p-6">
-          <div className="flex items-center gap-6 pb-6 border-b">
-            <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl">
-              <FaUserCircle className="text-white text-5xl" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-800">{invite.user?.name || "No name"}</h3>
-              <p className="text-gray-600 flex items-center gap-2 mt-1">
-                <FaEnvelope className="text-blue-500" size={14} />{invite.user?.email}
-              </p>
-              {invite.user?.phone && (
+  const ViewModal = ({ invite, onClose }) => {
+    const [showPermissions, setShowPermissions] = useState(false);
+    const [showAttendance, setShowAttendance] = useState(false);
+    
+    return (
+      <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={onClose}>
+        <ModalScrollLock />
+        <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}>
+          <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+            <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+          </div>
+          <div className="p-6">
+            <div className="flex items-center gap-6 pb-6 border-b">
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl">
+                <FaUserCircle className="text-white text-5xl" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">{invite.user?.name || "No name"}</h3>
                 <p className="text-gray-600 flex items-center gap-2 mt-1">
-                  <FaPhone className="text-green-500" size={14} />{invite.user.phone}
+                  <FaEnvelope className="text-blue-500" size={14} />{invite.user?.email}
                 </p>
-              )}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <InfoItem icon={<FaBriefcase className="text-blue-500" />}   label="Designation"      value={formatDisplay(invite.designation)} />
-            <InfoItem icon={<FaUserTie   className="text-purple-500" />} label="Employment Type"  value={formatDisplay(invite.employment_type)} />
-            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type"    value={formatDisplay(invite.salary_type)} />
-            <InfoItem icon={<FaTag       className="text-orange-500" />} label="Status"
-              value={
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
-                  {getStatusBadge(invite.status, invite.expires_at).text}
-                </span>
-              } />
-            <InfoItem icon={<FaCalendarAlt className="text-rose-500" />}  label="Sent Date"  value={formatDate(invite.created_at)} />
-            <InfoItem icon={<FaClock      className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
-          </div>
-          {invite.permissions?.length > 0 && (
-            <div className="mt-6">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <FaInfoCircle className="text-blue-500" /> Permissions
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
-                {invite.permissions.map((perm, idx) => (
-                  <motion.div key={perm.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                    className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                    <span className="font-medium text-gray-700">{perm.name}</span>
-                    {perm.is_allowed === 1 || perm.is_allowed === true
-                      ? <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium flex items-center gap-1"><FaCheckCircle size={10} /> Allowed</span>
-                      : <span className="px-3 py-1 bg-red-100   text-red-700   rounded-full text-xs font-medium flex items-center gap-1"><FaBan size={10} /> Denied</span>
-                    }
-                  </motion.div>
-                ))}
+                {invite.user?.phone && (
+                  <p className="text-gray-600 flex items-center gap-2 mt-1">
+                    <FaPhone className="text-green-500" size={14} />{invite.user.phone}
+                  </p>
+                )}
               </div>
             </div>
-          )}
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <InfoItem icon={<FaBriefcase className="text-blue-500" />}   label="Designation"      value={formatDisplay(invite.designation)} />
+              <InfoItem icon={<FaUserTie   className="text-purple-500" />} label="Employment Type"  value={formatDisplay(invite.employment_type)} />
+              <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type"    value={formatDisplay(invite.salary_type)} />
+              <InfoItem icon={<FaTag       className="text-orange-500" />} label="Status"
+                value={
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
+                    {getStatusBadge(invite.status, invite.expires_at).text}
+                  </span>
+                } />
+              <InfoItem icon={<FaCalendarAlt className="text-rose-500" />}  label="Sent Date"  value={formatDate(invite.created_at)} />
+              <InfoItem icon={<FaClock      className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
+            </div>
+
+            {invite.permissions?.length > 0 && (
+              <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <button 
+                  onClick={() => setShowPermissions(!showPermissions)}
+                  className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  type="button"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaShieldAlt className="text-blue-500" /> 
+                    <span className="text-sm font-semibold text-gray-700">Permissions</span>
+                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
+                      {invite.permissions.length}
+                    </span>
+                  </div>
+                  <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <FaChevronDown className="w-4 h-4 text-gray-400" />
+                  </motion.div>
+                </button>
+                
+                <AnimatePresence>
+                  {showPermissions && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                        {invite.permissions.map((perm, idx) => (
+                          <motion.div key={perm.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                            className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                            <span className="font-medium text-gray-700">{perm.name}</span>
+                            
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {invite.attendance_methods?.length > 0 && (
+              <div className="mt-4 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <button 
+                  onClick={() => setShowAttendance(!showAttendance)}
+                  className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  type="button"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaUserCheck className="text-purple-500" /> 
+                    <span className="text-sm font-semibold text-gray-700">Attendance Methods</span>
+                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">
+                      {invite.attendance_methods.length}
+                    </span>
+                  </div>
+                  <motion.div animate={{ rotate: showAttendance ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <FaChevronDown className="w-4 h-4 text-gray-400" />
+                  </motion.div>
+                </button>
+                
+                <AnimatePresence>
+                  {showAttendance && (
+                    <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {invite.attendance_methods.map((method, idx) => (
+                          <motion.div key={`method-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                            className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                            <span className="font-medium text-gray-700 capitalize">{method.method}</span>
+                            {method.is_auto && (
+                              <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
-  );
+    );
+  };
 
   // ── Cancel Modal ───────────────────────────────────────────────────────────
   const CancelModal = ({ invite, onClose, onConfirm }) => (
