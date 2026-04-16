@@ -634,7 +634,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                           <FaCheck className="h-4 w-4 text-indigo-500" />
-                          Invite Settings
+                          Attendance Settings
                         </label>
                         <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
                           <input
@@ -643,7 +643,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             onChange={(e) => setAutoApprove(e.target.checked)}
                             className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                           />
-                          <span className="text-sm text-slate-700">Auto approve invite</span>
+                          <span className="text-sm text-slate-700">Auto approve Attendance</span>
                         </label>
                       </div>
                     </motion.div>

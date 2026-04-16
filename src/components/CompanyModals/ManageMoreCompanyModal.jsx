@@ -272,6 +272,15 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
       id: companyId,
       company_ips: normalizedIps,
       attendance_methods: normalizedMethods,
+      // Always include address fields so GPS coordinates/address are persisted
+      address_line1: address.address_line1,
+      address_line2: address.address_line2,
+      city: address.city,
+      state: address.state,
+      postal_code: address.postal_code,
+      country: address.country,
+      latitude: address.latitude,
+      longitude: address.longitude,
     };
 
     if (!forceAutoDetect && normalizedIps.length === 0) {
@@ -343,6 +352,15 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
       id: companyId,
       company_ips: normalizedIps,
       attendance_methods: normalizedMethods,
+      // Include address fields so GPS coordinates/address are persisted
+      address_line1: address.address_line1,
+      address_line2: address.address_line2,
+      city: address.city,
+      state: address.state,
+      postal_code: address.postal_code,
+      country: address.country,
+      latitude: address.latitude,
+      longitude: address.longitude,
     };
 
     if (ipMode === 'manual' && normalizedIps.length === 0) {
