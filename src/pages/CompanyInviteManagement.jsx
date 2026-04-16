@@ -9,7 +9,6 @@ import {
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
 import Pagination, { usePagination } from "../components/PaginationComponent";
-import { DatePickerField } from "../components/DatePicker";
 import EditStaffModal from "../components/StaffModals/EditStaffModal";
 import CreateInviteModal from "../components/StaffModals/AddStaffModal";
 import Skeleton from "../components/SkeletonComponent";
@@ -97,9 +96,6 @@ export default function CompanyInvites() {
   const [editingInvite, setEditingInvite]       = useState(null);
   const [isInitialLoad, setIsInitialLoad]       = useState(true);
   const [openCreateInviteModal, setOpenCreateInviteModal] = useState(false);
-  const [dateFilterLabel, setDateFilterLabel]   = useState("Filter by date");
-  const inviteTimeParamsRef = useRef({});
-
   const fetchInProgress = useRef(false);
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -117,7 +113,7 @@ export default function CompanyInvites() {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchInvites = useCallback(
-    async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true, timeParams = inviteTimeParamsRef.current) => {
+    async (page = pagination.page, search = debouncedSearchTerm, resetLoading = true) => {
       if (fetchInProgress.current) return;
       fetchInProgress.current = true;
       if (resetLoading) setLoading(true);
@@ -126,12 +122,6 @@ export default function CompanyInvites() {
         const company = JSON.parse(localStorage.getItem("company"));
         const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
         if (search) params.append("search", search);
-        Object.entries(timeParams || {}).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && String(value).trim() !== "") {
-            params.append(key, String(value));
-          }
-        });
-
         const response = await apiCall(`/company/invites/list?${params.toString()}`, 'GET', null, company?.id);
         if (!response.ok) throw new Error("Failed to fetch invites");
 
@@ -174,37 +164,6 @@ export default function CompanyInvites() {
     (newPage) => { if (newPage !== pagination.page) goToPage(newPage); },
     [pagination.page, goToPage]
   );
-
-  const formatFilterLabel = (value) => new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  const handleDateFilterApply = useCallback((result) => {
-    let nextParams = {};
-    let nextLabel = "Filter by date";
-
-    if (typeof result === "string" && result) {
-      nextParams = { date: result };
-      nextLabel = formatFilterLabel(result);
-    } else if (result?.start && result?.end) {
-      nextParams = { from_date: result.start, to_date: result.end };
-      nextLabel = result.start === result.end
-        ? formatFilterLabel(result.start)
-        : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`;
-    }
-
-    inviteTimeParamsRef.current = nextParams;
-    setDateFilterLabel(nextLabel);
-    fetchInvites(1, debouncedSearchTerm, true, nextParams);
-  }, [debouncedSearchTerm, fetchInvites]);
-
-  const clearDateFilter = useCallback(() => {
-    inviteTimeParamsRef.current = {};
-    setDateFilterLabel("Filter by date");
-    fetchInvites(1, debouncedSearchTerm, true, {});
-  }, [debouncedSearchTerm, fetchInvites]);
 
   useEffect(() => {
     if (!isInitialLoad && !fetchInProgress.current) {
@@ -477,29 +436,6 @@ export default function CompanyInvites() {
 
         {/* View Toggle */}
         <div className="flex justify-end gap-2 mb-6">
-          <div className="flex items-center gap-2">
-            <DatePickerField
-              value=""
-              onChange={handleDateFilterApply}
-              placeholder={dateFilterLabel}
-              buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-              wrapperClassName="w-auto"
-              popoverClassName="w-[min(92vw,24rem)]"
-              initialTab="quick"
-              mode="both"
-            />
-            {inviteTimeParamsRef.current && Object.keys(inviteTimeParamsRef.current).length > 0 && (
-              <button
-                type="button"
-                onClick={clearDateFilter}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition hover:bg-rose-100 xsm:h-9 xsm:w-9"
-                title="Clear date filter"
-                aria-label="Clear date filter"
-              >
-                <FaTimes className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
           <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
         </div>
 

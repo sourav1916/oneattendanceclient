@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     FaClock, FaCalendarAlt, FaChevronLeft, FaChevronRight,
     FaUserCircle, FaSpinner, FaBriefcase, FaCheckCircle,
@@ -79,6 +79,34 @@ const getStatusBadge = (effectiveTo) => {
         return { icon: FaCheckCircle, text: "Active", className: "bg-green-100 text-green-800 border border-green-200" };
     }
     return { icon: FaTimesCircle, text: "Expired", className: "bg-gray-100 text-gray-800 border border-gray-200" };
+};
+
+const formatFilterLabel = (value) =>
+    new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+
+const salaryOverlapsDateFilter = (salary, filter) => {
+    if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return true;
+
+    const effectiveFrom = salary.effective_from ? new Date(salary.effective_from) : null;
+    const effectiveTo = salary.effective_to ? new Date(salary.effective_to) : null;
+
+    if (filter.date) {
+        const selected = new Date(`${filter.date}T00:00:00`);
+        const dayEnd = new Date(`${filter.date}T23:59:59.999`);
+        const start = effectiveFrom || selected;
+        const end = effectiveTo || dayEnd;
+        return start <= dayEnd && end >= selected;
+    }
+
+    const filterStart = new Date(`${filter.from_date}T00:00:00`);
+    const filterEnd = new Date(`${filter.to_date}T23:59:59.999`);
+    const start = effectiveFrom || filterStart;
+    const end = effectiveTo || filterEnd;
+    return start <= filterEnd && end >= filterStart;
 };
 
 // ─── Sub Components ───────────────────────────────────────────────────────────
@@ -1721,6 +1749,7 @@ const SalaryManagement = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [viewMode, setViewMode] = useState('table');
     const [showHistory, setShowHistory] = useState(false);
+    const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
     const [selectedSalary, setSelectedSalary] = useState(null);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -1742,6 +1771,7 @@ const SalaryManagement = () => {
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
+    const salaryDateFilterRef = useRef({});
 
     // Debounce search
     useEffect(() => {
@@ -1768,16 +1798,31 @@ const SalaryManagement = () => {
         return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
     }, []);
 
-    const fetchSalaries = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
+    const fetchSalaries = useCallback(async (
+        page = pagination.page,
+        search = debouncedSearch,
+        resetLoading = true,
+        dateParams = salaryDateFilterRef.current
+    ) => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
 
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            let url = `/salary/employees-salaries?page=${page}&limit=${pagination.limit}`;
-            if (showHistory) url += '&history=true';
-            if (search) url += `&search=${search}`;
+            const queryParams = new URLSearchParams({
+                page: page.toString(),
+                limit: pagination.limit.toString(),
+            });
+            if (showHistory) queryParams.append('history', 'true');
+            if (search) queryParams.append('search', search);
+            Object.entries(dateParams || {}).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && String(value).trim() !== '') {
+                    queryParams.append(key, String(value));
+                }
+            });
+
+            const url = `/salary/employees-salaries?${queryParams.toString()}`;
 
             const response = await apiCall(url, 'GET', null, company?.id);
             const result = await response.json();
@@ -1821,6 +1866,47 @@ const SalaryManagement = () => {
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
+
+    const handleDateFilterApply = useCallback((result) => {
+        let nextParams = {};
+        let nextLabel = 'Filter by date';
+
+        if (typeof result === 'string' && result) {
+            nextParams = { date: result };
+            nextLabel = formatFilterLabel(result);
+        } else if (result?.start && result?.end) {
+            nextParams = { from_date: result.start, to_date: result.end };
+            nextLabel = result.start === result.end
+                ? formatFilterLabel(result.start)
+                : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`;
+        }
+
+        salaryDateFilterRef.current = nextParams;
+        setDateFilterLabel(nextLabel);
+
+        if (pagination.page !== 1) {
+            goToPage(1);
+        } else {
+            fetchSalaries(1, debouncedSearch, true, nextParams);
+        }
+    }, [debouncedSearch, fetchSalaries, goToPage, pagination.page]);
+
+    const clearDateFilter = useCallback(() => {
+        salaryDateFilterRef.current = {};
+        setDateFilterLabel('Filter by date');
+
+        if (pagination.page !== 1) {
+            goToPage(1);
+        } else {
+            fetchSalaries(1, debouncedSearch, true, {});
+        }
+    }, [debouncedSearch, fetchSalaries, goToPage, pagination.page]);
+
+    const visibleSalaries = useMemo(() => {
+        const filter = salaryDateFilterRef.current;
+        if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return salaries;
+        return salaries.filter((salary) => salaryOverlapsDateFilter(salary, filter));
+    }, [salaries, dateFilterLabel]);
 
     // Search and history triggers
     useEffect(() => {
@@ -1872,12 +1958,12 @@ const SalaryManagement = () => {
 
     const stats = {
         total: meta?.total || 0,
-        avgBase: salaries.length > 0
-            ? salaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / salaries.length
+        avgBase: visibleSalaries.length > 0
+            ? visibleSalaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / visibleSalaries.length
             : 0,
-        totalCTC: salaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
-        activeCount: salaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
-        currency: salaries[0]?.currency || 'USD'
+        totalCTC: visibleSalaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
+        activeCount: visibleSalaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
+        currency: visibleSalaries[0]?.currency || salaries[0]?.currency || 'USD'
     };
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
@@ -1928,7 +2014,7 @@ const SalaryManagement = () => {
                 </motion.div>
 
                 {/* Stats Summary */}
-                {!loading && salaries.length > 0 && (
+                {!loading && visibleSalaries.length > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -1958,7 +2044,7 @@ const SalaryManagement = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 }}
-                    className="mb-6"
+                    className="mb-6 space-y-3"
                 >
                     <div className="relative">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
@@ -1976,26 +2062,50 @@ const SalaryManagement = () => {
                             </button>
                         )}
                     </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <DatePickerField
+                            value=""
+                            onChange={handleDateFilterApply}
+                            placeholder={dateFilterLabel}
+                            buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                            wrapperClassName="w-auto"
+                            popoverClassName="w-[min(92vw,24rem)]"
+                            initialTab="quick"
+                            mode="both"
+                        />
+                        {dateFilterLabel !== 'Filter by date' && (
+                            <button
+                                type="button"
+                                onClick={clearDateFilter}
+                                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                title="Clear date filter"
+                                aria-label="Clear date filter"
+                            >
+                                <FaTimes />
+                            </button>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* View Toggle & Info */}
-                {!loading && salaries.length > 0 && (
+                {!loading && visibleSalaries.length > 0 && (
                     <div className="flex justify-between items-center mb-6">
                         <p className="text-sm text-gray-500">
-                            <span className="font-semibold text-gray-800">{salaries.length}</span> of{' '}
+                            <span className="font-semibold text-gray-800">{visibleSalaries.length}</span> of{' '}
                             <span className="font-semibold text-gray-800">{stats.total}</span> salary records
                             {debouncedSearch && <span className="ml-1 text-green-600">· "{debouncedSearch}"</span>}
                             {showHistory && <span className="ml-1 text-purple-600">· Showing history</span>}
+                            {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">· {dateFilterLabel}</span>}
                         </p>
                         <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="green" />
                     </div>
                 )}
 
                 {/* Loading skeleton */}
-                {loading && !salaries.length && <SkeletonComponent />}
+                {loading && !visibleSalaries.length && <SkeletonComponent />}
 
                 {/* Empty State */}
-                {!loading && salaries.length === 0 && (
+                {!loading && visibleSalaries.length === 0 && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -2006,7 +2116,11 @@ const SalaryManagement = () => {
                         </div>
                         <p className="text-xl font-semibold text-gray-600">No salary records found</p>
                         <p className="text-gray-400 mt-2 text-sm">
-                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Assign Salary" to get started'}
+                            {debouncedSearch
+                                ? `No results for "${debouncedSearch}"`
+                                : dateFilterLabel !== 'Filter by date'
+                                    ? `No results for ${dateFilterLabel}`
+                                    : 'Click "Assign Salary" to get started'}
                         </p>
                         {debouncedSearch && (
                             <button onClick={() => setSearchTerm('')}
@@ -2024,7 +2138,7 @@ const SalaryManagement = () => {
                 )}
 
                 {/* Table View */}
-                {!loading && salaries.length > 0 && viewMode === "table" && (
+                {!loading && visibleSalaries.length > 0 && viewMode === "table" && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2044,7 +2158,7 @@ const SalaryManagement = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {salaries.map((salary, index) => {
+                                    {visibleSalaries.map((salary, index) => {
                                         const status = getStatusBadge(salary.effective_to);
                                         const StatusIcon = status.icon;
                                         const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
@@ -2150,9 +2264,9 @@ const SalaryManagement = () => {
                 )}
 
                 {/* Card View */}
-                {!loading && salaries.length > 0 && viewMode === "card" && (
+                {!loading && visibleSalaries.length > 0 && viewMode === "card" && (
                     <ManagementGrid viewMode={viewMode}>
-                        {salaries.map((salary, index) => (
+                        {visibleSalaries.map((salary, index) => (
                             <SalaryCard
                                 key={salary.salary_id}
                                 salary={salary}
@@ -2171,7 +2285,7 @@ const SalaryManagement = () => {
                 )}
 
                 {/* Pagination */}
-                {!loading && salaries.length > 0 && (
+                {!loading && visibleSalaries.length > 0 && (
                     <Pagination
                         currentPage={pagination.page}
                         totalItems={pagination.total}

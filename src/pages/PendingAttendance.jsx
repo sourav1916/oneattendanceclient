@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,15 +18,22 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { DatePickerField } from '../components/DatePicker';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
 const pendingAttendanceAPI = {
-    fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '') => {
+    fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '', dateParams = {}) => {
         const queryParams = new URLSearchParams({
             page: page.toString(),
             limit: limit.toString(),
             ...(search && { search })
+        });
+
+        Object.entries(dateParams || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && String(value).trim() !== '') {
+                queryParams.append(key, String(value));
+            }
         });
 
         const response = await apiCall(`/attendance/pending-punches?${queryParams.toString()}`, 'GET', null, companyId);
@@ -60,6 +67,28 @@ const pendingAttendanceAPI = {
 
         return response.json();
     }
+};
+
+const formatFilterLabel = (value) => new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+});
+
+const pendingAttendanceMatchesDateFilter = (attendance, filter) => {
+    if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return true;
+
+    const punchDate = attendance?.punch_time ? new Date(attendance.punch_time) : null;
+    if (!punchDate || Number.isNaN(punchDate.getTime())) return false;
+
+    if (filter.date) {
+        const selected = new Date(`${filter.date}T00:00:00`);
+        return punchDate.toDateString() === selected.toDateString();
+    }
+
+    const start = new Date(`${filter.from_date}T00:00:00`);
+    const end = new Date(`${filter.to_date}T23:59:59.999`);
+    return punchDate >= start && punchDate <= end;
 };
 
 // Helper Components
@@ -302,6 +331,7 @@ const PendingAttendance = ({ companyId }) => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
     const [selectedAttendance, setSelectedAttendance] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [processingId, setProcessingId] = useState(null);
@@ -318,6 +348,7 @@ const PendingAttendance = ({ companyId }) => {
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
     const previousSearchRef = useRef('');
     const lastRequestKeyRef = useRef('');
+    const pendingDateFilterRef = useRef({});
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const itemsPerPage = pagination.limit;
     const approveAccess = checkActionAccess('pendingAttendance', 'approve');
@@ -344,13 +375,13 @@ const PendingAttendance = ({ companyId }) => {
     }, []);
 
     // Fetch pending attendances
-    const fetchPendingAttendances = useCallback(async (force = false) => {
+    const fetchPendingAttendances = useCallback(async (force = false, dateParams = pendingDateFilterRef.current) => {
         if (!resolvedCompanyId) {
             setError('Company ID is required');
             setLoading(false);
             return;
         }
-        const requestKey = `${resolvedCompanyId}-${pagination.page}-${debouncedSearchTerm}-${pagination.limit}`;
+        const requestKey = `${resolvedCompanyId}-${pagination.page}-${debouncedSearchTerm}-${pagination.limit}-${JSON.stringify(dateParams || {})}`;
         if (!force && lastRequestKeyRef.current === requestKey) {
             return;
         }
@@ -362,7 +393,8 @@ const PendingAttendance = ({ companyId }) => {
                 resolvedCompanyId,
                 pagination.page,
                 itemsPerPage,
-                debouncedSearchTerm
+                debouncedSearchTerm,
+                dateParams
             );
 
             if (response.success) {
@@ -402,6 +434,47 @@ const PendingAttendance = ({ companyId }) => {
         previousSearchRef.current = debouncedSearchTerm;
         fetchPendingAttendances();
     }, [pagination.page, debouncedSearchTerm, fetchPendingAttendances, goToPage]);
+
+    const handleDateFilterApply = useCallback((result) => {
+        let nextParams = {};
+        let nextLabel = 'Filter by date';
+
+        if (typeof result === 'string' && result) {
+            nextParams = { date: result };
+            nextLabel = formatFilterLabel(result);
+        } else if (result?.start && result?.end) {
+            nextParams = { from_date: result.start, to_date: result.end };
+            nextLabel = result.start === result.end
+                ? formatFilterLabel(result.start)
+                : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`;
+        }
+
+        pendingDateFilterRef.current = nextParams;
+        setDateFilterLabel(nextLabel);
+
+        if (pagination.page !== 1) {
+            goToPage(1);
+        } else {
+            fetchPendingAttendances(true, nextParams);
+        }
+    }, [fetchPendingAttendances, goToPage, pagination.page]);
+
+    const clearDateFilter = useCallback(() => {
+        pendingDateFilterRef.current = {};
+        setDateFilterLabel('Filter by date');
+
+        if (pagination.page !== 1) {
+            goToPage(1);
+        } else {
+            fetchPendingAttendances(true, {});
+        }
+    }, [fetchPendingAttendances, goToPage, pagination.page]);
+
+    const visibleAttendances = useMemo(() => {
+        const filter = pendingDateFilterRef.current;
+        if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return attendances;
+        return attendances.filter((attendance) => pendingAttendanceMatchesDateFilter(attendance, filter));
+    }, [attendances, dateFilterLabel]);
 
     // Handle status update
     const handleStatusUpdate = async (punchId, action) => {
@@ -491,7 +564,7 @@ const PendingAttendance = ({ companyId }) => {
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-5 md:p-6 mb-4 sm:mb-5 md:mb-6"
+                        className="mb-6"
                     >
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                             <div>
@@ -522,28 +595,68 @@ const PendingAttendance = ({ companyId }) => {
                         </div>
                     </motion.div>
 
-                    {/* View Toggle */}
-                    <div className="flex justify-end mb-4 sm:mb-5 md:mb-6">
-                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                    </div>
-
                     {/* Search */}
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-5 md:mb-6"
+                        className="mb-6 space-y-3"
                     >
                         <div className="relative">
-                            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm sm:text-base" />
+                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
                             <input
                                 type="text"
                                 placeholder="Search by employee name, email, or code..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 md:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition text-sm sm:text-base"
+                                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none shadow-lg transition-all"
                             />
+                            {searchTerm && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    <FaTimes />
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <DatePickerField
+                                value=""
+                                onChange={handleDateFilterApply}
+                                placeholder={dateFilterLabel}
+                                buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                wrapperClassName="w-auto"
+                                popoverClassName="w-[min(92vw,24rem)]"
+                                initialTab="quick"
+                                mode="both"
+                            />
+                            {dateFilterLabel !== 'Filter by date' && (
+                                <button
+                                    type="button"
+                                    onClick={clearDateFilter}
+                                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                    title="Clear date filter"
+                                    aria-label="Clear date filter"
+                                >
+                                    <FaTimes />
+                                </button>
+                            )}
                         </div>
                     </motion.div>
+
+                    {/* View Toggle */}
+                    {!loading && visibleAttendances.length > 0 && (
+                        <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-sm text-gray-500">
+                                <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of{' '}
+                                <span className="font-semibold text-gray-800">{pagination.total}</span> pending records
+                                {debouncedSearchTerm && <span className="ml-1 text-amber-600">· "{debouncedSearchTerm}"</span>}
+                                {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">· {dateFilterLabel}</span>}
+                            </p>
+                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                        </div>
+                    )}
 
                     {/* Loading State */}
                     {loading ? (
@@ -554,11 +667,17 @@ const PendingAttendance = ({ companyId }) => {
                         <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
                             {error}
                         </div>
-                    ) : attendances.length === 0 ? (
+                    ) : visibleAttendances.length === 0 ? (
                         <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-8 sm:p-10 md:p-12 text-center">
                             <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
                             <p className="text-gray-500 text-sm sm:text-base md:text-lg">No pending attendance records found</p>
-                            <p className="text-gray-400 text-xs sm:text-sm mt-1">All attendances have been processed</p>
+                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                                {debouncedSearchTerm
+                                    ? 'Try adjusting your search'
+                                    : dateFilterLabel !== 'Filter by date'
+                                        ? `Try adjusting ${dateFilterLabel.toLowerCase()}`
+                                        : 'All attendances have been processed'}
+                            </p>
                         </div>
                     ) : (
                         <>
@@ -599,7 +718,7 @@ const PendingAttendance = ({ companyId }) => {
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">
-                                                {attendances.map((attendance) => (
+                                                {visibleAttendances.map((attendance) => (
                                                     <motion.tr
                                                         key={attendance.id}
                                                         initial={{ opacity: 0 }}
@@ -689,7 +808,7 @@ const PendingAttendance = ({ companyId }) => {
                             )}
                             {viewMode === 'card' && (
                                 <ManagementGrid viewMode={viewMode}>
-                                    {attendances.map((attendance) => (
+                                    {visibleAttendances.map((attendance) => (
                                         <PendingAttendanceCard
                                             key={attendance.id}
                                             attendance={attendance}

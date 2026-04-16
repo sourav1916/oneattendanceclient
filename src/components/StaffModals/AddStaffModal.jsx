@@ -57,8 +57,21 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [isLoadingConstants, setIsLoadingConstants] = useState(false);
 
   const companyAttendanceMethodList = useMemo(() => {
-    return (companyAttendanceMethods || [])
-      .map((item) => String(item || "").toLowerCase())
+    let methods = companyAttendanceMethods;
+    if (!methods) return [];
+    if (typeof methods === "string") {
+      methods = methods.includes(",") ? methods.split(",").map((m) => m.trim()) : [methods];
+    }
+    
+    if (!Array.isArray(methods)) return [];
+
+    return methods
+      .map((item) => {
+        if (typeof item === "object" && item !== null) {
+          return String(item.method || "").toLowerCase();
+        }
+        return String(item || "").toLowerCase();
+      })
       .filter(Boolean);
   }, [companyAttendanceMethods]);
 

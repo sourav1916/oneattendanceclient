@@ -29,13 +29,25 @@ import apiCall from '../utils/api';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
+import { DatePickerField } from '../components/DatePicker';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 10;
 
-const fetchAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE }) => {
-  const response = await apiCall(`/attendance/my?page=${page}&limit=${limit}`, 'GET', null, companyId);
+const fetchAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE, dateParams = {} }) => {
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString()
+  });
+
+  Object.entries(dateParams || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      queryParams.append(key, String(value));
+    }
+  });
+
+  const response = await apiCall(`/attendance/my?${queryParams.toString()}`, 'GET', null, companyId);
 
   if (!response.ok) {
     throw new Error(`Server error: ${response.status} ${response.statusText}`);
@@ -49,6 +61,12 @@ const fetchAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE 
 
   return json; // { success, message, total, page, limit, total_pages, data: PunchRecord[] }
 };
+
+const formatFilterLabel = (value) => new Date(`${value}T00:00:00`).toLocaleDateString('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric'
+});
 
 // ─── Data Transformation ──────────────────────────────────────────────────────
 const deriveDailyRecords = (punches) => {
@@ -358,6 +376,7 @@ const AttendanceHistory = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('table');
@@ -368,6 +387,7 @@ const AttendanceHistory = () => {
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
   const [totalRecords, setTotalRecords] = useState(0);
   const fetchInProgressRef = useRef(false);
+  const attendanceDateFilterRef = useRef({});
 
   // ── Debounce search ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -383,7 +403,7 @@ const AttendanceHistory = () => {
   }, []);
 
   // ── Fetch from API with server-side pagination ───────────────────────────
-  const fetchAttendance = useCallback(async () => {
+  const fetchAttendance = useCallback(async (dateParams = attendanceDateFilterRef.current) => {
     if (fetchInProgressRef.current) return;
     fetchInProgressRef.current = true;
     setLoading(true);
@@ -394,7 +414,8 @@ const AttendanceHistory = () => {
       const result = await fetchAttendanceAPI({
         companyId: company?.id,
         page: pagination.page,
-        limit: pagination.limit
+        limit: pagination.limit,
+        dateParams
       });
 
       const daily = deriveDailyRecords(result.data || []);
@@ -430,21 +451,72 @@ const AttendanceHistory = () => {
     }
   }, [debouncedSearch]);
 
-  // Filter records client-side for search
-  const filteredRecords = useMemo(() => {
-    if (!debouncedSearch) {
-      return records;
+  const handleDateFilterApply = useCallback((result) => {
+    let nextParams = {};
+    let nextLabel = 'Filter by date';
+
+    if (typeof result === 'string' && result) {
+      nextParams = { date: result };
+      nextLabel = formatFilterLabel(result);
+    } else if (result?.start && result?.end) {
+      nextParams = { from_date: result.start, to_date: result.end };
+      nextLabel = result.start === result.end
+        ? formatFilterLabel(result.start)
+        : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`;
     }
 
+    attendanceDateFilterRef.current = nextParams;
+    setDateFilterLabel(nextLabel);
+
+    if (pagination.page !== 1) {
+      goToPage(1);
+    } else {
+      fetchAttendance(nextParams);
+    }
+  }, [fetchAttendance, goToPage, pagination.page]);
+
+  const clearDateFilter = useCallback(() => {
+    attendanceDateFilterRef.current = {};
+    setDateFilterLabel('Filter by date');
+
+    if (pagination.page !== 1) {
+      goToPage(1);
+    } else {
+      fetchAttendance({});
+    }
+  }, [fetchAttendance, goToPage, pagination.page]);
+
+  // Filter records client-side for search and date
+  const filteredRecords = useMemo(() => {
+    const filter = attendanceDateFilterRef.current;
+    const hasDateFilter = filter && (filter.date || filter.from_date || filter.to_date);
     const query = debouncedSearch.toLowerCase();
-    return records.filter(
-      (record) =>
+
+    return records.filter((record) => {
+      const matchesSearch =
+        !debouncedSearch ||
         record.date.includes(debouncedSearch) ||
         record.status.toLowerCase().includes(query) ||
         record.location?.toLowerCase().includes(query) ||
-        record.day.toLowerCase().includes(query)
-    );
-  }, [records, debouncedSearch]);
+        record.day.toLowerCase().includes(query);
+
+      if (!matchesSearch) return false;
+
+      if (!hasDateFilter) return true;
+
+      const recordDate = new Date(`${record.date}T00:00:00`);
+      if (Number.isNaN(recordDate.getTime())) return false;
+
+      if (filter.date) {
+        const selected = new Date(`${filter.date}T00:00:00`);
+        return recordDate.toDateString() === selected.toDateString();
+      }
+
+      const start = new Date(`${filter.from_date}T00:00:00`);
+      const end = new Date(`${filter.to_date}T23:59:59.999`);
+      return recordDate >= start && recordDate <= end;
+    });
+  }, [records, debouncedSearch, dateFilterLabel]);
 
   // ── Responsive columns ────────────────────────────────────────────────────
   const isTinyViewport = windowWidth < 450;
@@ -518,16 +590,16 @@ const AttendanceHistory = () => {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+          className="mb-6 space-y-3"
         >
           <div className="relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
             <input
               type="text"
               placeholder="Search by date, status, location…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-12 pr-4 shadow-md outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200"
+              className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-12 shadow-lg outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200"
             />
             {searchTerm && (
               <button
@@ -535,7 +607,30 @@ const AttendanceHistory = () => {
                 onClick={() => setSearchTerm('')}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <FaTimes size={14} />
+                <FaTimes />
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <DatePickerField
+              value=""
+              onChange={handleDateFilterApply}
+              placeholder={dateFilterLabel}
+              buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+              wrapperClassName="w-auto"
+              popoverClassName="w-[min(92vw,24rem)]"
+              initialTab="quick"
+              mode="both"
+            />
+            {dateFilterLabel !== 'Filter by date' && (
+              <button
+                type="button"
+                onClick={clearDateFilter}
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                title="Clear date filter"
+                aria-label="Clear date filter"
+              >
+                <FaTimes />
               </button>
             )}
           </div>
@@ -557,9 +652,17 @@ const AttendanceHistory = () => {
         )}
 
         {/* View Toggle */}
-        <div className="flex justify-end mb-6">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-        </div>
+        {!loading && displayRecords.length > 0 && (
+          <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              <span className="font-semibold text-gray-800">{displayRecords.length}</span> of{' '}
+              <span className="font-semibold text-gray-800">{totalRecords}</span> attendance records
+              {debouncedSearch && <span className="ml-1 text-slate-600">· "{debouncedSearch}"</span>}
+              {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">· {dateFilterLabel}</span>}
+            </p>
+            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+          </div>
+        )}
 
         {/* ── Desktop Table ───────────────────────────────────────────────── */}
         {displayRecords.length > 0 && (
@@ -739,7 +842,11 @@ const AttendanceHistory = () => {
             <FaCalendarAlt className="mx-auto mb-4 text-5xl text-gray-200" />
             <p className="text-lg font-semibold text-gray-500">No attendance records found</p>
             <p className="mt-1 text-sm text-gray-400">
-              {debouncedSearch ? 'Try adjusting your search.' : 'No data available yet.'}
+              {debouncedSearch
+                ? 'Try adjusting your search.'
+                : dateFilterLabel !== 'Filter by date'
+                  ? `Try adjusting ${dateFilterLabel.toLowerCase()}.`
+                  : 'No data available yet.'}
             </p>
           </motion.div>
         )}
