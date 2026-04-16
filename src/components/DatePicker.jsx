@@ -47,6 +47,7 @@ function startOfDay(d) {
 function getPresets() {
   const t = startOfDay(new Date());
   const yesterday = new Date(t); yesterday.setDate(t.getDate() - 1);
+  const tomorrow = new Date(t); tomorrow.setDate(t.getDate() + 1);
   const last7start = new Date(t); last7start.setDate(t.getDate() - 6);
   const last30start = new Date(t); last30start.setDate(t.getDate() - 29);
   const thisMonthStart = new Date(t.getFullYear(), t.getMonth(), 1);
@@ -57,10 +58,10 @@ function getPresets() {
   return [
     { key: "today",     label: "Today",        sub: fmt(t),                         single: t },
     { key: "yesterday", label: "Yesterday",    sub: fmt(yesterday),                  single: yesterday },
-    { key: "last7",     label: "Last 7 days",  sub: `${fmt(last7start)} – ${fmt(t)}`, range: [last7start, t] },
-    { key: "last30",    label: "Last 30 days", sub: `${fmt(last30start)} – ${fmt(t)}`, range: [last30start, t] },
-    { key: "thisMonth", label: "This month",   sub: `${fmt(thisMonthStart)} – ${fmt(thisMonthEnd)}`, range: [thisMonthStart, thisMonthEnd] },
-    { key: "lastMonth", label: "Last month",   sub: `${fmt(lastMonthStart)} – ${fmt(lastMonthEnd)}`, range: [lastMonthStart, lastMonthEnd] },
+    { key: "tomorrow",  label: "Tomorrow",     sub: fmt(tomorrow),                   single: tomorrow },
+    { key: "last7",     label: "Last 7 days",  sub: `${fmt(last7start)} – ${fmt(t)}`, range: [last7start, t], single: last7start },
+    { key: "last30",    label: "Last 30 days", sub: `${fmt(last30start)} – ${fmt(t)}`, range: [last30start, t], single: last30start },
+    { key: "lastMonth", label: "Last month",   sub: `${fmt(lastMonthStart)} – ${fmt(lastMonthEnd)}`, range: [lastMonthStart, lastMonthEnd], single: lastMonthStart },
   ];
 }
 
@@ -311,7 +312,13 @@ export default function DatePicker({
             {presets.map(p => (
               <button
                 key={p.key}
-                onClick={() => setQuickKey(p.key)}
+                onClick={() => {
+                  setQuickKey(p.key);
+                  const result = p.single
+                    ? { type: "single", date: p.single }
+                    : { type: "range", start: p.range[0], end: p.range[1] };
+                  onApply?.(result);
+                }}
                 className={`w-full flex flex-col items-start px-2.5 py-2 rounded-lg border text-left transition-all ${
                   quickKey === p.key
                     ? "bg-blue-50 border-blue-300"

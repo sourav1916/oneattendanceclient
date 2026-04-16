@@ -567,8 +567,8 @@ const AttendanceHistory = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 flex flex-col items-center justify-between gap-3 sm:flex-row"
         >
-          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-800 md:text-3xl">
-            <FaHistory className="text-slate-500" />
+          <h1 className="flex items-center gap-2 text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 font-extrabold text-gray-800 md:text-3xl">
+            <FaHistory className="text-purple-600" />
             Attendance History
           </h1>
 

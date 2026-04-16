@@ -122,7 +122,7 @@ export default function SalaryManagementHub() {
                 <FaFileInvoiceDollar size={11} />
                 Salary management
               </div>
-              <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
+              <h1 className="mt-3 text-2xl font-bold text-purple-600 md:text-3xl">
                 Salary tools in one place
               </h1>
               <p className="mt-2 text-sm text-slate-500 md:text-base">
@@ -155,10 +155,10 @@ export default function SalaryManagementHub() {
                   title={disabled ? 'You do not have access to this section' : tab.description}
                   className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                     isActive
-                      ? 'border-slate-900 bg-slate-900 text-white shadow-md shadow-slate-300'
+                      ? 'border-purple-600 bg-purple-600 text-white shadow-md shadow-purple-300'
                       : disabled
                         ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
+                        : 'border-purple-600 bg-white text-slate-600 hover:border-purple-600 hover:bg-purple-50 hover:text-purple-600'
                   }`}
                 >
                   <Icon size={13} />

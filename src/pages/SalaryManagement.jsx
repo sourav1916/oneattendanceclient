@@ -406,11 +406,11 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-4xl min-h-[70vh] max-h-[90vh] rounded-3xl shadow-2xl px-6 sm:px-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}>
 
                     {/* Header */}
-                    <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-2xl px-6 py-5 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8">
+                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -427,7 +427,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto space-y-4 pt-6">
+                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
                         {/* Base Amount + Currency */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
@@ -453,6 +453,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     value={formData.effective_from}
                                     onChange={(value) => setFormData({ ...formData, effective_from: value })}
                                     placeholder="Select effective from"
+                                    mode="single"
                                     buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
                                     popoverClassName="mt-2"
                                 />
@@ -463,6 +464,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     value={formData.effective_to}
                                     onChange={(value) => setFormData({ ...formData, effective_to: value })}
                                     placeholder="Select effective to"
+                                    mode="single"
                                     buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
                                     popoverClassName="mt-2"
                                 />
@@ -548,6 +550,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                     value={overrideForm.effective_from}
                                                     onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })}
                                                     placeholder="From"
+                                                    mode="single"
                                                     buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left"
                                                     popoverClassName="mt-2"
                                                 />
@@ -558,6 +561,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                     value={overrideForm.effective_to}
                                                     onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })}
                                                     placeholder="To"
+                                                    mode="single"
                                                     buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left"
                                                     popoverClassName="mt-2"
                                                 />
@@ -745,11 +749,11 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-4xl min-h-[70vh] max-h-[90vh] rounded-3xl shadow-2xl px-6 sm:px-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}>
 
                     {/* Header */}
-                    <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-2xl px-6 py-5 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8">
+                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -764,7 +768,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto space-y-4 pt-6">
+                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
 
                         {/* Info Banner */}
                         <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-100 rounded-xl">
@@ -819,6 +823,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     value={formData.effective_from}
                                     onChange={(value) => setFormData({ ...formData, effective_from: value })}
                                     placeholder="Select effective from"
+                                    mode="single"
                                     buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left"
                                     popoverClassName="mt-2"
                                 />
@@ -829,6 +834,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     value={formData.effective_to}
                                     onChange={(value) => setFormData({ ...formData, effective_to: value })}
                                     placeholder="Select effective to"
+                                    mode="single"
                                     buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left"
                                     popoverClassName="mt-2"
                                 />
@@ -897,10 +903,28 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <input type="date" value={overrideForm.effective_from} onChange={e => setOverrideForm({ ...overrideForm, effective_from: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
-                                            <input type="date" value={overrideForm.effective_to} onChange={e => setOverrideForm({ ...overrideForm, effective_to: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
+                                                <DatePickerField
+                                                    value={overrideForm.effective_from}
+                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })}
+                                                    placeholder="From"
+                                                    mode="single"
+                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left"
+                                                    popoverClassName="mt-2"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
+                                                <DatePickerField
+                                                    value={overrideForm.effective_to}
+                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })}
+                                                    placeholder="To"
+                                                    mode="single"
+                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left"
+                                                    popoverClassName="mt-2"
+                                                />
+                                            </div>
                                         </div>
                                         <input type="text" placeholder="Reason (optional)" value={overrideForm.reason}
                                             onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
@@ -1183,10 +1207,10 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-4xl min-h-[70vh] max-h-[90vh] rounded-3xl shadow-2xl px-6 sm:px-8 border border-gray-100 m-auto flex flex-col overflow-y-auto"
+                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-2xl px-6 py-5 -mx-6 -mt-6 sm:-mx-8 sm:-mt-8">
+                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-md">
@@ -1203,7 +1227,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 pt-6">
+                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
                         {/* Employee Selection */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Employee *</label>
