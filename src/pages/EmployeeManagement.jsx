@@ -6,7 +6,7 @@ import {
     FaDollarSign, FaUserTag, FaShieldAlt, FaUser, FaTrashAlt,
     FaInfoCircle, FaPlus, FaUserTie, FaUserCheck, FaRobot, FaHandPaper,
     FaCamera, FaMapMarkerAlt, FaWifi, FaFingerprint, FaNetworkWired, FaSave,
-    FaTh, FaListUl
+    FaTh, FaListUl, FaChevronDown, FaChevronRight
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
@@ -384,6 +384,7 @@ const EmployeeManagement = () => {
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [viewMode, setViewMode] = useState('table');
+    const [showPermissions, setShowPermissions] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '', designation: '', email: '', phone: '',
@@ -801,6 +802,7 @@ const EmployeeManagement = () => {
     };
 
     const openViewModal = (emp) => {
+        setShowPermissions(false);
         setSelectedEmployee(emp);
         setModalType(MODAL_TYPES.VIEW);
         setActiveActionMenu(null);
@@ -839,6 +841,7 @@ const EmployeeManagement = () => {
     const closeModal = () => {
         setModalType(MODAL_TYPES.NONE);
         setSelectedEmployee(null);
+        setShowPermissions(false);
         setAttendanceMethodsConfig({});
         setFormData({
             name: '',
@@ -1342,9 +1345,31 @@ const EmployeeManagement = () => {
                                             )}
 
                                             {selectedEmployee.permissions?.length > 0 && (
-                                                <div className="col-span-2 mt-4">
-                                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><FaCheck className="text-green-500" /> Permissions</label>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="col-span-2 mt-4 border border-gray-200 rounded-2xl overflow-hidden">
+                                                    <button 
+                                                        onClick={() => setShowPermissions(!showPermissions)}
+                                                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                                                    >
+                                                        <div className="flex items-center gap-2">
+                                                            <FaShieldAlt className="text-indigo-500" /> 
+                                                            <span className="text-sm font-semibold text-gray-700">Permissions</span>
+                                                            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                                                                {selectedEmployee.permissions.length}
+                                                            </span>
+                                                        </div>
+                                                        <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                                                            <FaChevronDown className="w-4 h-4 text-gray-400" />
+                                                        </motion.div>
+                                                    </button>
+                                                    <AnimatePresence>
+                                                        {showPermissions && (
+                                                            <motion.div 
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
                                                         {selectedEmployee.permissions.map((perm, idx) => (
                                                             <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
                                                                 className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"
@@ -1353,7 +1378,10 @@ const EmployeeManagement = () => {
                                                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-mono">{perm.code}</span>
                                                             </motion.div>
                                                         ))}
-                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
                                                 </div>
                                             )}
 

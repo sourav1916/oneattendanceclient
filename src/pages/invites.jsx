@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaClock, FaExclamationCircle, FaSpinner, FaEye,
   FaCheckCircle, FaTimesCircle, FaEnvelope, FaPhone, FaCalendarAlt,
   FaSearch, FaBuilding, FaCheck, FaBan, FaUser, FaMapMarkerAlt,
   FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle,
-  FaTh, FaListUl
+  FaTh, FaListUl, FaShieldAlt, FaUserCheck, FaChevronDown
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -17,7 +17,7 @@ import ActionMenu from "../components/ActionMenu";
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
-// ─── Constants & Helpers ─────────────────────────────────────────────────────
+// â”€â”€â”€ Constants & Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const modalVariants = {
   hidden: { opacity: 0, scale: 0.9, y: 20 },
@@ -93,7 +93,7 @@ const formatDisplay = (str) => {
   return str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
-// ─── Local Components ────────────────────────────────────────────────────────
+// â”€â”€â”€ Local Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const InfoItem = ({ icon, label, value }) => (
   <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
@@ -104,7 +104,7 @@ const InfoItem = ({ icon, label, value }) => (
   </div>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export default function MyInvites() {
   const [invites, setInvites] = useState([]);
@@ -282,9 +282,12 @@ export default function MyInvites() {
     window.addEventListener('resize', onResize);
     return () => { clearTimeout(t); window.removeEventListener('resize', onResize); };
   }, []);
-  // ── Modals ───────────────────────────────────────────────────────────
+  // â”€â”€ Modals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  const ViewModal = ({ invite, onClose }) => (
+  const ViewModal = ({ invite, onClose }) => {
+    const [showPermissions, setShowPermissions] = useState(false);
+    const [showAttendance, setShowAttendance] = useState(false);
+    return (
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}>
@@ -345,24 +348,94 @@ export default function MyInvites() {
             <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
           </div>
           {invite.permissions?.length > 0 && (
-            <div className="mt-6">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <FaInfoCircle className="text-purple-500" /> Permissions
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
-                {invite.permissions.map((perm, idx) => (
-                  <motion.div key={`perm-${perm.id}-${invite.invite_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                    className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                    <span className="font-medium text-gray-700">{perm.name}</span>
+            <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <button 
+                onClick={() => setShowPermissions(!showPermissions)}
+                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <FaShieldAlt className="text-purple-500" /> 
+                  <span className="text-sm font-semibold text-gray-700">Permissions</span>
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">
+                    {invite.permissions.length}
+                  </span>
+                </div>
+                <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <FaChevronDown className="w-4 h-4 text-gray-400" />
+                </motion.div>
+              </button>
+              <AnimatePresence>
+                {showPermissions && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                      {invite.permissions.map((perm, idx) => (
+                        <motion.div key={`perm-${perm.id}-${invite.invite_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                          <span className="font-medium text-gray-700">{perm.name}</span>
+                        </motion.div>
+                      ))}
+                    </div>
                   </motion.div>
-                ))}
-              </div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {invite.attendance_methods?.length > 0 && (
+            <div className="mt-4 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <button 
+                onClick={() => setShowAttendance(!showAttendance)}
+                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <FaUserCheck className="text-blue-500" /> 
+                  <span className="text-sm font-semibold text-gray-700">Attendance Methods</span>
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
+                    {invite.attendance_methods.length}
+                  </span>
+                </div>
+                <motion.div animate={{ rotate: showAttendance ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <FaChevronDown className="w-4 h-4 text-gray-400" />
+                </motion.div>
+              </button>
+              <AnimatePresence>
+                {showAttendance && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {invite.attendance_methods.map((method, idx) => (
+                        <motion.div key={`method-${idx}-${invite.invite_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                          <span className="font-medium text-gray-700 capitalize">{method.method}</span>
+                          {method.is_auto && (
+                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
+                          )}
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
       </motion.div>
     </motion.div>
-  );
+    );
+  };
 
   const AcceptModal = ({ invite, onClose, onConfirm }) => (
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
@@ -431,7 +504,7 @@ export default function MyInvites() {
 
   if (isInitialLoad && loading) return <Skeleton />;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
     <div className="min-h-screen p-3 md:p-6 font-sans">
