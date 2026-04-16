@@ -550,9 +550,10 @@ export default function CompanyInvites() {
                       const status     = getStatusBadge(invite.status, invite.expires_at);
                       const StatusIcon = status.icon;
                       return (
-                        <motion.tr key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                      <motion.tr key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                          onClick={() => openModal(invite, "view")}
+                          className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
                           {visibleColumns.showUser && (
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-3">
@@ -598,7 +599,7 @@ export default function CompanyInvites() {
                               </div>
                             </td>
                           )}
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                             <ActionMenu
                               menuId={invite.token}
                               activeId={activeActionMenu}
@@ -650,6 +651,7 @@ export default function CompanyInvites() {
                 return (
                   <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
+                    onClick={() => openModal(invite, "view")}
                     className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
                       <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
@@ -682,18 +684,18 @@ export default function CompanyInvites() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                      <button onClick={() => openModal(invite, "view")}
+                    <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" onClick={() => openModal(invite, "view")}
                         className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
                         <FaEye size={16} />
                       </button>
                       {invite.status === "pending" && !isExpired(invite.expires_at) && (
                         <>
-                          <button onClick={() => handleEditClick(invite)} disabled={updateInviteAccess.disabled} title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
+                          <button type="button" onClick={() => handleEditClick(invite)} disabled={updateInviteAccess.disabled} title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
                             className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                             <FaEdit size={16} />
                           </button>
-                          <button onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
+                          <button type="button" onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
                             className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                             <FaBan size={16} />
                           </button>

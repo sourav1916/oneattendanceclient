@@ -294,12 +294,13 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100 h-full flex flex-col"
-    >
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => onViewDetails(attendance)}
+        className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100 h-full flex flex-col"
+      >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -311,7 +312,7 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
             <p className="text-xs text-gray-400 truncate">{attendance.employee?.designation}</p>
           </div>
         </div>
-        <div className="flex-shrink-0 ml-2">
+        <div className="flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
           <ActionMenu
             menuId={attendance.id}
             activeId={activeMenuId}
@@ -346,7 +347,7 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+      <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">Punch Type:</span>
           <PunchTypeBadge type={attendance.punch_type} />
@@ -738,7 +739,11 @@ const AttendanceManagement = ({ companyId }) => {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {visibleAttendances.map((attendance) => (
-                        <motion.tr key={attendance.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
+                      <motion.tr
+                        key={attendance.id}
+                        onClick={() => handleViewDetails(attendance)}
+                        className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                      >
                           <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
@@ -754,7 +759,7 @@ const AttendanceManagement = ({ companyId }) => {
                           {showDateTime && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm">{formatDateTime(attendance.punch_time)}</td>}
                           <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4"><StatusBadge status={attendance.status} /></td>
                           {showMethod && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-sm">{attendance.attendance?.method || 'N/A'}</td>}
-                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center">
+                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <ActionMenu
                               menuId={attendance.id}
                               activeId={activeActionMenu}

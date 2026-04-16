@@ -559,7 +559,8 @@ const PayrollManagement = () => {
                                                 <motion.tr key={item.payroll.id} initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: index * 0.05 }}
-                                                    className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300"
+                                                    className="cursor-pointer hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300"
+                                                    onClick={() => openViewModal(item)}
                                                 >
                                                     {visibleColumns.showEmployeeCode && (
                                                         <td className="px-6 py-4 font-mono text-xs font-medium text-gray-600">
@@ -626,7 +627,7 @@ const PayrollManagement = () => {
                                                             </div>
                                                         </td>
                                                     )}
-                                                    <td className="px-6 py-4 text-right">
+                                                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                         <ActionMenu
                                                             menuId={item.payroll.id}
                                                             activeId={activeActionMenu}
@@ -662,6 +663,7 @@ const PayrollManagement = () => {
                                     <motion.div key={item.payroll.id} initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
                                         className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                        onClick={() => openViewModal(item)}
                                     >
                                         <div className="flex items-start gap-4 mb-4">
                                             <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-2xl">
@@ -721,7 +723,7 @@ const PayrollManagement = () => {
 
                                         <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                                             <button
-                                                onClick={() => openViewModal(item)}
+                                                onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
                                                 className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"
                                             >
                                                 <FaEye size={16} />

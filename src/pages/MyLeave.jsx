@@ -147,7 +147,8 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="rounded-2xl bg-white p-4 shadow-md border border-gray-100"
+      className="rounded-2xl bg-white p-4 shadow-md border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      onClick={() => onViewDetails(leave)}
     >
       <div className="mb-3 flex items-start justify-between">
         <div className="flex-1">
@@ -156,38 +157,40 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
             Applied: {formatDate(leave.applied_at)}
           </p>
         </div>
-        <ActionMenu
-          menuId={`leave-card-${leave.id}`}
-          actions={[
-            {
-              label: 'View Details',
-              icon: <FaEye size={12} />,
-              onClick: () => onViewDetails(leave),
-              className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
-            },
-            ...(leave.status === 'pending'
-              ? [
-                {
-                  label: 'Edit',
-                  icon: <FaEdit size={12} />,
-                  onClick: () => onEdit(leave),
-                  className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
-                },
-                {
-                  label: 'Delete',
-                  icon: deletingId === leave.id ? (
-                    <FaSpinner className="animate-spin" size={12} />
-                  ) : (
-                    <FaTrash size={12} />
-                  ),
-                  onClick: () => onDelete(leave.id),
-                  disabled: deletingId === leave.id,
-                  className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                },
-              ]
-              : []),
-          ]}
-        />
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActionMenu
+            menuId={`leave-card-${leave.id}`}
+            actions={[
+              {
+                label: 'View Details',
+                icon: <FaEye size={12} />,
+                onClick: () => onViewDetails(leave),
+                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+              },
+              ...(leave.status === 'pending'
+                ? [
+                  {
+                    label: 'Edit',
+                    icon: <FaEdit size={12} />,
+                    onClick: () => onEdit(leave),
+                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                  },
+                  {
+                    label: 'Delete',
+                    icon: deletingId === leave.id ? (
+                      <FaSpinner className="animate-spin" size={12} />
+                    ) : (
+                      <FaTrash size={12} />
+                    ),
+                    onClick: () => onDelete(leave.id),
+                    disabled: deletingId === leave.id,
+                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                  },
+                ]
+                : []),
+            ]}
+          />
+        </div>
       </div>
 
       <div className="space-y-2 border-t border-gray-100 pt-3">
@@ -935,7 +938,7 @@ const MyLeave = () => {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {filteredLeaves.map((leave) => (
-                        <tr key={leave.id} className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50">
+                        <tr key={leave.id} className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50" onClick={() => setViewLeave(leave)}>
                           {visibleColumns.showLeaveType && (
                             <td className="px-4 py-3">
                               <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
@@ -952,7 +955,7 @@ const MyLeave = () => {
                           )}
                           {visibleColumns.showStatus && <td className="px-4 py-3"><StatusBadge status={leave.status} /></td>}
                           {visibleColumns.showAppliedOn && <td className="px-4 py-3 text-sm">{formatDateTime(leave.applied_at)}</td>}
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                             <div className="flex justify-center">
                               <ActionMenu
                                 menuId={`leave-table-${leave.id}`}

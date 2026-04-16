@@ -220,6 +220,18 @@ const punchTypeLabel = (type) => {
   }
 };
 
+const PunchTypeBadge = ({ type }) => {
+  const config = punchTypeLabel(type);
+  const Icon = config.icon;
+
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+      <Icon size={10} className={config.color} />
+      {config.label}
+    </span>
+  );
+};
+
 // ─── Info Item ────────────────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
@@ -285,10 +297,6 @@ const DetailsModal = ({ record, onClose }) => {
                 <h3 className="text-2xl font-bold text-gray-900">{formatDateFull(record.date)}</h3>
                 <p className="mt-0.5 text-sm text-gray-400">{record.day}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${statusStyle.className}`}>
-                    <StatusIcon size={11} />
-                    {record.status}
-                  </span>
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium capitalize ${apiStatusStyle.className}`}>
                     <ApiStatusIcon size={11} />
                     {apiStatusStyle.text}
@@ -306,7 +314,16 @@ const DetailsModal = ({ record, onClose }) => {
             <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InfoItem icon={<FaSignInAlt className="text-emerald-500" />} label="Clock In" value={record.clock_in} />
               <InfoItem icon={<FaSignOutAlt className="text-red-400" />} label="Clock Out" value={record.clock_out} />
-              <InfoItem icon={<FaMapMarkerAlt className="text-blue-500" />} label="Location" value={record.location} />
+              <InfoItem
+                icon={<FaMapMarkerAlt className="text-blue-500" />}
+                label="Location"
+                value={
+                  record.location?.ip_address ||
+                  (record.location?.latitude && record.location?.longitude
+                    ? `${record.location.latitude}, ${record.location.longitude}`
+                    : 'N/A')
+                }
+              />
               <InfoItem icon={<FaCoffee className="text-amber-500" />} label="Breaks" value={record.breaks > 0 ? `${record.breaks} break(s)` : 'None'} />
               <InfoItem icon={<FaWifi className="text-slate-400" />} label="Method" value={`${record.method} / ${record.mode}`} />
             </div>
@@ -418,8 +435,25 @@ const AttendanceHistory = () => {
         dateParams
       });
 
-      const daily = deriveDailyRecords(result.data || []);
-      setRecords(daily);
+      const punches = (result.data || [])
+        .slice()
+        .sort((a, b) => new Date(b.punch_time) - new Date(a.punch_time))
+        .map((punch) => ({
+          ...punch,
+          employee_code: punch.employee?.code || 'N/A',
+          designation: punch.employee?.designation || 'N/A',
+          method: punch.attendance?.method || 'N/A',
+          mode: punch.attendance?.mode || 'N/A',
+          api_status: punch.status || 'pending',
+          date: punch.punch_time ? punch.punch_time.split('T')[0] : '',
+          day: punch.punch_time ? new Date(punch.punch_time).toLocaleDateString('en-US', { weekday: 'short' }) : '',
+          clock_in: punch.punch_time ? formatTimestamp(punch.punch_time) : '--:-- --',
+          clock_out: '--:-- --',
+          worked_hours: '-',
+          breaks: 0,
+          punches: [punch]
+        }));
+      setRecords(punches);
       setTotalRecords(result.total || 0);
       
       updatePagination({
@@ -495,16 +529,19 @@ const AttendanceHistory = () => {
     return records.filter((record) => {
       const matchesSearch =
         !debouncedSearch ||
-        record.date.includes(debouncedSearch) ||
+        record.punch_time?.includes(debouncedSearch) ||
         record.status.toLowerCase().includes(query) ||
-        record.location?.toLowerCase().includes(query) ||
-        record.day.toLowerCase().includes(query);
+        record.location?.ip_address?.toLowerCase().includes(query) ||
+        record.punch_type?.toLowerCase().includes(query) ||
+        record.method?.toLowerCase().includes(query) ||
+        record.employee_code?.toLowerCase().includes(query) ||
+        record.designation?.toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
 
       if (!hasDateFilter) return true;
 
-      const recordDate = new Date(`${record.date}T00:00:00`);
+      const recordDate = new Date(record.punch_time);
       if (Number.isNaN(recordDate.getTime())) return false;
 
       if (filter.date) {
@@ -520,11 +557,7 @@ const AttendanceHistory = () => {
 
   // ── Responsive columns ────────────────────────────────────────────────────
   const isTinyViewport = windowWidth < 450;
-  const showDay = windowWidth >= 480;
-  const showWorked = windowWidth >= 640;
-  const showClockOut = windowWidth >= 1024;
-  const showLocation = windowWidth >= 1280;
-  const showApiStatus = windowWidth >= 1440;
+  const showMethod = windowWidth >= 1024;
 
   const openDetails = (record) => {
     setSelectedRecord(record);
@@ -675,24 +708,19 @@ const AttendanceHistory = () => {
               <table className="w-full text-left text-sm text-gray-700">
                 <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                   <tr>
-                    <th className="px-5 py-4">Date</th>
-                    {showDay && <th className="px-5 py-4">Day</th>}
-                    <th className="px-5 py-4">Clock In</th>
-                    {showClockOut && <th className="px-5 py-4">Clock Out</th>}
-                    {showWorked && <th className="px-5 py-4">Worked</th>}
+                    <th className="px-5 py-4">Employee Code</th>
+                    <th className="px-5 py-4">Type</th>
+                    <th className="px-5 py-4">Date & Time</th>
                     <th className="px-5 py-4">Status</th>
-                    {showLocation && <th className="px-5 py-4">Location</th>}
-                    {showApiStatus && <th className="px-5 py-4">Approval</th>}
+                    {showMethod && <th className="px-5 py-4">Method</th>}
                     <th className="px-5 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y divide-gray-200">
                   {displayRecords.map((record, index) => {
-                    const style = getStatusBadge(record.status);
-                    const StatusIcon = style.icon;
-                    const apiStatusStyle = getApiStatusBadge(record.api_status);
-                    const ApiStatusIcon = apiStatusStyle.icon;
+                    const approvalStyle = getApiStatusBadge(record.status);
+                    const ApprovalIcon = approvalStyle.icon;
 
                     return (
                       <motion.tr
@@ -700,43 +728,28 @@ const AttendanceHistory = () => {
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.03 }}
-                        className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                        onClick={() => openDetails(record)}
+                        className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                       >
-                        <td className="px-5 py-4 font-medium text-gray-800">{formatDateFull(record.date)}</td>
-                        {showDay && <td className="px-5 py-4 text-gray-400">{record.day}</td>}
                         <td className="px-5 py-4">
-                          <span className="inline-flex items-center gap-1">
-                            <FaSignInAlt className="text-emerald-500" />
-                            {record.clock_in}
+                          <div className="truncate max-w-[220px]">
+                            <p className="font-medium text-gray-900 text-sm">{record.employee_code || 'N/A'}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <PunchTypeBadge type={record.punch_type} />
+                        </td>
+                        <td className="px-5 py-4 text-gray-600">
+                          {formatDateTimeFull(record.punch_time)}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${approvalStyle.className}`}>
+                            <ApprovalIcon size={11} />
+                            {approvalStyle.text}
                           </span>
                         </td>
-                        {showClockOut && (
-                          <td className="px-5 py-4">
-                            <span className="inline-flex items-center gap-1">
-                              <FaSignOutAlt className="text-red-400" />
-                              {record.clock_out}
-                            </span>
-                          </td>
-                        )}
-                        {showWorked && <td className="px-5 py-4 text-gray-600">{record.worked_hours}</td>}
-                        <td className="px-5 py-4">
-                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${style.className}`}>
-                            <StatusIcon size={11} />
-                            {record.status}
-                          </span>
-                        </td>
-                        {showLocation && (
-                          <td className="px-5 py-4 text-gray-500 text-xs">{record.location}</td>
-                        )}
-                        {showApiStatus && (
-                          <td className="px-5 py-4">
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${apiStatusStyle.className}`}>
-                              <ApiStatusIcon size={10} />
-                              {apiStatusStyle.text}
-                            </span>
-                          </td>
-                        )}
-                        <td className="px-5 py-4 text-center">
+                        {showMethod && <td className="px-5 py-4 text-gray-600">{record.method || 'N/A'}</td>}
+                        <td className="px-5 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                           <ActionMenu
                             menuId={record.id}
                             activeId={activeActionMenu}
@@ -764,63 +777,54 @@ const AttendanceHistory = () => {
         {displayRecords.length > 0 && (
           <ManagementGrid viewMode={viewMode}>
             {displayRecords.map((record) => {
-              const style = getStatusBadge(record.status);
-              const StatusIcon = style.icon;
-              const apiStatusStyle = getApiStatusBadge(record.api_status);
-              const ApiStatusIcon = apiStatusStyle.icon;
+              const approvalStyle = getApiStatusBadge(record.status);
+              const ApprovalIcon = approvalStyle.icon;
 
               return (
                 <motion.div
                   key={record.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
+                  onClick={() => openDetails(record)}
                   className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group max-[390px]:p-4"
                 >
                   <div className="mb-3 flex items-start justify-between gap-2 max-[390px]:flex-col">
                     <div className="min-w-0">
-                      <h3 className="break-words font-bold text-gray-800">{formatDateFull(record.date)}</h3>
-                      <p className="text-xs text-gray-400">{record.day}</p>
+                      <h3 className="break-words font-bold text-gray-800">{record.employee_code || 'N/A'}</h3>
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${style.className}`}>
-                        <StatusIcon size={11} />
-                        {record.status}
-                      </span>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${apiStatusStyle.className}`}>
-                        <ApiStatusIcon size={8} />
-                        {apiStatusStyle.text}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${approvalStyle.className}`}>
+                        <ApprovalIcon size={11} />
+                        {approvalStyle.text}
                       </span>
                     </div>
                   </div>
 
                   <div className="mb-4 grid grid-cols-2 gap-2 text-sm text-gray-600 max-[390px]:text-xs">
                     <div className="flex min-w-0 items-center gap-1">
-                      <FaSignInAlt className="text-emerald-500 shrink-0" />
-                      <span className="truncate">{record.clock_in}</span>
+                      <FaClock className="text-slate-400 shrink-0" />
+                      <span className="truncate">{formatDateTimeFull(record.punch_time)}</span>
                     </div>
                     <div className="flex min-w-0 items-center gap-1">
-                      <FaSignOutAlt className="text-red-400 shrink-0" />
-                      <span className="truncate">{record.clock_out}</span>
+                      <FaBan className="text-amber-400 shrink-0" />
+                      <span className="truncate">{record.punch_type || 'N/A'}</span>
                     </div>
                     <div className="col-span-2 flex min-w-0 items-start gap-1">
                       <FaMapMarkerAlt className="mt-0.5 shrink-0 text-gray-400" />
-                      <span className="min-w-0 break-words text-xs">{record.location}</span>
+                      <span className="min-w-0 break-words text-xs">{record.location?.ip_address || 'N/A'}</span>
                     </div>
                     <div className="flex min-w-0 items-center gap-1">
-                      <FaChartLine className="shrink-0 text-slate-400" />
-                      <span className="min-w-0 break-words">{record.worked_hours}</span>
+                      <FaWifi className="shrink-0 text-slate-400" />
+                      <span className="min-w-0 break-words">{record.method || 'N/A'}</span>
                     </div>
-                    {record.breaks > 0 && (
-                      <div className="flex min-w-0 items-center gap-1">
-                        <FaCoffee className="shrink-0 text-amber-400" />
-                        <span className="min-w-0 break-words">{record.breaks} break(s)</span>
-                      </div>
-                    )}
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => openDetails(record)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDetails(record);
+                    }}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 max-[390px]:text-xs"
                   >
                     <FaEye />

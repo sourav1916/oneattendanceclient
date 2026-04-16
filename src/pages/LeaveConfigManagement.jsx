@@ -871,7 +871,8 @@ const LeaveConfigManagement = () => {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                    className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                    onClick={() => setViewModal({ open: true, record })}
                   >
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
@@ -899,7 +900,7 @@ const LeaveConfigManagement = () => {
                       </td>
                     )}
                     {showStatus && <td className="px-6 py-4"><ActiveBadge isActive={record.is_active} /></td>}
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <ActionMenu
                         record={record}
                         onView={(r) => setViewModal({ open: true, record: r })}
@@ -928,6 +929,7 @@ const LeaveConfigManagement = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
                 className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                onClick={() => setViewModal({ open: true, record })}
               >
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-3">
@@ -941,16 +943,18 @@ const LeaveConfigManagement = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <PaidBadge isPaid={record.is_paid} />
-                    <ActionMenu
-                      record={record}
-                      onView={(r) => setViewModal({ open: true, record: r })}
-                      onEdit={openEditModal}
-                      onDelete={openDeleteModal}
-                      editDisabled={updateAccess.disabled}
-                      deleteDisabled={deleteAccess.disabled}
-                      editMessage={updateMessage}
-                      deleteMessage={deleteMessage}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionMenu
+                        record={record}
+                        onView={(r) => setViewModal({ open: true, record: r })}
+                        onEdit={openEditModal}
+                        onDelete={openDeleteModal}
+                        editDisabled={updateAccess.disabled}
+                        deleteDisabled={deleteAccess.disabled}
+                        editMessage={updateMessage}
+                        deleteMessage={deleteMessage}
+                      />
+                    </div>
                   </div>
                 </div>
 

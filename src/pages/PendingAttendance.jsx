@@ -253,6 +253,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            onClick={() => onViewDetails(attendance)}
             className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
             <div className="flex justify-between items-start mb-3">
@@ -268,7 +269,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                         <p className="text-xs text-gray-400 truncate">{attendance.employee?.designation || 'N/A'}</p>
                     </div>
                 </div>
-                <div className="relative flex-shrink-0 ml-2">
+                <div className="relative flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                     <ActionMenu
                         menuId={attendance.id}
                         activeId={activeMenuId}
@@ -301,7 +302,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                 </div>
             </div>
 
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">Punch Time:</span>
                     <span className="font-medium text-xs sm:text-sm">{formatTime(attendance.punch_time)}</span>
@@ -723,7 +724,8 @@ const PendingAttendance = ({ companyId }) => {
                                                         key={attendance.id}
                                                         initial={{ opacity: 0 }}
                                                         animate={{ opacity: 1 }}
-                                                        className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                                                        onClick={() => handleViewDetails(attendance)}
+                                                        className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
                                                     >
                                                         <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
                                                             <div className="flex items-center gap-2 sm:gap-3">
@@ -764,7 +766,7 @@ const PendingAttendance = ({ companyId }) => {
                                                                 </div>
                                                             </td>
                                                         )}
-                                                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                                                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4" onClick={(e) => e.stopPropagation()}>
                                                             <div className="relative flex justify-center">
                                                                 <ActionMenu
                                                                     menuId={attendance.id}

@@ -594,7 +594,8 @@ const PermissionManagement = () => {
                   {packages.map((pkg, index) => (
                     <motion.tr key={pkg.id}
                       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
-                      className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                      onClick={() => openViewModal(pkg)}
+                      className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -620,9 +621,9 @@ const PermissionManagement = () => {
                         </td>
                       )}
                       {showPermissionCount && (
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                         {(pkg.permissions?.length || 0) > 0 ? (
-                          <button onClick={() => openPermListModal(pkg)}
+                          <button type="button" onClick={() => openPermListModal(pkg)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-blue-700 text-xs font-bold hover:from-blue-100 hover:to-purple-100 hover:border-blue-400 hover:shadow-md transition-all duration-200 group">
                             <FaShieldAlt size={10} className="text-purple-500 group-hover:scale-110 transition-transform" />
                             {pkg.permissions.length} permission{pkg.permissions.length !== 1 ? 's' : ''}
@@ -630,7 +631,7 @@ const PermissionManagement = () => {
                         ) : <span className="text-xs text-gray-400 italic">None</span>}
                         </td>
                       )}
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <ActionMenu
                           menuId={pkg.id}
                           activeId={activeActionMenu}
@@ -676,7 +677,8 @@ const PermissionManagement = () => {
             {packages.map((pkg, index) => (
               <motion.div key={pkg.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                onClick={() => openViewModal(pkg)}
+                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
               >
                 <div className="flex items-start gap-4">
                   <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl flex-shrink-0"><FaShieldAlt className="text-white text-xl" /></div>
@@ -691,7 +693,7 @@ const PermissionManagement = () => {
                     <div className="mt-3 flex items-center justify-between">
                       <p className="text-xs font-medium text-gray-400 flex items-center gap-1"><FaTag size={9} /> Permissions</p>
                       {(pkg.permissions?.length || 0) > 0 ? (
-                        <button onClick={() => openPermListModal(pkg)}
+                        <button type="button" onClick={() => openPermListModal(pkg)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-blue-700 text-xs font-bold hover:from-blue-100 hover:to-purple-100 hover:border-blue-400 hover:shadow-md transition-all duration-200">
                           <FaShieldAlt size={10} className="text-purple-500" />
                           {pkg.permissions.length} permission{pkg.permissions.length !== 1 ? 's' : ''}
@@ -700,10 +702,10 @@ const PermissionManagement = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
-                  <button onClick={() => openViewModal(pkg)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={14} /></button>
-                  <button onClick={() => openEditModal(pkg)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={14} /></button>
-                  <button onClick={() => openDeleteModal(pkg)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : ''} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={14} /></button>
+                <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                  <button type="button" onClick={() => openViewModal(pkg)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={14} /></button>
+                  <button type="button" onClick={() => openEditModal(pkg)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={14} /></button>
+                  <button type="button" onClick={() => openDeleteModal(pkg)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : ''} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={14} /></button>
                 </div>
               </motion.div>
             ))}

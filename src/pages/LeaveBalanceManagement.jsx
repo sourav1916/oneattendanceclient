@@ -389,6 +389,7 @@ const MobileBalanceCard = ({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full flex flex-col"
+      onClick={() => onView(balance)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -409,16 +410,18 @@ const MobileBalanceCard = ({
 
         <div className="flex shrink-0 items-center gap-2">
           <PaidBadge isPaid={balance.is_paid} compact />
-          <ActionMenu
-            balance={balance}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onView={onView}
-            editDisabled={editDisabled}
-            deleteDisabled={deleteDisabled}
-            editMessage={editMessage}
-            deleteMessage={deleteMessage}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionMenu
+              balance={balance}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onView={onView}
+              editDisabled={editDisabled}
+              deleteDisabled={deleteDisabled}
+              editMessage={editMessage}
+              deleteMessage={deleteMessage}
+            />
+          </div>
         </div>
       </div>
 
@@ -1002,7 +1005,8 @@ const LeaveBalanceManagement = () => {
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.03 }}
-                            className="transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                            className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
+                            onClick={() => setViewModal({ open: true, balance })}
                           >
                             {showEmployee && (
                               <td className="px-6 py-4">
@@ -1059,7 +1063,7 @@ const LeaveBalanceManagement = () => {
                             {showMax && (
                               <td className="px-6 py-4 font-medium text-slate-500">{formatDays(balance.max_balance)}</td>
                             )}
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                               <ActionMenu
                                 balance={balance}
                                 onEdit={(record) => openModal('edit', record)}

@@ -184,17 +184,20 @@ function MobileLeaveCard({
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            onClick={() => onView(leave)}
         >
             <div className="flex items-start gap-3 mb-3">
                 <Avatar name={leave.employee_name} />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                         <h3 className="font-bold text-gray-800 text-sm truncate">{leave.employee_name}</h3>
-                        <ActionMenu
-                            menuId={leave.id}
-                            actions={buildLeaveActions({ leave, onView, onEdit, onApprove, onReject, editDisabled, approveDisabled, rejectDisabled, editMessage, reviewMessage })}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <ActionMenu
+                                menuId={leave.id}
+                                actions={buildLeaveActions({ leave, onView, onEdit, onApprove, onReject, editDisabled, approveDisabled, rejectDisabled, editMessage, reviewMessage })}
+                            />
+                        </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{leave.employee_code}</p>
                 </div>
@@ -233,7 +236,8 @@ function MobileLeaveCard({
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                 <span className="text-xs text-gray-400">Applied: {fmt(leave.applied_at)}</span>
                 <button
-                    onClick={() => onView(leave)}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onView(leave); }}
                     className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all"
                 >
                     View Details
@@ -730,7 +734,8 @@ const LeaveManagement = () => {
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.05 }}
-                                            className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                                            className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
+                                            onClick={() => handleView(leave)}
                                         >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
@@ -785,7 +790,7 @@ const LeaveManagement = () => {
                                                     )}
                                                 </td>
                                             )}
-                                            <td className="px-6 py-4 text-right">
+                                            <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <ActionMenu
                                                     menuId={leave.id}
                                                     activeId={activeActionMenu}

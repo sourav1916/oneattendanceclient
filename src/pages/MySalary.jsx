@@ -495,7 +495,8 @@ const MyPayroll = () => {
                                                 <motion.tr key={p.id}
                                                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: index * 0.05 }}
-                                                    className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300"
+                                                    className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300"
+                                                    onClick={() => openViewModal(item)}
                                                 >
                                                     {visibleColumns.showPeriod && (
                                                         <td className="px-6 py-4">
@@ -564,8 +565,8 @@ const MyPayroll = () => {
                                                             </span>
                                                         </td>
                                                     )}
-                                                    <td className="px-6 py-4 text-right">
-                                                        <button onClick={() => openViewModal(item)}
+                                                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                        <button onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
                                                             className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all hover:scale-110 duration-200"
                                                         >
                                                             <FaEye size={14} />
@@ -594,6 +595,7 @@ const MyPayroll = () => {
                                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.05 }}
                                         className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                        onClick={() => openViewModal(item)}
                                     >
                                         {/* Card Header */}
                                         <div className="flex items-start gap-4 mb-4">
@@ -663,7 +665,7 @@ const MyPayroll = () => {
                                                     <span className="text-purple-600">+{parseFloat(p.overtime_hours).toFixed(1)}h OT</span>
                                                 )}
                                             </div>
-                                            <button onClick={() => openViewModal(item)}
+                                            <button onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
                                                 className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"
                                             >
                                                 <FaEye size={14} />
