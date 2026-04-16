@@ -4,6 +4,7 @@ import {
   FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog,
   FaMoon, FaSun, FaBars, FaTimes, FaSave, FaSpinner
 } from "react-icons/fa";
+import { FiLock, FiMonitor, FiTrash2, FiChevronDown } from "react-icons/fi";
 import { FiLogOut } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
@@ -65,6 +66,116 @@ const SettingsPage = () => {
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [loggingOutId, setLoggingOutId] = useState(null);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
+
+  // New state for delete account
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState("email");
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteOtp, setDeleteOtp] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+
+  // Collapsible card wrapper
+  const SecurityCard = ({ title, icon, badge, danger, headerAction, children }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border mt-4 overflow-hidden transition-all
+      ${danger ? "border-red-100" : "border-gray-100"}`}
+      >
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className={`w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left hover:bg-gray-50/70 transition-colors
+          ${danger ? "hover:bg-red-50/40" : ""}`}
+        >
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <span className={`text-base ${danger ? "text-red-500" : "text-indigo-500"}`}>{icon}</span>
+            <span className={`text-sm sm:text-base font-semibold ${danger ? "text-red-700" : "text-gray-800"}`}>{title}</span>
+            {badge && (
+              <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-0.5 rounded-full">{badge}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {open && headerAction}
+            <FiChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+          </div>
+        </button>
+
+        {open && (
+          <div className="px-4 sm:px-6 pb-5 border-t border-gray-100">
+            <div className="pt-4">{children}</div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    setDeleteConfirmText("");
+    setDeleteEmail("");
+    setDeleteOtp("");
+    setDeleteStep("confirm");
+    setOtpSent(false);
+    setShowAccountDeleteModal(true);
+  };
+
+  const handleSendDeleteOtp = async () => {
+    if (!deleteEmail.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    if (deleteEmail.trim().toLowerCase() !== user?.email?.toLowerCase()) {
+      toast.error("Email does not match your account email");
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      const response = await apiCall('/users/delete/request-otp', 'POST', { email: deleteEmail });
+      const data = await response.json();
+      if (data.success) {
+        setOtpSent(true);
+        setDeleteStep("otp");
+        toast.success("OTP sent to your email");
+      } else {
+        toast.error(data.message || "Failed to send OTP");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (!deleteOtp.trim()) {
+      toast.error("Please enter the OTP");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const response = await apiCall('/users/delete/confirm', 'DELETE', {
+        email: deleteEmail,
+        otp: deleteOtp,
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Account deleted successfully");
+        setShowAccountDeleteModal(false);
+        // Clear auth and redirect
+        localStorage.clear();
+        window.location.href = '/login';
+      } else {
+        toast.error(data.message || "Invalid OTP. Please try again.");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === "security") fetchSessions();
@@ -729,83 +840,62 @@ const SettingsPage = () => {
 
           {activeTab === "security" && (
             <>
-              {/* Change Password Card */}
-              <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
-                <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Security Settings</h2>
-
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-medium text-gray-900 text-sm sm:text-base mb-3">Change Password</h3>
-                    <div className="space-y-3">
-                      <input
-                        type="password"
-                        placeholder="Current Password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                        disabled={isUpdatingPassword}
-                      />
-                      <input
-                        type="password"
-                        placeholder="New Password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                        disabled={isUpdatingPassword}
-                      />
-                      <input
-                        type="password"
-                        placeholder="Confirm New Password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                        disabled={isUpdatingPassword}
-                      />
-                    </div>
-                  </div>
-
+              <SecurityCard
+                title="Change Password"
+                icon={<FiLock />}
+              >
+                <div className="space-y-3">
+                  <input
+                    type="password"
+                    placeholder="Current Password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    disabled={isUpdatingPassword}
+                  />
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    disabled={isUpdatingPassword}
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    disabled={isUpdatingPassword}
+                  />
                   <button
                     onClick={handlePasswordUpdate}
                     disabled={isUpdatingPassword}
                     className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isUpdatingPassword ? (
-                      <>
-                        <FaSpinner className="w-4 h-4 animate-spin inline mr-2" />
-                        Updating...
-                      </>
-                    ) : (
-                      'Update Password'
-                    )}
+                      <><FaSpinner className="w-4 h-4 animate-spin inline mr-2" />Updating...</>
+                    ) : "Update Password"}
                   </button>
                 </div>
-              </div>
+              </SecurityCard>
 
-              {/* Active Sessions Card */}
-              <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6 mt-4">
-                {/* Header */}
-                <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Active Sessions</h3>
-                    <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                      {sessions.length} device{sessions.length !== 1 ? "s" : ""}
-                    </span>
-                  </div>
+              <SecurityCard
+                title="Active Sessions"
+                icon={<FiMonitor />}
+                badge={`${sessions.length} device${sessions.length !== 1 ? "s" : ""}`}
+                headerAction={
                   <button
                     onClick={forceLogoutAll}
                     disabled={loggingOutAll || sessions.filter((s) => !s.is_current).length === 0}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loggingOutAll ? (
-                      <FaSpinner className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <FiLogOut className="w-3 h-3" />
-                    )}
+                    {loggingOutAll ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FiLogOut className="w-3 h-3" />}
                     Logout All Other Devices
                   </button>
-                </div>
-
-                {/* List */}
+                }
+              >
                 {loadingSessions ? (
                   <div className="flex items-center justify-center py-8 text-gray-400 text-sm gap-2">
                     <FaSpinner className="animate-spin w-4 h-4" /> Loading sessions...
@@ -821,7 +911,6 @@ const SettingsPage = () => {
                             : "bg-gray-50 border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30"
                           }`}
                       >
-                        {/* Left: icon + info */}
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0
                   ${session.device_name.toLowerCase().includes("ios") ? "bg-pink-100"
@@ -851,8 +940,6 @@ const SettingsPage = () => {
                             </p>
                           </div>
                         </div>
-
-                        {/* Right: action */}
                         {session.is_current ? (
                           <span className="text-xs text-indigo-500 font-semibold px-2">✓ Active</span>
                         ) : (
@@ -861,11 +948,7 @@ const SettingsPage = () => {
                             disabled={loggingOutId === session.id}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-500 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                           >
-                            {loggingOutId === session.id ? (
-                              <FaSpinner className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <FiLogOut className="w-3 h-3" />
-                            )}
+                            {loggingOutId === session.id ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FiLogOut className="w-3 h-3" />}
                             Logout
                           </button>
                         )}
@@ -873,6 +956,25 @@ const SettingsPage = () => {
                     ))}
                   </div>
                 )}
+              </SecurityCard>
+
+              {/* Delete Account Section */}
+              <div className="bg-red-50/50 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-sm border border-red-100 p-4 sm:p-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-500">
+                    <FiTrash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-red-700">Delete Account</h3>
+                    <p className="text-[11px] sm:text-xs text-red-500">Permanently remove your account and all your records. This is irreversible.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-md active:scale-95"
+                >
+                  Delete Account
+                </button>
               </div>
             </>
           )}
@@ -957,6 +1059,7 @@ const SettingsPage = () => {
         company={editingCompany}
       />
 
+
       {/* delete modal */}
       <AnimatePresence>
         {showDeleteModal && (
@@ -997,7 +1100,234 @@ const SettingsPage = () => {
           </div>
         )}
       </AnimatePresence>
+      {/* Account Delete Modal */}
+      <AnimatePresence>
+        {showAccountDeleteModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 px-4">
+            <ModalScrollLock />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="bg-red-600 px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FiTrash2 className="text-white w-5 h-5" />
+                  <h2 className="text-white font-semibold text-base">Delete Account</h2>
+                </div>
+                <button
+                  onClick={() => setShowAccountDeleteModal(false)}
+                  className="text-white/80 hover:text-white transition-colors"
+                >
+                  <FaTimes className="w-4 h-4" />
+                </button>
+              </div>
 
+              <div className="p-6">
+                {/* Warning Banner */}
+                <div className="flex gap-3 bg-red-50 border border-red-100 rounded-xl p-3 mb-5">
+                  <span className="text-red-500 text-lg flex-shrink-0 mt-0.5">⚠️</span>
+                  <div>
+                    <p className="text-sm font-semibold text-red-700">This is irreversible</p>
+                    <p className="text-xs text-red-500 mt-0.5">
+                      Your account, data, and all associated records will be permanently erased.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 mb-5">
+                  <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold
+              ${deleteStep === "confirm" ? "bg-red-600 text-white" : "bg-red-100 text-red-600"}`}>
+                    1
+                  </div>
+                  <span className={`text-[10px] font-medium ${deleteStep === "confirm" ? "text-red-700" : "text-red-400"}`}>
+                    Confirm
+                  </span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold
+              ${deleteStep === "email" ? "bg-red-600 text-white" : deleteStep === "confirm" ? "bg-gray-100 text-gray-400" : "bg-red-100 text-red-600"}`}>
+                    2
+                  </div>
+                  <span className={`text-[10px] font-medium ${deleteStep === "email" ? "text-red-700" : "text-gray-400"}`}>
+                    Verify
+                  </span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <div className={`flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold
+              ${deleteStep === "otp" ? "bg-red-600 text-white" : "bg-gray-100 text-gray-400"}`}>
+                    3
+                  </div>
+                  <span className={`text-[10px] font-medium ${deleteStep === "otp" ? "text-red-700" : "text-gray-400"}`}>
+                    OTP
+                  </span>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {deleteStep === "confirm" ? (
+                    <motion.div
+                      key="confirm"
+                      initial={{ opacity: 0, x: -16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 16 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Safety Check
+                        </label>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Please type <span className="font-bold text-red-600 underline">DELETE</span> below to confirm you want to proceed with account deletion.
+                        </p>
+                        <input
+                          type="text"
+                          placeholder="DELETE"
+                          value={deleteConfirmText}
+                          onChange={(e) => setDeleteConfirmText(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && deleteConfirmText === "DELETE" && setDeleteStep("email")}
+                          className="w-full px-4 py-2.5 text-sm border border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all uppercase"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-1">
+                        <button
+                          onClick={() => setShowAccountDeleteModal(false)}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => setDeleteStep("email")}
+                          disabled={deleteConfirmText !== "DELETE"}
+                          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Continue
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : deleteStep === "email" ? (
+                    <motion.div
+                      key="email"
+                      initial={{ opacity: 0, x: -16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 16 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Confirm your email address
+                        </label>
+                        <input
+                          type="email"
+                          placeholder={"your@email.com"}
+                          value={deleteEmail}
+                          onChange={(e) => setDeleteEmail(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSendDeleteOtp()}
+                          className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all"
+                        />
+                        <p className="text-xs text-gray-400 mt-1.5">
+                          Must match the email associated with your account.
+                        </p>
+                      </div>
+
+                      <div className="flex gap-3 pt-1">
+                        <button
+                          onClick={() => setDeleteStep("confirm")}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                        >
+                          Back
+                        </button>
+                        <button
+                          onClick={handleSendDeleteOtp}
+                          disabled={isSendingOtp || !deleteEmail.trim()}
+                          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isSendingOtp ? (
+                            <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Sending...</>
+                          ) : (
+                            "Request OTP"
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="otp"
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -16 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                          Enter the OTP sent to
+                        </label>
+                        <p className="text-sm font-semibold text-indigo-600 mb-3">{deleteEmail}</p>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="• • • • • •"
+                          value={deleteOtp}
+                          onChange={(e) => setDeleteOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          onKeyDown={(e) => e.key === "Enter" && handleConfirmDeleteAccount()}
+                          className="w-full px-4 py-3 text-center text-xl tracking-[0.5em] font-mono border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all"
+                        />
+                        <button
+                          onClick={() => {
+                            setDeleteStep("email");
+                            setDeleteOtp("");
+                          }}
+                          className="text-xs text-gray-400 hover:text-indigo-500 mt-2 block transition-colors"
+                        >
+                          ← Change email
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          onClick={handleSendDeleteOtp}
+                          disabled={isSendingOtp}
+                          className="text-xs text-gray-500 hover:text-indigo-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {isSendingOtp ? (
+                            <><FaSpinner className="w-3 h-3 animate-spin" />Resending...</>
+                          ) : (
+                            "Resend OTP"
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setDeleteStep("email")}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                        >
+                          Back
+                        </button>
+                        <button
+                          onClick={handleConfirmDeleteAccount}
+                          disabled={isVerifyingOtp || deleteOtp.length < 4}
+                          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isVerifyingOtp ? (
+                            <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Verifying...</>
+                          ) : (
+                            "Delete My Account"
+                          )}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes blob {
@@ -1030,5 +1360,6 @@ const SettingsPage = () => {
     </div>
   );
 };
+
 
 export default SettingsPage;
