@@ -64,6 +64,308 @@ const InfoItem = ({ icon, label, value }) => (
     </div>
 );
 
+const EmployeeEditModal = ({
+    selectedEmployee,
+    formData,
+    setFormData,
+    constants,
+    permissionPackages,
+    designationOptions,
+    employmentTypeOptions,
+    salaryTypeOptions,
+    attendanceMethodsConfig,
+    handleToggleMethod,
+    handleEdit,
+    closeModal,
+    loading,
+    constantsLoading,
+    permissionsLoading,
+    updateDisabled,
+    getAccessMessage
+}) => {
+    const formatDisplay = (value) =>
+        value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+
+    return (
+        <>
+            <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
+                        <FaEdit className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">Edit Employee</h2>
+                        <p className="text-sm text-slate-500">Update designation, salary, employment and attendance methods</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onClick={closeModal}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700"
+                >
+                    <FaTimes className="h-4 w-4" />
+                </button>
+            </div>
+
+            <form onSubmit={handleEdit} className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
+                {(constantsLoading || permissionsLoading) ? (
+                    <div className="flex items-center justify-center py-16">
+                        <FaSpinner className="h-8 w-8 animate-spin text-indigo-500" />
+                        <span className="ml-3 text-sm font-medium text-slate-500">Loading data...</span>
+                    </div>
+                ) : (
+                    <div className="space-y-6">
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
+                                    {formData.name?.charAt(0)?.toUpperCase() || "E"}
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-1">
+                                    <p className="font-semibold text-slate-900">{formData.name || "Employee"}</p>
+                                    <p className="text-sm text-slate-600">{formData.email || "No email"}</p>
+                                    {formData.phone && <p className="text-sm text-slate-600">{formData.phone}</p>}
+                                    <div className="flex flex-wrap gap-2 pt-2">
+                                        <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200">
+                                            Code: {formData.employee_code || "N/A"}
+                                        </span>
+                                        {selectedEmployee?.status && (
+                                            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200">
+                                                Status: {formatDisplay(selectedEmployee.status)}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaUserTie className="h-4 w-4 text-indigo-500" />
+                                    Designation
+                                </label>
+                                <Select
+                                    options={designationOptions}
+                                    value={designationOptions.find(opt => opt.value === formData.designation) || null}
+                                    onChange={(option) => setFormData(prev => ({ ...prev, designation: option?.value || '' }))}
+                                    placeholder="Select designation"
+                                    isClearable
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            minHeight: "48px",
+                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
+                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
+                                            "&:hover": { borderColor: "#6366f1" },
+                                            borderRadius: "0.75rem",
+                                            padding: "0 0.5rem",
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
+                                            color: state.isSelected ? "white" : "#1e293b",
+                                            "&:active": { backgroundColor: "#6366f1" },
+                                        }),
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaShieldAlt className="h-4 w-4 text-indigo-500" />
+                                    Permission Package
+                                </label>
+                                <Select
+                                    options={permissionPackages}
+                                    value={formData.selectedPackage || null}
+                                    onChange={(option) => setFormData(prev => ({ ...prev, selectedPackage: option, permission_package_id: option?.value || null }))}
+                                    placeholder="Select permission package"
+                                    isClearable
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            minHeight: "48px",
+                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
+                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
+                                            "&:hover": { borderColor: "#6366f1" },
+                                            borderRadius: "0.75rem",
+                                            padding: "0 0.5rem",
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
+                                            color: state.isSelected ? "white" : "#1e293b",
+                                            "&:active": { backgroundColor: "#6366f1" },
+                                        }),
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaUserCheck className="h-4 w-4 text-indigo-500" />
+                                    Employment Type
+                                </label>
+                                <Select
+                                    options={employmentTypeOptions}
+                                    value={employmentTypeOptions.find(opt => opt.value === formData.employment_type) || null}
+                                    onChange={(option) => setFormData(prev => ({ ...prev, employment_type: option?.value || '' }))}
+                                    placeholder="Select employment type"
+                                    isClearable
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            minHeight: "48px",
+                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
+                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
+                                            "&:hover": { borderColor: "#6366f1" },
+                                            borderRadius: "0.75rem",
+                                            padding: "0 0.5rem",
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
+                                            color: state.isSelected ? "white" : "#1e293b",
+                                            "&:active": { backgroundColor: "#6366f1" },
+                                        }),
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaDollarSign className="h-4 w-4 text-indigo-500" />
+                                    Salary Type
+                                </label>
+                                <Select
+                                    options={salaryTypeOptions}
+                                    value={salaryTypeOptions.find(opt => opt.value === formData.salary_type) || null}
+                                    onChange={(option) => setFormData(prev => ({ ...prev, salary_type: option?.value || '' }))}
+                                    placeholder="Select salary type"
+                                    isClearable
+                                    styles={{
+                                        control: (base, state) => ({
+                                            ...base,
+                                            minHeight: "48px",
+                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
+                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
+                                            "&:hover": { borderColor: "#6366f1" },
+                                            borderRadius: "0.75rem",
+                                            padding: "0 0.5rem",
+                                        }),
+                                        option: (base, state) => ({
+                                            ...base,
+                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
+                                            color: state.isSelected ? "white" : "#1e293b",
+                                            "&:active": { backgroundColor: "#6366f1" },
+                                        }),
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaFingerprint className="h-4 w-4 text-indigo-500" />
+                                    Attendance Methods
+                                </label>
+                                <span className="text-xs text-slate-500">Choose the methods this employee can use</span>
+                            </div>
+
+                            {constants.attendance_methods.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {constants.attendance_methods.map((method) => {
+                                        const config = attendanceMethodsConfig[method.id];
+                                        const active = config?.enabled || false;
+
+                                        return (
+                                            <button
+                                                key={method.id}
+                                                type="button"
+                                                onClick={() => method.available && handleToggleMethod(method.id)}
+                                                disabled={!method.available}
+                                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
+                                                    ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                                                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                                    } ${!method.available ? "cursor-not-allowed opacity-60" : ""}`}
+                                            >
+                                                {active && <FaCheck className="h-3 w-3" />}
+                                                {method.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                    No attendance methods are configured for this company.
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Auto Approve Toggle */}
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
+                                        <FaCheck className="h-4 w-4 text-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-700">Auto Approve Attendance</p>
+                                        <p className="text-xs text-slate-500">Automatically approve attendance records for this employee</p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, auto_approve: !prev.auto_approve }))}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.auto_approve ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                                    role="switch"
+                                    aria-checked={formData.auto_approve}
+                                >
+                                    <span
+                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${formData.auto_approve ? 'translate-x-5' : 'translate-x-0'}`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        disabled={loading}
+                        className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        disabled={loading || constantsLoading || permissionsLoading || updateDisabled}
+                        title={updateDisabled ? "You do not have permission to update employees" : ''}
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-200 transition hover:from-green-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {loading ? (
+                            <>
+                                <FaSpinner className="h-4 w-4 animate-spin" />
+                                Updating Employee...
+                            </>
+                        ) : (
+                            <>
+                                <FaSave className="h-4 w-4" />
+                                Update Employee
+                            </>
+                        )}
+                    </motion.button>
+                </div>
+            </form>
+        </>
+    );
+};
+
 const EmployeeManagement = () => {
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [employees, setEmployees] = useState([]);
@@ -87,7 +389,7 @@ const EmployeeManagement = () => {
         name: '', designation: '', email: '', phone: '',
         employee_code: '', employment_type: '', salary_type: '',
         joining_date: '', status: '', permission_package_id: null,
-        attendance_methods: []
+        attendance_methods: [], auto_approve: false
     });
     const [weekendConfig, setWeekendConfig] = useState({
         monday: 'none',
@@ -393,19 +695,14 @@ const EmployeeManagement = () => {
             const company = JSON.parse(localStorage.getItem('company'));
 
             const enabledMethods = Object.entries(attendanceMethodsConfig)
-                .filter(([, config]) => config?.enabled && config?.available !== false);
+                .filter(([, config]) => config?.enabled && config?.available !== false)
+                .map(([methodId]) => methodId);
 
             const payload = {
                 employee_id: id,
-                designation: employeeData.designation,
                 salary_type: employeeData.salary_type,
-                employment_type: employeeData.employment_type,
-                permission_package_id: employeeData.permission_package_id || null,
-                attendance_methods: enabledMethods.map(([methodId, config]) => ({
-                    method: methodId,
-                    is_manual: config.internalMethods.includes("manual") ? 1 : 0,
-                    is_auto: config.internalMethods.includes("auto") ? 1 : 0,
-                }))
+                attendance_methods: enabledMethods,
+                auto_approve: employeeData.auto_approve ?? false
             };
 
             const response = await apiCall('/employees/update', 'PUT', payload, company?.id);
@@ -455,7 +752,6 @@ const EmployeeManagement = () => {
             constants.attendance_methods.forEach(method => {
                 initialConfig[method.id] = {
                     enabled: false,
-                    internalMethods: [],
                     available: method.available
                 };
             });
@@ -465,14 +761,9 @@ const EmployeeManagement = () => {
                 employee.attendance_methods.forEach(method => {
                     const methodId = method.method.toLowerCase();
                     if (initialConfig[methodId]) {
-                        const internalMethods = [];
-                        if (method.is_manual === true || method.is_manual === 1) internalMethods.push("manual");
-                        if (method.is_auto === true || method.is_auto === 1) internalMethods.push("auto");
-
                         initialConfig[methodId] = {
                             ...initialConfig[methodId],
                             enabled: true,
-                            internalMethods: internalMethods
                         };
                     }
                 });
@@ -494,7 +785,8 @@ const EmployeeManagement = () => {
                 joining_date: employee.joining_date ? new Date(employee.joining_date).toISOString().split('T')[0] : '',
                 status: employee.status || '',
                 permission_package_id: employee.package_id || null,
-                selectedPackage: selectedPackage || null
+                selectedPackage: selectedPackage || null,
+                auto_approve: employee.auto_approve ?? false
             });
 
             setModalType(MODAL_TYPES.EDIT);
@@ -548,6 +840,21 @@ const EmployeeManagement = () => {
         setModalType(MODAL_TYPES.NONE);
         setSelectedEmployee(null);
         setAttendanceMethodsConfig({});
+        setFormData({
+            name: '',
+            designation: '',
+            email: '',
+            phone: '',
+            employee_code: '',
+            employment_type: '',
+            salary_type: '',
+            joining_date: '',
+            status: '',
+            permission_package_id: null,
+            selectedPackage: null,
+            attendance_methods: [],
+            auto_approve: false
+        });
     };
 
     // ─── Form Handlers ───────────────────────────────────────────────────────
@@ -556,7 +863,6 @@ const EmployeeManagement = () => {
         e.preventDefault();
         if (!selectedEmployee) return;
 
-        // Validate attendance methods
         const enabledMethods = Object.entries(attendanceMethodsConfig)
             .filter(([, config]) => config?.enabled && config?.available !== false);
 
@@ -565,19 +871,9 @@ const EmployeeManagement = () => {
             return;
         }
 
-        for (const [methodId, config] of enabledMethods) {
-            if (!config.internalMethods || config.internalMethods.length === 0) {
-                const methodName = constants.attendance_methods.find(m => m.id === methodId)?.name || methodId;
-                toast.warning(`Please select at least one internal method for ${methodName}`);
-                return;
-            }
-        }
-
         const result = await updateEmployee(selectedEmployee.id, {
-            designation: formData.designation,
-            employment_type: formData.employment_type,
             salary_type: formData.salary_type,
-            permission_package_id: formData.permission_package_id
+            auto_approve: formData.auto_approve
         });
 
         if (result.success) {
@@ -642,21 +938,12 @@ const EmployeeManagement = () => {
             ...prev,
             [methodId]: {
                 ...prev[methodId],
-                enabled: !prev[methodId]?.enabled,
-                internalMethods: !prev[methodId]?.enabled ? (prev[methodId]?.internalMethods || []) : []
+                enabled: !prev[methodId]?.enabled
             }
         }));
     };
 
-    const handleInternalMethodChange = (methodId, internalMethodValue) => {
-        setAttendanceMethodsConfig(prev => {
-            const current = prev[methodId]?.internalMethods || [];
-            const updated = current.includes(internalMethodValue)
-                ? current.filter(m => m !== internalMethodValue)
-                : [...current, internalMethodValue];
-            return { ...prev, [methodId]: { ...prev[methodId], internalMethods: updated } };
-        });
-    };
+    const handleInternalMethodChange = () => {};
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -984,9 +1271,11 @@ const EmployeeManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className={`relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
-                                    ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col'
-                                    : 'max-w-4xl max-h-[90vh]'
+                            className={`relative w-full bg-white shadow-2xl overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
+                                    ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col rounded-2xl'
+                                    : modalType === MODAL_TYPES.EDIT
+                                        ? 'max-w-4xl max-h-[90vh] rounded-3xl border border-slate-200'
+                                        : 'max-w-4xl max-h-[90vh] rounded-2xl'
                                 }`}
                             onClick={e => e.stopPropagation()}
                         >
@@ -1126,6 +1415,27 @@ const EmployeeManagement = () => {
 
                             {/* EDIT MODAL */}
                             {modalType === MODAL_TYPES.EDIT && (
+                                <EmployeeEditModal
+                                    selectedEmployee={selectedEmployee}
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                    constants={constants}
+                                    permissionPackages={permissionPackages}
+                                    designationOptions={designationOptions}
+                                    employmentTypeOptions={employmentTypeOptions}
+                                    salaryTypeOptions={salaryTypeOptions}
+                                    attendanceMethodsConfig={attendanceMethodsConfig}
+                                    handleToggleMethod={handleToggleMethod}
+                                    handleEdit={handleEdit}
+                                    closeModal={closeModal}
+                                    loading={loading}
+                                    constantsLoading={constantsLoading}
+                                    permissionsLoading={permissionsLoading}
+                                    updateDisabled={updateEmployeeAccess.disabled}
+                                    getAccessMessage={getAccessMessage}
+                                />
+                            )}
+                            {false && (
                                 <>
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
