@@ -760,7 +760,7 @@ const PayrollManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl max-h-[90vh]"
+                            className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl max-h-[90vh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}
@@ -790,7 +790,7 @@ const PayrollManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
+                                    <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
                                         <div className="grid grid-cols-1 gap-6">
                                             {/* Employee Info */}
                                             <div className="col-span-1 pb-6 border-b">
@@ -986,7 +986,8 @@ const PayrollManagement = () => {
                                         </div>
                                     </div>
 
-                                    <form onSubmit={handleGenerate} className="p-6">
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                        <form onSubmit={handleGenerate} className="p-6">
                                         <div className="space-y-6">
                                             {/* Generation Mode Selection */}
                                             <div>
@@ -1296,7 +1297,8 @@ const PayrollManagement = () => {
                                                 )}
                                             </motion.button>
                                         </div>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </>
                             )}
                         </motion.div>
