@@ -1,18 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import apiCall from "../utils/api";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 
+// ─── TABS CONFIGURATION ───────────────────────────────────────────────────────
 const TABS = [
   { key: "permissions", label: "Permissions" },
   { key: "attendance",  label: "Attendance"  },
   { key: "salary",      label: "Salary"      },
-  { key: "payroll",     label: "Payroll"      },
-  { key: "leave",       label: "Leave"        },
-  { key: "shift",       label: "Shift"        },
+  { key: "payroll",     label: "Payroll"     },
+  { key: "leave",       label: "Leave"       },
+  { key: "shift",       label: "Shift"       },
 ];
 
+// ─── MOCK DATA (FALLBACK) ────────────────────────────────────────────────────
 const MOCK_TAB_DATA = {
   permissions: {
     cols: ["Module", "View", "Create", "Edit", "Delete", "Admin"],
@@ -96,8 +99,7 @@ const DEMO_DATA = {
   },
 };
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = (str) =>
   str ? str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
 
@@ -107,35 +109,33 @@ const fmtDate = (d) =>
 const getInitials = (name) =>
   name?.trim().split(" ").filter(Boolean).map((w) => w[0].toUpperCase()).slice(0, 2).join("") || "?";
 
-// ─── pill maps ────────────────────────────────────────────────────────────────
-
+// ─── PILL STYLES ──────────────────────────────────────────────────────────────
 const STATUS_PILL = {
-  active:    "bg-green-100 text-green-800",
-  inactive:  "bg-red-100 text-red-800",
+  active:    "bg-emerald-100 text-emerald-800",
+  inactive:  "bg-rose-100 text-rose-800",
   suspended: "bg-amber-100 text-amber-800",
-  Present:   "bg-green-100 text-green-800",
+  Present:   "bg-emerald-100 text-emerald-800",
   Leave:     "bg-amber-100 text-amber-800",
-  Holiday:   "bg-blue-100 text-blue-800",
-  Paid:      "bg-green-100 text-green-800",
+  Holiday:   "bg-indigo-100 text-indigo-800",
+  Paid:      "bg-emerald-100 text-emerald-800",
   Pending:   "bg-amber-100 text-amber-800",
-  Failed:    "bg-red-100 text-red-800",
-  Approved:  "bg-green-100 text-green-800",
-  Rejected:  "bg-red-100 text-red-800",
-  Earning:   "bg-blue-100 text-blue-800",
-  Deduction: "bg-red-100 text-red-800",
+  Failed:    "bg-rose-100 text-rose-800",
+  Approved:  "bg-emerald-100 text-emerald-800",
+  Rejected:  "bg-rose-100 text-rose-800",
+  Earning:   "bg-indigo-100 text-indigo-800",
+  Deduction: "bg-rose-100 text-rose-800",
 };
 
 const TYPE_PILL = {
-  monthly:    "bg-blue-100 text-blue-800",
+  monthly:    "bg-indigo-100 text-indigo-800",
   daily:      "bg-teal-100 text-teal-800",
   hourly:     "bg-amber-100 text-amber-800",
-  full_time:  "bg-green-100 text-green-800",
+  full_time:  "bg-emerald-100 text-emerald-800",
   part_time:  "bg-amber-100 text-amber-800",
-  contract:   "bg-blue-100 text-blue-800",
+  contract:   "bg-indigo-100 text-indigo-800",
 };
 
-// ─── sub-components ───────────────────────────────────────────────────────────
-
+// ─── SUBCOMPONENTS ────────────────────────────────────────────────────────────
 function Pill({ label, colorClass }) {
   return (
     <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium ${colorClass}`}>
@@ -145,112 +145,93 @@ function Pill({ label, colorClass }) {
 }
 
 function StatusPill({ value }) {
-  const cls = STATUS_PILL[value] || "bg-gray-100 text-gray-600";
+  const cls = STATUS_PILL[value] || "bg-slate-100 text-slate-600";
   return <Pill label={fmt(value)} colorClass={cls} />;
 }
 
 function TypePill({ value }) {
-  const cls = TYPE_PILL[value] || "bg-gray-100 text-gray-600";
+  const cls = TYPE_PILL[value] || "bg-slate-100 text-slate-600";
   return <Pill label={fmt(value)} colorClass={cls} />;
 }
 
 function MetaItem({ label, children }) {
   return (
     <div>
-      <span className="block text-[11px] uppercase tracking-wide text-gray-400 mb-0.5">{label}</span>
-      <span className="text-[13px] font-medium text-gray-800">{children}</span>
+      <span className="block text-[11px] uppercase tracking-wide text-slate-500 mb-0.5">{label}</span>
+      <span className="text-[13px] font-medium text-slate-800">{children}</span>
     </div>
   );
 }
 
-// ─── Profile Card ─────────────────────────────────────────────────────────────
-
-function ProfileCard({ data, onAction }) {
-  const { employee: e, user: u, company: c } = data;
-  const [imgErr, setImgErr] = useState(false);
+// ─── DETAILS MODAL (shows full row info) ──────────────────────────────────────
+function DetailsModal({ isOpen, onClose, rowData, columns, tabLabel }) {
+  if (!isOpen || !rowData) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="bg-white border border-gray-200 rounded-2xl p-5"
-    >
-      {/* Top row */}
-      <div className="flex items-start gap-4 flex-wrap">
-        {/* Avatar */}
-        <div className="w-[68px] h-[68px] rounded-full bg-blue-100 flex items-center justify-center text-[22px] font-medium text-blue-800 shrink-0 select-none">
-          {getInitials(u.name)}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-[160px]">
-          <h2 className="text-[18px] font-medium text-gray-900 leading-tight">{u.name}</h2>
-          <p className="text-[13px] text-gray-500 mt-0.5">{fmt(e.designation)}</p>
-
-          <div className="flex gap-1.5 flex-wrap mt-2">
-            <StatusPill value={e.status} />
-            <TypePill value={e.employment_type} />
-            <TypePill value={e.salary_type} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">{tabLabel} Details</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Record information</p>
           </div>
-
-          {/* Company row */}
-          <div className="flex items-center gap-2 mt-2">
-            {c.logo_url && !imgErr && (
-              <img
-                src={c.logo_url}
-                alt={c.name}
-                onError={() => setImgErr(true)}
-                className="w-[22px] h-[22px] rounded object-contain border border-gray-200 bg-gray-50"
-              />
-            )}
-            <span className="text-[12px] text-gray-500">
-              {c.name} &nbsp;·&nbsp; {c.city}, {c.state}
-            </span>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex gap-2 flex-wrap ml-auto items-start">
           <button
-            onClick={() => onAction?.(`Edit profile for ${u.name}`)}
-            className="text-[12px] px-3.5 py-1.5 rounded-md border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/60 transition-colors"
           >
-            Edit ↗
-          </button>
-          <button
-            onClick={() => onAction?.(`Generate payslip for ${u.name}`)}
-            className="text-[12px] px-3.5 py-1.5 rounded-md border border-blue-600 bg-blue-50 text-blue-700 hover:bg-blue-100 active:scale-95 transition-all"
-          >
-            Payslip ↗
+            <i className="fas fa-times text-slate-400"></i>
           </button>
         </div>
-      </div>
-
-      {/* Meta grid */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5 mt-4 pt-4 border-t border-gray-100">
-        <MetaItem label="Employee ID">{e.code}</MetaItem>
-        <MetaItem label="Email">
-          <span className="text-[12px] break-all">{u.email}</span>
-        </MetaItem>
-        <MetaItem label="Phone">{u.phone || "—"}</MetaItem>
-        <MetaItem label="Joining Date">{fmtDate(e.joining_date)}</MetaItem>
-        <MetaItem label="Last Login">{fmtDate(u.last_login)}</MetaItem>
-        <MetaItem label="Saturday">{fmt(e.weekends?.saturday || "—")}</MetaItem>
-        <MetaItem label="Sunday">{fmt(e.weekends?.sunday || "—")}</MetaItem>
-        <MetaItem label="Company">
-          <span className="text-[12px]">{c.legal_name}</span>
-        </MetaItem>
-      </div>
-    </motion.div>
+        <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          {columns.map((col, idx) => {
+            let value = rowData[idx];
+            // Special rendering for status-like columns to show pill
+            const isStatusCol = ["Status", "Type"].includes(col) && STATUS_PILL[value];
+            return (
+              <div key={idx} className="flex justify-between items-start border-b border-gray-50 pb-2">
+                <span className="text-sm font-medium text-gray-500">{col}</span>
+                <div className="text-right">
+                  {isStatusCol ? (
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium ${STATUS_PILL[value] || "bg-gray-100 text-gray-600"}`}>
+                      {value}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-800 font-mono break-all">{value || "—"}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="px-6 py-4 bg-gray-50 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
-// ─── Data Table ───────────────────────────────────────────────────────────────
-
-function DataTable({ tabData }) {
+// ─── DATA TABLE (click on row → opens modal) ──────────────────────────────────
+function DataTable({ tabData, tabLabel }) {
   const { cols, rows, note, statusCol } = tabData;
   const isPermMatrix = cols[0] === "Module";
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const handleRowClick = (row) => {
+    setSelectedRow(row);
+    setModalOpen(true);
+  };
 
   return (
     <div>
@@ -278,10 +259,10 @@ function DataTable({ tabData }) {
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.2, delay: ri * 0.04 }}
-                className="hover:bg-gray-50 transition-colors"
+                className="hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => handleRowClick(row)}
               >
                 {row.map((cell, ci) => {
-                  // Status pill column
                   if (statusCol === ci) {
                     const cls = STATUS_PILL[cell] || "bg-gray-100 text-gray-600";
                     return (
@@ -290,7 +271,6 @@ function DataTable({ tabData }) {
                       </td>
                     );
                   }
-                  // Permission matrix ticks
                   if (isPermMatrix && ci > 0) {
                     const clr = cell === "✓" ? "text-green-700" : "text-gray-300";
                     return (
@@ -298,7 +278,7 @@ function DataTable({ tabData }) {
                     );
                   }
                   return (
-                    <td key={ci} className="px-3 py-2.5 border-b border-gray-100 text-gray-800 align-middle last:border-b-0">
+                    <td key={ci} className="px-3 py-2.5 border-b border-gray-100 text-gray-800 align-middle">
                       {cell}
                     </td>
                   );
@@ -308,17 +288,111 @@ function DataTable({ tabData }) {
           </tbody>
         </table>
       </div>
+
+      {/* Modal for row details */}
+      <DetailsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        rowData={selectedRow}
+        columns={cols}
+        tabLabel={tabLabel}
+      />
     </div>
   );
 }
 
-// ─── Tabs Panel ───────────────────────────────────────────────────────────────
+// ─── PROFILE CARD (no action column removed already) ──────────────────────────
+function ProfileCard({ data }) {
+  const { employee: e, user: u, company: c } = data;
+  const [imgErr, setImgErr] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="p-5"
+    >
+      <div className="flex items-start gap-4 flex-wrap">
+        <div className="w-[68px] h-[68px] rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[22px] font-bold text-white shadow-lg shadow-indigo-200 shrink-0 select-none">
+          {getInitials(u.name)}
+        </div>
+
+        <div className="flex-1 min-w-[160px]">
+          <h2 className="text-[18px] font-bold text-slate-800 leading-tight">{u.name}</h2>
+          <p className="text-[13px] text-slate-500 mt-0.5">{fmt(e.designation)}</p>
+
+          <div className="flex gap-1.5 flex-wrap mt-2">
+            <StatusPill value={e.status} />
+            <TypePill value={e.employment_type} />
+            <TypePill value={e.salary_type} />
+          </div>
+
+          <div className="flex items-center gap-2 mt-2">
+            {c.logo_url && !imgErr && (
+              <img
+                src={c.logo_url}
+                alt={c.name}
+                onError={() => setImgErr(true)}
+                className="w-[22px] h-[22px] rounded object-contain border border-slate-200 bg-slate-50"
+              />
+            )}
+            <span className="text-[12px] text-slate-500">
+              {c.name} &nbsp;·&nbsp; {c.city}, {c.state}
+            </span>
+          </div>
+        </div>
+
+        {/* ACTION BUTTONS REMOVED AS PER "no need actions remove this column" — only profile info */}
+      </div>
+
+      <div className="flex pb-2 mt-4 border-b border-transparent">
+        <button 
+          onClick={() => setShowDetails(!showDetails)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 bg-slate-50 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+        >
+          {showDetails ? "Hide Employee Details" : "View Employee Details"}
+          {showDetails ? <FaChevronUp className="w-3 h-3" /> : <FaChevronDown className="w-3 h-3" />}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {showDetails && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5 mt-2 pt-4 border-t border-slate-100">
+              <MetaItem label="Employee ID">{e.code}</MetaItem>
+              <MetaItem label="Email">
+                <span className="text-[12px] break-all">{u.email}</span>
+              </MetaItem>
+              <MetaItem label="Phone">{u.phone || "—"}</MetaItem>
+              <MetaItem label="Joining Date">{fmtDate(e.joining_date)}</MetaItem>
+              <MetaItem label="Last Login">{fmtDate(u.last_login)}</MetaItem>
+              <MetaItem label="Saturday">{fmt(e.weekends?.saturday || "—")}</MetaItem>
+              <MetaItem label="Sunday">{fmt(e.weekends?.sunday || "—")}</MetaItem>
+              <MetaItem label="Company">
+                <span className="text-[12px]">{c.legal_name}</span>
+              </MetaItem>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ─── TABS PANEL ────────────────────────────────────────────────────────────────
 function TabsPanel({ employeeId }) {
   const [activeTab, setActiveTab] = useState("permissions");
   const [tabData, setTabData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [warn, setWarn]       = useState(false);
+  const [warn, setWarn] = useState(false);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
 
   const fetchTab = useCallback(
@@ -327,7 +401,7 @@ function TabsPanel({ employeeId }) {
       setWarn(false);
       setTabData(null);
       try {
-        const res  = await apiCall(
+        const res = await apiCall(
           `/employees/tab-data?tab=${tab}&employee_id=${encodeURIComponent(employeeId)}&page=${page}&limit=${limit}`
         );
         const json = await res.json();
@@ -375,10 +449,11 @@ function TabsPanel({ employeeId }) {
     fetchTab(activeTab, pagination.page, pagination.limit);
   }, [activeTab, fetchTab, pagination.page, pagination.limit]);
 
+  const activeTabLabel = TABS.find(t => t.key === activeTab)?.label || activeTab;
+
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-      {/* Tab bar */}
-      <div className="flex overflow-x-auto border-b border-gray-100 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+    <div className="overflow-hidden">
+      <div className="flex overflow-x-auto border-b border-slate-100 scrollbar-none" style={{ scrollbarWidth: "none" }}>
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -388,8 +463,8 @@ function TabsPanel({ employeeId }) {
             }}
             className={`shrink-0 px-4 py-2.5 text-[13px] border-b-2 whitespace-nowrap transition-colors
               ${activeTab === t.key
-                ? "border-blue-600 text-blue-600 font-medium"
-                : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                ? "border-indigo-600 text-indigo-600 font-semibold"
+                : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
               }`}
           >
             {t.label}
@@ -397,7 +472,6 @@ function TabsPanel({ employeeId }) {
         ))}
       </div>
 
-      {/* Tab body */}
       <div className="p-4 overflow-hidden min-h-[120px]">
         <AnimatePresence mode="wait">
           {loading ? (
@@ -406,9 +480,9 @@ function TabsPanel({ employeeId }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-10 gap-2 text-[14px] text-gray-400"
+              className="flex flex-col items-center justify-center py-10 gap-2 text-[14px] text-slate-400"
             >
-              <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
               Loading…
             </motion.div>
           ) : tabData ? (
@@ -422,7 +496,7 @@ function TabsPanel({ employeeId }) {
               {warn && (
                 <p className="text-[11px] text-gray-400 pb-1">⚠ API unavailable — showing sample data</p>
               )}
-              <DataTable tabData={tabData} />
+              <DataTable tabData={tabData} tabLabel={activeTabLabel} />
               <Pagination
                 currentPage={pagination.page}
                 totalItems={pagination.total}
@@ -439,13 +513,12 @@ function TabsPanel({ employeeId }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
+// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function EmployeeProfilePage() {
   const { employeeId } = useParams();
-  const [profile,  setProfile]  = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchProfile = useCallback(async (id) => {
     if (!id) {
@@ -482,42 +555,46 @@ export default function EmployeeProfilePage() {
   }
 
   return (
-    <div className="max-w-[960px] mx-auto px-4 py-4 flex flex-col gap-3.5 font-sans">
+    <div className="min-h-screen p-3 md:p-6 font-sans">
+      <div className="max-w-7xl mx-auto flex flex-col gap-3.5">
+        <AnimatePresence>
+          {loading && (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center py-10 gap-2 text-[14px] text-slate-400"
+            >
+              <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+              Fetching employee data…
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-      {/* Loading state */}
-      <AnimatePresence>
-        {loading && (
-          <motion.div
-            key="loader"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center py-10 gap-2 text-[14px] text-gray-400"
-          >
-            <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-            Fetching employee data…
-          </motion.div>
+        <AnimatePresence>
+          {profile && !loading && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col gap-3.5"
+            >
+              <ProfileCard data={profile} />
+              <TabsPanel employeeId={profile.employee.id} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Optional error / demo reset */}
+        {error && !profile && !loading && (
+          <div className="text-center py-8 bg-rose-50 rounded-2xl border border-rose-200">
+            <p className="text-rose-600 text-sm">{error}</p>
+            <button onClick={loadDemo} className="mt-3 text-sm text-indigo-600 underline">Load demo data</button>
+          </div>
         )}
-      </AnimatePresence>
-
-
-      {/* Profile + tabs */}
-      <AnimatePresence>
-        {profile && !loading && (
-          <motion.div
-            key="profile"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col gap-3.5"
-          >
-            <ProfileCard data={profile} />
-            <TabsPanel
-              employeeId={profile.employee.id}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
