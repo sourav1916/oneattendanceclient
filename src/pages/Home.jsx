@@ -327,31 +327,12 @@ function HomePage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="relative mb-12 overflow-hidden min-h-[300px] flex flex-col md:flex-row group"
+          className="relative mb-12 overflow-hidden flex flex-col md:flex-row group"
         >
           {/* Subtle Background Pattern */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:20px_20px]"></div>
 
           <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 lg:p-6 relative z-10">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-100">
-                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Workspace Dashboard</span>
-              </div>
-
-              <div className="space-y-2">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
-                  {getGreeting()}, <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 animate-gradient">
-                    {user?.name?.split(' ')[0]}!
-                  </span>
-                </h1>
-                <p className="text-base text-slate-500 font-medium max-w-lg">
-                  Welcome back! Your workspace is organized and ready. Manage your team, track attendance, and stay on top of your tasks.
-                </p>
-              </div>
-            </div>
-
             {/* Bottom: Action Chips */}
             <div className="flex flex-wrap gap-3 mt-8">
               <button

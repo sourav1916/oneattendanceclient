@@ -31,6 +31,7 @@ import EmployeesShifts from "./pages/EmployeesShifts";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ScrollToTop from "./components/ScrollToTop";
 import ProfilePage from "./pages/Profile";
+import EmployeeProfile from "./pages/EmployeeProfile";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -91,6 +92,7 @@ function AppContent() {
         <Route path="/leave-config"element={<ProtectedRoute><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
         <Route path="/leave-balance"element={<ProtectedRoute><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
         <Route path="/payroll-management"element={<ProtectedRoute><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-profile/:employeeId" element={<ProtectedRoute><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

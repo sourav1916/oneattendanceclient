@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaUserCircle,
     FaSearch, FaSpinner,
@@ -367,6 +368,7 @@ const EmployeeEditModal = ({
 };
 
 const EmployeeManagement = () => {
+    const navigate = useNavigate();
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [employees, setEmployees] = useState([]);
     const [constants, setConstants] = useState({
@@ -422,6 +424,7 @@ const EmployeeManagement = () => {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const updateEmployeeAccess = checkActionAccess('employeeManagement', 'update');
     const deleteEmployeeAccess = checkActionAccess('employeeManagement', 'delete');
+    const readEmployeeAccess = checkActionAccess('employeeManagement', 'read');
 
     const getIconForType = (key) => {
         const iconMap = {
@@ -1178,6 +1181,14 @@ const EmployeeManagement = () => {
                                                                 className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                             },
                                                             {
+                                                                label: 'Profile',
+                                                                icon: <FaUserCircle size={14} />,
+                                                                onClick: () => navigate(`/employee-profile/${emp.id}`),
+                                                                disabled: readEmployeeAccess.disabled,
+                                                                title: readEmployeeAccess.disabled ? getAccessMessage(readEmployeeAccess) : '',
+                                                                className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+                                                            },
+                                                            {
                                                                 label: 'Edit',
                                                                 icon: <FaEdit size={14} />,
                                                                 onClick: () => openEditModal(emp),
@@ -1241,6 +1252,7 @@ const EmployeeManagement = () => {
                                         </div>
                                     </div>
                                     <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+                                        <button onClick={() => !readEmployeeAccess.disabled && navigate(`/employee-profile/${emp.id}`)} disabled={readEmployeeAccess.disabled} title={readEmployeeAccess.disabled ? getAccessMessage(readEmployeeAccess) : ''} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaUserCircle size={16} /></button>
                                         <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
                                         <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
                                         <button onClick={() => openWeekendModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaCalendarAlt size={16} /></button>
