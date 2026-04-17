@@ -4,15 +4,17 @@ import {
   FaUsers,
   FaUserPlus,
   FaClock,
+  FaBoxes,
   FaInfoCircle,
   FaChevronRight,
 } from 'react-icons/fa';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import EmployeeManagement from './EmployeeManagement';
 import CompanyInviteManagement from './CompanyInviteManagement';
+import InvitePackageManagement from './InvitePackage';
 import EmployeesShifts from './EmployeesShifts';
 
-const TAB_ORDER = ['employees', 'invites', 'shifts'];
+const TAB_ORDER = ['employees', 'invites', 'packages', 'shifts'];
 
 const TAB_CONFIG = {
   employees: {
@@ -32,6 +34,15 @@ const TAB_CONFIG = {
     pageKey: 'companyInvites',
     component: CompanyInviteManagement,
     accent: 'bg-purple-50 text-purple-700 border-purple-200',
+  },
+  packages: {
+    label: 'Invite Packages',
+    shortLabel: 'Packages',
+    description: 'Create reusable invite packages for onboarding workflows.',
+    icon: FaBoxes,
+    pageKey: 'invitePackages',
+    component: InvitePackageManagement,
+    accent: 'bg-indigo-50 text-indigo-700 border-indigo-200',
   },
   shifts: {
     label: 'Shift Management',
@@ -57,7 +68,7 @@ function AccessDeniedState() {
       </div>
       <h2 className="text-lg font-bold text-slate-800">No employee tabs available</h2>
       <p className="mt-2 text-sm text-slate-500">
-        Your current role does not have access to employee management or company invitations.
+        Your current role does not have access to employee management, company invitations, invite packages, or shift summaries.
       </p>
     </div>
   );
@@ -124,10 +135,10 @@ export default function EmployeeManagementHub() {
                 Staff Management
               </div>
               <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
-                Team & Invitations Hub
+                Team, Invitations & Packages Hub
               </h1>
               <p className="mt-2 text-sm text-slate-500 md:text-base">
-                Manage your active workforce and send or review onboarding invitations from one place.
+                Manage your active workforce, onboarding invitations, reusable packages, and shift summaries from one place.
               </p>
             </div>
 

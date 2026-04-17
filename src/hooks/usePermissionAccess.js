@@ -39,6 +39,9 @@ const PERMISSION_ACCESS_CONFIG = {
     companyInvites: {
       permissions: ["emp_invite", "emp_invite_cancel_admin"],
     },
+    invitePackages: {
+      permissions: ["emp_invite", "emp_invite_cancel_admin"],
+    },
     employeeManagement: {
       permissions: ["emp_create", "emp_view", "emp_update", "emp_delete", "report_emp", "export_emp"],
     },
@@ -144,6 +147,12 @@ const PERMISSION_ACCESS_CONFIG = {
       create: { permissions: "emp_invite" },
       update: { permissions: "emp_invite" },
       cancel: { permissions: "emp_invite_cancel_admin" },
+      read: { permissions: ["emp_invite", "emp_invite_cancel_admin"] },
+    },
+    invitePackages: {
+      create: { permissions: "emp_invite" },
+      update: { permissions: "emp_invite" },
+      delete: { permissions: "emp_invite_cancel_admin" },
       read: { permissions: ["emp_invite", "emp_invite_cancel_admin"] },
     },
     employeeManagement: {
