@@ -86,14 +86,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       isSection: true,
       children: [
         {
-          icon: FaBuilding,
-          label: 'Invites Management',
-          path: '/company-invites',
-          pageKey: 'companyInvites'
-        },
-        {
           icon: FaUsers,
-          label: 'Employee Management',
+          label: 'Employees',
           path: '/employee-management',
           pageKey: 'employeeManagement'
         },
@@ -105,43 +99,38 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         },
         {
           icon: FaClock,
-          label: 'Attendance Management',
+          label: 'Attendance',
           path: '/attendance-management',
           pageKey: 'attendanceManagement'
         },
         {
           icon: FaFileInvoiceDollar,
-          label: 'Salary Management',
+          label: 'Salary',
           path: '/salary-management',
           pageKey: 'salaryManagement'
         },
         {
           icon: FaCalculator,
-          label: 'Payroll Management',
+          label: 'Payroll',
           path: '/payroll-management',
           pageKey: 'payrollManagement'
         },
-        {
-          icon: FaTasks,
-          label: 'Employee Shifts',
-          path: '/employees-shifts',
-          pageKey: 'employeesShifts'
-        },
+
         {
           icon: FaUmbrellaBeach,
-          label: 'Leave Management',
+          label: 'Leaves',
           path: '/leave-management',
           pageKey: 'leaveManagement'
         },
         {
           icon: FaCog,
-          label: 'Company Settings',
+          label: 'Companies',
           path: '/company-settings',
           pageKey: 'companySettings'
         },
         {
           icon: FaCalendarAlt,
-          label: 'Holiday Management',
+          label: 'Holidays',
           path: '/holiday-management',
           pageKey: 'holidayManagement'
         }

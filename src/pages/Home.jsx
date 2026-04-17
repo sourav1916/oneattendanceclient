@@ -210,7 +210,7 @@ function HomePage() {
         description: inviteMgmtAccess.allowed ? "Manage team invites" : "No permission",
         icon: FaBuilding,
         color: inviteMgmtAccess.allowed ? "from-indigo-600 to-blue-600" : "from-slate-400 to-slate-500",
-        onClick: () => inviteMgmtAccess.allowed && navigate('/company-invites'),
+        onClick: () => inviteMgmtAccess.allowed && navigate('/employee-management?tab=invites'),
         gradient: inviteMgmtAccess.allowed ? "bg-gradient-to-r from-indigo-600 to-blue-600" : "bg-slate-200",
         disabled: !inviteMgmtAccess.allowed
       },
@@ -255,7 +255,7 @@ function HomePage() {
         description: employeeShiftsAccess.allowed ? "Monitor team shift summaries" : "No permission",
         icon: FaUserCheck,
         color: employeeShiftsAccess.allowed ? "from-indigo-500 to-cyan-500" : "from-slate-400 to-slate-500",
-        onClick: () => employeeShiftsAccess.allowed && navigate('/employees-shifts'),
+        onClick: () => employeeShiftsAccess.allowed && navigate('/employee-management?tab=shifts'),
         gradient: employeeShiftsAccess.allowed ? "bg-gradient-to-r from-indigo-500 to-cyan-500" : "bg-slate-200",
         disabled: !employeeShiftsAccess.allowed
       },

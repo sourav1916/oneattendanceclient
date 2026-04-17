@@ -32,6 +32,7 @@ import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ScrollToTop from "./components/ScrollToTop";
 import ProfilePage from "./pages/Profile";
 import EmployeeProfile from "./pages/EmployeeProfile";
+import EmployeeManagementHub from "./pages/EmployeeManagementHub";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -69,7 +70,7 @@ function AppContent() {
         <Route path="/home"element={<ProtectedRoute> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>}/>
         <Route path="/profile"element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>}/>
         <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
-        <Route path="/company-invites" element={ <ProtectedRoute><MainLayout><CompanyInvites /></MainLayout></ProtectedRoute>}/>
+        <Route path="/company-invites" element={ <ProtectedRoute><Navigate to="/employee-management?tab=invites" replace /></ProtectedRoute>}/>
         <Route path="/attendance"element={<ProtectedRoute><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-history"element={<ProtectedRoute><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
         <Route path="/my-shifts"element={<ProtectedRoute><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
@@ -78,7 +79,7 @@ function AppContent() {
         <Route path="/salary-management"element={<ProtectedRoute><MainLayout><SalaryManagementHub /></MainLayout></ProtectedRoute>} />
         <Route path="/salary-components-management"element={<ProtectedRoute><Navigate to="/salary-management?tab=components" replace /></ProtectedRoute>} />
         <Route path="/salary-package-management"element={<ProtectedRoute><Navigate to="/salary-management?tab=packages" replace /></ProtectedRoute>} />
-        <Route path="/employees-shifts"element={<ProtectedRoute><MainLayout><EmployeesShifts /></MainLayout></ProtectedRoute>} />
+        <Route path="/employees-shifts"element={<ProtectedRoute><Navigate to="/employee-management?tab=shifts" replace /></ProtectedRoute>} />
         <Route path="/leave-management"element={<ProtectedRoute><MainLayout><LeaveManagementHub /></MainLayout></ProtectedRoute>} />
         <Route path="/pending-attendance"element={<ProtectedRoute><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
         <Route path="/holiday-management"element={<ProtectedRoute><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
@@ -86,7 +87,7 @@ function AppContent() {
         <Route path="/help"element={<ProtectedRoute><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
         <Route path="/my-leaves"element={<ProtectedRoute><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
         <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
-        <Route path="/employee-management"element={<ProtectedRoute><MainLayout><EmployeeManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-management"element={<ProtectedRoute><MainLayout><EmployeeManagementHub /></MainLayout></ProtectedRoute>} />
         <Route path="/company-settings"element={<ProtectedRoute><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
         <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-config"element={<ProtectedRoute><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
