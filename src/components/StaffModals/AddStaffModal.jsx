@@ -249,8 +249,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
       const company = JSON.parse(localStorage.getItem("company"));
       const encodedEmail = encodeURIComponent(email);
       const endpoints = [
-        `/company/users/search?email=${encodedEmail}`,
-        `/company/users/find?email=${encodedEmail}`,
         `/company/users/available?email=${encodedEmail}`,
       ];
 
