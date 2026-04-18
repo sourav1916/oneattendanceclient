@@ -1,31 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  FaPlus,
-  FaEdit,
-  FaTrash,
-  FaSyncAlt,
-  FaSearch,
-  FaTimes,
-  FaCheck,
-  FaExclamationTriangle,
-  FaUser,
-  FaCalendarAlt,
-  FaClock,
-  FaDollarSign,
-  FaToggleOn,
-  FaEye,
-  FaSpinner,
-  FaChevronDown,
-  FaTh,
-  FaListUl,
-  FaCog,
+  FaPlus, FaEdit, FaTrash, FaSyncAlt, FaSearch, FaTimes, FaCheck,
+  FaExclamationTriangle, FaUser, FaCalendarAlt, FaClock, FaDollarSign,
+  FaToggleOn, FaEye, FaSpinner, FaChevronDown, FaTh, FaListUl, FaCog,
+  FaEnvelope, FaIdCard, FaChartBar
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
-import SharedActionMenu from '../components/ActionMenu';
+import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
@@ -83,18 +68,48 @@ const isLowBalance = (remaining) => Number.parseFloat(remaining ?? 0) <= 1;
 const getBalanceKey = (balance) =>
   balance.id ?? `${balance.employee_id}-${balance.leave_config_id}-${balance.year}`;
 
-const flattenEmployeeBalances = (employees, year) =>
-  (employees || []).flatMap((employee) =>
+const flattenEmployeeBalances = (data, year) => {
+  if (!data || !Array.isArray(data)) return [];
+  
+  // Robust check for data structure - handles both nested and flat responses
+  if (data.length > 0 && !data[0].leaves) {
+    return data.map(item => ({
+      employee_id: item.employee_id || item.employee?.id || item.id,
+      employee_name: item.employee_name || item.employee?.name || 'N/A',
+      email: item.email || item.employee?.email,
+      employee_code: item.employee_code || item.employee?.employee_code,
+      leave_config_id: item.leave_config_id || item.leave_config?.id,
+      type: item.type || item.code || item.leave_config?.code || 'N/A',
+      code: item.code || item.type || item.leave_config?.code || 'N/A',
+      name: item.name || item.leave_config?.name || 'N/A',
+      year: item.year || year,
+      total_allocated: item.total_allocated ?? 0,
+      used: item.used ?? 0,
+      remaining: item.remaining ?? ((item.total_allocated ?? 0) - (item.used ?? 0)),
+      is_paid: item.is_paid ?? item.leave_config?.is_paid ?? true,
+      allow_half_day: item.allow_half_day ?? item.leave_config?.allow_half_day ?? false,
+      accrual_type: item.accrual_type || item.leave_config?.accrual_type || 'none',
+      accrual_rate: item.accrual_rate ?? item.leave_config?.accrual_rate ?? 0,
+      max_balance: item.max_balance ?? item.leave_config?.max_balance ?? 0,
+      carry_forward_limit: item.carry_forward_limit ?? item.leave_config?.carry_forward_limit ?? 0,
+      allow_negative_balance: item.allow_negative_balance ?? item.leave_config?.allow_negative_balance ?? false,
+      exclude_weekends: item.exclude_weekends ?? item.leave_config?.exclude_weekends ?? true,
+      is_comp_off: item.is_comp_off ?? item.leave_config?.is_comp_off ?? false,
+      is_active: item.is_active ?? true,
+    }));
+  }
+
+  return data.flatMap((employee) =>
     (employee.leaves || []).map((leave) => ({
-      employee_id: employee.employee_id,
-      employee_name: employee.employee_name,
+      employee_id: employee.employee_id || employee.id,
+      employee_name: employee.employee_name || employee.name,
       email: employee.email,
       employee_code: employee.employee_code,
       leave_config_id: leave.leave_config_id,
-      type: leave.type,
-      code: leave.type,
+      type: leave.type || leave.code,
+      code: leave.code || leave.type,
       name: leave.name,
-      year,
+      year: leave.year || year,
       total_allocated: leave.total_allocated,
       used: leave.used,
       remaining: leave.remaining,
@@ -110,6 +125,7 @@ const flattenEmployeeBalances = (employees, year) =>
       is_active: true,
     }))
   );
+};
 
 const fetchEmployeeBalanceRows = async (year, companyId) => {
   const requestKey = `${companyId ?? 'no-company'}-${year}`;
@@ -302,46 +318,11 @@ const PaidBadge = ({ isPaid, compact = false }) => (
   )
 );
 
-const ActionMenu = ({
-  balance,
-  onEdit,
-  onDelete,
-  onView,
-  editDisabled = false,
-  deleteDisabled = false,
-  editMessage = '',
-  deleteMessage = '',
-}) => {
-  return (
-    <SharedActionMenu
-      menuId={balance.id}
-      actions={[
-        {
-          label: 'View Details',
-          icon: <FaEye size={12} />,
-          onClick: () => onView(balance),
-          className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50'
-        },
-        {
-          label: 'Edit Balance',
-          icon: <FaEdit size={12} />,
-          onClick: () => onEdit(balance),
-          disabled: editDisabled,
-          title: editDisabled ? editMessage : '',
-          className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-        },
-        {
-          label: 'Delete',
-          icon: <FaTrash size={12} />,
-          onClick: () => onDelete(balance),
-          disabled: deleteDisabled,
-          title: deleteDisabled ? deleteMessage : '',
-          className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-        }
-      ]}
-    />
-  );
-};
+const ActionMenuButtons = (balance, onEdit, onDelete, onView, updateAccess, deleteAccess, updateMessage, deleteMessage) => [
+    { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onView(balance), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+    { label: 'Edit Balance', icon: <FaEdit size={13} />, onClick: () => onEdit(balance), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+    { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(balance), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+];
 
 const StatCard = ({ stat }) => {
   const styles = STAT_STYLES[stat.color];
@@ -826,313 +807,198 @@ const LeaveBalanceManagement = () => {
     Number(showPaid) +
     Number(showMax);
 
-  return (
-    <div className="min-h-screen bg-slate-50/60 p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
-        >
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-800 md:text-3xl">
-              Leave Balance Management
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">
-              View and manage employee leave allocations across the company.
-            </p>
+  const ActionMenuButtons = (balance, onEdit, onDelete, onView, updateAccess, deleteAccess, updateMessage, deleteMessage) => [
+      { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onView(balance), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+      { label: 'Edit Balance', icon: <FaEdit size={13} />, onClick: () => onEdit(balance), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+      { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(balance), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+  ];
+
+  const columns = [
+    {
+      key: 'employee',
+      label: 'Employee',
+      render: (balance) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {balance.employee_name?.charAt(0)}
           </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            {loading && (
-              <span className="flex items-center justify-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold text-blue-600 shadow-sm">
-                <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-400" />
-                Syncing...
-              </span>
-            )}
-
-            <div className="rounded-full bg-white px-4 py-2 text-center text-sm font-medium text-slate-600 shadow-md">
-              {searchTerm.trim()
-                ? `Showing ${filteredBalances.length} of ${balances.length} balances`
-                : `${balances.length} balance${balances.length === 1 ? '' : 's'}`}
+          <div className="min-w-0">
+            <div className="font-semibold text-slate-800 truncate">{balance.employee_name}</div>
+            <div className="text-[10px] text-slate-400 font-mono">{balance.employee_code}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'leave_type',
+      label: 'Leave Type',
+      render: (balance) => (
+        <div>
+          <div className="font-semibold text-slate-800">{balance.name}</div>
+          <span className="inline-flex items-center justify-center rounded-lg bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700 mt-1 uppercase tracking-tight">
+            {balance.code}
+          </span>
+        </div>
+      )
+    },
+    { key: 'year', label: 'Year', className: 'font-medium text-slate-500' },
+    {
+      key: 'allocated',
+      label: 'Allocated',
+      render: (balance) => (
+        <span className="font-bold text-slate-700">{formatDays(balance.total_allocated)} <span className="text-[10px] text-slate-400">DAYS</span></span>
+      )
+    },
+    {
+      key: 'used',
+      label: 'Used',
+      render: (balance) => <span className="font-semibold text-orange-500">{formatDays(balance.used)}</span>
+    },
+    {
+      key: 'remaining',
+      label: 'Remaining',
+      render: (balance) => {
+        const remaining = balance.remaining;
+        const low = isLowBalance(remaining);
+        return (
+          <div className="flex flex-col gap-1 min-w-[110px]">
+            <div className={`text-sm font-bold ${low ? 'text-rose-600' : 'text-emerald-600'}`}>
+              {formatDays(remaining)} <span className="text-[10px] uppercase">left</span>
             </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="button"
-              onClick={() => openModal('assign')}
-              disabled={createAccess.disabled}
-              title={createAccess.disabled ? createMessage : ''}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed sm:w-auto"
-            >
-              <FaPlus size={12} /> Assign Balance
-            </motion.button>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-3xl border border-slate-100 bg-white p-4 shadow-lg shadow-slate-200/40 sm:p-5"
-        >
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px_56px]">
-            <div className="relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by leave type, code or employee ID..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-11 shadow-sm outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-50"
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${getRemainingPercentage(remaining, balance.total_allocated)}%` }}
+                className={`h-full rounded-full ${low ? 'bg-rose-500' : 'bg-emerald-500'}`}
               />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
-                >
-                  <FaTimes size={14} />
-                </button>
-              )}
             </div>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'paid',
+      label: 'Paid',
+      render: (balance) => <PaidBadge isPaid={balance.is_paid} />
+    }
+  ];
 
+  if (loading && balances.length === 0) return (
+    <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+            <FaSpinner className="animate-spin text-violet-500 text-4xl" />
+            <p className="text-slate-400 font-medium animate-pulse">Initializing leave manager...</p>
+        </div>
+    </div>
+  );
+
+  return (
+    <ManagementHub
+      eyebrow={<><FaChartBar size={11} /> Leave allocation</>}
+      title="Leave Balance Management"
+      description="Monitor and adjust employee leave quotas and remaining balances."
+      accent="violet"
+      actions={
+        <div className="flex items-center gap-3">
+          <ManagementButton
+            tone="violet"
+            variant="solid"
+            leftIcon={<FaPlus />}
+            onClick={() => openModal('assign')}
+          >
+            Assign Balance
+          </ManagementButton>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {/* Stats */}
+        {!loading && balances.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">{stat.label}</p>
+                  <p className="text-2xl font-black text-slate-800 mt-1">{stat.isCount ? stat.value : formatDays(stat.value)}</p>
+                </div>
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
+                  <stat.icon size={18} />
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Filters */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search employee name, code or leave type..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
+            />
+          </div>
+          <div className="flex items-center gap-3">
             <select
               value={selectedYear}
-              onChange={(event) => setSelectedYear(Number(event.target.value))}
-              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-50"
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-600 outline-none focus:ring-4 focus:ring-violet-500/10 transition-all cursor-pointer hover:border-violet-200"
             >
-              {YEAR_OPTIONS.map((year) => (
-                <option key={year} value={year}>
-                  Year: {year}
-                </option>
-              ))}
+              {YEAR_OPTIONS.map(y => <option key={y} value={y}>Year {y}</option>)}
             </select>
-
-            <button
-              type="button"
-              onClick={fetchData}
-              className="flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 shadow-sm transition hover:bg-slate-100 hover:text-violet-600 active:scale-95"
-              title="Refresh"
-            >
-              <FaSyncAlt className={loading ? 'animate-spin' : ''} />
-            </button>
+            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
           </div>
         </motion.div>
 
-        {loading && balances.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-slate-100 bg-white px-6 py-20 text-center shadow-xl shadow-slate-200/50"
-          >
-            <div className="flex flex-col items-center gap-3">
-              <FaSpinner className="text-3xl text-violet-500 animate-spin" />
-              <p className="font-semibold text-slate-700">Loading leave balances...</p>
-            </div>
+        {/* Data View */}
+        {totalItems === 0 && !loading ? (
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-100">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><FaListUl size={24} /></div>
+            <p className="text-slate-500 font-bold">No records found</p>
+            <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">{searchTerm ? `We couldn't find anything matching "${searchTerm}"` : "Try assigning a new leave balance to get started."}</p>
           </motion.div>
-        ) : filteredBalances.length === 0 ? (
-          <motion.div
-            initial={{ scale: 0.96 }}
-            animate={{ scale: 1 }}
-            className="rounded-3xl border border-slate-100 bg-white px-6 py-16 text-center shadow-xl shadow-slate-200/40"
-          >
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-300">
-              <FaSearch size={24} />
-            </div>
-            <p className="mt-5 text-lg font-semibold text-slate-700">No balances found</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {searchTerm.trim()
-                ? 'Try adjusting your search or clearing the current filter.'
-                : 'No leave balances are available for the selected year.'}
-            </p>
-            {!searchTerm.trim() && (
-              <button
-                type="button"
-                onClick={() => openModal('assign')}
-                disabled={createAccess.disabled}
-                title={createAccess.disabled ? createMessage : ''}
-                className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                <FaPlus size={12} /> Assign Balance
-              </button>
-            )}
-          </motion.div>
+        ) : viewMode === 'table' ? (
+          <ManagementTable
+            rows={paginatedData}
+            columns={columns}
+            rowKey={(row) => `${row.employee_id}-${row.leave_config_id}`}
+            onRowClick={(row) => setViewModal({ open: true, balance: row })}
+            getActions={(row) => ActionMenuButtons(row, (r) => openModal('edit', r), (r) => openModal('delete', r), (r) => setViewModal({ open: true, balance: r }), updateAccess, deleteAccess, updateMessage, deleteMessage)}
+            accent="violet"
+          />
         ) : (
-          <>
-            {/* View Toggle */}
-            <div className="mb-6 flex justify-end">
-              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-            </div>
+          <ManagementGrid>
+            {paginatedData.map((balance) => (
+              <MobileBalanceCard
+                key={getBalanceKey(balance)}
+                balance={balance}
+                onEdit={(record) => openModal('edit', record)}
+                onDelete={(record) => openModal('delete', record)}
+                onView={(record) => setViewModal({ open: true, balance: record })}
+                editDisabled={updateAccess.disabled}
+                deleteDisabled={deleteAccess.disabled}
+                editMessage={updateMessage}
+                deleteMessage={deleteMessage}
+              />
+            ))}
+          </ManagementGrid>
+        )}
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl bg-white shadow-xl`}
-          >
-            <div className="overflow-x-auto overflow-y-visible">
-                <table className="w-full text-sm text-left text-gray-700">
-                  <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                    <tr>
-                      {showEmployee && <th className="px-6 py-4">Employee</th>}
-                      <th className="px-6 py-4">Leave Type</th>
-                      {showCode && <th className="px-6 py-4">Code</th>}
-                      {showYear && <th className="px-6 py-4">Year</th>}
-                      <th className="px-6 py-4">Allocated</th>
-                      {showUsed && <th className="px-6 py-4">Used</th>}
-                      <th className="px-6 py-4">Remaining</th>
-                      {showPaid && <th className="px-6 py-4">Paid</th>}
-                      {showMax && <th className="px-6 py-4">Max</th>}
-                      <th className="px-6 py-4 text-center"><FaCog className="w-4 h-4 mx-auto" /></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {loading ? (
-                      <tr>
-                        <td colSpan={desktopColumnCount} className="px-6 py-14 text-center">
-                          <div className="flex flex-col items-center gap-3">
-                            <FaSpinner className="text-2xl text-violet-500 animate-spin" />
-                            <span className="font-medium text-slate-500">Refreshing leave balances...</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedData.map((balance, index) => {
-                        const lowBalance = isLowBalance(balance.remaining);
-
-                        return (
-                          <motion.tr
-                            key={getBalanceKey(balance)}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.03 }}
-                            className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
-                            onClick={() => setViewModal({ open: true, balance })}
-                          >
-                            {showEmployee && (
-                              <td className="px-6 py-4">
-                                <div>
-                                  <div className="font-semibold text-slate-800">{balance.employee_name}</div>
-                                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
-                                      <FaUser size={10} />
-                                      #{balance.employee_id}
-                                    </span>
-                                    <span className="font-mono">{balance.employee_code}</span>
-                                  </div>
-                                </div>
-                              </td>
-                            )}
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-slate-800">{balance.name}</div>
-                              <div className="mt-1 truncate text-[11px] text-slate-400">{balance.email}</div>
-                            </td>
-                            {showCode && (
-                              <td className="px-6 py-4">
-                                <span className="inline-flex items-center justify-center rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">
-                                  {balance.type}
-                                </span>
-                              </td>
-                            )}
-                            {showYear && <td className="px-6 py-4 font-medium text-slate-600">{balance.year}</td>}
-                            <td className="px-6 py-4">
-                              <span className="text-base font-bold text-slate-800">{formatDays(balance.total_allocated)}</span>
-                              <span className="ml-1 text-[10px] font-bold uppercase text-slate-400">days</span>
-                            </td>
-                            {showUsed && (
-                              <td className="px-6 py-4 font-semibold text-orange-600">{formatDays(balance.used)}</td>
-                            )}
-                            <td className="px-6 py-4">
-                              <div className="flex min-w-[132px] flex-col gap-1.5">
-                                <div className={`text-sm font-bold ${lowBalance ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                  {formatDays(balance.remaining)} <span className="text-[10px] uppercase">left</span>
-                                </div>
-                                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                                  <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${getRemainingPercentage(balance.remaining, balance.total_allocated)}%` }}
-                                    className={`h-full rounded-full ${lowBalance ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                                  />
-                                </div>
-                              </div>
-                            </td>
-                            {showPaid && (
-                              <td className="px-6 py-4">
-                                <PaidBadge isPaid={balance.is_paid} />
-                              </td>
-                            )}
-                            {showMax && (
-                              <td className="px-6 py-4 font-medium text-slate-500">{formatDays(balance.max_balance)}</td>
-                            )}
-                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                              <ActionMenu
-                                balance={balance}
-                                onEdit={(record) => openModal('edit', record)}
-                                onDelete={(record) => openModal('delete', record)}
-                                onView={(record) => setViewModal({ open: true, balance: record })}
-                                editDisabled={updateAccess.disabled}
-                                deleteDisabled={deleteAccess.disabled}
-                                editMessage={updateMessage}
-                                deleteMessage={deleteMessage}
-                              />
-                            </td>
-                          </motion.tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-
-            <div className={`${viewMode === 'card' ? 'grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4' : 'hidden'}`}>
-              {loading ? (
-                <div className="rounded-3xl border border-slate-100 bg-white px-6 py-14 text-center shadow-lg shadow-slate-200/40">
-                  <div className="flex flex-col items-center gap-3">
-                    <FaSpinner className="text-2xl text-violet-500 animate-spin" />
-                    <span className="font-medium text-slate-500">Refreshing leave balances...</span>
-                  </div>
-                </div>
-              ) : (
-                paginatedData.map((balance) => (
-                  <MobileBalanceCard
-                    key={getBalanceKey(balance)}
-                    balance={balance}
-                    onEdit={(record) => openModal('edit', record)}
-                    onDelete={(record) => openModal('delete', record)}
-                    onView={(record) => setViewModal({ open: true, balance: record })}
-                    editDisabled={updateAccess.disabled}
-                    deleteDisabled={deleteAccess.disabled}
-                    editMessage={updateMessage}
-                    deleteMessage={deleteMessage}
-                  />
-                ))
-              )}
-            </div>
-
-            {totalItems > 0 && (
-              <Pagination
+        {totalItems > 0 && (
+          <div className="mt-8">
+            <Pagination
                 currentPage={pagination.page}
                 totalItems={totalItems}
                 itemsPerPage={pagination.limit}
                 onPageChange={handlePageChange}
-                showInfo={true}
                 onLimitChange={changeLimit}
-              />
-            )}
-          </>
+                showInfo={true}
+            />
+          </div>
         )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
-        >
-          {stats.map((stat) => (
-            <StatCard key={stat.label} stat={stat} />
-          ))}
-        </motion.div>
       </div>
 
       <AnimatePresence>
@@ -1348,29 +1214,31 @@ const LeaveBalanceManagement = () => {
                 </div>
               ) : (
                 <>
-                  <div className="relative bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-6 text-white sm:px-8 sm:py-8">
-                    <div className="relative z-10 pr-10">
-                      <h2 className="text-2xl font-bold">
-                        {modalMode === 'assign' ? 'Assign New Balance' : 'Update Allocation'}
-                      </h2>
-                      <p className="mt-1 text-sm text-violet-100/90">
-                        {modalMode === 'assign'
-                          ? 'Configure leave quota for an employee.'
-                          : `Modifying allocation for ${selectedBalance?.name}`}
-                      </p>
+                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                          {modalMode === 'assign' ? <FaPlus /> : <FaEdit />}
+                        </div>
+                        <div>
+                          <h2 className="text-xl font-bold">
+                            {modalMode === 'assign' ? 'Assign Balance' : 'Update Allocation'}
+                          </h2>
+                          <p className="text-xs text-white/80">
+                            {modalMode === 'assign'
+                              ? 'Set leave quota for a specific employee'
+                              : `Modifying ${selectedBalance?.name}`}
+                          </p>
+                        </div>
+                      </div>
+                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all">
+                        <FaTimes size={20} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="absolute right-4 top-4 z-10 rounded-xl bg-white/10 p-2 text-white transition hover:bg-white/20 sm:right-6 sm:top-6"
-                    >
-                      <FaTimes size={16} />
-                    </button>
-                    <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
                   </div>
 
-                  <div className="p-5 sm:p-8">
-                    <div className="space-y-5">
+                  <div className="p-6 sm:p-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <SearchableSelect
                         label="Select Employee"
                         placeholder="Choose an employee..."
@@ -1379,58 +1247,54 @@ const LeaveBalanceManagement = () => {
                         options={employees}
                         onSearch={handleEmployeeSearch}
                         loading={employeesLoading}
-                        getOptionLabel={(employee) => `${employee.name} (${employee.employee_code}) - ${employee.email}`}
+                        getOptionLabel={(employee) => `${employee.name} (${employee.employee_code})`}
                         getOptionValue={(employee) => employee.id}
                         renderOption={(employee) => (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-medium text-slate-800">{employee.name}</span>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                              <span className="font-mono">{employee.employee_code}</span>
-                              <span>•</span>
-                              <span>{employee.email}</span>
-                              {employee.designation && (
-                                <>
-                                  <span>•</span>
-                                  <span>{employee.designation}</span>
-                                </>
-                              )}
-                            </div>
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
+                                {employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                             </div>
+                             <div className="min-w-0">
+                                <p className="font-semibold text-slate-800 text-sm truncate">{employee.name}</p>
+                                <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code} • {employee.email}</p>
+                             </div>
                           </div>
                         )}
                       />
 
                       <SearchableSelect
-                        label="Select Leave Type"
+                        label="Leave Type"
                         placeholder="Choose a leave type..."
                         value={formData.leave_config_id}
                         onChange={(value) => setFormData({ ...formData, leave_config_id: value })}
                         options={leaveConfigs}
                         onSearch={handleLeaveConfigSearch}
                         loading={leaveConfigsLoading}
-                        getOptionLabel={(config) => `${config.name} (${config.code}) - ${config.is_paid ? 'Paid' : 'Unpaid'}`}
+                        getOptionLabel={(config) => `${config.name} (${config.code})`}
                         getOptionValue={(config) => config.id}
                         renderOption={(config) => (
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="font-medium text-slate-800">{config.name}</span>
-                              <div className="flex items-center gap-2 text-xs text-slate-500">
-                                <span className="font-mono">{config.code}</span>
-                                <span>•</span>
-                                <span>Max: {formatDays(config.max_balance)} days</span>
-                              </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-slate-800 text-sm truncate">{config.name}</p>
+                              <p className="text-[10px] text-slate-400 font-mono italic">Code: {config.code} • Max: {config.max_balance}d</p>
                             </div>
                             <PaidBadge isPaid={config.is_paid} compact />
                           </div>
                         )}
                       />
+                    </div>
 
-                      <div>
-                        <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
-                          Total Allocation (Days)
-                        </label>
-                        <div className="relative">
-                          <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input
+                    <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 ml-1">
+                        Allocation Details
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                           <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
+                              <FaCalendarAlt size={12} className="text-violet-500" />
+                              Total Allocation (Days)
+                           </label>
+                           <input
                             type="number"
                             step="0.5"
                             placeholder="e.g. 12.0"
@@ -1438,18 +1302,26 @@ const LeaveBalanceManagement = () => {
                             onChange={(event) =>
                               setFormData({ ...formData, total_allocated: event.target.value })
                             }
-                            className="w-full rounded-2xl border border-slate-200 bg-slate-50/50 py-3 pl-11 pr-4 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-50"
+                            className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 font-semibold"
                           />
+                        </div>
+                        <div className="flex items-center">
+                           <div className="bg-violet-50 p-4 rounded-xl border border-violet-100 flex-1">
+                              <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Preview</p>
+                              <p className="text-sm text-violet-800 font-medium italic">
+                                "{formData.total_allocated || 0} days" will be {modalMode === 'assign' ? 'assigned to' : 'updated for'} the selected profile.
+                              </p>
+                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-8 flex flex-col-reverse gap-3 sm:mt-10 sm:flex-row">
+                    <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
                         onClick={closeModal}
                         disabled={saving}
-                        className="flex-1 rounded-2xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                        className="w-full rounded-2xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                       >
                         Discard
                       </button>
@@ -1458,7 +1330,7 @@ const LeaveBalanceManagement = () => {
                         onClick={handleAction}
                         disabled={saving || !formData.employee_id || !formData.leave_config_id || (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)}
                         title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
-                        className="flex-[2] rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {saving ? (
                           <div className="flex items-center justify-center gap-2">
@@ -1479,7 +1351,7 @@ const LeaveBalanceManagement = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </ManagementHub>
   );
 };
 
