@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaBox, FaCode, FaTag, FaBriefcase, FaDollarSign, FaUserTie,
@@ -16,6 +16,7 @@ import ActionMenu from "../components/ActionMenu";
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
+import { useAuth } from "../context/AuthContext";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -66,20 +67,6 @@ const WEEKEND_TYPES = [
   { value: "full", label: "Full Day", color: "bg-indigo-600 text-white" }
 ];
 
-const normalizeMethodOptions = (items = []) =>
-  items
-    .map((item) => ({
-      key: String(item.key || '').toLowerCase(),
-      value: String(item.value?.value || item.value || '').toLowerCase(),
-      label: item.value?.label || item.label || item.key,
-      description: item.value?.description || '',
-      requiresDevice: !!item.value?.requiresDevice,
-      requiresLocation: !!item.value?.requiresLocation,
-      requiresCamera: !!item.value?.requiresCamera,
-      isAvailable: item.value?.is_available !== false,
-    }))
-    .filter((item) => item.value);
-
 const normalizeAttendanceMethodValue = (value) => {
   if (typeof value === 'string') {
     return value.trim().toLowerCase();
@@ -118,14 +105,6 @@ const formatAttendanceMethod = (value) => {
   const normalized = normalizeAttendanceMethodValue(value);
   if (!normalized) return 'N/A';
   return normalized.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
-};
-
-const getAttendanceMethodRequirements = (method) => {
-  const requirements = [];
-  if (method.requiresDevice) requirements.push('Device');
-  if (method.requiresLocation) requirements.push('Location');
-  if (method.requiresCamera) requirements.push('Camera');
-  return requirements;
 };
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -194,6 +173,7 @@ const WeekendConfig = ({ weekends, onChange }) => {
 // ─── Create/Edit Modal ───────────────────────────────────────────────────────
 
 function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, submitDisabled, submitTitle }) {
+  const { attendanceMethods: companyAttendanceMethods = [], loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -211,8 +191,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
   const [loading, setLoading] = useState(false);
   const [permissionPackages, setPermissionPackages] = useState([]);
   const [constants, setConstants] = useState({ designations: [], salary_types: [], employment_types: [] });
-  const [attendanceMethods, setAttendanceMethods] = useState([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const attendanceMethods = useMemo(() => companyAttendanceMethods, [companyAttendanceMethods]);
 
   // Fetch options
   useEffect(() => {
@@ -286,17 +266,6 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
             }
           } catch (error) {
             console.error('Failed to fetch form constants:', error);
-          }
-        })(),
-        (async () => {
-          try {
-            const attendanceRes = await apiCall('/constants/?type=attendance_method', 'GET', null, company?.id);
-            const attendanceJson = await attendanceRes.json();
-            if (attendanceJson.success) {
-              setAttendanceMethods(normalizeMethodOptions(attendanceJson.data?.attendance_methods || []));
-            }
-          } catch (error) {
-            console.error('Failed to fetch attendance methods:', error);
           }
         })(),
       ]);
@@ -396,7 +365,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 mb-6 custom-scrollbar">
-          {loadingOptions ? (
+          {loadingOptions || authLoading ? (
             <div className="flex items-center justify-center py-12">
               <FaSpinner className="w-8 h-8 animate-spin text-indigo-500" />
               <span className="ml-3 text-gray-500">Loading options...</span>
@@ -558,59 +527,49 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                   <FaUserCheck className="w-4 h-4 text-indigo-500" />
                   Attendance Methods
                 </label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {attendanceMethods.map(method => (
-                    <button
-                      key={method.value}
-                      type="button"
-                      onClick={() => {
-                        if (!method.isAvailable) return;
-                        handleAttendanceToggle(method.value);
-                      }}
-                      disabled={!method.isAvailable}
-                      title={
-                        !method.isAvailable
-                          ? `${method.description || formatAttendanceMethod(method.label)} is currently disabled${getAttendanceMethodRequirements(method).length ? ` and requires ${getAttendanceMethodRequirements(method).join(', ')}` : ''}`
-                          : method.description || method.label
-                      }
-                      className={`flex flex-col items-start gap-1 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
-                        formData.attendance_methods.includes(method.value)
-                          ? method.isAvailable
-                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
-                            : 'border-gray-300 bg-gray-200 text-gray-500'
-                          : method.isAvailable
-                            ? 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
-                            : 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-                      }`}
-                    >
-                      <div className="flex w-full items-center justify-between gap-3">
-                        <span className="font-semibold">{method.label}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${
-                          method.isAvailable
-                            ? formData.attendance_methods.includes(method.value)
-                              ? 'bg-white/20 text-white'
-                              : 'bg-emerald-50 text-emerald-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}>
-                          {method.isAvailable ? 'Enabled' : 'Disabled'}
-                        </span>
-                      </div>
-                      {method.description && (
-                        <span className={`text-xs ${formData.attendance_methods.includes(method.value) && method.isAvailable ? 'text-white/80' : 'text-gray-500'}`}>
-                          {method.description}
-                        </span>
-                      )}
-                      {getAttendanceMethodRequirements(method).length > 0 && (
-                        <span className={`text-[11px] ${formData.attendance_methods.includes(method.value) && method.isAvailable ? 'text-white/70' : 'text-gray-400'}`}>
-                          Requires {getAttendanceMethodRequirements(method).join(', ')}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-400">
-                  Enabled methods can be selected. Disabled methods are unavailable in the current company configuration.
-                </p>
+                {attendanceMethods.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {attendanceMethods.map((method) => {
+                      const isSelected = formData.attendance_methods.includes(method.method);
+
+                      return (
+                        <button
+                          key={method.method}
+                          type="button"
+                          onClick={() => handleAttendanceToggle(method.method)}
+                          className={`flex flex-col items-start gap-1 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                            isSelected
+                              ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
+                              : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
+                          }`}
+                        >
+                          <div className="flex w-full items-center justify-between gap-3">
+                            <span className="font-semibold">{method.label || formatAttendanceMethod(method.method)}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${
+                              isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                            }`}>
+                              {isSelected ? 'Selected' : 'Available'}
+                            </span>
+                          </div>
+                          {method.is_auto && (
+                            <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                              Auto method
+                            </span>
+                          )}
+                          {method.is_manual && (
+                            <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                              Manual method
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                    No attendance methods are available for the current company.
+                  </div>
+                )}
               </div>
 
               {/* Auto Approve Toggle */}

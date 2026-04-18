@@ -4,6 +4,76 @@ import apiCall from "../utils/api";
 
 const AuthContext = createContext();
 
+const ATTENDANCE_METHOD_LABELS = {
+  manual: "Manual",
+  gps: "GPS",
+  face: "Face Recognition",
+  qr: "QR Code",
+  fingerprint: "Fingerprint",
+  ip: "IP Address",
+};
+
+const formatAttendanceMethodLabel = (method) => {
+  if (!method) return "";
+  return method
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const normalizeAttendanceMethod = (item) => {
+  if (typeof item === "string") {
+    const method = item.trim().toLowerCase();
+    if (!method) return null;
+
+    return {
+      method,
+      label: ATTENDANCE_METHOD_LABELS[method] || formatAttendanceMethodLabel(method),
+      is_manual: true,
+      is_auto: false,
+    };
+  }
+
+  if (item && typeof item === "object") {
+    const method = String(item.method || item.key || item.id || item.value || "").trim().toLowerCase();
+    if (!method) return null;
+
+    const isAuto = item.is_auto === 1 || item.is_auto === true;
+    const isManual =
+      item.is_manual === 1 ||
+      item.is_manual === true ||
+      (!Object.prototype.hasOwnProperty.call(item, "is_manual") && !isAuto);
+
+    return {
+      ...item,
+      method,
+      label: item.label || ATTENDANCE_METHOD_LABELS[method] || formatAttendanceMethodLabel(method),
+      is_manual: isManual,
+      is_auto: isAuto,
+    };
+  }
+
+  return null;
+};
+
+const normalizeAttendanceMethods = (value) => {
+  if (!value) return [];
+
+  let methods = value;
+  if (typeof methods === "string") {
+    try {
+      methods = JSON.parse(methods);
+    } catch {
+      methods = methods.includes(",")
+        ? methods.split(",").map((method) => method.trim())
+        : [methods.trim()];
+    }
+  }
+
+  if (!Array.isArray(methods)) return [];
+
+  return methods.map(normalizeAttendanceMethod).filter(Boolean);
+};
+
 
 
 export const AuthProvider = ({ children }) => {
@@ -103,7 +173,7 @@ export const AuthProvider = ({ children }) => {
           const single = allCompanies[0];
           setCompany(single);
           setPermissions(single.permissions || []);
-          setAttendanceMethods(single.attendance_methods || []);
+          setAttendanceMethods(normalizeAttendanceMethods(single.attendance_methods || []));
           setActiveRole(single.role || null);
           localStorage.setItem("company", JSON.stringify(single));
           setMustSelectCompany(false);
@@ -118,7 +188,7 @@ export const AuthProvider = ({ children }) => {
             if (found) {
               setCompany(found);
               setPermissions(found.permissions || []);
-              setAttendanceMethods(found.attendance_methods || []);
+              setAttendanceMethods(normalizeAttendanceMethods(found.attendance_methods || []));
               setActiveRole(found.role || null);
               setMustSelectCompany(false);
               setShowCompanySelection(false);
@@ -190,7 +260,7 @@ export const AuthProvider = ({ children }) => {
   const selectCompany = (selectedCompany) => {
     setCompany(selectedCompany);
     setPermissions(selectedCompany.permissions || []);
-    setAttendanceMethods(selectedCompany.attendance_methods || []);
+    setAttendanceMethods(normalizeAttendanceMethods(selectedCompany.attendance_methods || []));
     setActiveRole(selectedCompany.role || null);
     localStorage.setItem("company", JSON.stringify(selectedCompany));
     setMustSelectCompany(false);
