@@ -23,6 +23,8 @@ import {
   FaPhone,
   FaSave,
   FaListAlt,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
 
@@ -58,6 +60,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [invitePackages, setInvitePackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
+  const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
 
   const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -206,6 +209,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
       setWeekends(pkg.weekends);
+      if (pkg.weekends.length > 0) setIsWeekendsOpen(true);
     }
 
     toast.info(`Applied details from ${pkg.name}`);
@@ -480,6 +484,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       setShiftStart(staffData.shift_start || "09:00:00");
       setShiftEnd(staffData.shift_end || "18:00:00");
       setWeekends(Array.isArray(staffData.weekends) ? staffData.weekends : []);
+      if (Array.isArray(staffData.weekends) && staffData.weekends.length > 0) {
+        setIsWeekendsOpen(true);
+      }
     } catch (err) {
       console.error("Error loading staff data:", err);
       toast.error("Failed to load staff data");
@@ -551,6 +558,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     staffType,
     autoApprove,
     currentAttendanceMethods,
+    shiftStart,
+    shiftEnd,
+    weekends,
     initialInviteState,
   ]);
 
@@ -730,13 +740,13 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                   <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4">
                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                       <FaListAlt className="h-4 w-4 text-indigo-500" />
-                      Quick Fill via Invitation Package
+                      Quick Fill via Package (Optional)
                     </label>
                     <Select
                       options={invitePackages}
                       value={selectedPackage}
                       onChange={handlePackageSelect}
-                      placeholder={isLoadingPackages ? "Loading packages..." : "Select a package to auto-fill fields"}
+                      placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
                       isClearable
                       isLoading={isLoadingPackages}
                       styles={customSelectStyles}
@@ -915,51 +925,79 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                           </div>
 
                           <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                              <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
-                              Weekends
-                            </label>
-                            <div className="flex flex-col gap-2">
-                              {['saturday', 'sunday'].map(day => {
-                                const config = weekends.find(w => w.day === day);
-                                return (
-                                  <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleWeekend(day)}
-                                      className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                        config 
-                                          ? 'bg-indigo-600 text-white shadow-md' 
-                                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
-                                        {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
-                                      </div>
-                                      {day.charAt(0).toUpperCase() + day.slice(1)}
-                                    </button>
-                                    {config && (
-                                      <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
-                                        {['full', 'half'].map(type => (
+                            <button
+                              type="button"
+                              onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
+                              className="flex w-full items-center justify-between"
+                            >
+                              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                                <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
+                                Weekends
+                                {weekends.length > 0 && (
+                                  <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                                    {weekends.length} Selected
+                                  </span>
+                                )}
+                              </label>
+                              {isWeekendsOpen ? (
+                                <FaChevronUp className="h-3 w-3 text-slate-400" />
+                              ) : (
+                                <FaChevronDown className="h-3 w-3 text-slate-400" />
+                              )}
+                            </button>
+
+                            <AnimatePresence>
+                              {isWeekendsOpen && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                                  animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                                  exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="flex flex-col gap-2 pt-1">
+                                    {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                                      const config = weekends.find(w => w.day === day);
+                                      return (
+                                        <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
                                           <button
-                                            key={type}
                                             type="button"
-                                            onClick={() => updateWeekendType(day, type)}
-                                            className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
-                                              config.type === type 
-                                                ? 'bg-slate-900 text-white' 
-                                                : 'text-slate-400 hover:text-slate-600'
+                                            onClick={() => toggleWeekend(day)}
+                                            className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                              config 
+                                                ? 'bg-indigo-600 text-white shadow-md' 
+                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                                             }`}
                                           >
-                                            {type}
+                                            <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                              {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                            </div>
+                                            {day.charAt(0).toUpperCase() + day.slice(1)}
                                           </button>
-                                        ))}
-                                      </div>
-                                    )}
+                                          {config && (
+                                            <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
+                                              {['full', 'half'].map(type => (
+                                                <button
+                                                  key={type}
+                                                  type="button"
+                                                  onClick={() => updateWeekendType(day, type)}
+                                                  className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
+                                                    config.type === type 
+                                                      ? 'bg-slate-900 text-white' 
+                                                      : 'text-slate-400 hover:text-slate-600'
+                                                  }`}
+                                                >
+                                                  {type}
+                                                </button>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
-                            </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         </div>
                       </>
