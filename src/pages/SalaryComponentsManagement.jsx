@@ -12,9 +12,9 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
-import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 import ModalScrollLock from "../components/ModalScrollLock";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
@@ -51,6 +51,15 @@ const getTypeConfig = (type) => {
         employer_contribution: { color: 'blue', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', gradient: 'from-blue-500 to-indigo-600' },
     };
     return map[type] || { color: 'gray', bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', gradient: 'from-gray-500 to-gray-600' };
+};
+
+const getCardAccentForType = (type) => {
+    const map = {
+        earning: 'green',
+        deduction: 'rose',
+        employer_contribution: 'indigo',
+    };
+    return map[type] || 'slate';
 };
 
 const formatTypeLabel = (type) => {
@@ -441,36 +450,6 @@ const DeleteConfirmModal = ({ component, onClose, onConfirm, deleting }) => {
     );
 };
 
-// ─── Summary Card ─────────────────────────────────────────────────────────────
-
-const SummaryCard = ({ icon, label, value, color, delay = 0 }) => {
-    const colorMap = {
-        blue: 'from-blue-500 to-indigo-600',
-        green: 'from-green-500 to-emerald-600',
-        purple: 'from-purple-500 to-pink-600',
-        orange: 'from-orange-500 to-amber-500',
-        red: 'from-red-500 to-rose-600',
-    };
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay, duration: 0.4 }}
-            className={`bg-gradient-to-r ${colorMap[color]} rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
-        >
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-xs opacity-80">{label}</p>
-                    <p className="text-2xl font-bold">{value}</p>
-                </div>
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    {icon}
-                </div>
-            </div>
-        </motion.div>
-    );
-};
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const SalaryComponents = () => {
@@ -490,6 +469,11 @@ const SalaryComponents = () => {
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
+
+    // Mini-sidebar is always 80px wide on desktop (ml-20).
+    // Subtract it so breakpoints fire at the real *content* width.
+    const SIDEBAR_OFFSET = typeof window !== 'undefined' && window.innerWidth >= 768 ? 80 : 0;
+    const contentWidth = windowWidth - SIDEBAR_OFFSET;
 
     // Debounce search
     useEffect(() => {
@@ -639,402 +623,344 @@ const SalaryComponents = () => {
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
-    // Determine which columns to show based on window width - matching Salary Management pattern
+    // Determine which columns to show based on content width (excludes 80px mini-sidebar)
     // On very small screens (< 640px): only show Name and Actions
     // On small screens (640px - 768px): show Name, Type, Value, Actions
     // On medium screens (768px - 1024px): show Name, Type, Calculation, Value, Actions
     // On large screens (> 1024px): show all columns including Code, Flags, Status
-    const showCode = windowWidth >= 1024;
-    const showCalc = windowWidth >= 768;
-    const showFlags = windowWidth >= 1280;
-    const showStatus = windowWidth >= 1024;
-    const showType = windowWidth >= 640;
-    const showValue = true; // Always show value
+    const showCode   = contentWidth >= 1024;
+    const showCalc   = contentWidth >= 768;
+    const showFlags  = contentWidth >= 1280;
+    const showStatus = contentWidth >= 1024;
+    const showType   = contentWidth >= 640;
+    const showValue  = contentWidth >= 420; // Hide value column under 420px content width
+    const componentActions = (comp) => ([
+        {
+            label: 'View Details',
+            icon: <FaEye size={13} />,
+            onClick: () => setSelectedComponent(comp),
+            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+        },
+        {
+            label: 'Edit',
+            icon: <FaEdit size={13} />,
+            onClick: () => setFormModal({ mode: 'edit', data: comp }),
+            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+        },
+        {
+            label: 'Delete',
+            icon: <FaTrash size={13} />,
+            onClick: () => setDeleteTarget(comp),
+            className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+        },
+    ]);
+
+    const componentColumns = [
+        {
+            key: 'code',
+            label: 'Code',
+            visible: showCode,
+            className: 'font-mono',
+            render: (comp) => (
+                <span className="rounded-lg border border-gray-200 bg-gray-100 px-3 py-1 font-mono text-xs font-bold text-gray-700">
+                    {comp.code}
+                </span>
+            ),
+        },
+        {
+            key: 'name',
+            label: 'Name',
+            className: 'font-semibold text-gray-800',
+            render: (comp) => comp.name,
+        },
+        {
+            key: 'type',
+            label: 'Type',
+            visible: showType,
+            render: (comp) => {
+                const tc = getTypeConfig(comp.type);
+                return (
+                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${tc.bg} ${tc.text} ${tc.border}`}>
+                        {formatTypeLabel(comp.type)}
+                    </span>
+                );
+            },
+        },
+        {
+            key: 'calc_type',
+            label: 'Calculation',
+            visible: showCalc,
+            render: (comp) => <span className="capitalize text-gray-600">{comp.calc_type}</span>,
+        },
+        {
+            key: 'calc_value',
+            label: 'Value',
+            visible: showValue,
+            render: (comp) => (
+                <span className="rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                    {formatCalcValue(comp.calc_type, comp.calc_value)}
+                </span>
+            ),
+        },
+        {
+            key: 'flags',
+            label: 'Flags',
+            visible: showFlags,
+            render: (comp) => (
+                <div className="flex flex-wrap gap-1">
+                    {comp.is_taxable && (
+                        <span className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600">
+                            Tax
+                        </span>
+                    )}
+                    {comp.is_statutory && (
+                        <span className="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600">
+                            Stat
+                        </span>
+                    )}
+                    {!comp.is_taxable && !comp.is_statutory && <span className="text-xs text-gray-400">—</span>}
+                </div>
+            ),
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            visible: showStatus,
+            render: (comp) => (
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${comp.is_active ? 'border-green-200 bg-green-100 text-green-800' : 'border-gray-200 bg-gray-100 text-gray-600'}`}>
+                    {comp.is_active ? 'Active' : 'Inactive'}
+                </span>
+            ),
+        },
+    ];
+
+    const emptyState = (
+        <ManagementCard
+            accent="blue"
+            className="mx-auto max-w-xl"
+            hoverable={false}
+            bodyClassName="pt-0"
+        >
+            <div className="text-center py-10">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-violet-100">
+                    <FaMoneyBillWave className="text-4xl text-gray-300" />
+                </div>
+                <p className="text-xl font-semibold text-gray-700">No components found</p>
+                <p className="mt-2 text-sm text-gray-400">
+                    {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Component" to get started'}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    {debouncedSearch ? (
+                        <ManagementButton tone="blue" variant="soft" onClick={() => setSearchTerm('')}>
+                            Clear Search
+                        </ManagementButton>
+                    ) : (
+                        <ManagementButton
+                            tone="blue"
+                            variant="solid"
+                            leftIcon={<FaPlus />}
+                            onClick={() => setFormModal({ mode: 'create', data: {} })}
+                        >
+                            Add Component
+                        </ManagementButton>
+                    )}
+                </div>
+            </div>
+        </ManagementCard>
+    );
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+        <ManagementHub
+            eyebrow="Salary components"
+            title="Salary Components"
+            description="Manage earnings, deductions, and employer contribution components from a shared production UI."
+            accent="blue"
+            summary={(
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+                    <FaMoneyBillWave className="h-4 w-4" />
+                    <span>{stats.total}</span>
+                    <span>components</span>
+                </div>
+            )}
+            actions={(
+                <ManagementButton
+                    tone="blue"
+                    variant="solid"
+                    leftIcon={<FaPlus />}
+                    onClick={() => setFormModal({ mode: 'create', data: {} })}
                 >
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                        Salary Components
-                    </h1>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
-                            <FaMoneyBillWave className="w-4 h-4 text-blue-500" />
-                            <span className="font-medium text-gray-700">{stats.total}</span>
-                            <span className="text-gray-500">components</span>
-                        </div>
-
-                        <motion.button
-                            whileHover={{ scale: 1.02, y: -2 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setFormModal({ mode: 'create', data: {} })}
-                            className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
-                                       text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
-                                       transition-all duration-300 flex items-center gap-2 overflow-hidden"
+                    Add Component
+                </ManagementButton>
+            )}
+            contentClassName="space-y-6"
+        >
+            <ManagementCard
+                accent="slate"
+                title="Search"
+                subtitle="Find and filter salary components by name or code."
+                icon={<FaSearch />}
+                hoverable={false}
+                bodyClassName="pt-0"
+            >
+                <div className="relative">
+                    <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    <input
+                        type="text"
+                        placeholder="Search by component name or code..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-12 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
+                    />
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
                         >
-                            <div className="relative z-10">
-                                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
-                            <span className="relative z-10 text-sm">Add Component</span>
-                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
-                                           transition-transform duration-700 bg-gradient-to-r
-                                           from-transparent via-white/20 to-transparent" />
-                        </motion.button>
-                    </div>
-                </motion.div>
+                            <FaTimes />
+                        </button>
+                    )}
+                </div>
+            </ManagementCard>
 
-                {/* Summary Cards */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
-                >
-                    <SummaryCard icon={<FaMoneyBillWave />} label="Total Components" value={stats.total} color="blue" delay={0.05} />
-                    <SummaryCard icon={<FaCheckCircle />} label="Earnings" value={stats.earningCount} color="green" delay={0.1} />
-                    <SummaryCard icon={<FaTimesCircle />} label="Deductions" value={stats.deductionCount} color="red" delay={0.15} />
-                    <SummaryCard icon={<FaBuilding />} label="Employer Contributions" value={stats.employerCount} color="purple" delay={0.2} />
-                </motion.div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-gray-500">
+                    <span className="font-semibold text-gray-800">{components.length}</span> of{' '}
+                    <span className="font-semibold text-gray-800">{stats.total}</span> components
+                    {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
+                </p>
+                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+            </div>
 
-                {/* Search */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="mb-6"
-                >
-                    <div className="relative">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-                        <input
-                            type="text"
-                            placeholder="Search by component name or code..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all"
-                        />
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                <FaTimes />
-                            </button>
-                        )}
-                    </div>
-                </motion.div>
+            {loading && !components.length && <SkeletonComponent />}
 
-                {/* View Toggle & Info */}
-                {!loading && components.length > 0 && (
-                    <div className="flex justify-between items-center mb-6">
-                        <p className="text-sm text-gray-500">
-                            <span className="font-semibold text-gray-800">{components.length}</span> of{' '}
-                            <span className="font-semibold text-gray-800">{stats.total}</span> components
-                            {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
-                        </p>
-                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                    </div>
-                )}
+            {!loading && components.length === 0 && emptyState}
 
-                {/* Loading skeleton */}
-                {loading && !components.length && <SkeletonComponent />}
+            {!loading && components.length > 0 && viewMode === "table" && (
+                <ManagementTable
+                    rows={components}
+                    columns={componentColumns}
+                    rowKey="id"
+                    accent="blue"
+                    activeId={activeActionMenu}
+                    onToggleAction={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                    onRowClick={(row) => setSelectedComponent(row)}
+                    getActions={componentActions}
+                    rowClassName="hover:bg-gradient-to-r hover:from-blue-50 hover:to-violet-50 cursor-pointer"
+                />
+            )}
 
-                {/* Empty State */}
-                {!loading && components.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
-                    >
-                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaMoneyBillWave className="text-4xl text-gray-300" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-600">No components found</p>
-                        <p className="text-gray-400 mt-2 text-sm">
-                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Component" to get started'}
-                        </p>
-                        {debouncedSearch && (
-                            <button onClick={() => setSearchTerm('')}
-                                className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
-                                Clear Search
-                            </button>
-                        )}
-                        {!debouncedSearch && (
-                            <button onClick={() => setFormModal({ mode: 'create', data: {} })}
-                                className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all text-sm font-medium">
-                                Add Component
-                            </button>
-                        )}
-                    </motion.div>
-                )}
+            {!loading && components.length > 0 && viewMode === "card" && (
+                <ManagementGrid viewMode={viewMode}>
+                    {components.map((comp, index) => {
+                        const tc = getTypeConfig(comp.type);
+                        const accent = getCardAccentForType(comp.type);
 
-                {/* Table View */}
-                {!loading && components.length > 0 && viewMode === "table" && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible"
-                    >
-                        <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full text-sm text-left text-gray-700">
-                                <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                                    <tr>
-                                        {showCode && <th className="px-6 py-4">Code</th>}
-                                        <th className="px-6 py-4">Name</th>
-                                        {showType && <th className="px-6 py-4">Type</th>}
-                                        {showCalc && <th className="px-6 py-4">Calculation</th>}
-                                        <th className="px-6 py-4">Value</th>
-                                        {showFlags && <th className="px-6 py-4">Flags</th>}
-                                        {showStatus && <th className="px-6 py-4">Status</th>}
-                                        <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {components.map((comp, index) => {
-                                        const tc = getTypeConfig(comp.type);
-                                        return (
-                                            <motion.tr
-                                                key={comp.id}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.05 }}
-                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
-                                                onClick={() => setSelectedComponent(comp)}
-                                            >
-                                                {showCode && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold border border-gray-200 font-mono">
-                                                            {comp.code}
-                                                        </span>
-                                                    </td>
-                                                )}
-                                                <td className="px-6 py-4">
-                                                    <div className="font-semibold text-gray-800">{comp.name}</div>
-                                                </td>
-                                                {showType && (
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${tc.bg} ${tc.text} ${tc.border}`}>
-                                                            {formatTypeLabel(comp.type)}
-                                                        </span>
-                                                    </td>
-                                                )}
-                                                {showCalc && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="capitalize text-gray-600">{comp.calc_type}</span>
-                                                    </td>
-                                                )}
-                                                <td className="px-6 py-4">
-                                                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-semibold border border-indigo-100">
-                                                        {formatCalcValue(comp.calc_type, comp.calc_value)}
-                                                    </span>
-                                                </td>
-                                                {showFlags && (
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {comp.is_taxable && (
-                                                                <span className="px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200 rounded text-xs font-medium">Tax</span>
-                                                            )}
-                                                            {comp.is_statutory && (
-                                                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs font-medium">Stat</span>
-                                                            )}
-                                                            {!comp.is_taxable && !comp.is_statutory && (
-                                                                <span className="text-xs text-gray-400">—</span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                )}
-                                                {showStatus && (
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${comp.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                                            {comp.is_active ? 'Active' : 'Inactive'}
-                                                        </span>
-                                                    </td>
-                                                )}
-                                                <td className="px-6 py-4 text-right">
-                                                    <div onClick={e => e.stopPropagation()}>
-                                                        <ActionMenu
-                                                            menuId={`table-${comp.id}`}
-                                                            activeId={activeActionMenu}
-                                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                            actions={[
-                                                                {
-                                                                    label: 'View Details',
-                                                                    icon: <FaEye size={13} />,
-                                                                    onClick: () => setSelectedComponent(comp),
-                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                                },
-                                                                {
-                                                                    label: 'Edit',
-                                                                    icon: <FaEdit size={13} />,
-                                                                    onClick: () => setFormModal({ mode: 'edit', data: comp }),
-                                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                                                },
-                                                                {
-                                                                    label: 'Delete',
-                                                                    icon: <FaTrash size={13} />,
-                                                                    onClick: () => setDeleteTarget(comp),
-                                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                                }
-                                                            ]}
-                                                        />
-                                                    </div>
-                                                </td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
-                )}
+                        return (
+                            <ManagementCard
+                                key={comp.id}
+                                accent={accent}
+                                title={comp.name}
+                                subtitle={comp.code}
+                                icon={<FaMoneyBillWave className="text-gray-600" />}
+                                badge={(
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${comp.is_active ? 'border-green-200 bg-green-100 text-green-800' : 'border-gray-200 bg-gray-100 text-gray-600'}`}>
+                                        {comp.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                )}
+                                actions={componentActions(comp)}
+                                menuId={`card-${comp.id}`}
+                                activeId={activeActionMenu}
+                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                onClick={() => setSelectedComponent(comp)}
+                                delay={index * 0.05}
+                                bodyClassName="space-y-3"
+                                footer={(
+                                    <span className="text-xs text-gray-400">ID: #{comp.id}</span>
+                                )}
+                            >
+                                <div>
+                                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${tc.bg} ${tc.text} ${tc.border}`}>
+                                        {formatTypeLabel(comp.type)}
+                                    </span>
+                                </div>
 
-                {/* Card View */}
-                {!loading && components.length > 0 && viewMode === "card" && (
-                    <ManagementGrid viewMode={viewMode}>
-                        {components.map((comp, index) => {
-                            const tc = getTypeConfig(comp.type);
-                            return (
-                                <motion.div
-                                    key={comp.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    onClick={() => setSelectedComponent(comp)}
-                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-                                >
-                                    <div className="flex items-start justify-between gap-2.5 mb-3">
-                                        <div className="flex items-start gap-3">
-                                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tc.gradient} flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                                                <FaMoneyBillWave className="text-white text-lg" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="font-bold text-gray-800 truncate">{comp.name}</h3>
-                                                <p className="text-xs text-gray-500 mt-0.5 font-mono">{comp.code}</p>
-                                            </div>
-                                        </div>
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${comp.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                            {comp.is_active ? 'Active' : 'Inactive'}
-                                        </span>
+                                <div className="text-2xl font-bold text-indigo-600">
+                                    {formatCalcValue(comp.calc_type, comp.calc_value)}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-2 text-center">
+                                        <p className="text-xs text-gray-500">Calculation</p>
+                                        <p className="mt-1 text-sm font-semibold capitalize text-gray-700">
+                                            {comp.calc_type}
+                                        </p>
                                     </div>
-
-                                    <div className="mb-3">
-                                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${tc.bg} ${tc.text} ${tc.border}`}>
-                                            {formatTypeLabel(comp.type)}
-                                        </span>
+                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-2 text-center">
+                                        <p className="text-xs text-gray-500">Taxable</p>
+                                        <p className={`mt-1 text-sm font-semibold ${comp.is_taxable ? 'text-orange-600' : 'text-gray-400'}`}>
+                                            {comp.is_taxable ? 'Yes' : 'No'}
+                                        </p>
                                     </div>
-
-                                    <div className="text-2xl font-bold text-indigo-600 mb-3">
-                                        {formatCalcValue(comp.calc_type, comp.calc_value)}
+                                    <div className="col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-2 text-center">
+                                        <p className="text-xs text-gray-500">Statutory</p>
+                                        <p className={`mt-1 text-sm font-semibold ${comp.is_statutory ? 'text-blue-600' : 'text-gray-400'}`}>
+                                            {comp.is_statutory ? 'Yes' : 'No'}
+                                        </p>
                                     </div>
+                                </div>
+                            </ManagementCard>
+                        );
+                    })}
+                </ManagementGrid>
+            )}
 
-                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                        <div className="bg-gray-50 rounded-xl p-2 text-center border border-gray-100">
-                                            <p className="text-xs text-gray-500">Calculation</p>
-                                            <p className="text-sm font-semibold text-gray-700 capitalize mt-1">{comp.calc_type}</p>
-                                        </div>
-                                        <div className="bg-gray-50 rounded-xl p-2 text-center border border-gray-100">
-                                            <p className="text-xs text-gray-500">Taxable</p>
-                                            <p className={`text-sm font-semibold mt-1 ${comp.is_taxable ? 'text-orange-600' : 'text-gray-400'}`}>
-                                                {comp.is_taxable ? 'Yes' : 'No'}
-                                            </p>
-                                        </div>
-                                        <div className="bg-gray-50 rounded-xl p-2 text-center border border-gray-100 col-span-2">
-                                            <p className="text-xs text-gray-500">Statutory</p>
-                                            <p className={`text-sm font-semibold mt-1 ${comp.is_statutory ? 'text-blue-600' : 'text-gray-400'}`}>
-                                                {comp.is_statutory ? 'Yes' : 'No'}
-                                            </p>
-                                        </div>
-                                    </div>
+            {!loading && components.length > 0 && (
+                <Pagination
+                    currentPage={pagination.page}
+                    totalItems={pagination.total}
+                    itemsPerPage={pagination.limit}
+                    onPageChange={handlePageChange}
+                    showInfo={true}
+                    onLimitChange={changeLimit}
+                />
+            )}
 
-                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto" onClick={e => e.stopPropagation()}>
-                                        <span className="text-xs text-gray-400">
-                                            ID: #{comp.id}
-                                        </span>
-                                        <ActionMenu
-                                            menuId={`card-${comp.id}`}
-                                            activeId={activeActionMenu}
-                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                            actions={[
-                                                {
-                                                    label: 'View Details',
-                                                    icon: <FaEye size={13} />,
-                                                    onClick: () => setSelectedComponent(comp),
-                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                },
-                                                {
-                                                    label: 'Edit',
-                                                    icon: <FaEdit size={13} />,
-                                                    onClick: () => setFormModal({ mode: 'edit', data: comp }),
-                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                                },
-                                                {
-                                                    label: 'Delete',
-                                                    icon: <FaTrash size={13} />,
-                                                    onClick: () => setDeleteTarget(comp),
-                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                }
-                                            ]}
-                                        />
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </ManagementGrid>
-                )}
-
-                {/* Pagination */}
-                {!loading && components.length > 0 && (
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalItems={pagination.total}
-                        itemsPerPage={pagination.limit}
-                        onPageChange={handlePageChange}
-                        showInfo={true}
-                        onLimitChange={changeLimit}
+            {/* Modals */}
+            <AnimatePresence>
+                {selectedComponent && (
+                    <ComponentDetailModal
+                        component={selectedComponent}
+                        onClose={() => setSelectedComponent(null)}
+                        onEdit={(comp) => setFormModal({ mode: 'edit', data: comp })}
+                        onDelete={(comp) => setDeleteTarget(comp)}
                     />
                 )}
+            </AnimatePresence>
 
-                {/* Modals */}
-                <AnimatePresence>
-                    {selectedComponent && (
-                        <ComponentDetailModal
-                            component={selectedComponent}
-                            onClose={() => setSelectedComponent(null)}
-                            onEdit={(comp) => setFormModal({ mode: 'edit', data: comp })}
-                            onDelete={(comp) => setDeleteTarget(comp)}
-                        />
-                    )}
-                </AnimatePresence>
+            <AnimatePresence>
+                {formModal && (
+                    <FormModal
+                        mode={formModal.mode}
+                        initial={formModal.data}
+                        onClose={() => setFormModal(null)}
+                        onSave={handleSave}
+                        saving={saving}
+                    />
+                )}
+            </AnimatePresence>
 
-                <AnimatePresence>
-                    {formModal && (
-                        <FormModal
-                            mode={formModal.mode}
-                            initial={formModal.data}
-                            onClose={() => setFormModal(null)}
-                            onSave={handleSave}
-                            saving={saving}
-                        />
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                    {deleteTarget && (
-                        <DeleteConfirmModal
-                            component={deleteTarget}
-                            onClose={() => setDeleteTarget(null)}
-                            onConfirm={handleDelete}
-                            deleting={deleting}
-                        />
-                    )}
-                </AnimatePresence>
-            </div>
-        </div>
+            <AnimatePresence>
+                {deleteTarget && (
+                    <DeleteConfirmModal
+                        component={deleteTarget}
+                        onClose={() => setDeleteTarget(null)}
+                        onConfirm={handleDelete}
+                        deleting={deleting}
+                    />
+                )}
+            </AnimatePresence>
+        </ManagementHub>
     );
 };
 

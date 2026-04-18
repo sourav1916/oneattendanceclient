@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     FaPlus, FaEdit, FaTrash, FaCog, FaCalendarAlt,
     FaTimes, FaCheck, FaSpinner, FaBriefcase,
-    FaListUl, FaTh, FaExclamationTriangle,
+    FaExclamationTriangle,
     FaLayerGroup, FaArrowUp, FaArrowDown,
     FaEye, FaSearch, FaCheckCircle, FaToggleOn
 } from 'react-icons/fa';
@@ -11,9 +11,9 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
-import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 import ModalScrollLock from "../components/ModalScrollLock";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -64,36 +64,6 @@ const formatCalcValue = (calcType, calcValue) => {
 const formatDate = (s) => {
     if (!s) return 'N/A';
     return new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-};
-
-// ─── Sub Components ───────────────────────────────────────────────────────────
-
-const SummaryCard = ({ icon, label, value, color, delay = 0 }) => {
-    const colorMap = {
-        blue: 'from-blue-500 to-indigo-600',
-        green: 'from-green-500 to-emerald-600',
-        purple: 'from-purple-500 to-pink-600',
-        orange: 'from-orange-500 to-amber-500',
-        red: 'from-red-500 to-rose-600',
-    };
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay, duration: 0.4 }}
-            className={`bg-gradient-to-r ${colorMap[color]} rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300`}
-        >
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-xs opacity-80">{label}</p>
-                    <p className="text-2xl font-bold">{value}</p>
-                </div>
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    {icon}
-                </div>
-            </div>
-        </motion.div>
-    );
 };
 
 // ─── Package Detail Modal ─────────────────────────────────────────────────────
@@ -498,33 +468,53 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle 
     const deductionCount = pkg.items.filter(i => i.type === 'deduction').length;
     const contributionCount = pkg.items.filter(i => i.type?.includes('employer')).length;
 
+    const actions = [
+        {
+            label: 'View Details',
+            icon: <FaEye size={13} />,
+            onClick: () => onView(pkg),
+            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+        },
+        {
+            label: 'Edit',
+            icon: <FaEdit size={13} />,
+            onClick: () => onEdit(pkg),
+            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+        },
+        {
+            label: 'Delete',
+            icon: <FaTrash size={13} />,
+            onClick: () => onDelete(pkg),
+            className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+        },
+    ];
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+        <ManagementCard
+            accent="blue"
+            delay={index * 0.05}
             onClick={() => onView(pkg)}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-        >
-            <div className="flex items-start justify-between gap-2.5 mb-3">
-                <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
-                        <FaBriefcase className="text-white text-lg" />
-                    </div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-gray-800 truncate">{pkg.name}</h3>
-                        <p className="text-xs text-gray-500 mt-0.5 font-mono">{pkg.code}</p>
-                        {pkg.description && (
-                            <p className="text-xs text-gray-400 mt-1 line-clamp-2">{pkg.description}</p>
-                        )}
-                    </div>
-                </div>
+            activeId={activeId}
+            onToggle={onToggle}
+            menuId={`card-${pkg.id}`}
+            actions={actions}
+            hoverable
+            title={pkg.name}
+            subtitle={pkg.code}
+            eyebrow={pkg.description || 'Salary package'}
+            badge={
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                     {pkg.is_active ? 'Active' : 'Inactive'}
                 </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            }
+            footer={
+                <div className="flex w-full items-center justify-between text-xs text-gray-400">
+                    <span>{pkg.items.length} components</span>
+                    <span>{formatDate(pkg.created_at)}</span>
+                </div>
+            }
+        >
+            <div className="grid grid-cols-3 gap-2">
                 <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-green-700">{earningCount}</p>
                     <p className="text-xs text-green-500">Earnings</p>
@@ -538,39 +528,7 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle 
                     <p className="text-xs text-blue-400">Contributions</p>
                 </div>
             </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto" onClick={e => e.stopPropagation()}>
-                <span className="text-xs text-gray-400">
-                    {pkg.items.length} components
-                </span>
-                <span className="text-xs text-gray-400">{formatDate(pkg.created_at)}</span>
-                <ActionMenu
-                    menuId={`card-${pkg.id}`}
-                    activeId={activeId}
-                    onToggle={onToggle}
-                    actions={[
-                        {
-                            label: 'View Details',
-                            icon: <FaEye size={13} />,
-                            onClick: () => onView(pkg),
-                            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                        },
-                        {
-                            label: 'Edit',
-                            icon: <FaEdit size={13} />,
-                            onClick: () => onEdit(pkg),
-                            className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                        },
-                        {
-                            label: 'Delete',
-                            icon: <FaTrash size={13} />,
-                            onClick: () => onDelete(pkg),
-                            className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                        }
-                    ]}
-                />
-            </div>
-        </motion.div>
+        </ManagementCard>
     );
 };
 
@@ -596,6 +554,11 @@ const SalaryPackages = () => {
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
+
+    // Mini-sidebar is always 80px wide on desktop (ml-20).
+    // Subtract it so breakpoints fire at the real *content* width.
+    const SIDEBAR_OFFSET = typeof window !== 'undefined' && window.innerWidth >= 768 ? 80 : 0;
+    const contentWidth = windowWidth - SIDEBAR_OFFSET;
 
     // Debounce search
     useEffect(() => {
@@ -727,328 +690,324 @@ const SalaryPackages = () => {
     const openEdit = (pkg) => { setEditPkg(pkg); setShowForm(true); };
     const openCreate = () => { setEditPkg(null); setShowForm(true); };
 
+    // Responsive column visibility — use contentWidth (excludes mini-sidebar)
+    const showCode       = contentWidth >= 480;
+    const showEarnings   = contentWidth >= 560;
+    const showDeductions = contentWidth >= 640;
+    const showTotal      = contentWidth >= 480;
+    const showStatus     = contentWidth >= 768;
+    const showCreated    = contentWidth >= 1024;
+
+    // Actions per row
+    const packageActions = (pkg) => ([
+        {
+            label: 'View Details',
+            icon: <FaEye size={13} />,
+            onClick: () => setSelectedPkg(pkg),
+            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+        },
+        {
+            label: 'Edit',
+            icon: <FaEdit size={13} />,
+            onClick: () => openEdit(pkg),
+            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+        },
+        {
+            label: 'Delete',
+            icon: <FaTrash size={13} />,
+            onClick: () => setDeletePkg(pkg),
+            className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+        },
+    ]);
+
+    // Column definitions for ManagementTable
+    const packageColumns = [
+        {
+            key: 'name',
+            label: 'Package',
+            render: (pkg) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <FaBriefcase className="text-white text-sm" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-gray-800">{pkg.name}</p>
+                        {pkg.description && (
+                            <p className="text-xs text-gray-400 truncate max-w-[200px]">{pkg.description}</p>
+                        )}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'code',
+            label: 'Code',
+            visible: showCode,
+            render: (pkg) => (
+                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold border border-blue-100">
+                    {pkg.code}
+                </span>
+            ),
+        },
+        {
+            key: 'earnings',
+            label: 'Earnings',
+            visible: showEarnings,
+            render: (pkg) => {
+                const count = pkg.items.filter(i => i.type === 'earning').length;
+                return (
+                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">{count}</span>
+                );
+            },
+        },
+        {
+            key: 'deductions',
+            label: 'Deductions',
+            visible: showDeductions,
+            render: (pkg) => {
+                const count = pkg.items.filter(i => i.type === 'deduction').length;
+                return (
+                    <span className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{count}</span>
+                );
+            },
+        },
+        {
+            key: 'total',
+            label: 'Total',
+            visible: showTotal,
+            render: (pkg) => (
+                <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{pkg.items.length}</span>
+            ),
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            visible: showStatus,
+            render: (pkg) => (
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                    {pkg.is_active ? 'Active' : 'Inactive'}
+                </span>
+            ),
+        },
+        {
+            key: 'created_at',
+            label: 'Created',
+            visible: showCreated,
+            className: 'text-xs text-gray-400',
+            render: (pkg) => formatDate(pkg.created_at),
+        },
+    ];
+
     const activePackages = packages.filter(p => p.is_active).length;
     const totalComponents = packages.reduce((s, p) => s + (p.items?.length || 0), 0);
 
-    // Responsive column visibility - matching the pattern from other pages
-    const showCode = windowWidth >= 480;
-    const showEarnings = windowWidth >= 560;
-    const showDeductions = windowWidth >= 640;
-    const showTotal = windowWidth >= 480;
-    const showStatus = windowWidth >= 768;
-    const showCreated = windowWidth >= 1024;
+    const emptyState = (
+        <ManagementCard
+            accent="blue"
+            className="mx-auto max-w-xl"
+            hoverable={false}
+            bodyClassName="pt-0"
+        >
+            <div className="text-center py-10">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-violet-100">
+                    <FaBriefcase className="text-4xl text-gray-300" />
+                </div>
+                <p className="text-xl font-semibold text-gray-700">No packages found</p>
+                <p className="mt-2 text-sm text-gray-400">
+                    {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Create your first salary package to get started'}
+                </p>
+                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    {debouncedSearch ? (
+                        <ManagementButton tone="blue" variant="soft" onClick={() => setSearchTerm('')}>
+                            Clear Search
+                        </ManagementButton>
+                    ) : (
+                        <ManagementButton
+                            tone="blue"
+                            variant="solid"
+                            leftIcon={<FaPlus />}
+                            onClick={openCreate}
+                        >
+                            Create Package
+                        </ManagementButton>
+                    )}
+                </div>
+            </div>
+        </ManagementCard>
+    );
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
-            <div className="max-w-7xl mx-auto">
-
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+        <ManagementHub
+            eyebrow="Salary packages"
+            title="Salary Packages"
+            description="Manage salary package templates with earnings, deductions, and employer contribution components."
+            accent="blue"
+            summary={(
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+                    <FaBriefcase className="h-4 w-4" />
+                    <span>{pagination.total}</span>
+                    <span>packages</span>
+                </div>
+            )}
+            actions={(
+                <ManagementButton
+                    tone="blue"
+                    variant="solid"
+                    leftIcon={<FaPlus />}
+                    onClick={openCreate}
                 >
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                        Salary Packages
-                    </h1>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
-                            <FaBriefcase className="w-4 h-4 text-blue-500" />
-                            <span className="font-medium text-gray-700">{pagination.total}</span>
-                            <span className="text-gray-500">packages</span>
-                        </div>
+                    Create Package
+                </ManagementButton>
+            )}
+            contentClassName="space-y-6"
+        >
+            {/* Stats Row */}
+            {!loading && packages.length > 0 && (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
+                        <p className="text-xs opacity-80">Total Packages</p>
+                        <p className="text-2xl font-bold">{pagination.total}</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
+                        <p className="text-xs opacity-80">Active</p>
+                        <p className="text-2xl font-bold">{activePackages}</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 text-white shadow-lg">
+                        <p className="text-xs opacity-80">Total Components</p>
+                        <p className="text-2xl font-bold">{totalComponents}</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-lg">
+                        <p className="text-xs opacity-80">Avg / Package</p>
+                        <p className="text-2xl font-bold">{packages.length ? (totalComponents / packages.length).toFixed(1) : '0'}</p>
+                    </div>
+                </motion.div>
+            )}
 
-                        <motion.button
-                            whileHover={{ scale: 1.02, y: -2 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={openCreate}
-                            className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
-                                       text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
-                                       transition-all duration-300 flex items-center gap-2 overflow-hidden"
+            {/* Search */}
+            <ManagementCard
+                accent="slate"
+                title="Search"
+                subtitle="Find and filter salary packages by name or code."
+                icon={<FaSearch />}
+                hoverable={false}
+                bodyClassName="pt-0"
+            >
+                <div className="relative">
+                    <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    <input
+                        type="text"
+                        placeholder="Search packages by name or code..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full pl-12 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                            <div className="relative z-10">
-                                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
-                            <span className="relative z-10 text-sm">Create Package</span>
-                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
-                                           transition-transform duration-700 bg-gradient-to-r
-                                           from-transparent via-white/20 to-transparent" />
-                        </motion.button>
-                    </div>
-                </motion.div>
+                            <FaTimes />
+                        </button>
+                    )}
+                </div>
+            </ManagementCard>
 
-                {/* Summary Cards */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
-                >
-                    <SummaryCard icon={<FaBriefcase />} label="Total Packages" value={pagination.total} color="blue" delay={0.05} />
-                    <SummaryCard icon={<FaCheckCircle />} label="Active" value={activePackages} color="green" delay={0.1} />
-                    <SummaryCard icon={<FaLayerGroup />} label="Components" value={totalComponents} color="purple" delay={0.15} />
-                    <SummaryCard icon={<FaCog />} label="Avg / Package" value={packages.length ? (totalComponents / packages.length).toFixed(1) : '0'} color="orange" delay={0.2} />
-                </motion.div>
+            {/* View toggle + count */}
+            {!loading && packages.length > 0 && (
+                <div className="flex justify-between items-center">
+                    <p className="text-sm text-gray-500">
+                        <span className="font-semibold text-gray-800">{packages.length}</span> of{' '}
+                        <span className="font-semibold text-gray-800">{pagination.total}</span> packages
+                        {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
+                    </p>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                </div>
+            )}
 
-                {/* Search */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="mb-6"
-                >
-                    <div className="relative">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-                        <input
-                            type="text"
-                            placeholder="Search packages by name or code..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
+            {/* Loading skeleton */}
+            {loading && !packages.length && <SkeletonComponent />}
+
+            {/* Empty State */}
+            {!loading && packages.length === 0 && emptyState}
+
+            {/* Table View */}
+            {!loading && packages.length > 0 && viewMode === 'table' && (
+                <ManagementTable
+                    rows={packages}
+                    columns={packageColumns}
+                    rowKey="id"
+                    onRowClick={(pkg) => setSelectedPkg(pkg)}
+                    activeId={activeActionMenu}
+                    onToggleAction={(e, id) => setActiveActionMenu((curr) => (curr === id ? null : id))}
+                    getActions={packageActions}
+                    accent="blue"
+                />
+            )}
+
+            {/* Card View */}
+            {!loading && packages.length > 0 && viewMode === 'card' && (
+                <ManagementGrid viewMode={viewMode}>
+                    {packages.map((pkg, index) => (
+                        <PackageCard
+                            key={pkg.id}
+                            pkg={pkg}
+                            index={index}
+                            onView={setSelectedPkg}
+                            onEdit={openEdit}
+                            onDelete={setDeletePkg}
+                            activeId={activeActionMenu}
+                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                         />
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                <FaTimes />
-                            </button>
-                        )}
-                    </div>
-                </motion.div>
+                    ))}
+                </ManagementGrid>
+            )}
 
-                {/* View Toggle & Count */}
-                {!loading && packages.length > 0 && (
-                    <div className="flex justify-between items-center mb-6">
-                        <p className="text-sm text-gray-500">
-                            <span className="font-semibold text-gray-800">{packages.length}</span> of{' '}
-                            <span className="font-semibold text-gray-800">{pagination.total}</span> packages
-                            {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
-                        </p>
-                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                    </div>
-                )}
+            {/* Pagination */}
+            {!loading && packages.length > 0 && (
+                <Pagination
+                    currentPage={pagination.page}
+                    totalItems={pagination.total}
+                    itemsPerPage={pagination.limit}
+                    onPageChange={handlePageChange}
+                    showInfo={true}
+                    onLimitChange={changeLimit}
+                />
+            )}
 
-                {/* Loading skeleton */}
-                {loading && !packages.length && <SkeletonComponent />}
-
-                {/* Empty State */}
-                {!loading && packages.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
-                    >
-                        <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaBriefcase className="text-4xl text-gray-300" />
-                        </div>
-                        <p className="text-xl font-semibold text-gray-600">No packages found</p>
-                        <p className="text-gray-400 mt-2 text-sm">
-                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Create your first salary package to get started'}
-                        </p>
-                        {debouncedSearch ? (
-                            <button onClick={() => setSearchTerm('')}
-                                className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
-                                Clear Search
-                            </button>
-                        ) : (
-                            <button onClick={openCreate}
-                                className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all text-sm font-medium">
-                                Create Package
-                            </button>
-                        )}
-                    </motion.div>
-                )}
-
-                {/* Grid View */}
-                {!loading && packages.length > 0 && viewMode === "card" && (
-                    <ManagementGrid viewMode={viewMode}>
-                        {packages.map((pkg, index) => (
-                            <PackageCard
-                                key={pkg.id}
-                                pkg={pkg}
-                                index={index}
-                                onView={setSelectedPkg}
-                                onEdit={openEdit}
-                                onDelete={setDeletePkg}
-                                activeId={activeActionMenu}
-                                onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                            />
-                        ))}
-                    </ManagementGrid>
-                )}
-
-                {/* Table View */}
-                {!loading && packages.length > 0 && viewMode === "table" && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible"
-                    >
-                        <div className="overflow-x-auto overflow-y-visible">
-                            <table className="w-full text-sm text-left text-gray-700">
-                                <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                                    <tr>
-                                        <th className="px-6 py-4">Package</th>
-                                        {showCode && <th className="px-6 py-4">Code</th>}
-                                        {showEarnings && <th className="px-6 py-4">Earnings</th>}
-                                        {showDeductions && <th className="px-6 py-4">Deductions</th>}
-                                        {showTotal && <th className="px-6 py-4">Total</th>}
-                                        {showStatus && <th className="px-6 py-4">Status</th>}
-                                        {showCreated && <th className="px-6 py-4">Created</th>}
-                                        <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {packages.map((pkg, index) => {
-                                        const earningCount = pkg.items.filter(i => i.type === 'earning').length;
-                                        const deductionCount = pkg.items.filter(i => i.type === 'deduction').length;
-                                        return (
-                                            <motion.tr
-                                                key={pkg.id}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: index * 0.05 }}
-                                                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300 cursor-pointer"
-                                                onClick={() => setSelectedPkg(pkg)}
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                                            <FaBriefcase className="text-white text-sm" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-semibold text-gray-800">{pkg.name}</p>
-                                                            {pkg.description && (
-                                                                <p className="text-xs text-gray-400 truncate max-w-[200px]">{pkg.description}</p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                {showCode && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-mono font-semibold border border-blue-100">
-                                                            {pkg.code}
-                                                        </span>
-                                                    </td>
-                                                )}
-                                                {showEarnings && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">{earningCount}</span>
-                                                    </td>
-                                                )}
-                                                {showDeductions && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold border border-red-100">{deductionCount}</span>
-                                                    </td>
-                                                )}
-                                                {showTotal && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold border border-purple-100">{pkg.items.length}</span>
-                                                    </td>
-                                                )}
-                                                {showStatus && (
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                                            {pkg.is_active ? 'Active' : 'Inactive'}
-                                                        </span>
-                                                    </td>
-                                                )}
-                                                {showCreated && (
-                                                    <td className="px-6 py-4 text-xs text-gray-400">{formatDate(pkg.created_at)}</td>
-                                                )}
-                                                <td className="px-6 py-4 text-right">
-                                                    <div onClick={e => e.stopPropagation()}>
-                                                        <ActionMenu
-                                                            menuId={`table-${pkg.id}`}
-                                                            activeId={activeActionMenu}
-                                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                            actions={[
-                                                                {
-                                                                    label: 'View Details',
-                                                                    icon: <FaEye size={13} />,
-                                                                    onClick: () => setSelectedPkg(pkg),
-                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                                },
-                                                                {
-                                                                    label: 'Edit',
-                                                                    icon: <FaEdit size={13} />,
-                                                                    onClick: () => openEdit(pkg),
-                                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                                                                },
-                                                                {
-                                                                    label: 'Delete',
-                                                                    icon: <FaTrash size={13} />,
-                                                                    onClick: () => setDeletePkg(pkg),
-                                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                                }
-                                                            ]}
-                                                        />
-                                                    </div>
-                                                </td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Pagination */}
-                {!loading && packages.length > 0 && (
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalItems={pagination.total}
-                        itemsPerPage={pagination.limit}
-                        onPageChange={handlePageChange}
-                        showInfo={true}
-                        onLimitChange={changeLimit}
+            {/* Modals */}
+            <AnimatePresence>
+                {selectedPkg && (
+                    <PackageDetailModal
+                        pkg={selectedPkg}
+                        onClose={() => setSelectedPkg(null)}
                     />
                 )}
+            </AnimatePresence>
 
-                {/* Modals */}
-                <AnimatePresence>
-                    {selectedPkg && (
-                        <PackageDetailModal
-                            pkg={selectedPkg}
-                            onClose={() => setSelectedPkg(null)}
-                        />
-                    )}
-                </AnimatePresence>
+            <AnimatePresence>
+                {showForm && (
+                    <PackageFormModal
+                        pkg={editPkg}
+                        availableComponents={availableComponents}
+                        onClose={() => { setShowForm(false); setEditPkg(null); }}
+                        onSave={handleSave}
+                    />
+                )}
+            </AnimatePresence>
 
-                <AnimatePresence>
-                    {showForm && (
-                        <PackageFormModal
-                            pkg={editPkg}
-                            availableComponents={availableComponents}
-                            onClose={() => { setShowForm(false); setEditPkg(null); }}
-                            onSave={handleSave}
-                        />
-                    )}
-                </AnimatePresence>
-
-                <AnimatePresence>
-                    {deletePkg && (
-                        <DeleteModal
-                            pkg={deletePkg}
-                            onClose={() => setDeletePkg(null)}
-                            onConfirm={handleDelete}
-                            deleting={deleting}
-                        />
-                    )}
-                </AnimatePresence>
-            </div>
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-            `}</style>
-        </div>
+            <AnimatePresence>
+                {deletePkg && (
+                    <DeleteModal
+                        pkg={deletePkg}
+                        onClose={() => setDeletePkg(null)}
+                        onConfirm={handleDelete}
+                        deleting={deleting}
+                    />
+                )}
+            </AnimatePresence>
+        </ManagementHub>
     );
 };
 

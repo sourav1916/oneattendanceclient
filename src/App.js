@@ -18,13 +18,18 @@ import PunchAttendance from "./pages/PunchAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import MyShifts from "./pages/MyShifts";
 import MySalary from "./pages/MySalary";
-import SalaryManagementHub from "./pages/SalaryManagementHub";
+import SalaryManagement from "./pages/SalaryManagement";
+import SalaryComponentsManagement from "./pages/SalaryComponentsManagement";
+import SalaryPackageManagement from "./pages/SalaryPackageManagement";
+import LeaveManagement from "./pages/LeaveManagement";
+import LeaveConfigManagement from "./pages/LeaveConfigManagement";
+import LeaveBalanceManagement from "./pages/LeaveBalanceManagement";
+import InvitePackageManagement from "./pages/InvitePackage";
 import AttendanceManagement from "./pages/AttendanceManagement";
 import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
 import CompanyHolidays from "./pages/HolidayManagement";
 import Holidays from "./pages/Holidays";
-import LeaveManagementHub from "./pages/LeaveManagementHub";
 import PayrollManagement from "./pages/PayrollManagement";
 import CompanySettings from "./pages/CompanySettings";
 import EmployeesShifts from "./pages/EmployeesShifts";
@@ -32,9 +37,133 @@ import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ScrollToTop from "./components/ScrollToTop";
 import ProfilePage from "./pages/Profile";
 import EmployeeProfile from "./pages/EmployeeProfile";
-import EmployeeManagementHub from "./pages/EmployeeManagementHub";
+import {
+  TabbedManagementHub,
+} from "./components/common";
+import {
+  FaFileInvoiceDollar,
+  FaCalculator,
+  FaLayerGroup,
+  FaInfoCircle,
+  FaUmbrellaBeach,
+  FaClipboardList,
+  FaChartLine,
+  FaUsers,
+  FaUserPlus,
+  FaClock,
+  FaBoxes,
+} from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+const SALARY_HUB_TABS = [
+  {
+    id: "salary",
+    label: "Salary Management",
+    shortLabel: "Salary",
+    description: "Assign and manage employee salaries.",
+    icon: FaFileInvoiceDollar,
+    pageKey: "salaryManagement",
+    component: SalaryManagement,
+    accent: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  {
+    id: "components",
+    label: "Salary Components",
+    shortLabel: "Components",
+    description: "Define earnings, deductions, and contributions.",
+    icon: FaCalculator,
+    pageKey: "salaryComponentsManagement",
+    component: SalaryComponentsManagement,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  {
+    id: "packages",
+    label: "Salary Packages",
+    shortLabel: "Packages",
+    description: "Bundle components into reusable salary packages.",
+    icon: FaLayerGroup,
+    pageKey: "salaryPackageManagement",
+    component: SalaryPackageManagement,
+    accent: "bg-violet-50 text-violet-700 border-violet-200",
+  },
+];
+
+const LEAVE_HUB_TABS = [
+  {
+    id: "requests",
+    label: "Leave Requests",
+    shortLabel: "Requests",
+    description: "Review employee leave applications and approvals.",
+    icon: FaUmbrellaBeach,
+    pageKey: "leaveManagement",
+    component: LeaveManagement,
+    accent: "bg-orange-50 text-orange-700 border-orange-200",
+  },
+  {
+    id: "config",
+    label: "Leave Config",
+    shortLabel: "Config",
+    description: "Manage leave types, rules, and accrual settings.",
+    icon: FaClipboardList,
+    pageKey: "leaveConfig",
+    component: LeaveConfigManagement,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  {
+    id: "balance",
+    label: "Leave Balance",
+    shortLabel: "Balance",
+    description: "Assign and review employee leave balances.",
+    icon: FaChartLine,
+    pageKey: "leaveBalance",
+    component: LeaveBalanceManagement,
+    accent: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+];
+
+const EMPLOYEE_HUB_TABS = [
+  {
+    id: "employees",
+    label: "Employee Management",
+    shortLabel: "Employees",
+    description: "Manage current employees, their roles, and details.",
+    icon: FaUsers,
+    pageKey: "employeeManagement",
+    component: EmployeeManagement,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  {
+    id: "invites",
+    label: "Invite Management",
+    shortLabel: "Invites",
+    description: "Send and manage invitations for new employees.",
+    icon: FaUserPlus,
+    pageKey: "companyInvites",
+    component: CompanyInvites,
+    accent: "bg-purple-50 text-purple-700 border-purple-200",
+  },
+  {
+    id: "packages",
+    label: "Invite Packages",
+    shortLabel: "Packages",
+    description: "Create reusable invite packages for onboarding workflows.",
+    icon: FaBoxes,
+    pageKey: "invitePackages",
+    component: InvitePackageManagement,
+    accent: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  },
+  {
+    id: "shifts",
+    label: "Shift Management",
+    shortLabel: "Shifts",
+    description: "Monitor and manage employee shift summaries.",
+    icon: FaClock,
+    pageKey: "employeesShifts",
+    component: EmployeesShifts,
+    accent: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+];
 
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
@@ -76,18 +205,51 @@ function AppContent() {
         <Route path="/my-shifts"element={<ProtectedRoute><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/my-salary"element={<ProtectedRoute><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management"element={<ProtectedRoute><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
-        <Route path="/salary-management"element={<ProtectedRoute><MainLayout><SalaryManagementHub /></MainLayout></ProtectedRoute>} />
+        <Route path="/salary-management"element={<ProtectedRoute><MainLayout><TabbedManagementHub
+          routePath="/salary-management"
+          defaultTab="salary"
+          title="Salary tools in one place"
+          description="Switch between employee salaries, salary components, and salary packages without leaving the page."
+          eyebrow={<><FaFileInvoiceDollar size={11} /> Salary management</>}
+          accent="green"
+          tabs={SALARY_HUB_TABS}
+          accessDeniedTitle="No salary tabs available"
+          accessDeniedDescription="Your current role does not have access to salary management, salary components, or salary packages."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
         <Route path="/salary-components-management"element={<ProtectedRoute><Navigate to="/salary-management?tab=components" replace /></ProtectedRoute>} />
         <Route path="/salary-package-management"element={<ProtectedRoute><Navigate to="/salary-management?tab=packages" replace /></ProtectedRoute>} />
         <Route path="/employees-shifts"element={<ProtectedRoute><Navigate to="/employee-management?tab=shifts" replace /></ProtectedRoute>} />
-        <Route path="/leave-management"element={<ProtectedRoute><MainLayout><LeaveManagementHub /></MainLayout></ProtectedRoute>} />
+        <Route path="/leave-management"element={<ProtectedRoute><MainLayout><TabbedManagementHub
+          routePath="/leave-management"
+          defaultTab="requests"
+          title="All leave tools in one place"
+          description="Switch between leave requests, leave setup, and balance allocation without leaving this screen."
+          eyebrow={<><FaUmbrellaBeach size={11} /> Leave management</>}
+          accent="slate"
+          tabs={LEAVE_HUB_TABS}
+          accessDeniedTitle="No leave tabs available"
+          accessDeniedDescription="Your current role does not have access to leave requests, leave configuration, or leave balances."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
         <Route path="/pending-attendance"element={<ProtectedRoute><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
         <Route path="/holiday-management"element={<ProtectedRoute><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
         <Route path="/holidays"element={<ProtectedRoute><MainLayout><Holidays /></MainLayout></ProtectedRoute>} />
         <Route path="/help"element={<ProtectedRoute><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
         <Route path="/my-leaves"element={<ProtectedRoute><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
         <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
-        <Route path="/employee-management"element={<ProtectedRoute><MainLayout><EmployeeManagementHub /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-management"element={<ProtectedRoute><MainLayout><TabbedManagementHub
+          routePath="/employee-management"
+          defaultTab="employees"
+          title="Team, Invitations & Packages Hub"
+          description="Manage your active workforce, onboarding invitations, reusable packages, and shift summaries from one place."
+          eyebrow={<><FaUsers size={11} /> Staff Management</>}
+          accent="blue"
+          tabs={EMPLOYEE_HUB_TABS}
+          accessDeniedTitle="No employee tabs available"
+          accessDeniedDescription="Your current role does not have access to employee management, company invitations, invite packages, or shift summaries."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
         <Route path="/company-settings"element={<ProtectedRoute><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
         <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-config"element={<ProtectedRoute><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
