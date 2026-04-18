@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "react-select";
 import { toast } from "react-toastify";
@@ -18,11 +18,11 @@ import {
   FaUserTie,
   FaFingerprint,
   FaCalendarAlt,
-  FaSearch,
+  FaRegCheckCircle,
   FaEnvelope,
   FaPhone,
-  FaRegCheckCircle,
   FaSave,
+  FaListAlt,
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
 
@@ -51,6 +51,13 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [employmentType, setEmploymentType] = useState(null);
   const [selectedAttendanceMethods, setSelectedAttendanceMethods] = useState([]);
   const [autoApprove, setAutoApprove] = useState(false);
+  const [shiftStart, setShiftStart] = useState("09:00:00");
+  const [shiftEnd, setShiftEnd] = useState("18:00:00");
+  const [weekends, setWeekends] = useState([]); // Array of {day, type}
+
+  const [invitePackages, setInvitePackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [isLoadingPackages, setIsLoadingPackages] = useState(false);
 
   const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,7 +134,82 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
 
     fetchPermissionPackages();
     fetchAllConstants();
+    fetchInvitePackages();
   }, [isOpen]);
+
+  const fetchInvitePackages = async () => {
+    setIsLoadingPackages(true);
+    try {
+      const company = JSON.parse(localStorage.getItem("company"));
+      const res = await apiCall("/company/invites/package-list", "GET", null, company?.id);
+      const data = await res.json();
+      if (data.success) {
+        setInvitePackages(
+          (data.data || [])
+            .filter((pkg) => pkg.is_active)
+            .map((pkg) => ({
+              ...pkg,
+              value: pkg.id,
+              label: `${pkg.name} (${pkg.code})`,
+            }))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to fetch invite packages", err);
+    } finally {
+      setIsLoadingPackages(false);
+    }
+  };
+
+  const handlePackageSelect = (pkg) => {
+    setSelectedPackage(pkg);
+    if (!pkg) return;
+
+    // Designation
+    if (pkg.designation) {
+      const found = designations.find((d) => d.value === pkg.designation);
+      setDesignation(found || { value: pkg.designation, label: pkg.designation });
+    }
+
+    // Employment Type
+    if (pkg.employment_type) {
+      const found = employmentTypes.find((e) => e.value === pkg.employment_type);
+      setEmploymentType(found || { value: pkg.employment_type, label: pkg.employment_type });
+    }
+
+    // Salary Type
+    if (pkg.salary_type) {
+      const found = salaryTypes.find((s) => s.value === pkg.salary_type);
+      setStaffType(found || { value: pkg.salary_type, label: pkg.salary_type });
+    }
+
+    // Permission Package
+    if (pkg.permission_package_id) {
+      const found = permissionPackages.find((p) => p.value === pkg.permission_package_id);
+      setSelectedPermissionPackage(found || null);
+    }
+
+    // Attendance Methods
+    if (Array.isArray(pkg.attendance_methods)) {
+      setSelectedAttendanceMethods(pkg.attendance_methods.map((m) => m.toLowerCase()));
+    }
+
+    // Auto Approve
+    if (typeof pkg.auto_approve !== "undefined") {
+      setAutoApprove(Boolean(pkg.auto_approve));
+    }
+
+    // Shift Times
+    if (pkg.shift_start) setShiftStart(pkg.shift_start);
+    if (pkg.shift_end) setShiftEnd(pkg.shift_end);
+
+    // Weekends
+    if (Array.isArray(pkg.weekends)) {
+      setWeekends(pkg.weekends);
+    }
+
+    toast.info(`Applied details from ${pkg.name}`);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -147,6 +229,21 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setSelectedAttendanceMethods((prev) =>
       prev.includes(method) ? prev.filter((item) => item !== method) : [...prev, method]
     );
+  };
+
+  const toggleWeekend = (day) => {
+    setWeekends(prev => {
+      const exists = prev.find(w => w.day === day);
+      if (exists) {
+        return prev.filter(w => w.day !== day);
+      } else {
+        return [...prev, { day, type: 'full' }];
+      }
+    });
+  };
+
+  const updateWeekendType = (day, type) => {
+    setWeekends(prev => prev.map(w => w.day === day ? { ...w, type } : w));
   };
 
   const fetchAllConstants = async () => {
@@ -379,6 +476,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       } else {
         setAutoApprove(false);
       }
+
+      setShiftStart(staffData.shift_start || "09:00:00");
+      setShiftEnd(staffData.shift_end || "18:00:00");
+      setWeekends(Array.isArray(staffData.weekends) ? staffData.weekends : []);
     } catch (err) {
       console.error("Error loading staff data:", err);
       toast.error("Failed to load staff data");
@@ -418,6 +519,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       permissionPackageId: initialPermissionPackageId,
       attendanceMethods: initialAttendanceMethods,
       autoApprove: Boolean(staffData?.auto_approve),
+      shiftStart: staffData?.shift_start ?? "09:00:00",
+      shiftEnd: staffData?.shift_end ?? "18:00:00",
+      weekends: Array.isArray(staffData?.weekends) ? [...staffData.weekends].sort((a,b) => a.day.localeCompare(b.day)) : [],
     };
   }, [staffData]);
 
@@ -434,6 +538,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       (staffType?.value ?? null) !== initialInviteState.salaryType ||
       currentPermissionPackageId !== initialInviteState.permissionPackageId ||
       autoApprove !== initialInviteState.autoApprove ||
+      shiftStart !== initialInviteState.shiftStart ||
+      shiftEnd !== initialInviteState.shiftEnd ||
+      JSON.stringify([...weekends].sort((a,b) => a.day.localeCompare(b.day))) !== JSON.stringify(initialInviteState.weekends) ||
       JSON.stringify(currentAttendanceMethods) !== JSON.stringify(initialInviteState.attendanceMethods)
     );
   }, [
@@ -497,6 +604,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         designation: designation.value,
         attendance_methods: selectedAttendanceMethods,
         auto_approve: autoApprove,
+        shift_start: shiftStart,
+        shift_end: shiftEnd,
+        weekends: weekends,
       };
 
       const response = await apiCall("/company/invites/update", "PUT", payload, company?.id);
@@ -524,6 +634,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setSelectedPermissionPackage(null);
     setSelectedAttendanceMethods([]);
     setAutoApprove(false);
+    setShiftStart("09:00:00");
+    setShiftEnd("18:00:00");
+    setWeekends([]);
+    setSelectedPackage(null);
     setIsSubmitting(false);
     onClose();
   };
@@ -609,6 +723,25 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {selectedUser && (
+                  <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/30 p-4">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <FaListAlt className="h-4 w-4 text-indigo-500" />
+                      Quick Fill via Invitation Package
+                    </label>
+                    <Select
+                      options={invitePackages}
+                      value={selectedPackage}
+                      onChange={handlePackageSelect}
+                      placeholder={isLoadingPackages ? "Loading packages..." : "Select a package to auto-fill fields"}
+                      isClearable
+                      isLoading={isLoadingPackages}
+                      styles={customSelectStyles}
+                    />
+                    <p className="text-[10px] text-slate-400 italic">Choosing a package will automatically populate all fields below.</p>
                   </div>
                 )}
 
@@ -734,21 +867,102 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                     )}
 
                     {showInviteFields && (
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                          <FaCheck className="h-4 w-4 text-indigo-500" />
-                          Invite Settings
-                        </label>
-                        <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={autoApprove}
-                            onChange={(e) => setAutoApprove(e.target.checked)}
-                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="text-sm text-slate-700">Auto approve invite</span>
-                        </label>
-                      </div>
+                      <>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <FaCheck className="h-4 w-4 text-indigo-500" />
+                            Invite Settings
+                          </label>
+                          <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={autoApprove}
+                              onChange={(e) => setAutoApprove(e.target.checked)}
+                              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-slate-700">Auto approve invite</span>
+                          </label>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <FaClock className="h-4 w-4 text-indigo-500" />
+                              Shift Timings
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase text-slate-400">Start Time</span>
+                                <input
+                                  type="time"
+                                  step="1"
+                                  value={shiftStart}
+                                  onChange={(e) => setShiftStart(e.target.value)}
+                                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase text-slate-400">End Time</span>
+                                <input
+                                  type="time"
+                                  step="1"
+                                  value={shiftEnd}
+                                  onChange={(e) => setShiftEnd(e.target.value)}
+                                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
+                              Weekends
+                            </label>
+                            <div className="flex flex-col gap-2">
+                              {['saturday', 'sunday'].map(day => {
+                                const config = weekends.find(w => w.day === day);
+                                return (
+                                  <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleWeekend(day)}
+                                      className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                        config 
+                                          ? 'bg-indigo-600 text-white shadow-md' 
+                                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                        {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                      </div>
+                                      {day.charAt(0).toUpperCase() + day.slice(1)}
+                                    </button>
+                                    {config && (
+                                      <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
+                                        {['full', 'half'].map(type => (
+                                          <button
+                                            key={type}
+                                            type="button"
+                                            onClick={() => updateWeekendType(day, type)}
+                                            className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${
+                                              config.type === type 
+                                                ? 'bg-slate-900 text-white' 
+                                                : 'text-slate-400 hover:text-slate-600'
+                                            }`}
+                                          >
+                                            {type}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </motion.div>
                 </AnimatePresence>
