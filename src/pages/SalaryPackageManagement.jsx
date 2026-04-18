@@ -943,6 +943,7 @@ const SalaryPackages = () => {
                     onToggleAction={(e, id) => setActiveActionMenu((curr) => (curr === id ? null : id))}
                     getActions={packageActions}
                     accent="blue"
+                    headerClassName="xsm:hidden"
                 />
             )}
 

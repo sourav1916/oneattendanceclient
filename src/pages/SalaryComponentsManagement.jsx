@@ -847,6 +847,7 @@ const SalaryComponents = () => {
                     onRowClick={(row) => setSelectedComponent(row)}
                     getActions={componentActions}
                     rowClassName="hover:bg-gradient-to-r hover:from-blue-50 hover:to-violet-50 cursor-pointer"
+                    headerClassName="xsm:hidden"
                 />
             )}
 

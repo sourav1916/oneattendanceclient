@@ -1263,6 +1263,7 @@ const SalaryManagement = () => {
                         onToggleAction={(e, id) => setActiveActionMenu((curr) => (curr === id ? null : id))}
                         getActions={salaryTableActions}
                         accent="green"
+                        headerClassName="xsm:hidden"
                     />
                 )}
                 {/* Card View */}
