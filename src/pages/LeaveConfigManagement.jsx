@@ -22,6 +22,7 @@ import {
   FaSpinner,
   FaTh,
   FaListUl,
+  FaCog,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -861,7 +862,7 @@ const LeaveConfigManagement = () => {
                   {showHalfDay && <th className="px-6 py-4">Half Day</th>}
                   {showWeekends && <th className="px-6 py-4">Weekends</th>}
                   {showStatus && <th className="px-6 py-4">Status</th>}
-                  <th className="px-6 py-4 text-center">Actions</th>
+                  <th className="px-6 py-4 text-center"><FaCog className="w-4 h-4 mx-auto" /></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">

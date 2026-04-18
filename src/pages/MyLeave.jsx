@@ -11,7 +11,8 @@ import {
   FaTrash,
   FaCalendarCheck,
   FaInfoCircle,
-  FaUpload
+  FaUpload,
+  FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -933,7 +934,7 @@ const MyLeave = () => {
                         {visibleColumns.showDuration && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>}
                         {visibleColumns.showStatus && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>}
                         {visibleColumns.showAppliedOn && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applied On</th>}
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase"><FaCog className="w-4 h-4 mx-auto" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">

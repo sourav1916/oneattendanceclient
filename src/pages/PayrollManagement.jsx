@@ -6,7 +6,7 @@ import {
     FaCheckCircle, FaFileInvoiceDollar, FaClock, FaPlus,
     FaDownload, FaSave, FaCalculator, FaClipboardList,
     FaTh, FaListUl, FaBriefcase, FaEnvelope, FaIdCard,
-    FaUsers, FaUserFriends, FaUser
+    FaUsers, FaUserFriends, FaUser, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
@@ -547,7 +547,7 @@ const PayrollManagement = () => {
                                             {visibleColumns.showDeductions && <th className="px-6 py-4">Deductions</th>}
                                             {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
                                             {visibleColumns.showAttendance && <th className="px-6 py-4">Attendance</th>}
-                                            <th className="px-6 py-4 text-right">Actions</th>
+                                            <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">

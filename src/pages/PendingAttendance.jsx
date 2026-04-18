@@ -8,7 +8,7 @@ import {
     FaChevronRight, FaHourglassStart, FaHourglassEnd, FaCheck,
     FaBan, FaComment, FaHistory, FaUserCheck,
     FaEllipsisV, FaFilter, FaCalendarAlt, FaEnvelope, FaIdCard,
-    FaTh, FaListUl
+    FaTh, FaListUl, FaCog
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -714,7 +714,7 @@ const PendingAttendance = ({ companyId }) => {
                                                         </th>
                                                     )}
                                                     <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Actions
+                                                        <FaCog className="w-4 h-4 mx-auto" />
                                                     </th>
                                                 </tr>
                                             </thead>

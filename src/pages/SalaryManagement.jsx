@@ -8,7 +8,7 @@ import {
     FaTh, FaListUl, FaShieldAlt, FaPlus, FaEdit,
     FaTrash, FaHistory, FaMoneyBillWave, FaPercentage,
     FaCalculator, FaCalendarPlus, FaCalendarCheck,
-    FaExchangeAlt, FaSave, FaBan, FaExclamationCircle
+    FaExchangeAlt, FaSave, FaBan, FaExclamationCircle,FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
@@ -80,6 +80,15 @@ const getStatusBadge = (effectiveTo) => {
     }
     return { icon: FaTimesCircle, text: "Expired", className: "bg-gray-100 text-gray-800 border border-gray-200" };
 };
+
+const getVisibleSalaryColumns = (width) => ({
+    showEmployee: true,
+    showBaseAmount: width >= 420,
+    showNetSalary: width >= 640,
+    showStatus: width >= 768,
+    showPackage: width >= 1024,
+    showEffectivePeriod: width >= 1280,
+});
 
 const formatFilterLabel = (value) =>
     new Date(`${value}T00:00:00`).toLocaleDateString("en-US", {
@@ -195,7 +204,6 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                     </div>
 
                     <div className="p-6">
-                        {/* Employee Info */}
                         <div className="flex items-center gap-6 pb-6 border-b">
                             <div className={`bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} p-4 rounded-2xl`}>
                                 <FaUserCircle className="text-white text-5xl" />
@@ -211,7 +219,6 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                             </div>
                         </div>
 
-                        {/* Salary Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                             <InfoItem icon={<FaDollarSign className="text-blue-500" />} label="Base Amount" value={formatCurrency(salary.base_amount, salary.currency)} />
                             <InfoItem icon={<FaCalculator className="text-purple-500" />} label="Gross Salary" value={formatCurrency(salary.gross_salary, salary.currency)} />
@@ -227,7 +234,6 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                             <InfoItem icon={<FaCalendarCheck className="text-yellow-500" />} label="Effective To" value={formatDateFull(salary.effective_to)} />
                         </div>
 
-                        {/* CTC Info */}
                         <div className="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-semibold text-gray-600 flex items-center gap-2">
@@ -243,7 +249,6 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                             </div>
                         </div>
 
-                        {/* Components Breakdown */}
                         {salary.components?.length > 0 && (
                             <div className="mt-6">
                                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
@@ -262,7 +267,6 @@ const SalaryDetailModal = ({ salary, onClose }) => {
         </AnimatePresence>
     );
 };
-
 
 // ─── Edit Salary Modal ────────────────────────────────────────────────────────
 
@@ -408,8 +412,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
                     className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}>
-
-                    {/* Header */}
                     <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -428,7 +430,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                        {/* Base Amount + Currency */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
                             <div className="flex gap-2">
@@ -445,7 +446,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             </div>
                         </div>
 
-                        {/* Effective Dates */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
@@ -472,7 +472,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             </div>
                         </div>
 
-                        {/* Component Overrides */}
                         <div className="border-t border-gray-200 pt-4">
                             <div className="flex items-center justify-between mb-3">
                                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -546,25 +545,11 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-                                                <DatePickerField
-                                                    value={overrideForm.effective_from}
-                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })}
-                                                    placeholder="From"
-                                                    mode="single"
-                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left"
-                                                    popoverClassName="mt-2"
-                                                />
+                                                <DatePickerField value={overrideForm.effective_from} onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })} placeholder="From" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left" popoverClassName="mt-2" />
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-                                                <DatePickerField
-                                                    value={overrideForm.effective_to}
-                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })}
-                                                    placeholder="To"
-                                                    mode="single"
-                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left"
-                                                    popoverClassName="mt-2"
-                                                />
+                                                <DatePickerField value={overrideForm.effective_to} onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })} placeholder="To" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left" popoverClassName="mt-2" />
                                             </div>
                                         </div>
                                         <div>
@@ -573,24 +558,19 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                 className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                                         </div>
                                         <div className="flex gap-2 pt-1">
-                                            <button type="button" onClick={addOverride}
-                                                className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all">
+                                            <button type="button" onClick={addOverride} className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all">
                                                 {editingOverride !== null ? 'Update' : 'Add'}
                                             </button>
-                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }}
-                                                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        {/* Actions */}
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting}
-                                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                 {submitting ? 'Saving...' : 'Save Changes'}
                             </button>
@@ -612,195 +592,85 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const [showOverrideForm, setShowOverrideForm] = useState(false);
     const [editingOverride, setEditingOverride] = useState(null);
 
-    const [formData, setFormData] = useState({
-        component_package_id: '',
-        base_amount: '',
-        currency: 'USD',
-        effective_from: '',
-        effective_to: '',
-        overrides: []
-    });
-
-    const [overrideForm, setOverrideForm] = useState({
-        component_id: '', calc_type: 'percentage', calc_value: '',
-        effective_from: '', effective_to: '', reason: ''
-    });
+    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', overrides: [] });
+    const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
 
     useEffect(() => {
         if (isOpen && salary) {
-            setFormData({
-                component_package_id: salary.package?.id || '',
-                base_amount: salary.base_amount || '',
-                currency: salary.currency || 'USD',
-                effective_from: '',
-                effective_to: '',
-                overrides: []
-            });
-            loadPackages();
-            loadComponents();
-            loadCurrencies();
+            setFormData({ component_package_id: salary.package?.id || '', base_amount: salary.base_amount || '', currency: salary.currency || 'USD', effective_from: '', effective_to: '', overrides: [] });
+            loadPackages(); loadComponents(); loadCurrencies();
         }
     }, [isOpen, salary]);
 
-    const loadPackages = async () => {
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) setPackages(result.data || []);
-        } catch (e) { console.error(e); }
-    };
-
-    const loadComponents = async () => {
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) setAvailableComponents(result.data || []);
-        } catch (e) { console.error(e); }
-    };
-
-    const loadCurrencies = async () => {
-        try {
-            const response = await apiCall('/constants/?type=currency', 'GET');
-            const result = await response.json();
-            if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
-        } catch (e) { console.error(e); }
-    };
+    const loadPackages = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/packages', 'GET', null, company?.id); const result = await response.json(); if (result.success) setPackages(result.data || []); } catch (e) { console.error(e); } };
+    const loadComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (e) { console.error(e); } };
+    const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types); } catch (e) { console.error(e); } };
 
     const addOverride = () => {
-        if (!overrideForm.component_id || !overrideForm.calc_value) {
-            toast.warning('Please fill component and value'); return;
-        }
-        const newOverride = {
-            component_id: parseInt(overrideForm.component_id),
-            calc_type: overrideForm.calc_type,
-            calc_value: parseFloat(overrideForm.calc_value),
-            effective_from: overrideForm.effective_from || formData.effective_from,
-            effective_to: overrideForm.effective_to || null,
-            reason: overrideForm.reason || ''
-        };
-        if (editingOverride !== null) {
-            const updated = [...formData.overrides];
-            updated[editingOverride] = newOverride;
-            setFormData({ ...formData, overrides: updated });
-            setEditingOverride(null);
-        } else {
-            setFormData({ ...formData, overrides: [...formData.overrides, newOverride] });
-        }
+        if (!overrideForm.component_id || !overrideForm.calc_value) { toast.warning('Please fill component and value'); return; }
+        const newOverride = { component_id: parseInt(overrideForm.component_id), calc_type: overrideForm.calc_type, calc_value: parseFloat(overrideForm.calc_value), effective_from: overrideForm.effective_from || formData.effective_from, effective_to: overrideForm.effective_to || null, reason: overrideForm.reason || '' };
+        if (editingOverride !== null) { const updated = [...formData.overrides]; updated[editingOverride] = newOverride; setFormData({ ...formData, overrides: updated }); setEditingOverride(null); }
+        else { setFormData({ ...formData, overrides: [...formData.overrides, newOverride] }); }
         setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
         setShowOverrideForm(false);
     };
 
-    const editOverride = (index) => {
-        const o = formData.overrides[index];
-        setOverrideForm({
-            component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value,
-            effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || ''
-        });
-        setEditingOverride(index);
-        setShowOverrideForm(true);
-    };
-
-    const removeOverride = (index) => {
-        setFormData({ ...formData, overrides: formData.overrides.filter((_, i) => i !== index) });
-    };
+    const editOverride = (index) => { const o = formData.overrides[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
+    const removeOverride = (index) => { setFormData({ ...formData, overrides: formData.overrides.filter((_, i) => i !== index) }); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
-            toast.warning('Please fill all required fields'); return;
-        }
+        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) { toast.warning('Please fill all required fields'); return; }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const payload = {
-                employee_id: salary.employee?.id,
-                component_package_id: parseInt(formData.component_package_id),
-                base_amount: parseFloat(formData.base_amount),
-                currency: formData.currency.toLowerCase(),
-                effective_from: formData.effective_from,
-                effective_to: formData.effective_to || null,
-                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
-            };
+            const payload = { employee_id: salary.employee?.id, component_package_id: parseInt(formData.component_package_id), base_amount: parseFloat(formData.base_amount), currency: formData.currency.toLowerCase(), effective_from: formData.effective_from, effective_to: formData.effective_to || null, overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null })) };
             const response = await apiCall('/salary/revise-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) {
-                toast.success('Salary revised successfully!');
-                onSuccess();
-                onClose();
-            } else {
-                toast.error(result.message || 'Failed to revise salary');
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error('Failed to revise salary');
-        } finally {
-            setSubmitting(false);
-        }
+            if (result.success) { toast.success('Salary revised successfully!'); onSuccess(); onClose(); }
+            else { toast.error(result.message || 'Failed to revise salary'); }
+        } catch (e) { console.error(e); toast.error('Failed to revise salary'); }
+        finally { setSubmitting(false); }
     };
 
     if (!isOpen || !salary) return null;
 
     return (
         <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
-                    onClick={e => e.stopPropagation()}>
-
-                    {/* Header */}
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 z-[10] bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                    <FaExchangeAlt className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold">Revise Salary</h2>
-                                    <p className="text-xs text-white/80">{salary.employee?.name} · Creates a new salary record</p>
-                                </div>
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FaExchangeAlt className="text-white text-sm" /></div>
+                                <div><h2 className="text-lg font-bold">Revise Salary</h2><p className="text-xs text-white/80">{salary.employee?.name} · Creates a new salary record</p></div>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-
-                        {/* Info Banner */}
                         <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-100 rounded-xl">
                             <FaInfoCircle className="text-purple-500 mt-0.5 flex-shrink-0" size={14} />
-                            <p className="text-xs text-purple-700">
-                                Revising salary creates a <span className="font-semibold">new salary record</span> for this employee. The previous record will remain in history.
-                            </p>
+                            <p className="text-xs text-purple-700">Revising salary creates a <span className="font-semibold">new salary record</span> for this employee. The previous record will remain in history.</p>
                         </div>
 
-                        {/* Package */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
-                            <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
+                            <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
                                 <option value="">Select package</option>
                                 {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
                             </select>
                         </div>
 
-                        {/* Base Amount + Currency */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">New Base Amount *</label>
                             <div className="flex gap-2">
-                                <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })}
-                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
-                                    {currencies.length > 0
-                                        ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>)
-                                        : <option value="USD">$ USD</option>}
+                                <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
+                                    {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
                                 </select>
-                                <input type="number" placeholder="Enter new base amount" value={formData.base_amount}
-                                    onChange={e => setFormData({ ...formData, base_amount: e.target.value })}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
+                                <input type="number" placeholder="Enter new base amount" value={formData.base_amount} onChange={e => setFormData({ ...formData, base_amount: e.target.value })} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
                             </div>
                             {salary.base_amount && (
                                 <p className="text-xs text-gray-400 mt-1">
@@ -815,139 +685,21 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             )}
                         </div>
 
-                        {/* Effective Dates */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField
-                                    value={formData.effective_from}
-                                    onChange={(value) => setFormData({ ...formData, effective_from: value })}
-                                    placeholder="Select effective from"
-                                    mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left"
-                                    popoverClassName="mt-2"
-                                />
+                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField
-                                    value={formData.effective_to}
-                                    onChange={(value) => setFormData({ ...formData, effective_to: value })}
-                                    placeholder="Select effective to"
-                                    mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left"
-                                    popoverClassName="mt-2"
-                                />
+                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
                         </div>
 
-                        {/* Overrides — identical pattern, purple accent */}
-                        <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <FaCalculator className="text-purple-500" /> Component Overrides
-                                </label>
-                                <button type="button"
-                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
-                                    className="px-3 py-1.5 text-sm bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-all flex items-center gap-1">
-                                    <FaPlus size={10} /> Add Override
-                                </button>
-                            </div>
-
-                            {formData.overrides.length > 0 && (
-                                <div className="space-y-2 mb-3">
-                                    {formData.overrides.map((override, idx) => {
-                                        const component = availableComponents.find(c => c.id === override.component_id);
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-purple-100 text-purple-700' : 'bg-pink-100 text-pink-700'}`}>
-                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
-                                                        </span>
-                                                    </div>
-                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-purple-500"><FaEdit size={12} /></button>
-                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-sm font-semibold text-purple-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
-                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
-                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
-                                            <option value="">Select component</option>
-                                            {availableComponents.map(comp => <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>)}
-                                        </select>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
-                                                <option value="percentage">Percentage (%)</option>
-                                                <option value="fixed">Fixed Amount</option>
-                                            </select>
-                                            <input type="number" placeholder="Value" value={overrideForm.calc_value}
-                                                onChange={e => setOverrideForm({ ...overrideForm, calc_value: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-                                                <DatePickerField
-                                                    value={overrideForm.effective_from}
-                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })}
-                                                    placeholder="From"
-                                                    mode="single"
-                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left"
-                                                    popoverClassName="mt-2"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-                                                <DatePickerField
-                                                    value={overrideForm.effective_to}
-                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })}
-                                                    placeholder="To"
-                                                    mode="single"
-                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left"
-                                                    popoverClassName="mt-2"
-                                                />
-                                            </div>
-                                        </div>
-                                        <input type="text" placeholder="Reason (optional)" value={overrideForm.reason}
-                                            onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
-                                            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
-                                        <div className="flex gap-2 pt-1">
-                                            <button type="button" onClick={addOverride}
-                                                className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
-                                                {editingOverride !== null ? 'Update' : 'Add'}
-                                            </button>
-                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }}
-                                                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Actions */}
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting}
-                                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaExchangeAlt />}
                                 {submitting ? 'Revising...' : 'Revise Salary'}
                             </button>
@@ -959,7 +711,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     );
 };
 
-// ─── Assign Salary Modal (Updated with Overrides) ─────────────────────────────────────
+// ─── Assign Salary Modal ──────────────────────────────────────────────────────
 
 const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitTitle }) => {
     const [employees, setEmployees] = useState([]);
@@ -972,623 +724,130 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [searchTerm, setSearchTerm] = useState('');
     const [showOverrideForm, setShowOverrideForm] = useState(false);
     const [editingOverride, setEditingOverride] = useState(null);
-    const [formData, setFormData] = useState({
-        component_package_id: '',
-        base_amount: '',
-        currency: 'USD',
-        effective_from: '',
-        effective_to: '',
-        overrides: []
-    });
-
-    const [overrideForm, setOverrideForm] = useState({
-        component_id: '',
-        calc_type: 'percentage',
-        calc_value: '',
-        effective_from: '',
-        effective_to: '',
-        reason: ''
-    });
+    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', overrides: [] });
+    const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
 
     useEffect(() => {
-        if (isOpen) {
-            loadEmployeesWithoutSalary();
-            loadSalaryPackages();
-            loadSalaryComponents();
-            loadCurrencies();
-        }
+        if (isOpen) { loadEmployeesWithoutSalary(); loadSalaryPackages(); loadSalaryComponents(); loadCurrencies(); }
     }, [isOpen]);
 
-    const loadEmployeesWithoutSalary = async () => {
-        setLoading(true);
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/employees-without-salary', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) {
-                setEmployees(result.data || []);
-            }
-        } catch (error) {
-            console.error('Failed to load employees:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const loadEmployeesWithoutSalary = async () => { setLoading(true); try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/employees-without-salary', 'GET', null, company?.id); const result = await response.json(); if (result.success) setEmployees(result.data || []); } catch (error) { console.error('Failed to load employees:', error); } finally { setLoading(false); } };
+    const loadSalaryPackages = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/packages', 'GET', null, company?.id); const result = await response.json(); if (result.success) { setPackages(result.data || []); if (result.data?.length > 0) setFormData(prev => ({ ...prev, component_package_id: result.data[0].id })); } } catch (error) { console.error('Failed to load packages:', error); } };
+    const loadSalaryComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (error) { console.error('Failed to load salary components:', error); } };
+    const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) { setCurrencies(result.data.currency_types); const keys = result.data.currency_types.map(c => c.key); setFormData(prev => ({ ...prev, currency: keys.includes(prev.currency) ? prev.currency : (keys[0] || 'USD') })); } } catch (error) { console.error('Failed to load currencies:', error); } };
 
-    const loadSalaryPackages = async () => {
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) {
-                setPackages(result.data || []);
-                if (result.data?.length > 0) {
-                    setFormData(prev => ({ ...prev, component_package_id: result.data[0].id }));
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load packages:', error);
-        }
-    };
-
-    const loadSalaryComponents = async () => {
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) {
-                setAvailableComponents(result.data || []);
-            }
-        } catch (error) {
-            console.error('Failed to load salary components:', error);
-        }
-    };
-
-    const loadCurrencies = async () => {
-        try {
-            const response = await apiCall('/constants/?type=currency', 'GET');
-            const result = await response.json();
-            if (result.success && result.data?.currency_types) {
-                setCurrencies(result.data.currency_types);
-                const keys = result.data.currency_types.map(c => c.key);
-                setFormData(prev => ({
-                    ...prev,
-                    currency: keys.includes(prev.currency) ? prev.currency : (keys[0] || 'USD')
-                }));
-            }
-        } catch (error) {
-            console.error('Failed to load currencies:', error);
-        }
-    };
-
-    const filteredEmployees = employees.filter(emp =>
-        emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.employee_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredEmployees = employees.filter(emp => emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) || emp.employee_code?.toLowerCase().includes(searchTerm.toLowerCase()) || emp.email?.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const addOverride = () => {
-        if (!overrideForm.component_id || !overrideForm.calc_value) {
-            toast.warning('Please fill component and value');
-            return;
-        }
-
-        const newOverride = {
-            component_id: parseInt(overrideForm.component_id),
-            calc_type: overrideForm.calc_type,
-            calc_value: parseFloat(overrideForm.calc_value),
-            effective_from: overrideForm.effective_from || formData.effective_from,
-            effective_to: overrideForm.effective_to || null,
-            reason: overrideForm.reason || ''
-        };
-
-        if (editingOverride !== null) {
-            const updated = [...formData.overrides];
-            updated[editingOverride] = newOverride;
-            setFormData({ ...formData, overrides: updated });
-            setEditingOverride(null);
-        } else {
-            setFormData({
-                ...formData,
-                overrides: [...formData.overrides, newOverride]
-            });
-        }
-
-        setOverrideForm({
-            component_id: '',
-            calc_type: 'percentage',
-            calc_value: '',
-            effective_from: '',
-            effective_to: '',
-            reason: ''
-        });
+        if (!overrideForm.component_id || !overrideForm.calc_value) { toast.warning('Please fill component and value'); return; }
+        const newOverride = { component_id: parseInt(overrideForm.component_id), calc_type: overrideForm.calc_type, calc_value: parseFloat(overrideForm.calc_value), effective_from: overrideForm.effective_from || formData.effective_from, effective_to: overrideForm.effective_to || null, reason: overrideForm.reason || '' };
+        if (editingOverride !== null) { const updated = [...formData.overrides]; updated[editingOverride] = newOverride; setFormData({ ...formData, overrides: updated }); setEditingOverride(null); }
+        else { setFormData({ ...formData, overrides: [...formData.overrides, newOverride] }); }
+        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
         setShowOverrideForm(false);
     };
 
-    const editOverride = (index) => {
-        const override = formData.overrides[index];
-        setOverrideForm({
-            component_id: override.component_id,
-            calc_type: override.calc_type,
-            calc_value: override.calc_value,
-            effective_from: override.effective_from || '',
-            effective_to: override.effective_to || '',
-            reason: override.reason || ''
-        });
-        setEditingOverride(index);
-        setShowOverrideForm(true);
-    };
+    const editOverride = (index) => { const o = formData.overrides[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
+    const removeOverride = (index) => { setFormData({ ...formData, overrides: formData.overrides.filter((_, i) => i !== index) }); };
 
-    const removeOverride = (index) => {
-        const updated = formData.overrides.filter((_, i) => i !== index);
-        setFormData({ ...formData, overrides: updated });
-    };
-
-    const resetForm = () => {
-        setSelectedEmployee(null);
-        setSearchTerm('');
-        setFormData({
-            component_package_id: packages[0]?.id || '',
-            base_amount: '',
-            currency: 'USD',
-            effective_from: '',
-            effective_to: '',
-            overrides: []
-        });
-        setOverrideForm({
-            component_id: '',
-            calc_type: 'percentage',
-            calc_value: '',
-            effective_from: '',
-            effective_to: '',
-            reason: ''
-        });
-        setShowOverrideForm(false);
-        setEditingOverride(null);
-    };
+    const resetForm = () => { setSelectedEmployee(null); setSearchTerm(''); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', overrides: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (submitDisabled) return;
-        if (!selectedEmployee) {
-            toast.warning('Please select an employee');
-            return;
-        }
-        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
-            toast.warning('Please fill all required fields');
-            return;
-        }
-
+        if (!selectedEmployee) { toast.warning('Please select an employee'); return; }
+        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) { toast.warning('Please fill all required fields'); return; }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const payload = {
-                employee_id: selectedEmployee.employee_id,
-                component_package_id: parseInt(formData.component_package_id),
-                base_amount: parseFloat(formData.base_amount),
-                currency: formData.currency.toLowerCase(),
-                effective_from: formData.effective_from,
-                effective_to: formData.effective_to || null,
-                overrides: formData.overrides.map(o => ({
-                    ...o,
-                    effective_to: o.effective_to || null
-                }))
-            };
-
+            const payload = { employee_id: selectedEmployee.employee_id, component_package_id: parseInt(formData.component_package_id), base_amount: parseFloat(formData.base_amount), currency: formData.currency.toLowerCase(), effective_from: formData.effective_from, effective_to: formData.effective_to || null, overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null })) };
             const response = await apiCall('/salary/assign-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) {
-                toast.success('Salary assigned successfully!');
-                onSuccess();
-                onClose();
-                resetForm();
-            } else {
-                toast.error(result.message || 'Failed to assign salary');
-            }
-        } catch (error) {
-            console.error('Error assigning salary:', error);
-            toast.error('Failed to assign salary');
-        } finally {
-            setSubmitting(false);
-        }
+            if (result.success) { toast.success('Salary assigned successfully!'); onSuccess(); onClose(); resetForm(); }
+            else { toast.error(result.message || 'Failed to assign salary'); }
+        } catch (error) { console.error('Error assigning salary:', error); toast.error('Failed to assign salary'); }
+        finally { setSubmitting(false); }
     };
 
     if (!isOpen) return null;
 
     return (
         <AnimatePresence>
-            <motion.div
-                variants={backdropVariants}
-                initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}
-            >
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div
-                    variants={modalVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
-                    onClick={e => e.stopPropagation()}
-                >
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 z-[10] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-md">
-                                    <FaPlus className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold">Assign Salary</h2>
-                                    <p className="text-xs text-white/80">Assign salary to an employee with component overrides</p>
-                                </div>
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-md"><FaPlus className="text-white text-sm" /></div>
+                                <div><h2 className="text-lg font-bold">Assign Salary</h2><p className="text-xs text-white/80">Assign salary to an employee</p></div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                                <FaTimes size={20} />
-                            </button>
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                        {/* Employee Selection */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Employee *</label>
                             <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search employee by name, code or email..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
-                                    disabled={!!selectedEmployee}
-                                />
+                                <input type="text" placeholder="Search employee by name, code or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" disabled={!!selectedEmployee} />
                                 <FaSearch className="absolute left-3 top-3.5 text-gray-400 text-sm" />
                             </div>
-
                             {!selectedEmployee && (
                                 <div className="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
-                                    {loading ? (
-                                        <div className="p-4 text-center text-gray-400"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>
-                                    ) : filteredEmployees.length === 0 ? (
-                                        <div className="p-4 text-center text-gray-400">No employees found</div>
-                                    ) : (
-                                        filteredEmployees.map(emp => (
-                                            <button
-                                                key={emp.employee_id}
-                                                type="button"
-                                                onClick={() => setSelectedEmployee(emp)}
-                                                className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3"
-                                            >
-                                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}>
-                                                    <span className="text-white font-bold text-xs">{getInitials(emp.name)}</span>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-gray-800 text-sm">{emp.name}</p>
-                                                    <p className="text-xs text-gray-400">{emp.employee_code} • {emp.email}</p>
-                                                    <p className="text-xs text-gray-400 capitalize">{formatDisplay(emp.designation)}</p>
-                                                </div>
+                                    {loading ? (<div className="p-4 text-center text-gray-400"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>)
+                                        : filteredEmployees.length === 0 ? (<div className="p-4 text-center text-gray-400">No employees found</div>)
+                                        : filteredEmployees.map(emp => (
+                                            <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></div>
+                                                <div className="flex-1 min-w-0"><p className="font-semibold text-gray-800 text-sm">{emp.name}</p><p className="text-xs text-gray-400">{emp.employee_code} • {emp.email}</p></div>
                                             </button>
-                                        ))
-                                    )}
+                                        ))}
                                 </div>
                             )}
-
                             {selectedEmployee && (
                                 <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center`}>
-                                            <span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span>
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-gray-800 text-sm">{selectedEmployee.name}</p>
-                                            <p className="text-xs text-gray-500">{selectedEmployee.employee_code}</p>
-                                        </div>
+                                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></div>
+                                        <div><p className="font-semibold text-gray-800 text-sm">{selectedEmployee.name}</p><p className="text-xs text-gray-500">{selectedEmployee.employee_code}</p></div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedEmployee(null)}
-                                        className="text-red-400 hover:text-red-600"
-                                    >
-                                        <FaTimes />
-                                    </button>
+                                    <button type="button" onClick={() => setSelectedEmployee(null)} className="text-red-400 hover:text-red-600"><FaTimes /></button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Salary Package */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
-                            <select
-                                value={formData.component_package_id}
-                                onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
-                            >
-                                {packages.length === 0 ? (
-                                    <option value="">Loading packages...</option>
-                                ) : (
-                                    packages.map(pkg => (
-                                        <option key={pkg.id} value={pkg.id}>
-                                            {pkg.name} ({pkg.code})
-                                        </option>
-                                    ))
-                                )}
+                            <select value={formData.component_package_id} onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
+                                {packages.length === 0 ? <option value="">Loading packages...</option> : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
                             </select>
                         </div>
 
-                        {/* Base Amount */}
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
                             <div className="flex gap-2">
-                                <select
-                                    value={formData.currency}
-                                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
-                                >
-                                    {currencies.length > 0
-                                        ? currencies.map(c => (
-                                            <option key={c.key} value={c.key}>
-                                                {c.value.symbol} {c.key}
-                                            </option>
-                                        ))
-                                        : <option value="USD">$ US Dollar</option>
-                                    }
+                                <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
+                                    {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ US Dollar</option>}
                                 </select>
-                                <input
-                                    type="number"
-                                    placeholder="Enter amount"
-                                    value={formData.base_amount}
-                                    onChange={(e) => setFormData({ ...formData, base_amount: e.target.value })}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none"
-                                />
+                                <input type="number" placeholder="Enter amount" value={formData.base_amount} onChange={(e) => setFormData({ ...formData, base_amount: e.target.value })} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none" />
                             </div>
                         </div>
 
-                        {/* Effective Dates */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField
-                                    value={formData.effective_from}
-                                    onChange={(value) => setFormData({ ...formData, effective_from: value })}
-                                    placeholder="Select effective from"
-                                    mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left"
-                                    popoverClassName="mt-2"
-                                />
+                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField
-                                    value={formData.effective_to}
-                                    onChange={(value) => setFormData({ ...formData, effective_to: value })}
-                                    placeholder="Select effective to"
-                                    mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left"
-                                    popoverClassName="mt-2"
-                                />
+                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
                         </div>
 
-                        {/* Component Overrides Section */}
-                        <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <FaCalculator className="text-green-500" />
-                                    Component Overrides
-                                </label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setEditingOverride(null);
-                                        setOverrideForm({
-                                            component_id: '',
-                                            calc_type: 'percentage',
-                                            calc_value: '',
-                                            effective_from: formData.effective_from,
-                                            effective_to: '',
-                                            reason: ''
-                                        });
-                                        setShowOverrideForm(true);
-                                    }}
-                                    className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all flex items-center gap-1"
-                                >
-                                    <FaPlus size={10} /> Add Override
-                                </button>
-                            </div>
-
-                            {/* Overrides List */}
-                            {formData.overrides.length > 0 && (
-                                <div className="space-y-2 mb-3">
-                                    {formData.overrides.map((override, idx) => {
-                                        const component = availableComponents.find(c => c.id === override.component_id);
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                                                            }`}>
-                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
-                                                        </span>
-                                                    </div>
-                                                    {override.reason && (
-                                                        <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>
-                                                    )}
-                                                    <p className="text-xs text-gray-400">
-                                                        {override.effective_from ? formatDate(override.effective_from) : 'Start'} → {override.effective_to ? formatDate(override.effective_to) : 'Ongoing'}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => editOverride(idx)}
-                                                        className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors"
-                                                    >
-                                                        <FaEdit size={12} />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeOverride(idx)}
-                                                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                                                    >
-                                                        <FaTimes size={12} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {/* Add/Edit Override Form */}
-                            {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-sm font-semibold text-green-800">
-                                            {editingOverride !== null ? 'Edit Override' : 'New Override'}
-                                        </p>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowOverrideForm(false);
-                                                setEditingOverride(null);
-                                            }}
-                                            className="text-gray-400 hover:text-gray-600"
-                                        >
-                                            <FaTimes />
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
-                                            <select
-                                                value={overrideForm.component_id}
-                                                onChange={(e) => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm"
-                                            >
-                                                <option value="">Select component</option>
-                                                {availableComponents.map(comp => (
-                                                    <option key={comp.id} value={comp.id}>
-                                                        {comp.name} ({comp.code}) - {comp.type}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calculation Type</label>
-                                                <select
-                                                    value={overrideForm.calc_type}
-                                                    onChange={(e) => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm"
-                                                >
-                                                    <option value="percentage">Percentage (%)</option>
-                                                    <option value="fixed">Fixed Amount</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                                                    Value {overrideForm.calc_type === 'percentage' ? '(%)' : '(Amount)'} *
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    placeholder={overrideForm.calc_type === 'percentage' ? 'e.g., 30' : 'e.g., 5000'}
-                                                    value={overrideForm.calc_value}
-                                                    onChange={(e) => setOverrideForm({ ...overrideForm, calc_value: e.target.value })}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Effective From</label>
-                                                <DatePickerField
-                                                    value={overrideForm.effective_from}
-                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })}
-                                                    placeholder="Effective from"
-                                                    mode="single"
-                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm text-left"
-                                                    popoverClassName="mt-2"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Effective To</label>
-                                                <DatePickerField
-                                                    value={overrideForm.effective_to}
-                                                    onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })}
-                                                    placeholder="Effective to"
-                                                    mode="single"
-                                                    buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm text-left"
-                                                    popoverClassName="mt-2"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g., Special HRA, PF disabled"
-                                                value={overrideForm.reason}
-                                                onChange={(e) => setOverrideForm({ ...overrideForm, reason: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none text-sm"
-                                            />
-                                        </div>
-
-                                        <div className="flex gap-2 pt-2">
-                                            <button
-                                                type="button"
-                                                onClick={addOverride}
-                                                className="flex-1 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-emerald-700 transition-all"
-                                            >
-                                                {editingOverride !== null ? 'Update Override' : 'Add Override'}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setShowOverrideForm(false);
-                                                    setEditingOverride(null);
-                                                }}
-                                                className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Summary of Overrides */}
-                        {formData.overrides.length > 0 && (
-                            <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
-                                <p className="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1">
-                                    <FaInfoCircle /> Override Summary
-                                </p>
-                                <p className="text-xs text-blue-700">
-                                    {formData.overrides.length} component{formData.overrides.length > 1 ? 's are' : ' is'} being overridden
-                                    from the standard package calculation.
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Form Actions */}
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={submitting || submitDisabled}
-                                title={submitDisabled ? submitTitle : ""}
-                                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
+                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting || submitDisabled} title={submitDisabled ? submitTitle : ""} className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                 {submitting ? 'Assigning...' : 'Assign Salary'}
                             </button>
@@ -1600,54 +859,28 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     );
 };
 
-// ─── Delete Confirmation Modal ───────────────────────────────────────────────
+// ─── Delete Confirmation Modal ────────────────────────────────────────────────
 
 const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }) => {
     if (!isOpen || !salary) return null;
-
     return (
         <AnimatePresence>
-            <motion.div
-                variants={backdropVariants}
-                initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}
-            >
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div
-                    variants={modalVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
-                    onClick={e => e.stopPropagation()}
-                >
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <FaTrash /> Delete Salary Record
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                            <FaTimes size={20} />
-                        </button>
+                        <h2 className="text-xl font-semibold flex items-center gap-2"><FaTrash /> Delete Salary Record</h2>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
                     </div>
                     <div className="flex flex-1 flex-col justify-center p-6 text-center">
-                        <motion.div
-                            initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
-                            className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
-                        >
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }} className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <FaBan className="text-4xl text-red-600" />
                         </motion.div>
                         <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
-                        <p className="text-gray-500 mb-6">
-                            You are about to delete the salary record for{" "}
-                            <span className="font-semibold text-red-600">{salary.employee?.name}</span>.
-                            This action cannot be undone.
-                        </p>
+                        <p className="text-gray-500 mb-6">You are about to delete the salary record for <span className="font-semibold text-red-600">{salary.employee?.name}</span>. This action cannot be undone.</p>
                         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
-                            <button onClick={onClose}
-                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
-                                Keep
-                            </button>
-                            <button onClick={onConfirm} disabled={processingId === salary.salary_id}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+                            <button onClick={onClose} className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Keep</button>
+                            <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
                                 {processingId === salary.salary_id && <FaSpinner className="animate-spin" />}
                                 Delete Record
                             </button>
@@ -1659,9 +892,9 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
     );
 };
 
-// ─── Salary Card (Grid) ──────────────────────────────────────────────────────
+// ─── Salary Card (Grid) ───────────────────────────────────────────────────────
 
-const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onToggle }) => {
+const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEdit, onRevise }) => {
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
 
@@ -1705,61 +938,27 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
             </div>
 
             <div className="flex items-center justify-between text-xs text-gray-400 mb-3">
-                <span className="flex items-center gap-1">
-                    <FaCalendarPlus size={9} />
-                    {formatDate(salary.effective_from)}
-                </span>
-                <span className="flex items-center gap-1">
-                    <FaCalendarCheck size={9} />
-                    {formatDate(salary.effective_to)}
-                </span>
+                <span className="flex items-center gap-1"><FaCalendarPlus size={9} />{formatDate(salary.effective_from)}</span>
+                <span className="flex items-center gap-1"><FaCalendarCheck size={9} />{formatDate(salary.effective_to)}</span>
             </div>
 
             <div className="flex flex-wrap gap-1 mb-3">
-                {salary.components?.slice(0, 2).map((comp, idx) => (
-                    <SalaryBadge key={idx} type={comp.type} value={comp.code} />
-                ))}
-                {(salary.components?.length || 0) > 2 && (
-                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">
-                        +{salary.components.length - 2} more
-                    </span>
-                )}
+                {salary.components?.slice(0, 2).map((comp, idx) => (<SalaryBadge key={idx} type={comp.type} value={comp.code} />))}
+                {(salary.components?.length || 0) > 2 && (<span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium">+{salary.components.length - 2} more</span>)}
             </div>
 
             <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
-                <span className="text-xs text-gray-400">
-                    {formatCurrency(salary.ctc, salary.currency)} CTC
-                </span>
+                <span className="text-xs text-gray-400">{formatCurrency(salary.ctc, salary.currency)} CTC</span>
                 <div onClick={e => e.stopPropagation()}>
                     <ActionMenu
                         menuId={`card-${salary.salary_id}`}
                         activeId={activeId}
                         onToggle={onToggle}
                         actions={[
-                            {
-                                label: 'View Details',
-                                icon: <FaEye size={13} />,
-                                onClick: () => setSelectedSalary(salary),
-                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                            },
-                            {
-                                label: 'Edit Salary',
-                                icon: <FaEdit size={13} />,
-                                onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); },
-                                className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
-                            },
-                            {
-                                label: 'Revise Salary',
-                                icon: <FaExchangeAlt size={13} />,
-                                onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); },
-                                className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
-                            },
-                            {
-                                label: 'Delete',
-                                icon: <FaTrash size={13} />,
-                                onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
-                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                            }
+                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onClick(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+                            { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => onEdit(salary), className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' },
+                            { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => onRevise(salary), className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
+                            { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(salary), className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
                         ]}
                     />
                 </div>
@@ -1768,7 +967,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, onView, activeId, onTogg
     );
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const SalaryManagement = () => {
     const [salaries, setSalaries] = useState([]);
@@ -1786,14 +985,7 @@ const SalaryManagement = () => {
     const [salaryToDelete, setSalaryToDelete] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
-    const [visibleColumns, setVisibleColumns] = useState(() => ({
-        showEmployee: true,
-        showPackage: window.innerWidth >= 1024,
-        showBaseAmount: window.innerWidth >= 480,
-        showNetSalary: window.innerWidth >= 590,
-        showEffectivePeriod: window.innerWidth >= 1280,
-        showStatus: window.innerWidth >= 768,
-    }));
+    const [visibleColumns, setVisibleColumns] = useState(() => ({ ...getVisibleSalaryColumns(window.innerWidth) }));
     const [showEditModal, setShowEditModal] = useState(false);
     const [showReviseModal, setShowReviseModal] = useState(false);
     const [salaryToEdit, setSalaryToEdit] = useState(null);
@@ -1803,133 +995,62 @@ const SalaryManagement = () => {
     const fetchInProgress = useRef(false);
     const salaryDateFilterRef = useRef({});
 
-    // Debounce search
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm), 500);
         return () => clearTimeout(t);
     }, [searchTerm]);
 
-    // Responsive columns
     useEffect(() => {
         let t;
-        const onResize = () => {
-            clearTimeout(t);
-            t = setTimeout(() =>
-                setVisibleColumns({
-                    showEmployee: true,
-                    showPackage: window.innerWidth >= 1024,
-                    showBaseAmount: window.innerWidth >= 480,
-                    showNetSalary: window.innerWidth >= 590,
-                    showEffectivePeriod: window.innerWidth >= 1280,
-                    showStatus: window.innerWidth >= 768,
-                }), 150);
-        };
+        const onResize = () => { clearTimeout(t); t = setTimeout(() => setVisibleColumns(getVisibleSalaryColumns(window.innerWidth)), 150); };
         window.addEventListener("resize", onResize);
         return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
     }, []);
 
-    const fetchSalaries = useCallback(async (
-        page = pagination.page,
-        search = debouncedSearch,
-        resetLoading = true,
-        dateParams = salaryDateFilterRef.current
-    ) => {
+    const fetchSalaries = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true, dateParams = salaryDateFilterRef.current) => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
-
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const queryParams = new URLSearchParams({
-                page: page.toString(),
-                limit: pagination.limit.toString(),
-            });
+            const queryParams = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
             if (showHistory) queryParams.append('history', 'true');
             if (search) queryParams.append('search', search);
-            Object.entries(dateParams || {}).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && String(value).trim() !== '') {
-                    queryParams.append(key, String(value));
-                }
-            });
-
+            Object.entries(dateParams || {}).forEach(([key, value]) => { if (value !== undefined && value !== null && String(value).trim() !== '') queryParams.append(key, String(value)); });
             const url = `/salary/employees-salaries?${queryParams.toString()}`;
-
             const response = await apiCall(url, 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) {
                 setSalaries(result.data || []);
                 setMeta(result);
-                const total = Number(
-                    result.pagination?.total ??
-                    result.meta?.total ??
-                    result.total ??
-                    result.data?.length ??
-                    0
-                );
-                const pageCount = Number(
-                    result.pagination?.total_pages ??
-                    result.meta?.total_pages ??
-                    Math.max(1, Math.ceil(total / pagination.limit))
-                );
+                const total = Number(result.pagination?.total ?? result.meta?.total ?? result.total ?? result.data?.length ?? 0);
+                const pageCount = Number(result.pagination?.total_pages ?? result.meta?.total_pages ?? Math.max(1, Math.ceil(total / pagination.limit)));
                 const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
                 const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
-                updatePagination({
-                    page: currentPage,
-                    limit: perPage,
-                    total,
-                    total_pages: pageCount,
-                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= pageCount)
-                });
-            } else {
-                throw new Error(result.message || "Failed to fetch salaries");
-            }
-        } catch (e) {
-            toast.error(e.message || "Failed to load salary records.");
-            console.error(e);
-        } finally {
-            setLoading(false);
-            fetchInProgress.current = false;
-            setIsInitialLoad(false);
-        }
+                updatePagination({ page: currentPage, limit: perPage, total, total_pages: pageCount, is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= pageCount) });
+            } else { throw new Error(result.message || "Failed to fetch salaries"); }
+        } catch (e) { toast.error(e.message || "Failed to load salary records."); console.error(e); }
+        finally { setLoading(false); fetchInProgress.current = false; setIsInitialLoad(false); }
     }, [pagination.page, pagination.limit, debouncedSearch, showHistory, updatePagination]);
 
-    const handlePageChange = useCallback((newPage) => {
-        if (newPage !== pagination.page) goToPage(newPage);
-    }, [pagination.page, goToPage]);
+    const handlePageChange = useCallback((newPage) => { if (newPage !== pagination.page) goToPage(newPage); }, [pagination.page, goToPage]);
 
     const handleDateFilterApply = useCallback((result) => {
         let nextParams = {};
         let nextLabel = 'Filter by date';
-
-        if (typeof result === 'string' && result) {
-            nextParams = { date: result };
-            nextLabel = formatFilterLabel(result);
-        } else if (result?.start && result?.end) {
-            nextParams = { from_date: result.start, to_date: result.end };
-            nextLabel = result.start === result.end
-                ? formatFilterLabel(result.start)
-                : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`;
-        }
-
+        if (typeof result === 'string' && result) { nextParams = { date: result }; nextLabel = formatFilterLabel(result); }
+        else if (result?.start && result?.end) { nextParams = { from_date: result.start, to_date: result.end }; nextLabel = result.start === result.end ? formatFilterLabel(result.start) : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`; }
         salaryDateFilterRef.current = nextParams;
         setDateFilterLabel(nextLabel);
-
-        if (pagination.page !== 1) {
-            goToPage(1);
-        } else {
-            fetchSalaries(1, debouncedSearch, true, nextParams);
-        }
+        if (pagination.page !== 1) goToPage(1);
+        else fetchSalaries(1, debouncedSearch, true, nextParams);
     }, [debouncedSearch, fetchSalaries, goToPage, pagination.page]);
 
     const clearDateFilter = useCallback(() => {
         salaryDateFilterRef.current = {};
         setDateFilterLabel('Filter by date');
-
-        if (pagination.page !== 1) {
-            goToPage(1);
-        } else {
-            fetchSalaries(1, debouncedSearch, true, {});
-        }
+        if (pagination.page !== 1) goToPage(1);
+        else fetchSalaries(1, debouncedSearch, true, {});
     }, [debouncedSearch, fetchSalaries, goToPage, pagination.page]);
 
     const visibleSalaries = useMemo(() => {
@@ -1938,7 +1059,6 @@ const SalaryManagement = () => {
         return salaries.filter((salary) => salaryOverlapsDateFilter(salary, filter));
     }, [salaries, dateFilterLabel]);
 
-    // Search and history triggers
     useEffect(() => {
         if (!isInitialLoad) {
             if (pagination.page !== 1) goToPage(1);
@@ -1947,20 +1067,13 @@ const SalaryManagement = () => {
     }, [debouncedSearch, showHistory]);
 
     useEffect(() => {
-        if (!isInitialLoad && !fetchInProgress.current) {
-            fetchSalaries(pagination.page, debouncedSearch, true);
-        }
+        if (!isInitialLoad && !fetchInProgress.current) fetchSalaries(pagination.page, debouncedSearch, true);
     }, [pagination.page, pagination.limit]);
 
     useEffect(() => {
         const company = JSON.parse(localStorage.getItem('company'));
-        if (company && isInitialLoad) {
-            fetchSalaries(1, "", true);
-        } else if (!company) {
-            toast.error("Company ID not found. Please ensure you're logged in as a company.");
-            setLoading(false);
-            setIsInitialLoad(false);
-        }
+        if (company && isInitialLoad) fetchSalaries(1, "", true);
+        else if (!company) { toast.error("Company ID not found."); setLoading(false); setIsInitialLoad(false); }
     }, []);
 
     const handleDeleteSalary = async () => {
@@ -1970,27 +1083,15 @@ const SalaryManagement = () => {
             const company = JSON.parse(localStorage.getItem('company'));
             const response = await apiCall('/salary/delete-salary', 'DELETE', { salary_id: salaryToDelete.salary_id }, company?.id);
             const result = await response.json();
-            if (result.success) {
-                toast.success('Salary record deleted successfully.');
-                fetchSalaries(pagination.page, debouncedSearch, false);
-                setShowDeleteModal(false);
-                setSalaryToDelete(null);
-            } else {
-                throw new Error(result.message || 'Failed to delete salary');
-            }
-        } catch (error) {
-            console.error('Error deleting salary:', error);
-            toast.error(error.message || 'Failed to delete salary');
-        } finally {
-            setProcessingId(null);
-        }
+            if (result.success) { toast.success('Salary record deleted successfully.'); fetchSalaries(pagination.page, debouncedSearch, false); setShowDeleteModal(false); setSalaryToDelete(null); }
+            else { throw new Error(result.message || 'Failed to delete salary'); }
+        } catch (error) { console.error('Error deleting salary:', error); toast.error(error.message || 'Failed to delete salary'); }
+        finally { setProcessingId(null); }
     };
 
     const stats = {
         total: meta?.total || 0,
-        avgBase: visibleSalaries.length > 0
-            ? visibleSalaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / visibleSalaries.length
-            : 0,
+        avgBase: visibleSalaries.length > 0 ? visibleSalaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / visibleSalaries.length : 0,
         totalCTC: visibleSalaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
         activeCount: visibleSalaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
         currency: visibleSalaries[0]?.currency || salaries[0]?.currency || 'USD'
@@ -2002,115 +1103,44 @@ const SalaryManagement = () => {
         <div className="min-h-screen p-3 md:p-6 font-sans">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
-                >
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
                     <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
                         Salary Management
                     </h1>
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setShowHistory(!showHistory)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showHistory
-                                ? 'bg-purple-600 text-white shadow-md'
-                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
+                        <button onClick={() => setShowHistory(!showHistory)} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${showHistory ? 'bg-purple-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                             <FaHistory /> History
                         </button>
-
-                        <motion.button
-                            whileHover={{ scale: 1.02, y: -2 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => setShowAssignModal(true)}
-                            className="group relative px-6 py-2.5 bg-gradient-to-r from-green-600 via-green-600 to-emerald-600
-                                       text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
-                                       transition-all duration-300 flex items-center gap-2 overflow-hidden"
-                        >
-                            <div className="relative z-10">
-                                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                                </svg>
-                            </div>
+                        <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }} onClick={() => setShowAssignModal(true)}
+                            className="group relative px-6 py-2.5 bg-gradient-to-r from-green-600 via-green-600 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 overflow-hidden">
+                            <div className="relative z-10"><svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg></div>
                             <span className="relative z-10 text-sm">Assign Salary</span>
-                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
-                                           transition-transform duration-700 bg-gradient-to-r
-                                           from-transparent via-white/20 to-transparent" />
+                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
                         </motion.button>
                     </div>
                 </motion.div>
 
-                {/* Stats Summary */}
+                {/* Stats */}
                 {!loading && visibleSalaries.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
-                    >
-                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
-                            <p className="text-xs opacity-80">Total Employees</p>
-                            <p className="text-2xl font-bold">{stats.total}</p>
-                        </div>
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
-                            <p className="text-xs opacity-80">Avg Base Salary</p>
-                            <p className="text-2xl font-bold">{formatCurrency(stats.avgBase, stats.currency)}</p>
-                        </div>
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 text-white shadow-lg">
-                            <p className="text-xs opacity-80">Total CTC</p>
-                            <p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, stats.currency)}</p>
-                        </div>
-                        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
-                            <p className="text-xs opacity-80">Active Salaries</p>
-                            <p className="text-2xl font-bold">{stats.activeCount}</p>
-                        </div>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total Employees</p><p className="text-2xl font-bold">{stats.total}</p></div>
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Avg Base Salary</p><p className="text-2xl font-bold">{formatCurrency(stats.avgBase, stats.currency)}</p></div>
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total CTC</p><p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, stats.currency)}</p></div>
+                        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Active Salaries</p><p className="text-2xl font-bold">{stats.activeCount}</p></div>
                     </motion.div>
                 )}
 
-                {/* Search */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="mb-6 space-y-3"
-                >
+                {/* Search + Date Filter */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6 space-y-3">
                     <div className="relative">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-                        <input
-                            type="text"
-                            placeholder="Search by employee name, code or email..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none shadow-lg transition-all"
-                        />
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                                <FaTimes />
-                            </button>
-                        )}
+                        <input type="text" placeholder="Search by employee name, code or email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none shadow-lg transition-all" />
+                        {searchTerm && (<button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><FaTimes /></button>)}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                        <DatePickerField
-                            value=""
-                            onChange={handleDateFilterApply}
-                            placeholder={dateFilterLabel}
-                            buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-                            wrapperClassName="w-auto"
-                            popoverClassName="w-[min(92vw,24rem)]"
-                            initialTab="quick"
-                            mode="both"
-                        />
+                        <DatePickerField value="" onChange={handleDateFilterApply} placeholder={dateFilterLabel} buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]" wrapperClassName="w-auto" popoverClassName="w-[min(92vw,24rem)]" initialTab="quick" mode="both" />
                         {dateFilterLabel !== 'Filter by date' && (
-                            <button
-                                type="button"
-                                onClick={clearDateFilter}
-                                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-                                title="Clear date filter"
-                                aria-label="Clear date filter"
-                            >
+                            <button type="button" onClick={clearDateFilter} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]" title="Clear date filter" aria-label="Clear date filter">
                                 <FaTimes />
                             </button>
                         )}
@@ -2121,8 +1151,7 @@ const SalaryManagement = () => {
                 {!loading && visibleSalaries.length > 0 && (
                     <div className="flex justify-between items-center mb-6">
                         <p className="text-sm text-gray-500">
-                            <span className="font-semibold text-gray-800">{visibleSalaries.length}</span> of{' '}
-                            <span className="font-semibold text-gray-800">{stats.total}</span> salary records
+                            <span className="font-semibold text-gray-800">{visibleSalaries.length}</span> of <span className="font-semibold text-gray-800">{stats.total}</span> salary records
                             {debouncedSearch && <span className="ml-1 text-green-600">· "{debouncedSearch}"</span>}
                             {showHistory && <span className="ml-1 text-purple-600">· Showing history</span>}
                             {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">· {dateFilterLabel}</span>}
@@ -2131,67 +1160,53 @@ const SalaryManagement = () => {
                     </div>
                 )}
 
-                {/* Loading skeleton */}
+                {/* Loading */}
                 {loading && !visibleSalaries.length && <SkeletonComponent />}
 
                 {/* Empty State */}
                 {!loading && visibleSalaries.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
-                    >
-                        <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaMoneyBillWave className="text-4xl text-gray-300" />
-                        </div>
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100">
+                        <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4"><FaMoneyBillWave className="text-4xl text-gray-300" /></div>
                         <p className="text-xl font-semibold text-gray-600">No salary records found</p>
-                        <p className="text-gray-400 mt-2 text-sm">
-                            {debouncedSearch
-                                ? `No results for "${debouncedSearch}"`
-                                : dateFilterLabel !== 'Filter by date'
-                                    ? `No results for ${dateFilterLabel}`
-                                    : 'Click "Assign Salary" to get started'}
-                        </p>
-                        {debouncedSearch && (
-                            <button onClick={() => setSearchTerm('')}
-                                className="mt-4 px-4 py-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all text-sm font-medium">
-                                Clear Search
-                            </button>
-                        )}
-                        {!debouncedSearch && (
-                            <button onClick={() => setShowAssignModal(true)}
-                                className="mt-4 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium">
-                                Assign Salary
-                            </button>
-                        )}
+                        <p className="text-gray-400 mt-2 text-sm">{debouncedSearch ? `No results for "${debouncedSearch}"` : dateFilterLabel !== 'Filter by date' ? `No results for ${dateFilterLabel}` : 'Click "Assign Salary" to get started'}</p>
+                        {debouncedSearch && (<button onClick={() => setSearchTerm('')} className="mt-4 px-4 py-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all text-sm font-medium">Clear Search</button>)}
+                        {!debouncedSearch && (<button onClick={() => setShowAssignModal(true)} className="mt-4 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium">Assign Salary</button>)}
                     </motion.div>
                 )}
 
-                {/* Table View */}
+                {/* ─── TABLE VIEW ─── */}
                 {!loading && visibleSalaries.length > 0 && viewMode === "table" && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible"
-                    >
-                        <div className="overflow-x-auto overflow-y-visible">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left text-gray-700">
-                                <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                     <tr>
-                                        {visibleColumns.showEmployee && <th className="px-6 py-4">Employee</th>}
-                                        {visibleColumns.showPackage && <th className="px-6 py-4">Package</th>}
-                                        {visibleColumns.showBaseAmount && <th className="px-6 py-4">Base Amount</th>}
-                                        {visibleColumns.showNetSalary && <th className="px-6 py-4">Net Salary</th>}
-                                        {visibleColumns.showEffectivePeriod && <th className="px-6 py-4">Effective Period</th>}
-                                        {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
-                                        <th className="px-6 py-4 text-right">Actions</th>
+                                        {visibleColumns.showEmployee && (
+                                            <th className="px-4 lg:px-6 py-4 font-semibold">Employee</th>
+                                        )}
+                                        {visibleColumns.showPackage && (
+                                            <th className="px-4 lg:px-6 py-4 font-semibold">Package</th>
+                                        )}
+                                        {visibleColumns.showBaseAmount && (
+                                            <th className="px-4 lg:px-6 py-4 font-semibold">Base Amount</th>
+                                        )}
+                                        {visibleColumns.showNetSalary && (
+                                            <th className="px-4 lg:px-6 py-4 font-semibold">Net Salary</th>
+                                        )}
+                                        {visibleColumns.showEffectivePeriod && (
+                                            <th className="px-4 lg:px-6 py-4 font-semibold">Effective Period</th>
+                                        )}
+                                        {visibleColumns.showStatus && (
+                                            <th className="px-4 lg:px-6 py-4 font-semibold">Status</th>
+                                        )}
+                                        {/* ✅ FIX: Actions column — no text label, fixed narrow width */}
+                                        <th className="py-4 pr-4 w-12"><FaCog className="w-4 h-4 ml-auto" /></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-100">
                                     {visibleSalaries.map((salary, index) => {
                                         const status = getStatusBadge(salary.effective_to);
                                         const StatusIcon = status.icon;
-                                        const isActive = !salary.effective_to || new Date(salary.effective_to) > new Date();
 
                                         return (
                                             <motion.tr
@@ -2199,90 +1214,70 @@ const SalaryManagement = () => {
                                                 initial={{ opacity: 0, y: 20 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: index * 0.05 }}
-                                                className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 cursor-pointer"
+                                                className="hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 cursor-pointer align-middle"
                                                 onClick={() => setSelectedSalary(salary)}
                                             >
                                                 {visibleColumns.showEmployee && (
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-4 lg:px-6 py-4 max-w-[150px]">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center text-white font-semibold`}>
+                                                            <div className={`w-10 h-10 rounded-full shrink-0 bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center text-white font-semibold`}>
                                                                 {getInitials(salary.employee?.name)}
                                                             </div>
-                                                            <div>
-                                                                <p className="font-semibold text-gray-800">{salary.employee?.name || "No name"}</p>
-                                                                <p className="text-xs text-gray-500 flex items-center gap-1">
-                                                                    <FaEnvelope className="text-gray-400" size={10} />{salary.employee?.email}
+                                                            <div className="min-w-0">
+                                                                <p className="font-semibold text-gray-800 truncate">{salary.employee?.name || "No name"}</p>
+                                                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                                                    <FaEnvelope className="text-gray-400 shrink-0" size={10} />
+                                                                    <span className="truncate">{salary.employee?.email}</span>
                                                                 </p>
-                                                                <p className="text-xs text-gray-400 font-mono">{salary.employee?.employee_code}</p>
+                                                                <p className="text-xs text-gray-400 font-mono mt-0.5">{salary.employee?.employee_code}</p>
                                                             </div>
                                                         </div>
                                                     </td>
                                                 )}
                                                 {visibleColumns.showPackage && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium">
+                                                    <td className="px-4 lg:px-6 py-4">
+                                                        <span className="inline-flex px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-medium whitespace-nowrap">
                                                             {salary.package?.name}
                                                         </span>
                                                     </td>
                                                 )}
                                                 {visibleColumns.showBaseAmount && (
-                                                    <td className="px-6 py-4 font-semibold text-gray-700">
+                                                    <td className="px-4 lg:px-6 py-4 font-semibold text-gray-700 whitespace-nowrap">
                                                         {formatCurrency(salary.base_amount, salary.currency)}
                                                     </td>
                                                 )}
                                                 {visibleColumns.showNetSalary && (
-                                                    <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold">
+                                                    <td className="px-4 lg:px-6 py-4">
+                                                        <span className="inline-flex px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold whitespace-nowrap">
                                                             {formatCurrency(salary.net_salary, salary.currency)}
                                                         </span>
                                                     </td>
                                                 )}
                                                 {visibleColumns.showEffectivePeriod && (
-                                                    <td className="px-6 py-4 text-xs">
+                                                    <td className="px-4 lg:px-6 py-4 text-xs text-gray-500 whitespace-nowrap">
                                                         {formatDate(salary.effective_from)} → {formatDate(salary.effective_to)}
                                                     </td>
                                                 )}
                                                 {visibleColumns.showStatus && (
-                                                    <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                                                    <td className="px-4 lg:px-6 py-4">
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border whitespace-nowrap ${status.className}`}>
                                                             <StatusIcon size={12} />{status.text}
                                                         </span>
                                                     </td>
                                                 )}
-                                                <td className="px-6 py-4 text-right">
-                                                    <div onClick={e => e.stopPropagation()}>
-                                                        <ActionMenu
-                                                            menuId={`table-${salary.salary_id}`}
-                                                            activeId={activeActionMenu}
-                                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                            actions={[
-                                                                {
-                                                                    label: 'View Details',
-                                                                    icon: <FaEye size={13} />,
-                                                                    onClick: () => setSelectedSalary(salary),
-                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
-                                                                },
-                                                                {
-                                                                    label: 'Edit Salary',
-                                                                    icon: <FaEdit size={13} />,
-                                                                    onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); },
-                                                                    className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
-                                                                },
-                                                                {
-                                                                    label: 'Revise Salary',
-                                                                    icon: <FaExchangeAlt size={13} />,
-                                                                    onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); },
-                                                                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
-                                                                },
-                                                                {
-                                                                    label: 'Delete',
-                                                                    icon: <FaTrash size={13} />,
-                                                                    onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); },
-                                                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
-                                                                }
-                                                            ]}
-                                                        />
-                                                    </div>
+                                                {/* ✅ FIX: Actions td — w-12, no padding-left, shrink-0 */}
+                                                <td className="pr-4 py-4 w-12 text-right" onClick={e => e.stopPropagation()}>
+                                                    <ActionMenu
+                                                        menuId={`table-${salary.salary_id}`}
+                                                        activeId={activeActionMenu}
+                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                        actions={[
+                                                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setSelectedSalary(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+                                                            { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); }, className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' },
+                                                            { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); }, className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
+                                                            { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); }, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+                                                        ]}
+                                                    />
                                                 </td>
                                             </motion.tr>
                                         );
@@ -2302,11 +1297,9 @@ const SalaryManagement = () => {
                                 salary={salary}
                                 index={index}
                                 onClick={(s) => setSelectedSalary(s)}
-                                onView={(s) => setSelectedSalary(s)}
-                                onDelete={(s) => {
-                                    setSalaryToDelete(s);
-                                    setShowDeleteModal(true);
-                                }}
+                                onEdit={(s) => { setSalaryToEdit(s); setShowEditModal(true); }}
+                                onRevise={(s) => { setSalaryToRevise(s); setShowReviseModal(true); }}
+                                onDelete={(s) => { setSalaryToDelete(s); setShowDeleteModal(true); }}
                                 activeId={activeActionMenu}
                                 onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                             />
@@ -2327,43 +1320,15 @@ const SalaryManagement = () => {
                 )}
 
                 {/* Modals */}
-                <SalaryDetailModal
-                    salary={selectedSalary}
-                    onClose={() => setSelectedSalary(null)}
-                />
+                <SalaryDetailModal salary={selectedSalary} onClose={() => setSelectedSalary(null)} />
 
-                <AssignSalaryModal
-                    isOpen={showAssignModal}
-                    onClose={() => setShowAssignModal(false)}
-                    onSuccess={() => {
-                        fetchSalaries(1, "", true);
-                        setShowAssignModal(false);
-                    }}
-                />
-                <EditSalaryModal
-                    isOpen={showEditModal}
-                    onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }}
-                    onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)}
-                    salary={salaryToEdit}
-                />
+                <AssignSalaryModal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} onSuccess={() => { fetchSalaries(1, "", true); setShowAssignModal(false); }} />
 
-                <ReviseSalaryModal
-                    isOpen={showReviseModal}
-                    onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }}
-                    onSuccess={() => fetchSalaries(1, "", true)}
-                    salary={salaryToRevise}
-                />
+                <EditSalaryModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }} onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)} salary={salaryToEdit} />
 
-                <DeleteConfirmModal
-                    isOpen={showDeleteModal}
-                    onClose={() => {
-                        setShowDeleteModal(false);
-                        setSalaryToDelete(null);
-                    }}
-                    onConfirm={handleDeleteSalary}
-                    salary={salaryToDelete}
-                    processingId={processingId}
-                />
+                <ReviseSalaryModal isOpen={showReviseModal} onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }} onSuccess={() => fetchSalaries(1, "", true)} salary={salaryToRevise} />
+
+                <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setSalaryToDelete(null); }} onConfirm={handleDeleteSalary} salary={salaryToDelete} processingId={processingId} />
             </div>
         </div>
     );

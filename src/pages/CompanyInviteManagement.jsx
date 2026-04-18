@@ -4,7 +4,7 @@ import {
   FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
   FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
   FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
-  FaSearch, FaTimes, FaShieldAlt, FaUserCircle, FaTh, FaListUl,FaChevronDown,FaUserCheck
+  FaSearch, FaTimes, FaShieldAlt, FaUserCircle, FaTh, FaListUl,FaChevronDown,FaUserCheck, FaCog
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
@@ -542,7 +542,7 @@ export default function CompanyInvites() {
                       {visibleColumns.showEmployment  && <th className="px-6 py-4">Employment</th>}
                       {visibleColumns.showStatus      && <th className="px-6 py-4">Status</th>}
                       {visibleColumns.showExpires     && <th className="px-6 py-4">Expires</th>}
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

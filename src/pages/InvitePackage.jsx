@@ -50,6 +50,15 @@ const getStatusBadge = (isActive) => {
   return { icon: FaTimesCircle, text: "Inactive", className: "bg-gray-100 text-gray-800 border border-gray-200" };
 };
 
+const getVisibleColumns = (width) => ({
+  showCode: width >= 480,
+  showName: true,
+  showDesignation: width >= 640,
+  showStatus: width >= 768,
+  showEmployment: width >= 1024,
+  showCreated: width >= 1280
+});
+
 // Weekday options
 const WEEKDAYS = [
   { value: "monday", label: "Monday" },
@@ -1085,26 +1094,14 @@ export default function InvitePackageManagement() {
 
   // Responsive columns
   const [visibleColumns, setVisibleColumns] = useState(() => ({
-    showCode: window.innerWidth >= 420,
-    showName: true,
-    showDesignation: window.innerWidth >= 540,
-    showEmployment: window.innerWidth >= 1024,
-    showStatus: window.innerWidth >= 768,
-    showCreated: window.innerWidth >= 1280
+    ...getVisibleColumns(window.innerWidth),
   }));
 
   useEffect(() => {
     let t;
     const onResize = () => {
       clearTimeout(t);
-      t = setTimeout(() => setVisibleColumns({
-        showCode: window.innerWidth >= 420,
-        showName: true,
-        showDesignation: window.innerWidth >= 540,
-        showEmployment: window.innerWidth >= 1024,
-        showStatus: window.innerWidth >= 768,
-        showCreated: window.innerWidth >= 1280
-      }), 150);
+      t = setTimeout(() => setVisibleColumns(getVisibleColumns(window.innerWidth)), 150);
     };
     window.addEventListener("resize", onResize);
     return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
@@ -1185,18 +1182,18 @@ export default function InvitePackageManagement() {
         {/* Table View */}
         {!loading && packages.length > 0 && viewMode === "table" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-xl overflow-visible">
-            <div className="overflow-x-auto overflow-y-visible">
-              <table className="w-full text-sm text-left text-gray-700">
+            className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="overflow-hidden">
+              <table className="w-full table-fixed text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs xsm:hidden">
                   <tr>
-                    {visibleColumns.showCode && <th className="px-6 py-4">Code</th>}
-                    {visibleColumns.showName && <th className="px-6 py-4">Package Name</th>}
-                    {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
-                    {visibleColumns.showEmployment && <th className="px-6 py-4">Employment</th>}
-                    {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
-                    {visibleColumns.showCreated && <th className="px-6 py-4">Created</th>}
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    {visibleColumns.showCode && <th className="w-[12%] px-4 lg:px-6 py-4">Code</th>}
+                    {visibleColumns.showName && <th className="w-[24%] px-4 lg:px-6 py-4">Package Name</th>}
+                    {visibleColumns.showDesignation && <th className="w-[16%] px-4 lg:px-6 py-4">Designation</th>}
+                    {visibleColumns.showEmployment && <th className="w-[20%] px-4 lg:px-6 py-4">Employment</th>}
+                    {visibleColumns.showStatus && <th className="w-[12%] px-4 lg:px-6 py-4">Status</th>}
+                    {visibleColumns.showCreated && <th className="w-[12%] px-4 lg:px-6 py-4">Created</th>}
+                    <th className="w-12 px-2 py-4"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -1207,43 +1204,49 @@ export default function InvitePackageManagement() {
                       <motion.tr key={pkg.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
                         onClick={() => readAccess.enabled && openModal(pkg, "view")}
-                        className="cursor-pointer hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-300">
+                        className="cursor-pointer hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 transition-all duration-300 align-top">
                         {visibleColumns.showCode && (
-                          <td className="px-6 py-4 font-mono text-xs font-medium text-gray-600">{pkg.code}</td>
+                          <td className="px-4 lg:px-6 py-4 font-mono text-xs font-medium text-gray-600">
+                            <span className="block truncate">{pkg.code}</span>
+                          </td>
                         )}
                         {visibleColumns.showName && (
-                          <td className="px-6 py-4 font-semibold text-gray-800">{pkg.name}</td>
+                          <td className="px-4 lg:px-6 py-4 font-semibold text-gray-800">
+                            <span className="block truncate">{pkg.name}</span>
+                          </td>
                         )}
                         {visibleColumns.showDesignation && (
-                          <td className="px-6 py-4">
-                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                          <td className="px-4 lg:px-6 py-4">
+                            <span className="inline-flex max-w-full truncate px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
                               {formatDisplay(pkg.designation)}
                             </span>
                           </td>
                         )}
                         {visibleColumns.showEmployment && (
-                          <td className="px-6 py-4">
-                            <div className="flex flex-wrap gap-1">
-                              <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+                          <td className="px-4 lg:px-6 py-4">
+                            <div className="flex flex-wrap gap-1 min-w-0">
+                              <span className="max-w-full truncate px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
                                 {formatDisplay(pkg.employment_type)}
                               </span>
-                              <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">
+                              <span className="max-w-full truncate px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">
                                 {formatDisplay(pkg.salary_type)}
                               </span>
                             </div>
                           </td>
                         )}
                         {visibleColumns.showStatus && (
-                          <td className="px-6 py-4">
+                          <td className="px-4 lg:px-6 py-4">
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
                               <StatusIcon size={12} />{status.text}
                             </span>
                           </td>
                         )}
                         {visibleColumns.showCreated && (
-                          <td className="px-6 py-4 text-xs text-gray-500">{formatDate(pkg.created_at)}</td>
+                          <td className="px-4 lg:px-6 py-4 text-xs text-gray-500">
+                            <span className="block truncate">{formatDate(pkg.created_at)}</span>
+                          </td>
                         )}
-                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td className="w-12 px-2 py-4 text-right max-w-[150px] align-top" onClick={(e) => e.stopPropagation()}>
                           <ActionMenu
                             menuId={pkg.id}
                             activeId={activeActionMenu}

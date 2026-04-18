@@ -5,7 +5,7 @@ import {
     FaSpinner, FaSearch, FaTimes, FaEye,
     FaRegClock, FaFileInvoiceDollar, FaExclamationTriangle,
     FaCheckCircle, FaTimesCircle, FaHourglassHalf, FaIdCard,
-    FaUserTag, FaWallet, FaCalendarCheck, FaUserTie, FaDollarSign
+    FaUserTag, FaWallet, FaCalendarCheck, FaUserTie, FaDollarSign, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -481,7 +481,7 @@ const MyPayroll = () => {
                                             {visibleColumns.showAttendance  && <th className="px-6 py-4">Attendance</th>}
                                             {visibleColumns.showHours       && <th className="px-6 py-4">Hours</th>}
                                             {visibleColumns.showStatus      && <th className="px-6 py-4">Status</th>}
-                                            <th className="px-6 py-4 text-right">Actions</th>
+                                            <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">

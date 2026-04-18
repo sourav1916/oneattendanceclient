@@ -5,7 +5,7 @@ import {
   FaCheckCircle, FaTimesCircle, FaEnvelope, FaPhone, FaCalendarAlt,
   FaSearch, FaBuilding, FaCheck, FaBan, FaUser, FaMapMarkerAlt,
   FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle,
-  FaTh, FaListUl, FaShieldAlt, FaUserCheck, FaChevronDown
+  FaTh, FaListUl, FaShieldAlt, FaUserCheck, FaChevronDown, FaCog
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -561,7 +561,7 @@ export default function MyInvites() {
                       {visibleColumns.showEmployment && <th className="px-6 py-4">Employment</th>}
                       {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
                       {visibleColumns.showExpires && <th className="px-6 py-4">Expires</th>}
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

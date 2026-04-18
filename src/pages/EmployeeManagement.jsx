@@ -7,7 +7,7 @@ import {
     FaDollarSign, FaUserTag, FaShieldAlt, FaUser, FaTrashAlt,
     FaInfoCircle, FaPlus, FaUserTie, FaUserCheck, FaRobot, FaHandPaper,
     FaCamera, FaMapMarkerAlt, FaWifi, FaFingerprint, FaNetworkWired, FaSave,
-    FaTh, FaListUl, FaChevronDown, FaChevronRight
+    FaTh, FaListUl, FaChevronDown, FaChevronRight, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
@@ -1120,7 +1120,7 @@ const EmployeeManagement = () => {
                                             {visibleColumns.showType && <th className="px-6 py-4">Type</th>}
                                             {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
                                             {visibleColumns.showJoiningDate && <th className="px-6 py-4">Joining Date</th>}
-                                            <th className="px-6 py-4 text-right">Actions</th>
+                                            <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">

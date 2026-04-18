@@ -567,7 +567,7 @@ const CompanyManagement = () => {
                                         {showIP       && <th className="px-5 py-4 font-semibold tracking-wider">IP Address</th>}
                                         <th className="px-5 py-4 font-semibold tracking-wider">Status</th>
                                         {showCreated  && <th className="px-5 py-4 font-semibold tracking-wider">Created</th>}
-                                        <th className="px-5 py-4 text-right font-semibold tracking-wider">Actions</th>
+                                        <th className="px-5 py-4 text-right font-semibold tracking-wider"><FaCog className="w-4 h-4 ml-auto" /></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">

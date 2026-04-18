@@ -19,6 +19,7 @@ import {
   FaChevronDown,
   FaTh,
   FaListUl,
+  FaCog,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -982,7 +983,7 @@ const LeaveBalanceManagement = () => {
                       <th className="px-6 py-4">Remaining</th>
                       {showPaid && <th className="px-6 py-4">Paid</th>}
                       {showMax && <th className="px-6 py-4">Max</th>}
-                      <th className="px-6 py-4 text-center">Actions</th>
+                      <th className="px-6 py-4 text-center"><FaCog className="w-4 h-4 mx-auto" /></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">

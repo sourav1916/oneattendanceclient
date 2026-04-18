@@ -5,7 +5,7 @@ import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
-  FaBan, FaComment, FaHistory, FaUserCheck,
+  FaBan, FaComment, FaHistory, FaUserCheck, FaCog,
   FaEllipsisV,FaTimes
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -734,7 +734,7 @@ const AttendanceManagement = ({ companyId }) => {
                         {showDateTime && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date & Time</th>}
                         <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                         {showMethod && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>}
-                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">

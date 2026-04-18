@@ -898,7 +898,7 @@ const SalaryPackages = () => {
                                         {showTotal && <th className="px-6 py-4">Total</th>}
                                         {showStatus && <th className="px-6 py-4">Status</th>}
                                         {showCreated && <th className="px-6 py-4">Created</th>}
-                                        <th className="px-6 py-4 text-right">Actions</th>
+                                        <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">

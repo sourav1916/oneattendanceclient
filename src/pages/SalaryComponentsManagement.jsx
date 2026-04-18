@@ -5,7 +5,7 @@ import {
     FaChartBar, FaEdit, FaTrash, FaInfoCircle,
     FaListUl, FaTh, FaPercentage, FaDollarSign,
     FaBuilding, FaBalanceScale, FaTag, FaToggleOn, FaToggleOff, FaEye,
-    FaSearch, FaClock, FaBriefcase, FaUserCircle
+    FaSearch, FaClock, FaBriefcase, FaUserCircle, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -791,7 +791,7 @@ const SalaryComponents = () => {
                                         <th className="px-6 py-4">Value</th>
                                         {showFlags && <th className="px-6 py-4">Flags</th>}
                                         {showStatus && <th className="px-6 py-4">Status</th>}
-                                        <th className="px-6 py-4 text-right">Actions</th>
+                                        <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">

@@ -3,7 +3,7 @@ import {
   FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaSearch, FaSpinner,
   FaShieldAlt, FaPlus, FaInfoCircle, FaCode,
   FaLayerGroup, FaTag, FaAlignLeft, FaBan, FaChevronLeft, FaChevronRight,
-  FaTh, FaListUl
+  FaTh, FaListUl, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -587,7 +587,7 @@ const PermissionManagement = () => {
                     {showGroupCode && <th className="px-6 py-4">Group Code</th>}
                     {showDescription && <th className="px-6 py-4">Description</th>}
                     {showPermissionCount && <th className="px-6 py-4 text-center">Permissions</th>}
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">

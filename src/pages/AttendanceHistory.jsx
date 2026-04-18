@@ -20,7 +20,8 @@ import {
   FaListUl,
   FaSpinner,
   FaCheck,
-  FaBan
+  FaBan,
+  FaCog
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
@@ -713,7 +714,7 @@ const AttendanceHistory = () => {
                     <th className="px-5 py-4">Date & Time</th>
                     <th className="px-5 py-4">Status</th>
                     {showMethod && <th className="px-5 py-4">Method</th>}
-                    <th className="px-5 py-4 text-center">Actions</th>
+                    <th className="px-5 py-4 text-center"><FaCog className="w-4 h-4 mx-auto" /></th>
                   </tr>
                 </thead>
 

@@ -6,7 +6,7 @@ import {
     FaMoon, FaSun, FaInfoCircle, FaAngleDown,
     FaEnvelope, FaPhone, FaIdCard, FaUserTag,
     FaDollarSign, FaHandPaper, FaRobot, FaEye,
-    FaListUl, FaTh, FaShieldAlt
+    FaListUl, FaTh, FaShieldAlt, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -633,7 +633,7 @@ const EmployeesShifts = () => {
                                         {showAbsent && <th className="px-6 py-4">Absent</th>}
                                         {showAttendance && <th className="px-6 py-4">Attendance</th>}
                                         {showStatus && <th className="px-6 py-4">Status</th>}
-                                        <th className="px-6 py-4 text-right">Actions</th>
+                                        <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
