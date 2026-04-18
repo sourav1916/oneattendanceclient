@@ -296,7 +296,7 @@ const LeaveManagement = () => {
                 )}
 
                 {/* Filters */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col md:flex-row gap-4">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col gap-4">
                     <div className="relative flex-1">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
@@ -307,8 +307,8 @@ const LeaveManagement = () => {
                             className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none shadow-sm transition-all text-sm font-medium"
                         />
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar max-w-[400px]">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 overflow-x-auto max-w-[400px]">
                             {['', 'approved', 'rejected', 'pending', 'cancelled'].map((s) => (
                                 <button
                                     key={s || 'all'}

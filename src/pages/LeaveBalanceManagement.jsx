@@ -493,8 +493,9 @@ const LeaveBalanceManagement = () => {
 
   const [formData, setFormData] = useState({
     employee_id: '',
-    leave_config_id: '',
-    total_allocated: 0,
+    leave_config_id: '', // for edit
+    total_allocated: 0,  // for edit
+    leaves: [{ leave_config_id: '', total_allocated: 0 }], // for assign
   });
 
   // Fetch employees with search
@@ -598,25 +599,25 @@ const LeaveBalanceManagement = () => {
       let response;
 
       if (modalMode === 'assign') {
-        response = await apiCall('/leave/assign-balance', 'POST', {
+        const payload = {
           employee_id: formData.employee_id,
-          leaves: [
-            {
-              leave_config_id: formData.leave_config_id,
-              total_allocated: formData.total_allocated,
-            },
-          ],
-        }, getCompanyId());
+          leaves: formData.leaves.map(l => ({
+            leave_config_id: l.leave_config_id,
+            total_allocated: Number(l.total_allocated) || 0
+          }))
+        };
+        response = await apiCall('/leave/assign-balance', 'POST', payload, getCompanyId());
       } else if (modalMode === 'edit') {
-        response = await apiCall('/leave/update-balance', 'PUT', {
+        const payload = {
           employee_id: selectedBalance.employee_id,
           leaves: [
             {
               leave_config_id: selectedBalance.leave_config_id,
-              total_allocated: formData.total_allocated,
+              total_allocated: Number(formData.total_allocated) || 0,
             },
           ],
-        }, getCompanyId());
+        };
+        response = await apiCall('/leave/update-balance', 'PUT', payload, getCompanyId());
       } else if (modalMode === 'delete') {
         response = await apiCall('/leave/delete-balance', 'DELETE', {
           employee_id: selectedBalance.employee_id,
@@ -700,6 +701,7 @@ const LeaveBalanceManagement = () => {
         employee_id: balance.employee_id,
         leave_config_id: balance.leave_config_id,
         total_allocated: Number.parseFloat(balance.total_allocated ?? 0),
+        leaves: [{ leave_config_id: '', total_allocated: 0 }],
       });
     } else {
       setSelectedBalance(null);
@@ -707,6 +709,7 @@ const LeaveBalanceManagement = () => {
         employee_id: '',
         leave_config_id: '',
         total_allocated: 0,
+        leaves: [{ leave_config_id: '', total_allocated: 0 }],
       });
     }
 
@@ -930,7 +933,7 @@ const LeaveBalanceManagement = () => {
         )}
 
         {/* Filters */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col md:flex-row gap-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col gap-4">
           <div className="relative flex-1">
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -941,7 +944,7 @@ const LeaveBalanceManagement = () => {
               className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between">
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -1238,85 +1241,178 @@ const LeaveBalanceManagement = () => {
                   </div>
 
                   <div className="p-6 sm:p-8 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <SearchableSelect
-                        label="Select Employee"
-                        placeholder="Choose an employee..."
-                        value={formData.employee_id}
-                        onChange={(value) => setFormData({ ...formData, employee_id: value })}
-                        options={employees}
-                        onSearch={handleEmployeeSearch}
-                        loading={employeesLoading}
-                        getOptionLabel={(employee) => `${employee.name} (${employee.employee_code})`}
-                        getOptionValue={(employee) => employee.id}
-                        renderOption={(employee) => (
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
-                                {employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                             </div>
-                             <div className="min-w-0">
-                                <p className="font-semibold text-slate-800 text-sm truncate">{employee.name}</p>
-                                <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code} • {employee.email}</p>
-                             </div>
-                          </div>
-                        )}
-                      />
-
-                      <SearchableSelect
-                        label="Leave Type"
-                        placeholder="Choose a leave type..."
-                        value={formData.leave_config_id}
-                        onChange={(value) => setFormData({ ...formData, leave_config_id: value })}
-                        options={leaveConfigs}
-                        onSearch={handleLeaveConfigSearch}
-                        loading={leaveConfigsLoading}
-                        getOptionLabel={(config) => `${config.name} (${config.code})`}
-                        getOptionValue={(config) => config.id}
-                        renderOption={(config) => (
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-semibold text-slate-800 text-sm truncate">{config.name}</p>
-                              <p className="text-[10px] text-slate-400 font-mono italic">Code: {config.code} • Max: {config.max_balance}d</p>
-                            </div>
-                            <PaidBadge isPaid={config.is_paid} compact />
-                          </div>
-                        )}
-                      />
-                    </div>
-
-                    <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 ml-1">
-                        Allocation Details
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                           <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-                              <FaCalendarAlt size={12} className="text-violet-500" />
-                              Total Allocation (Days)
-                           </label>
-                           <input
-                            type="number"
-                            step="0.5"
-                            placeholder="e.g. 12.0"
-                            value={formData.total_allocated}
-                            onChange={(event) =>
-                              setFormData({ ...formData, total_allocated: event.target.value })
-                            }
-                            className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 font-semibold"
-                          />
-                        </div>
-                        <div className="flex items-center">
-                           <div className="bg-violet-50 p-4 rounded-xl border border-violet-100 flex-1">
-                              <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Preview</p>
-                              <p className="text-sm text-violet-800 font-medium italic">
-                                "{formData.total_allocated || 0} days" will be {modalMode === 'assign' ? 'assigned to' : 'updated for'} the selected profile.
-                              </p>
+                    <SearchableSelect
+                      label="Select Employee"
+                      placeholder="Choose an employee..."
+                      value={formData.employee_id}
+                      onChange={(value) => setFormData({ ...formData, employee_id: value })}
+                      options={employees}
+                      onSearch={handleEmployeeSearch}
+                      loading={employeesLoading}
+                      getOptionLabel={(employee) => `${employee.name} (${employee.employee_code})`}
+                      getOptionValue={(employee) => employee.id}
+                      renderOption={(employee) => (
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
+                              {employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                           </div>
+                           <div className="min-w-0">
+                              <p className="font-semibold text-slate-800 text-sm truncate">{employee.name}</p>
+                              <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code} • {employee.email}</p>
                            </div>
                         </div>
-                      </div>
-                    </div>
+                      )}
+                    />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {modalMode === 'assign' ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            Leave Allocations
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                leaves: [...prev.leaves, { leave_config_id: '', total_allocated: 0 }],
+                              }))
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+                          >
+                            <FaPlus size={10} /> Add More
+                          </button>
+                        </div>
+
+                        {formData.leaves.map((row, idx) => (
+                          <div key={idx} className="relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                            <div className="mb-3 flex items-center justify-between">
+                              <span className="inline-flex items-center gap-1.5 rounded-lg bg-violet-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+                                Leave #{idx + 1}
+                              </span>
+                              {formData.leaves.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      leaves: prev.leaves.filter((_, i) => i !== idx),
+                                    }))
+                                  }
+                                  className="rounded-lg p-1.5 text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                                >
+                                  <FaTimes size={12} />
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                              <SearchableSelect
+                                label="Leave Type"
+                                placeholder="Choose..."
+                                value={row.leave_config_id}
+                                onChange={(value) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    leaves: prev.leaves.map((l, i) =>
+                                      i === idx ? { ...l, leave_config_id: value } : l
+                                    ),
+                                  }))
+                                }
+                                options={leaveConfigs}
+                                onSearch={handleLeaveConfigSearch}
+                                loading={leaveConfigsLoading}
+                                getOptionLabel={(config) => `${config.name} (${config.code})`}
+                                getOptionValue={(config) => config.id}
+                                renderOption={(config) => (
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-slate-800 text-sm truncate">{config.name}</p>
+                                      <p className="text-[10px] text-slate-400 font-mono italic">Code: {config.code}</p>
+                                    </div>
+                                    <PaidBadge isPaid={config.is_paid} compact />
+                                  </div>
+                                )}
+                              />
+                              <div className="space-y-2">
+                                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Days</label>
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  value={row.total_allocated}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      leaves: prev.leaves.map((l, i) =>
+                                        i === idx ? { ...l, total_allocated: e.target.value } : l
+                                      ),
+                                    }))
+                                  }
+                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <SearchableSelect
+                          label="Leave Type"
+                          placeholder="Choose a leave type..."
+                          value={formData.leave_config_id}
+                          onChange={(value) => setFormData({ ...formData, leave_config_id: value })}
+                          options={leaveConfigs}
+                          onSearch={handleLeaveConfigSearch}
+                          loading={leaveConfigsLoading}
+                          getOptionLabel={(config) => `${config.name} (${config.code})`}
+                          getOptionValue={(config) => config.id}
+                          renderOption={(config) => (
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-semibold text-slate-800 text-sm truncate">{config.name}</p>
+                                <p className="text-[10px] text-slate-400 font-mono italic">Code: {config.code} • Max: {config.max_balance}d</p>
+                              </div>
+                              <PaidBadge isPaid={config.is_paid} compact />
+                            </div>
+                          )}
+                        />
+
+                        <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 ml-1">
+                            Allocation Details
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                               <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
+                                  <FaCalendarAlt size={12} className="text-violet-500" />
+                                  Total Allocation (Days)
+                               </label>
+                               <input
+                                type="number"
+                                step="0.5"
+                                placeholder="e.g. 12.0"
+                                value={formData.total_allocated}
+                                onChange={(event) =>
+                                  setFormData({ ...formData, total_allocated: event.target.value })
+                                }
+                                className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 font-semibold"
+                              />
+                            </div>
+                            <div className="flex items-center">
+                               <div className="bg-violet-50 p-4 rounded-xl border border-violet-100 flex-1">
+                                  <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Preview</p>
+                                  <p className="text-sm text-violet-800 font-medium italic">
+                                    "{formData.total_allocated || 0} days" will be updated for the selected profile.
+                                  </p>
+                               </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 pt-2">
                       <button
                         type="button"
                         onClick={closeModal}
@@ -1328,7 +1424,14 @@ const LeaveBalanceManagement = () => {
                       <button
                         type="button"
                         onClick={handleAction}
-                        disabled={saving || !formData.employee_id || !formData.leave_config_id || (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)}
+                        disabled={
+                          saving || 
+                          !formData.employee_id || 
+                          (modalMode === 'assign' 
+                            ? (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id)) 
+                            : !formData.leave_config_id) || 
+                          (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)
+                        }
                         title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
                         className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
