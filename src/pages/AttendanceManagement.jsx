@@ -6,7 +6,7 @@ import {
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
   FaBan, FaComment, FaHistory, FaUserCheck,
-  FaEllipsisV
+  FaEllipsisV,FaTimes
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';

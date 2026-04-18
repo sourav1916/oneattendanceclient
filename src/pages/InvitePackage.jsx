@@ -1085,7 +1085,7 @@ export default function InvitePackageManagement() {
 
   // Responsive columns
   const [visibleColumns, setVisibleColumns] = useState(() => ({
-    showCode: true,
+    showCode: window.innerWidth >= 420,
     showName: true,
     showDesignation: window.innerWidth >= 540,
     showEmployment: window.innerWidth >= 1024,
@@ -1098,7 +1098,7 @@ export default function InvitePackageManagement() {
     const onResize = () => {
       clearTimeout(t);
       t = setTimeout(() => setVisibleColumns({
-        showCode: true,
+        showCode: window.innerWidth >= 420,
         showName: true,
         showDesignation: window.innerWidth >= 540,
         showEmployment: window.innerWidth >= 1024,
@@ -1188,7 +1188,7 @@ export default function InvitePackageManagement() {
             className="bg-white rounded-2xl shadow-xl overflow-visible">
             <div className="overflow-x-auto overflow-y-visible">
               <table className="w-full text-sm text-left text-gray-700">
-                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs xsm:hidden">
                   <tr>
                     {visibleColumns.showCode && <th className="px-6 py-4">Code</th>}
                     {visibleColumns.showName && <th className="px-6 py-4">Package Name</th>}
