@@ -230,8 +230,6 @@ function Field({ label, value, mono, highlight }) {
 function ProfileCard({ data }) {
   const { employee: e, user: u, company: c } = data;
   const [imgErr, setImgErr] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -12 }}
@@ -262,43 +260,25 @@ function ProfileCard({ data }) {
         </div>
       </div>
 
-      <div className="mt-4">
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-500 bg-slate-50 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-        >
-          {showDetails ? "Hide Details" : "View Details"}
-          {showDetails ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
-        </button>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 mt-4 pt-4 border-t border-slate-100">
+        {[
+          ["Employee Code", e.code],
+          ["Email", u.email],
+          ["Phone", u.phone || "—"],
+          ["Joining Date", fmtDate(e.joining_date)],
+          ["Created At", fmtDateTime(e.created_at)],
+          ["Company", c.legal_name],
+          ["Work Schedule", `${e.expected_work_minutes || 0} mins/day`],
+          ["Weekends", Array.isArray(e.weekends) 
+            ? e.weekends.map(w => `${fmt(w.day)} (${fmt(w.type)})`).join(", ") 
+            : "None"],
+        ].map(([label, val]) => (
+          <div key={label}>
+            <span className="block text-[10px] uppercase tracking-wide text-slate-400 mb-0.5">{label}</span>
+            <span className="text-[12px] font-medium text-slate-800 break-all">{val}</span>
+          </div>
+        ))}
       </div>
-
-      <AnimatePresence>
-        {showDetails && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 mt-4 pt-4 border-t border-slate-100">
-              {[
-                ["Employee Code", e.code],
-                ["Email", u.email],
-                ["Phone", u.phone || "—"],
-                ["Joining Date", fmtDate(e.joining_date)],
-                ["Last Login", fmtDate(u.last_login)],
-                ["Company", c.legal_name],
-              ].map(([label, val]) => (
-                <div key={label}>
-                  <span className="block text-[10px] uppercase tracking-wide text-slate-400 mb-0.5">{label}</span>
-                  <span className="text-[12px] font-medium text-slate-800 break-all">{val}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
@@ -931,8 +911,19 @@ export default function EmployeeProfilePage() {
           ...raw,
           code: raw.employee_code || raw.code,
         },
-        user: raw,
-        company: raw.company ?? { id: raw.company_id },
+        user: {
+          ...raw,
+          name: raw.user_name || raw.name,
+        },
+        company: {
+          ...raw,
+          name: raw.company_name || (raw.company?.name ?? '—'),
+          legal_name: raw.legal_name || (raw.company?.legal_name ?? '—'),
+          logo_url: raw.logo_url || raw.company?.logo_url,
+          city: raw.city || raw.company?.city,
+          state: raw.state || raw.company?.state,
+          country: raw.country || raw.company?.country,
+        },
       });
     } catch (err) {
       setError(err.message || "Failed to load profile");

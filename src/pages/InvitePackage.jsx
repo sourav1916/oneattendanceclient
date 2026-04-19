@@ -633,31 +633,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 // ─── View Modal ──────────────────────────────────────────────────────────────
 
 function ViewPackageModal({ isOpen, onClose, package: pkg }) {
-  const [showPermissions, setShowPermissions] = useState(false);
-  const [permissionDetails, setPermissionDetails] = useState([]);
-  const [loadingPerms, setLoadingPerms] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && pkg?.permission_package_id) {
-      fetchPermissions();
-    }
-  }, [isOpen, pkg]);
-
-  const fetchPermissions = async () => {
-    setLoadingPerms(true);
-    try {
-      const company = JSON.parse(localStorage.getItem("company"));
-      const response = await apiCall(`/permissions/permission-packages/${pkg.permission_package_id}`, 'GET', null, company?.id);
-      const result = await response.json();
-      if (result.success) {
-        setPermissionDetails(result.data?.permissions || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch permissions:", error);
-    } finally {
-      setLoadingPerms(false);
-    }
-  };
 
   if (!isOpen || !pkg) return null;
 
@@ -751,56 +727,14 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
             </div>
           )}
 
-          {/* Permissions Section */}
+          {/* Permission Package ID */}
           {pkg.permission_package_id && (
-            <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden">
-              <button 
-                onClick={() => setShowPermissions(!showPermissions)}
-                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                type="button"
-              >
-                <div className="flex items-center gap-2">
-                  <FaShieldAlt className="text-indigo-500" /> 
-                  <span className="text-sm font-semibold text-gray-700">Permission Package</span>
-                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                    Package ID: {pkg.permission_package_id}
-                  </span>
-                </div>
-                <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <FaChevronDown className="w-4 h-4 text-gray-400" />
-                </motion.div>
-              </button>
-              
-              <AnimatePresence>
-                {showPermissions && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-4 bg-white">
-                      {loadingPerms ? (
-                        <div className="flex items-center justify-center py-8">
-                          <FaSpinner className="w-6 h-6 animate-spin text-indigo-500" />
-                        </div>
-                      ) : permissionDetails.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {permissionDetails.map((perm, idx) => (
-                            <div key={perm.permission_id || idx} className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg">
-                              <span className="text-sm text-gray-700">{perm.permission_name || perm.name}</span>
-                              <span className="text-xs text-indigo-600 font-mono">{perm.code}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center text-gray-500 py-4">No permissions found for this package</p>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="mt-4">
+              <InfoItem 
+                icon={<FaShieldAlt className="text-indigo-500" />} 
+                label="Permission Package" 
+                value={`Package ID: ${pkg.permission_package_id}`} 
+              />
             </div>
           )}
         </div>

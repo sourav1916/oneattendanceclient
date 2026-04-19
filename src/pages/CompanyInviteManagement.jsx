@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
@@ -229,31 +229,35 @@ export default function CompanyInvites() {
   const openModal       = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
   const closeModal      = ()              => { setSelectedInvite(null);   setModalType(null); };
 
-  // Responsive columns
-  const [visibleColumns, setVisibleColumns] = useState(() => ({
+  // ─── Responsive Columns ──────────────────────────────────────────────────
+  const getEffectiveWidth = () => {
+    const width = window.innerWidth;
+    const offset = width >= 1024 ? 280 : (width >= 768 ? 80 : 0);
+    return width - offset;
+  };
+
+  const getVisibleColumns = useCallback((width) => ({
     showUser:        true,
-    showDesignation: window.innerWidth >= 540,
-    showEmployment:  window.innerWidth >= 1024,
-    showStatus:      window.innerWidth >= 640,
-    showExpires:     window.innerWidth >= 1280
-  }));
+    showEmailInside: width >= 800,
+    showDesignation: width >= 600,
+    showEmployment:  width >= 1000,
+    showStatus:      width >= 500,
+    showExpires:     width >= 1200
+  }), []);
+
+  const [visibleColumns, setVisibleColumns] = useState(() => getVisibleColumns(getEffectiveWidth()));
 
   useEffect(() => {
     let t;
     const onResize = () => {
       clearTimeout(t);
-      t = setTimeout(() =>
-        setVisibleColumns({
-          showUser:        true,
-          showDesignation: window.innerWidth >= 540,
-          showEmployment:  window.innerWidth >= 1024,
-          showStatus:      window.innerWidth >= 640,
-          showExpires:     window.innerWidth >= 1280
-        }), 150);
+      t = setTimeout(() => {
+        setVisibleColumns(getVisibleColumns(getEffectiveWidth()));
+      }, 150);
     };
     window.addEventListener("resize", onResize);
     return () => { clearTimeout(t); window.removeEventListener("resize", onResize); };
-  }, []);
+  }, [getVisibleColumns]);
 
   // ── View Modal ─────────────────────────────────────────────────────────────
   const ViewModal = ({ invite, onClose }) => {
@@ -532,7 +536,7 @@ export default function CompanyInvites() {
           <>
             {viewMode === "table" && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-xl overflow-visible">
+                className="bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
                   <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
@@ -561,17 +565,20 @@ export default function CompanyInvites() {
                                   {invite.user?.name?.charAt(0)?.toUpperCase() || invite.user?.email?.charAt(0)?.toUpperCase()}
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-gray-800">{invite.user?.name || "No name"}</p>
-                                  <p className="text-xs text-gray-500 flex items-center gap-1">
-                                    <FaEnvelope className="text-gray-400" size={10} />{invite.user?.email}
-                                  </p>
+                                  <p className="font-semibold text-gray-800 truncate max-w-[120px] sm:max-w-[180px]">{invite.user?.name || "No name"}</p>
+                                  {visibleColumns.showEmailInside && (
+                                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                                      <FaEnvelope className="text-gray-400" size={10} />
+                                      <span className="truncate max-w-[150px]">{invite.user?.email}</span>
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             </td>
                           )}
                           {visibleColumns.showDesignation && (
                             <td className="px-6 py-4">
-                              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                              <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium truncate max-w-[120px] inline-block">
                                 {formatDisplay(invite.designation)}
                               </span>
                             </td>
