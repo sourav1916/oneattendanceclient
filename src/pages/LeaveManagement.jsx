@@ -405,83 +405,131 @@ const LeaveManagement = () => {
                 {/* Modals */}
                 <AnimatePresence>
                     {detailLeave && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md" onMouseDown={(e) => e.target === e.currentTarget && setDetailLeave(null)}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setDetailLeave(null)}>
                             <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }} className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-3xl bg-white shadow-2xl flex flex-col">
-                                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-8 text-white shrink-0">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <StatusBadge status={detailLeave.status} />
-                                        <button onClick={() => setDetailLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={18} /></button>
+                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                                <FaEye className="text-white text-sm" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-lg font-bold">Leave Details</h2>
+                                                <p className="text-xs text-white/80">{detailLeave.employee_name} · <StatusBadge status={detailLeave.status} /></p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setDetailLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                                     </div>
-                                    <h2 className="text-3xl font-black">{detailLeave.employee_name}</h2>
-                                    <p className="text-blue-100 mt-1 font-medium">{detailLeave.leave_name} · {parseFloat(detailLeave.total_days)} Days</p>
                                 </div>
-                                <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
+                                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+                                        <h3 className="text-2xl font-black text-slate-800">{detailLeave.employee_name}</h3>
+                                        <p className="text-blue-600 mt-1 font-semibold text-sm">{detailLeave.leave_name} · {parseFloat(detailLeave.total_days)} Days</p>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Start Date</p>
-                                            <p className="font-bold text-slate-700">{fmt(detailLeave.start_date)}</p>
+                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Start Date</label>
+                                            <div className="text-gray-800 font-medium">{fmt(detailLeave.start_date)}</div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End Date</p>
-                                            <p className="font-bold text-slate-700">{fmt(detailLeave.end_date)}</p>
+                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">End Date</label>
+                                            <div className="text-gray-800 font-medium">{fmt(detailLeave.end_date)}</div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Applied On</p>
-                                            <p className="font-bold text-slate-700">{fmt(detailLeave.applied_at)}</p>
+                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Applied On</label>
+                                            <div className="text-gray-800 font-medium">{fmt(detailLeave.applied_at)}</div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Type</p>
-                                            <p className="font-bold text-slate-700">{detailLeave.is_paid ? 'Paid Leave' : 'Unpaid Leave'}</p>
+                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Payment Type</label>
+                                            <div className="text-gray-800 font-medium">{detailLeave.is_paid ? 'Paid Leave' : 'Unpaid Leave'}</div>
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reason / Description</p>
-                                        <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl text-sm text-slate-600 italic leading-relaxed">
-                                            "{detailLeave.reason || 'No reason provided.'}"
-                                        </div>
+                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Reason / Description</label>
+                                        <div className="text-gray-700 text-sm italic leading-relaxed">"{detailLeave.reason || 'No reason provided.'}"</div>
                                     </div>
                                     {detailLeave.approval_remarks && (
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Approval Remarks</p>
-                                            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-sm text-emerald-700">
-                                                {detailLeave.approval_remarks}
-                                            </div>
+                                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                                            <label className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block mb-2">Approval Remarks</label>
+                                            <div className="text-emerald-800 text-sm">{detailLeave.approval_remarks}</div>
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-6 border-t border-slate-50 flex gap-3 shrink-0">
-                                    <ManagementButton tone="slate" variant="ghost" className="flex-1" onClick={() => setDetailLeave(null)}>Close</ManagementButton>
+                                <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
+                                    <button type="button" onClick={() => setDetailLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
                                 </div>
                             </motion.div>
                         </motion.div>
                     )}
 
                     {approveLeave && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md" onMouseDown={(e) => e.target === e.currentTarget && setApproveLeave(null)}>
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
-                                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">✓</div>
-                                <h3 className="text-xl font-bold text-slate-800">Approve Leave?</h3>
-                                <p className="text-slate-500 mt-2 text-sm leading-relaxed">Are you sure you want to approve this leave request for <span className="font-bold text-slate-700">{approveLeave.employee_name}</span>?</p>
-                                <textarea placeholder="Optional approval remarks..." className="w-full mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all resize-none h-24" value={approveRemarks} onChange={(e) => setApproveRemarks(e.target.value)} />
-                                <div className="flex gap-3 mt-8">
-                                    <ManagementButton tone="slate" variant="ghost" className="flex-1" onClick={() => setApproveLeave(null)}>Cancel</ManagementButton>
-                                    <ManagementButton tone="green" variant="solid" className="flex-1" onClick={submitApprove} loading={submitting}>Confirm</ManagementButton>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setApproveLeave(null)}>
+                            <ModalScrollLock />
+                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="sticky top-0 z-[10] bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-t-3xl px-6 py-5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                                <FaCheck className="text-white text-sm" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-lg font-bold">Approve Leave</h2>
+                                                <p className="text-xs text-white/80">{approveLeave.employee_name}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setApproveLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 py-6">
+                                    <p className="text-gray-600 text-sm leading-relaxed">Are you sure you want to approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>?</p>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Approval Remarks (Optional)</label>
+                                        <textarea placeholder="Optional approval remarks..." className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none h-24" value={approveRemarks} onChange={(e) => setApproveRemarks(e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
+                                    <button type="button" onClick={() => setApproveLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                    <button type="button" onClick={submitApprove} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                        {submitting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                        {submitting ? 'Approving...' : 'Confirm Approve'}
+                                    </button>
                                 </div>
                             </motion.div>
                         </motion.div>
                     )}
 
                     {rejectLeave && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md" onMouseDown={(e) => e.target === e.currentTarget && setRejectLeave(null)}>
-                            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
-                                <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">×</div>
-                                <h3 className="text-xl font-bold text-slate-800">Reject Leave?</h3>
-                                <p className="text-slate-500 mt-2 text-sm leading-relaxed">Please provide a reason for rejecting <span className="font-bold text-slate-700">{rejectLeave.employee_name}</span>'s request.</p>
-                                <textarea placeholder="Rejection reason (Required)..." className="w-full mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm focus:ring-4 focus:ring-rose-500/10 outline-none transition-all resize-none h-24" value={rejectRemarks} onChange={(e) => setRejectRemarks(e.target.value)} />
-                                <div className="flex gap-3 mt-8">
-                                    <ManagementButton tone="slate" variant="ghost" className="flex-1" onClick={() => setRejectLeave(null)}>Cancel</ManagementButton>
-                                    <ManagementButton tone="red" variant="solid" className="flex-1" onClick={submitReject} loading={submitting}>Reject Request</ManagementButton>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setRejectLeave(null)}>
+                            <ModalScrollLock />
+                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="sticky top-0 z-[10] bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-t-3xl px-6 py-5">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                                <FaTrash className="text-white text-sm" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-lg font-bold">Reject Leave</h2>
+                                                <p className="text-xs text-white/80">{rejectLeave.employee_name}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setRejectLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 py-6">
+                                    <p className="text-gray-600 text-sm leading-relaxed">Please provide a reason for rejecting <span className="font-bold text-gray-800">{rejectLeave.employee_name}</span>'s request.</p>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Rejection Reason <span className="text-red-500">*</span></label>
+                                        <textarea placeholder="Rejection reason (Required)..." className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none h-24" value={rejectRemarks} onChange={(e) => setRejectRemarks(e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
+                                    <button type="button" onClick={() => setRejectLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                    <button type="button" onClick={submitReject} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-medium hover:from-rose-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                        {submitting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                                        {submitting ? 'Rejecting...' : 'Reject Request'}
+                                    </button>
                                 </div>
                             </motion.div>
                         </motion.div>

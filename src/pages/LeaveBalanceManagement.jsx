@@ -1022,7 +1022,7 @@ const LeaveBalanceManagement = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 closeViewModal();
@@ -1031,36 +1031,38 @@ const LeaveBalanceManagement = () => {
           >
             <ModalScrollLock />
             <motion.div
-              initial={{ scale: 0.96, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
-              exit={{ scale: 0.96, opacity: 0, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
+              className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
               onMouseDown={(event) => event.stopPropagation()}
             >
-              <div className="relative bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 px-5 py-6 text-white sm:px-8 sm:py-8">
-                <div className="relative z-10 pr-10">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center justify-center rounded-xl bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-slate-100">
-                      {viewModal.balance.type}
-                    </span>
-                    <PaidBadge isPaid={viewModal.balance.is_paid} compact />
+              <div className="sticky top-0 z-[10] bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                      <FaEye className="text-white text-sm" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold">{viewModal.balance.name}</h2>
+                      <p className="text-xs text-white/80">{viewModal.balance.employee_name} • Year {viewModal.balance.year}</p>
+                    </div>
                   </div>
-                  <h2 className="mt-4 text-2xl font-bold sm:text-3xl">{viewModal.balance.name}</h2>
-                  <p className="mt-2 text-sm text-slate-200">
-                    {viewModal.balance.employee_name} • {viewModal.balance.employee_code || `#${viewModal.balance.employee_id}`} • Year {viewModal.balance.year}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={closeViewModal}
+                    className="p-2 hover:bg-white/20 rounded-xl transition-all"
+                  >
+                    <FaTimes size={20} />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeViewModal}
-                  className="absolute right-4 top-4 z-10 rounded-xl bg-white/10 p-2 text-white transition hover:bg-white/20 sm:right-6 sm:top-6"
-                >
-                  <FaTimes size={16} />
-                </button>
-                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  <span className="inline-flex items-center justify-center rounded-xl bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-100">
+                    {viewModal.balance.type}
+                  </span>
+                  <PaidBadge isPaid={viewModal.balance.is_paid} compact />
+                </div>
               </div>
 
-              <div className="max-h-[calc(100vh-200px)] overflow-y-auto p-5 custom-scrollbar sm:p-8">
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-5 sm:px-8 py-6">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <DetailItem label="Employee" value={viewModal.balance.employee_name} />
                   <DetailItem label="Employee Code" value={viewModal.balance.employee_code || `#${viewModal.balance.employee_id}`} />
@@ -1141,11 +1143,13 @@ const LeaveBalanceManagement = () => {
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 px-5 sm:px-8 py-5 border-t border-gray-100 sm:flex-row">
                   <button
                     type="button"
                     onClick={closeViewModal}
-                    className="flex-1 rounded-2xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
                   >
                     Close
                   </button>
@@ -1157,12 +1161,11 @@ const LeaveBalanceManagement = () => {
                     }}
                     disabled={updateAccess.disabled}
                     title={updateAccess.disabled ? updateMessage : ''}
-                    className="flex-1 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <FaEdit className="mr-2 inline" size={12} />
+                    <FaEdit size={12} />
                     Edit Balance
                   </button>
-                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -1175,7 +1178,7 @@ const LeaveBalanceManagement = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
                 closeModal();
@@ -1187,32 +1190,38 @@ const LeaveBalanceManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`w-full ${
-                modalMode === 'delete'
-                  ? 'max-w-lg max-h-[90vh] rounded-2xl flex flex-col overflow-y-auto'
-                  : 'max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl'
-              } bg-white shadow-2xl`}
+              className={`bg-white backdrop-blur-xl w-full max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${
+                modalMode === 'delete' ? 'max-w-md' : 'max-w-4xl'
+              }`}
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (
-                <div className="flex flex-1 flex-col justify-center p-6">
-                  <div className="mb-4 flex items-center justify-center">
-                    <div className="rounded-full bg-red-100 p-4">
-                      <FaTrash className="text-2xl text-red-500" />
+                <>
+                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-3xl px-6 py-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                          <FaTrash className="text-white text-sm" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold">Delete Leave Balance</h2>
+                          <p className="text-xs text-white/80">This action cannot be undone</p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
-                  <h3 className="mb-1 text-center text-lg font-bold text-gray-800">
-                    Delete Leave Balance
-                  </h3>
-                  <p className="mb-6 text-center text-sm text-gray-500">
-                    Are you sure you want to delete this leave balance? This cannot be undone.
-                  </p>
-                  <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6">
+                    <p className="text-gray-600 text-sm leading-relaxed text-center">
+                      Are you sure you want to delete this leave balance? This cannot be undone.
+                    </p>
+                  </div>
+                  <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={closeModal}
                       disabled={saving}
-                      className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
+                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
                     >
                       Cancel
                     </button>
@@ -1221,12 +1230,12 @@ const LeaveBalanceManagement = () => {
                       onClick={handleAction}
                       disabled={saving || deleteAccess.disabled}
                       title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {saving ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
-                </div>
+                </>
               ) : (
                 <>
                   <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
@@ -1424,7 +1433,7 @@ const LeaveBalanceManagement = () => {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
                       <button
                         type="button"
                         onClick={closeModal}
