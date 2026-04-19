@@ -4,7 +4,7 @@ import {
   FaBox, FaCode, FaTag, FaBriefcase, FaDollarSign, FaUserTie,
   FaClock, FaCalendarAlt, FaSpinner, FaEye, FaEdit, FaTrash,
   FaCheckCircle, FaTimesCircle, FaSearch, FaTimes, FaShieldAlt,
-  FaUserCheck, FaSave, FaPlus, FaTh, FaListUl, FaChevronDown,
+  FaUserCheck, FaSave, FaPlus, FaCog, FaListUl, FaChevronDown,
   FaChevronUp, FaToggleOn, FaToggleOff, FaInfoCircle
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
@@ -17,6 +17,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
 import { useAuth } from "../context/AuthContext";
+import TimePickerField from "../components/TimePicker";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -32,13 +33,6 @@ const backdropVariants = {
   exit:    { opacity: 0 }
 };
 
-const formatDate = (date) => {
-  if (!date) return "N/A";
-  return new Date(date).toLocaleDateString("en-US", {
-    year: "numeric", month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit"
-  });
-};
 
 const formatDisplay = (str) => 
   str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
@@ -55,8 +49,7 @@ const getVisibleColumns = (width) => ({
   showName: true,
   showDesignation: width >= 640,
   showStatus: width >= 768,
-  showEmployment: width >= 1024,
-  showCreated: width >= 1280
+  showEmployment: width >= 1024
 });
 
 // Weekday options
@@ -499,27 +492,17 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
               {/* Shift Timing */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
-                    <FaClock className="text-indigo-500" /> Shift Start
-                  </label>
-                  <input
-                    type="time"
-                    name="shift_start"
+                  <TimePickerField
+                    label="Shift Start"
                     value={formData.shift_start}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition"
+                    onChange={(val) => setFormData(prev => ({ ...prev, shift_start: val }))}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
-                    <FaClock className="text-indigo-500" /> Shift End
-                  </label>
-                  <input
-                    type="time"
-                    name="shift_end"
+                  <TimePickerField
+                    label="Shift End"
                     value={formData.shift_end}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition"
+                    onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
                   />
                 </div>
               </div>
@@ -680,7 +663,6 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
             <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment Type" value={formatDisplay(pkg.employment_type)} />
             <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
             <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Timing" value={`${pkg.shift_start} - ${pkg.shift_end}`} />
-            <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Created At" value={formatDate(pkg.created_at)} />
             <InfoItem icon={<FaTag className="text-indigo-500" />} label="Remarks" value={pkg.remarks || "—"} />
           </div>
 
@@ -1166,8 +1148,7 @@ export default function InvitePackageManagement() {
                     {visibleColumns.showDesignation && <th className="w-[16%] px-4 lg:px-6 py-4">Designation</th>}
                     {visibleColumns.showEmployment && <th className="w-[20%] px-4 lg:px-6 py-4">Employment</th>}
                     {visibleColumns.showStatus && <th className="w-[12%] px-4 lg:px-6 py-4">Status</th>}
-                    {visibleColumns.showCreated && <th className="w-[12%] px-4 lg:px-6 py-4">Created</th>}
-                    <th className="w-12 px-2 py-4"></th>
+                    <th className="px-2 py-4 flex justify-end"><FaCog className="text-gray-700 mr-4" size={16} /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -1213,11 +1194,6 @@ export default function InvitePackageManagement() {
                             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
                               <StatusIcon size={12} />{status.text}
                             </span>
-                          </td>
-                        )}
-                        {visibleColumns.showCreated && (
-                          <td className="px-4 lg:px-6 py-4 text-xs text-gray-500">
-                            <span className="block truncate">{formatDate(pkg.created_at)}</span>
                           </td>
                         )}
                         <td className="w-12 px-2 py-4 text-right max-w-[150px] align-top" onClick={(e) => e.stopPropagation()}>
@@ -1303,10 +1279,6 @@ export default function InvitePackageManagement() {
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <FaClock className="text-yellow-500" />
                             {pkg.shift_start} - {pkg.shift_end}
-                          </span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <FaCalendarAlt className="text-blue-500" />
-                            {formatDate(pkg.created_at).split(',')[0]}
                           </span>
                         </div>
                       </div>

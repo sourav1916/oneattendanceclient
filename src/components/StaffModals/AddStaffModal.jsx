@@ -27,6 +27,7 @@ import {
   FaChevronUp,
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
+import TimePickerField from "../TimePicker";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -784,26 +785,16 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             Shift Timings
                           </label>
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <span className="text-[10px] font-bold uppercase text-slate-400">Start Time</span>
-                              <input
-                                type="time"
-                                step="1"
-                                value={shiftStart}
-                                onChange={(e) => setShiftStart(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[10px] font-bold uppercase text-slate-400">End Time</span>
-                              <input
-                                type="time"
-                                step="1"
-                                value={shiftEnd}
-                                onChange={(e) => setShiftEnd(e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                              />
-                            </div>
+                            <TimePickerField
+                              label="Start Time"
+                              value={shiftStart}
+                              onChange={setShiftStart}
+                            />
+                            <TimePickerField
+                              label="End Time"
+                              value={shiftEnd}
+                              onChange={setShiftEnd}
+                            />
                           </div>
                         </div>
 
