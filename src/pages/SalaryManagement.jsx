@@ -996,7 +996,7 @@ const SalaryManagement = () => {
             clearTimeout(t);
             t = setTimeout(() => {
                 const width = window.innerWidth;
-                const offset = width >= 768 ? 80 : 0;
+                const offset = width >= 1024 ? 280 : (width >= 768 ? 80 : 0);
                 setVisibleColumns(getVisibleSalaryColumns(width - offset));
             }, 150);
         };
