@@ -65,66 +65,36 @@ const getRemainingPercentage = (remaining, total) => {
 
 const isLowBalance = (remaining) => Number.parseFloat(remaining ?? 0) <= 1;
 
-const getBalanceKey = (balance) =>
-  balance.id ?? `${balance.employee_id}-${balance.leave_config_id}-${balance.year}`;
 
-const flattenEmployeeBalances = (data, year) => {
+
+const normalizeEmployeeBalances = (data, year) => {
   if (!data || !Array.isArray(data)) return [];
   
-  // Robust check for data structure - handles both nested and flat responses
-  if (data.length > 0 && !data[0].leaves) {
-    return data.map(item => ({
-      employee_id: item.employee_id || item.employee?.id || item.id,
-      employee_name: item.employee_name || item.employee?.name || 'N/A',
-      email: item.email || item.employee?.email,
-      employee_code: item.employee_code || item.employee?.employee_code,
-      leave_config_id: item.leave_config_id || item.leave_config?.id,
-      type: item.type || item.code || item.leave_config?.code || 'N/A',
-      code: item.code || item.type || item.leave_config?.code || 'N/A',
-      name: item.name || item.leave_config?.name || 'N/A',
-      year: item.year || year,
-      total_allocated: item.total_allocated ?? 0,
-      used: item.used ?? 0,
-      remaining: item.remaining ?? ((item.total_allocated ?? 0) - (item.used ?? 0)),
-      is_paid: item.is_paid ?? item.leave_config?.is_paid ?? true,
-      allow_half_day: item.allow_half_day ?? item.leave_config?.allow_half_day ?? false,
-      accrual_type: item.accrual_type || item.leave_config?.accrual_type || 'none',
-      accrual_rate: item.accrual_rate ?? item.leave_config?.accrual_rate ?? 0,
-      max_balance: item.max_balance ?? item.leave_config?.max_balance ?? 0,
-      carry_forward_limit: item.carry_forward_limit ?? item.leave_config?.carry_forward_limit ?? 0,
-      allow_negative_balance: item.allow_negative_balance ?? item.leave_config?.allow_negative_balance ?? false,
-      exclude_weekends: item.exclude_weekends ?? item.leave_config?.exclude_weekends ?? true,
-      is_comp_off: item.is_comp_off ?? item.leave_config?.is_comp_off ?? false,
-      is_active: item.is_active ?? true,
-    }));
-  }
-
-  return data.flatMap((employee) =>
-    (employee.leaves || []).map((leave) => ({
-      employee_id: employee.employee_id || employee.id,
-      employee_name: employee.employee_name || employee.name,
-      email: employee.email,
-      employee_code: employee.employee_code,
-      leave_config_id: leave.leave_config_id,
-      type: leave.type || leave.code,
-      code: leave.code || leave.type,
-      name: leave.name,
+  return data.map((employee) => ({
+    employee_id: employee.employee_id || employee.employee?.id || employee.id,
+    employee_name: employee.employee_name || employee.employee?.name || employee.name || 'N/A',
+    email: employee.email || employee.employee?.email,
+    employee_code: employee.employee_code || employee.employee?.employee_code,
+    leaves: (employee.leaves || []).map(leave => ({
+      leave_config_id: leave.leave_config_id || leave.leave_config?.id,
+      type: leave.type || leave.code || leave.leave_config?.code || 'N/A',
+      code: leave.code || leave.type || leave.leave_config?.code || 'N/A',
+      name: leave.name || leave.leave_config?.name || 'N/A',
       year: leave.year || year,
-      total_allocated: leave.total_allocated,
-      used: leave.used,
-      remaining: leave.remaining,
-      is_paid: leave.is_paid,
-      allow_half_day: leave.allow_half_day,
-      accrual_type: leave.accrual_type,
-      accrual_rate: leave.accrual_rate,
-      max_balance: leave.max_balance,
-      carry_forward_limit: leave.carry_forward_limit,
-      allow_negative_balance: leave.allow_negative_balance,
-      exclude_weekends: leave.exclude_weekends,
-      is_comp_off: leave.is_comp_off,
-      is_active: true,
+      total_allocated: leave.total_allocated ?? 0,
+      used: leave.used ?? 0,
+      remaining: leave.remaining ?? ((leave.total_allocated ?? 0) - (leave.used ?? 0)),
+      is_paid: leave.is_paid ?? leave.leave_config?.is_paid ?? true,
+      allow_half_day: leave.allow_half_day ?? leave.leave_config?.allow_half_day ?? false,
+      accrual_type: leave.accrual_type || leave.leave_config?.accrual_type || 'none',
+      accrual_rate: leave.accrual_rate ?? leave.leave_config?.accrual_rate ?? 0,
+      max_balance: leave.max_balance ?? leave.leave_config?.max_balance ?? 0,
+      carry_forward_limit: leave.carry_forward_limit ?? leave.leave_config?.carry_forward_limit ?? 0,
+      allow_negative_balance: leave.allow_negative_balance ?? leave.leave_config?.allow_negative_balance ?? false,
+      exclude_weekends: leave.exclude_weekends ?? leave.leave_config?.exclude_weekends ?? true,
+      is_comp_off: leave.is_comp_off ?? leave.leave_config?.is_comp_off ?? false,
     }))
-  );
+  }));
 };
 
 const fetchEmployeeBalanceRows = async (year, companyId) => {
@@ -153,7 +123,7 @@ const fetchEmployeeBalanceRows = async (year, companyId) => {
         throw new Error(result.message || 'Failed to fetch balances');
       }
 
-      allBalances = allBalances.concat(flattenEmployeeBalances(result.data, year));
+      allBalances = allBalances.concat(normalizeEmployeeBalances(result.data, year));
       totalPages = Number(result.meta?.total_pages ?? 1);
       currentPage += 1;
     } while (currentPage <= totalPages);
@@ -179,6 +149,7 @@ const SearchableSelect = ({
   placeholder,
   label,
   loading = false,
+  disabled = false,
   renderOption,
   getOptionLabel,
   getOptionValue,
@@ -231,18 +202,19 @@ const SearchableSelect = ({
         {label}
       </label>
       <div
-        className="relative cursor-pointer rounded-2xl border border-slate-200 bg-slate-50/50 transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-50"
+        className={`relative cursor-pointer rounded-2xl border border-slate-200 bg-slate-50/50 transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-50 ${disabled ? 'pointer-events-none' : ''}`}
         onClick={() => {
+          if (disabled) return;
           setIsOpen(!isOpen);
           if (!isOpen) setTimeout(() => inputRef.current?.focus(), 100);
         }}
       >
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className={`flex items-center justify-between px-4 py-3 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
           <span className={selectedOption ? 'text-slate-700' : 'text-slate-400'}>
             {selectedOption ? getOptionLabel(selectedOption) : placeholder}
           </span>
           <FaChevronDown
-            className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`text-slate-400 transition-transform duration-200 ${isOpen && !disabled ? 'rotate-180' : ''}`}
             size={12}
           />
         </div>
@@ -354,7 +326,7 @@ const DetailItem = ({ label, value, className = '' }) => (
 );
 
 const MobileBalanceCard = ({
-  balance,
+  employee,
   onEdit,
   onDelete,
   onView,
@@ -363,38 +335,30 @@ const MobileBalanceCard = ({
   editMessage,
   deleteMessage,
 }) => {
-  const lowBalance = isLowBalance(balance.remaining);
+  const totalAllocated = employee.leaves.reduce((sum, l) => sum + (Number(l.total_allocated) || 0), 0);
+  const totalUsed = employee.leaves.reduce((sum, l) => sum + (Number(l.used) || 0), 0);
+  const totalRemaining = employee.leaves.reduce((sum, l) => sum + (Number(l.remaining) || 0), 0);
 
   return (
     <motion.div
-      key={getBalanceKey(balance)}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full flex flex-col"
-      onClick={() => onView(balance)}
+      className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
+      onClick={() => onView(employee)}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center justify-center rounded-xl bg-violet-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-violet-700">
-              {balance.type}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
-              {balance.employee_code || `EMP-${balance.employee_id}`}
-            </span>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 font-bold shrink-0">
+            {employee.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
-          <h3 className="mt-3 truncate text-lg font-bold text-slate-800">{balance.employee_name}</h3>
-          <p className="mt-1 text-xs font-medium text-slate-500">{balance.name}</p>
-          <p className="mt-1 truncate text-xs text-slate-400">
-            {balance.email || `Employee ID #${balance.employee_id}`} • Year {balance.year}
-          </p>
+          <div className="min-w-0">
+            <h3 className="truncate font-bold text-slate-800">{employee.employee_name}</h3>
+            <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code}</p>
+          </div>
         </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          <PaidBadge isPaid={balance.is_paid} compact />
-          <div onClick={(e) => e.stopPropagation()}>
-            <ActionMenu
-              balance={balance}
+        <div onClick={(e) => e.stopPropagation()}>
+           <ActionMenu
+              balance={employee}
               onEdit={onEdit}
               onDelete={onDelete}
               onView={onView}
@@ -403,57 +367,43 @@ const MobileBalanceCard = ({
               editMessage={editMessage}
               deleteMessage={deleteMessage}
             />
-          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5 text-sm">
-        <div className="rounded-2xl bg-slate-50 px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Allocated</p>
-          <p className="mt-1 font-bold text-slate-800">{formatDays(balance.total_allocated)} days</p>
-        </div>
-        <div className="rounded-2xl bg-slate-50 px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Used</p>
-          <p className="mt-1 font-bold text-orange-600">{formatDays(balance.used)} days</p>
-        </div>
-        <div className="rounded-2xl bg-slate-50 px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Max Balance</p>
-          <p className="mt-1 font-bold text-slate-700">{formatDays(balance.max_balance)} days</p>
-        </div>
-        <div className="rounded-2xl bg-slate-50 px-3 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Status</p>
-          <p className="mt-1 font-bold text-slate-700">{balance.is_paid ? 'Paid leave' : 'Unpaid leave'}</p>
-        </div>
+      <div className="mt-5 space-y-3">
+         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+            <span>Assigned Leaves</span>
+            <span>Rem.</span>
+         </div>
+         <div className="grid gap-2">
+            {employee.leaves.slice(0, 3).map((leave, idx) => (
+               <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-violet-400" />
+                    <span className="text-xs font-bold text-slate-700">{leave.code}</span>
+                  </div>
+                  <span className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {formatDays(leave.remaining)}d
+                  </span>
+               </div>
+            ))}
+            {employee.leaves.length > 3 && (
+               <div className="text-center py-1 text-[10px] font-bold text-slate-400 uppercase">
+                  + {employee.leaves.length - 3} more types
+               </div>
+            )}
+         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 mt-auto">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Remaining Balance</p>
-            <p className={`mt-1 text-xl font-black ${lowBalance ? 'text-rose-600' : 'text-emerald-600'}`}>
-              {formatDays(balance.remaining)} days
-            </p>
-          </div>
-          {lowBalance && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-rose-700">
-              <FaExclamationTriangle size={10} />
-              Low balance
-            </span>
-          )}
-        </div>
-
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${getRemainingPercentage(balance.remaining, balance.total_allocated)}%` }}
-            className={`h-full rounded-full ${lowBalance ? 'bg-rose-500' : 'bg-emerald-500'}`}
-          />
-        </div>
-
-        <div className="mt-3 flex items-center justify-between text-xs font-medium">
-          <span className="text-orange-600">Used {formatDays(balance.used)}d</span>
-          <span className="text-slate-500">Allocated {formatDays(balance.total_allocated)}d</span>
-        </div>
+      <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
+         <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Quota</p>
+            <p className="text-xl font-black text-slate-800">{formatDays(totalAllocated)}<span className="text-xs ml-1 text-slate-400">DAYS</span></p>
+         </div>
+         <div className="text-right">
+            <p className="text-[10px] font-bold text-slate-400 uppercase text-emerald-600">Total Rem.</p>
+            <p className="text-xl font-black text-emerald-600">{formatDays(totalRemaining)}<span className="text-xs ml-1 text-emerald-400">DAYS</span></p>
+         </div>
       </div>
     </motion.div>
   );
@@ -621,13 +571,11 @@ const LeaveBalanceManagement = () => {
         response = await apiCall('/leave/assign-balance', 'POST', payload, getCompanyId());
       } else if (modalMode === 'edit') {
         const payload = {
-          employee_id: selectedBalance.employee_id,
-          leaves: [
-            {
-              leave_config_id: selectedBalance.leave_config_id,
-              total_allocated: Number(formData.total_allocated) || 0,
-            },
-          ],
+          employee_id: formData.employee_id,
+          leaves: formData.leaves.map(l => ({
+            leave_config_id: l.leave_config_id,
+            total_allocated: Number(l.total_allocated) || 0,
+          })),
         };
         response = await apiCall('/leave/update-balance', 'PUT', payload, getCompanyId());
       } else if (modalMode === 'delete') {
@@ -669,13 +617,16 @@ const LeaveBalanceManagement = () => {
       return;
     }
 
-    const nextFilteredBalances = balances.filter((balance) =>
-      balance.name?.toLowerCase().includes(normalizedSearch) ||
-      balance.type?.toLowerCase().includes(normalizedSearch) ||
-      balance.employee_name?.toLowerCase().includes(normalizedSearch) ||
-      balance.employee_code?.toLowerCase().includes(normalizedSearch) ||
-      balance.email?.toLowerCase().includes(normalizedSearch) ||
-      String(balance.employee_id ?? '').includes(searchTerm.trim())
+    const nextFilteredBalances = balances.filter((employee) =>
+      employee.employee_name?.toLowerCase().includes(normalizedSearch) ||
+      employee.employee_code?.toLowerCase().includes(normalizedSearch) ||
+      employee.email?.toLowerCase().includes(normalizedSearch) ||
+      employee.leaves.some(leave => 
+        leave.name?.toLowerCase().includes(normalizedSearch) ||
+        leave.type?.toLowerCase().includes(normalizedSearch) ||
+        leave.code?.toLowerCase().includes(normalizedSearch)
+      ) ||
+      String(employee.employee_id ?? '').includes(searchTerm.trim())
     );
 
     setFilteredBalances(nextFilteredBalances);
@@ -711,9 +662,12 @@ const LeaveBalanceManagement = () => {
       setSelectedBalance(balance);
       setFormData({
         employee_id: balance.employee_id,
-        leave_config_id: balance.leave_config_id,
-        total_allocated: Number.parseFloat(balance.total_allocated ?? 0),
-        leaves: [{ leave_config_id: '', total_allocated: 0 }],
+        leave_config_id: '',
+        total_allocated: 0,
+        leaves: (balance.leaves || []).map(l => ({
+          leave_config_id: l.leave_config_id,
+          total_allocated: l.total_allocated
+        })),
       });
     } else {
       setSelectedBalance(null);
@@ -832,69 +786,65 @@ const LeaveBalanceManagement = () => {
     {
       key: 'employee',
       label: 'Employee',
-      render: (balance) => (
+      render: (employee) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-            {balance.employee_name?.charAt(0)}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+            {employee.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
           <div className="min-w-0">
-            <div className="font-semibold text-slate-800 truncate">{balance.employee_name}</div>
-            <div className="text-[10px] text-slate-400 font-mono">{balance.employee_code}</div>
+            <div className="font-semibold text-slate-800 text-sm truncate">{employee.employee_name}</div>
+            <div className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code}</div>
           </div>
         </div>
       )
     },
     {
-      key: 'leave_type',
-      label: 'Leave Type',
-      render: (balance) => (
-        <div>
-          <div className="font-semibold text-slate-800">{balance.name}</div>
-          <span className="inline-flex items-center justify-center rounded-lg bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700 mt-1 uppercase tracking-tight">
-            {balance.code}
-          </span>
+      key: 'leaves_summary',
+      label: 'Assigned Leaves',
+      render: (employee) => (
+        <div className="flex flex-wrap gap-1.5 max-w-[300px]">
+          {employee.leaves.length > 0 ? (
+            employee.leaves.map((leave, idx) => (
+              <div 
+                key={idx} 
+                className="group relative flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-100 bg-slate-50 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all"
+                title={`${leave.name}: ${formatDays(leave.remaining)}/${formatDays(leave.total_allocated)} remaining`}
+              >
+                <span className="text-[10px] font-bold text-violet-700">{leave.code}</span>
+                <div className="flex flex-col gap-0.5">
+                   <span className={`text-[9px] font-bold ${isLowBalance(leave.remaining) ? 'text-rose-500' : 'text-emerald-500'}`}>
+                     {formatDays(leave.remaining)}d
+                   </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <span className="text-[10px] text-slate-400 italic">No leaves assigned</span>
+          )}
         </div>
       )
     },
-    { key: 'year', label: 'Year', className: 'font-medium text-slate-500' },
     {
-      key: 'allocated',
-      label: 'Allocated',
-      render: (balance) => (
-        <span className="font-bold text-slate-700">{formatDays(balance.total_allocated)} <span className="text-[10px] text-slate-400">DAYS</span></span>
-      )
-    },
-    {
-      key: 'used',
-      label: 'Used',
-      render: (balance) => <span className="font-semibold text-orange-500">{formatDays(balance.used)}</span>
-    },
-    {
-      key: 'remaining',
-      label: 'Remaining',
-      render: (balance) => {
-        const remaining = balance.remaining;
-        const low = isLowBalance(remaining);
+      key: 'total_allocation',
+      label: 'Total Quota',
+      render: (employee) => {
+        const total = employee.leaves.reduce((sum, l) => sum + (Number(l.total_allocated) || 0), 0);
         return (
-          <div className="flex flex-col gap-1 min-w-[110px]">
-            <div className={`text-sm font-bold ${low ? 'text-rose-600' : 'text-emerald-600'}`}>
-              {formatDays(remaining)} <span className="text-[10px] uppercase">left</span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${getRemainingPercentage(remaining, balance.total_allocated)}%` }}
-                className={`h-full rounded-full ${low ? 'bg-rose-500' : 'bg-emerald-500'}`}
-              />
-            </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-700 text-sm">{formatDays(total)} <span className="text-[10px] text-slate-400">DAYS</span></span>
+            <span className="text-[9px] text-slate-400 font-medium uppercase tracking-tighter">{employee.leaves.length} TYPES</span>
           </div>
         );
       }
     },
     {
-      key: 'paid',
-      label: 'Paid',
-      render: (balance) => <PaidBadge isPaid={balance.is_paid} />
+      key: 'year',
+      label: 'Year',
+      render: (employee) => (
+        <span className="text-sm font-medium text-slate-500">
+          {employee.leaves[0]?.year || selectedYear}
+        </span>
+      )
     }
   ];
 
@@ -979,17 +929,17 @@ const LeaveBalanceManagement = () => {
           <ManagementTable
             rows={paginatedData}
             columns={columns}
-            rowKey={(row) => `${row.employee_id}-${row.leave_config_id}`}
+            rowKey={(row) => row.employee_id}
             onRowClick={(row) => setViewModal({ open: true, balance: row })}
             getActions={(row) => ActionMenuButtons(row, (r) => openModal('edit', r), (r) => openModal('delete', r), (r) => setViewModal({ open: true, balance: r }), updateAccess, deleteAccess, updateMessage, deleteMessage)}
             accent="violet"
           />
         ) : (
           <ManagementGrid>
-            {paginatedData.map((balance) => (
+            {paginatedData.map((employee) => (
               <MobileBalanceCard
-                key={getBalanceKey(balance)}
-                balance={balance}
+                key={employee.employee_id}
+                employee={employee}
                 onEdit={(record) => openModal('edit', record)}
                 onDelete={(record) => openModal('delete', record)}
                 onView={(record) => setViewModal({ open: true, balance: record })}
@@ -1018,154 +968,105 @@ const LeaveBalanceManagement = () => {
 
       <AnimatePresence>
         {viewModal.open && viewModal.balance && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) {
-                closeViewModal();
-              }
-            }}
-          >
-            <ModalScrollLock />
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-              className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
-              onMouseDown={(event) => event.stopPropagation()}
-            >
-              <div className="sticky top-0 z-[10] bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-t-3xl px-6 sm:px-8 py-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                      <FaEye className="text-white text-sm" />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
+            onMouseDown={(event) => event.target === event.currentTarget && closeViewModal()}>
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+              {/* Header */}
+              <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white px-6 sm:px-8 py-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-xl font-black shrink-0">
+                      {viewModal.balance.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
-                    <div>
-                      <h2 className="text-lg font-bold">{viewModal.balance.name}</h2>
-                      <p className="text-xs text-white/80">{viewModal.balance.employee_name} • Year {viewModal.balance.year}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeViewModal}
-                    className="p-2 hover:bg-white/20 rounded-xl transition-all"
-                  >
-                    <FaTimes size={20} />
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <span className="inline-flex items-center justify-center rounded-xl bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-100">
-                    {viewModal.balance.type}
-                  </span>
-                  <PaidBadge isPaid={viewModal.balance.is_paid} compact />
-                </div>
-              </div>
-
-              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-5 sm:px-8 py-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <DetailItem label="Employee" value={viewModal.balance.employee_name} />
-                  <DetailItem label="Employee Code" value={viewModal.balance.employee_code || `#${viewModal.balance.employee_id}`} />
-                  <DetailItem label="Email" value={viewModal.balance.email || '—'} />
-                  <DetailItem label="Leave Config ID" value={viewModal.balance.leave_config_id} />
-                  <DetailItem label="Allocated" value={`${formatDays(viewModal.balance.total_allocated)} days`} />
-                  <DetailItem label="Used" value={`${formatDays(viewModal.balance.used)} days`} />
-                  <DetailItem label="Remaining" value={`${formatDays(viewModal.balance.remaining)} days`} />
-                  <DetailItem label="Max Balance" value={`${formatDays(viewModal.balance.max_balance)} days`} />
-                  <DetailItem label="Carry Forward" value={`${formatDays(viewModal.balance.carry_forward_limit)} days`} />
-                  <DetailItem label="Accrual Type" value={viewModal.balance.accrual_type || 'none'} />
-                  <DetailItem label="Accrual Rate" value={`${formatDays(viewModal.balance.accrual_rate)} days`} />
-                  <DetailItem
-                    label="Half Day"
-                    value={
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        viewModal.balance.allow_half_day ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {viewModal.balance.allow_half_day ? <FaCheck size={10} /> : <FaTimes size={10} />}
-                        {viewModal.balance.allow_half_day ? 'Allowed' : 'Not allowed'}
-                      </span>
-                    }
-                  />
-                  <DetailItem
-                    label="Negative Balance"
-                    value={
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        viewModal.balance.allow_negative_balance ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {viewModal.balance.allow_negative_balance ? <FaCheck size={10} /> : <FaTimes size={10} />}
-                        {viewModal.balance.allow_negative_balance ? 'Allowed' : 'Blocked'}
-                      </span>
-                    }
-                  />
-                  <DetailItem
-                    label="Exclude Weekends"
-                    value={
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        viewModal.balance.exclude_weekends ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {viewModal.balance.exclude_weekends ? <FaCheck size={10} /> : <FaTimes size={10} />}
-                        {viewModal.balance.exclude_weekends ? 'Yes' : 'No'}
-                      </span>
-                    }
-                  />
-                  <DetailItem
-                    label="Comp Off"
-                    value={
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        viewModal.balance.is_comp_off ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {viewModal.balance.is_comp_off ? <FaCheck size={10} /> : <FaTimes size={10} />}
-                        {viewModal.balance.is_comp_off ? 'Enabled' : 'Disabled'}
-                      </span>
-                    }
-                  />
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-slate-100 bg-slate-50/70 p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Balance Progress</p>
-                      <p className={`mt-2 text-2xl font-black ${isLowBalance(viewModal.balance.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>
-                        {formatDays(viewModal.balance.remaining)} days left
+                    <div className="min-w-0">
+                      <h2 className="text-xl font-bold truncate leading-tight">{viewModal.balance.employee_name}</h2>
+                      <p className="text-white/70 text-sm mt-1 flex items-center gap-2">
+                        <span className="font-mono">{viewModal.balance.employee_code}</span>
+                        <span>•</span>
+                        <span className="truncate">{viewModal.balance.email}</span>
                       </p>
                     </div>
-                    <div className="text-right text-sm text-slate-500">
-                      <p>Used: <span className="font-semibold text-orange-600">{formatDays(viewModal.balance.used)}d</span></p>
-                      <p className="mt-1">Allocated: <span className="font-semibold text-slate-700">{formatDays(viewModal.balance.total_allocated)}d</span></p>
-                    </div>
                   </div>
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-200">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${getRemainingPercentage(viewModal.balance.remaining, viewModal.balance.total_allocated)}%` }}
-                      className={`h-full rounded-full ${isLowBalance(viewModal.balance.remaining) ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                    />
-                  </div>
+                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0"><FaTimes size={20} /></button>
                 </div>
-
               </div>
 
-              <div className="flex flex-col-reverse gap-3 px-5 sm:px-8 py-5 border-t border-gray-100 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={closeViewModal}
-                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
-                  >
-                    Close
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeViewModal();
-                      openModal('edit', viewModal.balance);
-                    }}
-                    disabled={updateAccess.disabled}
-                    title={updateAccess.disabled ? updateMessage : ''}
-                    className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    <FaEdit size={12} />
-                    Edit Balance
-                  </button>
+              {/* Body */}
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                      <p className="text-sm font-bold text-emerald-600">Active Employment</p>
+                   </div>
+                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Year</p>
+                    <p className="text-sm font-bold text-slate-700">{viewModal.balance.leaves[0]?.year || selectedYear}</p>
+                   </div>
+                   <div className="col-span-2 sm:col-span-1 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Leaves</p>
+                    <p className="text-sm font-bold text-slate-700 underline decoration-violet-200 decoration-2">{viewModal.balance.leaves.length} Assigned Types</p>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                       <FaIdCard className="text-violet-500" /> Allocated Balances
+                    </h3>
+                    <span className="px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-[10px] font-black uppercase">Summary</span>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {viewModal.balance.leaves.map((leave, idx) => (
+                      <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-violet-200 hover:shadow-md transition-all group">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-[10px] font-bold">{leave.code}</span>
+                            <h4 className="font-bold text-slate-800 text-sm truncate">{leave.name}</h4>
+                            <PaidBadge isPaid={leave.is_paid} compact />
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-2">
+                             <div className="bg-slate-50/50 rounded-xl p-2">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Total</p>
+                                <p className="text-xs font-bold text-slate-700">{formatDays(leave.total_allocated)}d</p>
+                             </div>
+                             <div className="bg-slate-50/50 rounded-xl p-2">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Used</p>
+                                <p className="text-xs font-bold text-orange-600">{formatDays(leave.used)}d</p>
+                             </div>
+                             <div className="bg-slate-50/50 rounded-xl p-2">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase">Rem.</p>
+                                <p className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>{formatDays(leave.remaining)}d</p>
+                             </div>
+                          </div>
+                        </div>
+
+                        <div className="w-full sm:w-24 shrink-0">
+                           <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1.5">
+                              <div 
+                                className={`h-full rounded-full ${isLowBalance(leave.remaining) ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                                style={{ width: `${getRemainingPercentage(leave.remaining, leave.total_allocated)}%` }}
+                              />
+                           </div>
+                           <p className="text-[9px] font-black text-slate-400 text-center uppercase">{getRemainingPercentage(leave.remaining, leave.total_allocated).toFixed(0)}% Left</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
+                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+                  Close Window
+                </button>
+                <button onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2">
+                   <FaEdit /> Edit Balances
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1261,7 +1162,7 @@ const LeaveBalanceManagement = () => {
                     </div>
                   </div>
 
-                  <div className="p-6 sm:p-8 space-y-6">
+                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
                     <SearchableSelect
                       label="Select Employee"
                       placeholder="Choose an employee..."
@@ -1270,6 +1171,7 @@ const LeaveBalanceManagement = () => {
                       options={employees}
                       onSearch={handleEmployeeSearch}
                       loading={employeesLoading}
+                      disabled={modalMode === 'edit'}
                       getOptionLabel={(employee) => `${employee.name} (${employee.employee_code})`}
                       getOptionValue={(employee) => employee.id}
                       renderOption={(employee) => (
@@ -1285,31 +1187,36 @@ const LeaveBalanceManagement = () => {
                       )}
                     />
 
-                    {modalMode === 'assign' ? (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                            Leave Allocations
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                leaves: [...prev.leaves, { leave_config_id: '', total_allocated: 0 }],
-                              }))
-                            }
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
-                          >
-                            <FaPlus size={10} /> Add More
-                          </button>
-                        </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                          {modalMode === 'assign' ? 'Leave Allocations' : 'Adjust Balances'}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              leaves: [...prev.leaves, { leave_config_id: '', total_allocated: 0 }],
+                            }))
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+                        >
+                          <FaPlus size={10} /> Add More
+                        </button>
+                      </div>
 
+                      <div className="grid gap-4">
                         {formData.leaves.map((row, idx) => (
-                          <div key={idx} className="relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+                          <motion.div 
+                            key={idx} 
+                            initial={{ opacity: 0, y: 10 }} 
+                            animate={{ opacity: 1, y: 0 }}
+                            className="relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4"
+                          >
                             <div className="mb-3 flex items-center justify-between">
                               <span className="inline-flex items-center gap-1.5 rounded-lg bg-violet-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">
-                                Leave #{idx + 1}
+                                {modalMode === 'assign' ? `Leave #${idx + 1}` : 'Leave Type'}
                               </span>
                               {formData.leaves.length > 1 && (
                                 <button
@@ -1356,7 +1263,7 @@ const LeaveBalanceManagement = () => {
                                 )}
                               />
                               <div className="space-y-2">
-                                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Days</label>
+                                <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Total Days</label>
                                 <input
                                   type="number"
                                   step="0.5"
@@ -1373,67 +1280,13 @@ const LeaveBalanceManagement = () => {
                                 />
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <SearchableSelect
-                          label="Leave Type"
-                          placeholder="Choose a leave type..."
-                          value={formData.leave_config_id}
-                          onChange={(value) => setFormData({ ...formData, leave_config_id: value })}
-                          options={leaveConfigs}
-                          onSearch={handleLeaveConfigSearch}
-                          loading={leaveConfigsLoading}
-                          getOptionLabel={(config) => `${config.name} (${config.code})`}
-                          getOptionValue={(config) => config.id}
-                          renderOption={(config) => (
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="font-semibold text-slate-800 text-sm truncate">{config.name}</p>
-                                <p className="text-[10px] text-slate-400 font-mono italic">Code: {config.code} • Max: {config.max_balance}d</p>
-                              </div>
-                              <PaidBadge isPaid={config.is_paid} compact />
-                            </div>
-                          )}
-                        />
+                    </div>
+                  </div>
 
-                        <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
-                          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 ml-1">
-                            Allocation Details
-                          </label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                               <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-                                  <FaCalendarAlt size={12} className="text-violet-500" />
-                                  Total Allocation (Days)
-                               </label>
-                               <input
-                                type="number"
-                                step="0.5"
-                                placeholder="e.g. 12.0"
-                                value={formData.total_allocated}
-                                onChange={(event) =>
-                                  setFormData({ ...formData, total_allocated: event.target.value })
-                                }
-                                className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 font-semibold"
-                              />
-                            </div>
-                            <div className="flex items-center">
-                               <div className="bg-violet-50 p-4 rounded-xl border border-violet-100 flex-1">
-                                  <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Preview</p>
-                                  <p className="text-sm text-violet-800 font-medium italic">
-                                    "{formData.total_allocated || 0} days" will be updated for the selected profile.
-                                  </p>
-                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
+                  <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
                       <button
                         type="button"
                         onClick={closeModal}
@@ -1468,7 +1321,6 @@ const LeaveBalanceManagement = () => {
                         )}
                       </button>
                     </div>
-                  </div>
                 </>
               )}
             </motion.div>
