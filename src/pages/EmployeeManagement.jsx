@@ -7,7 +7,7 @@ import {
     FaDollarSign, FaUserTag, FaShieldAlt, FaUser, FaTrashAlt,
     FaInfoCircle, FaPlus, FaUserTie, FaUserCheck, FaRobot, FaHandPaper,
     FaCamera, FaMapMarkerAlt, FaWifi, FaFingerprint, FaNetworkWired, FaSave,
-    FaTh, FaListUl, FaChevronDown, FaChevronRight, FaCog
+    FaTh, FaListUl, FaChevronDown, FaChevronRight, FaCog, FaUserCog, FaClock
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from 'react-select';
@@ -20,8 +20,27 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import TimePickerField from '../components/TimePicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
+
+const customSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: "48px",
+        borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
+        boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
+        "&:hover": { borderColor: "#6366f1" },
+        borderRadius: "0.75rem",
+        padding: "0 0.5rem",
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
+        color: state.isSelected ? "white" : "#1e293b",
+        "&:active": { backgroundColor: "#6366f1" },
+    }),
+};
 
 const MODAL_TYPES = {
     NONE: 'NONE',
@@ -84,19 +103,40 @@ const EmployeeEditModal = ({
     updateDisabled,
     getAccessMessage
 }) => {
+    const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
+
     const formatDisplay = (value) =>
         value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
 
+    const toggleWeekend = (day) => {
+        setFormData(prev => {
+            const currentWeekends = Array.isArray(prev.weekends) ? prev.weekends : [];
+            const exists = currentWeekends.find(w => w.day === day);
+            if (exists) {
+                return { ...prev, weekends: currentWeekends.filter(w => w.day !== day) };
+            } else {
+                return { ...prev, weekends: [...currentWeekends, { day, type: 'full' }] };
+            }
+        });
+    };
+
+    const updateWeekendType = (day, type) => {
+        setFormData(prev => ({
+            ...prev,
+            weekends: (prev.weekends || []).map(w => w.day === day ? { ...w, type } : w)
+        }));
+    };
+
     return (
-        <>
+        <div className="flex flex-col h-full">
             <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
-                        <FaEdit className="h-6 w-6 text-white" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                        <FaUserCog className="h-6 w-6 text-white" />
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-slate-900">Edit Employee</h2>
-                        <p className="text-sm text-slate-500">Update designation, salary, employment and attendance methods</p>
+                        <p className="text-sm text-slate-500">Update configuration and accessibility</p>
                     </div>
                 </div>
                 <button
@@ -108,14 +148,15 @@ const EmployeeEditModal = ({
                 </button>
             </div>
 
-            <form onSubmit={handleEdit} className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
+            <form onSubmit={handleEdit} className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
                 {(constantsLoading || permissionsLoading) ? (
                     <div className="flex items-center justify-center py-16">
                         <FaSpinner className="h-8 w-8 animate-spin text-indigo-500" />
                         <span className="ml-3 text-sm font-medium text-slate-500">Loading data...</span>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 pb-20">
+                        {/* Status Card */}
                         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
                             <div className="flex items-start gap-4">
                                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
@@ -124,7 +165,6 @@ const EmployeeEditModal = ({
                                 <div className="min-w-0 flex-1 space-y-1">
                                     <p className="font-semibold text-slate-900">{formData.name || "Employee"}</p>
                                     <p className="text-sm text-slate-600">{formData.email || "No email"}</p>
-                                    {formData.phone && <p className="text-sm text-slate-600">{formData.phone}</p>}
                                     <div className="flex flex-wrap gap-2 pt-2">
                                         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200">
                                             Code: {formData.employee_code || "N/A"}
@@ -139,6 +179,7 @@ const EmployeeEditModal = ({
                             </div>
                         </div>
 
+                        {/* Core Details Grid */}
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="space-y-3">
                                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -151,23 +192,7 @@ const EmployeeEditModal = ({
                                     onChange={(option) => setFormData(prev => ({ ...prev, designation: option?.value || '' }))}
                                     placeholder="Select designation"
                                     isClearable
-                                    styles={{
-                                        control: (base, state) => ({
-                                            ...base,
-                                            minHeight: "48px",
-                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
-                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
-                                            "&:hover": { borderColor: "#6366f1" },
-                                            borderRadius: "0.75rem",
-                                            padding: "0 0.5rem",
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
-                                            color: state.isSelected ? "white" : "#1e293b",
-                                            "&:active": { backgroundColor: "#6366f1" },
-                                        }),
-                                    }}
+                                    styles={customSelectStyles}
                                 />
                             </div>
 
@@ -179,32 +204,20 @@ const EmployeeEditModal = ({
                                 <Select
                                     options={permissionPackages}
                                     value={formData.selectedPackage || null}
-                                    onChange={(option) => setFormData(prev => ({ ...prev, selectedPackage: option, permission_package_id: option?.value || null }))}
+                                    onChange={(option) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        selectedPackage: option, 
+                                        permission_package_id: option?.value || null 
+                                    }))}
                                     placeholder="Select permission package"
                                     isClearable
-                                    styles={{
-                                        control: (base, state) => ({
-                                            ...base,
-                                            minHeight: "48px",
-                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
-                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
-                                            "&:hover": { borderColor: "#6366f1" },
-                                            borderRadius: "0.75rem",
-                                            padding: "0 0.5rem",
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
-                                            color: state.isSelected ? "white" : "#1e293b",
-                                            "&:active": { backgroundColor: "#6366f1" },
-                                        }),
-                                    }}
+                                    styles={customSelectStyles}
                                 />
                             </div>
 
                             <div className="space-y-3">
                                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                    <FaUserCheck className="h-4 w-4 text-indigo-500" />
+                                    <FaBriefcase className="h-4 w-4 text-indigo-500" />
                                     Employment Type
                                 </label>
                                 <Select
@@ -213,23 +226,7 @@ const EmployeeEditModal = ({
                                     onChange={(option) => setFormData(prev => ({ ...prev, employment_type: option?.value || '' }))}
                                     placeholder="Select employment type"
                                     isClearable
-                                    styles={{
-                                        control: (base, state) => ({
-                                            ...base,
-                                            minHeight: "48px",
-                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
-                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
-                                            "&:hover": { borderColor: "#6366f1" },
-                                            borderRadius: "0.75rem",
-                                            padding: "0 0.5rem",
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
-                                            color: state.isSelected ? "white" : "#1e293b",
-                                            "&:active": { backgroundColor: "#6366f1" },
-                                        }),
-                                    }}
+                                    styles={customSelectStyles}
                                 />
                             </div>
 
@@ -244,126 +241,190 @@ const EmployeeEditModal = ({
                                     onChange={(option) => setFormData(prev => ({ ...prev, salary_type: option?.value || '' }))}
                                     placeholder="Select salary type"
                                     isClearable
-                                    styles={{
-                                        control: (base, state) => ({
-                                            ...base,
-                                            minHeight: "48px",
-                                            borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
-                                            boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
-                                            "&:hover": { borderColor: "#6366f1" },
-                                            borderRadius: "0.75rem",
-                                            padding: "0 0.5rem",
-                                        }),
-                                        option: (base, state) => ({
-                                            ...base,
-                                            backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
-                                            color: state.isSelected ? "white" : "#1e293b",
-                                            "&:active": { backgroundColor: "#6366f1" },
-                                        }),
-                                    }}
+                                    styles={customSelectStyles}
                                 />
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                    <FaFingerprint className="h-4 w-4 text-indigo-500" />
-                                    Attendance Methods
-                                </label>
-                                <span className="text-xs text-slate-500">Choose the methods this employee can use</span>
+                        {/* Attendance Section */}
+                        <div className="space-y-4">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaFingerprint className="h-4 w-4 text-indigo-500" />
+                                        Attendance Methods
+                                    </label>
+                                </div>
+                                {constants.attendance_methods.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {constants.attendance_methods.map((method) => {
+                                            const config = attendanceMethodsConfig[method.id];
+                                            const active = config?.enabled || false;
+                                            return (
+                                                <button
+                                                    key={method.id}
+                                                    type="button"
+                                                    onClick={() => method.available && handleToggleMethod(method.id)}
+                                                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                                                        active
+                                                            ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                                                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                                    } ${!method.available ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                >
+                                                    {active && <FaCheck className="h-3 w-3" />}
+                                                    {method.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                        No attendance methods available.
+                                    </div>
+                                )}
                             </div>
 
-                            {constants.attendance_methods.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {constants.attendance_methods.map((method) => {
-                                        const config = attendanceMethodsConfig[method.id];
-                                        const active = config?.enabled || false;
-
-                                        return (
-                                            <button
-                                                key={method.id}
-                                                type="button"
-                                                onClick={() => method.available && handleToggleMethod(method.id)}
-                                                disabled={!method.available}
-                                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
-                                                    ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                                                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
-                                                    } ${!method.available ? "cursor-not-allowed opacity-60" : ""}`}
-                                            >
-                                                {active && <FaCheck className="h-3 w-3" />}
-                                                {method.name}
-                                            </button>
-                                        );
-                                    })}
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaCheck className="h-4 w-4 text-indigo-500" />
+                                        Auto Approve Attendance
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, auto_approve: !prev.auto_approve }))}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                            formData.auto_approve ? 'bg-indigo-600' : 'bg-slate-300'
+                                        }`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                            formData.auto_approve ? 'translate-x-6' : 'translate-x-1'
+                                        }`} />
+                                    </button>
                                 </div>
-                            ) : (
-                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                                    No attendance methods are configured for this company.
-                                </div>
-                            )}
+                            </div>
                         </div>
 
-                        {/* Auto Approve Toggle */}
-                        <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                            <div className="flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
-                                        <FaCheck className="h-4 w-4 text-indigo-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-slate-700">Auto Approve Attendance</p>
-                                        <p className="text-xs text-slate-500">Automatically approve attendance records for this employee</p>
-                                    </div>
+                        {/* Shift & Weekends Grid */}
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaClock className="h-4 w-4 text-indigo-500" />
+                                    Shift Timings
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <TimePickerField
+                                        label="Start Time"
+                                        value={formData.shift_start}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, shift_start: val }))}
+                                    />
+                                    <TimePickerField
+                                        label="End Time"
+                                        value={formData.shift_end}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
+                                    />
                                 </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
                                 <button
                                     type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, auto_approve: !prev.auto_approve }))}
-                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.auto_approve ? 'bg-indigo-600' : 'bg-slate-200'}`}
-                                    role="switch"
-                                    aria-checked={formData.auto_approve}
+                                    onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
+                                    className="flex w-full items-center justify-between"
                                 >
-                                    <span
-                                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${formData.auto_approve ? 'translate-x-5' : 'translate-x-0'}`}
-                                    />
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
+                                        Weekends
+                                        {formData.weekends?.length > 0 && (
+                                            <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                                                {formData.weekends.length} Selected
+                                            </span>
+                                        )}
+                                    </label>
+                                    <FaChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${isWeekendsOpen ? 'rotate-180' : ''}`} />
                                 </button>
+
+                                <AnimatePresence>
+                                    {isWeekendsOpen && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="flex flex-col gap-2 pt-4">
+                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                                                    const config = (formData.weekends || []).find(w => w.day === day);
+                                                    return (
+                                                        <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleWeekend(day)}
+                                                                className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                                                    config 
+                                                                        ? 'bg-indigo-600 text-white shadow-md' 
+                                                                        : 'bg-white text-slate-600 border border-slate-200'
+                                                                }`}
+                                                            >
+                                                                <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                                                    {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                                                </div>
+                                                                {day.charAt(0).toUpperCase() + day.slice(1)}
+                                                            </button>
+                                                            {config && (
+                                                                <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
+                                                                    {['full', 'half'].map(type => (
+                                                                        <button
+                                                                            key={type}
+                                                                            type="button"
+                                                                            onClick={() => updateWeekendType(day, type)}
+                                                                            className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
+                                                                                config.type === type 
+                                                                                    ? 'bg-slate-900 text-white' 
+                                                                                    : 'text-slate-400'
+                                                                            }`}
+                                                                        >
+                                                                            {type}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
                     </div>
                 )}
-
-                <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
-                    <button
-                        type="button"
-                        onClick={closeModal}
-                        disabled={loading}
-                        className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                    <motion.button
-                        type="submit"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        disabled={loading || constantsLoading || permissionsLoading || updateDisabled}
-                        title={updateDisabled ? "You do not have permission to update employees" : ''}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-200 transition hover:from-green-700 hover:to-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <>
-                                <FaSpinner className="h-4 w-4 animate-spin" />
-                                Updating Employee...
-                            </>
-                        ) : (
-                            <>
-                                <FaSave className="h-4 w-4" />
-                                Update Employee
-                            </>
-                        )}
-                    </motion.button>
-                </div>
             </form>
-        </>
+
+            <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+                <button
+                    type="button"
+                    onClick={closeModal}
+                    disabled={loading}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                >
+                    Cancel
+                </button>
+                <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={loading || constantsLoading || permissionsLoading || updateDisabled}
+                    title={updateDisabled ? getAccessMessage : ''}
+                    onClick={handleEdit}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:scale-[1.02] disabled:opacity-50"
+                >
+                    {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSave className="h-4 w-4" />}
+                    Update Employee
+                </motion.button>
+            </div>
+        </div>
     );
 };
 
@@ -392,7 +453,9 @@ const EmployeeManagement = () => {
         name: '', designation: '', email: '', phone: '',
         employee_code: '', employment_type: '', salary_type: '',
         joining_date: '', status: '', permission_package_id: null,
-        attendance_methods: [], auto_approve: false
+        attendance_methods: [], auto_approve: false,
+        shift_start: '09:00:00', shift_end: '18:00:00',
+        weekends: []
     });
     const [weekendConfig, setWeekendConfig] = useState({
         monday: 'none',
@@ -704,9 +767,15 @@ const EmployeeManagement = () => {
 
             const payload = {
                 employee_id: id,
+                designation: employeeData.designation,
+                employment_type: employeeData.employment_type,
                 salary_type: employeeData.salary_type,
+                permission_package_id: employeeData.permission_package_id,
                 attendance_methods: enabledMethods,
-                auto_approve: employeeData.auto_approve ?? false
+                auto_approve: employeeData.auto_approve ?? false,
+                shift_start: employeeData.shift_start,
+                shift_end: employeeData.shift_end,
+                weekends: employeeData.weekends
             };
 
             const response = await apiCall('/employees/update', 'PUT', payload, company?.id);
@@ -790,7 +859,10 @@ const EmployeeManagement = () => {
                 status: employee.status || '',
                 permission_package_id: employee.package_id || null,
                 selectedPackage: selectedPackage || null,
-                auto_approve: employee.auto_approve ?? false
+                auto_approve: employee.auto_approve ?? false,
+                shift_start: employee.shift_start || '09:00:00',
+                shift_end: employee.shift_end || '18:00:00',
+                weekends: Array.isArray(employee.weekends) ? employee.weekends : []
             });
 
             setModalType(MODAL_TYPES.EDIT);
@@ -878,8 +950,14 @@ const EmployeeManagement = () => {
         }
 
         const result = await updateEmployee(selectedEmployee.id, {
+            designation: formData.designation,
+            employment_type: formData.employment_type,
             salary_type: formData.salary_type,
-            auto_approve: formData.auto_approve
+            permission_package_id: formData.permission_package_id,
+            auto_approve: formData.auto_approve,
+            shift_start: formData.shift_start,
+            shift_end: formData.shift_end,
+            weekends: formData.weekends
         });
 
         if (result.success) {
@@ -1297,7 +1375,7 @@ const EmployeeManagement = () => {
                             className={`relative w-full bg-white shadow-2xl overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
                                     ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col rounded-2xl'
                                     : modalType === MODAL_TYPES.EDIT
-                                        ? 'max-w-4xl max-h-[90vh] rounded-3xl border border-slate-200'
+                                        ? 'max-w-4xl h-[90vh] flex flex-col rounded-3xl border border-slate-200'
                                         : 'max-w-4xl max-h-[90vh] rounded-2xl'
                                 }`}
                             onClick={e => e.stopPropagation()}

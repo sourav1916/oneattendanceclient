@@ -18,13 +18,14 @@ import {
   FaUserTie,
   FaFingerprint,
   FaCalendarAlt,
-  FaRegCheckCircle,
+  FaSearch,
   FaEnvelope,
   FaPhone,
-  FaSave,
+  FaRegCheckCircle,
   FaListAlt,
   FaChevronDown,
   FaChevronUp,
+  FaSave,
 } from "react-icons/fa";
 import TimePickerField from "../TimePicker";
 import ModalScrollLock from "../ModalScrollLock";
@@ -607,7 +608,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     try {
       const company = JSON.parse(localStorage.getItem("company"));
       const payload = {
-        invite_id: staffData?.invite_id,
+        invite_id: staffData?.id || staffData?.invite_id,
         user_id: selectedUser.id,
         permission_package_id: selectedPermissionPackage?.value || null,
         employment_type: employmentType.value,
@@ -680,12 +681,12 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
-                  <FaUserPlus className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                  <FaUserCog className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">Edit Staff Invitation</h2>
-                  <p className="text-sm text-slate-500">Search by email, then update invite details</p>
+                  <p className="text-sm text-slate-500">Update configuration for this staff member</p>
                 </div>
               </div>
               <button
@@ -879,21 +880,21 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
 
                     {showInviteFields && (
                       <>
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaCheck className="h-4 w-4 text-indigo-500" />
-                            Invite Settings
-                          </label>
-                          <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                            <input
-                              type="checkbox"
-                              checked={autoApprove}
-                              onChange={(e) => setAutoApprove(e.target.checked)}
-                              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                            />
-                            <span className="text-sm text-slate-700">Auto approve invite</span>
-                          </label>
-                        </div>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                          <FaCheck className="h-4 w-4 text-indigo-500" />
+                          Attendance Settings
+                        </label>
+                        <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={autoApprove}
+                            onChange={(e) => setAutoApprove(e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-slate-700">Auto approve Attendance</span>
+                        </label>
+                      </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-2xl border border-slate-200 bg-white p-4">
