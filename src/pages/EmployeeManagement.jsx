@@ -987,35 +987,37 @@ const EmployeeManagement = () => {
 
     // ─── Responsive Columns ──────────────────────────────────────────────────
 
-    const [visibleColumns, setVisibleColumns] = useState(() => ({
-        showEmployeeCode: window.innerWidth >= 1280,
+    // ─── Responsive Columns ──────────────────────────────────────────────────
+    const getEffectiveWidth = () => {
+        const width = window.innerWidth;
+        const offset = width >= 1024 ? 280 : (width >= 768 ? 80 : 0);
+        return width - offset;
+    };
+
+    const getVisibleColumns = useCallback((width) => ({
+        showEmployeeCode: width >= 1100,
         showName: true,
-        showDesignation: window.innerWidth >= 768,
-        showEmail: window.innerWidth >= 1100,
-        showPhone: window.innerWidth >= 1440,
-        showType: window.innerWidth >= 1100,
-        showStatus: window.innerWidth >= 640,
-        showJoiningDate: window.innerWidth >= 1280,
-    }));
+        showDesignation: width >= 600,
+        showEmail: width >= 950,
+        showPhone: width >= 1300,
+        showType: width >= 1050,
+        showStatus: width >= 450,
+        showJoiningDate: width >= 1200,
+    }), []);
+
+    const [visibleColumns, setVisibleColumns] = useState(() => getVisibleColumns(getEffectiveWidth()));
 
     useEffect(() => {
         let t;
         const onResize = () => {
             clearTimeout(t);
-            t = setTimeout(() => setVisibleColumns({
-                showEmployeeCode: window.innerWidth >= 1280,
-                showName: true,
-                showDesignation: window.innerWidth >= 768,
-                showEmail: window.innerWidth >= 1100,
-                showPhone: window.innerWidth >= 1440,
-                showType: window.innerWidth >= 1100,
-                showStatus: window.innerWidth >= 640,
-                showJoiningDate: window.innerWidth >= 1280,
-            }), 150);
+            t = setTimeout(() => {
+                setVisibleColumns(getVisibleColumns(getEffectiveWidth()));
+            }, 150);
         };
         window.addEventListener('resize', onResize);
         return () => { clearTimeout(t); window.removeEventListener('resize', onResize); };
-    }, []);
+    }, [visibleColumns, getVisibleColumns]);
 
     // ─── Memoized Select Options ─────────────────────────────────────────────
 
@@ -1106,7 +1108,7 @@ const EmployeeManagement = () => {
                 <>
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-2xl shadow-xl overflow-visible"
+                            className="bg-white rounded-2xl shadow-xl overflow-hidden"
                         >
                             <div className="overflow-x-auto overflow-y-visible">
                                 <table className="w-full text-sm text-left text-gray-700">
@@ -1141,7 +1143,7 @@ const EmployeeManagement = () => {
                                                             </div>
 
                                                             {/* Name */}
-                                                            <span className="text-gray-800 font-medium">
+                                                            <span className="text-gray-800 font-medium truncate max-w-[120px] sm:max-w-[180px]">
                                                                 {emp.name}
                                                             </span>
 
@@ -1149,7 +1151,11 @@ const EmployeeManagement = () => {
                                                     </td>
                                                 )}
                                                 {visibleColumns.showDesignation && (
-                                                    <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">{getDesignationDisplay(emp.designation)}</span></td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium truncate max-w-[120px] inline-block">
+                                                            {getDesignationDisplay(emp.designation)}
+                                                        </span>
+                                                    </td>
                                                 )}
                                                 {visibleColumns.showEmail && (
                                                     <td className="px-6 py-4"><div className="flex items-center gap-2"><FaEnvelope className="text-gray-400 text-xs" /><span className="truncate max-w-[150px]">{emp.email}</span></div></td>

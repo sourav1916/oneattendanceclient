@@ -755,7 +755,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
     salary: salConfig,
     payroll: payConfig,
     leave: leaveConfig,
-    shift: shiftConfig,
+    shifts: shiftConfig,
   };
   const { columns, cardRenderer, rowKey } = CONFIG_MAP[tabKey] || permConfig;
 
