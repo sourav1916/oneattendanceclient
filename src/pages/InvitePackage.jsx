@@ -633,7 +633,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 // ─── View Modal ──────────────────────────────────────────────────────────────
 
 function ViewPackageModal({ isOpen, onClose, package: pkg }) {
-
+  const [showPermissions, setShowPermissions] = useState(false);
 
   if (!isOpen || !pkg) return null;
 
@@ -727,14 +727,54 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
             </div>
           )}
 
-          {/* Permission Package ID */}
+          {/* Permissions Section */}
           {pkg.permission_package_id && (
-            <div className="mt-4">
-              <InfoItem 
-                icon={<FaShieldAlt className="text-indigo-500" />} 
-                label="Permission Package" 
-                value={`Package ID: ${pkg.permission_package_id}`} 
-              />
+            <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden">
+              <button 
+                onClick={() => setShowPermissions(!showPermissions)}
+                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <FaShieldAlt className="text-indigo-500" /> 
+                  <span className="text-sm font-semibold text-gray-700">Permission Package</span>
+                  {pkg.permission_package_name && (
+                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                      {pkg.permission_package_name}
+                    </span>
+                  )}
+                </div>
+                <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <FaChevronDown className="w-4 h-4 text-gray-400" />
+                </motion.div>
+              </button>
+              
+              <AnimatePresence>
+                {showPermissions && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 bg-white">
+                      {pkg.permissions && pkg.permissions.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {pkg.permissions.map((perm, idx) => (
+                            <div key={perm.id || idx} className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg">
+                              <span className="text-sm text-gray-700">{perm.name}</span>
+                              <span className="text-xs text-indigo-600 font-mono">{perm.code}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-gray-500 py-4">No permissions found for this package</p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
