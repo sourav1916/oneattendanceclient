@@ -588,9 +588,21 @@ const LeaveBalanceManagement = () => {
   };
 
   const handleAction = async () => {
-    if (modalMode !== 'delete' && (!formData.employee_id || !formData.leave_config_id)) {
-      toast.error('Please select both employee and leave type');
-      return;
+    if (modalMode === 'assign') {
+      if (!formData.employee_id) {
+        toast.error('Please select an employee');
+        return;
+      }
+      const hasValidLeave = formData.leaves.some(l => l.leave_config_id);
+      if (!hasValidLeave) {
+        toast.error('Please select at least one leave type');
+        return;
+      }
+    } else if (modalMode === 'edit') {
+      if (!formData.employee_id || !formData.leave_config_id) {
+        toast.error('Please select both employee and leave type');
+        return;
+      }
     }
 
     setSaving(true);
