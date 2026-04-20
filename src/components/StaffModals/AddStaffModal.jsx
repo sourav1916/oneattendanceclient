@@ -615,16 +615,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             {selectedUser.phone}
                           </p>
                         )}
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200">
-                            ID: {selectedUser.id}
-                          </span>
-                          {selectedUser.created_at && (
-                            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200">
-                              Created: {selectedUser.created_at}
-                            </span>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </div>
