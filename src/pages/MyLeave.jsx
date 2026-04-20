@@ -356,6 +356,8 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
     event.preventDefault();
     setSaving(true);
     try {
+      let method;
+      let endpoint;
       const payload = {
         leave_config_id: form.leave_config_id,
         start_date: form.start_date,
