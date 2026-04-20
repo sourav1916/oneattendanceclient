@@ -20,6 +20,8 @@ import {
   FaFingerprint,
   FaInfoCircle,
   FaLocationArrow,
+  FaChevronDown,
+  FaChevronUp,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../../utils/api';
@@ -120,31 +122,54 @@ const methodIcon = (value) => {
   }
 };
 
-function MethodTabButton({ tab, active, disabled, onClick }) {
+function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, onToggle }) {
   const Icon = methodIcon(tab.value);
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
-        active
-          ? 'border-indigo-200 bg-indigo-50 text-indigo-700 shadow-sm'
-          : disabled
-            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
-            : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700'
-      }`}
+    <div
+      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${
+        active ? 'bg-indigo-50/50 rounded-t-2xl' : 'hover:bg-slate-50 rounded-2xl'
+      } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
-      <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-        active ? 'bg-white text-indigo-600' : 'bg-gray-100 text-gray-500'
-      }`}>
-        <Icon size={14} />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-semibold">{tab.label}</span>
-        <span className="block text-[11px] opacity-70">{tab.description || tab.value}</span>
-      </span>
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className="flex flex-1 items-center gap-4 text-left w-full overflow-hidden"
+      >
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all ${
+          active ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-500'
+        }`}>
+          <Icon size={16} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-[15px] font-bold transition-colors ${active ? 'text-indigo-900' : 'text-gray-800'}`}>{tab.label}</span>
+          <span className="block text-xs font-medium opacity-80 truncate text-gray-500 mt-0.5">{tab.description || tab.value}</span>
+        </span>
+        <span className={`flex-shrink-0 ml-1 mr-2 p-1.5 rounded-full transition-colors ${active ? 'bg-indigo-100 text-indigo-600' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
+          {active ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
+        </span>
+      </button>
+
+      <div className="flex shrink-0 items-center justify-center pl-2 pr-1">
+        <label className="relative flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={enabled}
+            onChange={(e) => {
+              onToggle();
+              if (!active && onExpand) onExpand();
+            }}
+            disabled={disabled}
+          />
+          <div className={`h-6 w-6 rounded-lg border-2 transition-all flex items-center justify-center ${
+            enabled ? 'border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200' : 'border-gray-300 bg-white'
+          }`}>
+             <FaCheck className={`text-white transition-all transform ${enabled ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} size={12} />
+          </div>
+        </label>
+      </div>
+    </div>
   );
 }
 
@@ -172,6 +197,16 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
 
   const originalIps = useMemo(() => parseIPs(company?.company_ips || []), [company]);
   const originalEnabledMethods = useMemo(() => parseMethods(company?.attendance_methods || []), [company]);
+  const originalAddress = useMemo(() => ({
+    address_line1: company?.address_line1 || '',
+    address_line2: company?.address_line2 || '',
+    city: company?.city || '',
+    state: company?.state || '',
+    postal_code: company?.postal_code || '',
+    country: company?.country || 'India',
+    latitude: company?.latitude || '',
+    longitude: company?.longitude || '',
+  }), [company]);
 
   useEffect(() => {
     if (!isOpen || !company) return;
@@ -233,7 +268,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
     };
   }, [companyId, isOpen]);
 
-  const activeTab = availableMethods.find((method) => method.value === activeMethod) || availableMethods[0];
+  // Active method tracked via state
 
   const toggleMethod = (methodValue) => {
     setEnabledMethods((prev) =>
@@ -261,12 +296,14 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
   const submitCompanyUpdate = async ({ forceAutoDetect = false } = {}) => {
     if (!companyId) return;
 
-    const normalizedIps = forceAutoDetect ? [] : ips.map((ip) => ip.trim()).filter(Boolean);
-    const normalizedMethods = enabledMethods.map((method) => method.trim().toLowerCase()).filter(Boolean);
-
-    if (activeTab?.value && !normalizedMethods.includes(activeTab.value)) {
-      normalizedMethods.push(activeTab.value);
+    let currentIps = [...ips];
+    const rawIp = ipInput.trim();
+    if (rawIp && !currentIps.includes(rawIp)) {
+      currentIps.push(rawIp);
     }
+
+    const normalizedIps = forceAutoDetect ? [] : currentIps.map((ip) => ip.trim()).filter(Boolean);
+    const normalizedMethods = enabledMethods.map((method) => method.trim().toLowerCase()).filter(Boolean);
 
     const payload = {
       id: companyId,
@@ -335,50 +372,12 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
   const handleSubmit = async () => {
     if (!companyId) return;
 
-    const normalizedIps = ips.map((ip) => ip.trim()).filter(Boolean);
-    const normalizedMethods = enabledMethods.map((method) => method.trim().toLowerCase()).filter(Boolean);
-
-    if (activeTab?.value && !normalizedMethods.includes(activeTab.value)) {
-      normalizedMethods.push(activeTab.value);
-    }
-
-    const changed =
-      normalizedIps.length !== originalIps.length ||
-      normalizedIps.some((ip, index) => ip !== originalIps[index]) ||
-      normalizedMethods.length !== originalEnabledMethods.length ||
-      normalizedMethods.some((method, index) => method !== originalEnabledMethods[index]);
-
-    const payload = {
-      id: companyId,
-      company_ips: normalizedIps,
-      attendance_methods: normalizedMethods,
-      // Include address fields so GPS coordinates/address are persisted
-      address_line1: address.address_line1,
-      address_line2: address.address_line2,
-      city: address.city,
-      state: address.state,
-      postal_code: address.postal_code,
-      country: address.country,
-      latitude: address.latitude,
-      longitude: address.longitude,
-    };
-
-    if (ipMode === 'manual' && normalizedIps.length === 0) {
-      payload.clear_ips = true;
-    }
-
-    if (!changed) {
-      toast.info('No changes detected');
-      onClose?.();
-      return;
-    }
-
     setSaving(true);
     try {
       const updatedPayload = await submitCompanyUpdate({ forceAutoDetect: false });
 
       toast.success('Company updated successfully');
-      onSuccess?.(updatedPayload || payload);
+      onSuccess?.(updatedPayload);
       onClose?.();
     } catch (error) {
       toast.error(error.message || 'Failed to update company');
@@ -387,19 +386,12 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
     }
   };
 
-  const renderMethodBody = () => {
-    if (!activeTab) {
-      return (
-        <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-400">
-          <FaInfoCircle className="mx-auto mb-2" />
-          No attendance method data available.
-        </div>
-      );
-    }
+  const renderMethodBody = (methodItem) => {
+    if (!methodItem) return null;
 
-    const methodEnabled = enabledMethods.includes(activeTab.value);
+    const methodEnabled = enabledMethods.includes(methodItem.value);
 
-    if (activeTab.value === 'ip') {
+    if (methodItem.value === 'ip') {
       return (
         <div className="space-y-4">
           <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4">
@@ -475,11 +467,28 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               </button>
             </div>
           </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => toggleMethod('ip')}
+              className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition-all ${
+                enabledMethods.includes('ip')
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
+              }`}
+            >
+              <span>{enabledMethods.includes('ip') ? 'IP Restriction Enabled' : 'IP Restriction Disabled'}</span>
+              <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${enabledMethods.includes('ip') ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                {enabledMethods.includes('ip') ? <FaCheck size={12} /> : <FaTimes size={12} />}
+              </span>
+            </button>
+          </div>
         </div>
       );
     }
 
-    if (activeTab.value === 'gps') {
+    if (methodItem.value === 'gps') {
       return (
         <div className="space-y-4">
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
@@ -564,14 +573,30 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             </label>
           </div>
 
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            className="inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-          >
-            <FaLocationArrow size={12} />
-            Use current location
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 flex-1"
+            >
+              <FaLocationArrow size={12} />
+              Use current location
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleMethod('gps')}
+              className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition-all flex-1 ${
+                enabledMethods.includes('gps')
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
+              }`}
+            >
+              <span>{enabledMethods.includes('gps') ? 'GPS Enabled' : 'GPS Disabled'}</span>
+              <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${enabledMethods.includes('gps') ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                {enabledMethods.includes('gps') ? <FaCheck size={12} /> : <FaTimes size={12} />}
+              </span>
+            </button>
+          </div>
         </div>
       );
     }
@@ -581,37 +606,37 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-900">{activeTab.label}</p>
-              <p className="mt-1 text-xs text-slate-600">{activeTab.description}</p>
+              <p className="text-sm font-semibold text-slate-900">{methodItem.label}</p>
+              <p className="mt-1 text-xs text-slate-600">{methodItem.description}</p>
             </div>
             <div className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-              activeTab.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
+              methodItem.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
             }`}>
-              {activeTab.isAvailable ? 'Available' : 'Unavailable'}
+              {methodItem.isAvailable ? 'Available' : 'Unavailable'}
             </div>
           </div>
           <div className="mt-3 grid gap-2 text-xs text-slate-500 md:grid-cols-2">
             <div className="flex items-center gap-2">
               <FaClock className="text-slate-400" />
-              <span>Method key: {activeTab.value}</span>
+              <span>Method key: {methodItem.value}</span>
             </div>
             <div className="flex items-center gap-2">
-              {activeTab.requiresDevice && <span className="rounded-full bg-white px-2 py-1">Requires device</span>}
-              {activeTab.requiresLocation && <span className="rounded-full bg-white px-2 py-1">Requires location</span>}
-              {activeTab.requiresCamera && <span className="rounded-full bg-white px-2 py-1">Requires camera</span>}
+              {methodItem.requiresDevice && <span className="rounded-full bg-white px-2 py-1">Requires device</span>}
+              {methodItem.requiresLocation && <span className="rounded-full bg-white px-2 py-1">Requires location</span>}
+              {methodItem.requiresCamera && <span className="rounded-full bg-white px-2 py-1">Requires camera</span>}
             </div>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => toggleMethod(activeTab.value)}
-          disabled={!activeTab.isAvailable}
+          onClick={() => toggleMethod(methodItem.value)}
+          disabled={!methodItem.isAvailable}
           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-semibold transition-all ${
             methodEnabled
               ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
               : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
-          } ${!activeTab.isAvailable ? 'cursor-not-allowed opacity-50' : ''}`}
+          } ${!methodItem.isAvailable ? 'cursor-not-allowed opacity-50' : ''}`}
         >
           <span>{methodEnabled ? 'Enabled for company' : 'Disabled for company'}</span>
           <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${methodEnabled ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
@@ -659,56 +684,68 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               </button>
             </div>
 
-            <div className="grid gap-0 lg:grid-cols-[300px_1fr] flex-1 min-h-0 overflow-scroll scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50">
-              <div className="border-b border-gray-100 bg-gray-50/80 p-4 lg:border-b-0 lg:border-r lg:overflow-y-auto">
-                <div className="mb-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-400">Attendance Tabs</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-800">Choose a method</p>
-                </div>
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-7 scrollbar-none bg-slate-50/50">
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm">
+                  <FaBuilding size={11} />
+                  {company?.name || 'Company'}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-600 shadow-sm">
+                  <FaUserCheck size={11} />
+                  {enabledMethods.length} enabled
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 shadow-sm">
+                  <FaWifi size={11} />
+                  {ips.length} IPs
+                </span>
+              </div>
 
-                {loadingMethods ? (
-                  <div className="flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-sm text-gray-400">
-                    <FaSpinner className="mr-2 animate-spin text-indigo-500" />
-                    Loading methods...
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {availableMethods.map((tab) => (
-                      <MethodTabButton
-                        key={tab.value}
-                        tab={tab}
-                        active={activeMethod === tab.value}
-                        disabled={!tab.isAvailable}
-                        onClick={() => setActiveMethod(tab.value)}
-                      />
-                    ))}
-                    {availableMethods.length === 0 && (
-                      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
-                        No attendance methods found.
+              {loadingMethods ? (
+                <div className="flex items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-sm text-gray-400">
+                  <FaSpinner className="mr-2 animate-spin text-indigo-500" />
+                  Loading methods...
+                </div>
+              ) : (
+                <div className="space-y-4 max-w-4xl mx-auto">
+                  {availableMethods.map((tab) => {
+                    const isActive = activeMethod === tab.value;
+                    const isEnabled = enabledMethods.includes(tab.value);
+                    return (
+                      <div key={tab.value} className={`bg-white rounded-2xl border transition-all duration-300 ${isActive ? 'border-indigo-200 shadow-lg ring-1 ring-indigo-50' : 'border-gray-200 shadow-sm hover:shadow-md'}`}>
+                        <MethodTabButton
+                          tab={tab}
+                          active={isActive}
+                          enabled={isEnabled}
+                          disabled={!tab.isAvailable}
+                          onClick={() => setActiveMethod(isActive ? null : tab.value)}
+                          onExpand={() => setActiveMethod(tab.value)}
+                          onToggle={() => toggleMethod(tab.value)}
+                        />
+                        <AnimatePresence initial={false}>
+                          {isActive && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.25, ease: 'easeOut' }}
+                              className="overflow-hidden"
+                            >
+                              <div className="border-t border-gray-100 bg-white p-5 sm:p-7">
+                                {renderMethodBody(tab)}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 lg:overflow-y-auto">
-                <div className="mb-5 flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 shadow-sm">
-                    <FaBuilding size={11} />
-                    {company?.name || 'Company'}
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 shadow-sm">
-                    <FaUserCheck size={11} />
-                    {enabledMethods.length} enabled
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-600 shadow-sm">
-                    <FaWifi size={11} />
-                    {ips.length} IPs
-                  </span>
+                    );
+                  })}
+                  {availableMethods.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
+                      No attendance methods found.
+                    </div>
+                  )}
                 </div>
-
-                {renderMethodBody()}
-              </div>
+              )}
             </div>
 
             <div className="flex gap-3 border-t border-gray-100 px-6 py-4">

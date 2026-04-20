@@ -93,7 +93,7 @@ const STATUS_COLORS = {
 function Pill({ value, className = "" }) {
   const cls = STATUS_COLORS[value?.toLowerCase?.()] || "bg-slate-100 text-slate-600";
   return (
-    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-medium ${cls} ${className}`}>
+    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${cls} ${className}`}>
       {fmt(value)}
     </span>
   );
@@ -238,13 +238,13 @@ function ProfileCard({ data }) {
       className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
     >
       <div className="flex items-start gap-4 flex-wrap">
-        <div className={`w-[64px] h-[64px] rounded-2xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-[20px] font-bold text-white shadow-md shrink-0 select-none`}>
+        <div className={`w-[64px] h-[64px] rounded-2xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none`}>
           {getInitials(u.name)}
         </div>
 
         <div className="flex-1 min-w-[160px]">
-          <h2 className="text-[17px] font-bold text-slate-800 leading-tight">{u.name}</h2>
-          <p className="text-[13px] text-slate-500 mt-0.5">{fmt(e.designation)}</p>
+          <h2 className="text-xl font-bold text-slate-800 leading-tight">{u.name}</h2>
+          <p className="text-sm text-slate-500 mt-0.5">{fmt(e.designation)}</p>
           <div className="flex gap-1.5 flex-wrap mt-2">
             <Pill value={e.status} />
             <Pill value={e.employment_type} />
@@ -255,7 +255,7 @@ function ProfileCard({ data }) {
               <img src={c.logo_url} alt={c.name} onError={() => setImgErr(true)}
                 className="w-5 h-5 rounded object-contain border border-slate-200 bg-slate-50" />
             )}
-            <span className="text-[12px] text-slate-500">{c.name} · {c.city}, {c.state}</span>
+            <span className="text-sm text-slate-500">{c.name} · {c.city}, {c.state}</span>
           </div>
         </div>
       </div>
@@ -274,8 +274,8 @@ function ProfileCard({ data }) {
             : "None"],
         ].map(([label, val]) => (
           <div key={label}>
-            <span className="block text-[10px] uppercase tracking-wide text-slate-400 mb-0.5">{label}</span>
-            <span className="text-[12px] font-medium text-slate-800 break-all">{val}</span>
+            <span className="block text-[11px] uppercase tracking-wider text-slate-400 mb-0.5">{label}</span>
+            <span className="text-sm font-medium text-slate-800 break-all">{val}</span>
           </div>
         ))}
       </div>
@@ -524,7 +524,7 @@ function usePayrollConfig(onView, width) {
         {[["Gross", p.gross_amount || p.gross, "blue"], ["Deductions", p.deductions, "red"], ["Net Pay", p.net_pay || p.net, "green"]].map(([lbl, val, clr]) => (
           <div key={lbl} className={`rounded-xl border border-${clr}-100 bg-${clr}-50 p-2`}>
             <p className={`text-xs font-bold text-${clr}-700`}>{val || "—"}</p>
-            <p className={`text-[10px] text-${clr}-500`}>{lbl}</p>
+            <p className={`text-[11px] text-${clr}-500`}>{lbl}</p>
           </div>
         ))}
       </div>
@@ -746,7 +746,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   return (
     <div className="space-y-4">
       {warn && (
-        <p className="text-[11px] text-amber-500">⚠ Could not load data from API — list may be empty.</p>
+        <p className="text-xs text-amber-500">⚠ Could not load data from API — list may be empty.</p>
       )}
 
       {/* View switcher + count */}
@@ -765,7 +765,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       {loading && (
         <div className="flex flex-col items-center py-10 gap-2 text-slate-400">
           <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
-          <span className="text-[13px]">Loading {tabLabel.toLowerCase()}…</span>
+          <span className="text-sm">Loading {tabLabel.toLowerCase()}…</span>
         </div>
       )}
 
@@ -851,7 +851,7 @@ function TabsPanel({ employeeId }) {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`shrink-0 flex items-center gap-1.5 px-4 py-3 text-[13px] border-b-2 whitespace-nowrap transition-colors
+            className={`shrink-0 flex items-center gap-1.5 px-4 py-3 text-sm border-b-2 whitespace-nowrap transition-colors
               ${activeTab === t.key
                 ? "border-indigo-600 text-indigo-600 font-semibold"
                 : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
@@ -942,7 +942,7 @@ export default function EmployeeProfilePage() {
         {loading && (
           <div className="flex flex-col items-center py-16 gap-2 text-slate-400">
             <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
-            <span className="text-[13px]">Fetching employee data…</span>
+            <span className="text-sm">Fetching employee data…</span>
           </div>
         )}
 
