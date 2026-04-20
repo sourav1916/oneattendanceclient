@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FaCheck, FaUndo } from "react-icons/fa";
+import { FaCheck, FaUndo, FaExclamationTriangle, FaTimesCircle, FaCheckCircle, FaInfoCircle } from "react-icons/fa";
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = [
@@ -38,6 +38,7 @@ function sameDay(a, b) {
 }
 
 function startOfDay(d) {
+  if (!d) return null;
   const c = new Date(d);
   c.setHours(0, 0, 0, 0);
   return c;
@@ -79,21 +80,24 @@ function filterPresets(presets, mode) {
 
 // ── Calendar grid ─────────────────────────────────────────────────────
 function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle,
-  rangeStart, rangeEnd, onRangeClick, onSinglePick }) {
+  rangeStart, rangeEnd, onRangeClick, onSinglePick, minDate }) {
 
   const [hoverDate, setHoverDate] = useState(null);
   const today = startOfDay(new Date());
+  const minThreshold = startOfDay(minDate);
   const y = viewDate.getFullYear(), m = viewDate.getMonth();
   const firstDay = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const prevMonthDays = new Date(y, m, 0).getDate();
 
   function getDayClass(date) {
-    const base = "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs cursor-pointer select-none transition-colors duration-100 ";
+    const isPast = minThreshold && date < minThreshold;
+    const base = "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs select-none transition-colors duration-100 " + (isPast ? "cursor-not-allowed text-gray-200 " : "cursor-pointer ");
+    
     if (mode === "single") {
       if (sameDay(date, selectedSingle)) return base + "bg-blue-500 text-white rounded-lg font-medium";
       if (sameDay(date, today)) return base + "bg-blue-100 text-blue-700 rounded-lg font-medium";
-      return base + "hover:bg-gray-100 rounded-lg text-gray-700";
+      return base + (isPast ? "" : "hover:bg-gray-100 rounded-lg text-gray-700");
     }
     // range mode
     const lo = rangeStart && rangeEnd ? (rangeStart <= rangeEnd ? rangeStart : rangeEnd) : rangeStart;
@@ -108,8 +112,8 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
       return base + "bg-blue-500 text-white font-medium rounded-r-lg rounded-l-none";
     if (lo && hi && date > lo && date < hi)
       return base + "bg-blue-100 text-blue-700 rounded-none";
-    if (sameDay(date, today)) return base + "bg-blue-50 text-blue-600 rounded-lg font-medium";
-    return base + "hover:bg-gray-100 rounded-lg text-gray-700";
+    if (sameDay(date, today)) return base + "bg-blue-100 text-blue-600 rounded-lg font-medium";
+    return base + (isPast ? "" : "hover:bg-gray-100 rounded-lg text-gray-700");
   }
 
   const cells = [];
@@ -129,6 +133,7 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
         key={d}
         className={getDayClass(date)}
         onClick={() => {
+          if (minThreshold && date < minThreshold) return;
           if (mode === "single") {
             onSelectSingle(date);
             onSinglePick?.(date);
@@ -191,6 +196,9 @@ export default function DatePicker({
   initialSingle = null,
   initialRangeStart = null,
   initialRangeEnd = null,
+  minDate = null,
+  maxDays = null,
+  showQuickSelect = true,
 }) {
   const [tab, setTab] = useState(initialTab);
   const [quickKey, setQuickKey] = useState(initialQuickKey);
@@ -199,11 +207,30 @@ export default function DatePicker({
   const [rangeStart, setRangeStart] = useState(parseDateValue(initialRangeStart));
   const [rangeEnd, setRangeEnd] = useState(parseDateValue(initialRangeEnd));
   const [feedback, setFeedback] = useState("");
+  const [feedbackType, setFeedbackType] = useState("info"); // "success" | "warning" | "danger" | "info"
+
+  function showFeedback(msg, type = "info", duration = 2500) {
+    setFeedback(msg);
+    setFeedbackType(type);
+    setTimeout(() => setFeedback(""), duration);
+  }
 
   const presets = filterPresets(getPresets(), mode);
   const today = startOfDay(new Date());
+  const hasMaxDays = Number.isFinite(Number(maxDays));
+
+  function getRangeDays(start, end) {
+    if (!start || !end) return 0;
+    return Math.abs(end - start) / (1000 * 60 * 60 * 24) + 1;
+  }
+
+  function isRangeWithinLimit(start, end) {
+    if (!hasMaxDays) return true;
+    return getRangeDays(start, end) <= Number(maxDays);
+  }
+
   const tabs = [
-    { key: "quick", label: "Quick select" },
+    ...(showQuickSelect ? [{ key: "quick", label: "Quick select" }] : []),
     { key: "single", label: "Single date" },
     ...(mode === "single" ? [] : [{ key: "range", label: "Date range" }]),
   ];
@@ -213,13 +240,17 @@ export default function DatePicker({
       setRangeStart(date);
       setRangeEnd(null);
     } else {
+      if (!isRangeWithinLimit(rangeStart, date)) {
+        showFeedback(`Max ${maxDays} days allowed.`, "warning");
+        return;
+      }
       if (date < rangeStart) { setRangeEnd(rangeStart); setRangeStart(date); }
       else setRangeEnd(date);
     }
   }
 
   function getLabel() {
-    if (tab === "quick") {
+    if (showQuickSelect && tab === "quick") {
       return presets.find(p => p.key === quickKey)?.label || "";
     }
     if (tab === "single") {
@@ -232,22 +263,29 @@ export default function DatePicker({
 
   function handleApply() {
     let result = null;
-    if (tab === "quick") {
+    if (showQuickSelect && tab === "quick") {
       const p = presets.find(p => p.key === quickKey);
       if (p?.single) {
         result = { type: "single", date: p.single };
       } else if (p?.range) {
+        if (!isRangeWithinLimit(p.range[0], p.range[1])) {
+          showFeedback(`Max ${maxDays} days allowed.`, "warning");
+          return;
+        }
         result = { type: "range", start: p.range[0], end: p.range[1] };
       }
     } else if (tab === "single") {
-      if (!selectedSingle) { setFeedback("Please select a date."); setTimeout(() => setFeedback(""), 2000); return; }
+      if (!selectedSingle) { showFeedback("Please select a date.", "danger"); return; }
       result = { type: "single", date: selectedSingle };
     } else {
-      if (!rangeStart || !rangeEnd) { setFeedback("Please select a date range."); setTimeout(() => setFeedback(""), 2000); return; }
+      if (!rangeStart || !rangeEnd) { showFeedback("Please select a date range.", "danger"); return; }
+      if (!isRangeWithinLimit(rangeStart, rangeEnd)) {
+        showFeedback(`Max ${maxDays} days allowed.`, "warning");
+        return;
+      }
       result = { type: "range", start: rangeStart, end: rangeEnd };
     }
-    setFeedback("✓ Applied!");
-    setTimeout(() => setFeedback(""), 2000);
+    showFeedback("Applied successfully!", "success", 2000);
     onApply?.(result);
   }
 
@@ -264,28 +302,66 @@ export default function DatePicker({
     if (mode === "single" && tab === "range") {
       setTab("single");
     }
-    if (mode === "range" && tab === "single") {
-      setTab("range");
-    }
   }, [mode, tab]);
 
   useEffect(() => {
-    if (tab === "quick" && presets.length > 0) {
+    if (showQuickSelect && tab === "quick" && presets.length > 0) {
       const hasQuick = presets.some((preset) => preset.key === quickKey);
       if (!hasQuick) {
         setQuickKey(presets[0].key);
       }
     }
-  }, [presets, quickKey, tab]);
+  }, [presets, quickKey, tab, showQuickSelect]);
+
+  // Toast style config per type
+  const toastConfig = {
+    success: {
+      bg: "bg-emerald-50",
+      border: "border-emerald-300",
+      text: "text-emerald-700",
+      icon: <FaCheckCircle className="text-emerald-500 flex-shrink-0" />,
+    },
+    warning: {
+      bg: "bg-amber-50",
+      border: "border-amber-300",
+      text: "text-amber-700",
+      icon: <FaExclamationTriangle className="text-amber-500 flex-shrink-0" />,
+    },
+    danger: {
+      bg: "bg-red-50",
+      border: "border-red-300",
+      text: "text-red-700",
+      icon: <FaTimesCircle className="text-red-500 flex-shrink-0" />,
+    },
+    info: {
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+      text: "text-blue-700",
+      icon: <FaInfoCircle className="text-blue-400 flex-shrink-0" />,
+    },
+  };
+  const toast = toastConfig[feedbackType] || toastConfig.info;
 
   return (
     <div className="w-[min(calc(100vw-0.5rem),19rem)] w-full max-w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden font-sans max-h-[calc(100vh-6rem)] flex flex-col">
       {/* Header */}
-      <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-100">
-        <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Selected</p>
-        <p className="text-xs sm:text-sm font-medium text-gray-800 break-words">
-          {feedback || getLabel()}
-        </p>
+      <div className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-2 border-b border-gray-100">
+        <p className="text-[9px] text-gray-400 mb-1.5 uppercase tracking-widest font-semibold">Selected</p>
+
+        {/* Toast-style feedback */}
+        {feedback ? (
+          <div
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium ${toast.bg} ${toast.border} ${toast.text} animate-[slideDown_0.2s_ease-out]`}
+            style={{ animation: "slideDown 0.2s ease-out" }}
+          >
+            {toast.icon}
+            <span className="leading-tight">{feedback}</span>
+          </div>
+        ) : (
+          <p className="text-xs sm:text-sm font-medium text-gray-800 break-words">
+            {getLabel()}
+          </p>
+        )}
       </div>
 
       {/* Tabs */}
@@ -307,7 +383,7 @@ export default function DatePicker({
 
       {/* Body */}
       <div className="px-3 sm:px-4 py-3.5 overflow-y-auto">
-        {tab === "quick" && (
+        {showQuickSelect && tab === "quick" && (
           <div className="space-y-1.5 max-h-[46vh]">
             {presets.map(p => (
               <button
@@ -343,6 +419,7 @@ export default function DatePicker({
             onViewChange={setViewDate}
             selectedSingle={selectedSingle}
             onSelectSingle={setSelectedSingle}
+            minDate={minDate}
             onSinglePick={(date) => {
               onApply?.({ type: "single", date });
             }}
@@ -362,6 +439,7 @@ export default function DatePicker({
               onViewChange={setViewDate}
               rangeStart={rangeStart}
               rangeEnd={rangeEnd}
+              minDate={minDate}
               onRangeClick={handleRangeClick}
             />
           </div>
@@ -400,6 +478,9 @@ export function DatePickerField({
   popoverClassName = "",
   initialTab = "single",
   mode = "single",
+  minDate = null,
+  maxDays = null,
+  showQuickSelect = true,
 }) {
   const [open, setOpen] = useState(false);
   const selectedDate = parseDateValue(value);
@@ -450,6 +531,9 @@ export function DatePickerField({
                 mode={mode}
                 initialTab={initialTab}
                 initialSingle={selectedDate}
+                minDate={minDate}
+                maxDays={maxDays}
+                showQuickSelect={showQuickSelect}
                 onApply={(result) => {
                   if (result?.type === "single") {
                     onChange?.(toIsoDate(result.date));
@@ -478,6 +562,10 @@ export function DateRangePickerField({
   wrapperClassName = "",
   popoverClassName = "",
   initialTab = "single",
+  mode = "both",
+  minDate = null,
+  maxDays = null,
+  showQuickSelect = true,
 }) {
   const [open, setOpen] = useState(false);
   const startValue = value?.start || value?.start_date || value?.from || "";
@@ -536,10 +624,13 @@ export function DateRangePickerField({
                 Close
               </button>
               <DatePicker
-                mode="both"
+                mode={mode}
                 initialTab={initialTab}
                 initialRangeStart={startDate}
                 initialRangeEnd={endDate}
+                minDate={minDate}
+                maxDays={maxDays}
+                showQuickSelect={showQuickSelect}
                 onApply={(result) => {
                   if (result?.type === "range") {
                     onChange?.({

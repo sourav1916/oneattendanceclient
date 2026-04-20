@@ -160,7 +160,7 @@ const SearchableSelect = ({
   const inputRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  const selectedOption = options.find(opt => getOptionValue(opt) === value);
+  const selectedOption = options.find(opt => String(getOptionValue(opt)) === String(value));
 
   useEffect(() => {
     const handler = (event) => {
@@ -504,9 +504,9 @@ const LeaveBalanceManagement = () => {
     fetchLeaveConfigs(search);
   }, [fetchLeaveConfigs]);
 
-  // Initial fetch of employees and leave configs when modal opens
+  // Fetch lookup data when the modal opens so edit mode can resolve labels too.
   useEffect(() => {
-    if (showModal && modalMode === 'assign') {
+    if (showModal && modalMode !== 'delete') {
       fetchEmployees();
       fetchLeaveConfigs();
     }
@@ -549,8 +549,14 @@ const LeaveBalanceManagement = () => {
         return;
       }
     } else if (modalMode === 'edit') {
-      if (!formData.employee_id || !formData.leave_config_id) {
-        toast.error('Please select both employee and leave type');
+      if (!formData.employee_id) {
+        toast.error('Please select an employee');
+        return;
+      }
+
+      const hasValidLeave = formData.leaves.some(l => l.leave_config_id);
+      if (!hasValidLeave) {
+        toast.error('Please keep at least one leave type');
         return;
       }
     }
@@ -1301,9 +1307,9 @@ const LeaveBalanceManagement = () => {
                         disabled={
                           saving || 
                           !formData.employee_id || 
-                          (modalMode === 'assign' 
-                            ? (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id)) 
-                            : !formData.leave_config_id) || 
+                          (modalMode === 'assign'
+                            ? (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id))
+                            : (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id))) || 
                           (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)
                         }
                         title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}

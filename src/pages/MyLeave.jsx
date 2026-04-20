@@ -22,7 +22,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
-import { DatePickerField } from '../components/DatePicker';
+import { DateRangePickerField } from '../components/DatePicker';
 
 const getCompanyId = () => {
   try {
@@ -34,6 +34,11 @@ const getCompanyId = () => {
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : 'N/A');
 const formatDateTime = (value) => (value ? new Date(value).toLocaleString() : 'N/A');
+const formatDays = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0';
+  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+};
 const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const ALLOWED_ATTACHMENT_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
 
@@ -96,6 +101,51 @@ const formatLeaveTypeName = (key) => {
     compensatory_off: 'Compensatory Off',
   };
   return nameMap[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
+const normalizeBalanceKey = (value) =>
+  String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+
+const toNumber = (value) => {
+  const next = Number(value);
+  return Number.isFinite(next) ? next : 0;
+};
+
+const findBalanceForLeaveType = (leaveType, balances) => {
+  if (!leaveType) return null;
+
+  const candidates = [
+    leaveType.id,
+    leaveType.code,
+    leaveType.name,
+    formatLeaveTypeName(leaveType.code || ''),
+    leaveType.code ? leaveType.code.replace(/_/g, ' ') : '',
+  ]
+    .filter(Boolean)
+    .map(normalizeBalanceKey);
+
+  for (const [key, balance] of Object.entries(balances || {})) {
+    const normalizedKey = normalizeBalanceKey(key);
+    const normalizedName = normalizeBalanceKey(balance?.name || balance?.code || balance?.leave_type_name || '');
+    if (candidates.includes(normalizedKey) || (normalizedName && candidates.includes(normalizedName))) {
+      return { key, balance };
+    }
+  }
+
+  return null;
+};
+
+const getRequestedDays = (startDate, endDate, isHalfDay) => {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const dayCount = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+  if (isHalfDay && start.toDateString() === end.toDateString()) {
+    return 0.5;
+  }
+  return dayCount;
 };
 
 // Leave Balance Card Component
@@ -222,7 +272,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
   );
 };
 
-const Modal = ({ open, title, onClose, children }) => {
+const Modal = ({ open, title, subtitle, onClose, children }) => {
   useEffect(() => {
     if (open) {
       const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -251,20 +301,23 @@ const Modal = ({ open, title, onClose, children }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-4 text-white">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 hover:bg-white/20">
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3 rounded-t-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 text-white">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
+            {subtitle && <p className="mt-0.5 text-[11px] text-white/80 sm:text-xs">{subtitle}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 transition hover:bg-white/20">
             <FaTimes />
           </button>
         </div>
-        <div className="max-h-[80vh] overflow-y-auto p-5">{children}</div>
+        <div className="max-h-[82vh] overflow-y-auto p-4 sm:p-5">{children}</div>
       </div>
     </div>
   );
 };
 
-const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSuccess }) => {
+const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClose, onSuccess }) => {
   const [form, setForm] = useState({
     leave_config_id: '',
     start_date: '',
@@ -278,6 +331,34 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
   const [saving, setSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [attachmentPreviews, setAttachmentPreviews] = useState([]);
+  const isEditing = Boolean(initialLeave);
+
+  const selectedLeaveType = useMemo(
+    () => leaveTypes.find((type) => String(type.id) === String(form.leave_config_id)) || null,
+    [leaveTypes, form.leave_config_id]
+  );
+  const selectedLeaveBalance = useMemo(
+    () => findBalanceForLeaveType(selectedLeaveType, balances),
+    [balances, selectedLeaveType]
+  );
+  const remainingDays = toNumber(selectedLeaveBalance?.balance?.remaining);
+  const selectedDays = getRequestedDays(form.start_date, form.end_date, form.is_half_day);
+  const overBalance = Boolean(selectedLeaveType && selectedLeaveBalance && selectedDays > remainingDays);
+  const balanceLabel = selectedLeaveType
+    ? `${formatDays(remainingDays)} left`
+    : 'Choose a leave type';
+  const requestLabel = selectedDays
+    ? `${formatDays(selectedDays)} day${Number(selectedDays) === 1 ? '' : 's'}`
+    : 'No dates selected';
+
+  const handleDateChange = (range) => {
+    if (!range) return;
+    setForm((prev) => ({
+      ...prev,
+      start_date: range.start || '',
+      end_date: range.end || '',
+    }));
+  };
 
   const handleAttachmentChange = async (event) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -354,6 +435,10 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
 
   const submit = async (event) => {
     event.preventDefault();
+    if (overBalance) {
+      toast.error(`Selected date range exceeds your ${formatDays(remainingDays)} day balance for ${selectedLeaveType?.name || 'this leave type'}.`);
+      return;
+    }
     setSaving(true);
     try {
       let method;
@@ -392,83 +477,146 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
   };
 
   return (
-    <Modal open={open} title={title} onClose={onClose}>
-      <form onSubmit={submit} className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">Leave Type</label>
-          <select
-            className="w-full rounded-lg border px-3 py-2"
-            value={form.leave_config_id}
-            onChange={(e) => setForm((prev) => ({ ...prev, leave_config_id: e.target.value }))}
-            required
-          >
-            <option value="">Select leave type</option>
-            {leaveTypes.map((type) => (
-              <option key={type.id} value={type.id}>
-                {type.name} {!type.is_paid && '(Unpaid)'}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-xs text-gray-500">Start Date</label>
-            <DatePickerField
-              value={form.start_date}
-              onChange={(value) => setForm((prev) => ({ ...prev, start_date: value }))}
-              placeholder="Select start date"
-              buttonClassName="w-full rounded-lg border px-3 py-2 text-left bg-white"
-              popoverClassName="mt-2"
-            />
+    <Modal
+      open={open}
+      title={title}
+      subtitle={isEditing ? 'Edit the request and keep it within your remaining balance.' : 'Create a new request and stay within your remaining balance.'}
+      onClose={onClose}
+    >
+      <form onSubmit={submit} className="space-y-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Mode</p>
+            <p className="mt-0.5 text-sm font-semibold text-purple-700">{isEditing ? 'Edit request' : 'New request'}</p>
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-gray-500">End Date</label>
-            <DatePickerField
-              value={form.end_date}
-              onChange={(value) => setForm((prev) => ({ ...prev, end_date: value }))}
-              placeholder="Select end date"
-              buttonClassName="w-full rounded-lg border px-3 py-2 text-left bg-white"
-              popoverClassName="mt-2"
-            />
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Balance</p>
+            <p className="mt-0.5 text-sm font-semibold text-gray-800">{balanceLabel}</p>
+          </div>
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Selection</p>
+            <p className={`mt-0.5 text-sm font-semibold ${overBalance ? 'text-rose-600' : 'text-gray-800'}`}>{requestLabel}</p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input type="checkbox" checked={form.is_half_day} onChange={(e) => setForm((prev) => ({ ...prev, is_half_day: e.target.checked }))} />
-            Half Day
-          </label>
-          {form.is_half_day && (
-            <select className="rounded-lg border px-3 py-2" value={form.half_day_type} onChange={(e) => setForm((prev) => ({ ...prev, half_day_type: e.target.value }))}>
-              <option value="first_half">First Half</option>
-              <option value="second_half">Second Half</option>
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,0.95fr)]">
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Leave Type</label>
+            <select
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              value={form.leave_config_id}
+              onChange={(e) => setForm((prev) => ({ ...prev, leave_config_id: e.target.value }))}
+              required
+            >
+              <option value="">Select leave type</option>
+              {leaveTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}{type.code ? ` (${type.code})` : ''} {!type.is_paid && '(Unpaid)'}
+                </option>
+              ))}
             </select>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Available balance</p>
+                <p className="mt-1 truncate text-sm font-semibold text-gray-800">
+                  {selectedLeaveType ? selectedLeaveType.name : 'Select a leave type'}
+                </p>
+                <p className="truncate text-[11px] text-gray-500">
+                  {selectedLeaveType?.code ? `Code ${selectedLeaveType.code}` : 'Balance comes from the list API'}
+                </p>
+              </div>
+              <div className="flex flex-col items-end">
+                <p className={`text-2xl font-bold ${remainingDays <= 1 ? 'text-rose-600' : 'text-purple-600'}`}>
+                  {selectedLeaveType ? formatDays(remainingDays) : '0'}
+                </p>
+                <p className="text-[10px] uppercase tracking-wide text-gray-400">day(s) left</p>
+              </div>
+            </div>
+            {selectedLeaveBalance?.balance && (
+              <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
+                <span>Used {formatDays(selectedLeaveBalance.balance.used ?? 0)}</span>
+                <span>Total {formatDays(selectedLeaveBalance.balance.total ?? 0)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
+            <span className={`text-[11px] font-medium ${overBalance ? 'text-rose-600' : 'text-gray-400'}`}>
+              {selectedDays ? `${formatDays(selectedDays)} day(s) selected` : 'Select within balance'}
+            </span>
+          </div>
+          <DateRangePickerField
+            value={{ start: form.start_date, end: form.end_date }}
+            onChange={handleDateChange}
+            placeholder="Select leave dates"
+            buttonClassName="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            popoverClassName="mt-2"
+            initialTab="single"
+            mode="range"
+            showQuickSelect={false}
+            minDate={new Date()}
+            maxDays={selectedLeaveType ? Math.max(0, remainingDays) : null}
+          />
+          {selectedLeaveType && (
+            <p className={`mt-2 text-[11px] ${overBalance ? 'text-rose-600' : 'text-gray-500'}`}>
+              {overBalance
+                ? `Selected range exceeds the available ${formatDays(remainingDays)} day balance.`
+                : 'The picker will stop at your current balance.'}
+            </p>
           )}
         </div>
 
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Reason</label>
-          <textarea
-            rows={4}
-            className="w-full rounded-lg border px-3 py-2"
-            placeholder="Please provide a reason for your leave..."
-            value={form.reason}
-            onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-            required
-          />
+        <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:items-start">
+          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.is_half_day}
+                onChange={(e) => setForm((prev) => ({ ...prev, is_half_day: e.target.checked }))}
+              />
+              Half day
+            </label>
+            {form.is_half_day && (
+              <select
+                className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                value={form.half_day_type}
+                onChange={(e) => setForm((prev) => ({ ...prev, half_day_type: e.target.value }))}
+              >
+                <option value="first_half">First Half</option>
+                <option value="second_half">Second Half</option>
+              </select>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Reason</label>
+            <textarea
+              rows={3}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              placeholder="Please provide a reason for your leave..."
+              value={form.reason}
+              onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
+              required
+            />
+          </div>
         </div>
 
         {initialLeave?.attachments?.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-gray-700">Current Attachments</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current Attachments</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {initialLeave.attachments.map((file) => {
                 const marked = form.deleted_attachments.includes(file.id);
                 const isImage = isImageAttachment(file);
                 return (
-                  <div key={file.id} className={`group relative overflow-hidden rounded-xl border transition-all ${marked ? 'border-red-200 opacity-60' : 'border-gray-200'}`}>
-                    <div className="aspect-square bg-gray-50 flex items-center justify-center">
+                  <div key={file.id} className={`group relative overflow-hidden rounded-lg border transition-all ${marked ? 'border-red-200 opacity-60' : 'border-gray-200'}`}>
+                    <div className="flex aspect-square items-center justify-center bg-gray-50">
                       {isImage ? (
                         <img
                           src={file.file_url}
@@ -512,7 +660,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
                       )}
                     </button>
 
-                    <div className="bg-gray-50 px-2 py-1 text-[10px] text-gray-500 truncate border-t">
+                    <div className="border-t bg-gray-50 px-2 py-1 text-[10px] truncate text-gray-500">
                       {file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}
                     </div>
                   </div>
@@ -523,8 +671,8 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
         )}
 
         {/* ── Modern File Upload ── */}
-        <div>
-          <label className="mb-2 block text-xs text-gray-500">Add Attachments</label>
+        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3">
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Add Attachments</label>
 
           {/* Drop Zone */}
           <div
@@ -536,7 +684,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
               const dt = e.dataTransfer;
               if (dt?.files) handleAttachmentChange({ target: { files: dt.files } });
             }}
-            className="relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-6 py-8 text-center transition-colors hover:border-purple-300 hover:bg-purple-50/40"
+            className="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-white px-4 py-5 text-center transition-colors hover:border-purple-300 hover:bg-purple-50/40"
           >
             <input
               type="file"
@@ -548,7 +696,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
             />
 
             {/* Upload icon */}
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white">
               <FaUpload className="text-sm text-gray-400" />
             </div>
 
@@ -556,15 +704,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
               <p className="text-sm font-medium text-gray-700">
                 Drop files here or <span className="text-purple-600">click to browse</span>
               </p>
-              <p className="mt-0.5 text-xs text-gray-400">Upload supporting documents</p>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {['PDF', 'JPG', 'PNG', 'WEBP'].map((fmt) => (
-                <span key={fmt} className="rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-[10px] font-medium text-gray-500">
-                  {fmt}
-                </span>
-              ))}
+              <p className="mt-0.5 text-xs text-gray-400">JPG, JPEG, PNG, WEBP and PDF files only</p>
             </div>
           </div>
 
@@ -617,12 +757,12 @@ const LeaveFormModal = ({ open, title, leaveTypes, initialLeave, onClose, onSucc
           )}
         </div>
 
-        <div className="flex gap-3 pt-4">
-          <button type="submit" disabled={saving} className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 py-2 font-medium text-white disabled:opacity-50">
-            {saving ? <FaSpinner className="inline animate-spin" /> : 'Save'}
-          </button>
-          <button type="button" onClick={onClose} className="flex-1 rounded-lg bg-gray-200 py-2 font-medium text-gray-700">
+        <div className="flex gap-2 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-sm font-medium text-gray-700" disabled={saving}>
             Cancel
+          </button>
+          <button type="submit" disabled={saving || isUploading} className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 py-2 text-sm font-medium text-white disabled:opacity-50">
+            {saving ? <FaSpinner className="inline animate-spin" /> : 'Save'}
           </button>
         </div>
       </form>
@@ -690,7 +830,12 @@ const MyLeave = () => {
   const loadLeaveTypes = useCallback(async () => {
     try {
       const result = await request('/leave/company?page=1&limit=100');
-      setLeaveTypes((result.data || []).map((row) => ({ id: row.id, name: row.name, is_paid: row.is_paid })));
+      setLeaveTypes((result.data || []).map((row) => ({
+        id: row.id,
+        name: row.name,
+        code: row.code || row.leave_code || row.type || '',
+        is_paid: row.is_paid,
+      })));
     } catch (error) {
       console.error('Failed to load leave types:', error);
     }
@@ -1136,6 +1281,7 @@ const MyLeave = () => {
         open={showApply}
         title="Apply Leave"
         leaveTypes={leaveTypes}
+        balances={balances}
         initialLeave={null}
         onClose={() => setShowApply(false)}
         onSuccess={() => {
@@ -1149,6 +1295,7 @@ const MyLeave = () => {
         open={!!editLeave}
         title="Edit Leave"
         leaveTypes={leaveTypes}
+        balances={balances}
         initialLeave={editLeave}
         onClose={() => setEditLeave(null)}
         onSuccess={() => {
