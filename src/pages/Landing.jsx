@@ -1,11 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  FaClock, 
-  FaUsers, 
-  FaShieldAlt, 
-  FaMobileAlt, 
+import {
+  FaClock,
+  FaUsers,
+  FaShieldAlt,
+  FaMobileAlt,
   FaChartBar,
   FaArrowRight,
   FaPlayCircle,
@@ -87,14 +87,14 @@ export default function LandingPage() {
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100"
     >
       {/* Navbar with animation */}
-      <motion.nav 
+      <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
@@ -102,7 +102,7 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <motion.div 
+            <motion.div
               className="flex items-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -111,7 +111,7 @@ export default function LandingPage() {
                 OneAttendance
               </h1>
             </motion.div>
-            <div className="flex space-x-4 items-center">
+            <div className="flex space-x-4 xsm:space-x-0 items-center">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -119,7 +119,7 @@ export default function LandingPage() {
                 className="px-6 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg transition-all duration-200 relative overflow-hidden group"
               >
                 <span className="relative z-10">Login</span>
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 bg-blue-100"
                   initial={{ scale: 0, opacity: 0 }}
                   whileHover={{ scale: 1, opacity: 1 }}
@@ -132,8 +132,9 @@ export default function LandingPage() {
                 onClick={() => navigate('/signup')}
                 className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg relative overflow-hidden group"
               >
-                <span className="relative z-10">Get Started Free</span>
-                <motion.div 
+                <span className="hidden xsm:inline">Free</span>
+                <span className="xsm:hidden">Get Started Free</span>
+                <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
                   initial={{ x: "100%" }}
                   whileHover={{ x: 0 }}
@@ -148,13 +149,13 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="py-20 lg:py-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="text-center"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <motion.h1 
+            <motion.h1
               className="text-5xl lg:text-7xl font-bold mb-6"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -163,12 +164,12 @@ export default function LandingPage() {
               <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                 Simplify Attendance
               </span>
-              <motion.span 
+              <motion.span
                 className="block bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent"
-                animate={{ 
+                animate={{
                   backgroundPosition: ["0%", "100%", "0%"],
                 }}
-                transition={{ 
+                transition={{
                   duration: 5,
                   repeat: Infinity,
                   ease: "linear"
@@ -178,18 +179,18 @@ export default function LandingPage() {
                 Management
               </motion.span>
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               className="text-xl lg:text-2xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
-              Track employee attendance effortlessly with real-time insights, biometric integration, and automated reports. 
+              Track employee attendance effortlessly with real-time insights, biometric integration, and automated reports.
               Focus on growth, not clock-watching.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-md mx-auto"
               variants={staggerContainer}
               initial="initial"
@@ -210,14 +211,14 @@ export default function LandingPage() {
                 >
                   <FaArrowRight />
                 </motion.div>
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
                   initial={{ x: "100%" }}
                   whileHover={{ x: 0 }}
                   transition={{ duration: 0.3 }}
                 />
               </motion.button>
-              
+
               <motion.button
                 variants={fadeInUp}
                 whileHover={{ scale: 1.05, backgroundColor: "#f9fafb" }}
@@ -236,7 +237,7 @@ export default function LandingPage() {
       {/* Features Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             className="grid md:grid-cols-2 lg:grid-cols-5 gap-8"
             variants={staggerContainer}
             initial="initial"
@@ -250,15 +251,15 @@ export default function LandingPage() {
                   initial: { opacity: 0, y: 50 },
                   animate: { opacity: 1, y: 0 }
                 }}
-                whileHover={{ 
+                whileHover={{
                   y: -10,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 }}
                 className="group relative p-6 rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
               >
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 rounded-2xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ 
+                  style={{
                     backgroundImage: `linear-gradient(to right, ${feature.color})`,
                     filter: "blur(20px)",
                     zIndex: -1
@@ -269,7 +270,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                 <p className="text-gray-600">{feature.description}</p>
-                <motion.div 
+                <motion.div
                   className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity"
                   whileHover={{ x: 5 }}
                 >
@@ -280,7 +281,7 @@ export default function LandingPage() {
           </motion.div>
 
           {/* Stats Section */}
-          <motion.div 
+          <motion.div
             className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8"
             variants={staggerContainer}
             initial="initial"
@@ -295,7 +296,7 @@ export default function LandingPage() {
                 whileHover={{ scale: 1.05 }}
               >
                 <stat.icon className="w-12 h-12 mx-auto text-blue-600 mb-4" />
-                <motion.div 
+                <motion.div
                   className="text-4xl font-bold text-gray-900 mb-2"
                   initial={{ opacity: 0, scale: 0.5 }}
                   whileInView={{ opacity: 1, scale: 1 }}
@@ -311,19 +312,19 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Footer */}
-      <motion.section 
+      <motion.section
         className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-center relative overflow-hidden"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
       >
         {/* Animated background elements */}
-        <motion.div 
+        <motion.div
           className="absolute inset-0 opacity-10"
-          animate={{ 
+          animate={{
             backgroundPosition: ["0% 0%", "100% 100%"],
           }}
-          transition={{ 
+          transition={{
             duration: 20,
             repeat: Infinity,
             repeatType: "reverse"
@@ -333,9 +334,9 @@ export default function LandingPage() {
             backgroundSize: "100% 100%"
           }}
         />
-        
+
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.h2 
+          <motion.h2
             className="text-4xl lg:text-5xl font-bold mb-6"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -343,8 +344,8 @@ export default function LandingPage() {
           >
             Ready to Transform Attendance?
           </motion.h2>
-          
-          <motion.p 
+
+          <motion.p
             className="text-xl mb-10 opacity-90"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 0.9 }}
@@ -352,8 +353,8 @@ export default function LandingPage() {
           >
             Join 10,000+ teams saving hours weekly.
           </motion.p>
-          
-          <motion.div 
+
+          <motion.div
             className="flex flex-col sm:flex-row gap-4 justify-center"
             variants={staggerContainer}
             initial="initial"
@@ -374,7 +375,7 @@ export default function LandingPage() {
                 <FaCheckCircle className="text-green-500" />
               </motion.div>
             </motion.button>
-            
+
             <motion.button
               variants={fadeInUp}
               whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}
