@@ -526,12 +526,30 @@ const FormModal = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Max Balance (days)</label>
-                <input type="number" min={0} value={form.max_balance} onChange={(e) => set('max_balance', e.target.value)} className={inputCls('max_balance')} />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.max_balance}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) set('max_balance', val);
+                  }}
+                  className={inputCls('max_balance')}
+                />
                 {errors.max_balance && <p className="mt-1 text-xs text-red-500">{errors.max_balance}</p>}
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Carry Forward Limit (days)</label>
-                <input type="number" min={0} value={form.carry_forward_limit} onChange={(e) => set('carry_forward_limit', e.target.value)} className={inputCls('carry_forward_limit')} />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.carry_forward_limit}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) set('carry_forward_limit', val);
+                  }}
+                  className={inputCls('carry_forward_limit')}
+                />
               </div>
             </div>
           </div>
@@ -550,9 +568,14 @@ const FormModal = ({
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Accrual Rate (days)</label>
                 <input
-                  type="number" min={0} step={0.5} value={form.accrual_rate}
+                  type="text"
+                  inputMode="decimal"
+                  value={form.accrual_rate}
                   disabled={!form.accrual_type || form.accrual_type === 'none'}
-                  onChange={(e) => set('accrual_rate', e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) set('accrual_rate', val);
+                  }}
                   className={`${inputCls('accrual_rate')} ${!form.accrual_type || form.accrual_type === 'none' ? '!bg-gray-50 cursor-not-allowed text-gray-400' : ''}`}
                 />
                 {errors.accrual_rate && <p className="mt-1 text-xs text-red-500">{errors.accrual_rate}</p>}

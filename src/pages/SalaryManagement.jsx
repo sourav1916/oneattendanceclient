@@ -378,11 +378,16 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             const company = JSON.parse(localStorage.getItem('company'));
             const payload = {
                 salary_id: salary.salary_id,
+                employee_id: salary.employee?.id,
+                component_package_id: salary.package?.id,
                 base_amount: parseFloat(formData.base_amount),
                 currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
                 effective_to: formData.effective_to || null,
-                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
+                overrides: formData.overrides.map(o => ({
+                    ...o,
+                    effective_to: o.effective_to || null
+                }))
             };
             const response = await apiCall('/salary/update-salary', 'PUT', payload, company?.id);
             const result = await response.json();
@@ -440,8 +445,13 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                         ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>)
                                         : <option value="USD">$ USD</option>}
                                 </select>
-                                <input type="number" placeholder="Enter amount" value={formData.base_amount}
-                                    onChange={e => setFormData({ ...formData, base_amount: e.target.value })}
+                                <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                            setFormData({ ...formData, base_amount: val });
+                                        }
+                                    }}
                                     className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
                             </div>
                         </div>
@@ -537,8 +547,14 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                             </div>
                                             <div>
                                                 <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
-                                                <input type="number" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
-                                                    value={overrideForm.calc_value} onChange={e => setOverrideForm({ ...overrideForm, calc_value: e.target.value })}
+                                                <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
+                                                    value={overrideForm.calc_value}
+                                                    onChange={e => {
+                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            setOverrideForm({ ...overrideForm, calc_value: val });
+                                                        }
+                                                    }}
                                                     className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                                             </div>
                                         </div>
@@ -602,7 +618,19 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         }
     }, [isOpen, salary]);
 
-    const loadPackages = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/packages', 'GET', null, company?.id); const result = await response.json(); if (result.success) setPackages(result.data || []); } catch (e) { console.error(e); } };
+    const loadPackages = async () => {
+        setLoadingPackages(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) setPackages(result.data || []);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingPackages(false);
+        }
+    };
     const loadComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (e) { console.error(e); } };
     const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types); } catch (e) { console.error(e); } };
 
@@ -620,17 +648,40 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) { toast.warning('Please fill all required fields'); return; }
+        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
+            toast.warning('Please fill all required fields');
+            return;
+        }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const payload = { employee_id: salary.employee?.id, component_package_id: parseInt(formData.component_package_id), base_amount: parseFloat(formData.base_amount), currency: formData.currency.toLowerCase(), effective_from: formData.effective_from, effective_to: formData.effective_to || null, overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null })) };
+            const payload = {
+                employee_id: salary.employee?.id,
+                component_package_id: parseInt(formData.component_package_id),
+                base_amount: parseFloat(formData.base_amount),
+                currency: formData.currency.toLowerCase(),
+                effective_from: formData.effective_from,
+                effective_to: formData.effective_to || null,
+                overrides: formData.overrides.map(o => ({
+                    ...o,
+                    effective_to: o.effective_to || null
+                }))
+            };
             const response = await apiCall('/salary/revise-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) { toast.success('Salary revised successfully!'); onSuccess(); onClose(); }
-            else { toast.error(result.message || 'Failed to revise salary'); }
-        } catch (e) { console.error(e); toast.error('Failed to revise salary'); }
-        finally { setSubmitting(false); }
+            if (result.success) {
+                toast.success('Salary revised successfully!');
+                onSuccess();
+                onClose();
+            } else {
+                toast.error(result.message || 'Failed to revise salary');
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to revise salary');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (!isOpen || !salary) return null;
@@ -659,8 +710,9 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
                             <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
-                                <option value="">Select package</option>
-                                {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                                {loadingPackages ? <option value="">Loading packages...</option>
+                                    : packages.length === 0 ? <option value="">No packages found</option>
+                                        : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
                             </select>
                         </div>
 
@@ -670,7 +722,14 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                 <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
                                     {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
                                 </select>
-                                <input type="number" placeholder="Enter new base amount" value={formData.base_amount} onChange={e => setFormData({ ...formData, base_amount: e.target.value })} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
+                                <input type="text" inputMode="decimal" placeholder="Enter new base amount" value={formData.base_amount}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                            setFormData({ ...formData, base_amount: val });
+                                        }
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
                             </div>
                             {salary.base_amount && (
                                 <p className="text-xs text-gray-400 mt-1">
@@ -697,6 +756,108 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             </div>
                         </div>
 
+                        <div className="border-t border-gray-200 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <FaCalculator className="text-purple-500" /> Component Overrides
+                                </label>
+                                <button type="button"
+                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                    className="px-3 py-1.5 text-sm bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-all flex items-center gap-1">
+                                    <FaPlus size={10} /> Add Override
+                                </button>
+                            </div>
+
+                            {formData.overrides.length > 0 && (
+                                <div className="space-y-2 mb-3">
+                                    {formData.overrides.map((override, idx) => {
+                                        const component = availableComponents.find(c => c.id === override.component_id);
+                                        return (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                        </span>
+                                                    </div>
+                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-purple-500"><FaEdit size={12} /></button>
+                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {showOverrideForm && (
+                                <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold text-purple-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
+                                            <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                                                <option value="">Select component</option>
+                                                {availableComponents.map(comp => (
+                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calc Type</label>
+                                                <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
+                                                    <option value="percentage">Percentage (%)</option>
+                                                    <option value="fixed">Fixed Amount</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
+                                                <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
+                                                    value={overrideForm.calc_value}
+                                                    onChange={e => {
+                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            setOverrideForm({ ...overrideForm, calc_value: val });
+                                                        }
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
+                                                <DatePickerField value={overrideForm.effective_from} onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })} placeholder="From" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left" popoverClassName="mt-2" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
+                                                <DatePickerField value={overrideForm.effective_to} onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })} placeholder="To" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left" popoverClassName="mt-2" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
+                                            <input type="text" placeholder="e.g., Special HRA" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                        </div>
+                                        <div className="flex gap-2 pt-1">
+                                            <button type="button" onClick={addOverride} className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
+                                                {editingOverride !== null ? 'Update' : 'Add'}
+                                            </button>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
                             <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
                             <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
@@ -719,6 +880,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [availableComponents, setAvailableComponents] = useState([]);
     const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingPackages, setLoadingPackages] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -732,7 +894,22 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     }, [isOpen]);
 
     const loadEmployeesWithoutSalary = async () => { setLoading(true); try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/employees-without-salary', 'GET', null, company?.id); const result = await response.json(); if (result.success) setEmployees(result.data || []); } catch (error) { console.error('Failed to load employees:', error); } finally { setLoading(false); } };
-    const loadSalaryPackages = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/packages', 'GET', null, company?.id); const result = await response.json(); if (result.success) { setPackages(result.data || []); if (result.data?.length > 0) setFormData(prev => ({ ...prev, component_package_id: result.data[0].id })); } } catch (error) { console.error('Failed to load packages:', error); } };
+    const loadSalaryPackages = async () => {
+        setLoadingPackages(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) {
+                setPackages(result.data || []);
+                if (result.data?.length > 0) setFormData(prev => ({ ...prev, component_package_id: result.data[0].id }));
+            }
+        } catch (error) {
+            console.error('Failed to load packages:', error);
+        } finally {
+            setLoadingPackages(false);
+        }
+    };
     const loadSalaryComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (error) { console.error('Failed to load salary components:', error); } };
     const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) { setCurrencies(result.data.currency_types); const keys = result.data.currency_types.map(c => c.key); setFormData(prev => ({ ...prev, currency: keys.includes(prev.currency) ? prev.currency : (keys[0] || 'USD') })); } } catch (error) { console.error('Failed to load currencies:', error); } };
 
@@ -755,18 +932,45 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (submitDisabled) return;
-        if (!selectedEmployee) { toast.warning('Please select an employee'); return; }
-        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) { toast.warning('Please fill all required fields'); return; }
+        if (!selectedEmployee) {
+            toast.warning('Please select an employee');
+            return;
+        }
+        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
+            toast.warning('Please fill all required fields');
+            return;
+        }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const payload = { employee_id: selectedEmployee.employee_id, component_package_id: parseInt(formData.component_package_id), base_amount: parseFloat(formData.base_amount), currency: formData.currency.toLowerCase(), effective_from: formData.effective_from, effective_to: formData.effective_to || null, overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null })) };
+            const payload = {
+                employee_id: selectedEmployee.employee_id,
+                component_package_id: parseInt(formData.component_package_id),
+                base_amount: parseFloat(formData.base_amount),
+                currency: formData.currency.toLowerCase(),
+                effective_from: formData.effective_from,
+                effective_to: formData.effective_to || null,
+                overrides: formData.overrides.map(o => ({
+                    ...o,
+                    effective_to: o.effective_to || null
+                }))
+            };
             const response = await apiCall('/salary/assign-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) { toast.success('Salary assigned successfully!'); onSuccess(); onClose(); resetForm(); }
-            else { toast.error(result.message || 'Failed to assign salary'); }
-        } catch (error) { console.error('Error assigning salary:', error); toast.error('Failed to assign salary'); }
-        finally { setSubmitting(false); }
+            if (result.success) {
+                toast.success('Salary assigned successfully!');
+                onSuccess();
+                onClose();
+                resetForm();
+            } else {
+                toast.error(result.message || 'Failed to assign salary');
+            }
+        } catch (error) {
+            console.error('Error assigning salary:', error);
+            toast.error('Failed to assign salary');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -819,7 +1023,9 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
                             <select value={formData.component_package_id} onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
-                                {packages.length === 0 ? <option value="">Loading packages...</option> : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                                {loadingPackages ? <option value="">Loading packages...</option>
+                                    : packages.length === 0 ? <option value="">No packages found</option>
+                                        : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
                             </select>
                         </div>
 
@@ -829,7 +1035,14 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
                                     {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ US Dollar</option>}
                                 </select>
-                                <input type="number" placeholder="Enter amount" value={formData.base_amount} onChange={(e) => setFormData({ ...formData, base_amount: e.target.value })} className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none" />
+                                <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                    onChange={e => {
+                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                            setFormData({ ...formData, base_amount: val });
+                                        }
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none" />
                             </div>
                         </div>
 
@@ -843,6 +1056,108 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
+                        </div>
+
+                        <div className="border-t border-gray-200 pt-4">
+                            <div className="flex items-center justify-between mb-3">
+                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                    <FaCalculator className="text-green-500" /> Component Overrides
+                                </label>
+                                <button type="button"
+                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                    className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all flex items-center gap-1">
+                                    <FaPlus size={10} /> Add Override
+                                </button>
+                            </div>
+
+                            {formData.overrides.length > 0 && (
+                                <div className="space-y-2 mb-3">
+                                    {formData.overrides.map((override, idx) => {
+                                        const component = availableComponents.find(c => c.id === override.component_id);
+                                        return (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                        </span>
+                                                    </div>
+                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-green-500"><FaEdit size={12} /></button>
+                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {showOverrideForm && (
+                                <div className="mt-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-sm font-semibold text-green-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
+                                            <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
+                                                <option value="">Select component</option>
+                                                {availableComponents.map(comp => (
+                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calc Type</label>
+                                                <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
+                                                    <option value="percentage">Percentage (%)</option>
+                                                    <option value="fixed">Fixed Amount</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
+                                                <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
+                                                    value={overrideForm.calc_value}
+                                                    onChange={e => {
+                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            setOverrideForm({ ...overrideForm, calc_value: val });
+                                                        }
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
+                                                <DatePickerField value={overrideForm.effective_from} onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })} placeholder="From" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-left" popoverClassName="mt-2" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
+                                                <DatePickerField value={overrideForm.effective_to} onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })} placeholder="To" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-left" popoverClassName="mt-2" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
+                                            <input type="text" placeholder="e.g., Special HRA" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
+                                        </div>
+                                        <div className="flex gap-2 pt-1">
+                                            <button type="button" onClick={addOverride} className="flex-1 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-emerald-700 transition-all">
+                                                {editingOverride !== null ? 'Update' : 'Add'}
+                                            </button>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex gap-3 pt-4 border-t border-gray-100">

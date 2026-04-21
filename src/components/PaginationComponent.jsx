@@ -177,11 +177,13 @@ const Pagination = ({
                     <span className="text-xs text-slate-500 font-medium">Go to:</span>
                     <form onSubmit={handleJump} className="relative group">
                         <input
-                            type="number"
-                            min={1}
-                            max={totalPages}
+                            type="text"
+                            inputMode="numeric"
                             value={jumpPage}
-                            onChange={(e) => setJumpPage(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setJumpPage(val);
+                            }}
                             className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1 pr-7 text-xs font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-center"
                         />
                         <button
@@ -220,11 +222,13 @@ const Pagination = ({
                     <span className="text-sm text-slate-500 font-medium">Go to:</span>
                     <form onSubmit={handleJump} className="relative group">
                         <input
-                            type="number"
-                            min={1}
-                            max={totalPages}
+                            type="text"
+                            inputMode="numeric"
                             value={jumpPage}
-                            onChange={(e) => setJumpPage(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                setJumpPage(val);
+                            }}
                             placeholder="Page No"
                             className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-10 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-center"
                         />

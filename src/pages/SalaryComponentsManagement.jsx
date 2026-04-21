@@ -331,11 +331,13 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                         {form.calc_type === 'percentage' ? '%' : '₹'}
                                     </span>
                                     <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={form.calc_value}
-                                        onChange={e => setField('calc_value', e.target.value)}
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                            if (val === '' || /^\d*\.?\d*$/.test(val)) setField('calc_value', val);
+                                        }}
                                         placeholder="0.00"
                                         className={`w-full pl-8 pr-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.calc_value ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                                     />
