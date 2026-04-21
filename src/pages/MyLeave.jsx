@@ -347,9 +347,6 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
   const balanceLabel = selectedLeaveType
     ? `${formatDays(remainingDays)} left`
     : 'Choose a leave type';
-  const requestLabel = selectedDays
-    ? `${formatDays(selectedDays)} day${Number(selectedDays) === 1 ? '' : 's'}`
-    : 'No dates selected';
 
   const handleDateChange = (range) => {
     if (!range) return;
@@ -494,34 +491,10 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
             <p className="mt-0.5 text-sm font-semibold text-gray-800">{balanceLabel}</p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Selection</p>
-            <p className={`mt-0.5 text-sm font-semibold ${overBalance ? 'text-rose-600' : 'text-gray-800'}`}>{requestLabel}</p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,0.95fr)]">
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Leave Type</label>
-            <select
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-              value={form.leave_config_id}
-              onChange={(e) => setForm((prev) => ({ ...prev, leave_config_id: e.target.value }))}
-              required
-            >
-              <option value="">Select leave type</option>
-              {leaveTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}{type.code ? ` (${type.code})` : ''} {!type.is_paid && '(Unpaid)'}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Available balance</p>
-                <p className="mt-1 truncate text-sm font-semibold text-gray-800">
+                <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">
                   {selectedLeaveType ? selectedLeaveType.name : 'Select a leave type'}
                 </p>
                 <p className="truncate text-[11px] text-gray-500">
@@ -544,68 +517,129 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
-            <span className={`text-[11px] font-medium ${overBalance ? 'text-rose-600' : 'text-gray-400'}`}>
-              {selectedDays ? `${formatDays(selectedDays)} day(s) selected` : 'Select within balance'}
-            </span>
+        <div className="space-y-3">
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Leave Type</label>
+            <select
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              value={form.leave_config_id}
+              onChange={(e) => setForm((prev) => ({ ...prev, leave_config_id: e.target.value }))}
+              required
+            >
+              <option value="">Select leave type</option>
+              {leaveTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}{type.code ? ` (${type.code})` : ''} {!type.is_paid && '(Unpaid)'}
+                </option>
+              ))}
+            </select>
           </div>
-          <DateRangePickerField
-            value={{ start: form.start_date, end: form.end_date }}
-            onChange={handleDateChange}
-            placeholder="Select leave dates"
-            buttonClassName="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
-            popoverClassName="mt-2"
-            initialTab="single"
-            mode="range"
-            showQuickSelect={false}
-            minDate={new Date()}
-            maxDays={selectedLeaveType ? Math.max(0, remainingDays) : null}
-          />
-          {selectedLeaveType && (
-            <p className={`mt-2 text-[11px] ${overBalance ? 'text-rose-600' : 'text-gray-500'}`}>
-              {overBalance
-                ? `Selected range exceeds the available ${formatDays(remainingDays)} day balance.`
-                : 'The picker will stop at your current balance.'}
-            </p>
-          )}
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:items-start">
+        <div className="grid gap-3 md:grid-cols-2 md:items-start">
           <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <input
                 type="checkbox"
                 checked={form.is_half_day}
-                onChange={(e) => setForm((prev) => ({ ...prev, is_half_day: e.target.checked }))}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setForm((prev) => ({
+                    ...prev,
+                    is_half_day: checked,
+                    half_day_type: checked ? "first_half" : "",
+                  }));
+                }}
               />
               Half day
             </label>
-            {form.is_half_day && (
-              <select
-                className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-                value={form.half_day_type}
-                onChange={(e) => setForm((prev) => ({ ...prev, half_day_type: e.target.value }))}
-              >
-                <option value="first_half">First Half</option>
-                <option value="second_half">Second Half</option>
-              </select>
-            )}
+
+            <div className="mt-3 flex gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="half_day_type"
+                  value="first_half"
+                  checked={form.half_day_type === "first_half"}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      is_half_day: true,
+                      half_day_type: e.target.value,
+                    }))
+                  }
+                />
+                First Half
+              </label>
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="half_day_type"
+                  value="second_half"
+                  checked={form.half_day_type === "second_half"}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      is_half_day: true,
+                      half_day_type: e.target.value,
+                    }))
+                  }
+                />
+                Second Half
+              </label>
+            </div>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Reason</label>
-            <textarea
-              rows={3}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-              placeholder="Please provide a reason for your leave..."
-              value={form.reason}
-              onChange={(e) => setForm((prev) => ({ ...prev, reason: e.target.value }))}
-              required
+          <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-sm">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
+              <span className={`text-[11px] font-medium ${overBalance ? 'text-rose-600' : 'text-gray-400'}`}>
+                {selectedDays ? `${formatDays(selectedDays)} day(s) selected` : 'Select within balance'}
+              </span>
+            </div>
+            <DateRangePickerField
+              value={{ start: form.start_date, end: form.end_date }}
+              onChange={handleDateChange}
+              placeholder="Select leave dates"
+              buttonClassName="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              popoverClassName="mt-2"
+              initialTab="single"
+              mode="range"
+              showQuickSelect={false}
+              minDate={new Date()}
+              maxDays={selectedLeaveType ? Math.max(0, remainingDays) : null}
             />
+            {selectedLeaveType && (
+              <p className={`mt-2 text-[11px] ${overBalance ? 'text-rose-600' : 'text-gray-500'}`}>
+                {overBalance
+                  ? `Selected range exceeds the available ${formatDays(remainingDays)} day balance.`
+                  : 'The picker will stop at your current balance.'}
+              </p>
+            )}
           </div>
         </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Reason
+          </label>
+          <textarea
+            rows={3}
+            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+            placeholder="Please provide a reason for your leave..."
+            value={form.reason}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                reason: e.target.value,
+              }))
+            }
+            required
+          />
+        </div>
+
+
 
         {initialLeave?.attachments?.length > 0 && (
           <div className="space-y-2">

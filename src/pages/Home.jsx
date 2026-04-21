@@ -307,7 +307,7 @@ function HomePage() {
     ];
   };
 
-  const quickActions = getQuickActions();
+  const quickActions = getQuickActions().filter((action) => !action.disabled);
   const punchActionAccess = checkActionAccess("attendance", "punch");
   const canPunch = punchActionAccess.allowed;
 

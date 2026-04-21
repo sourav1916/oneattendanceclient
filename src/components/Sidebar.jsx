@@ -27,7 +27,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const { checkPageAccess, accessReasons } = usePermissionAccess();
+  const { checkPageAccess } = usePermissionAccess();
 
   // Toggle section
   const toggleSection = (sectionName) => {
@@ -46,7 +46,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     },
     {
       icon: FaClock,
-      label: 'Attendance',
+      label: 'My Attendance',
       path: '/attendance',
       pageKey: 'attendance'
     },
@@ -86,6 +86,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       isSection: true,
       children: [
         {
+          icon: FaClock,
+          label: 'Attendance',
+          path: '/attendance-management',
+          pageKey: 'attendanceManagement'
+        },
+        {
           icon: FaUsers,
           label: 'Employees',
           path: '/employee-management',
@@ -97,12 +103,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           path: '/permission-management',
           pageKey: 'permissionManagement'
         },
-        {
-          icon: FaClock,
-          label: 'Attendance',
-          path: '/attendance-management',
-          pageKey: 'attendanceManagement'
-        },
+        
         {
           icon: FaFileInvoiceDollar,
           label: 'Salary',
@@ -150,21 +151,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 
   const getItemAccess = (item) => checkPageAccess(item.pageKey);
 
-  const getAccessMessage = (access) => {
-    if (access.reason === accessReasons.OWNER_RESTRICTED) {
-      return 'Disabled for company owner';
-    }
-
-    if (access.reason === accessReasons.NO_COMPANY) {
-      return 'Select a company first';
-    }
-
-    if (access.reason === accessReasons.MISSING_CONFIG) {
-      return 'Permission config missing';
-    }
-
-    return 'Access Denied - You don\'t have permission';
-  };
+  const getVisibleChildren = (children) =>
+    children.filter((child) => getItemAccess(child).allowed);
 
   useEffect(() => {
     if (onHover && !isMobile) {
@@ -188,23 +176,10 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
               {menuItems.map((item) => {
                 if (item.isSection) {
                   const isOpen = openSections[item.label];
-                  const authorizedChildren = item.children;
-                  const hasAnyChildAuthorized = authorizedChildren.some((child) => getItemAccess(child).allowed);
+                  const authorizedChildren = getVisibleChildren(item.children);
 
-                  if (!hasAnyChildAuthorized) {
-                    return (
-                      <div key={item.label} className="mb-2">
-                        <div className="w-full flex items-center justify-between px-3 py-3 rounded-xl opacity-50 cursor-not-allowed">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-gray-100 text-gray-400">
-                              <item.icon className="w-4 h-4" />
-                            </div>
-                            <span className="text-sm font-medium text-gray-400">{item.label}</span>
-                          </div>
-                          <FaChevronRight className="w-3.5 h-3.5 text-gray-400" />
-                        </div>
-                      </div>
-                    );
+                  if (authorizedChildren.length === 0) {
+                    return null;
                   }
 
                   return (
@@ -232,23 +207,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                         <div className="ml-8 mt-1 space-y-1">
                           {authorizedChildren.map((child) => {
                             const isActive = isActiveRoute(child.path);
-                            const access = getItemAccess(child);
-
-                            if (access.disabled) {
-                              return (
-                                <div
-                                  key={child.label}
-                                  className="flex items-center px-3 py-2 rounded-xl opacity-50 cursor-not-allowed"
-                                  title={getAccessMessage(access)}
-                                >
-                                  <div className="p-2 rounded-lg bg-gray-100 text-gray-400 mr-3">
-                                    <child.icon className="w-3 h-3" />
-                                  </div>
-                                  <span className="text-xs text-gray-400">{child.label}</span>
-                                </div>
-                              );
-                            }
-
                             return (
                               <Link
                                 key={child.label}
@@ -287,18 +245,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                 const Icon = item.icon;
 
                 if (access.disabled) {
-                  return (
-                    <div
-                      key={item.label}
-                      className="flex items-center px-3 py-3 rounded-xl opacity-50 cursor-not-allowed mb-1"
-                      title={getAccessMessage(access)}
-                    >
-                      <div className="p-2 rounded-lg bg-gray-100 text-gray-400 mr-3">
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm text-gray-400">{item.label}</span>
-                    </div>
-                  );
+                  return null;
                 }
 
                 return (
@@ -352,34 +299,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     const Icon = item.icon;
 
     if (access.disabled) {
-      return (
-        <div
-          key={item.label}
-          className={`
-            flex items-center rounded-xl transition-all duration-200
-            ${isExpandedState ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
-            cursor-not-allowed opacity-50
-          `}
-          title={
-            !isExpandedState
-              ? `${item.label} (${getAccessMessage(access)})`
-              : getAccessMessage(access)
-          }
-        >
-          <div className={`
-            p-2 rounded-lg transition-all duration-200
-            ${isExpandedState ? '' : 'mx-auto'}
-            bg-gray-100 text-gray-400
-          `}>
-            <Icon className="w-4 h-4" />
-          </div>
-          {isExpandedState && (
-            <span className="flex-1 text-sm font-medium text-gray-400">
-              {item.label}
-            </span>
-          )}
-        </div>
-      );
+      return null;
     }
 
     return (
@@ -426,39 +346,10 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const renderSection = (item, isExpandedState) => {
     const isOpen = openSections[item.label];
     const Icon = item.icon;
-    const authorizedChildren = item.children;
+    const authorizedChildren = getVisibleChildren(item.children);
 
-    const hasAnyChildAuthorized = authorizedChildren.some((child) => getItemAccess(child).allowed);
-
-    if (!hasAnyChildAuthorized) {
-      return (
-        <div key={item.label} className="mb-1">
-          <div
-            className={`
-              w-full flex items-center rounded-xl transition-all duration-200
-              ${isExpandedState ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
-              cursor-not-allowed opacity-50
-            `}
-            title={!isExpandedState ? `${item.label} (Access Denied)` : 'Access Denied - You don\'t have permission'}
-          >
-            <div className={`
-              p-2 rounded-lg transition-all duration-200
-              ${isExpandedState ? '' : 'mx-auto'}
-              bg-gray-100 text-gray-400
-            `}>
-              <Icon className="w-4 h-4" />
-            </div>
-            {isExpandedState && (
-              <>
-                <span className="flex-1 text-sm font-medium text-left text-gray-400">
-                  {item.label}
-                </span>
-                <FaChevronRight className="w-3.5 h-3.5 text-gray-400" />
-              </>
-            )}
-          </div>
-        </div>
-      );
+    if (authorizedChildren.length === 0) {
+      return null;
     }
 
     return (
@@ -497,32 +388,9 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
         {/* Section Children */}
         {isExpandedState && isOpen && (
           <div className="ml-8 mt-1 space-y-1">
-                          {authorizedChildren.map((child) => {
+            {authorizedChildren.map((child) => {
               const isActive = isActiveRoute(child.path);
               const ChildIcon = child.icon;
-              const access = getItemAccess(child);
-
-              if (access.disabled) {
-                return (
-                  <div
-                    key={child.label}
-                    className={`
-                      flex items-center rounded-xl transition-all duration-200
-                      px-3 py-2 gap-3
-                      cursor-not-allowed opacity-50
-                      text-gray-400
-                    `}
-                    title={getAccessMessage(access)}
-                  >
-                    <div className="p-2 rounded-lg bg-gray-100 text-gray-400">
-                      <ChildIcon className="w-3 h-3" />
-                    </div>
-                    <span className="flex-1 text-xs font-medium">
-                      {child.label}
-                    </span>
-                  </div>
-                );
-              }
 
               return (
                 <Link

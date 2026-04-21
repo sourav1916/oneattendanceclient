@@ -110,8 +110,9 @@ const StatusBadge = ({ status }) => {
     const Icon = config.icon;
 
     return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
-            <Icon size={12} /> {config.text}
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`} title={config.text}>
+            <Icon size={12} />
+            <span className="hidden min-[400px]:inline">{config.text}</span>
         </span>
     );
 };

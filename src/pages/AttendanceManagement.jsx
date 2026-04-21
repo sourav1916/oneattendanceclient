@@ -109,8 +109,9 @@ const StatusBadge = ({ status }) => {
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`}>
-      <Icon size={12} /> {config.text}
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.className}`} title={config.text}>
+      <Icon size={12} />
+      <span className="hidden min-[400px]:inline">{config.text}</span>
     </span>
   );
 };
@@ -418,13 +419,17 @@ const AttendanceManagement = ({ companyId }) => {
     };
   }, []);
 
+  const SIDEBAR_OFFSET = windowWidth >= 768 ? 80 : 0;
+  const effectiveWidth = windowWidth - SIDEBAR_OFFSET;
+
   const isMobile = windowWidth < 768;
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const isDesktop = windowWidth >= 1024;
 
-  const showPunchType = !isMobile;
-  const showDateTime = !isMobile;
-  const showMethod = isDesktop;
+  // Refined column visibility based on effective width to prevent overflow
+  const showPunchType = effectiveWidth >= 640;
+  const showDateTime = effectiveWidth >= 900;
+  const showMethod = effectiveWidth >= 1100;
 
   useEffect(() => {
     const timer = setTimeout(() => {

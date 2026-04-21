@@ -71,7 +71,7 @@ const Pagination = ({
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`w-full bg-white rounded-xl border border-slate-200 mt-6 p-3 sm:p-4 ${className}`.trim()}
+            className={`w-full lg:flex lg:justify-between lg:items-center bg-white rounded-xl border border-slate-200 mt-6 p-3 sm:p-4 ${className}`.trim()}
         >
             {/* ── ROW 1 (mobile): Info + Page controls side by side ── */}
             <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
@@ -196,7 +196,7 @@ const Pagination = ({
             </div>
 
             {/* ── Desktop layout (sm+): original single row ── */}
-            <div className="hidden sm:flex items-center justify-between gap-4 mt-3 pt-3 border-t border-slate-100">
+            <div className="hidden sm:flex items-center justify-between gap-4 mt-3 pt-3 border-t border-slate-100 lg:mt-0 lg:pt-0">
                 {onLimitChange && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-500 font-medium">Show:</span>
