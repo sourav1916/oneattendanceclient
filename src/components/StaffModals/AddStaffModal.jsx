@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Select from "react-select";
+import Select from "../SelectField";
 import { toast } from "react-toastify";
 import apiCall from "../../utils/api";
 import { useAuth } from "../../context/AuthContext";

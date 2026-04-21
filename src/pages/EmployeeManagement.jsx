@@ -10,7 +10,7 @@ import {
     FaTh, FaListUl, FaChevronDown, FaChevronRight, FaCog, FaUserCog, FaClock
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-import Select from 'react-select';
+import Select from '../components/SelectField';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';

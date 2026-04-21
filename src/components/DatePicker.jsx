@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FaCheck, FaUndo, FaExclamationTriangle, FaTimesCircle, FaCheckCircle, FaInfoCircle } from "react-icons/fa";
 
@@ -42,6 +42,35 @@ function startOfDay(d) {
   const c = new Date(d);
   c.setHours(0, 0, 0, 0);
   return c;
+}
+
+function getAnchoredPopoverPosition(triggerEl, popoverEl, offset = 8) {
+  if (!triggerEl || !popoverEl) return null;
+
+  const triggerRect = triggerEl.getBoundingClientRect();
+  const popoverRect = popoverEl.getBoundingClientRect();
+  const margin = 8;
+
+  let top = triggerRect.bottom + offset;
+  let left = triggerRect.left;
+
+  if (left + popoverRect.width > window.innerWidth - margin) {
+    left = Math.max(margin, window.innerWidth - popoverRect.width - margin);
+  }
+
+  if (left < margin) {
+    left = margin;
+  }
+
+  if (top + popoverRect.height > window.innerHeight - margin) {
+    top = Math.max(margin, triggerRect.top - popoverRect.height - offset);
+  }
+
+  if (top < margin) {
+    top = margin;
+  }
+
+  return { top, left };
 }
 
 // ── Quick-select presets ──────────────────────────────────────────────
@@ -191,6 +220,7 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
 export default function DatePicker({
   mode = "both",
   onApply,
+  onReset,
   initialTab = "quick",
   initialQuickKey = "today",
   initialSingle = null,
@@ -296,6 +326,7 @@ export default function DatePicker({
     setRangeEnd(null);
     setViewDate(new Date());
     setFeedback("");
+    onReset?.();
   }
 
   useEffect(() => {
@@ -483,20 +514,60 @@ export function DatePickerField({
   showQuickSelect = true,
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
   const selectedDate = parseDateValue(value);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+
+    const updatePosition = () => {
+      const nextPosition = getAnchoredPopoverPosition(triggerRef.current, popoverRef.current);
+      if (nextPosition) {
+        setPosition(nextPosition);
+      }
+    };
+
+    const handlePointerDown = (event) => {
+      if (
+        popoverRef.current?.contains(event.target) ||
+        triggerRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    updatePosition();
+    const rafId = window.requestAnimationFrame(updatePosition);
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
     return () => {
-      document.body.style.overflow = previousOverflow;
+      window.cancelAnimationFrame(rafId);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
     };
   }, [open]);
 
   return (
     <div className={`relative ${wrapperClassName}`.trim()}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={`${buttonClassName} flex items-center justify-between gap-2`.trim()}
@@ -512,14 +583,15 @@ export function DatePickerField({
       {open &&
         createPortal(
           <div
+            ref={popoverRef}
             data-datepicker-portal="true"
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6"
-            onClick={() => setOpen(false)}
+            className={`fixed z-[9999] ${popoverClassName}`.trim()}
+            style={{
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+            }}
           >
-            <div
-              className={`relative w-[min(100%,19rem)] ${popoverClassName}`.trim()}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -534,6 +606,7 @@ export function DatePickerField({
                 minDate={minDate}
                 maxDays={maxDays}
                 showQuickSelect={showQuickSelect}
+                onReset={() => onChange?.("")}
                 onApply={(result) => {
                   if (result?.type === "single") {
                     onChange?.(toIsoDate(result.date));
@@ -568,17 +641,56 @@ export function DateRangePickerField({
   showQuickSelect = true,
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
   const startValue = value?.start || value?.start_date || value?.from || "";
   const endValue = value?.end || value?.end_date || value?.to || "";
   const startDate = parseDateValue(startValue);
   const endDate = parseDateValue(endValue);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+
+    const updatePosition = () => {
+      const nextPosition = getAnchoredPopoverPosition(triggerRef.current, popoverRef.current);
+      if (nextPosition) {
+        setPosition(nextPosition);
+      }
+    };
+
+    const handlePointerDown = (event) => {
+      if (
+        popoverRef.current?.contains(event.target) ||
+        triggerRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    updatePosition();
+    const rafId = window.requestAnimationFrame(updatePosition);
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+
     return () => {
-      document.body.style.overflow = previousOverflow;
+      window.cancelAnimationFrame(rafId);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
     };
   }, [open]);
 
@@ -593,6 +705,7 @@ export function DateRangePickerField({
   return (
     <div className={`relative ${wrapperClassName}`.trim()}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={`${buttonClassName} flex items-center justify-between gap-2`.trim()}
@@ -608,14 +721,15 @@ export function DateRangePickerField({
       {open &&
         createPortal(
           <div
+            ref={popoverRef}
             data-datepicker-portal="true"
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6"
-            onClick={() => setOpen(false)}
+            className={`fixed z-[9999] ${popoverClassName}`.trim()}
+            style={{
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+            }}
           >
-            <div
-              className={`relative w-[min(100%,19rem)] ${popoverClassName}`.trim()}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="relative">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -631,6 +745,7 @@ export function DateRangePickerField({
                 minDate={minDate}
                 maxDays={maxDays}
                 showQuickSelect={showQuickSelect}
+                onReset={() => onChange?.({ start: "", end: "" })}
                 onApply={(result) => {
                   if (result?.type === "range") {
                     onChange?.({

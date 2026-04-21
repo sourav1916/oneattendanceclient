@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { FaClock, FaCheck, FaHistory, FaTimes } from "react-icons/fa";
 
 /**
@@ -32,6 +32,35 @@ const PRESETS = [
   { label: "01:00 PM", value: "13:00:00" },
   { label: "06:00 PM", value: "18:00:00" },
 ];
+
+function getAnchoredPopoverPosition(triggerEl, popoverEl, offset = 8) {
+  if (!triggerEl || !popoverEl) return null;
+
+  const triggerRect = triggerEl.getBoundingClientRect();
+  const popoverRect = popoverEl.getBoundingClientRect();
+  const margin = 8;
+
+  let top = triggerRect.bottom + offset;
+  let left = triggerRect.left;
+
+  if (left + popoverRect.width > window.innerWidth - margin) {
+    left = Math.max(margin, window.innerWidth - popoverRect.width - margin);
+  }
+
+  if (left < margin) {
+    left = margin;
+  }
+
+  if (top + popoverRect.height > window.innerHeight - margin) {
+    top = Math.max(margin, triggerRect.top - popoverRect.height - offset);
+  }
+
+  if (top < margin) {
+    top = margin;
+  }
+
+  return { top, left };
+}
 
 const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
   return (
@@ -172,27 +201,59 @@ export const TimePickerField = ({
   className = ""
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
+      const updatePosition = () => {
+        const nextPosition = getAnchoredPopoverPosition(triggerRef.current, popoverRef.current);
+        if (nextPosition) {
+          setPosition(nextPosition);
+        }
+      };
+
+      const handlePointerDown = (event) => {
+        if (
+          popoverRef.current?.contains(event.target) ||
+          triggerRef.current?.contains(event.target)
+        ) {
+          return;
+        }
+        setIsOpen(false);
+      };
+
+      const handleKeyDown = (event) => {
+        if (event.key === "Escape") {
+          setIsOpen(false);
+        }
+      };
+
+      updatePosition();
+      const rafId = window.requestAnimationFrame(updatePosition);
+
+      document.addEventListener("mousedown", handlePointerDown);
+      document.addEventListener("touchstart", handlePointerDown);
+      document.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+
+      return () => {
+        window.cancelAnimationFrame(rafId);
+        document.removeEventListener("mousedown", handlePointerDown);
+        document.removeEventListener("touchstart", handlePointerDown);
+        document.removeEventListener("keydown", handleKeyDown);
+        window.removeEventListener("scroll", updatePosition, true);
+        window.removeEventListener("resize", updatePosition);
+      };
     }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
   }, [isOpen]);
 
   const displayValue = (value && typeof value === 'string') ? value.substring(0, 5) : "";
 
   return (
-    <div className={`flex flex-col min-w-0 ${className}`} ref={containerRef}>
+    <div className={`flex flex-col min-w-0 ${className}`}>
       {label && (
         <label className="mb-1 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
           {label} {required && <span className="text-red-500">*</span>}
@@ -201,6 +262,7 @@ export const TimePickerField = ({
       
       <div className="relative">
         <div 
+          ref={triggerRef}
           onClick={() => setIsOpen(true)}
           className={`
             cursor-pointer flex items-center gap-2 px-2 h-[32px]
@@ -216,26 +278,30 @@ export const TimePickerField = ({
           </span>
         </div>
 
-        <AnimatePresence>
-          {isOpen && (
+        {isOpen &&
+          createPortal(
             <motion.div
+              ref={popoverRef}
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
               transition={{ duration: 0.15 }}
-              className="absolute top-full left-0 mt-1 z-[100] w-full min-w-[200px]"
+              className="fixed z-[9999] w-[min(calc(100vw-1rem),200px)]"
+              style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+              }}
             >
-              <TimePicker 
-                value={value} 
+              <TimePicker
+                value={value}
                 onApply={(val) => {
                   onChange(val);
                   setIsOpen(false);
                 }}
                 onClose={() => setIsOpen(false)}
               />
-            </motion.div>
+            </motion.div>,
+            document.body
           )}
-        </AnimatePresence>
       </div>
     </div>
   );
