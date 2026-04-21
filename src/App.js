@@ -196,16 +196,16 @@ function AppContent() {
         />
 
         {/* Protected Routes - Only accessible after company selection */}
-        <Route path="/home"element={<ProtectedRoute> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>}/>
-        <Route path="/profile"element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>}/>
+        <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>}/>
+        <Route path="/profile" element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>}/>
         <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
-        <Route path="/company-invites" element={ <ProtectedRoute><Navigate to="/employee-management?tab=invites" replace /></ProtectedRoute>}/>
-        <Route path="/attendance"element={<ProtectedRoute><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
-        <Route path="/attendance-history"element={<ProtectedRoute><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
-        <Route path="/my-shifts"element={<ProtectedRoute><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
-        <Route path="/my-salary"element={<ProtectedRoute><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
-        <Route path="/attendance-management"element={<ProtectedRoute><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
-        <Route path="/salary-management"element={<ProtectedRoute><MainLayout><TabbedManagementHub
+        <Route path="/company-invites" element={ <ProtectedRoute pageKey="companyInvites"><Navigate to="/employee-management?tab=invites" replace /></ProtectedRoute>}/>
+        <Route path="/attendance" element={<ProtectedRoute pageKey="attendance"><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
+        <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-shifts" element={<ProtectedRoute pageKey="myShifts"><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
+        <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/salary-management" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><TabbedManagementHub
           routePath="/salary-management"
           defaultTab="salary"
           title="Salary tools in one place"
@@ -217,10 +217,10 @@ function AppContent() {
           accessDeniedDescription="Your current role does not have access to salary management, salary components, or salary packages."
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
-        <Route path="/salary-components-management"element={<ProtectedRoute><Navigate to="/salary-management?tab=components" replace /></ProtectedRoute>} />
-        <Route path="/salary-package-management"element={<ProtectedRoute><Navigate to="/salary-management?tab=packages" replace /></ProtectedRoute>} />
-        <Route path="/employees-shifts"element={<ProtectedRoute><Navigate to="/employee-management?tab=shifts" replace /></ProtectedRoute>} />
-        <Route path="/leave-management"element={<ProtectedRoute><MainLayout><TabbedManagementHub
+        <Route path="/salary-components-management" element={<ProtectedRoute pageKey="salaryComponentsManagement"><Navigate to="/salary-management?tab=components" replace /></ProtectedRoute>} />
+        <Route path="/salary-package-management" element={<ProtectedRoute pageKey="salaryPackageManagement"><Navigate to="/salary-management?tab=packages" replace /></ProtectedRoute>} />
+        <Route path="/employees-shifts" element={<ProtectedRoute pageKey="employeesShifts"><Navigate to="/employee-management?tab=shifts" replace /></ProtectedRoute>} />
+        <Route path="/leave-management" element={<ProtectedRoute pageKey="leaveManagement"><MainLayout><TabbedManagementHub
           routePath="/leave-management"
           defaultTab="requests"
           title="All leave tools in one place"
@@ -232,13 +232,13 @@ function AppContent() {
           accessDeniedDescription="Your current role does not have access to leave requests, leave configuration, or leave balances."
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
-        <Route path="/pending-attendance"element={<ProtectedRoute><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
-        <Route path="/holiday-management"element={<ProtectedRoute><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
-        <Route path="/holidays"element={<ProtectedRoute><MainLayout><Holidays /></MainLayout></ProtectedRoute>} />
-        <Route path="/help"element={<ProtectedRoute><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
-        <Route path="/my-leaves"element={<ProtectedRoute><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
-        <Route path="/my-invites"element={<ProtectedRoute><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
-        <Route path="/employee-management"element={<ProtectedRoute><MainLayout><TabbedManagementHub
+        <Route path="/pending-attendance" element={<ProtectedRoute pageKey="pendingAttendance"><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
+        <Route path="/holiday-management" element={<ProtectedRoute pageKey="holidayManagement"><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
+        <Route path="/holidays" element={<ProtectedRoute pageKey="holidays"><MainLayout><Holidays /></MainLayout></ProtectedRoute>} />
+        <Route path="/help" element={<ProtectedRoute pageKey="help"><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
+        <Route path="/my-leaves" element={<ProtectedRoute pageKey="myLeaves"><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
+        <Route path="/my-invites" element={<ProtectedRoute pageKey="myInvites"><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
+        <Route path="/employee-management" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><TabbedManagementHub
           routePath="/employee-management"
           defaultTab="employees"
           title="Team, Invitations & Packages Hub"
@@ -250,12 +250,12 @@ function AppContent() {
           accessDeniedDescription="Your current role does not have access to employee management, company invitations, invite packages, or shift summaries."
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
-        <Route path="/company-settings"element={<ProtectedRoute><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
-        <Route path="/permission-management"element={<ProtectedRoute><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
-        <Route path="/leave-config"element={<ProtectedRoute><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
-        <Route path="/leave-balance"element={<ProtectedRoute><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
-        <Route path="/payroll-management"element={<ProtectedRoute><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
-        <Route path="/employee-profile/:employeeId" element={<ProtectedRoute><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
+        <Route path="/company-settings" element={<ProtectedRoute pageKey="companySettings"><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
+        <Route path="/permission-management" element={<ProtectedRoute pageKey="permissionManagement"><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/leave-config" element={<ProtectedRoute pageKey="leaveConfig"><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
+        <Route path="/leave-balance" element={<ProtectedRoute pageKey="leaveBalance"><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
+        <Route path="/payroll-management" element={<ProtectedRoute pageKey="payrollManagement"><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-profile/:employeeId" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
