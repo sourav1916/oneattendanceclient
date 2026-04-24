@@ -17,6 +17,7 @@ import {
   FaTasks,
   FaClock,
   FaCalendarAlt,
+  FaUniversity,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import usePermissionAccess from "../hooks/usePermissionAccess";
@@ -115,6 +116,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           label: 'Payroll',
           path: '/payroll-management',
           pageKey: 'payrollManagement'
+        },
+        {
+          icon: FaUniversity,
+          label: 'Bank Accounts',
+          path: '/bank-account-management',
+          pageKey: 'bankAccountManagement'
         },
 
         {

@@ -31,6 +31,7 @@ import PermissionManagement from "./pages/PermissionManagement";
 import CompanyHolidays from "./pages/HolidayManagement";
 import Holidays from "./pages/Holidays";
 import PayrollManagement from "./pages/PayrollManagement";
+import BankAccountManagement from "./pages/BankAccountManagement";
 import CompanySettings from "./pages/CompanySettings";
 import EmployeesShifts from "./pages/EmployeesShifts";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
@@ -255,6 +256,7 @@ function AppContent() {
         <Route path="/leave-config" element={<ProtectedRoute pageKey="leaveConfig"><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
         <Route path="/leave-balance" element={<ProtectedRoute pageKey="leaveBalance"><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
         <Route path="/payroll-management" element={<ProtectedRoute pageKey="payrollManagement"><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><BankAccountManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-profile/:employeeId" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />

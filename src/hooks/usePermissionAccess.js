@@ -96,6 +96,9 @@ const PERMISSION_ACCESS_CONFIG = {
       permissions: ["salary_view_all", "salary_assign", "salary_update", "salary_delete"],
       allowCompanyOwner: true,
     },
+    bankAccountManagement: {
+      permissions: null,
+    },
     pendingAttendance: {
       permissions: ["att_view_all", "att_review"],
     },
@@ -306,6 +309,12 @@ const PERMISSION_ACCESS_CONFIG = {
         permissions: "salary_assign",
         allowCompanyOwner: true,
       },
+    },
+    bankAccountManagement: {
+      create: { permissions: null },
+      read: { permissions: null },
+      update: { permissions: null },
+      delete: { permissions: null },
     },
     workspace: {
       addStaff: { permissions: ["emp_create", "emp_invite"] },
