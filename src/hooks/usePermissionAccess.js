@@ -31,6 +31,9 @@ const PERMISSION_ACCESS_CONFIG = {
       permissions: ["salary_view_own", "salary_advance_view"],
       disableForCompanyOwner: true,
     },
+    employeeBankAccount: {
+      permissions: null,
+    },
     myInvites: { permissions: null },
     holidays: {
       permissions: null,
@@ -145,6 +148,12 @@ const PERMISSION_ACCESS_CONFIG = {
         permissions: "salary_advance_view",
         disableForCompanyOwner: true,
       },
+    },
+    employeeBankAccount: {
+      create: { permissions: null },
+      read: { permissions: null },
+      update: { permissions: null },
+      delete: { permissions: null },
     },
     companyInvites: {
       create: { permissions: "emp_invite" },

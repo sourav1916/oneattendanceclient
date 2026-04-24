@@ -18,6 +18,7 @@ import {
   FaClock,
   FaCalendarAlt,
   FaUniversity,
+  FaIdCard,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import usePermissionAccess from "../hooks/usePermissionAccess";
@@ -68,6 +69,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       label: 'My Salary',
       path: '/my-salary',
       pageKey: 'mySalary'
+    },
+    {
+      icon: FaIdCard,
+      label: 'My Accounts',
+      path: '/my-accounts',
+      pageKey: 'employeeBankAccount'
     },
     {
       icon: FaEnvelope,

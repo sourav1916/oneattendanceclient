@@ -13,6 +13,7 @@ import CompanyInvites from "./pages/CompanyInviteManagement";
 import HelpPage from "./pages/Help";
 import MyInvites from "./pages/invites";
 import MyLeave from "./pages/MyLeave";
+import MyAccounts from "./pages/MyAccounts";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
@@ -205,6 +206,7 @@ function AppContent() {
         <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
         <Route path="/my-shifts" element={<ProtectedRoute pageKey="myShifts"><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-accounts" element={<ProtectedRoute pageKey="employeeBankAccount"><MainLayout><MyAccounts /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/salary-management" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><TabbedManagementHub
           routePath="/salary-management"
