@@ -23,6 +23,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import { DateRangePickerField } from '../components/DatePicker';
+import { ManagementHub } from '../components/common';
 
 const getCompanyId = () => {
   try {
@@ -313,7 +314,7 @@ const Modal = ({ open, title, subtitle, onClose, children }) => {
         </div>
         <div className="max-h-[82vh] overflow-y-auto p-4 sm:p-5">{children}</div>
       </div>
-    </div>
+      </div>
   );
 };
 
@@ -969,61 +970,51 @@ const MyLeave = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+    <ManagementHub
+      eyebrow={<><FaCalendarAlt size={11} /> Leave management</>}
+      title="My Leaves"
+      description="Manage your leave applications and track leave balance."
+      accent="violet"
+      actions={
+        <button
+          type="button"
+          onClick={() => setShowApply(true)}
+          className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-fuchsia-700"
         >
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-800 md:text-3xl">
-              <FaCalendarAlt className="text-purple-500" />
-              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                My Leaves
-              </span>
-            </h1>
-            <p className="text-sm text-gray-500">Manage your leave applications</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowApply(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2.5 font-semibold text-white shadow-lg transition hover:from-purple-700 hover:to-pink-700"
-          >
-            <FaPlus />
-            Apply Leave
-          </button>
-        </motion.div>
-
+          <FaPlus />
+          Apply Leave
+        </button>
+      }
+    >
+      <div className="space-y-6">
         {/* Statistics Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
         >
-          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
-              <FaCalendarCheck className="text-purple-500 text-sm sm:text-base" />
+              <FaCalendarCheck className="text-violet-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Total</p>
             </div>
             <p className="text-xl font-bold text-gray-800 sm:text-2xl">{stats.total}</p>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaSpinner className="text-yellow-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Pending</p>
             </div>
             <p className="text-xl font-bold text-yellow-600 sm:text-2xl">{stats.pending}</p>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaEye className="text-green-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Approved</p>
             </div>
             <p className="text-xl font-bold text-green-600 sm:text-2xl">{stats.approved}</p>
           </div>
-          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaTimes className="text-red-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Rejected</p>
@@ -1040,7 +1031,7 @@ const MyLeave = () => {
             className="mb-4 sm:mb-6"
           >
             <h2 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FaCalendarCheck className="text-purple-500" /> Leave Balance
+              <FaCalendarCheck className="text-violet-500" /> Leave Balance
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {Object.entries(balances).map(([type, balance]) => (
@@ -1050,29 +1041,43 @@ const MyLeave = () => {
           </motion.div>
         )}
 
-        <div className="mb-4 flex justify-end">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-        </div>
-
-        {/* Filters */}
+        {/* View and Filters */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6 rounded-[10px] bg-white p-4 shadow-md"
+          transition={{ delay: 0.15 }}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
         >
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <div className="relative flex-1">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
               <input
-                className="w-full rounded-lg border py-2 pl-9 pr-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm"
                 placeholder="Search leaves by type or reason..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
             </div>
+
+            {!loading && filteredLeaves.length > 0 && (
+              <p className="text-sm text-gray-500 hidden xl:block">
+                <span className="font-semibold text-gray-800">{filteredLeaves.length}</span> of <span className="font-semibold text-gray-800">{resultMeta.total || leaves.length}</span> leaves
+                {search && <span className="ml-1 text-violet-600">· "{search}"</span>}
+              </p>
+            )}
+          </div>
+
+          <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
             <select
-              className="rounded-lg border px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 sm:w-48"
+              className="min-w-[150px] rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -1082,6 +1087,12 @@ const MyLeave = () => {
               <option value="rejected">Rejected</option>
               <option value="cancelled">Cancelled</option>
             </select>
+
+            <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
+
+            <div className="flex w-full lg:w-auto justify-end">
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
+            </div>
           </div>
         </motion.div>
 
@@ -1337,7 +1348,7 @@ const MyLeave = () => {
           loadBalances();
         }}
       />
-    </div>
+    </ManagementHub>
   );
 };
 

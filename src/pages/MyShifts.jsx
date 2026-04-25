@@ -12,6 +12,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { ManagementHub } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -333,33 +334,22 @@ const MyShifts = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="max-w-7xl m-auto min-h-screen p-3 md:p-6 font-sans">
-
-            {/* Header */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4"
-            >
-                <div>
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                        My Shifts
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">Track your work hours and attendance</p>
-                </div>
-                {summary && (
-                    <AttendanceBadge pct={summary.attendance_percentage} />
-                )}
-            </motion.div>
-
-            {/* Month Navigator */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mb-6"
-            >
-                <div className="flex items-center justify-between bg-white rounded-[10px] shadow-md border border-gray-100 p-3 md:p-4">
+        <ManagementHub
+            eyebrow={<><FaClock size={11} /> Time tracking</>}
+            title="My Shifts"
+            description="Track your work hours, breaks, and attendance for the selected month."
+            accent="blue"
+            summary={summary ? <AttendanceBadge pct={summary.attendance_percentage} /> : null}
+        >
+            <div className="space-y-6">
+                {/* Month Navigator */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="mb-6"
+                >
+                    <div className="flex items-center justify-between bg-white rounded-[10px] shadow-md border border-gray-100 p-3 md:p-4">
                     <motion.button
                         whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                         onClick={() => navigateMonth(-1)}
@@ -389,99 +379,99 @@ const MyShifts = () => {
                     >
                         <FaChevronRight size={12} />
                     </motion.button>
-                </div>
+                    </div>
 
-                {/* Month quick-picker */}
-                <AnimatePresence>
-                    {monthPickerOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="mt-2 bg-white border border-gray-200 rounded-[10px] shadow-xl p-3 grid grid-cols-4 gap-2"
-                        >
-                            {MONTHS.map((m, i) => {
-                                const isFuture = year === now.getFullYear()
-                                    ? i + 1 > now.getMonth() + 1
-                                    : year > now.getFullYear();
-                                const isSelected = month === i + 1;
+                    {/* Month quick-picker */}
+                    <AnimatePresence>
+                        {monthPickerOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-2 bg-white border border-gray-200 rounded-[10px] shadow-xl p-3 grid grid-cols-4 gap-2"
+                            >
+                                {MONTHS.map((m, i) => {
+                                    const isFuture = year === now.getFullYear()
+                                        ? i + 1 > now.getMonth() + 1
+                                        : year > now.getFullYear();
+                                    const isSelected = month === i + 1;
 
-                                return (
-                                    <button
-                                        key={m}
-                                        onClick={() => {
-                                            if (isFuture) return;
-                                            setMonth(i + 1);
-                                            setMonthPickerOpen(false);
-                                        }}
-                                        disabled={isFuture}
-                                        className={`py-2 rounded-xl text-xs font-semibold transition-all duration-200
+                                    return (
+                                        <button
+                                            key={m}
+                                            onClick={() => {
+                                                if (isFuture) return;
+                                                setMonth(i + 1);
+                                                setMonthPickerOpen(false);
+                                            }}
+                                            disabled={isFuture}
+                                            className={`py-2 rounded-xl text-xs font-semibold transition-all duration-200
                 ${isSelected
-                                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
-                                                : isFuture
-                                                    ? 'text-gray-300 cursor-not-allowed'
-                                                    : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
-                                            }`}
-                                    >
-                                        {m.slice(0, 3)}
-                                    </button>
-                                );
-                            })}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-
-            {/* Summary Cards */}
-            {summary && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-                    <SummaryCard icon={<FaCheckCircle />} label="Worked Days" value={summary.worked_days} color="green" delay={0.1} />
-                    <SummaryCard icon={<FaClock />} label="Total Hours" value={formatHours(summary.total_work_hours)} color="blue" delay={0.15} />
-                    <SummaryCard icon={<FaSun />} label="Avg / Day" value={formatHours(summary.average_hours_per_day)} color="orange" delay={0.2} />
-                    <SummaryCard icon={<FaMoon />} label="Leave Days" value={summary.leave_days} color="purple" delay={0.25} />
-                    <SummaryCard icon={<FaTimesCircle />} label="Absent" value={summary.absent_days} color="red" delay={0.3} />
-                    <SummaryCard icon={<FaCalendarAlt />} label="Holidays" value={summary.holidays} color="indigo" delay={0.35} />
-                </div>
-            )}
-
-            {/* Attendance Bar */}
-            {summary && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="mb-6 bg-white rounded-[10px] shadow-md border border-gray-100 p-4"
-                >
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                            <FaChartBar className="text-blue-500" /> Attendance Rate
-                        </span>
-                        <span className="text-sm font-bold text-blue-600">{summary.attendance_percentage?.toFixed(1)}%</span>
-                    </div>
-                    <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-                        <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(summary.attendance_percentage, 100)}%` }}
-                            transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
-                            className={`h-full rounded-full ${summary.attendance_percentage >= 80 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : summary.attendance_percentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-red-400 to-rose-500'}`}
-                        />
-                    </div>
-                    <div className="flex justify-between mt-1 text-xs text-gray-400">
-                        <span>{summary.worked_days} worked</span>
-                        <span>{summary.total_days_in_month} total days</span>
-                    </div>
+                                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                                                    : isFuture
+                                                        ? 'text-gray-300 cursor-not-allowed'
+                                                        : 'hover:bg-blue-50 text-gray-600 hover:text-blue-700'
+                                                }`}
+                                        >
+                                            {m.slice(0, 3)}
+                                        </button>
+                                    );
+                                })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </motion.div>
-            )}
 
-            {/* View Toggle + Count */}
-            {!loading && shifts.length > 0 && (
-                <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-gray-500">
-                        Showing <span className="font-semibold text-gray-800">{shifts.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> shifts
-                    </p>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                </div>
-            )}
+                {/* Summary Cards */}
+                {summary && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                        <SummaryCard icon={<FaCheckCircle />} label="Worked Days" value={summary.worked_days} color="green" delay={0.1} />
+                        <SummaryCard icon={<FaClock />} label="Total Hours" value={formatHours(summary.total_work_hours)} color="blue" delay={0.15} />
+                        <SummaryCard icon={<FaSun />} label="Avg / Day" value={formatHours(summary.average_hours_per_day)} color="orange" delay={0.2} />
+                        <SummaryCard icon={<FaMoon />} label="Leave Days" value={summary.leave_days} color="purple" delay={0.25} />
+                        <SummaryCard icon={<FaTimesCircle />} label="Absent" value={summary.absent_days} color="red" delay={0.3} />
+                        <SummaryCard icon={<FaCalendarAlt />} label="Holidays" value={summary.holidays} color="indigo" delay={0.35} />
+                    </div>
+                )}
+
+                {/* Attendance Bar */}
+                {summary && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="mb-6 bg-white rounded-[10px] shadow-md border border-gray-100 p-4"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                <FaChartBar className="text-blue-500" /> Attendance Rate
+                            </span>
+                            <span className="text-sm font-bold text-blue-600">{summary.attendance_percentage?.toFixed(1)}%</span>
+                        </div>
+                        <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${Math.min(summary.attendance_percentage, 100)}%` }}
+                                transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+                                className={`h-full rounded-full ${summary.attendance_percentage >= 80 ? 'bg-gradient-to-r from-green-400 to-emerald-500' : summary.attendance_percentage >= 50 ? 'bg-gradient-to-r from-yellow-400 to-orange-400' : 'bg-gradient-to-r from-red-400 to-rose-500'}`}
+                            />
+                        </div>
+                        <div className="flex justify-between mt-1 text-xs text-gray-400">
+                            <span>{summary.worked_days} worked</span>
+                            <span>{summary.total_days_in_month} total days</span>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* View Toggle + Count */}
+                {!loading && shifts.length > 0 && (
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm text-gray-500">
+                            Showing <span className="font-semibold text-gray-800">{shifts.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> shifts
+                        </p>
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                    </div>
+                )}
 
             {/* Loading */}
             {loading && <SkeletonComponent />}
@@ -665,7 +655,8 @@ const MyShifts = () => {
                     .xs\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
                 }
             `}</style>
-        </div>
+            </div>
+        </ManagementHub>
     );
 };
 

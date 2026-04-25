@@ -25,7 +25,7 @@ const MONTHS = [
     'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const backdropVariants = {
+const mySalaryBackdropVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
     exit: { opacity: 0 }
@@ -250,12 +250,12 @@ const MyPayroll = () => {
 
     const [visibleColumns, setVisibleColumns] = useState(() => ({
         showPeriod:      true,
-        showEarnings:    window.innerWidth >= 640,
-        showDeductions:  window.innerWidth >= 768,
+        showEarnings:    true,
+        showDeductions:  true,
         showNet:         true,
-        showAttendance:  window.innerWidth >= 1024,
-        showHours:       window.innerWidth >= 1100,
-        showStatus:      window.innerWidth >= 640,
+        showAttendance:  true,
+        showHours:       true,
+        showStatus:      true,
     }));
 
     useEffect(() => {
@@ -264,12 +264,12 @@ const MyPayroll = () => {
             clearTimeout(t);
             t = setTimeout(() => setVisibleColumns({
                 showPeriod:      true,
-                showEarnings:    window.innerWidth >= 640,
-                showDeductions:  window.innerWidth >= 768,
+                showEarnings:    true,
+                showDeductions:  true,
                 showNet:         true,
-                showAttendance:  window.innerWidth >= 1024,
-                showHours:       window.innerWidth >= 1100,
-                showStatus:      window.innerWidth >= 640,
+                showAttendance:  true,
+                showHours:       true,
+                showStatus:      true,
             }), 150);
         };
         window.addEventListener('resize', onResize);
@@ -385,7 +385,7 @@ const MyPayroll = () => {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6"
+                className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
             >
                 <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500 mb-2">
@@ -511,14 +511,14 @@ const MyPayroll = () => {
                                 <table className="w-full text-sm text-left text-gray-700">
                                     <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                         <tr>
-                                            {visibleColumns.showPeriod      && <th className="px-6 py-4">Period</th>}
-                                            {visibleColumns.showEarnings    && <th className="px-6 py-4">Earnings</th>}
-                                            {visibleColumns.showDeductions  && <th className="px-6 py-4">Deductions</th>}
-                                            {visibleColumns.showNet         && <th className="px-6 py-4">Net Salary</th>}
-                                            {visibleColumns.showAttendance  && <th className="px-6 py-4">Attendance</th>}
-                                            {visibleColumns.showHours       && <th className="px-6 py-4">Hours</th>}
-                                            {visibleColumns.showStatus      && <th className="px-6 py-4">Status</th>}
-                                            <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
+                                            {visibleColumns.showPeriod      && <th className="px-6 py-4 whitespace-nowrap">Period</th>}
+                                            {visibleColumns.showEarnings    && <th className="px-6 py-4 whitespace-nowrap">Earnings</th>}
+                                            {visibleColumns.showDeductions  && <th className="px-6 py-4 whitespace-nowrap">Deductions</th>}
+                                            {visibleColumns.showNet         && <th className="px-6 py-4 whitespace-nowrap">Net Salary</th>}
+                                            {visibleColumns.showAttendance  && <th className="px-6 py-4 whitespace-nowrap">Attendance</th>}
+                                            {visibleColumns.showHours       && <th className="px-6 py-4 whitespace-nowrap">Hours</th>}
+                                            {visibleColumns.showStatus      && <th className="px-6 py-4 whitespace-nowrap">Status</th>}
+                                            <th className="px-6 py-4 text-right whitespace-nowrap"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -536,7 +536,7 @@ const MyPayroll = () => {
                                                     onClick={() => openViewModal(item)}
                                                 >
                                                     {visibleColumns.showPeriod && (
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center">
                                                                     <FaCalendarAlt className="text-blue-500 text-sm" />
@@ -549,17 +549,17 @@ const MyPayroll = () => {
                                                         </td>
                                                     )}
                                                     {visibleColumns.showEarnings && (
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className="text-green-600 font-semibold">{formatCurrency(p.total_earnings)}</span>
                                                         </td>
                                                     )}
                                                     {visibleColumns.showDeductions && (
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className="text-red-500 font-semibold">{formatCurrency(p.total_deductions)}</span>
                                                         </td>
                                                     )}
                                                     {visibleColumns.showNet && (
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center gap-1.5">
                                                                 <span className={`font-bold text-base ${netNeg ? 'text-orange-600' : 'text-blue-600'}`}>
                                                                     {netNeg ? '-' : ''}{formatCurrency(p.net_salary)}
@@ -569,16 +569,16 @@ const MyPayroll = () => {
                                                         </td>
                                                     )}
                                                     {visibleColumns.showAttendance && (
-                                                        <td className="px-6 py-4">
-                                                            <div className="flex flex-wrap gap-1 text-xs">
-                                                        <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center gap-1 text-xs">
+                                                        <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
                                                                     ✓ {formatDays(p.attendance?.present_days || 0)}d
                                                         </span>
-                                                        <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full">
+                                                        <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                                                                     ✗ {formatDays(p.attendance?.absent_days || 0)}d
                                                         </span>
                                                         {parseFloat(p.attendance?.paid_leave_days || 0) > 0 && (
-                                                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                                                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
                                                                         PL {formatDays(p.attendance.paid_leave_days)}d
                                                             </span>
                                                         )}
@@ -586,7 +586,7 @@ const MyPayroll = () => {
                                                         </td>
                                                     )}
                                                     {visibleColumns.showHours && (
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
                                                             <div className="text-xs text-gray-600 space-y-0.5">
                                                                 <p>{parseFloat(p.worked_hours || 0).toFixed(1)}h worked</p>
                                                                 {parseFloat(p.overtime_hours || 0) > 0 && (
@@ -596,7 +596,7 @@ const MyPayroll = () => {
                                                         </td>
                                                     )}
                                                     {visibleColumns.showStatus && (
-                                                        <td className="px-6 py-4">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
                                                             <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${statusCfg.className}`}>
                                                                 <StatusIcon className="text-xs" /> {statusCfg.label}
                                                             </span>
@@ -729,7 +729,7 @@ const MyPayroll = () => {
             {/* View Modal */}
             <AnimatePresence>
                 {modalType !== MODAL_TYPES.NONE && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+                    <motion.div variants={mySalaryBackdropVariants} initial="hidden" animate="visible" exit="exit"
                         className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
                         onClick={closeModal}
                     >

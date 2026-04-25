@@ -11,6 +11,7 @@ import apiCall from '../utils/api';
 import { getPreciseLocation } from '../utils/geolocation';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { ManagementHub } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -203,14 +204,37 @@ const PunchAttendance = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Subtle background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" />
-        <div className="absolute -bottom-32 -left-32 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float animation-delay-2000" />
-      </div>
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-4 sm:space-y-6">
+    <ManagementHub
+      eyebrow={<><FaFingerprint size={11} /> Attendance</>}
+      title="Mark your Attendance"
+      description={`Welcome back, ${user?.name || 'there'}. Use the controls below to punch in, break, or punch out.`}
+      accent="indigo"
+      summary={
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${loadingStatus ? 'bg-slate-50 border-slate-200 text-slate-500' : `bg-${statusConfig.color}-50 border-${statusConfig.color}-100 text-${statusConfig.color}-700`}`}>
+          {loadingStatus ? (
+            <>
+              <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+              <span className="text-xs font-medium">Loading...</span>
+            </>
+          ) : (
+            <>
+              <StatusIcon className="w-3 h-3" />
+              <span className="text-xs font-bold uppercase tracking-wide">{statusConfig.label}</span>
+            </>
+          )}
+        </div>
+      }
+      actions={
+        <button
+          onClick={() => navigate('/attendance-history')}
+          className="inline-flex items-center gap-1.5 rounded-[10px] border border-indigo-100 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-600 shadow-sm transition hover:bg-indigo-50"
+        >
+          <FaHistory className="w-3 h-3" />
+          History
+        </button>
+      }
+    >
+      <div className="space-y-4 sm:space-y-6">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}>
@@ -481,7 +505,6 @@ const PunchAttendance = () => {
           Ensure you are within the designated area for <span className="font-semibold uppercase">{activeTab}</span> validation
         </motion.p>
       </div>
-
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -494,7 +517,7 @@ const PunchAttendance = () => {
         .animation-delay-2000 { animation-delay: 2s; }
         @media (min-width: 480px) { .xs\\:inline { display: inline; } .xs\\:hidden { display: none; } }
       `}</style>
-    </div>
+    </ManagementHub>
   );
 };
 

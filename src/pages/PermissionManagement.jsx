@@ -14,6 +14,7 @@ import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { ManagementButton } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -481,15 +482,41 @@ const PermissionManagement = () => {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen p-2 sm:p-3 md:p-6 font-sans">
+    <div className="min-h-screen p-3 md:p-6 font-sans">
 
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-        className="mb-6">
-        <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-          Permission Management
-        </h1>
-        <p className="text-xs text-gray-500 mt-1">Create and manage access packages for different employee roles.</p>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-6 rounded-[10px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur md:p-6"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-green-200 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-green-700">
+              <FaShieldAlt size={11} />
+              Access control
+            </div>
+            <h1 className="mt-3 text-2xl font-bold text-slate-900 md:text-3xl">
+              Permission Management
+            </h1>
+            <p className="mt-2 text-sm text-slate-500 md:text-base">
+              Create and manage access packages for different employee roles.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ManagementButton
+              tone="green"
+              variant="solid"
+              leftIcon={<FaPlus />}
+              onClick={openCreateModal}
+              disabled={createAccess.disabled}
+              title={createAccess.disabled ? getAccessMessage(createAccess) : ''}
+            >
+              New Package
+            </ManagementButton>
+          </div>
+        </div>
       </motion.div>
 
       {/* ─── Consolidated Filter & View Bar ─── */}
@@ -497,10 +524,10 @@ const PermissionManagement = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+        className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
       >
         {/* Left Section: Search & Result Info */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+        <div className="flex items-center gap-4 flex-1">
           <div className="relative flex-1 w-full">
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
             <input
@@ -508,7 +535,7 @@ const PermissionManagement = () => {
               placeholder="Search packages by name, code, or description..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
+              className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm"
             />
             {searchTerm && (
               <button
@@ -520,34 +547,31 @@ const PermissionManagement = () => {
             )}
           </div>
 
-          <button onClick={openCreateModal} disabled={createAccess.disabled} title={createAccess.disabled ? getAccessMessage(createAccess) : ''}
-            className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-[10px] hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-            <FaPlus size={12} /><span>New Package</span>
-          </button>
-
           {!loading && packages.length > 0 && (
-            <p className="text-sm text-gray-500 hidden xl:block border-l pl-4 border-gray-200">
+            <p className="text-sm text-gray-500 hidden xl:block">
               <span className="font-semibold text-gray-800">{packages.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> packages
             </p>
           )}
         </div>
 
         {/* Right Section: Controls */}
-        <div className="flex items-center gap-4 justify-between sm:justify-end">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100 hidden sm:flex">
-            <FaShieldAlt className="text-blue-500 text-xs" />
-            <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Access Control</span>
+        <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-100 hidden sm:flex">
+            <FaShieldAlt className="text-green-500 text-xs" />
+            <span className="text-[11px] font-bold text-green-700 uppercase tracking-wider">Access Control</span>
           </div>
 
           {/* Vertical Separator */}
           <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
 
           {/* View Switcher */}
-          <ManagementViewSwitcher
-            viewMode={viewMode}
-            onChange={setViewMode}
-            accent="blue"
-          />
+          <div className="flex w-full lg:w-auto justify-end">
+            <ManagementViewSwitcher
+              viewMode={viewMode}
+              onChange={setViewMode}
+              accent="green"
+            />
+          </div>
         </div>
       </motion.div>
 

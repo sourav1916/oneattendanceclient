@@ -31,6 +31,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import { DatePickerField } from '../components/DatePicker';
+import { ManagementHub } from '../components/common';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
 

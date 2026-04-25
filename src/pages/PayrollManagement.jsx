@@ -450,21 +450,28 @@ const PayrollManagement = () => {
         <div className="min-h-screen p-3 md:p-6 font-sans">
 
             {/* Header */}
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
             >
                 <div>
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-500 mb-2">
+                        Payroll Overview
+                    </p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
                         Payroll Management
                     </h1>
-                    <p className="text-xs text-gray-500 mt-1">Generate and manage employee payroll records with integrated attendance data.</p>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Generate and manage employee payroll records with integrated attendance data.
+                    </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 justify-end">
                     <button
                         onClick={openGenerateModal}
                         disabled={generatePayrollAccess.disabled}
                         title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
-                        className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[10px] hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-bold"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[10px] hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm font-bold"
                     >
                         <FaPlus size={14} />
                         Generate Payroll
@@ -477,7 +484,7 @@ const PayrollManagement = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
             >
                 {/* Left Section: Time Period Filters */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 flex-1">
@@ -512,7 +519,7 @@ const PayrollManagement = () => {
                 </div>
 
                 {/* Right Section: Controls */}
-                <div className="flex items-center gap-4 justify-between sm:justify-end">
+                <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-100 hidden sm:flex">
                         <FaChartLine className="text-green-500 text-xs" />
                         <span className="text-[11px] font-bold text-green-700 uppercase tracking-wider">Active View</span>
@@ -522,11 +529,13 @@ const PayrollManagement = () => {
                     <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
 
                     {/* View Switcher */}
-                    <ManagementViewSwitcher
-                        viewMode={viewMode}
-                        onChange={setViewMode}
-                        accent="green"
-                    />
+                    <div className="flex w-full lg:w-auto justify-end">
+                        <ManagementViewSwitcher
+                            viewMode={viewMode}
+                            onChange={setViewMode}
+                            accent="green"
+                        />
+                    </div>
                 </div>
             </motion.div>
 

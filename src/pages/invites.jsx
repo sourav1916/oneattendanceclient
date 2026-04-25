@@ -16,6 +16,7 @@ import ModalScrollLock from "../components/ModalScrollLock";
 import ActionMenu from "../components/ActionMenu";
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { ManagementHub } from '../components/common';
 
 // â”€â”€â”€ Constants & Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -507,32 +508,74 @@ export default function MyInvites() {
   // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   return (
-    <div className="min-h-screen p-3 md:p-6 font-sans">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Incoming Invitations</h1>
-          <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">Total: {pagination.total} invitations</div>
-        </motion.div>
+    <ManagementHub
+      eyebrow={<><FaShieldAlt size={11} /> Invitations</>}
+      title="Incoming Invitations"
+      description="Review and manage company invitations from a single workspace."
+      accent="violet"
+      summary={
+        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+          Total: <span className="font-semibold text-slate-900">{pagination.total}</span> invitations
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+        >
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              <input
+                type="text"
+                placeholder="Search by company name, designation, or inviter..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+            </div>
 
-        {/* Search */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-              <input type="text" placeholder="Search by company name, designation, or inviter..."
-                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none shadow-lg transition-all" />
-              {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><FaTimes /></button>}
+            {!loading && invites.length > 0 && (
+              <p className="text-sm text-gray-500 hidden xl:block">
+                <span className="font-semibold text-gray-800">{invites.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> invitations
+                {debouncedSearchTerm && <span className="ml-1 text-violet-600">· "{debouncedSearchTerm}"</span>}
+              </p>
+            )}
+          </div>
+
+          <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
+            <div className="flex items-center gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="min-w-[150px] rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
+
+            <div className="flex w-full lg:w-auto justify-end">
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
             </div>
           </div>
         </motion.div>
-
-        {/* View Toggle */}
-        <div className="flex justify-end mb-6">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-        </div>
 
         {/* Loading State */}
         {loading && !invites.length && <Skeleton />}
@@ -722,6 +765,6 @@ export default function MyInvites() {
           {modalType === 'reject' && selectedInvite && <RejectModal invite={selectedInvite} onClose={closeModal} onConfirm={handleRejectInvite} />}
         </AnimatePresence>
       </div>
-    </div>
+    </ManagementHub>
   );
 }
