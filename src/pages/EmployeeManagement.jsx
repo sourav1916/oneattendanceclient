@@ -1147,20 +1147,33 @@ const EmployeeManagement = () => {
         <div className="min-h-screen p-3 md:p-6 font-sans">
 
             {/* Header */}
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
             >
-                <div>
-                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                        Employee Management
-                    </h1>
-                    <p className="text-xs text-gray-500 mt-1">Directory of all staff members with profile management and status tracking.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="hidden sm:flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-[10px] shadow-sm border border-gray-100">
-                        <FaUserCircle className="text-blue-500" />
-                        <span className="font-medium text-gray-700">{pagination.total}</span>
-                        <span className="text-gray-500">Employees</span>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                            <FaUserCircle size={11} />
+                            Employee management
+                        </div>
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                                Employee Management
+                            </h1>
+                            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                                Directory of all staff members with profile management and status tracking.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 md:justify-end">
+                        <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
+                            <FaUserCircle className="text-blue-500" />
+                            <span className="font-medium text-gray-700">{pagination.total}</span>
+                            <span className="text-gray-500">Employees</span>
+                        </div>
                     </div>
                 </div>
             </motion.div>

@@ -449,23 +449,46 @@ export default function CompanyInvites() {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-              Company Invitations
-            </h1>
-            <p className="text-xs text-gray-500 mt-1">Manage and track invitations sent to prospective employees and staff members.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-              onClick={() => !createInviteAccess.disabled && setOpenCreateInviteModal(true)}
-              disabled={createInviteAccess.disabled}
-              title={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-[10px] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              <FaEnvelope size={14} />
-              <span className="text-sm">Create Invite</span>
-            </motion.button>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                <FaEnvelope size={11} />
+                Invite management
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                  Company Invitations
+                </h1>
+                <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                  Manage and track invitations sent to prospective employees and staff members.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:justify-end">
+              <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
+                <FaUserCheck className="h-4 w-4 text-blue-500" />
+                <span className="font-medium text-gray-700">{invites.length}</span>
+                <span className="text-gray-500">invites</span>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => !createInviteAccess.disabled && setOpenCreateInviteModal(true)}
+                disabled={createInviteAccess.disabled}
+                title={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
+                className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2.5 font-bold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FaEnvelope size={14} />
+                <span className="text-sm">Create Invite</span>
+              </motion.button>
+            </div>
           </div>
 
           <CreateInviteModal
