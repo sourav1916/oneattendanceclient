@@ -522,7 +522,7 @@ const PayrollManagement = () => {
                 <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-100 hidden sm:flex">
                         <FaChartLine className="text-green-500 text-xs" />
-                        <span className="text-[11px] font-bold text-green-700 uppercase tracking-wider">Active View</span>
+                        <span className="text-[11px] font-bold text-green-700 uppercase tracking-wider whitespace-nowrap">Active View</span>
                     </div>
 
                     {/* Vertical Separator */}
