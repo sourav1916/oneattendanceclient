@@ -596,25 +596,36 @@ const AttendanceHistory = () => {
       <div className="mx-auto max-w-7xl">
 
         {/* ─── Page Header ─── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[10px] border border-gray-100 shadow-sm mb-6">
-            <div>
-                <div className="flex items-center gap-2 text-purple-600 mb-1">
-                    <FaHistory size={14} className="animate-pulse-slow" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">Attendance Logs</span>
+        <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
+        >
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-2">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-purple-700">
+                        <FaHistory size={11} className="animate-pulse-slow" />
+                        Attendance logs
+                    </div>
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 tracking-tight">
+                            Attendance History
+                        </h1>
+                        <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                            Review comprehensive employee punch logs, shift details, and record statuses.
+                        </p>
+                    </div>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Attendance History</h1>
-                <p className="text-sm text-slate-500 mt-1">Review comprehensive employee punch logs, shift details, and record statuses.</p>
+
+                <div className="flex items-center gap-3 md:justify-end">
+                    <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
+                        <FaCalendarAlt className="text-purple-600" size={18} />
+                        <span className="font-medium text-gray-700">{totalRecords}</span>
+                        <span className="text-gray-500">records</span>
+                    </div>
+                </div>
             </div>
-            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-[10px] border border-slate-100">
-                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-purple-600">
-                    <FaCalendarAlt size={20} />
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase">Total Records</p>
-                    <p className="text-lg font-black text-slate-800 leading-tight">{totalRecords}</p>
-                </div>
-            </div>
-        </div>
+        </motion.div>
 
         {/* ─── Consolidated Filter & View Bar ─── */}
         <motion.div

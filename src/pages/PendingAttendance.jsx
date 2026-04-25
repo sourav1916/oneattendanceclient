@@ -566,19 +566,24 @@ const PendingAttendance = ({ companyId }) => {
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-6"
+                        className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
                     >
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                            <div>
-                                <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold flex items-center gap-2">
-                                    <FaHistory className="text-amber-500 text-base sm:text-xl md:text-2xl" />
-                                    <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="space-y-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                                    <FaHistory size={11} className="text-amber-500" />
+                                    Pending attendance
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600">
                                         Pending Attendance
-                                    </span>
-                                </h1>
-                                <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">Company ID: {resolvedCompanyId}</p>
+                                    </h1>
+                                    <p className="mt-1 break-words text-sm text-slate-500">
+                                        Company ID: {resolvedCompanyId}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center md:justify-end">
                                 <button
                                     type="button"
                                     onClick={() => navigate('/attendance-management')}
@@ -587,7 +592,7 @@ const PendingAttendance = ({ companyId }) => {
                                     <FaCheckCircle />
                                     All Attendance
                                 </button>
-                                <div className="flex items-center gap-2 bg-amber-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg justify-between sm:justify-start">
+                                <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 sm:px-4 sm:py-2 justify-between sm:justify-start shadow-sm">
                                     <FaUserCheck className="text-amber-500 text-sm sm:text-base" />
                                     <span className="text-xs sm:text-sm font-medium text-gray-700">
                                         Pending: {pagination.total}
@@ -645,20 +650,19 @@ const PendingAttendance = ({ companyId }) => {
                                 </button>
                             )}
                         </div>
-                    </motion.div>
 
-                    {/* View Toggle */}
-                    {!loading && visibleAttendances.length > 0 && (
-                        <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-sm text-gray-500">
-                                <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of{' '}
-                                <span className="font-semibold text-gray-800">{pagination.total}</span> pending records
-                                {debouncedSearchTerm && <span className="ml-1 text-amber-600">· "{debouncedSearchTerm}"</span>}
-                                {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">· {dateFilterLabel}</span>}
-                            </p>
+                        <div className="flex items-center justify-between gap-3">
+                            {!loading && visibleAttendances.length > 0 && (
+                                <p className="text-sm text-gray-500">
+                                    <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of{' '}
+                                    <span className="font-semibold text-gray-800">{pagination.total}</span> pending records
+                                    {debouncedSearchTerm && <span className="ml-1 text-amber-600">Â· "{debouncedSearchTerm}"</span>}
+                                    {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">Â· {dateFilterLabel}</span>}
+                                </p>
+                            )}
                             <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                         </div>
-                    )}
+                    </motion.div>
 
                     {/* Loading State */}
                     {loading ? (

@@ -382,13 +382,24 @@ const MyPayroll = () => {
         <div className="min-h-screen p-3 md:p-6 font-sans">
 
             {/* Header */}
-            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6"
             >
-                <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
-                    My Payroll
-                </h1>
-                <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500 mb-2">
+                        Payroll Overview
+                    </p>
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                        My Payroll
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-1">
+                        Review your payroll history, earnings, deductions, and attendance impact.
+                    </p>
+                </div>
+                <div className="inline-flex items-center gap-2 text-sm text-slate-600 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
+                    <FaFileInvoiceDollar className="text-blue-500" />
                     Total: {pagination.total} records
                 </div>
             </motion.div>
@@ -434,26 +445,46 @@ const MyPayroll = () => {
                 </div>
             )}
 
-            {/* Search */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-                <div className="relative w-full">
-                    <input type="text" placeholder="Search by month, year, or status..."
-                        value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
-                    />
-                    <FaSearch className="absolute left-4 top-4 text-gray-400 text-lg" />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors">
-                            <FaTimes />
-                        </button>
+            {/* Consolidated Filter Bar */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
+                className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+            >
+                <div className="flex items-center gap-4 flex-1">
+                    <div className="relative flex-1 w-full">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                        <input
+                            type="text"
+                            placeholder="Search by month, year, or status..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                            >
+                                <FaTimes size={14} />
+                            </button>
+                        )}
+                    </div>
+
+                    {!loading && payrollData.length > 0 && (
+                        <p className="text-sm text-gray-500 hidden xl:block">
+                            <span className="font-semibold text-gray-800">{payrollData.length}</span> of{' '}
+                            <span className="font-semibold text-gray-800">{pagination.total}</span> records
+                            {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
+                        </p>
                     )}
                 </div>
-            </motion.div>
 
-            {/* View Toggle */}
-            <div className="flex justify-end mb-6">
-                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-            </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                </div>
+            </motion.div>
 
             {/* Loading */}
             {loading && !payrollData.length && <SkeletonComponent />}
