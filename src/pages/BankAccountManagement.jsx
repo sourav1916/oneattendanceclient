@@ -556,6 +556,19 @@ const BankAccountManagement = () => {
       title="Bank Account Management"
       description="Manage company bank accounts, cash wallets, and payment methods."
       accent="violet"
+      actions={
+        <ManagementButton
+          tone="violet"
+          variant="solid"
+          leftIcon={<FaPlus />}
+          onClick={() => openModal('create')}
+          disabled={createAccess.disabled}
+          title={createAccess.disabled ? createMessage : ''}
+          className="whitespace-nowrap"
+        >
+          Add Account
+        </ManagementButton>
+      }
     >
       <div className="space-y-6">
         {/* Stats */}
@@ -595,17 +608,6 @@ const BankAccountManagement = () => {
               />
             </div>
 
-            <ManagementButton
-              tone="violet"
-              variant="solid"
-              leftIcon={<FaPlus />}
-              onClick={() => openModal('create')}
-              disabled={createAccess.disabled}
-              title={createAccess.disabled ? createMessage : ''}
-              className="whitespace-nowrap"
-            >
-              Add Account
-            </ManagementButton>
           </div>
 
           {/* Right Section: View Switcher */}

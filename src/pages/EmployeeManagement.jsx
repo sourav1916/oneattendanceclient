@@ -1168,7 +1168,7 @@ const EmployeeManagement = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 md:justify-end">
+                    <div className="flex items-center gap-3 justify-end">
                         <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                             <FaUserCircle className="text-blue-500" />
                             <span className="font-medium text-gray-700">{pagination.total}</span>

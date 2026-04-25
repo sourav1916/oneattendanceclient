@@ -86,7 +86,7 @@ const LeaveManagement = () => {
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('');
+    const [typeFilter, setTypeFilter] = useState('');
     const [viewMode, setViewMode] = useState('table');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
@@ -113,7 +113,7 @@ const LeaveManagement = () => {
         return () => clearTimeout(t);
     }, [search]);
 
-    const fetchLeaves = useCallback(async (page = pagination.page, searchVal = debouncedSearch, statusVal = statusFilter, resetLoading = true) => {
+    const fetchLeaves = useCallback(async (page = pagination.page, searchVal = debouncedSearch, typeVal = typeFilter, resetLoading = true) => {
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
@@ -125,7 +125,7 @@ const LeaveManagement = () => {
                 limit: pagination.limit.toString(),
             });
             if (searchVal) params.append('search', searchVal);
-            if (statusVal) params.append('status', statusVal);
+            if (typeVal) params.append('leave_type', typeVal);
 
             const response = await apiCall(`/leave/emp-leaves?${params}`, 'GET', null, companyId);
             const result = await response.json();
@@ -147,11 +147,11 @@ const LeaveManagement = () => {
             fetchInProgress.current = false;
             setIsInitialLoad(false);
         }
-    }, [pagination.limit, updatePagination, debouncedSearch, statusFilter]);
+    }, [pagination.limit, updatePagination, debouncedSearch, typeFilter]);
 
     useEffect(() => {
-        if (!isInitialLoad) fetchLeaves(pagination.page, debouncedSearch, statusFilter, true);
-    }, [pagination.page, pagination.limit, debouncedSearch, statusFilter]);
+        if (!isInitialLoad) fetchLeaves(pagination.page, debouncedSearch, typeFilter, true);
+    }, [pagination.page, pagination.limit, debouncedSearch, typeFilter]);
 
     useEffect(() => {
         fetchLeaves(1, '', '', true);
@@ -267,6 +267,38 @@ const LeaveManagement = () => {
         { label: 'Pending', val: leaves.filter(l => l.status === 'pending').length, icon: FaClock, color: 'yellow' },
     ];
 
+    const leaveTypeOptions = useMemo(() => {
+        const seen = new Map();
+
+        leaves.forEach((leave) => {
+            const rawValue = String(leave.leave_code || leave.leave_name || leave.leave_type || '').trim();
+            if (!rawValue) return;
+
+            const normalized = rawValue.toLowerCase();
+            if (!seen.has(normalized)) {
+                seen.set(normalized, {
+                    value: normalized,
+                    label: leave.leave_name || leave.leave_code || rawValue,
+                });
+            }
+        });
+
+        return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }, [leaves]);
+
+    const visibleLeaves = useMemo(() => {
+        if (!typeFilter) return leaves;
+
+        const normalized = typeFilter.toLowerCase();
+        return leaves.filter((leave) => {
+            const candidates = [leave.leave_name, leave.leave_code, leave.leave_type]
+                .filter(Boolean)
+                .map((value) => String(value).toLowerCase());
+
+            return candidates.some((value) => value === normalized || value.includes(normalized));
+        });
+    }, [leaves, typeFilter]);
+
     if (isInitialLoad && loading) return (
         <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
@@ -306,10 +338,10 @@ const LeaveManagement = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                    className="flex flex-col gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6 md:flex-row md:items-center md:justify-between"
                 >
-                    {/* Left Section: Search & Result Info */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                    {/* Left Section: Search & Type Filter */}
+                    <div className="flex flex-col gap-4 flex-1 sm:flex-row sm:items-center md:flex-row md:items-center">
                         <div className="relative flex-1 w-full">
                             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                             <input
@@ -328,36 +360,27 @@ const LeaveManagement = () => {
                                 </button>
                             )}
                         </div>
-
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-                            {['', 'pending', 'approved', 'rejected', 'cancelled'].map((s) => (
-                                <button
-                                    key={s || 'all'}
-                                    onClick={() => setStatusFilter(s)}
-                                    className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
-                                        statusFilter === s
-                                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100'
-                                            : 'bg-white border-slate-200 text-slate-500 hover:border-blue-200 hover:text-blue-600'
-                                    }`}
-                                >
-                                    {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All Requests'}
-                                </button>
-                            ))}
-                        </div>
                     </div>
 
-                    {/* Right Section: Controls */}
-                    <div className="flex items-center gap-3 justify-between sm:justify-end">
-                        {!loading && leaves.length > 0 && (
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
-                                {pagination.total} Applications
-                            </p>
-                        )}
-                        
+                    {/* Right Section: View Mode */}
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 flex-col gap-1.5 sm:w-56">
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                            >
+                                <option value="">All Leave Types</option>
+                                {leaveTypeOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                         {/* Vertical Separator */}
-                        <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+                <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
 
-                        {/* View Switcher */}
                         <ManagementViewSwitcher
                             viewMode={viewMode}
                             onChange={setViewMode}
@@ -366,15 +389,21 @@ const LeaveManagement = () => {
                     </div>
                 </motion.div>
 
-                {pagination.total === 0 && !loading ? (
+                {visibleLeaves.length === 0 && !loading ? (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-[10px] border-2 border-dashed border-slate-100">
                         <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><FaClipboardList size={24} /></div>
                         <p className="text-slate-500 font-bold">No leave requests found</p>
-                        <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">{search ? `We couldn't find anything matching "${search}"` : "Employee leave applications will appear here."}</p>
+                        <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">
+                            {search
+                                ? `We couldn't find anything matching "${search}"`
+                                : typeFilter
+                                    ? `No leave requests match the selected leave type.`
+                                    : "Employee leave applications will appear here."}
+                        </p>
                     </motion.div>
                 ) : viewMode === 'table' ? (
                     <ManagementTable
-                        rows={leaves}
+                        rows={visibleLeaves}
                         columns={columns}
                         rowKey={(row) => row.id}
                         onRowClick={(row) => setDetailLeave(row)}
@@ -383,7 +412,7 @@ const LeaveManagement = () => {
                     />
                 ) : (
                     <ManagementGrid>
-                        {leaves.map((leave) => (
+                        {visibleLeaves.map((leave) => (
                             <ManagementCard
                                 key={leave.id}
                                 eyebrow={<div className="flex items-center gap-2"><StatusBadge status={leave.status} /> <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span></div>}

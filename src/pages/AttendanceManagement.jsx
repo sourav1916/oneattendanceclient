@@ -631,7 +631,7 @@ const AttendanceManagement = ({ companyId }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 md:justify-end">
+            <div className="flex items-center gap-3 justify-end">
               <button
                 type="button"
                 onClick={() => navigate('/pending-attendance')}
