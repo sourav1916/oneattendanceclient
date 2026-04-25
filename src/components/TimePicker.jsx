@@ -122,7 +122,7 @@ export const TimePicker = ({ value, onApply, onClose }) => {
 
   return (
     <div 
-      className="bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden w-full max-w-[200px] flex flex-col font-sans"
+      className="bg-white rounded-[10px] shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden w-full max-w-[200px] flex flex-col font-sans"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">

@@ -198,7 +198,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="rounded-2xl bg-white p-4 shadow-md border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      className="rounded-[10px] bg-white p-4 shadow-md border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       onClick={() => onViewDetails(leave)}
     >
       <div className="mb-3 flex items-start justify-between">
@@ -301,7 +301,7 @@ const Modal = ({ open, title, subtitle, onClose, children }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-xl rounded-[10px] bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 rounded-t-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 text-white">
           <div className="min-w-0">
             <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
@@ -1059,7 +1059,7 @@ const MyLeave = () => {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="mb-6 rounded-2xl bg-white p-4 shadow-md"
+          className="mb-6 rounded-[10px] bg-white p-4 shadow-md"
         >
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
@@ -1090,7 +1090,7 @@ const MyLeave = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="rounded-2xl bg-white shadow-xl overflow-visible"
+          className="rounded-[10px] bg-white shadow-xl overflow-visible"
         >
           {loading ? (
             <div className="flex justify-center py-16">

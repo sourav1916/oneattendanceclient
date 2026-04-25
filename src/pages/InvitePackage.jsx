@@ -529,7 +529,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                           key={method.method}
                           type="button"
                           onClick={() => handleAttendanceToggle(method.method)}
-                          className={`flex flex-col items-start gap-1 rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
+                          className={`flex flex-col items-start gap-1 rounded-[10px] border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
                             isSelected
                               ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
                               : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
@@ -558,14 +558,14 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     })}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                  <div className="rounded-[10px] border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
                     No attendance methods are available for the current company.
                   </div>
                 )}
               </div>
 
               {/* Auto Approve Toggle */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
+              <div className="rounded-[10px] border border-gray-200 bg-white p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
@@ -711,7 +711,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
 
           {/* Permissions Section */}
           {pkg.permission_package_id && (
-            <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden">
               <button 
                 onClick={() => setShowPermissions(!showPermissions)}
                 className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -776,7 +776,7 @@ function DeletePackageModal({ isOpen, onClose, onConfirm, package: pkg, processi
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg overflow-hidden"
         onClick={e => e.stopPropagation()}>
         
         <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white">
@@ -827,7 +827,7 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
         onClick={e => e.stopPropagation()}>
         
         <div className={`flex justify-between items-center p-5 border-b ${isActivating ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-amber-600 to-orange-600'} text-white`}>
@@ -1071,11 +1071,11 @@ export default function InvitePackageManagement() {
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">
             Invite Packages
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
               <FaBox className="w-4 h-4 text-indigo-500" />
               <span className="font-medium text-gray-700">{pagination.total}</span>
@@ -1093,26 +1093,46 @@ export default function InvitePackageManagement() {
           </div>
         </motion.div>
 
-        {/* Search */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-          <div className="relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-            <input type="text" placeholder="Search by name, code, or designation..."
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none shadow-lg transition-all" />
-            {searchTerm && (
-              <button onClick={() => setSearchTerm("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <FaTimes />
-              </button>
+        {/* Consolidated Filter & View Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+        >
+          {/* Left Section: Search & Result Info */}
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              <input
+                type="text"
+                placeholder="Search by name, code, or designation..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+            </div>
+
+            {!loading && packages.length > 0 && (
+              <p className="text-sm text-gray-500 hidden xl:block border-l pl-4 border-gray-200">
+                <span className="font-semibold text-gray-800">{packages.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> packages
+              </p>
             )}
           </div>
-        </motion.div>
 
-        {/* View Toggle */}
-        <div className="flex justify-end gap-2 mb-6">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="indigo" />
-        </div>
+          {/* Right Section: Controls */}
+          <div className="flex items-center justify-end gap-2">
+            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="indigo" />
+          </div>
+        </motion.div>
 
         {/* Loading */}
         {loading && !packages.length && <Skeleton />}
@@ -1120,7 +1140,7 @@ export default function InvitePackageManagement() {
         {/* Empty State */}
         {!loading && packages.length === 0 && (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-16 bg-white rounded-2xl shadow-xl">
+            className="text-center py-16 bg-white rounded-[10px] shadow-xl">
             <FaBox className="text-8xl text-gray-300 mx-auto mb-4" />
             <p className="text-xl text-gray-500">No packages found</p>
             <p className="text-gray-400 mt-2">
@@ -1138,7 +1158,7 @@ export default function InvitePackageManagement() {
         {/* Table View */}
         {!loading && packages.length > 0 && viewMode === "table" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            className="bg-white rounded-[10px] shadow-xl overflow-hidden">
             <div className="overflow-hidden">
               <table className="w-full table-fixed text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs xsm:hidden">
@@ -1254,9 +1274,9 @@ export default function InvitePackageManagement() {
                 <motion.div key={pkg.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => readAccess.enabled && openModal(pkg, "view")}
-                  className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                  className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="flex items-start gap-4">
-                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-2xl">
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-[10px]">
                       <FaBox className="text-white text-2xl" />
                     </div>
                     <div className="flex-1 min-w-0">

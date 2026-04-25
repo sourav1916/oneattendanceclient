@@ -110,7 +110,7 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
         zIndex:   9999,
         width:    `${menuWidth}px`,
       }}
-      className="overflow-hidden rounded-2xl border border-gray-100 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl ring-1 ring-black/5"
+      className="overflow-hidden rounded-[10px] border border-gray-100 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl ring-1 ring-black/5"
     >
       {actions.map((action, index) => (
         <button

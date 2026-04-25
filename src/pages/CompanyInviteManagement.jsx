@@ -32,7 +32,7 @@ const backdropVariants = {
   exit:    { opacity: 0 }
 };
 
-const CONFIRM_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
+const CONFIRM_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
 
 const isExpired = (date) => new Date(date) < new Date();
 
@@ -71,7 +71,7 @@ const formatDisplay = (str) => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l)
 // ─── Local Components ────────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
     <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
       {icon}{label}
     </label>
@@ -270,15 +270,15 @@ export default function CompanyInvites() {
         onClick={onClose}>
         <ModalScrollLock />
         <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}>
-          <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+          <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
             <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
-            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300"><FaTimes size={20} /></button>
           </div>
           <div className="p-6">
             <div className="flex items-center gap-6 pb-6 border-b">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl">
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-[10px]">
                 <FaUserCircle className="text-white text-5xl" />
               </div>
               <div>
@@ -308,7 +308,7 @@ export default function CompanyInvites() {
             </div>
 
             {invite.permissions?.length > 0 && (
-              <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
                 <button 
                   onClick={() => setShowPermissions(!showPermissions)}
                   className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -338,7 +338,7 @@ export default function CompanyInvites() {
                       <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
                         {invite.permissions.map((perm, idx) => (
                           <motion.div key={perm.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                            className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-100">
                             <span className="font-medium text-gray-700">{perm.name}</span>
                             
                           </motion.div>
@@ -351,7 +351,7 @@ export default function CompanyInvites() {
             )}
 
             {invite.attendance_methods?.length > 0 && (
-              <div className="mt-4 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
                 <button 
                   onClick={() => setShowAttendance(!showAttendance)}
                   className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -381,7 +381,7 @@ export default function CompanyInvites() {
                       <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
                         {invite.attendance_methods.map((method, idx) => (
                           <motion.div key={`method-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                            className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-[10px] border border-purple-100">
                             <span className="font-medium text-gray-700 capitalize">{method.method}</span>
                             {method.is_auto && (
                               <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
@@ -409,9 +409,9 @@ export default function CompanyInvites() {
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className={CONFIRM_MODAL_CLASS}
         onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
+        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaBan /> Cancel Invitation</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300"><FaTimes size={20} /></button>
         </div>
         <div className="flex flex-1 flex-col justify-center p-6 text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
@@ -426,11 +426,11 @@ export default function CompanyInvites() {
           </p>
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
             <button onClick={onClose}
-              className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
+              className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
               Keep
             </button>
             <button onClick={() => onConfirm(invite.token)} disabled={processingId === invite.token || cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
               {processingId === invite.token && <FaSpinner className="animate-spin" />}
               Cancel Invite
             </button>
@@ -451,36 +451,20 @@ export default function CompanyInvites() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
           className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-            Company Invitations
-          </h1>
+          <div>
+            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+              Company Invitations
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">Manage and track invitations sent to prospective employees and staff members.</p>
+          </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span className="font-medium text-gray-700">{pagination.total}</span>
-              <span className="text-gray-500">invitations</span>
-            </div>
-
             <motion.button whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
               onClick={() => !createInviteAccess.disabled && setOpenCreateInviteModal(true)}
               disabled={createInviteAccess.disabled}
               title={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
-              className="group relative px-6 py-2.5 bg-gradient-to-r from-blue-600 via-blue-600 to-purple-600
-                         text-white font-semibold rounded-xl shadow-lg hover:shadow-xl
-                         transition-all duration-300 flex items-center gap-2 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed">
-              <div className="relative z-10">
-                <svg className="w-4 h-4 group-hover:rotate-90 transition-all duration-300"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <span className="relative z-10 text-sm">Create Invite</span>
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full
-                             transition-transform duration-700 bg-gradient-to-r
-                             from-transparent via-white/20 to-transparent" />
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-[10px] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <FaEnvelope size={14} />
+              <span className="text-sm">Create Invite</span>
             </motion.button>
           </div>
 
@@ -496,26 +480,53 @@ export default function CompanyInvites() {
           />
         </motion.div>
 
-        {/* Search */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6">
-          <div className="relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-            <input type="text" placeholder="Search by name, email or designation..."
-              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all" />
-            {searchTerm && (
-              <button onClick={() => setSearchTerm("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <FaTimes />
-              </button>
+        {/* ─── Consolidated Filter & View Bar ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+        >
+          {/* Left Section: Search, Result Info & View Mode */}
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              <input
+                type="text"
+                placeholder="Search by name, email or designation..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+            </div>
+
+            {!loading && invites.length > 0 && (
+              <p className="text-sm text-gray-500 hidden xl:block border-l pl-4 border-gray-200">
+                <span className="font-semibold text-gray-800">{invites.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> invitations
+              </p>
             )}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-[10px] border border-blue-100 hidden sm:flex">
+              <FaUserCheck className="text-blue-500 text-xs" />
+              <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Active Invites</span>
+            </div>
+
+            <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
+
+            <ManagementViewSwitcher
+              viewMode={viewMode}
+              onChange={setViewMode}
+              accent="blue"
+            />
           </div>
         </motion.div>
-
-        {/* View Toggle */}
-        <div className="flex justify-end gap-2 mb-6">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-        </div>
 
         {/* Loading skeleton */}
         {loading && !invites.length && <Skeleton />}
@@ -523,7 +534,7 @@ export default function CompanyInvites() {
         {/* Empty State */}
         {!loading && invites.length === 0 && (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-16 bg-white rounded-2xl shadow-xl">
+            className="text-center py-16 bg-white rounded-[10px] shadow-xl">
             <FaEnvelope className="text-8xl text-gray-300 mx-auto mb-4" />
             <p className="text-xl text-gray-500">No invitations found</p>
             <p className="text-gray-400 mt-2">
@@ -536,7 +547,7 @@ export default function CompanyInvites() {
           <>
             {viewMode === "table" && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                className="bg-white rounded-[10px] shadow-xl overflow-hidden">
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
                   <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
@@ -659,9 +670,9 @@ export default function CompanyInvites() {
                   <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                     onClick={() => openModal(invite, "view")}
-                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                    className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
-                      <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-2xl">
+                      <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-[10px]">
                         <FaUserCircle className="text-white text-3xl" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -693,17 +704,17 @@ export default function CompanyInvites() {
                     </div>
                     <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                       <button type="button" onClick={() => openModal(invite, "view")}
-                        className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
+                        className="p-3 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 transition-all duration-300 hover:scale-110">
                         <FaEye size={16} />
                       </button>
                       {invite.status === "pending" && !isExpired(invite.expires_at) && (
                         <>
                           <button type="button" onClick={() => handleEditClick(invite)} disabled={updateInviteAccess.disabled} title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
-                            className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
+                            className="p-3 bg-green-50 text-green-600 rounded-[10px] hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                             <FaEdit size={16} />
                           </button>
                           <button type="button" onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
-                            className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
+                            className="p-3 bg-red-50 text-red-600 rounded-[10px] hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                             <FaBan size={16} />
                           </button>
                         </>

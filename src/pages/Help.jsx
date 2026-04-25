@@ -104,7 +104,7 @@ const HelpPage = () => {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
         >
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-start gap-4 hover:shadow-md transition">
+          <div className="bg-white rounded-[10px] p-6 shadow-sm border border-slate-200 flex items-start gap-4 hover:shadow-md transition">
             <div className="bg-indigo-100 p-3 rounded-lg">
               <FaFileAlt className="text-xl text-indigo-700" />
             </div>
@@ -115,7 +115,7 @@ const HelpPage = () => {
               </p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-start gap-4 hover:shadow-md transition">
+          <div className="bg-white rounded-[10px] p-6 shadow-sm border border-slate-200 flex items-start gap-4 hover:shadow-md transition">
             <div className="bg-indigo-100 p-3 rounded-lg">
               <FaEnvelope className="text-xl text-indigo-700" />
             </div>
@@ -126,7 +126,7 @@ const HelpPage = () => {
               </p>
             </div>
           </div>
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex items-start gap-4 hover:shadow-md transition">
+          <div className="bg-white rounded-[10px] p-6 shadow-sm border border-slate-200 flex items-start gap-4 hover:shadow-md transition">
             <div className="bg-indigo-100 p-3 rounded-lg">
               <FaBook className="text-xl text-indigo-700" />
             </div>
@@ -144,7 +144,7 @@ const HelpPage = () => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8"
+          className="bg-white rounded-[10px] shadow-sm border border-slate-200 p-6 md:p-8"
         >
           <div className="flex items-center gap-3 mb-6">
             <FaQuestionCircle className="text-2xl text-indigo-600" />

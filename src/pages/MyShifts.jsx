@@ -92,7 +92,7 @@ const SummaryCard = ({ icon, label, value, color, delay = 0 }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay, duration: 0.4 }}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-4 flex items-center gap-3 hover:shadow-lg transition-all duration-300"
+            className="bg-white rounded-[10px] shadow-md border border-gray-100 p-4 flex items-center gap-3 hover:shadow-lg transition-all duration-300"
         >
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colorMap[color]} flex items-center justify-center flex-shrink-0`}>
                 <span className="text-white text-sm">{icon}</span>
@@ -132,7 +132,7 @@ const ShiftDetailModal = ({ shift, onClose }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+                    className="relative w-full max-w-md bg-white rounded-[10px] shadow-2xl overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
 
@@ -359,7 +359,7 @@ const MyShifts = () => {
                 transition={{ delay: 0.1 }}
                 className="mb-6"
             >
-                <div className="flex items-center justify-between bg-white rounded-2xl shadow-md border border-gray-100 p-3 md:p-4">
+                <div className="flex items-center justify-between bg-white rounded-[10px] shadow-md border border-gray-100 p-3 md:p-4">
                     <motion.button
                         whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                         onClick={() => navigateMonth(-1)}
@@ -398,7 +398,7 @@ const MyShifts = () => {
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 grid grid-cols-4 gap-2"
+                            className="mt-2 bg-white border border-gray-200 rounded-[10px] shadow-xl p-3 grid grid-cols-4 gap-2"
                         >
                             {MONTHS.map((m, i) => {
                                 const isFuture = year === now.getFullYear()
@@ -450,7 +450,7 @@ const MyShifts = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="mb-6 bg-white rounded-2xl shadow-md border border-gray-100 p-4"
+                    className="mb-6 bg-white rounded-[10px] shadow-md border border-gray-100 p-4"
                 >
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -491,7 +491,7 @@ const MyShifts = () => {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-100"
+                    className="text-center py-16 bg-white rounded-[10px] shadow-xl border border-gray-100"
                 >
                     <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <FaClock className="text-4xl text-gray-400" />
@@ -509,7 +509,7 @@ const MyShifts = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="bg-white rounded-2xl shadow-xl overflow-visible mb-4"
+                        className="bg-white rounded-[10px] shadow-xl overflow-visible mb-4"
                     >
                         <div className="overflow-x-auto overflow-y-visible">
                             <table className="w-full text-sm text-left text-gray-700">
@@ -595,11 +595,11 @@ const MyShifts = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.04 }}
                             onClick={() => setSelectedShift(shift)}
-                            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
+                            className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
                         >
                             <div className="flex items-start justify-between gap-3 mb-4">
                                 <div className="flex items-start gap-3">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-[10px] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
                                         <FaClock className="text-white text-base" />
                                     </div>
                                     <div className="min-w-0">

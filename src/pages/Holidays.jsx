@@ -210,7 +210,7 @@ const HolidayDetailsSidebar = ({ holidays, onClose, onMonthNavigate }) => {
           {Object.entries(groupedHolidays).map(([date, dateHolidays]) => (
             <div key={date} className="group">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                <div className="w-10 h-10 rounded-[10px] bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
                   <FaCalendarAlt className="w-5 h-5" />
                 </div>
                 <span className="font-black text-gray-900 text-sm tracking-tight">
@@ -230,7 +230,7 @@ const HolidayDetailsSidebar = ({ holidays, onClose, onMonthNavigate }) => {
                       onMonthNavigate(holiday.date);
                       onClose();
                     }}
-                    className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-all hover:bg-white hover:shadow-sm cursor-pointer active:scale-[0.98] group/item"
+                    className="flex items-start gap-4 p-4 rounded-[10px] bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-all hover:bg-white hover:shadow-sm cursor-pointer active:scale-[0.98] group/item"
                   >
                     <div className={`w-3 h-3 rounded-full mt-1 shrink-0 group-hover/item:scale-125 transition-transform ${holiday.type === 'Observance' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' :
                         holiday.is_optional === 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
@@ -421,7 +421,7 @@ const CompanyHolidayCalendar = () => {
         <div className="h-4 xsm:h-2"></div>
 
         {/* Calendar Controls */}
-        <div className="bg-white rounded-2xl xsm:rounded-xl shadow-sm border border-gray-200 p-3 xsm:p-2 mb-4 xsm:mb-3">
+        <div className="bg-white rounded-[10px] xsm:rounded-xl shadow-sm border border-gray-200 p-3 xsm:p-2 mb-4 xsm:mb-3">
           <div className="flex items-center justify-between gap-3 xsm:gap-2">
             <div className="flex items-center gap-2 xsm:gap-1.5">
               <button

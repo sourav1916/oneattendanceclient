@@ -83,7 +83,7 @@ const SettingsPage = () => {
     const [open, setOpen] = useState(false);
 
     return (
-      <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border mt-4 overflow-hidden transition-all
+      <div className={`bg-white/95 backdrop-blur-xl rounded-[10px] sm:rounded-[10px] shadow-xl border mt-4 overflow-hidden transition-all
       ${danger ? "border-red-100" : "border-gray-100"}`}
       >
         <button
@@ -520,12 +520,12 @@ const SettingsPage = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center w-full max-w-[90%] sm:max-w-md mx-auto p-6 sm:p-8 bg-white rounded-2xl shadow-xl">
+        <div className="text-center w-full max-w-[90%] sm:max-w-md mx-auto p-6 sm:p-8 bg-white rounded-[10px] shadow-xl">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Session Expired</h2>
           <p className="text-sm sm:text-base text-gray-600 mb-6">Please login again to continue</p>
           <button
             onClick={() => window.location.href = '/login'}
-            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
+            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[10px] font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
           >
             Go to Login
           </button>
@@ -563,7 +563,7 @@ const SettingsPage = () => {
         <div className="block sm:hidden mb-4">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full flex items-center justify-between p-3 bg-white rounded-xl shadow-md border border-gray-200"
+            className="w-full flex items-center justify-between p-3 bg-white rounded-[10px] shadow-md border border-gray-200"
           >
             <div className="flex items-center gap-2">
               <ActiveIcon className="w-5 h-5 text-indigo-600" />
@@ -580,7 +580,7 @@ const SettingsPage = () => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-[calc(100%-1.5rem)] mt-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
+                className="absolute z-10 w-[calc(100%-1.5rem)] mt-2 bg-white rounded-[10px] shadow-xl border border-gray-200 overflow-hidden"
               >
                 {SETTINGS_TABS.map((tab) => {
                   const Icon = tab.icon;
@@ -637,7 +637,7 @@ const SettingsPage = () => {
         >
           {/* Companies Tab */}
           {activeTab === "companies" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[10px] sm:rounded-[10px] shadow-xl border border-gray-100 p-4 sm:p-6">
               {/* Header - Responsive */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2 text-gray-800">
@@ -648,7 +648,7 @@ const SettingsPage = () => {
                 <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
                   <button
                     onClick={handleAddCompanyClick}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-xl text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl w-full xs:w-auto"
+                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-[10px] text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl w-full xs:w-auto"
                   >
                     <FaPlus className="w-4 h-4" />
                     <span className="whitespace-nowrap">Create Your Company</span>
@@ -659,12 +659,12 @@ const SettingsPage = () => {
               {/* Companies List - Responsive */}
               <div className="space-y-3">
                 {companies.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 px-4">
+                  <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-[10px] border-2 border-dashed border-gray-200 px-4">
                     <FaBuilding className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
                     <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">No companies found</p>
                     <button
                       onClick={() => setOpenCreateModal(true)}
-                      className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-base shadow-sm border border-gray-200 hover:border-indigo-300 transition-all"
+                      className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-[10px] text-sm sm:text-base shadow-sm border border-gray-200 hover:border-indigo-300 transition-all"
                     >
                       <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
                       Create your first company
@@ -687,12 +687,12 @@ const SettingsPage = () => {
 
               {/* Active Company Info - Responsive */}
               {activeCompany && companies.length > 0 && (
-                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-center gap-4">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-[10px] border border-indigo-100 flex items-center gap-4">
                   {activeCompany.logo_url ? (
                     <img
                       src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`}
                       alt="Company Logo"
-                      className="w-14 h-14 rounded-xl object-cover border border-indigo-200 shadow-sm bg-white shrink-0 hidden sm:block"
+                      className="w-14 h-14 rounded-[10px] object-cover border border-indigo-200 shadow-sm bg-white shrink-0 hidden sm:block"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.style.display = 'none';
@@ -700,7 +700,7 @@ const SettingsPage = () => {
                       }}
                     />
                   ) : null}
-                  <div className={`w-14 h-14 rounded-xl bg-indigo-100 items-center justify-center border border-indigo-200 shadow-sm shrink-0 hidden sm:flex ${activeCompany.logo_url ? '!hidden' : ''}`}>
+                  <div className={`w-14 h-14 rounded-[10px] bg-indigo-100 items-center justify-center border border-indigo-200 shadow-sm shrink-0 hidden sm:flex ${activeCompany.logo_url ? '!hidden' : ''}`}>
                     <FaBuilding className="text-indigo-500 text-2xl" />
                   </div>
                   <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 flex-1">
@@ -717,9 +717,9 @@ const SettingsPage = () => {
 
           {/* Profile Tab - Updated with working API integration */}
           {activeTab === "profile" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[10px] sm:rounded-[10px] shadow-xl border border-gray-100 p-4 sm:p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-[10px] flex items-center justify-center">
                   <FaUser className="w-5 h-5 text-white" />
                 </div>
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Profile Information</h2>
@@ -735,7 +735,7 @@ const SettingsPage = () => {
                     name="name"
                     value={profileForm.name}
                     onChange={handleProfileChange}
-                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -748,7 +748,7 @@ const SettingsPage = () => {
                     type="email"
                     value={user?.email || ''}
                     readOnly
-                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-[10px] bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
                   <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                 </div>
@@ -762,7 +762,7 @@ const SettingsPage = () => {
                     name="phone"
                     value={profileForm.phone}
                     onChange={handleProfileChange}
-                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     placeholder="Enter your phone number"
                   />
                 </div>
@@ -771,7 +771,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleProfileUpdate}
                     disabled={isUpdatingProfile}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-[10px] text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isUpdatingProfile ? (
                       <>
@@ -792,11 +792,11 @@ const SettingsPage = () => {
 
           {/* Notifications Tab - Responsive */}
           {activeTab === "notifications" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[10px] sm:rounded-[10px] shadow-xl border border-gray-100 p-4 sm:p-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Notification Preferences</h2>
 
               <div className="space-y-4">
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-[10px]">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Email Notifications</p>
                     <p className="text-xs sm:text-sm text-gray-500">Receive updates via email</p>
@@ -812,7 +812,7 @@ const SettingsPage = () => {
                   </label>
                 </div>
 
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-[10px]">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Push Notifications</p>
                     <p className="text-xs sm:text-sm text-gray-500">Receive push notifications in browser</p>
@@ -830,7 +830,7 @@ const SettingsPage = () => {
 
                 <button
                   onClick={handleNotificationSettings}
-                  className="w-full sm:w-auto mt-4 px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
+                  className="w-full sm:w-auto mt-4 px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-[10px] text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
                 >
                   Save Preferences
                 </button>
@@ -850,7 +850,7 @@ const SettingsPage = () => {
                     placeholder="Current Password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-indigo-500"
                     disabled={isUpdatingPassword}
                   />
                   <input
@@ -858,7 +858,7 @@ const SettingsPage = () => {
                     placeholder="New Password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-indigo-500"
                     disabled={isUpdatingPassword}
                   />
                   <input
@@ -866,13 +866,13 @@ const SettingsPage = () => {
                     placeholder="Confirm New Password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-indigo-500"
                     disabled={isUpdatingPassword}
                   />
                   <button
                     onClick={handlePasswordUpdate}
                     disabled={isUpdatingPassword}
-                    className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-[10px] text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isUpdatingPassword ? (
                       <><FaSpinner className="w-4 h-4 animate-spin inline mr-2" />Updating...</>
@@ -905,14 +905,14 @@ const SettingsPage = () => {
                     {sessions.map((session) => (
                       <div
                         key={session.id}
-                        className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all flex-wrap
+                        className={`flex items-center justify-between gap-3 p-3 rounded-[10px] border transition-all flex-wrap
                 ${session.is_current
                             ? "bg-indigo-50/60 border-indigo-200"
                             : "bg-gray-50 border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30"
                           }`}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0
+                          <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center text-lg flex-shrink-0
                   ${session.device_name.toLowerCase().includes("ios") ? "bg-pink-100"
                               : session.device_name.toLowerCase().includes("android") ? "bg-green-100"
                                 : "bg-indigo-100"}`}>
@@ -959,9 +959,9 @@ const SettingsPage = () => {
               </SecurityCard>
 
               {/* Delete Account Section */}
-              <div className="bg-red-50/50 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-sm border border-red-100 p-4 sm:p-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-red-50/50 backdrop-blur-xl rounded-[10px] sm:rounded-[10px] shadow-sm border border-red-100 p-4 sm:p-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-500">
+                  <div className="w-10 h-10 bg-red-100 rounded-[10px] flex items-center justify-center text-red-500">
                     <FiTrash2 className="w-5 h-5" />
                   </div>
                   <div>
@@ -971,7 +971,7 @@ const SettingsPage = () => {
                 </div>
                 <button
                   onClick={handleDeleteAccount}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-md active:scale-95"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-[10px] text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-md active:scale-95"
                 >
                   Delete Account
                 </button>
@@ -981,11 +981,11 @@ const SettingsPage = () => {
 
           {/* Preferences Tab - Responsive */}
           {activeTab === "preferences" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-6">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[10px] sm:rounded-[10px] shadow-xl border border-gray-100 p-4 sm:p-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Application Preferences</h2>
 
               <div className="space-y-4">
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-[10px]">
                   <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     {darkMode ?
                       <FaMoon className="text-indigo-600 text-base sm:text-xl flex-shrink-0" /> :
@@ -1007,7 +1007,7 @@ const SettingsPage = () => {
                   </label>
                 </div>
 
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-[10px]">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Language</p>
                     <p className="text-xs sm:text-sm text-gray-500">Select your preferred language</p>
@@ -1020,7 +1020,7 @@ const SettingsPage = () => {
                   </select>
                 </div>
 
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
+                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-[10px]">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Time Zone</p>
                     <p className="text-xs sm:text-sm text-gray-500">Set your local time zone</p>
@@ -1069,7 +1069,7 @@ const SettingsPage = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="flex w-full max-w-lg max-h-[90vh] flex-col justify-center overflow-y-auto rounded-2xl bg-white p-6 shadow-xl sm:p-7"
+              className="flex w-full max-w-lg max-h-[90vh] flex-col justify-center overflow-y-auto rounded-[10px] bg-white p-6 shadow-xl sm:p-7"
             >
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
                 Delete Company
@@ -1109,7 +1109,7 @@ const SettingsPage = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+              className="w-full max-w-md bg-white rounded-[10px] shadow-2xl overflow-hidden"
             >
               {/* Modal Header */}
               <div className="bg-red-600 px-6 py-4 flex items-center justify-between">
@@ -1127,7 +1127,7 @@ const SettingsPage = () => {
 
               <div className="p-6">
                 {/* Warning Banner */}
-                <div className="flex gap-3 bg-red-50 border border-red-100 rounded-xl p-3 mb-5">
+                <div className="flex gap-3 bg-red-50 border border-red-100 rounded-[10px] p-3 mb-5">
                   <span className="text-red-500 text-lg flex-shrink-0 mt-0.5">⚠️</span>
                   <div>
                     <p className="text-sm font-semibold text-red-700">This is irreversible</p>
@@ -1186,21 +1186,21 @@ const SettingsPage = () => {
                           value={deleteConfirmText}
                           onChange={(e) => setDeleteConfirmText(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && deleteConfirmText === "DELETE" && setDeleteStep("email")}
-                          className="w-full px-4 py-2.5 text-sm border border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all uppercase"
+                          className="w-full px-4 py-2.5 text-sm border border-red-100 rounded-[10px] focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all uppercase"
                         />
                       </div>
 
                       <div className="flex gap-3 pt-1">
                         <button
                           onClick={() => setShowAccountDeleteModal(false)}
-                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                          className="flex-1 px-4 py-2.5 rounded-[10px] border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => setDeleteStep("email")}
                           disabled={deleteConfirmText !== "DELETE"}
-                          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 px-4 py-2.5 rounded-[10px] bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Continue
                         </button>
@@ -1225,7 +1225,7 @@ const SettingsPage = () => {
                           value={deleteEmail}
                           onChange={(e) => setDeleteEmail(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleSendDeleteOtp()}
-                          className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all"
                         />
                         <p className="text-xs text-gray-400 mt-1.5">
                           Must match the email associated with your account.
@@ -1235,14 +1235,14 @@ const SettingsPage = () => {
                       <div className="flex gap-3 pt-1">
                         <button
                           onClick={() => setDeleteStep("confirm")}
-                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                          className="flex-1 px-4 py-2.5 rounded-[10px] border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
                         >
                           Back
                         </button>
                         <button
                           onClick={handleSendDeleteOtp}
                           disabled={isSendingOtp || !deleteEmail.trim()}
-                          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          className="flex-1 px-4 py-2.5 rounded-[10px] bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                           {isSendingOtp ? (
                             <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Sending...</>
@@ -1274,7 +1274,7 @@ const SettingsPage = () => {
                           value={deleteOtp}
                           onChange={(e) => setDeleteOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                           onKeyDown={(e) => e.key === "Enter" && handleConfirmDeleteAccount()}
-                          className="w-full px-4 py-3 text-center text-xl tracking-[0.5em] font-mono border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-3 text-center text-xl tracking-[0.5em] font-mono border border-gray-200 rounded-[10px] focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none transition-all"
                         />
                         <button
                           onClick={() => {
@@ -1304,14 +1304,14 @@ const SettingsPage = () => {
                       <div className="flex gap-3">
                         <button
                           onClick={() => setDeleteStep("email")}
-                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
+                          className="flex-1 px-4 py-2.5 rounded-[10px] border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
                         >
                           Back
                         </button>
                         <button
                           onClick={handleConfirmDeleteAccount}
                           disabled={isVerifyingOtp || deleteOtp.length < 4}
-                          className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          className="flex-1 px-4 py-2.5 rounded-[10px] bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                           {isVerifyingOtp ? (
                             <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Verifying...</>

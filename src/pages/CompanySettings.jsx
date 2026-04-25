@@ -104,7 +104,7 @@ function parseIPs(ips) {
 // ─── Small Reusable Components ────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+    <div className="bg-gray-50 p-4 rounded-[10px] border border-gray-100">
         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
             {icon} {label}
         </label>
@@ -126,13 +126,13 @@ const SummaryCard = ({ icon, label, value, gradient, delay = 0 }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay, duration: 0.4 }}
-        className={`bg-gradient-to-r ${gradient} rounded-2xl p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300`}>
+        className={`bg-gradient-to-r ${gradient} rounded-[10px] p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300`}>
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-xs opacity-80 mb-1">{label}</p>
                 <p className="text-3xl font-bold">{value}</p>
             </div>
-            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-xl">
+            <div className="w-11 h-11 bg-white/20 rounded-[10px] flex items-center justify-center text-xl">
                 {icon}
             </div>
         </div>
@@ -153,18 +153,18 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}>
 
                     {/* Header */}
                     <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-t-3xl z-10 flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                            <div className="w-9 h-9 bg-white/20 rounded-[10px] flex items-center justify-center">
                                 <FaBuilding className="text-base" />
                             </div>
                             <h2 className="text-lg font-bold">Company Details</h2>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
                             <FaTimes size={17} />
                         </button>
                     </div>
@@ -172,7 +172,7 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                     <div className="p-6 space-y-6">
                         {/* Identity */}
                         <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-gray-100">
-                            <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black overflow-hidden shadow-lg ring-4 ring-white flex-shrink-0"
+                            <div className="w-20 h-20 rounded-[10px] flex items-center justify-center text-2xl font-black overflow-hidden shadow-lg ring-4 ring-white flex-shrink-0"
                                 style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                 {company.logo_url
                                     ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
@@ -211,7 +211,7 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude"  value={company.latitude} />
                                 <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Longitude" value={company.longitude} />
-                                <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-[10px] border border-indigo-100">
                                     <label className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
                                         <FaNetworkWired /> IP Addresses
                                     </label>
@@ -244,11 +244,11 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
 
                     <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
                         <button onClick={() => { onEdit(company); onClose(); }}
-                            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
+                            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-[10px] hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
                             <FaEdit size={14} /> Edit Company
                         </button>
                         <button onClick={() => { onDelete(company); onClose(); }}
-                            className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-2xl hover:from-red-500 hover:to-rose-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
+                            className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-[10px] hover:from-red-500 hover:to-rose-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
                             <FaTrash size={14} /> Delete
                         </button>
                     </div>
@@ -269,11 +269,11 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
                     onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 flex justify-between items-center p-5 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-t-3xl">
                         <h2 className="text-lg font-bold flex items-center gap-2"><FaTrash /> Delete Company</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl"><FaTimes size={17} /></button>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px]"><FaTimes size={17} /></button>
                     </div>
                     <div className="p-6 sm:p-8 text-center">
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', duration: 0.5 }}
@@ -287,11 +287,11 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
                         </p>
                         <div className="flex gap-3">
                             <button onClick={onClose}
-                                className="flex-1 py-3 border-2 border-gray-100 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold transition-all">
+                                className="flex-1 py-3 border-2 border-gray-100 rounded-[10px] text-gray-600 hover:bg-gray-50 font-semibold transition-all">
                                 Keep
                             </button>
                             <button onClick={() => onConfirm(company.id)} disabled={deleting}
-                                className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-xl hover:from-red-500 hover:to-rose-600 flex items-center justify-center gap-2 font-semibold disabled:opacity-50 shadow-md">
+                                className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-[10px] hover:from-red-500 hover:to-rose-600 flex items-center justify-center gap-2 font-semibold disabled:opacity-50 shadow-md">
                                 {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
                                 {deleting ? 'Deleting...' : 'Delete Now'}
                             </button>
@@ -488,7 +488,7 @@ const CompanyManagement = () => {
                         </div>
                         <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
                             onClick={() => setCreateModalOpen(true)}
-                            className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
+                            className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-[10px] shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
                             <FaPlus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
                             <span className="text-sm">Add Company</span>
                             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -512,7 +512,7 @@ const CompanyManagement = () => {
                             placeholder="Search by company name, city, or state..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-10 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/15 focus:border-blue-400 outline-none shadow-sm transition-all text-sm" />
+                            className="w-full pl-11 pr-10 py-3.5 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/15 focus:border-blue-400 outline-none shadow-sm transition-all text-sm" />
                         {searchTerm && (
                             <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                 <FaTimes />
@@ -539,7 +539,7 @@ const CompanyManagement = () => {
                 {/* Empty State */}
                 {!loading && companies.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-2xl shadow-md border border-gray-100 p-16 text-center">
+                        className="bg-white rounded-[10px] shadow-md border border-gray-100 p-16 text-center">
                         <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
                             <FaBuilding className="text-4xl text-blue-200" />
                         </div>
@@ -548,15 +548,15 @@ const CompanyManagement = () => {
                             {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Company" to get started'}
                         </p>
                         {debouncedSearch
-                            ? <button onClick={() => setSearchTerm('')} className="mt-4 px-5 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 text-sm font-semibold">Clear Search</button>
-                            : <button onClick={() => setCreateModalOpen(true)} className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-lg">Add Company</button>}
+                            ? <button onClick={() => setSearchTerm('')} className="mt-4 px-5 py-2 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 text-sm font-semibold">Clear Search</button>
+                            : <button onClick={() => setCreateModalOpen(true)} className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-[10px] text-sm font-semibold shadow-lg">Add Company</button>}
                     </motion.div>
                 )}
 
                 {/* Table View */}
                 {!loading && companies.length > 0 && viewMode === 'table' && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100">
+                        className="bg-white rounded-[10px] shadow-md overflow-hidden border border-gray-100">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="xsm:hidden bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
@@ -583,7 +583,7 @@ const CompanyManagement = () => {
                                                 {/* Company */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
+                                                        <div className="w-10 h-10 rounded-[10px] flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
                                                             style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                                             {company.logo_url
                                                                 ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
@@ -672,12 +672,12 @@ const CompanyManagement = () => {
                                 <motion.div key={company.id}
                                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                                     onClick={() => setDetailTarget(company)}
-                                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
+                                    className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
 
                                     {/* Header */}
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
+                                            <div className="w-12 h-12 rounded-[10px] flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
                                                 style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                                 {company.logo_url
                                                     ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />

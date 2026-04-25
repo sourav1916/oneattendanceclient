@@ -196,7 +196,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
@@ -212,7 +212,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
           {renderFields()}
         </div>
         <div className="px-5 py-3 bg-gray-50 flex justify-end border-t border-gray-100">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-[10px] hover:bg-gray-100 transition">
             Close
           </button>
         </div>
@@ -241,10 +241,10 @@ function ProfileCard({ data }) {
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
+      className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-5"
     >
       <div className="flex items-start gap-4 flex-wrap">
-        <div className={`w-[64px] h-[64px] rounded-2xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none`}>
+        <div className={`w-[64px] h-[64px] rounded-[10px] bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none`}>
           {getInitials(u.name)}
         </div>
 
@@ -471,7 +471,7 @@ function useSalaryConfig(onView, width) {
           </div>
         }
       >
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-center">
+        <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-3 text-center">
           <p className="text-sm font-bold text-blue-700">{s.currency?.toUpperCase()} {Number(s.base_amount).toLocaleString()}</p>
           <p className="text-xs text-blue-500 mt-0.5">Base Amount</p>
         </div>
@@ -528,7 +528,7 @@ function usePayrollConfig(onView, width) {
     >
       <div className="grid grid-cols-3 gap-2 text-center mt-1">
         {[["Gross", p.gross_amount || p.gross, "blue"], ["Deductions", p.deductions, "red"], ["Net Pay", p.net_pay || p.net, "green"]].map(([lbl, val, clr]) => (
-          <div key={lbl} className={`rounded-xl border border-${clr}-100 bg-${clr}-50 p-2`}>
+          <div key={lbl} className={`rounded-[10px] border border-${clr}-100 bg-${clr}-50 p-2`}>
             <p className={`text-xs font-bold text-${clr}-700`}>{val || "—"}</p>
             <p className={`text-[11px] text-${clr}-500`}>{lbl}</p>
           </div>
@@ -847,7 +847,7 @@ function TabsPanel({ employeeId }) {
   const activeConf = TABS.find((t) => t.key === activeTab) || TABS[0];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-[10px] border border-gray-100 shadow-sm overflow-hidden">
       {/* Tab bar */}
       <div
         className="flex overflow-x-auto border-b border-slate-100"
@@ -942,8 +942,26 @@ export default function EmployeeProfilePage() {
   useEffect(() => { fetchProfile(employeeId); }, [employeeId, fetchProfile]);
 
   return (
-    <div className="min-h-screen p-3 md:p-5 font-sans">
-      <div className="max-w-6xl mx-auto flex flex-col gap-3.5">
+    <div className="min-h-screen p-3 md:p-6 font-sans">
+      <div className="max-w-7xl mx-auto flex flex-col gap-6">
+
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col sm:flex-row justify-between items-center mb-0 gap-4"
+        >
+          <div>
+            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+              Employee Profile
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">Detailed overview of employee performance, attendance, and employment records.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+              <FaUserCircle className="text-indigo-500" />
+              <span className="font-medium text-gray-700">Staff Member</span>
+            </div>
+          </div>
+        </motion.div>
 
         {loading && (
           <div className="flex flex-col items-center py-16 gap-2 text-slate-400">

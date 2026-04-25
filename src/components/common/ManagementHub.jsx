@@ -45,13 +45,13 @@ export default function ManagementHub({
   const accentClass = accentStyles[accent] || accentStyles.slate;
 
   return (
-    <div className={joinClasses('min-h-screen p-4 md:p-6', className)}>
+    <div className={joinClasses('min-h-screen', className)}>
       <div className={joinClasses('mx-auto', widthClassName)}>
         <motion.div
           initial={{ opacity: 0, y: -14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-6 rounded-[2rem] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur md:p-6"
+          className="mb-6 rounded-[10px] sm: m-[10px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur md:p-6"
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
@@ -68,7 +68,7 @@ export default function ManagementHub({
             </div>
 
             {(summary || actions) && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {summary}
                 {actions}
               </div>
@@ -90,7 +90,7 @@ export default function ManagementHub({
                     disabled={disabled}
                     title={tab.title || tab.description || tab.label}
                     className={joinClasses(
-                      'inline-flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-semibold transition-all duration-200',
+                      'inline-flex items-center gap-2 rounded-[10px] border px-4 py-2 text-sm font-semibold transition-all duration-200',
                       isActive
                         ? activeButtonStyles[accent] || activeButtonStyles.slate
                         : disabled
@@ -107,7 +107,7 @@ export default function ManagementHub({
           )}
         </motion.div>
 
-        <div className={contentClassName}>{children}</div>
+        <div className={`p-[10px] lg:p2 ${contentClassName || ""}`}>{children}</div>
       </div>
     </div>
   );

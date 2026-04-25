@@ -18,7 +18,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { DatePickerField } from '../components/DatePicker';
 
-const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
+const NOTES_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
 const attendanceAPI = {
   fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}) => {
@@ -158,15 +158,15 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-2xl z-10">
+        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-[10px] z-10">
           <div className="flex justify-between items-center">
             <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
               <FaInfoCircle /> Attendance Details
             </h2>
-            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition">
+            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-[10px] transition">
               <FaTimesCircle size={18} className="sm:w-5 sm:h-5" />
             </button>
           </div>
@@ -300,11 +300,11 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         onClick={() => onViewDetails(attendance)}
-        className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100 h-full flex flex-col"
+        className="bg-white rounded-[10px] shadow-lg p-4 border border-gray-100 h-full flex flex-col"
       >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-[10px] flex items-center justify-center flex-shrink-0">
             <FaUser className="text-purple-600 text-base sm:text-xl" />
           </div>
           <div className="min-w-0 flex-1">
@@ -613,97 +613,92 @@ const AttendanceManagement = ({ companyId }) => {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 sm:p-5 md:p-6"
+          className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
         >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-            <div>
-              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold flex items-center gap-2">
-                <FaHistory className="text-purple-500 text-base sm:text-xl md:text-2xl" />
-                <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Attendance Management
-                </span>
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">Company ID: {resolvedCompanyId}</p>
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => navigate('/pending-attendance')}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-amber-600 sm:text-sm"
-              >
-                <FaClock />
-                Pending Attendance
-              </button>
-              <div className="flex items-center gap-2 bg-purple-50 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg justify-between sm:justify-start">
-                <FaUserCheck className="text-purple-500 text-sm sm:text-base" />
-                <span className="text-xs sm:text-sm font-medium text-gray-700">
-                  Total: {pagination.total}
-                </span>
-              </div>
-            </div>
+          <div>
+            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
+              Attendance Management
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">Monitor and approve employee attendance records and punch logs.</p>
           </div>
+
         </motion.div>
 
-        {/* Search */}
+        {/* ─── Consolidated Filter & View Bar ─── */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 space-y-3"
+          transition={{ delay: 0.1 }}
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
         >
-          <div className="relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-            <input
-              type="text"
-              placeholder="Search by employee name, email, or code..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none shadow-lg transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes />
-              </button>
-            )}
+          {/* Left Section: Search & Result Info */}
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              <input
+                type="text"
+                placeholder="Search by employee name, email, or code..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/pending-attendance')}
+              className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-amber-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-amber-600 shadow-sm active:scale-95 whitespace-nowrap"
+            >
+              <FaClock />
+              Pending Attendance
+            </button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <DatePickerField
-              value=""
-              onChange={handleDateFilterApply}
-              placeholder={dateFilterLabel}
-              buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-              wrapperClassName="w-auto"
-              popoverClassName="w-[min(92vw,24rem)]"
-              initialTab="quick"
-              mode="both"
+
+          {/* Right Section: Controls */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3">
+            {/* Date Filter */}
+            <div className="flex items-center gap-2">
+              <DatePickerField
+                value=""
+                onChange={handleDateFilterApply}
+                placeholder={dateFilterLabel}
+                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                wrapperClassName="w-auto"
+                popoverClassName="w-[min(92vw,24rem)]"
+                initialTab="quick"
+                mode="both"
+              />
+              {dateFilterLabel !== 'Filter by date' && (
+                <button
+                  type="button"
+                  onClick={clearDateFilter}
+                  className="p-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                  title="Clear date filter"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Vertical Separator */}
+            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+
+            {/* View Switcher */}
+            <ManagementViewSwitcher
+              viewMode={viewMode}
+              onChange={setViewMode}
+              accent="blue"
             />
-            {dateFilterLabel !== 'Filter by date' && (
-              <button
-                type="button"
-                onClick={clearDateFilter}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-                title="Clear date filter"
-                aria-label="Clear date filter"
-              >
-                <FaTimes />
-              </button>
-            )}
           </div>
         </motion.div>
-
-        {!loading && visibleAttendances.length > 0 && (
-          <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-gray-500">
-              <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of{' '}
-              <span className="font-semibold text-gray-800">{pagination.total}</span> attendance records
-              {debouncedSearchTerm && <span className="ml-1 text-purple-600">· "{debouncedSearchTerm}"</span>}
-              {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">· {dateFilterLabel}</span>}
-            </p>
-            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-          </div>
-        )}
 
         {/* Loading State */}
         {loading ? (
@@ -711,11 +706,11 @@ const AttendanceManagement = ({ companyId }) => {
             <FaSpinner className="animate-spin text-purple-500 text-3xl sm:text-4xl" />
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
+          <div className="bg-red-50 border border-red-200 rounded-[10px] p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
             {error}
           </div>
         ) : visibleAttendances.length === 0 ? (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-8 sm:p-10 md:p-12 text-center">
+          <div className="bg-white rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
             <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
             <p className="text-gray-500 text-sm sm:text-base md:text-lg">No attendance records found</p>
             <p className="text-gray-400 text-xs sm:text-sm mt-1">
@@ -728,7 +723,7 @@ const AttendanceManagement = ({ companyId }) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-xl overflow-visible"
+                className="bg-white rounded-[10px] shadow-xl overflow-visible"
               >
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
@@ -877,14 +872,14 @@ const AttendanceManagement = ({ companyId }) => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition"
+                  className="w-full p-3 border border-gray-300 rounded-[10px] focus:ring-2 focus:ring-purple-500 outline-none transition"
                   placeholder="Enter rejection reason..."
                   autoFocus
                 />
                 <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3">
                   <button
                     onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-[10px] hover:bg-gray-200 transition font-medium"
                   >
                     Cancel
                   </button>
@@ -896,7 +891,7 @@ const AttendanceManagement = ({ companyId }) => {
                         toast.warning('Please provide a reason for rejection');
                       }
                     }}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium shadow-lg"
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[10px] hover:bg-red-700 transition font-medium shadow-lg"
                   >
                     Submit Rejection
                   </button>

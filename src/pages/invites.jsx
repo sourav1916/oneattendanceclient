@@ -31,7 +31,7 @@ const backdropVariants = {
   exit: { opacity: 0 }
 };
 
-const CONFIRM_MODAL_CLASS = 'bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col';
+const CONFIRM_MODAL_CLASS = 'bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col';
 
 const isExpired = (date) => new Date(date) < new Date();
 
@@ -293,7 +293,7 @@ export default function MyInvites() {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-2xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
@@ -302,9 +302,9 @@ export default function MyInvites() {
         <div className="p-6">
           <div className="flex items-center gap-6 pb-6 border-b">
             {invite.company?.logo_url ? (
-               <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="Company Logo" className="w-16 h-16 rounded-2xl object-cover border border-purple-200 shadow-md bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+               <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="Company Logo" className="w-16 h-16 rounded-[10px] object-cover border border-purple-200 shadow-md bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
             ) : null}
-            <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-2xl shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'} items-center justify-center w-16 h-16`}>
+            <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-[10px] shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'} items-center justify-center w-16 h-16`}>
               <FaBuilding className="text-white text-4xl" />
             </div>
             <div>
@@ -348,7 +348,7 @@ export default function MyInvites() {
             <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
           </div>
           {invite.permissions?.length > 0 && (
-            <div className="mt-6 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
               <button 
                 onClick={() => setShowPermissions(!showPermissions)}
                 className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -389,7 +389,7 @@ export default function MyInvites() {
           )}
 
           {invite.attendance_methods?.length > 0 && (
-            <div className="mt-4 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
               <button 
                 onClick={() => setShowAttendance(!showAttendance)}
                 className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -523,7 +523,7 @@ export default function MyInvites() {
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
               <input type="text" placeholder="Search by company name, designation, or inviter..."
                 value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none shadow-lg transition-all" />
+                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none shadow-lg transition-all" />
               {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><FaTimes /></button>}
             </div>
           </div>
@@ -539,7 +539,7 @@ export default function MyInvites() {
 
         {/* Empty State */}
         {!loading && !error && invites.length === 0 && (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-2xl shadow-xl">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-[10px] shadow-xl">
             <FaEnvelope className="text-8xl text-gray-300 mx-auto mb-4" />
             <p className="text-xl text-gray-500">No invitations found</p>
             <p className="text-gray-400 mt-2">{searchTerm || statusFilter !== 'all' ? 'Try adjusting your filters' : 'You haven\'t received any invitations yet'}</p>
@@ -550,7 +550,7 @@ export default function MyInvites() {
           <>
             {viewMode === "table" && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                className="bg-white rounded-2xl shadow-xl overflow-visible">
+                className="bg-white rounded-[10px] shadow-xl overflow-visible">
               <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
                   <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
@@ -664,12 +664,12 @@ export default function MyInvites() {
                 return (
                   <motion.div key={`card-${invite.invite_id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
                     onClick={() => openModal(invite, 'view')}
-                    className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                    className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
                       {invite.company?.logo_url ? (
-                        <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="logo" className="w-12 h-12 rounded-2xl object-cover border border-purple-200 bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                        <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="logo" className="w-12 h-12 rounded-[10px] object-cover border border-purple-200 bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
                       ) : null}
-                      <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-2xl w-12 h-12 items-center justify-center shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'}`}><FaBuilding className="text-white text-2xl" /></div>
+                      <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-[10px] w-12 h-12 items-center justify-center shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'}`}><FaBuilding className="text-white text-2xl" /></div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
                           <h3 className="font-bold text-lg text-gray-800 truncate">{invite.company?.name || 'N/A'}</h3>

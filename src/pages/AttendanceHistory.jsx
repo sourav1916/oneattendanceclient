@@ -236,7 +236,7 @@ const PunchTypeBadge = ({ type }) => {
 // ─── Info Item ────────────────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-  <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+  <div className="rounded-[10px] border border-gray-100 bg-gray-50 p-4">
     <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400">
       {icon}
       {label}
@@ -277,7 +277,7 @@ const DetailsModal = ({ record, onClose }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
+          className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[10px] bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -304,7 +304,7 @@ const DetailsModal = ({ record, onClose }) => {
                   </span>
                 </div>
               </div>
-              <div className="min-w-[90px] rounded-xl border border-gray-100 bg-gray-50 p-3 text-center max-[390px]:w-full max-[390px]:min-w-0">
+              <div className="min-w-[90px] rounded-[10px] border border-gray-100 bg-gray-50 p-3 text-center max-[390px]:w-full max-[390px]:min-w-0">
                 <FaChartLine className="mx-auto mb-1 text-lg text-slate-500" />
                 <p className="text-[10px] uppercase tracking-wider text-gray-400">Worked</p>
                 <p className="font-bold text-gray-800">{record.worked_hours}</p>
@@ -342,7 +342,7 @@ const DetailsModal = ({ record, onClose }) => {
                     return (
                       <div
                         key={punch.id}
-                        className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-2 rounded-[10px] border border-gray-100 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <PunchIcon className={`text-sm ${color}`} />
@@ -371,7 +371,7 @@ const DetailsModal = ({ record, onClose }) => {
 const SkeletonLoader = () => (
   <div className="space-y-3">
     {[1, 2, 3, 4, 5].map((i) => (
-      <div key={i} className="animate-pulse rounded-2xl bg-white p-5 shadow-sm">
+      <div key={i} className="animate-pulse rounded-[10px] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="h-4 w-1/3 rounded-lg bg-gray-200" />
           <div className="h-6 w-20 rounded-full bg-gray-200" />
@@ -595,84 +595,101 @@ const AttendanceHistory = () => {
     <div className="min-h-screen p-3 font-sans md:p-6">
       <div className="mx-auto max-w-7xl">
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex flex-col items-center justify-between gap-3 sm:flex-row"
-        >
-          <h1 className="flex items-center gap-2 text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 font-extrabold text-gray-800 md:text-3xl">
-            <FaHistory className="text-purple-600" />
-            Attendance History
-          </h1>
-
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end sm:gap-3">
-            {loading && (
-              <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-2 text-[11px] font-medium text-blue-600 shadow-sm sm:px-4 sm:text-xs">
-                <FaSpinner className="animate-spin" size={12} />
-                Loading...
-              </span>
-            )}
-            <div className="rounded-full bg-white px-4 py-2 text-xs text-gray-600 shadow-md sm:px-5 sm:text-sm">
-              <FaCalendarAlt className="mr-2 inline text-slate-400" />
-              {totalRecords} record{totalRecords !== 1 ? 's' : ''}
+        {/* ─── Page Header ─── */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[10px] border border-gray-100 shadow-sm mb-6">
+            <div>
+                <div className="flex items-center gap-2 text-purple-600 mb-1">
+                    <FaHistory size={14} className="animate-pulse-slow" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider">Attendance Logs</span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Attendance History</h1>
+                <p className="text-sm text-slate-500 mt-1">Review comprehensive employee punch logs, shift details, and record statuses.</p>
             </div>
-          </div>
-        </motion.div>
+            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-[10px] border border-slate-100">
+                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-purple-600">
+                    <FaCalendarAlt size={20} />
+                </div>
+                <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Total Records</p>
+                    <p className="text-lg font-black text-slate-800 leading-tight">{totalRecords}</p>
+                </div>
+            </div>
+        </div>
 
-        {/* ── Search ─────────────────────────────────────────────────────── */}
+        {/* ─── Consolidated Filter & View Bar ─── */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 space-y-3"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
         >
-          <div className="relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-            <input
-              type="text"
-              placeholder="Search by date, status, location…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-12 shadow-lg outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes />
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <DatePickerField
-              value=""
-              onChange={handleDateFilterApply}
-              placeholder={dateFilterLabel}
-              buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-              wrapperClassName="w-auto"
-              popoverClassName="w-[min(92vw,24rem)]"
-              initialTab="quick"
-              mode="both"
-            />
-            {dateFilterLabel !== 'Filter by date' && (
-              <button
-                type="button"
-                onClick={clearDateFilter}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
-                title="Clear date filter"
-                aria-label="Clear date filter"
-              >
-                <FaTimes />
-              </button>
-            )}
-          </div>
+            {/* Left Section: Search & Result Info */}
+            <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                <div className="relative flex-1 w-full">
+                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    <input
+                        type="text"
+                        placeholder="Search by date, status, code..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                        >
+                            <FaTimes size={14} />
+                        </button>
+                    )}
+                </div>
+                {!loading && displayRecords.length > 0 && (
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
+                        {totalRecords} Logs
+                    </p>
+                )}
+            </div>
+
+            {/* Right Section: Controls */}
+            <div className="flex items-center gap-3 justify-between sm:justify-end">
+                <div className="flex items-center gap-2">
+                    <DatePickerField
+                        value=""
+                        onChange={handleDateFilterApply}
+                        placeholder={dateFilterLabel}
+                        buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50"
+                        wrapperClassName="w-auto"
+                        popoverClassName="w-[min(92vw,24rem)]"
+                        initialTab="quick"
+                        mode="both"
+                    />
+                    {dateFilterLabel !== 'Filter by date' && (
+                        <button
+                            type="button"
+                            onClick={clearDateFilter}
+                            className="w-10 h-10 flex items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-500 hover:bg-red-100 transition-all shadow-sm"
+                            title="Clear date filter"
+                        >
+                            <FaTimes size={14} />
+                        </button>
+                    )}
+                </div>
+
+                {/* Vertical Separator */}
+                <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+
+                {/* View Switcher */}
+                <ManagementViewSwitcher
+                    viewMode={viewMode}
+                    onChange={setViewMode}
+                    accent="blue"
+                />
+            </div>
         </motion.div>
 
         {/* ── Error ──────────────────────────────────────────────────────── */}
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-red-700">
+          <div className="mb-4 flex items-center gap-2 rounded-[10px] bg-red-50 p-4 text-red-700">
             <FaExclamationCircle />
             {error}
             <button
@@ -703,7 +720,7 @@ const AttendanceHistory = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-2xl bg-white shadow-xl`}
+            className={`${viewMode === 'table' ? 'overflow-visible' : 'hidden'} rounded-[10px] bg-white shadow-xl`}
           >
             <div className="overflow-x-auto overflow-y-visible">
               <table className="w-full text-left text-sm text-gray-700">
@@ -787,7 +804,7 @@ const AttendanceHistory = () => {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   onClick={() => openDetails(record)}
-                  className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group max-[390px]:p-4"
+                  className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group max-[390px]:p-4"
                 >
                   <div className="mb-3 flex items-start justify-between gap-2 max-[390px]:flex-col">
                     <div className="min-w-0">
@@ -826,7 +843,7 @@ const AttendanceHistory = () => {
                       e.stopPropagation();
                       openDetails(record);
                     }}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 max-[390px]:text-xs"
+                    className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-slate-50 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 max-[390px]:text-xs"
                   >
                     <FaEye />
                     View Full Details
@@ -842,7 +859,7 @@ const AttendanceHistory = () => {
           <motion.div
             initial={{ scale: 0.96 }}
             animate={{ scale: 1 }}
-            className="rounded-2xl bg-white py-16 text-center shadow-md"
+            className="rounded-[10px] bg-white py-16 text-center shadow-md"
           >
             <FaCalendarAlt className="mx-auto mb-4 text-5xl text-gray-200" />
             <p className="text-lg font-semibold text-gray-500">No attendance records found</p>

@@ -47,7 +47,7 @@ const CompanySwitcherModal = ({ companies = [], currentCompany, onSwitch, onClos
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                className="bg-white rounded-[10px] shadow-2xl w-full max-w-sm overflow-hidden"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Modal header */}

@@ -20,7 +20,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { DatePickerField } from '../components/DatePicker';
 
-const NOTES_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
+const NOTES_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
 const pendingAttendanceAPI = {
     fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '', dateParams = {}) => {
@@ -159,7 +159,7 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="sticky top-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 sm:p-6 rounded-t-2xl">
@@ -255,7 +255,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => onViewDetails(attendance)}
-            className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+            className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
         >
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -610,7 +610,7 @@ const PendingAttendance = ({ companyId }) => {
                                 placeholder="Search by employee name, email, or code..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none shadow-lg transition-all"
+                                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none shadow-lg transition-all"
                             />
                             {searchTerm && (
                                 <button
@@ -627,7 +627,7 @@ const PendingAttendance = ({ companyId }) => {
                                 value=""
                                 onChange={handleDateFilterApply}
                                 placeholder={dateFilterLabel}
-                                buttonClassName="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
                                 wrapperClassName="w-auto"
                                 popoverClassName="w-[min(92vw,24rem)]"
                                 initialTab="quick"
@@ -637,7 +637,7 @@ const PendingAttendance = ({ companyId }) => {
                                 <button
                                     type="button"
                                     onClick={clearDateFilter}
-                                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                    className="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
                                     title="Clear date filter"
                                     aria-label="Clear date filter"
                                 >
@@ -670,7 +670,7 @@ const PendingAttendance = ({ companyId }) => {
                             {error}
                         </div>
                     ) : visibleAttendances.length === 0 ? (
-                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-8 sm:p-10 md:p-12 text-center">
+                        <div className="bg-white rounded-xl sm:rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
                             <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
                             <p className="text-gray-500 text-sm sm:text-base md:text-lg">No pending attendance records found</p>
                             <p className="text-gray-400 text-xs sm:text-sm mt-1">
@@ -687,7 +687,7 @@ const PendingAttendance = ({ companyId }) => {
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-2xl shadow-xl overflow-visible"
+                                    className="bg-white rounded-[10px] shadow-xl overflow-visible"
                                 >
                                     <div className="overflow-x-auto overflow-y-visible">
                                         <table className="w-full text-sm text-left text-gray-700">

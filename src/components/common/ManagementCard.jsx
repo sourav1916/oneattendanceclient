@@ -41,7 +41,7 @@ export default function ManagementCard({
   const cardBody = (
     <div
       className={joinClasses(
-        'rounded-2xl border bg-white p-5 shadow-md transition-all duration-300',
+        'rounded-[10px] border bg-white p-5 shadow-md transition-all duration-300',
         accentMap[accent] || accentMap.slate,
         hoverable && 'hover:-translate-y-1 hover:shadow-xl',
         onClick && 'cursor-pointer',
@@ -58,7 +58,7 @@ export default function ManagementCard({
               </p>
             )}
             <div className="flex items-center gap-2">
-              {icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-600">{icon}</span>}
+              {icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-slate-50 text-slate-600">{icon}</span>}
               <div className="min-w-0">
                 {title && <h3 className="truncate text-base font-bold text-slate-900">{title}</h3>}
                 {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}

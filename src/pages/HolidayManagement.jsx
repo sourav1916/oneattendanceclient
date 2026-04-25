@@ -242,7 +242,7 @@ const Modal = ({ children, onClose, danger = false, panelClassName = 'sm:max-w-m
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 40, scale: 0.97 }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className={`bg-white w-full rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden ${panelClassName}`}
+      className={`bg-white w-full rounded-t-[10px] sm:rounded-[10px] shadow-2xl overflow-hidden ${panelClassName}`}
       onClick={e => e.stopPropagation()}
     >
       {children}
@@ -289,7 +289,7 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
             {selectedDates.length === 1 ? formatDate(selectedDates[0]) : `${selectedDates.length} dates selected`}
           </p>
         </div>
-        <button onClick={onClose} className="mt-1 p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
+        <button onClick={onClose} className="mt-1 p-2 rounded-[10px] hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
           <Icon.X />
         </button>
       </div>
@@ -303,11 +303,11 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="e.g. Diwali, Republic Day…"
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent focus:bg-white transition-all"
+            className="w-full px-4 py-3 rounded-[10px] border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent focus:bg-white transition-all"
           />
         </div>
 
-        <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group">
+        <label className="flex items-center gap-3 p-4 rounded-[10px] border border-gray-100 bg-gray-50 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group">
           <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isOptional ? 'bg-violet-500 border-violet-500' : 'border-gray-300 group-hover:border-violet-400'}`}>
             {isOptional && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
           </div>
@@ -322,7 +322,7 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
           type="submit"
           disabled={loading || submitDisabled}
           title={submitDisabled ? submitTitle : ''}
-          className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-[10px] font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {loading ? <><Icon.Spinner /> Creating…</> : <><Icon.Plus /> Create Holiday{selectedDates.length > 1 ? 's' : ''}</>}
         </button>
@@ -361,7 +361,7 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess, submitDisabled 
           <h2 className="text-xl font-bold text-gray-900">Update Details</h2>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5"><Icon.Calendar />{holiday.date}</p>
         </div>
-        <button onClick={onClose} className="mt-1 p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"><Icon.X /></button>
+        <button onClick={onClose} className="mt-1 p-2 rounded-[10px] hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"><Icon.X /></button>
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -372,11 +372,11 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess, submitDisabled 
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent focus:bg-white transition-all"
+            className="w-full px-4 py-3 rounded-[10px] border border-gray-200 bg-gray-50 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent focus:bg-white transition-all"
           />
         </div>
 
-        <label className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 bg-gray-50 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group">
+        <label className="flex items-center gap-3 p-4 rounded-[10px] border border-gray-100 bg-gray-50 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group">
           <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isOptional ? 'bg-violet-500 border-violet-500' : 'border-gray-300 group-hover:border-violet-400'}`}>
             {isOptional && <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3"><polyline points="20 6 9 17 4 12"/></svg>}
           </div>
@@ -391,7 +391,7 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess, submitDisabled 
           type="submit"
           disabled={loading || submitDisabled}
           title={submitDisabled ? submitTitle : ''}
-          className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-[10px] font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {loading ? <><Icon.Spinner /> Updating…</> : <><Icon.Check /> Save Changes</>}
         </button>
@@ -421,7 +421,7 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
   return (
     <Modal onClose={onClose} danger panelClassName="sm:max-w-lg sm:max-h-[90vh]">
       <div className="flex flex-col justify-center p-6 text-center">
-        <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5 text-red-500">
+        <div className="w-14 h-14 bg-red-50 rounded-[10px] flex items-center justify-center mx-auto mb-5 text-red-500">
           <Icon.Trash />
         </div>
         <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Holiday?</h2>
@@ -432,7 +432,7 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
         <div className="flex flex-col-reverse gap-3 sm:flex-row">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition-all"
+            className="flex-1 py-3 rounded-[10px] font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition-all"
           >
             Cancel
           </button>
@@ -440,7 +440,7 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
             onClick={handleDelete}
             disabled={loading || submitDisabled}
             title={submitDisabled ? submitTitle : ''}
-            className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-100 disabled:opacity-60 flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-[10px] font-bold text-sm text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-100 disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <><Icon.Spinner /> Deleting…</> : 'Delete'}
           </button>
@@ -481,7 +481,7 @@ const ActionMenu = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.92, y: -4 }}
       transition={{ duration: 0.12 }}
-      className="absolute right-0 top-full mt-1 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden py-1"
+      className="absolute right-0 top-full mt-1 w-44 bg-white rounded-[10px] shadow-xl border border-gray-100 z-50 overflow-hidden py-1"
       onClick={e => e.stopPropagation()}
     >
       {canCreate && (
@@ -771,20 +771,12 @@ const HolidayManagementCalendar = () => {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-100 top-0 z-30">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>
-            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">Manage corporate & national holidays</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>
+            <p className="text-xs text-gray-400 mt-1">Manage corporate and national holidays for your organization.</p>
           </div>
-          {!isCurrentMonthToday && (
-            <button
-              onClick={() => setCurrentDate(toCalendarDate(new Date()) || new Date())}
-              className="px-2.5 py-1 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-violet-600 bg-violet-50 rounded-lg border border-violet-100 hover:bg-violet-100 transition-colors"
-            >
-              Today
-            </button>
-          )}
         </div>
       </div>
 
@@ -797,36 +789,56 @@ const HolidayManagementCalendar = () => {
             { label: 'Optional', value: stats.optional, color: 'text-teal-600', bg: 'bg-teal-50' },
             { label: 'Corporate', value: stats.corporate, color: 'text-violet-600', bg: 'bg-violet-50' },
           ].map(s => (
-            <div key={s.label} className={`${s.bg} rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-gray-100 shadow-sm`}>
+            <div key={s.label} className={`${s.bg} rounded-[10px] p-2.5 sm:p-4 border border-gray-100 shadow-sm`}>
               <p className={`text-lg sm:text-2xl font-bold ${s.color} leading-none`}>{s.value}</p>
               <p className="text-[9px] sm:text-xs text-gray-500 mt-1 font-medium">{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Month Nav */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => changeMonth(-1)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          >
-            <Icon.ChevronLeft />
-          </button>
-          <div className="text-center">
-            <h2 className="text-base sm:text-lg font-bold text-gray-900">
-              {MONTH_NAMES[currentMonth]} {currentYear}
-            </h2>
+        {/* ─── Consolidated Filter & View Bar ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+        >
+          {/* Left Section: Month Nav */}
+          <div className="flex items-center justify-between lg:justify-start gap-4 flex-1">
+            <button
+              onClick={() => changeMonth(-1)}
+              className="w-10 h-10 rounded-[10px] border border-slate-200 flex items-center justify-center text-slate-500 hover:text-violet-600 hover:border-violet-200 hover:bg-violet-50 transition-colors"
+            >
+              <Icon.ChevronLeft />
+            </button>
+            <div className="text-center min-w-[140px]">
+              <h2 className="text-lg font-bold text-slate-800">
+                {MONTH_NAMES[currentMonth]} {currentYear}
+              </h2>
+            </div>
+            <button
+              onClick={() => changeMonth(1)}
+              className="w-10 h-10 rounded-[10px] border border-slate-200 flex items-center justify-center text-slate-500 hover:text-violet-600 hover:border-violet-200 hover:bg-violet-50 transition-colors"
+            >
+              <Icon.ChevronRight />
+            </button>
           </div>
-          <button
-            onClick={() => changeMonth(1)}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          >
-            <Icon.ChevronRight />
-          </button>
-        </div>
+
+          {/* Right Section: Controls */}
+          <div className="flex items-center gap-3 justify-end">
+            {!isCurrentMonthToday && (
+              <button
+                onClick={() => setCurrentDate(toCalendarDate(new Date()) || new Date())}
+                className="px-4 py-2.5 text-sm font-bold text-violet-600 bg-white rounded-[10px] border border-violet-200 hover:bg-violet-50 transition-all shadow-sm active:scale-95"
+              >
+                Today
+              </button>
+            )}
+          </div>
+        </motion.div>
 
         {/* Calendar */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-[10px] border border-gray-100 shadow-sm overflow-hidden">
           {/* Weekday headers */}
           <div className="grid grid-cols-7 border-b border-gray-100">
             {WEEK_DAYS.map(d => (
@@ -865,7 +877,7 @@ const HolidayManagementCalendar = () => {
                   exit={{ opacity: 0 }}
                   className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-20 rounded-b-2xl"
                 >
-                  <div className="flex items-center gap-2.5 bg-white px-5 py-3 rounded-xl shadow-lg border border-gray-100">
+                  <div className="flex items-center gap-2.5 bg-white px-5 py-3 rounded-[10px] shadow-lg border border-gray-100">
                     <Icon.Spinner />
                     <span className="text-xs font-semibold text-gray-600">Loading holidays…</span>
                   </div>

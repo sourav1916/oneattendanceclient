@@ -66,7 +66,7 @@ const getStatusConfig = (status) => ({
 const StatCard = ({ icon: Icon, label, value, sub, gradient, delay = 0 }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
-        className={`relative overflow-hidden rounded-2xl p-5 shadow-lg text-white ${gradient}`}
+        className={`relative overflow-hidden rounded-[10px] p-5 shadow-lg text-white ${gradient}`}
     >
         <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 bg-white -translate-y-8 translate-x-8" />
         <div className="flex items-center justify-between mb-3">
@@ -119,8 +119,8 @@ const PayrollViewModal = ({ payroll, employee, onClose }) => {
 
             <div className="p-6 max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar">
                 {/* Employee Info */}
-                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-100 mb-6">
+                    <div className="w-14 h-14 rounded-[10px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
                         <FaUserCircle className="text-white text-3xl" />
                     </div>
                     <div className="flex-1">
@@ -138,17 +138,17 @@ const PayrollViewModal = ({ payroll, employee, onClose }) => {
 
                 {/* Salary Breakdown */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                    <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100 text-center">
+                    <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-[10px] border border-green-100 text-center">
                         <FaArrowUp className="text-green-500 mx-auto mb-2" />
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Earnings</p>
                         <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(p.total_earnings)}</p>
                     </div>
-                    <div className="p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl border border-red-100 text-center">
+                    <div className="p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-[10px] border border-red-100 text-center">
                         <FaArrowDown className="text-red-500 mx-auto mb-2" />
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Deductions</p>
                         <p className="text-xl font-bold text-red-600 mt-1">{formatCurrency(p.total_deductions)}</p>
                     </div>
-                    <div className={`p-4 rounded-2xl border text-center ${netNegative ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-100' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'}`}>
+                    <div className={`p-4 rounded-[10px] border text-center ${netNegative ? 'bg-gradient-to-br from-orange-50 to-red-50 border-orange-100' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'}`}>
                         <FaWallet className={`mx-auto mb-2 ${netNegative ? 'text-orange-500' : 'text-blue-500'}`} />
                         <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Net Salary</p>
                         <p className={`text-xl font-bold mt-1 ${netNegative ? 'text-orange-600' : 'text-blue-600'}`}>
@@ -439,7 +439,7 @@ const MyPayroll = () => {
                 <div className="relative w-full">
                     <input type="text" placeholder="Search by month, year, or status..."
                         value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
+                        className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-lg transition-all text-sm"
                     />
                     <FaSearch className="absolute left-4 top-4 text-gray-400 text-lg" />
                     {searchTerm && (
@@ -461,7 +461,7 @@ const MyPayroll = () => {
             {/* Empty */}
             {!loading && payrollData.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-white rounded-2xl shadow-xl"
+                    className="text-center py-16 bg-white rounded-[10px] shadow-xl"
                 >
                     <FaFileInvoiceDollar className="text-8xl text-gray-300 mx-auto mb-4" />
                     <p className="text-xl text-gray-500">No payroll records found</p>
@@ -474,7 +474,7 @@ const MyPayroll = () => {
                     {/* ── TABLE VIEW ─────────────────────────────────────────────────────── */}
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-2xl shadow-xl overflow-visible"
+                            className="bg-white rounded-[10px] shadow-xl overflow-visible"
                         >
                             <div className="overflow-x-auto overflow-y-visible">
                                 <table className="w-full text-sm text-left text-gray-700">
@@ -600,12 +600,12 @@ const MyPayroll = () => {
                                     <motion.div key={p.id}
                                         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.05 }}
-                                        className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                        className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                         onClick={() => openViewModal(item)}
                                     >
                                         {/* Card Header */}
                                         <div className="flex items-start gap-4 mb-4">
-                                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-2xl shadow-md">
+                                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-3 rounded-[10px] shadow-md">
                                                 <FaCalendarAlt className="text-white text-xl" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -708,7 +708,7 @@ const MyPayroll = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[10px] shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
                             {modalType === MODAL_TYPES.VIEW && (

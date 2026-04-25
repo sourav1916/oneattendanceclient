@@ -55,7 +55,7 @@ const GENERATION_MODES = {
 // ─── Helper Components ───────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value, valueClassName = '' }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
             {icon}{label}
         </label>
@@ -453,18 +453,18 @@ const PayrollManagement = () => {
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4"
             >
-                <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
-                    Payroll Management
-                </h1>
+                <div>
+                    <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
+                        Payroll Management
+                    </h1>
+                    <p className="text-xs text-gray-500 mt-1">Generate and manage employee payroll records with integrated attendance data.</p>
+                </div>
                 <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
-                        Total: {pagination.total} records
-                    </div>
                     <button
                         onClick={openGenerateModal}
                         disabled={generatePayrollAccess.disabled}
                         title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
-                        className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-medium"
+                        className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[10px] hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm font-bold"
                     >
                         <FaPlus size={14} />
                         Generate Payroll
@@ -472,16 +472,16 @@ const PayrollManagement = () => {
                 </div>
             </motion.div>
 
-            {/* Filters */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                className="mb-6 bg-white rounded-2xl shadow-lg p-4"
+            {/* ─── Consolidated Filter & View Bar ─── */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
             >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <FaCalendarAlt className="text-green-500" />
-                            Month
-                        </label>
+                {/* Left Section: Time Period Filters */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 flex-1">
+                    <div className="w-full sm:w-48">
                         <Select
                             options={monthOptions}
                             value={monthOptions.find(opt => opt.value === selectedMonth)}
@@ -492,11 +492,7 @@ const PayrollManagement = () => {
                             styles={customSelectStyles}
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <FaCalendarAlt className="text-green-500" />
-                            Year
-                        </label>
+                    <div className="w-full sm:w-32">
                         <Select
                             options={yearOptions}
                             value={yearOptions.find(opt => opt.value === selectedYear)}
@@ -507,27 +503,38 @@ const PayrollManagement = () => {
                             styles={customSelectStyles}
                         />
                     </div>
-                    <div className="flex items-end">
-                        <div className="text-sm text-gray-600 bg-gradient-to-r from-green-50 to-emerald-50 px-4 py-3 rounded-xl border border-green-200 w-full">
-                            <div className="font-semibold text-green-800">Viewing</div>
-                            <div className="text-xs text-gray-600 mt-1">
-                                {getMonthName(selectedMonth)} {selectedYear}
-                            </div>
-                        </div>
+
+                    {!loading && payrollList.length > 0 && (
+                        <p className="text-sm text-gray-500 hidden xl:block border-l pl-4 border-gray-200">
+                            Showing <span className="font-semibold text-gray-800">{payrollList.length}</span> records for <span className="font-semibold text-green-700">{getMonthName(selectedMonth)} {selectedYear}</span>
+                        </p>
+                    )}
+                </div>
+
+                {/* Right Section: Controls */}
+                <div className="flex items-center gap-4 justify-between sm:justify-end">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-100 hidden sm:flex">
+                        <FaChartLine className="text-green-500 text-xs" />
+                        <span className="text-[11px] font-bold text-green-700 uppercase tracking-wider">Active View</span>
                     </div>
+
+                    {/* Vertical Separator */}
+                    <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
+
+                    {/* View Switcher */}
+                    <ManagementViewSwitcher
+                        viewMode={viewMode}
+                        onChange={setViewMode}
+                        accent="green"
+                    />
                 </div>
             </motion.div>
-
-            {/* View Toggle */}
-            <div className="flex justify-end mb-6">
-                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="green" />
-            </div>
 
             {loading && !payrollList.length && <SkeletonComponent />}
 
             {!loading && payrollList.length === 0 && (
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                    className="text-center py-16 bg-white rounded-2xl shadow-xl"
+                    className="text-center py-16 bg-white rounded-[10px] shadow-xl"
                 >
                     <FaFileInvoiceDollar className="text-8xl text-gray-300 mx-auto mb-4" />
                     <p className="text-xl text-gray-500">No payroll records found</p>
@@ -539,7 +546,7 @@ const PayrollManagement = () => {
                 <>
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-2xl shadow-xl overflow-visible"
+                            className="bg-white rounded-[10px] shadow-xl overflow-visible"
                         >
                             <div className="overflow-x-auto overflow-y-visible">
                                 <table className="w-full text-sm text-left text-gray-700">
@@ -668,11 +675,11 @@ const PayrollManagement = () => {
                                 return (
                                     <motion.div key={item.payroll.id} initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                        className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                        className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                         onClick={() => openViewModal(item)}
                                     >
                                         <div className="flex items-start gap-4 mb-4">
-                                            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-2xl">
+                                            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-[10px]">
                                                 <FaFileInvoiceDollar className="text-white text-3xl" />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -687,7 +694,7 @@ const PayrollManagement = () => {
                                         </div>
 
                                         <div className="space-y-3 mb-4">
-                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                                            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-[10px]">
                                                 <span className="text-sm text-gray-600 flex items-center gap-2">
                                                     <FaDollarSign className="text-green-500" />
                                                     Net Salary
@@ -730,7 +737,7 @@ const PayrollManagement = () => {
                                         <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
-                                                className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"
+                                                className="p-3 bg-green-50 text-green-600 rounded-[10px] hover:bg-green-100 transition-all duration-300 hover:scale-110"
                                             >
                                                 <FaEye size={16} />
                                             </button>
@@ -766,7 +773,7 @@ const PayrollManagement = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl max-h-[90vh] flex flex-col"
+                            className="relative w-full bg-white rounded-[10px] shadow-2xl overflow-hidden max-w-4xl max-h-[90vh] flex flex-col"
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}
@@ -775,7 +782,7 @@ const PayrollManagement = () => {
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-[10px] flex items-center justify-center shadow-lg shadow-emerald-200">
                                                     <FaFileInvoiceDollar className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
@@ -879,7 +886,7 @@ const PayrollManagement = () => {
                                                     Attendance Details
                                                 </h3>
                                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                    <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                                                    <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-[10px] border border-green-200">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <FaCheckCircle className="text-green-600" />
                                                             <span className="text-xs font-semibold text-gray-600">Present Days</span>
@@ -889,7 +896,7 @@ const PayrollManagement = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
+                                                    <div className="p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-[10px] border border-red-200">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <FaExclamationTriangle className="text-red-600" />
                                                             <span className="text-xs font-semibold text-gray-600">Absent Days</span>
@@ -899,7 +906,7 @@ const PayrollManagement = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                                                    <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-[10px] border border-blue-200">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <FaCalendarAlt className="text-blue-600" />
                                                             <span className="text-xs font-semibold text-gray-600">Paid Leave</span>
@@ -909,7 +916,7 @@ const PayrollManagement = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
+                                                    <div className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-[10px] border border-yellow-200">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <FaCalendarAlt className="text-yellow-600" />
                                                             <span className="text-xs font-semibold text-gray-600">Unpaid Leave</span>
@@ -919,7 +926,7 @@ const PayrollManagement = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                                                    <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-[10px] border border-orange-200">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <FaExclamationTriangle className="text-orange-600" />
                                                             <span className="text-xs font-semibold text-gray-600">LOP Days</span>
@@ -929,7 +936,7 @@ const PayrollManagement = () => {
                                                         </div>
                                                     </div>
 
-                                                    <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                                                    <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-[10px] border border-purple-200">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <FaDollarSign className="text-purple-600" />
                                                             <span className="text-xs font-semibold text-gray-600">LOP Deduction</span>
@@ -958,7 +965,7 @@ const PayrollManagement = () => {
                                         <div className="mt-6 flex justify-end">
                                             <button
                                                 onClick={closeModal}
-                                                className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium"
+                                                className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-[10px] hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium"
                                             >
                                                 Close
                                             </button>
@@ -973,7 +980,7 @@ const PayrollManagement = () => {
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-[10px] flex items-center justify-center shadow-lg shadow-emerald-200">
                                                     <FaPlus className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
@@ -1015,7 +1022,7 @@ const PayrollManagement = () => {
                                                                 employee_ids: []
                                                             }));
                                                         }}
-                                                        className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                                                        className={`p-4 rounded-[10px] border-2 transition-all duration-200 ${
                                                             generationMode === GENERATION_MODES.INDIVIDUAL
                                                                 ? 'border-emerald-500 bg-emerald-50 shadow-lg'
                                                                 : 'border-gray-200 bg-white hover:border-emerald-200'
@@ -1043,7 +1050,7 @@ const PayrollManagement = () => {
                                                                 employee_ids: []
                                                             }));
                                                         }}
-                                                        className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                                                        className={`p-4 rounded-[10px] border-2 transition-all duration-200 ${
                                                             generationMode === GENERATION_MODES.MULTIPLE
                                                                 ? 'border-emerald-500 bg-emerald-50 shadow-lg'
                                                                 : 'border-gray-200 bg-white hover:border-emerald-200'
@@ -1071,7 +1078,7 @@ const PayrollManagement = () => {
                                                                 employee_ids: []
                                                             }));
                                                         }}
-                                                        className={`p-4 rounded-xl border-2 transition-all duration-200 ${
+                                                        className={`p-4 rounded-[10px] border-2 transition-all duration-200 ${
                                                             generationMode === GENERATION_MODES.ALL
                                                                 ? 'border-emerald-500 bg-emerald-50 shadow-lg'
                                                                 : 'border-gray-200 bg-white hover:border-emerald-200'
@@ -1208,7 +1215,7 @@ const PayrollManagement = () => {
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: 10 }}
-                                                    className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl"
+                                                    className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-[10px]"
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <FaUsers className="text-emerald-600 text-2xl mt-1" />
@@ -1273,7 +1280,7 @@ const PayrollManagement = () => {
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={closeModal}
                                                 disabled={loading}
-                                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-5 py-2.5 rounded-[10px] border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Cancel
                                             </motion.button>
@@ -1283,7 +1290,7 @@ const PayrollManagement = () => {
                                                 whileTap={{ scale: 0.98 }}
                                                 disabled={loading || employeesLoading || generatePayrollAccess.disabled}
                                                 title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
-                                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                className="px-5 py-2.5 rounded-[10px] bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {loading ? (
                                                     <>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    FaMoneyBillWave, FaPlus, FaSpinner, FaCheckCircle,
+    FaMoneyBillWave, FaPlus, FaSpinner, FaCheckCircle,FaMinus,
     FaTimesCircle, FaExclamationTriangle, FaTimes,
     FaChartBar, FaEdit, FaTrash, FaInfoCircle,
     FaListUl, FaTh, FaPercentage, FaDollarSign,
@@ -31,7 +31,7 @@ const backdropVariants = {
     exit: { opacity: 0 }
 };
 
-const CONFIRM_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
+const CONFIRM_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
 
 const COMPONENT_TYPES = [
     { value: 'earning', label: 'Earning', color: 'green' },
@@ -85,7 +85,7 @@ const formatDate = (date) => {
 };
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
             {icon}{label}
         </label>
@@ -111,21 +111,21 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className={`sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r ${tc.gradient} text-white rounded-t-2xl`}>
+                    <div className={`sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r ${tc.gradient} text-white rounded-t-[10px]`}>
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <FaMoneyBillWave /> Component Details
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
 
                     <div className="p-6">
                         <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className={`bg-gradient-to-br ${tc.gradient} p-4 rounded-2xl`}>
+                            <div className={`bg-gradient-to-br ${tc.gradient} p-4 rounded-[10px]`}>
                                 <FaMoneyBillWave className="text-white text-4xl" />
                             </div>
                             <div>
@@ -169,7 +169,7 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                             />
                         </div>
 
-                        <div className="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <div className="mt-6 bg-gray-50 rounded-[10px] p-4 border border-gray-200">
                             <p className="text-xs text-gray-500 flex items-center gap-2">
                                 <FaInfoCircle className="text-blue-400" />
                                 Component ID: #{component.id} · Created: {formatDate(component.created_at)}
@@ -180,13 +180,13 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                     <div className="px-6 pb-6 flex gap-3">
                         <button
                             onClick={() => { onEdit(component); onClose(); }}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-medium flex items-center justify-center gap-2"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[10px] hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-medium flex items-center justify-center gap-2"
                         >
                             <FaEdit size={14} /> Edit Component
                         </button>
                         <button
                             onClick={() => { onDelete(component); onClose(); }}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 transition-all duration-300 font-medium flex items-center justify-center gap-2"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] hover:from-red-700 hover:to-rose-700 transition-all duration-300 font-medium flex items-center justify-center gap-2"
                         >
                             <FaTrash size={14} /> Delete
                         </button>
@@ -250,14 +250,14 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             {isEdit ? <FaEdit /> : <FaPlus />} {isEdit ? 'Edit Component' : 'New Component'}
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
@@ -270,7 +270,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                     value={form.code}
                                     onChange={e => setField('code', e.target.value.toUpperCase())}
                                     placeholder="e.g. HRA"
-                                    className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                    className={`w-full px-3 py-2.5 rounded-[10px] border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                                 />
                                 {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
                             </div>
@@ -280,7 +280,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                     value={form.name}
                                     onChange={e => setField('name', e.target.value)}
                                     placeholder="e.g. House Rent Allowance"
-                                    className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                    className={`w-full px-3 py-2.5 rounded-[10px] border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                                 />
                                 {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                             </div>
@@ -297,7 +297,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                             key={t.value}
                                             type="button"
                                             onClick={() => setField('type', t.value)}
-                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${active ? `bg-gradient-to-r ${tc.gradient} text-white border-transparent shadow-md` : `${tc.bg} ${tc.text} ${tc.border} hover:shadow-sm`}`}
+                                            className={`py-2.5 rounded-[10px] text-xs font-semibold transition-all duration-200 border ${active ? `bg-gradient-to-r ${tc.gradient} text-white border-transparent shadow-md` : `${tc.bg} ${tc.text} ${tc.border} hover:shadow-sm`}`}
                                         >
                                             {t.label}
                                         </button>
@@ -315,7 +315,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                             key={ct.value}
                                             type="button"
                                             onClick={() => setField('calc_type', ct.value)}
-                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center justify-center gap-1 ${form.calc_type === ct.value ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-md' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300'}`}
+                                            className={`py-2.5 rounded-[10px] text-xs font-semibold transition-all duration-200 border flex items-center justify-center gap-1 ${form.calc_type === ct.value ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-md' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300'}`}
                                         >
                                             <span className="font-bold">{ct.icon}</span> {ct.label}
                                         </button>
@@ -339,7 +339,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                             if (val === '' || /^\d*\.?\d*$/.test(val)) setField('calc_value', val);
                                         }}
                                         placeholder="0.00"
-                                        className={`w-full pl-8 pr-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.calc_value ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                        className={`w-full pl-8 pr-3 py-2.5 rounded-[10px] border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.calc_value ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                                     />
                                 </div>
                                 {errors.calc_value && <p className="text-xs text-red-500 mt-1">{errors.calc_value}</p>}
@@ -358,7 +358,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                                         key={toggle.key}
                                         type="button"
                                         onClick={() => setField(toggle.key, !isOn)}
-                                        className={`p-3 rounded-xl border text-left transition-all duration-200 ${isOn ? `bg-gradient-to-br ${colorMap[toggle.color]} text-white border-transparent shadow-md` : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        className={`p-3 rounded-[10px] border text-left transition-all duration-200 ${isOn ? `bg-gradient-to-br ${colorMap[toggle.color]} text-white border-transparent shadow-md` : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'}`}
                                     >
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-xs font-bold">{toggle.label}</span>
@@ -374,14 +374,14 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                     <div className="px-6 pb-6 flex gap-3">
                         <button
                             onClick={onClose}
-                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium"
+                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleSubmit}
                             disabled={saving}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-[10px] hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                         >
                             {saving ? <FaSpinner className="animate-spin" /> : (isEdit ? <FaEdit /> : <FaPlus />)}
                             {saving ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Component')}
@@ -413,11 +413,11 @@ const DeleteConfirmModal = ({ component, onClose, onConfirm, deleting }) => {
                     className={CONFIRM_MODAL_CLASS}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <FaTrash /> Delete Component
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
@@ -436,11 +436,11 @@ const DeleteConfirmModal = ({ component, onClose, onConfirm, deleting }) => {
                         </p>
                         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
                             <button onClick={onClose}
-                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
+                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
                                 Keep
                             </button>
                             <button onClick={() => onConfirm(component.id)} disabled={deleting}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
                                 {deleting && <FaSpinner className="animate-spin" />}
                                 Delete Component
                             </button>
@@ -773,66 +773,88 @@ const SalaryComponents = () => {
 
     return (
         <ManagementHub
-            eyebrow="Salary components"
+            eyebrow={<><FaMoneyBillWave size={11} /> Global Settings</>}
             title="Salary Components"
-            description="Manage earnings, deductions, and employer contribution components from a shared production UI."
+            description="Manage earnings, deductions, and employer contribution components for payroll structure."
             accent="blue"
-            summary={(
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-                    <FaMoneyBillWave className="h-4 w-4" />
-                    <span>{stats.total}</span>
-                    <span>components</span>
+            actions={
+                <div className="flex items-center gap-3">
+                    <ManagementButton
+                        tone="blue"
+                        variant="solid"
+                        leftIcon={<FaPlus />}
+                        onClick={() => setFormModal({ mode: 'create', data: {} })}
+                    >
+                        Add Component
+                    </ManagementButton>
                 </div>
-            )}
-            actions={(
-                <ManagementButton
-                    tone="blue"
-                    variant="solid"
-                    leftIcon={<FaPlus />}
-                    onClick={() => setFormModal({ mode: 'create', data: {} })}
-                >
-                    Add Component
-                </ManagementButton>
-            )}
-            contentClassName="space-y-6"
+            }
         >
-            <ManagementCard
-                accent="slate"
-                title="Search"
-                subtitle="Find and filter salary components by name or code."
-                icon={<FaSearch />}
-                hoverable={false}
-                bodyClassName="pt-0"
-            >
-                <div className="relative">
-                    <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                    <input
-                        type="text"
-                        placeholder="Search by component name or code..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-12 outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20"
-                    />
-                    {searchTerm && (
-                        <button
-                            type="button"
-                            onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
-                        >
-                            <FaTimes />
-                        </button>
-                    )}
-                </div>
-            </ManagementCard>
+            <div className="space-y-6">
+                {/* Stats */}
+                {!loading && components.length > 0 && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Total Components', val: stats.total, icon: FaMoneyBillWave, color: 'blue' },
+                            { label: 'Earnings', val: stats.earningCount, icon: FaPlus, color: 'green' },
+                            { label: 'Deductions', val: stats.deductionCount, icon: FaMinus, color: 'red' },
+                            { label: 'Contributions', val: stats.employerCount, icon: FaBuilding, color: 'indigo' },
+                        ].map((s) => (
+                            <div key={s.label} className="bg-white rounded-[10px] p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{s.label}</p>
+                                    <p className="text-2xl font-black text-slate-800 mt-1">{s.val}</p>
+                                </div>
+                                <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-110 ${s.color === 'blue' ? 'bg-blue-50 text-blue-600' : s.color === 'green' ? 'bg-emerald-50 text-emerald-600' : s.color === 'red' ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                                    <s.icon size={18} />
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
+                )}
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-gray-500">
-                    <span className="font-semibold text-gray-800">{components.length}</span> of{' '}
-                    <span className="font-semibold text-gray-800">{stats.total}</span> components
-                    {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
-                </p>
-                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-            </div>
+                {/* ─── Consolidated Filter & View Bar ─── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                >
+                    {/* Left Section: Search, Result Info & View Mode */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                        <div className="relative flex-1 w-full">
+                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                            <input
+                                type="text"
+                                placeholder="Search by name or code..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                                >
+                                    <FaTimes size={14} />
+                                </button>
+                            )}
+                        </div>
+                        {!loading && components.length > 0 && (
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
+                                {pagination.total} Components
+                            </p>
+                        )}
+
+                        <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
+
+                        <ManagementViewSwitcher
+                            viewMode={viewMode}
+                            onChange={setViewMode}
+                            accent="blue"
+                        />
+                    </div>
+                </motion.div>
 
             {loading && !components.length && <SkeletonComponent />}
 
@@ -893,19 +915,19 @@ const SalaryComponents = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2">
-                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-2 text-center">
+                                    <div className="rounded-[10px] border border-gray-100 bg-gray-50 p-2 text-center">
                                         <p className="text-xs text-gray-500">Calculation</p>
                                         <p className="mt-1 text-sm font-semibold capitalize text-gray-700">
                                             {comp.calc_type}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-2 text-center">
+                                    <div className="rounded-[10px] border border-gray-100 bg-gray-50 p-2 text-center">
                                         <p className="text-xs text-gray-500">Taxable</p>
                                         <p className={`mt-1 text-sm font-semibold ${comp.is_taxable ? 'text-orange-600' : 'text-gray-400'}`}>
                                             {comp.is_taxable ? 'Yes' : 'No'}
                                         </p>
                                     </div>
-                                    <div className="col-span-2 rounded-xl border border-gray-100 bg-gray-50 p-2 text-center">
+                                    <div className="col-span-2 rounded-[10px] border border-gray-100 bg-gray-50 p-2 text-center">
                                         <p className="text-xs text-gray-500">Statutory</p>
                                         <p className={`mt-1 text-sm font-semibold ${comp.is_statutory ? 'text-blue-600' : 'text-gray-400'}`}>
                                             {comp.is_statutory ? 'Yes' : 'No'}
@@ -928,6 +950,7 @@ const SalaryComponents = () => {
                     onLimitChange={changeLimit}
                 />
             )}
+            </div>
 
             {/* Modals */}
             <AnimatePresence>

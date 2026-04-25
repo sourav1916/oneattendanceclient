@@ -30,7 +30,7 @@ const backdropVariants = {
     exit: { opacity: 0 }
 };
 
-const CONFIRM_MODAL_CLASS = "bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
+const CONFIRM_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
     const contributionItems = pkg.items.filter(i => i.type?.includes('employer'));
 
     const InfoItem = ({ icon, label, value }) => (
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
                 {icon}{label}
             </label>
@@ -95,14 +95,14 @@ const PackageDetailModal = ({ pkg, onClose }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <FaBriefcase /> Package Details
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
@@ -110,7 +110,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
                     <div className="p-6">
                         {/* Package Profile */}
                         <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl">
+                            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-[10px]">
                                 <FaBriefcase className="text-white text-4xl" />
                             </div>
                             <div>
@@ -160,7 +160,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: i * 0.05 }}
-                                                className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200"
+                                                className="flex items-center justify-between p-3 rounded-[10px] bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200"
                                             >
                                                 <div className="flex items-center gap-2.5">
                                                     <span className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-md flex items-center justify-center font-bold flex-shrink-0">
@@ -188,7 +188,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
 
                     <div className="px-6 pb-6">
                         <button onClick={onClose}
-                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
+                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-[10px] hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
                             Close
                         </button>
                     </div>
@@ -268,14 +268,14 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
+                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-2xl">
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             {isEdit ? <FaEdit /> : <FaPlus />} {isEdit ? 'Edit Package' : 'Create Package'}
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
@@ -287,7 +287,7 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 placeholder="e.g. New Employee Package"
-                                className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                className={`w-full px-4 py-2.5 rounded-[10px] border text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                             />
                             {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
                         </div>
@@ -299,7 +299,7 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                                     value={code}
                                     onChange={e => setCode(e.target.value.toUpperCase())}
                                     placeholder="e.g. PKG_001"
-                                    className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
+                                    className={`w-full px-4 py-2.5 rounded-[10px] border text-sm font-mono focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all ${errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
                                 />
                                 {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
                             </div>
@@ -312,7 +312,7 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                                 onChange={e => setDescription(e.target.value)}
                                 placeholder="Optional description..."
                                 rows={2}
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
+                                className="w-full px-4 py-2.5 rounded-[10px] border border-gray-200 bg-gray-50 focus:bg-white text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
                             />
                         </div>
 
@@ -329,7 +329,7 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                                             key={comp.id}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => toggleComponent(comp.id)}
-                                            className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200 ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}
+                                            className={`flex items-center justify-between p-3 rounded-[10px] border cursor-pointer transition-all duration-200 ${isSelected ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}
                                         >
                                             <div className="flex items-center gap-2.5">
                                                 <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
@@ -360,7 +360,7 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                                         const comp = availableComponents.find(c => c.id === sel.component_id);
                                         if (!comp) return null;
                                         return (
-                                            <div key={sel.component_id} className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-2.5 border border-gray-200">
+                                            <div key={sel.component_id} className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-[10px] p-2.5 border border-gray-200">
                                                 <span className="w-6 h-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white text-xs rounded-md flex items-center justify-center font-bold flex-shrink-0">{idx + 1}</span>
                                                 <span className="flex-1 text-sm font-medium text-gray-800 truncate">{comp.name}</span>
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border flex-shrink-0 ${getTypeStyle(comp.type)}`}>
@@ -386,13 +386,13 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
 
                     <div className="px-6 pb-6 pt-4 border-t border-gray-100 flex gap-3">
                         <button onClick={onClose}
-                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">
+                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium text-sm">
                             Cancel
                         </button>
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                             onClick={handleSubmit} disabled={saving}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-[10px] hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium text-sm flex items-center justify-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? <FaSpinner className="animate-spin" /> : <FaCheck />}
                             {saving ? 'Saving...' : isEdit ? 'Update Package' : 'Create Package'}
@@ -422,11 +422,11 @@ const DeleteModal = ({ pkg, onClose, onConfirm, deleting }) => {
                     className={CONFIRM_MODAL_CLASS}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-2xl">
+                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <FaTrash /> Delete Package
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
@@ -445,11 +445,11 @@ const DeleteModal = ({ pkg, onClose, onConfirm, deleting }) => {
                         </p>
                         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
                             <button onClick={onClose}
-                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
+                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
                                 Keep
                             </button>
                             <button onClick={() => onConfirm(pkg.id)} disabled={deleting}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
                                 {deleting && <FaSpinner className="animate-spin" />}
                                 Delete Package
                             </button>
@@ -515,15 +515,15 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle 
             }
         >
             <div className="grid grid-cols-3 gap-2">
-                <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
+                <div className="bg-green-50 border border-green-100 rounded-[10px] p-2 text-center">
                     <p className="text-sm font-bold text-green-700">{earningCount}</p>
                     <p className="text-xs text-green-500">Earnings</p>
                 </div>
-                <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-center">
+                <div className="bg-red-50 border border-red-100 rounded-[10px] p-2 text-center">
                     <p className="text-sm font-bold text-red-600">{deductionCount}</p>
                     <p className="text-xs text-red-400">Deductions</p>
                 </div>
-                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
+                <div className="bg-blue-50 border border-blue-100 rounded-[10px] p-2 text-center">
                     <p className="text-sm font-bold text-blue-700">{contributionCount}</p>
                     <p className="text-xs text-blue-400">Contributions</p>
                 </div>
@@ -727,7 +727,7 @@ const SalaryPackages = () => {
             label: 'Package',
             render: (pkg) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                         <FaBriefcase className="text-white text-sm" />
                     </div>
                     <div>
@@ -839,19 +839,13 @@ const SalaryPackages = () => {
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
     return (
-        <ManagementHub
-            eyebrow="Salary packages"
-            title="Salary Packages"
-            description="Manage salary package templates with earnings, deductions, and employer contribution components."
-            accent="blue"
-            summary={(
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-                    <FaBriefcase className="h-4 w-4" />
-                    <span>{pagination.total}</span>
-                    <span>packages</span>
-                </div>
-            )}
-            actions={(
+    <ManagementHub
+        eyebrow={<><FaBriefcase size={11} /> Compensation</>}
+        title="Salary Packages"
+        description="Create and manage structured salary packages by combining multiple earning and deduction components."
+        accent="blue"
+        actions={
+            <div className="flex items-center gap-3">
                 <ManagementButton
                     tone="blue"
                     variant="solid"
@@ -860,71 +854,77 @@ const SalaryPackages = () => {
                 >
                     Create Package
                 </ManagementButton>
-            )}
-            contentClassName="space-y-6"
-        >
+            </div>
+        }
+    >
+        <div className="space-y-6">
             {/* Stats Row */}
             {!loading && packages.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Total Packages</p>
-                        <p className="text-2xl font-bold">{pagination.total}</p>
-                    </div>
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Active</p>
-                        <p className="text-2xl font-bold">{activePackages}</p>
-                    </div>
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Total Components</p>
-                        <p className="text-2xl font-bold">{totalComponents}</p>
-                    </div>
-                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-4 text-white shadow-lg">
-                        <p className="text-xs opacity-80">Avg / Package</p>
-                        <p className="text-2xl font-bold">{packages.length ? (totalComponents / packages.length).toFixed(1) : '0'}</p>
-                    </div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                        { label: 'Total Packages', val: pagination.total, color: 'from-blue-600 to-indigo-600', icon: FaBriefcase },
+                        { label: 'Active Packages', val: activePackages, color: 'from-green-600 to-emerald-600', icon: FaCheckCircle },
+                        { label: 'Total Components', val: totalComponents, color: 'from-purple-600 to-pink-600', icon: FaLayerGroup },
+                        { label: 'Avg / Package', val: packages.length ? (totalComponents / packages.length).toFixed(1) : '0', color: 'from-orange-500 to-amber-500', icon: FaCog },
+                    ].map((s) => (
+                        <div key={s.label} className={`bg-gradient-to-br ${s.color} rounded-[10px] p-5 shadow-lg text-white group hover:shadow-xl transition-all`}>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">{s.label}</p>
+                                    <p className="text-2xl font-black mt-1">{s.val}</p>
+                                </div>
+                                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-md group-hover:scale-110 transition-transform">
+                                    <s.icon size={18} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </motion.div>
             )}
 
-            {/* Search */}
-            <ManagementCard
-                accent="slate"
-                title="Search"
-                subtitle="Find and filter salary packages by name or code."
-                icon={<FaSearch />}
-                hoverable={false}
-                bodyClassName="pt-0"
+            {/* ─── Consolidated Filter & View Bar ─── */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
             >
-                <div className="relative">
-                    <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                    <input
-                        type="text"
-                        placeholder="Search packages by name or code..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm"
-                    />
-                    {searchTerm && (
-                        <button
-                            onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <FaTimes />
-                        </button>
+                {/* Left Section: Search & Result Info */}
+                <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+                    <div className="relative flex-1 w-full">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                        <input
+                            type="text"
+                            placeholder="Search packages by name or code..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                            >
+                                <FaTimes size={14} />
+                            </button>
+                        )}
+                    </div>
+                    {!loading && packages.length > 0 && (
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
+                            {pagination.total} Packages
+                        </p>
                     )}
                 </div>
-            </ManagementCard>
 
-            {/* View toggle + count */}
-            {!loading && packages.length > 0 && (
-                <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-500">
-                        <span className="font-semibold text-gray-800">{packages.length}</span> of{' '}
-                        <span className="font-semibold text-gray-800">{pagination.total}</span> packages
-                        {debouncedSearch && <span className="ml-1 text-blue-600">· "{debouncedSearch}"</span>}
-                    </p>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                {/* Right Section: Controls */}
+                <div className="flex items-center justify-end">
+                    <ManagementViewSwitcher
+                        viewMode={viewMode}
+                        onChange={setViewMode}
+                        accent="blue"
+                    />
                 </div>
-            )}
+            </motion.div>
 
             {/* Loading skeleton */}
             {loading && !packages.length && <SkeletonComponent />}
@@ -976,6 +976,7 @@ const SalaryPackages = () => {
                     onLimitChange={changeLimit}
                 />
             )}
+            </div>
 
             {/* Modals */}
             <AnimatePresence>

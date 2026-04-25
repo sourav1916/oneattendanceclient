@@ -141,7 +141,7 @@ const BoolCell = ({ value }) =>
 // ─── Toggle Switch ────────────────────────────────────────────────────────────
 
 const ToggleSwitch = ({ checked, onChange, label, sublabel }) => (
-  <div className="flex cursor-pointer items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition hover:bg-gray-100">
+  <div className="flex cursor-pointer items-center justify-between rounded-[10px] border border-gray-100 bg-gray-50 px-4 py-3 transition hover:bg-gray-100">
     <div>
       <p className="text-sm font-medium text-gray-700">{label}</p>
       {sublabel && <p className="text-xs text-gray-400">{sublabel}</p>}
@@ -204,7 +204,7 @@ const ActionMenu = ({
 const SkeletonLoader = () => (
   <div className="space-y-3">
     {[1, 2, 3, 4, 5].map((i) => (
-      <div key={i} className="animate-pulse rounded-2xl bg-white p-5 shadow-sm">
+      <div key={i} className="animate-pulse rounded-[10px] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="h-4 w-1/3 rounded-lg bg-gray-200" />
           <div className="h-6 w-20 rounded-full bg-gray-200" />
@@ -221,19 +221,6 @@ const SkeletonLoader = () => (
 
 // ─── View Details Modal ───────────────────────────────────────────────────────
 
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.93, y: 24 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', stiffness: 320, damping: 28 } },
-  exit: { opacity: 0, scale: 0.93, y: 24, transition: { duration: 0.2 } },
-};
-
-const InfoItem = ({ label, value }) => (
-  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
-    <div className="text-sm font-medium text-gray-800">{value ?? '—'}</div>
-  </div>
-);
-
 const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editTitle = '' }) => {
   if (!record) return null;
   return (
@@ -247,13 +234,13 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
         <ModalScrollLock />
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-          className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+          className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+          <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
                   <FaEye className="text-white text-sm" />
                 </div>
                 <div>
@@ -261,7 +248,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
                   <p className="text-xs text-white/80">{record.name} · {record.code}</p>
                 </div>
               </div>
-              <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
+              <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
                 <FaTimes size={20} />
               </button>
             </div>
@@ -270,7 +257,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
             <div className="flex flex-wrap items-start gap-4 pb-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-50 text-sm font-bold text-violet-700 border border-violet-100">
+                <span className="flex h-12 w-12 items-center justify-center rounded-[10px] bg-violet-50 text-sm font-bold text-violet-700 border border-violet-100">
                   {record.code}
                 </span>
                 <div>
@@ -301,7 +288,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
           </div>
 
           <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
+            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all">
               Close
             </button>
             <button
@@ -309,7 +296,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
               onClick={() => { onClose(); onEdit(record); }}
               disabled={editDisabled}
               title={editDisabled ? editTitle : ''}
-              className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[10px] font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <FaEdit size={14} /> Edit
             </button>
@@ -319,6 +306,13 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
     </AnimatePresence>
   );
 };
+
+const InfoItem = ({ label, value }) => (
+  <div className="rounded-[10px] border border-gray-100 bg-gray-50 p-3">
+    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+    <div className="text-sm font-medium text-gray-800">{value ?? '—'}</div>
+  </div>
+);
 
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
@@ -333,13 +327,13 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
       initial={{ scale: 0.9, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }}
       exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-      className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+      className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-3xl px-6 py-5">
+      <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
               <FaTrash className="text-white text-sm" />
             </div>
             <div>
@@ -347,7 +341,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
               <p className="text-xs text-white/80">{leaveType?.name}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+          <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
         </div>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6">
@@ -356,10 +350,10 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
         </p>
       </div>
       <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-        <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
+        <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all">
           Cancel
         </button>
-        <button type="button" onClick={onConfirm} disabled={loading || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+        <button type="button" onClick={onConfirm} disabled={loading || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
           {loading ? 'Deleting…' : 'Delete'}
         </button>
       </div>
@@ -385,15 +379,6 @@ const FormModal = ({
   const [errors, setErrors] = useState({});
 
   const set = (key, value) => setForm((p) => ({ ...p, [key]: value }));
-
-  // When a preset leave type is selected from constants, auto-fill code + name
-  const handleLeaveTypeSelect = (e) => {
-    const selected = leaveTypeOptions.find((o) => o.value === e.target.value);
-    if (selected) {
-      set('code', selected.value.toUpperCase());
-      set('name', selected.label);
-    }
-  };
 
   // Filter out options whose codes are already used in existing records
   const availableLeaveTypeOptions = leaveTypeOptions.filter(
@@ -440,7 +425,7 @@ const FormModal = ({
   };
 
   const inputCls = (field) =>
-    `w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition focus:ring-4 bg-white ${errors[field]
+    `w-full rounded-[10px] border px-4 py-2.5 text-sm outline-none transition focus:ring-4 bg-white ${errors[field]
       ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
       : 'border-gray-200 focus:border-slate-400 focus:ring-slate-200'}`;
 
@@ -455,13 +440,13 @@ const FormModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }}
         exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-        className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+        className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+        <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
                 {isEdit ? <FaEdit className="text-white text-sm" /> : <FaPlus className="text-white text-sm" />}
               </div>
               <div>
@@ -469,9 +454,9 @@ const FormModal = ({
                 <p className="text-xs text-white/80">{isEdit ? `Editing ${form.name}` : 'Configure a new leave type'}</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
+            <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
               <FaTimes size={20} />
-            </button>
+             </button>
           </div>
         </div>
 
@@ -493,7 +478,7 @@ const FormModal = ({
                         set('name', opt.label);
                       }}
                       title={opt.description}
-                      className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                      className={`rounded-[10px] border px-3 py-1.5 text-xs font-medium transition ${
                         form.code === opt.value.toUpperCase()
                           ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
                           : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-violet-50 hover:border-violet-300'
@@ -512,14 +497,14 @@ const FormModal = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Code <span className="text-red-400">*</span></label>
-                <div className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-gray-50 ${form.code ? 'text-gray-800 font-semibold border-gray-200' : 'text-gray-400 border-gray-200'}`}>
+                <div className={`w-full rounded-[10px] border px-4 py-2.5 text-sm bg-gray-50 ${form.code ? 'text-gray-800 font-semibold border-gray-200' : 'text-gray-400 border-gray-200'}`}>
                   {form.code || 'Select a type above'}
                 </div>
                 {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code}</p>}
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Name <span className="text-red-400">*</span></label>
-                <div className={`w-full rounded-xl border px-4 py-2.5 text-sm bg-gray-50 ${form.name ? 'text-gray-800 font-semibold border-gray-200' : 'text-gray-400 border-gray-200'}`}>
+                <div className={`w-full rounded-[10px] border px-4 py-2.5 text-sm bg-gray-50 ${form.name ? 'text-gray-800 font-semibold border-gray-200' : 'text-gray-400 border-gray-200'}`}>
                   {form.name || 'Select a type above'}
                 </div>
                 {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
@@ -603,10 +588,10 @@ const FormModal = ({
         </div>
 
         <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-          <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
+          <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all">
             Cancel
           </button>
-          <button type="button" onClick={handleSubmit} disabled={saving || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+          <button type="button" onClick={handleSubmit} disabled={saving || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[10px] font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Leave Type'}
           </button>
         </div>
@@ -816,67 +801,56 @@ const LeaveConfigManagement = () => {
     <div className="min-h-screen p-4 font-sans md:p-6">
       <div className="mx-auto max-w-7xl">
 
-        {/* ── Header ── */}
+        {/* ─── Consolidated Filter & View Bar ─── */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex flex-col items-center justify-between gap-3 sm:flex-row"
+          transition={{ delay: 0.1 }}
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
         >
-          <h1 className="flex items-center gap-2 text-2xl font-extrabold text-gray-800 md:text-3xl">
-            <FaUmbrellaBeach className="text-slate-500" />
-            Leave Configuration
-          </h1>
-
-          <div className="flex items-center gap-3">
-            {loading && (
-              <span className="flex items-center gap-1.5 rounded-full bg-blue-50 px-4 py-2 text-xs font-medium text-blue-600 shadow-sm">
-                <span className="inline-block h-2 w-2 animate-ping rounded-full bg-blue-400" />
-                Syncing…
-              </span>
-            )}
-            <div className="rounded-full bg-white px-5 py-2 text-sm text-gray-600 shadow-md">
-              <FaLayerGroup className="mr-2 inline text-slate-400" />
-              {pagination.total} type{pagination.total !== 1 ? 's' : ''}
+          {/* Left Section: Search & Result Info */}
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              <input
+                type="text"
+                placeholder="Search leave types by name or code..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
             </div>
-            <button
-              type="button"
+
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
               onClick={openCreateModal}
               disabled={createAccess.disabled}
               title={createAccess.disabled ? createMessage : ''}
-              className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
             >
               <FaPlus size={12} /> New Leave Type
-            </button>
+            </motion.button>
           </div>
-        </motion.div>
 
-        {/* ── Search ── */}
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-          <div className="relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, code, or accrual type…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-12 pr-4 shadow-md outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-200"
-            />
-            {searchTerm && (
-              <button type="button" onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <FaTimes size={14} />
-              </button>
-            )}
+          {/* Right Section: View Switcher */}
+          <div className="flex items-center justify-end">
+            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
           </div>
         </motion.div>
 
         {/* ── Error ── */}
-        {/* View Toggle */}
-        <div className="flex justify-end mb-6">
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-        </div>
-
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-2xl bg-red-50 p-4 text-red-700 text-sm">
+          <div className="mb-4 flex items-center gap-2 rounded-[10px] bg-red-50 p-4 text-red-700 text-sm">
             <FaExclamationCircle />
             {error}
             <button type="button" onClick={loadRecords} className="ml-auto rounded-lg bg-red-100 px-3 py-1 text-xs font-medium hover:bg-red-200">Retry</button>
@@ -888,7 +862,7 @@ const LeaveConfigManagement = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-2xl bg-white shadow-xl overflow-visible`}
+            className={`${viewMode === 'table' ? 'block' : 'hidden'} rounded-[10px] bg-white shadow-xl overflow-visible`}
           >
             <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full text-left text-sm text-gray-700">
@@ -970,12 +944,12 @@ const LeaveConfigManagement = () => {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                 onClick={() => setViewModal({ open: true, record })}
               >
                 <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-slate-100 text-xs font-bold text-slate-700">
                       {record.code}
                     </span>
                     <div>
@@ -1051,7 +1025,7 @@ const LeaveConfigManagement = () => {
 
         {/* ── Empty State ── */}
         {!loading && records.length === 0 && (
-          <motion.div initial={{ scale: 0.96 }} animate={{ scale: 1 }} className="rounded-2xl bg-white py-16 text-center shadow-md">
+          <motion.div initial={{ scale: 0.96 }} animate={{ scale: 1 }} className="rounded-[10px] bg-white py-16 text-center shadow-md">
             <FaUmbrellaBeach className="mx-auto mb-4 text-5xl text-gray-200" />
             <p className="text-lg font-semibold text-gray-500">No leave types found</p>
             <p className="mt-1 text-sm text-gray-400 mb-6">
@@ -1063,7 +1037,7 @@ const LeaveConfigManagement = () => {
                 onClick={openCreateModal}
                 disabled={createAccess.disabled}
                 title={createAccess.disabled ? createMessage : ''}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <FaPlus size={12} /> Create Leave Type
               </button>

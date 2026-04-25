@@ -283,12 +283,12 @@ const Login = () => {
 
           {/* Right Card */}
           <motion.div variants={itemVariants} className="w-full lg:w-96">
-            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-2xl shadow-2xl">
+            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-[10px] shadow-2xl">
               <AnimatePresence mode="wait">
                 {!showCompanySelection ? (
                   <motion.div key="login" initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 50, opacity: 0 }}>
                     <div className="flex flex-col items-center mb-8">
-                      <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-2xl text-white text-3xl shadow-lg">
+                      <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-[10px] text-white text-3xl shadow-lg">
                         <FaUserShield />
                       </motion.div>
                       <h2 className="text-2xl font-bold text-gray-800 mt-4">{otpSent ? 'Verify OTP' : 'Secure Login'}</h2>

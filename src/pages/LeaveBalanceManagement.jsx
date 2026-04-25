@@ -203,7 +203,7 @@ const SearchableSelect = ({
         {label}
       </label>
       <div
-        className={`relative cursor-pointer rounded-2xl border border-slate-200 bg-slate-50/50 transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-50 ${disabled ? 'pointer-events-none' : ''}`}
+        className={`relative cursor-pointer rounded-[10px] border border-slate-200 bg-slate-50/50 transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-50 ${disabled ? 'pointer-events-none' : ''}`}
         onClick={() => {
           if (disabled) return;
           setIsOpen(!isOpen);
@@ -227,7 +227,7 @@ const SearchableSelect = ({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+            className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl"
           >
             <div className="border-b border-slate-100 p-3">
               <div className="relative">
@@ -238,7 +238,7 @@ const SearchableSelect = ({
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-violet-400 focus:bg-white"
+                  className="w-full rounded-[10px] border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-violet-400 focus:bg-white"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -301,7 +301,7 @@ const StatCard = ({ stat }) => {
   const styles = STAT_STYLES[stat.color];
 
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-white bg-white p-5 shadow-lg shadow-slate-200/50 transition duration-300 hover:shadow-xl sm:p-6">
+    <div className="group relative overflow-hidden rounded-[10px] border border-white bg-white p-5 shadow-lg shadow-slate-200/50 transition duration-300 hover:shadow-xl sm:p-6">
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${styles.glow}`} />
       <div className="relative z-10 flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -311,7 +311,7 @@ const StatCard = ({ stat }) => {
             {!stat.isCount && <span className="ml-1 text-xs font-bold uppercase text-slate-300">days</span>}
           </p>
         </div>
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${styles.iconWrap}`}>
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] ${styles.iconWrap}`}>
           <stat.icon size={20} />
         </div>
       </div>
@@ -320,7 +320,7 @@ const StatCard = ({ stat }) => {
 };
 
 const DetailItem = ({ label, value, className = '' }) => (
-  <div className={`rounded-2xl border border-slate-100 bg-slate-50/80 p-4 ${className}`}>
+  <div className={`rounded-[10px] border border-slate-100 bg-slate-50/80 p-4 ${className}`}>
     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">{label}</p>
     <div className="mt-2 text-sm font-semibold text-slate-800">{value}</div>
   </div>
@@ -344,12 +344,12 @@ const MobileBalanceCard = ({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
+      className="bg-white rounded-[10px] shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
       onClick={() => onView(employee)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 font-bold shrink-0">
+          <div className="w-12 h-12 rounded-[10px] bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 font-bold shrink-0">
             {employee.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
           <div className="min-w-0">
@@ -378,7 +378,7 @@ const MobileBalanceCard = ({
          </div>
          <div className="grid gap-2">
             {employee.leaves.slice(0, 3).map((leave, idx) => (
-               <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+               <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-[10px] border border-slate-100/50">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-violet-400" />
                     <span className="text-xs font-bold text-slate-700">{leave.code}</span>
@@ -814,7 +814,7 @@ const LeaveBalanceManagement = () => {
             employee.leaves.map((leave, idx) => (
               <div 
                 key={idx} 
-                className="group relative flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-100 bg-slate-50 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all"
+                className="group relative flex items-center gap-1.5 px-2 py-1 rounded-[10px] border border-slate-100 bg-slate-50 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all"
                 title={`${leave.name}: ${formatDays(leave.remaining)}/${formatDays(leave.total_allocated)} remaining`}
               >
                 <span className="text-[10px] font-bold text-violet-700">{leave.code}</span>
@@ -888,12 +888,12 @@ const LeaveBalanceManagement = () => {
         {!loading && balances.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div key={stat.label} className="bg-white rounded-[10px] p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">{stat.label}</p>
                   <p className="text-2xl font-black text-slate-800 mt-1">{stat.isCount ? stat.value : formatDays(stat.value)}</p>
                 </div>
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
+                <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
                   <stat.icon size={18} />
                 </div>
               </div>
@@ -901,36 +901,83 @@ const LeaveBalanceManagement = () => {
           </motion.div>
         )}
 
-        {/* Filters */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col gap-4">
-          <div className="relative flex-1">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search employee name, code or leave type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
-            />
+        {/* ─── Consolidated Filter & View Bar ─── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+        >
+          {/* Left Section: Search & Result Info */}
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+            <div className="relative flex-1 w-full">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+              <input
+                type="text"
+                placeholder="Search by name, code, or leave type..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <FaTimes size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              {YEAR_OPTIONS.map((year) => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
+                    selectedYear === year
+                      ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-100'
+                      : 'bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-600'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="bg-white border border-slate-200 rounded-2xl px-4 py-3.5 text-sm font-bold text-slate-600 outline-none focus:ring-4 focus:ring-violet-500/10 transition-all cursor-pointer hover:border-violet-200"
+
+          {/* Right Section: Controls */}
+          <div className="flex items-center gap-3 justify-between sm:justify-end">
+            <motion.button
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => openModal('assign')}
+              disabled={createAccess.disabled}
+              title={createAccess.disabled ? createMessage : ''}
+              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-[10px] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {YEAR_OPTIONS.map(y => <option key={y} value={y}>Year {y}</option>)}
-            </select>
-            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
+              <FaPlus size={14} />
+              <span className="text-sm">Assign Balance</span>
+            </motion.button>
+
+            {/* Vertical Separator */}
+            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+
+            {/* View Switcher */}
+            <ManagementViewSwitcher
+              viewMode={viewMode}
+              onChange={setViewMode}
+              accent="violet"
+            />
           </div>
         </motion.div>
 
         {/* Data View */}
         {totalItems === 0 && !loading ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-100">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><FaListUl size={24} /></div>
-            <p className="text-slate-500 font-bold">No records found</p>
-            <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">{searchTerm ? `We couldn't find anything matching "${searchTerm}"` : "Try assigning a new leave balance to get started."}</p>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-[10px] border-2 border-dashed border-slate-100">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><FaCalendarAlt size={24} /></div>
+            <p className="text-slate-500 font-bold">No leave balances found</p>
+            <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">{searchTerm ? `We couldn't find anything matching "${searchTerm}"` : "Employee leave balances will appear here."}</p>
           </motion.div>
         ) : viewMode === 'table' ? (
           <ManagementTable
@@ -978,39 +1025,39 @@ const LeaveBalanceManagement = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
             onMouseDown={(event) => event.target === event.currentTarget && closeViewModal()}>
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+              className="bg-white rounded-[10px] shadow-2xl border border-gray-100 w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
               {/* Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white px-6 sm:px-8 py-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-xl font-black shrink-0">
-                      {viewModal.balance.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    <div className="w-14 h-14 bg-white/20 rounded-[10px] flex items-center justify-center text-xl font-black shrink-0">
+                      <FaUser size={22} />
                     </div>
                     <div className="min-w-0">
                       <h2 className="text-xl font-bold truncate leading-tight">{viewModal.balance.employee_name}</h2>
                       <p className="text-white/70 text-sm mt-1 flex items-center gap-2">
                         <span className="font-mono">{viewModal.balance.employee_code}</span>
                         <span>•</span>
-                        <span className="truncate">{viewModal.balance.email}</span>
+                        <span className="truncate">{selectedYear} Balance</span>
                       </p>
                     </div>
                   </div>
-                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0"><FaTimes size={20} /></button>
+                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all shrink-0"><FaTimes size={20} /></button>
                 </div>
               </div>
 
               {/* Body */}
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
                       <p className="text-sm font-bold text-emerald-600">Active Employment</p>
                    </div>
-                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Year</p>
                     <p className="text-sm font-bold text-slate-700">{viewModal.balance.leaves[0]?.year || selectedYear}</p>
                    </div>
-                   <div className="col-span-2 sm:col-span-1 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                   <div className="col-span-2 sm:col-span-1 bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Leaves</p>
                     <p className="text-sm font-bold text-slate-700 underline decoration-violet-200 decoration-2">{viewModal.balance.leaves.length} Assigned Types</p>
                    </div>
@@ -1027,24 +1074,24 @@ const LeaveBalanceManagement = () => {
                   <div className="grid gap-3">
                     {viewModal.balance.leaves.map((leave, idx) => (
                       <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}
-                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-violet-200 hover:shadow-md transition-all group">
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white border border-slate-100 rounded-[10px] shadow-sm hover:border-violet-200 hover:shadow-md transition-all group">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-lg text-[10px] font-bold">{leave.code}</span>
+                            <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-[10px] text-[10px] font-bold">{leave.code}</span>
                             <h4 className="font-bold text-slate-800 text-sm truncate">{leave.name}</h4>
                             <PaidBadge isPaid={leave.is_paid} compact />
                           </div>
                           
                           <div className="grid grid-cols-3 gap-2">
-                             <div className="bg-slate-50/50 rounded-xl p-2">
+                             <div className="bg-slate-50/50 rounded-[10px] p-2">
                                 <p className="text-[9px] font-bold text-slate-400 uppercase">Total</p>
                                 <p className="text-xs font-bold text-slate-700">{formatDays(leave.total_allocated)}d</p>
                              </div>
-                             <div className="bg-slate-50/50 rounded-xl p-2">
+                             <div className="bg-slate-50/50 rounded-[10px] p-2">
                                 <p className="text-[9px] font-bold text-slate-400 uppercase">Used</p>
                                 <p className="text-xs font-bold text-orange-600">{formatDays(leave.used)}d</p>
                              </div>
-                             <div className="bg-slate-50/50 rounded-xl p-2">
+                             <div className="bg-slate-50/50 rounded-[10px] p-2">
                                 <p className="text-[9px] font-bold text-slate-400 uppercase">Rem.</p>
                                 <p className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>{formatDays(leave.remaining)}d</p>
                              </div>
@@ -1068,10 +1115,10 @@ const LeaveBalanceManagement = () => {
 
               {/* Footer */}
               <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-[10px] font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
                   Close Window
                 </button>
-                <button onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-2xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2">
+                <button onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[10px] font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2">
                    <FaEdit /> Edit Balances
                 </button>
               </div>
@@ -1098,17 +1145,17 @@ const LeaveBalanceManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`bg-white backdrop-blur-xl w-full max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${
-                modalMode === 'delete' ? 'max-w-md' : 'max-w-4xl'
+              className={`bg-white backdrop-blur-xl w-full max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${
+                modalMode === 'delete' ? 'max-w-md' : 'max-w-3xl'
               }`}
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (
                 <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-3xl px-6 py-5">
+                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
                           <FaTrash className="text-white text-sm" />
                         </div>
                         <div>
@@ -1116,7 +1163,7 @@ const LeaveBalanceManagement = () => {
                           <p className="text-xs text-white/80">This action cannot be undone</p>
                         </div>
                       </div>
-                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6">
@@ -1129,7 +1176,7 @@ const LeaveBalanceManagement = () => {
                       type="button"
                       onClick={closeModal}
                       disabled={saving}
-                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
+                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
                     >
                       Cancel
                     </button>
@@ -1138,7 +1185,7 @@ const LeaveBalanceManagement = () => {
                       onClick={handleAction}
                       disabled={saving || deleteAccess.disabled}
                       title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {saving ? 'Deleting...' : 'Delete'}
                     </button>
@@ -1146,24 +1193,24 @@ const LeaveBalanceManagement = () => {
                 </>
               ) : (
                 <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
                           {modalMode === 'assign' ? <FaPlus /> : <FaEdit />}
                         </div>
                         <div>
                           <h2 className="text-xl font-bold">
-                            {modalMode === 'assign' ? 'Assign Balance' : 'Update Allocation'}
+                            {modalMode === 'assign' ? 'Assign Leave Balance' : 'Edit Leave Balance'}
                           </h2>
                           <p className="text-xs text-white/80">
                             {modalMode === 'assign'
-                              ? 'Set leave quota for a specific employee'
-                              : `Modifying ${selectedBalance?.name}`}
+                              ? 'Allocate new leave types to employees'
+                              : `Editing: ${selectedBalance?.employee_name}`}
                           </p>
                         </div>
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all">
+                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
                         <FaTimes size={20} />
                       </button>
                     </div>
@@ -1207,7 +1254,7 @@ const LeaveBalanceManagement = () => {
                               leaves: [...prev.leaves, { leave_config_id: '', total_allocated: 0 }],
                             }))
                           }
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+                          className="inline-flex items-center gap-1.5 rounded-[10px] border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
                         >
                           <FaPlus size={10} /> Add More
                         </button>
@@ -1219,7 +1266,7 @@ const LeaveBalanceManagement = () => {
                             key={idx} 
                             initial={{ opacity: 0, y: 10 }} 
                             animate={{ opacity: 1, y: 0 }}
-                            className="relative rounded-2xl border border-slate-100 bg-slate-50/60 p-4"
+                            className="relative rounded-[10px] border border-slate-100 bg-slate-50/60 p-4"
                           >
                             <div className="mb-3 flex items-center justify-between">
                               <span className="inline-flex items-center gap-1.5 rounded-lg bg-violet-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">
@@ -1283,7 +1330,7 @@ const LeaveBalanceManagement = () => {
                                       ),
                                     }))
                                   }
-                                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5"
+                                  className="w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5"
                                 />
                               </div>
                             </div>
@@ -1298,7 +1345,7 @@ const LeaveBalanceManagement = () => {
                         type="button"
                         onClick={closeModal}
                         disabled={saving}
-                        className="w-full rounded-2xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                        className="w-full rounded-[10px] border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                       >
                         Discard
                       </button>
@@ -1314,7 +1361,7 @@ const LeaveBalanceManagement = () => {
                           (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)
                         }
                         title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
-                        className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full rounded-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {saving ? (
                           <div className="flex items-center justify-center gap-2">
