@@ -97,6 +97,12 @@ const formatDate = (dateStr) => {
   return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
+const formatDays = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0';
+  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+};
+
 // ─── Badge components ─────────────────────────────────────────────────────────
 
 const PaidBadge = ({ isPaid }) =>
@@ -282,11 +288,11 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              <InfoItem label="Max Balance" value={`${record.max_balance} days`} />
-              <InfoItem label="Carry Forward" value={`${record.carry_forward_limit} days`} />
+              <InfoItem label="Max Balance" value={`${formatDays(record.max_balance)} days`} />
+              <InfoItem label="Carry Forward" value={`${formatDays(record.carry_forward_limit)} days`} />
               <InfoItem label="Accrual Type" value={<span className="capitalize">{record.accrual_type}</span>} />
               {record.accrual_type !== 'none' && (
-                <InfoItem label="Accrual Rate" value={`${record.accrual_rate} days`} />
+                <InfoItem label="Accrual Rate" value={`${formatDays(record.accrual_rate)} days`} />
               )}
               <InfoItem label="Half Day" value={<BoolCell value={record.allow_half_day} />} />
               <InfoItem label="Negative Balance" value={<BoolCell value={record.allow_negative_balance} />} />
@@ -917,13 +923,13 @@ const LeaveConfigManagement = () => {
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-800">{record.name}</td>
                     <td className="px-6 py-4"><PaidBadge isPaid={record.is_paid} /></td>
-                    {showMaxBalance && <td className="px-6 py-4 text-gray-600">{record.max_balance} days</td>}
-                    {showCarryFwd && <td className="px-6 py-4 text-gray-600">{record.carry_forward_limit} days</td>}
+                    {showMaxBalance && <td className="px-6 py-4 text-gray-600">{formatDays(record.max_balance)} days</td>}
+                    {showCarryFwd && <td className="px-6 py-4 text-gray-600">{formatDays(record.carry_forward_limit)} days</td>}
                     {showAccrual && (
                       <td className="px-6 py-4">
                         <span className="capitalize text-gray-600">{record.accrual_type}</span>
                         {record.accrual_type !== 'none' && (
-                          <span className="ml-1 text-xs text-gray-400">({record.accrual_rate}d)</span>
+                          <span className="ml-1 text-xs text-gray-400">({formatDays(record.accrual_rate)}d)</span>
                         )}
                       </td>
                     )}

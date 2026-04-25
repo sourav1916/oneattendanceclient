@@ -354,6 +354,12 @@ const PayrollManagement = () => {
         return `₹${num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
+    const formatDays = (value) => {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '0';
+        return Number.isInteger(num) ? String(num) : num.toFixed(1);
+    };
+
     const getMonthName = (monthNum) => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return months[monthNum - 1] || '';
@@ -618,11 +624,11 @@ const PayrollManagement = () => {
                                                             <div className="text-xs space-y-1">
                                                                 <div className="flex items-center gap-2">
                                                                     <FaCheckCircle className="text-green-500" />
-                                                                    <span>{item.payroll.attendance.present_days} Present</span>
+                                                                    <span>{formatDays(item.payroll.attendance.present_days)} Present</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     <FaExclamationTriangle className="text-red-500" />
-                                                                    <span>{item.payroll.attendance.absent_days} Absent</span>
+                                                                    <span>{formatDays(item.payroll.attendance.absent_days)} Absent</span>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -711,11 +717,11 @@ const PayrollManagement = () => {
                                                 <div className="grid grid-cols-2 gap-2 text-xs">
                                                     <div className="flex items-center gap-1 text-green-600">
                                                         <FaCheckCircle />
-                                                        <span>{item.payroll.attendance.present_days} Present</span>
+                                                        <span>{formatDays(item.payroll.attendance.present_days)} Present</span>
                                                     </div>
                                                     <div className="flex items-center gap-1 text-red-600">
                                                         <FaExclamationTriangle />
-                                                        <span>{item.payroll.attendance.absent_days} Absent</span>
+                                                        <span>{formatDays(item.payroll.attendance.absent_days)} Absent</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -879,7 +885,7 @@ const PayrollManagement = () => {
                                                             <span className="text-xs font-semibold text-gray-600">Present Days</span>
                                                         </div>
                                                         <div className="text-2xl font-bold text-green-700">
-                                                            {selectedPayroll.payroll.attendance.present_days}
+                                                            {formatDays(selectedPayroll.payroll.attendance.present_days)}
                                                         </div>
                                                     </div>
 
@@ -889,7 +895,7 @@ const PayrollManagement = () => {
                                                             <span className="text-xs font-semibold text-gray-600">Absent Days</span>
                                                         </div>
                                                         <div className="text-2xl font-bold text-red-700">
-                                                            {selectedPayroll.payroll.attendance.absent_days}
+                                                            {formatDays(selectedPayroll.payroll.attendance.absent_days)}
                                                         </div>
                                                     </div>
 
@@ -899,7 +905,7 @@ const PayrollManagement = () => {
                                                             <span className="text-xs font-semibold text-gray-600">Paid Leave</span>
                                                         </div>
                                                         <div className="text-2xl font-bold text-blue-700">
-                                                            {selectedPayroll.payroll.attendance.paid_leave_days}
+                                                            {formatDays(selectedPayroll.payroll.attendance.paid_leave_days)}
                                                         </div>
                                                     </div>
 
@@ -909,7 +915,7 @@ const PayrollManagement = () => {
                                                             <span className="text-xs font-semibold text-gray-600">Unpaid Leave</span>
                                                         </div>
                                                         <div className="text-2xl font-bold text-yellow-700">
-                                                            {selectedPayroll.payroll.attendance.unpaid_leave_days}
+                                                            {formatDays(selectedPayroll.payroll.attendance.unpaid_leave_days)}
                                                         </div>
                                                     </div>
 
@@ -919,7 +925,7 @@ const PayrollManagement = () => {
                                                             <span className="text-xs font-semibold text-gray-600">LOP Days</span>
                                                         </div>
                                                         <div className="text-2xl font-bold text-orange-700">
-                                                            {selectedPayroll.payroll.attendance.lop_days}
+                                                            {formatDays(selectedPayroll.payroll.attendance.lop_days)}
                                                         </div>
                                                     </div>
 

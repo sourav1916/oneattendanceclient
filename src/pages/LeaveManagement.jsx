@@ -26,6 +26,12 @@ const fmt = (d) => {
     });
 };
 
+const formatDays = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+    return Number.isInteger(number) ? String(number) : number.toFixed(1);
+};
+
 const STATUS = {
     approved: {
         label: 'Approved',
@@ -245,7 +251,7 @@ const LeaveManagement = () => {
         {
             key: 'days',
             label: 'Days',
-            render: (leave) => <span className="font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg text-xs">{parseFloat(leave.total_days)}d</span>
+            render: (leave) => <span className="font-bold text-slate-700 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg text-xs">{formatDays(leave.total_days)}d</span>
         },
         {
             key: 'applied',
@@ -362,7 +368,7 @@ const LeaveManagement = () => {
                                         </div>
                                         <div className="text-right space-y-1">
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Duration</p>
-                                            <p className="text-sm font-black text-blue-600">{parseFloat(leave.total_days)} Days</p>
+                                            <p className="text-sm font-black text-blue-600">{formatDays(leave.total_days)} Days</p>
                                         </div>
                                     </div>
                                     <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100/50">
@@ -425,7 +431,7 @@ const LeaveManagement = () => {
                                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
                                     <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
                                         <h3 className="text-2xl font-black text-slate-800">{detailLeave.employee_name}</h3>
-                                        <p className="text-blue-600 mt-1 font-semibold text-sm">{detailLeave.leave_name} · {parseFloat(detailLeave.total_days)} Days</p>
+                                        <p className="text-blue-600 mt-1 font-semibold text-sm">{detailLeave.leave_name} · {formatDays(detailLeave.total_days)} Days</p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">

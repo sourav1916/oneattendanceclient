@@ -248,7 +248,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
         <div className="flex justify-between">
           <span className="text-xs text-gray-500">Duration:</span>
           <span className="text-xs font-medium text-gray-700">
-            {leave.total_days} day(s)
+            {formatDays(leave.total_days)} day(s)
             {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
           </span>
         </div>
@@ -1124,14 +1124,14 @@ const MyLeave = () => {
                           {visibleColumns.showLeaveType && (
                             <td className="px-4 py-3">
                               <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
-                              <p className="mt-1 text-xs text-gray-500">{leave.total_days} day(s)</p>
+                              <p className="mt-1 text-xs text-gray-500">{formatDays(leave.total_days)} day(s)</p>
                             </td>
                           )}
                           {visibleColumns.showStartDate && <td className="px-4 py-3 text-sm">{formatDate(leave.start_date)}</td>}
                           {visibleColumns.showEndDate && <td className="px-4 py-3 text-sm">{formatDate(leave.end_date)}</td>}
                           {visibleColumns.showDuration && (
                             <td className="px-4 py-3 text-sm">
-                              {leave.total_days} day(s)
+                              {formatDays(leave.total_days)} day(s)
                               {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
                             </td>
                           )}
@@ -1244,7 +1244,7 @@ const MyLeave = () => {
               <div>
                 <p className="text-xs text-gray-500">Duration</p>
                 <p className="font-medium">
-                  {viewLeave.total_days} day(s)
+                  {formatDays(viewLeave.total_days)} day(s)
                   {viewLeave.is_half_day && ` (${viewLeave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
                 </p>
               </div>

@@ -44,6 +44,12 @@ const formatHours = (h) => {
     return `${parseFloat(h).toFixed(1)}h`;
 };
 
+const formatDays = (value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    return Number.isInteger(num) ? String(num) : num.toFixed(1);
+};
+
 const formatDate = (s) => {
     if (!s) return 'N/A';
     return new Date(s).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -94,8 +100,8 @@ const MiniStatBar = ({ worked, total, pct }) => {
     return (
         <div className="w-full">
             <div className="flex justify-between text-xs text-gray-400 mb-1">
-                <span>{worked}d worked</span>
-                <span>{total}d total</span>
+                <span>{formatDays(worked)}d worked</span>
+                <span>{formatDays(total)}d total</span>
             </div>
             <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <motion.div
@@ -119,7 +125,7 @@ const StatPill = ({ icon, value, label, color }) => {
     };
     return (
         <div className={`flex flex-col items-center px-3 py-2 rounded-xl border text-center min-w-0 ${colors[color]}`}>
-            <span className="text-base font-bold">{value}</span>
+            <span className="text-base font-bold">{formatDays(value)}</span>
             <span className="text-xs opacity-75 whitespace-nowrap">{label}</span>
         </div>
     );
@@ -279,7 +285,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-green-700">{s.worked_days}</p>
+                    <p className="text-sm font-bold text-green-700">{formatDays(s.worked_days)}</p>
                     <p className="text-xs text-green-500">Worked</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
@@ -287,7 +293,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
                     <p className="text-xs text-blue-500">Hours</p>
                 </div>
                 <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-red-600">{s.absent_days}</p>
+                    <p className="text-sm font-bold text-red-600">{formatDays(s.absent_days)}</p>
                     <p className="text-xs text-red-400">Absent</p>
                 </div>
             </div>
@@ -298,7 +304,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
             {/* Footer */}
             <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-xs text-gray-400">
-                    {s.leave_days} leaves · {s.holidays} holidays
+                    {formatDays(s.leave_days)} leaves · {formatDays(s.holidays)} holidays
                 </span>
                 <span className="text-xs text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     View <FaEye size={10} />
@@ -676,7 +682,7 @@ const EmployeesShifts = () => {
                                                     </td>
                                                 )}
                                                 {showWorked && (
-                                                    <td className="px-6 py-4 font-semibold text-gray-700">{s.worked_days}d</td>
+                                                    <td className="px-6 py-4 font-semibold text-gray-700">{formatDays(s.worked_days)}d</td>
                                                 )}
                                                 {showHours && (
                                                     <td className="px-6 py-4">
@@ -686,10 +692,10 @@ const EmployeesShifts = () => {
                                                     </td>
                                                 )}
                                                 {showLeave && (
-                                                    <td className="px-6 py-4 text-purple-600 font-medium">{s.leave_days}d</td>
+                                                    <td className="px-6 py-4 text-purple-600 font-medium">{formatDays(s.leave_days)}d</td>
                                                 )}
                                                 {showAbsent && (
-                                                    <td className="px-6 py-4 text-red-500 font-medium">{s.absent_days}d</td>
+                                                    <td className="px-6 py-4 text-red-500 font-medium">{formatDays(s.absent_days)}d</td>
                                                 )}
                                                 {showAttendance && (
                                                     <td className="px-6 py-4">

@@ -43,6 +43,12 @@ const formatCurrency = (value) => {
     }).format(Math.abs(num));
 };
 
+const formatDays = (value) => {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '0';
+    return Number.isInteger(num) ? String(num) : num.toFixed(1);
+};
+
 const formatLabel = (str) => {
     if (!str) return 'N/A';
     return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -76,7 +82,7 @@ const StatCard = ({ icon: Icon, label, value, sub, gradient, delay = 0 }) => (
 
 const AttendancePill = ({ label, value, color }) => (
     <div className={`flex flex-col items-center p-3 rounded-xl bg-${color}-50 border border-${color}-100 min-w-0`}>
-        <span className={`text-xl font-bold text-${color}-600`}>{parseFloat(value || 0).toFixed(1)}</span>
+        <span className={`text-xl font-bold text-${color}-600`}>{formatDays(value)}</span>
         <span className="text-xs text-gray-500 mt-1 text-center">{label}</span>
     </div>
 );
@@ -534,17 +540,17 @@ const MyPayroll = () => {
                                                     {visibleColumns.showAttendance && (
                                                         <td className="px-6 py-4">
                                                             <div className="flex flex-wrap gap-1 text-xs">
-                                                                <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-                                                                    ✓ {parseFloat(p.attendance?.present_days || 0).toFixed(0)}d
-                                                                </span>
-                                                                <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full">
-                                                                    ✗ {parseFloat(p.attendance?.absent_days || 0).toFixed(0)}d
-                                                                </span>
-                                                                {parseFloat(p.attendance?.paid_leave_days || 0) > 0 && (
-                                                                    <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
-                                                                        PL {parseFloat(p.attendance.paid_leave_days).toFixed(0)}d
-                                                                    </span>
-                                                                )}
+                                                        <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
+                                                                    ✓ {formatDays(p.attendance?.present_days || 0)}d
+                                                        </span>
+                                                        <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full">
+                                                                    ✗ {formatDays(p.attendance?.absent_days || 0)}d
+                                                        </span>
+                                                        {parseFloat(p.attendance?.paid_leave_days || 0) > 0 && (
+                                                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                                                                        PL {formatDays(p.attendance.paid_leave_days)}d
+                                                            </span>
+                                                        )}
                                                             </div>
                                                         </td>
                                                     )}
@@ -639,19 +645,19 @@ const MyPayroll = () => {
                                         {/* Attendance pills */}
                                         <div className="flex flex-wrap gap-1.5 mb-4">
                                             <span className="text-xs bg-green-50 text-green-700 border border-green-100 px-2.5 py-1 rounded-full">
-                                                ✓ {parseFloat(p.attendance?.present_days || 0).toFixed(0)}d Present
+                                                ✓ {formatDays(p.attendance?.present_days || 0)}d Present
                                             </span>
                                             <span className="text-xs bg-red-50 text-red-600 border border-red-100 px-2.5 py-1 rounded-full">
-                                                ✗ {parseFloat(p.attendance?.absent_days || 0).toFixed(0)}d Absent
+                                                ✗ {formatDays(p.attendance?.absent_days || 0)}d Absent
                                             </span>
                                             {parseFloat(p.attendance?.paid_leave_days || 0) > 0 && (
                                                 <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded-full">
-                                                    PL {parseFloat(p.attendance.paid_leave_days).toFixed(0)}d
+                                                    PL {formatDays(p.attendance.paid_leave_days)}d
                                                 </span>
                                             )}
                                             {parseFloat(p.attendance?.lop_days || 0) > 0 && (
                                                 <span className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full">
-                                                    LOP {parseFloat(p.attendance.lop_days).toFixed(0)}d
+                                                    LOP {formatDays(p.attendance.lop_days)}d
                                                 </span>
                                             )}
                                         </div>

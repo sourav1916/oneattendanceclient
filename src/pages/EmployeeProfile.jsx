@@ -60,6 +60,12 @@ const fmtDateTime = (d) => {
   });
 };
 
+const formatDays = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0';
+  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+};
+
 const getInitials = (name) =>
   name?.trim().split(" ").filter(Boolean).map((w) => w[0].toUpperCase()).slice(0, 2).join("") || "?";
 
@@ -157,7 +163,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
           <Field label="Leave Type" value={item.leave_type || item.type} highlight />
           <Field label="From" value={fmtDate(item.from_date || item.from)} />
           <Field label="To" value={fmtDate(item.to_date || item.to)} />
-          <Field label="Days" value={item.days} />
+          <Field label="Days" value={formatDays(item.days)} />
           <Field label="Status" value={<Pill value={item.status} />} />
           <Field label="Reason" value={item.reason} />
         </>

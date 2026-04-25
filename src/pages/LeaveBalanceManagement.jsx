@@ -49,7 +49,8 @@ const STAT_STYLES = {
 
 const formatDays = (value) => {
   const numericValue = Number.parseFloat(value ?? 0);
-  return Number.isFinite(numericValue) ? numericValue.toFixed(1) : '0.0';
+  if (!Number.isFinite(numericValue)) return '0';
+  return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(1);
 };
 
 const getRemainingPercentage = (remaining, total) => {
