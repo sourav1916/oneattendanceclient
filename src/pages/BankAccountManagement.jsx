@@ -15,6 +15,7 @@ import { ManagementButton, ManagementHub, ManagementTable } from '../components/
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { fetchIfscDetails } from '../utils/ifscLookup';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -220,6 +221,13 @@ const EMPTY_FORM = {
   account_number: '',
   ifsc_code: '',
   branch_name: '',
+  address: '',
+  city: '',
+  district: '',
+  state: '',
+  micr: '',
+  contact: '',
+  upi: false,
   is_primary: false,
   status: 'active',
 };
@@ -238,6 +246,10 @@ const BankAccountManagement = () => {
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [ifscLookupState, setIfscLookupState] = useState({ loading: false, error: '' });
+  const ifscLookupRequestRef = useRef(0);
+  const ifscLookupTimerRef = useRef(null);
+  const lastIfscLookupRef = useRef('');
   const getEffectiveWidth = () => {
     const width = window.innerWidth;
     const offset = width >= 1024 ? 280 : (width >= 768 ? 80 : 0);
@@ -392,17 +404,84 @@ const BankAccountManagement = () => {
         account_number: account.account_number || '',
         ifsc_code: account.ifsc_code || '',
         branch_name: account.branch_name || '',
+        address: account.address || '',
+        city: account.city || '',
+        district: account.district || '',
+        state: account.state || '',
+        micr: account.micr || '',
+        contact: account.contact || '',
+        upi: account.upi ?? false,
         is_primary: account.is_primary || false,
         status: account.status || 'active',
       });
     } else if (!account) {
       setFormData({ ...EMPTY_FORM });
     }
+    ifscLookupRequestRef.current += 1;
+    if (ifscLookupTimerRef.current) {
+      clearTimeout(ifscLookupTimerRef.current);
+      ifscLookupTimerRef.current = null;
+    }
+    lastIfscLookupRef.current = '';
+    setIfscLookupState({ loading: false, error: '' });
     setShowModal(true);
   };
 
   const closeModal = useCallback(() => { if (!saving) setShowModal(false); }, [saving]);
   const closeViewModal = useCallback(() => setViewModal({ open: false, account: null }), []);
+
+  const applyIfscLookup = useCallback(async (ifscValue, { silent = false } = {}) => {
+    const ifsc = String(ifscValue || '').trim().toUpperCase();
+
+    if (ifsc.length !== 11) {
+      if (!silent) {
+        toast.error('Enter a valid 11-character IFSC code');
+      }
+      return false;
+    }
+
+    const requestId = ++ifscLookupRequestRef.current;
+    setIfscLookupState({ loading: true, error: '' });
+
+    try {
+      const details = await fetchIfscDetails(ifsc);
+
+      if (requestId !== ifscLookupRequestRef.current || !isMountedRef.current) {
+        return false;
+      }
+
+      lastIfscLookupRef.current = ifsc;
+      setFormData((prev) => ({
+        ...prev,
+        ifsc_code: ifsc,
+        bank_name: details.bank_name || prev.bank_name,
+        branch_name: details.branch_name || prev.branch_name,
+        address: details.address || prev.address,
+        city: details.city || prev.city,
+        district: details.district || prev.district,
+        state: details.state || prev.state,
+        micr: details.micr || prev.micr,
+        contact: details.contact || prev.contact,
+        upi: typeof details.upi === 'boolean' ? details.upi : prev.upi,
+      }));
+      return true;
+    } catch (error) {
+      if (requestId !== ifscLookupRequestRef.current || !isMountedRef.current) {
+        return false;
+      }
+
+      const message = error.message || 'Failed to fetch bank details';
+      setIfscLookupState({ loading: false, error: message });
+      if (!silent) {
+        toast.error(message);
+      }
+      return false;
+    } finally {
+      if (requestId === ifscLookupRequestRef.current && isMountedRef.current) {
+        setIfscLookupState((prev) => ({ ...prev, loading: false }));
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!showModal && !viewModal.open) return;
@@ -415,6 +494,32 @@ const BankAccountManagement = () => {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [closeModal, closeViewModal, showModal, viewModal.open]);
+
+  useEffect(() => {
+    if (!showModal || modalMode === 'delete' || formData.account_type !== 'bank') {
+      return undefined;
+    }
+
+    const ifsc = String(formData.ifsc_code || '').trim().toUpperCase();
+    if (ifsc.length !== 11 || ifsc === lastIfscLookupRef.current) {
+      return undefined;
+    }
+
+    if (ifscLookupTimerRef.current) {
+      clearTimeout(ifscLookupTimerRef.current);
+    }
+
+    ifscLookupTimerRef.current = setTimeout(() => {
+      void applyIfscLookup(ifsc, { silent: true });
+    }, 450);
+
+    return () => {
+      if (ifscLookupTimerRef.current) {
+        clearTimeout(ifscLookupTimerRef.current);
+        ifscLookupTimerRef.current = null;
+      }
+    };
+  }, [applyIfscLookup, formData.account_type, formData.ifsc_code, modalMode, showModal]);
 
   // ── Action ───────────────────────────────────────────────────────────────────
 
@@ -444,6 +549,13 @@ const BankAccountManagement = () => {
             account_number: formData.account_number,
             ifsc_code: formData.ifsc_code,
             branch_name: formData.branch_name,
+            address: formData.address,
+            city: formData.city,
+            district: formData.district,
+            state: formData.state,
+            micr: formData.micr,
+            contact: formData.contact,
+            upi: formData.upi,
           }),
         };
         response = await apiCall('/bank-accounts/create', 'POST', payload, companyId);
@@ -455,6 +567,13 @@ const BankAccountManagement = () => {
           account_number: formData.account_number,
           ifsc_code: formData.ifsc_code,
           branch_name: formData.branch_name,
+          address: formData.address,
+          city: formData.city,
+          district: formData.district,
+          state: formData.state,
+          micr: formData.micr,
+          contact: formData.contact,
+          upi: formData.upi,
           is_primary: formData.is_primary,
           status: formData.status,
         };
@@ -859,11 +978,78 @@ const BankAccountManagement = () => {
                             <input type="text" value={formData.account_number} onChange={(e) => setFormData((p) => ({ ...p, account_number: e.target.value }))} placeholder="12345678901" className={inputCls} />
                           </FormField>
                           <FormField label="IFSC Code *">
-                            <input type="text" value={formData.ifsc_code} onChange={(e) => setFormData((p) => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))} placeholder="SBIN0001234" className={inputCls} />
+                            <div className="space-y-2">
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={formData.ifsc_code}
+                                  onChange={(e) => setFormData((p) => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))}
+                                  placeholder="SBIN0001234"
+                                  className={inputCls}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => void applyIfscLookup(formData.ifsc_code)}
+                                  disabled={ifscLookupState.loading || formData.ifsc_code.trim().length !== 11}
+                                  className="shrink-0 rounded-[10px] border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {ifscLookupState.loading ? 'Checking...' : 'Fetch'}
+                                </button>
+                              </div>
+                              {ifscLookupState.error && (
+                                <p className="text-xs font-semibold text-rose-500">{ifscLookupState.error}</p>
+                              )}
+                            </div>
                           </FormField>
                         </div>
                         <FormField label="Branch Name">
                           <input type="text" value={formData.branch_name} onChange={(e) => setFormData((p) => ({ ...p, branch_name: e.target.value }))} placeholder="e.g. Kolkata Main Branch" className={inputCls} />
+                        </FormField>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <FormField label="City">
+                            <input type="text" value={formData.city} onChange={(e) => setFormData((p) => ({ ...p, city: e.target.value }))} placeholder="City" className={inputCls} />
+                          </FormField>
+                          <FormField label="District">
+                            <input type="text" value={formData.district} onChange={(e) => setFormData((p) => ({ ...p, district: e.target.value }))} placeholder="District" className={inputCls} />
+                          </FormField>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <FormField label="State">
+                            <input type="text" value={formData.state} onChange={(e) => setFormData((p) => ({ ...p, state: e.target.value }))} placeholder="State" className={inputCls} />
+                          </FormField>
+                          <FormField label="MICR">
+                            <input type="text" value={formData.micr} onChange={(e) => setFormData((p) => ({ ...p, micr: e.target.value }))} placeholder="736002507" className={inputCls} />
+                          </FormField>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <FormField label="Contact">
+                            <input type="text" value={formData.contact} onChange={(e) => setFormData((p) => ({ ...p, contact: e.target.value }))} placeholder="Branch contact number" className={inputCls} />
+                          </FormField>
+                          <FormField label="UPI Enabled">
+                            <div className="flex items-center justify-between rounded-[10px] border border-slate-200 bg-slate-50 px-4 py-3">
+                              <span className="text-sm font-semibold text-slate-600">{formData.upi ? 'Yes' : 'No'}</span>
+                              <button
+                                type="button"
+                                onClick={() => setFormData((p) => ({ ...p, upi: !p.upi }))}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.upi ? 'bg-violet-500' : 'bg-slate-300'}`}
+                              >
+                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.upi ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                            </div>
+                          </FormField>
+                        </div>
+
+                        <FormField label="Address">
+                          <textarea
+                            rows="3"
+                            value={formData.address}
+                            onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
+                            placeholder="Bank branch address"
+                            className={`${inputCls} resize-none`}
+                          />
                         </FormField>
                       </motion.div>
                     )}
