@@ -1091,7 +1091,7 @@ export default function InvitePackageManagement() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaBox className="h-4 w-4 text-indigo-500" />
                 <span className="font-medium text-gray-700">{pagination.total}</span>

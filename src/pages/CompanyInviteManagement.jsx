@@ -470,7 +470,7 @@ export default function CompanyInvites() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 md:justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaUserCheck className="h-4 w-4 text-blue-500" />
                 <span className="font-medium text-gray-700">{invites.length}</span>
@@ -536,10 +536,7 @@ export default function CompanyInvites() {
                 <span className="font-semibold text-gray-800">{invites.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> invitations
               </p>
             )}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-[10px] border border-blue-100 hidden sm:flex">
-              <FaUserCheck className="text-blue-500 text-xs" />
-              <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Active Invites</span>
-            </div>
+            
 
             <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
 

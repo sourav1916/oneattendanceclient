@@ -583,7 +583,7 @@ const PendingAttendance = ({ companyId }) => {
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center md:justify-end">
+                            <div className="flex w-full gap-4 sm:items-center justify-end">
                                 <button
                                     type="button"
                                     onClick={() => navigate('/attendance-management')}
@@ -604,35 +604,48 @@ const PendingAttendance = ({ companyId }) => {
 
                     {/* Search */}
                     <motion.div
-                        initial={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-6 space-y-3"
+                        transition={{ delay: 0.05 }}
+                        className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
                     >
-                        <div className="relative">
-                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                        <div className="flex items-center gap-4 flex-1">
+                            <div className="relative flex-1 w-full">
+                                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                             <input
                                 type="text"
                                 placeholder="Search by employee name, email, or code..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-12 py-4 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 outline-none shadow-lg transition-all"
+                                className="w-full rounded-[10px] border border-gray-200 bg-gray-50 py-3 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                             />
                             {searchTerm && (
                                 <button
                                     type="button"
                                     onClick={() => setSearchTerm('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
+                                    aria-label="Clear search"
+                                    title="Clear search"
                                 >
-                                    <FaTimes />
+                                    <FaTimes size={12} />
                                 </button>
                             )}
+                            </div>
+
+                            {!loading && visibleAttendances.length > 0 && (
+                                <p className="text-sm text-gray-500 hidden xl:block">
+                                    <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> pending records
+                                    {debouncedSearchTerm && <span className="ml-1 text-green-600">· "{debouncedSearchTerm}"</span>}
+                                </p>
+                            )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
+
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                             <DatePickerField
                                 value=""
                                 onChange={handleDateFilterApply}
                                 placeholder={dateFilterLabel}
-                                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                                 wrapperClassName="w-auto"
                                 popoverClassName="w-[min(92vw,24rem)]"
                                 initialTab="quick"
@@ -642,25 +655,21 @@ const PendingAttendance = ({ companyId }) => {
                                 <button
                                     type="button"
                                     onClick={clearDateFilter}
-                                    className="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-500 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 xsm:px-2.5 xsm:py-1.5 xsm:text-[11px]"
+                                    className="p-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all"
                                     title="Clear date filter"
                                     aria-label="Clear date filter"
                                 >
-                                    <FaTimes />
+                                    <FaTimes size={14} />
                                 </button>
                             )}
-                        </div>
 
-                        <div className="flex items-center justify-between gap-3">
-                            {!loading && visibleAttendances.length > 0 && (
-                                <p className="text-sm text-gray-500">
-                                    <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of{' '}
-                                    <span className="font-semibold text-gray-800">{pagination.total}</span> pending records
-                                    {debouncedSearchTerm && <span className="ml-1 text-amber-600">Â· "{debouncedSearchTerm}"</span>}
-                                    {dateFilterLabel !== 'Filter by date' && <span className="ml-1 text-blue-600">Â· {dateFilterLabel}</span>}
-                                </p>
-                            )}
-                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+
+                            <ManagementViewSwitcher
+                                viewMode={viewMode}
+                                onChange={setViewMode}
+                                accent="green"
+                            />
                         </div>
                     </motion.div>
 
@@ -932,3 +941,4 @@ const PendingAttendance = ({ companyId }) => {
 };
 
 export default PendingAttendance;
+

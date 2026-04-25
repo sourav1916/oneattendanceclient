@@ -1211,10 +1211,7 @@ const EmployeeManagement = () => {
                             Showing <span className="font-semibold text-gray-800">{employees.length}</span> staff members
                         </p>
                     )}
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-[10px] border border-blue-100 hidden sm:flex">
-                        <FaUserCheck className="text-blue-500 text-xs" />
-                        <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Staff Directory</span>
-                    </div>
+                    
 
                     <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
 

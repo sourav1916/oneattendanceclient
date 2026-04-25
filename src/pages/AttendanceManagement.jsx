@@ -680,7 +680,7 @@ const AttendanceManagement = ({ companyId }) => {
           </div>
 
           {/* Right Section: Controls */}
-          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Date Filter */}
             <div className="flex items-center gap-2">
               <DatePickerField
