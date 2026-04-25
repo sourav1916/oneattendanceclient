@@ -234,59 +234,10 @@ const PunchAttendance = () => {
         </button>
       }
     >
-      <div className="space-y-4 sm:space-y-6">
-
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}>
-          {/* Date pill */}
-          <div className="flex items-center gap-2 mb-3 bg-white/80 w-fit px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-            <FaCalendarAlt className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">{currentDate}</span>
-          </div>
-
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Mark your{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Attendance</span>
-              </h1>
-              <p className="text-slate-500 mt-1 text-sm sm:text-base truncate">
-                Welcome back, <span className="font-semibold text-slate-700">{user?.name}</span>
-              </p>
-            </div>
-
-            {/* Status badge + history button */}
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              <button
-                onClick={() => navigate('/attendance-history')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-100 bg-white text-indigo-600 font-semibold text-xs shadow-sm hover:bg-indigo-50 transition-all"
-              >
-                <FaHistory className="w-3 h-3" />
-                <span>History</span>
-              </button>
-
-              <AnimatePresence mode="wait">
-                {loadingStatus ? (
-                  <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border bg-slate-50 border-slate-200">
-                    <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                    <span className="text-xs font-medium text-slate-500">Loading…</span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={currentStatus}
-                    initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border shadow-sm
-                      bg-${statusConfig.color}-50 border-${statusConfig.color}-100 text-${statusConfig.color}-700`}
-                  >
-                    <StatusIcon className="w-3 h-3" />
-                    <span className="text-xs font-bold uppercase tracking-wide">{statusConfig.label}</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </motion.div>
+        <div className="flex items-center gap-2 bg-white/80 w-fit px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+          <FaCalendarAlt className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">{currentDate}</span>
+        </div>
 
         {/* ── Main Card ───────────────────────────────────────────────────── */}
         <motion.div
@@ -504,7 +455,6 @@ const PunchAttendance = () => {
           <FaHandPaper className="w-3 h-3" />
           Ensure you are within the designated area for <span className="font-semibold uppercase">{activeTab}</span> validation
         </motion.p>
-      </div>
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

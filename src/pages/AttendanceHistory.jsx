@@ -593,40 +593,20 @@ const AttendanceHistory = () => {
   const displayRecords = filteredRecords;
 
   return (
-    <div className="min-h-screen p-3 font-sans md:p-6">
-      <div className="mx-auto max-w-7xl">
-
-        {/* ─── Page Header ─── */}
-        <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
-        >
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="space-y-2">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-purple-700">
-                        <FaHistory size={11} className="animate-pulse-slow" />
-                        Attendance logs
-                    </div>
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 tracking-tight">
-                            Attendance History
-                        </h1>
-                        <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                            Review comprehensive employee punch logs, shift details, and record statuses.
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3 md:justify-end">
-                    <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
-                        <FaCalendarAlt className="text-purple-600" size={18} />
-                        <span className="font-medium text-gray-700">{totalRecords}</span>
-                        <span className="text-gray-500">records</span>
-                    </div>
-                </div>
-            </div>
-        </motion.div>
+    <ManagementHub
+      eyebrow={<><FaHistory size={11} /> Attendance logs</>}
+      title="Attendance History"
+      description="Review comprehensive employee punch logs, shift details, and record statuses."
+      accent="violet"
+      summary={
+        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+          <FaCalendarAlt className="text-violet-600" size={18} />
+          <span className="font-medium text-slate-900">{totalRecords}</span>
+          <span className="text-slate-500">records</span>
+        </div>
+      }
+    >
+      <div className="space-y-6">
 
         {/* ─── Consolidated Filter & View Bar ─── */}
         <motion.div
@@ -904,7 +884,7 @@ const AttendanceHistory = () => {
           <DetailsModal record={selectedRecord} onClose={closeModal} />
         )}
       </AnimatePresence>
-    </div>
+    </ManagementHub>
   );
 };
 
