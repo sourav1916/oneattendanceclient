@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
   FaBan, FaComment, FaHistory, FaUserCheck, FaCog,
-  FaEllipsisV,FaTimes
+  FaEllipsisV, FaTimes, FaListUl
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -17,6 +16,8 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { DatePickerField } from '../components/DatePicker';
+import { ManagementHub } from '../components/common';
+import PendingAttendance from './PendingAttendance';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -391,8 +392,8 @@ const AttendanceManagement = ({ companyId }) => {
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [viewMode, setViewMode] = useState('table');
+  const [activeTab, setActiveTab] = useState('all');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-  const navigate = useNavigate();
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
   const previousSearchRef = useRef('');
@@ -607,6 +608,27 @@ const AttendanceManagement = ({ companyId }) => {
   }
 
   return (
+    <ManagementHub
+      eyebrow={<><FaClock size={11} /> Attendance</>}
+      title="Attendance Management"
+      description="Monitor and approve employee attendance records and punch logs."
+      accent="blue"
+      summary={
+        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+          Total: <span className="font-semibold text-slate-900">{pagination.total}</span> records
+        </div>
+      }
+      tabs={[
+        { id: 'all', label: 'All Attendance', icon: FaListUl },
+        { id: 'pending', label: 'Pending Attendance', icon: FaClock },
+      ]}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      contentClassName="pb-6"
+    >
+      {activeTab === 'pending' ? (
+        <PendingAttendance companyId={resolvedCompanyId} />
+      ) : (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         {/* Header */}
@@ -631,21 +653,11 @@ const AttendanceManagement = ({ companyId }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 justify-end">
-              <button
-                type="button"
-                onClick={() => navigate('/pending-attendance')}
-                className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-amber-500 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-600 shadow-sm active:scale-95 whitespace-nowrap"
-              >
-                <FaClock />
-                Pending Attendance
-              </button>
-              <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
+            <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaCheckCircle className="text-purple-600" />
                 <span className="font-medium text-gray-700">{pagination.total}</span>
                 <span className="text-gray-500">records</span>
               </div>
-            </div>
           </div>
         </motion.div>
 
@@ -919,6 +931,8 @@ const AttendanceManagement = ({ companyId }) => {
         )}
       </AnimatePresence>
     </div>
+      )}
+    </ManagementHub>
   );
 };
 

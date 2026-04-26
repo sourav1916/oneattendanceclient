@@ -4,7 +4,7 @@ import {
   FaClock, FaExclamationCircle, FaSpinner, FaEye,
   FaCheckCircle, FaTimesCircle, FaEnvelope, FaPhone, FaCalendarAlt,
   FaSearch, FaBuilding, FaCheck, FaBan, FaUser, FaMapMarkerAlt,
-  FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle,
+  FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle, FaTag,
   FaTh, FaListUl, FaShieldAlt, FaUserCheck, FaChevronDown, FaCog
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
@@ -94,14 +94,51 @@ const formatDisplay = (str) => {
   return str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
+const DEFAULT_DURATION = "00:30";
+
+const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
+  if (value === null || typeof value === "undefined" || value === "") return fallback;
+  if (typeof value === "number") {
+    const hours = Math.floor(value / 60);
+    const minutes = value % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+  if (typeof value !== "string") return fallback;
+
+  const [hours = "00", minutes = "00"] = value.split(":");
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+const formatDurationDisplay = (value) => {
+  const normalized = normalizeDuration(value, null);
+  if (!normalized) return "N/A";
+  const [hours, minutes] = normalized.split(":").map((part) => Number(part) || 0);
+  const totalMinutes = (hours * 60) + minutes;
+  if (totalMinutes === 0) return "0m";
+  if (hours === 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+};
+
+const normalizeInviteRecord = (invite) => ({
+  ...invite,
+  break_minutes: normalizeDuration(invite?.break_minutes, DEFAULT_DURATION),
+  grace_minutes: normalizeDuration(invite?.grace_minutes, DEFAULT_DURATION),
+});
+
 // â”€â”€â”€ Local Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const InfoItem = ({ icon, label, value }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
-      {icon}{label}
-    </label>
-    <div className="text-gray-800 font-medium">{value}</div>
+const InfoItem = ({ icon, label, value, className = "" }) => (
+  <div className={`flex items-start gap-2 rounded-[10px] border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 px-3 py-2 ${className}`}>
+    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 border border-gray-200">
+      {icon}
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 leading-none mb-1">
+        {label}
+      </div>
+      <div className="text-sm font-medium text-gray-800 leading-snug break-words">{value}</div>
+    </div>
   </div>
 );
 
@@ -152,7 +189,7 @@ export default function MyInvites() {
 
       const result = await response.json();
       if (result.success) {
-        setInvites(result.data || []);
+        setInvites((result.data || []).map(normalizeInviteRecord));
         const currentPage = Number(result.current_page ?? result.page ?? page);
         const perPage = Number(result.per_page ?? result.limit ?? pagination.limit);
         const total = Number(result.total ?? result.meta?.total ?? 0);
@@ -288,28 +325,29 @@ export default function MyInvites() {
   const ViewModal = ({ invite, onClose }) => {
     const [showPermissions, setShowPermissions] = useState(false);
     const [showAttendance, setShowAttendance] = useState(false);
+    const [showWeekends, setShowWeekends] = useState(false);
     return (
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
       className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
-        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-2xl">
-          <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+        <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-[10px]">
+          <h2 className="text-lg font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300"><FaTimes size={18} /></button>
         </div>
-        <div className="p-6">
-          <div className="flex items-center gap-6 pb-6 border-b">
+        <div className="p-4">
+          <div className="flex items-center gap-4 pb-4 border-b">
             {invite.company?.logo_url ? (
-               <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="Company Logo" className="w-16 h-16 rounded-[10px] object-cover border border-purple-200 shadow-md bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+               <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="Company Logo" className="w-14 h-14 rounded-[10px] object-cover border border-purple-200 shadow-md bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
             ) : null}
-            <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-4 rounded-[10px] shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'} items-center justify-center w-16 h-16`}>
-              <FaBuilding className="text-white text-4xl" />
+            <div className={`bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-[10px] shrink-0 ${invite.company?.logo_url ? 'hidden' : 'flex'} items-center justify-center w-14 h-14`}>
+              <FaBuilding className="text-white text-3xl" />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-800">{invite.company?.name || 'Company Name'}</h3>
+              <h3 className="text-xl font-bold text-gray-800">{invite.company?.name || 'Company Name'}</h3>
               <p className="text-gray-600 flex items-center gap-2 mt-1">
                 <FaMapMarkerAlt className="text-purple-500" size={14} />
                 {[invite.company?.city, invite.company?.state, invite.company?.country].filter(Boolean).join(', ') || 'Location not provided'}
@@ -317,7 +355,7 @@ export default function MyInvites() {
             </div>
           </div>
           {invite.invited_by && (
-            <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+            <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-[10px] border border-purple-100">
               <h4 className="text-sm font-semibold text-purple-700 mb-3 flex items-center gap-2">
                 <FaUser className="text-purple-500" /> Invited By
               </h4>
@@ -335,11 +373,26 @@ export default function MyInvites() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
             <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(invite.designation)} />
             <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Employment Type" value={formatDisplay(invite.employment_type)} />
             <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(invite.salary_type)} />
-            <InfoItem icon={<FaClock className="text-orange-500" />} label="Status"
+            <InfoItem icon={<FaClock className="text-orange-500" />} label="Schedule"
+              value={
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                    {`${invite.shift_start || "N/A"} - ${invite.shift_end || "N/A"}`}
+                  </span>
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                    Break Minutes {formatDurationDisplay(invite.break_minutes)}
+                  </span>
+                  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                    Grace Minutes {formatDurationDisplay(invite.grace_minutes)}
+                  </span>
+                </div>
+              }
+            />
+            <InfoItem icon={<FaTag className="text-orange-500" />} label="Status"
               value={
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
                   {getStatusBadge(invite.status, invite.expires_at).text}
@@ -348,17 +401,73 @@ export default function MyInvites() {
             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Sent Date" value={formatDate(invite.created_at)} />
             <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
           </div>
-          {invite.permissions?.length > 0 && (
-            <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
-              <button 
-                onClick={() => setShowPermissions(!showPermissions)}
-                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+          {invite.weekends?.length > 0 && (
+            <div className="mt-3 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+              <button
+                onClick={() => setShowWeekends(!showWeekends)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                 type="button"
               >
                 <div className="flex items-center gap-2">
-                  <FaShieldAlt className="text-purple-500" /> 
+                  <FaCalendarAlt className="text-indigo-500" />
+                  <span className="text-sm font-semibold text-gray-700">Weekends</span>
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                    {invite.weekends.length}
+                  </span>
+                </div>
+                <motion.div animate={{ rotate: showWeekends ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <FaChevronDown className="w-4 h-4 text-gray-400" />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {showWeekends && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
+                      {invite.weekends.map((weekend, idx) => (
+                        <motion.div
+                          key={`${weekend.day}-${idx}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-[10px] border border-indigo-100"
+                        >
+                          <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              weekend.type === "half"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-indigo-100 text-indigo-700"
+                            }`}
+                          >
+                            {weekend.type || "full"}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {invite.permissions?.length > 0 && (
+            <div className="mt-3 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+              <button 
+                onClick={() => setShowPermissions(!showPermissions)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <FaShieldAlt className="text-blue-500" /> 
                   <span className="text-sm font-semibold text-gray-700">Permissions</span>
-                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
                     {invite.permissions.length}
                   </span>
                 </div>
@@ -375,11 +484,11 @@ export default function MyInvites() {
                     transition={{ duration: 0.25, ease: "easeInOut" }}
                     className="overflow-hidden"
                   >
-                    <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                    <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
                       {invite.permissions.map((perm, idx) => (
                         <motion.div key={`perm-${perm.id}-${invite.invite_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                          <span className="font-medium text-gray-700">{perm.name}</span>
+                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-100">
+                          <span className="text-sm font-medium text-gray-700">{perm.name}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -390,16 +499,16 @@ export default function MyInvites() {
           )}
 
           {invite.attendance_methods?.length > 0 && (
-            <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+            <div className="mt-3 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
               <button 
                 onClick={() => setShowAttendance(!showAttendance)}
-                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                 type="button"
               >
                 <div className="flex items-center gap-2">
-                  <FaUserCheck className="text-blue-500" /> 
+                  <FaUserCheck className="text-purple-500" /> 
                   <span className="text-sm font-semibold text-gray-700">Attendance Methods</span>
-                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">
                     {invite.attendance_methods.length}
                   </span>
                 </div>
@@ -416,13 +525,13 @@ export default function MyInvites() {
                     transition={{ duration: 0.25, ease: "easeInOut" }}
                     className="overflow-hidden"
                   >
-                    <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 bg-white flex flex-wrap gap-2">
                       {invite.attendance_methods.map((method, idx) => (
                         <motion.div key={`method-${idx}-${invite.invite_id}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-                          <span className="font-medium text-gray-700 capitalize">{method.method}</span>
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-full border border-purple-100">
+                          <span className="text-sm font-medium text-gray-700 capitalize">{method.method}</span>
                           {method.is_auto && (
-                            <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
+                            <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
                           )}
                         </motion.div>
                       ))}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
     FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
     FaUser, FaBuilding, FaMapMarkerAlt,
@@ -345,7 +344,6 @@ const PendingAttendance = ({ companyId }) => {
     const [windowWidth, setWindowWidth] = useState(() =>
         typeof window !== 'undefined' ? window.innerWidth : 1440
     );
-    const navigate = useNavigate();
 
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
     const previousSearchRef = useRef('');
@@ -584,14 +582,6 @@ const PendingAttendance = ({ companyId }) => {
                                 </div>
                             </div>
                             <div className="flex w-full gap-4 sm:items-center justify-end">
-                                <button
-                                    type="button"
-                                    onClick={() => navigate('/attendance-management')}
-                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-purple-600 sm:text-sm"
-                                >
-                                    <FaCheckCircle />
-                                    All Attendance
-                                </button>
                                 <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 sm:px-4 sm:py-2 justify-between sm:justify-start shadow-sm">
                                     <FaUserCheck className="text-amber-500 text-sm sm:text-base" />
                                     <span className="text-xs sm:text-sm font-medium text-gray-700">

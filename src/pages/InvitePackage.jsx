@@ -17,7 +17,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
 import { useAuth } from "../context/AuthContext";
-import TimePickerField from "../components/TimePicker";
+import TimeDurationPickerField from "../components/TimeDurationPicker";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -109,14 +109,46 @@ const formatAttendanceMethod = (value) => {
   return normalized.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
+const DEFAULT_DURATION = "00:30";
+
+const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
+  if (value === null || typeof value === "undefined" || value === "") return fallback;
+  if (typeof value === "number") {
+    const hours = Math.floor(value / 60);
+    const minutes = value % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+  if (typeof value !== "string") return fallback;
+
+  const [hours = "00", minutes = "00"] = value.split(":");
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+const normalizePackageRecord = (pkg) => ({
+  ...pkg,
+  break_minutes: normalizeDuration(
+    pkg?.break_minutes,
+    DEFAULT_DURATION
+  ),
+  grace_minutes: normalizeDuration(
+    pkg?.grace_minutes,
+    DEFAULT_DURATION
+  ),
+});
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-const InfoItem = ({ icon, label, value }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
-      {icon}{label}
-    </label>
-    <div className="text-gray-800 font-medium">{value}</div>
+const InfoItem = ({ icon, label, value, className = "" }) => (
+  <div className={`flex items-start gap-2 rounded-[10px] border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 px-3 py-2 ${className}`}>
+    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 border border-gray-200">
+      {icon}
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 leading-none mb-1">
+        {label}
+      </div>
+      <div className="text-sm font-medium text-gray-800 leading-snug break-words">{value}</div>
+    </div>
   </div>
 );
 
@@ -185,6 +217,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
     permission_package_id: "",
     shift_start: "09:00:00",
     shift_end: "18:00:00",
+    break_minutes: DEFAULT_DURATION,
+    grace_minutes: DEFAULT_DURATION,
     weekends: [],
     attendance_methods: [],
     auto_approve: false,
@@ -214,6 +248,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         permission_package_id: packageData.permission_package_id?.toString() || "",
         shift_start: packageData.shift_start || "09:00:00",
         shift_end: packageData.shift_end || "18:00:00",
+        break_minutes: normalizeDuration(packageData.break_minutes),
+        grace_minutes: normalizeDuration(packageData.grace_minutes),
         weekends: packageData.weekends || [],
         attendance_methods: normalizeAttendanceMethods(packageData.attendance_methods || []),
         auto_approve: packageData.auto_approve || false,
@@ -229,6 +265,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         permission_package_id: "",
         shift_start: "09:00:00",
         shift_end: "18:00:00",
+        break_minutes: DEFAULT_DURATION,
+        grace_minutes: DEFAULT_DURATION,
         weekends: [],
         attendance_methods: [],
         auto_approve: false,
@@ -311,6 +349,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         permission_package_id: parseInt(formData.permission_package_id),
         shift_start: formData.shift_start,
         shift_end: formData.shift_end,
+        break_minutes: formData.break_minutes,
+        grace_minutes: formData.grace_minutes,
         weekends: formData.weekends,
         attendance_methods: formData.attendance_methods,
         auto_approve: formData.auto_approve,
@@ -492,17 +532,38 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
               {/* Shift Timing */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <TimePickerField
+                  <TimeDurationPickerField
                     label="Shift Start"
                     value={formData.shift_start}
                     onChange={(val) => setFormData(prev => ({ ...prev, shift_start: val }))}
+                    mode="time"
                   />
                 </div>
                 <div>
-                  <TimePickerField
+                  <TimeDurationPickerField
                     label="Shift End"
                     value={formData.shift_end}
                     onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
+                    mode="time"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <TimeDurationPickerField
+                    label="Break Minutes"
+                    value={formData.break_minutes}
+                    onChange={(val) => setFormData(prev => ({ ...prev, break_minutes: val }))}
+                    mode="duration"
+                  />
+                </div>
+                <div>
+                  <TimeDurationPickerField
+                    label="Grace Minutes"
+                    value={formData.grace_minutes}
+                    onChange={(val) => setFormData(prev => ({ ...prev, grace_minutes: val }))}
+                    mode="duration"
                   />
                 </div>
               </div>
@@ -617,6 +678,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 
 function ViewPackageModal({ isOpen, onClose, package: pkg }) {
   const [showPermissions, setShowPermissions] = useState(false);
+  const [showWeekends, setShowWeekends] = useState(false);
 
   if (!isOpen || !pkg) return null;
 
@@ -629,40 +691,42 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-[10px] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
         
-        <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-3xl">
+        <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-[10px]">
           <div className="flex items-center gap-3">
-            <FaBox className="w-6 h-6" />
-            <h2 className="text-xl font-semibold">Package Details</h2>
+            <FaBox className="w-5 h-5" />
+            <h2 className="text-lg font-semibold">Package Details</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition">
-            <FaTimes size={20} />
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition">
+            <FaTimes size={18} />
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-4">
           {/* Header */}
-          <div className="flex items-center justify-between pb-6 border-b">
+          <div className="flex items-center justify-between pb-4 border-b">
             <div>
-              <h3 className="text-2xl font-bold text-gray-800">{pkg.name}</h3>
+              <h3 className="text-xl font-bold text-gray-800">{pkg.name}</h3>
               <p className="text-gray-500 flex items-center gap-2 mt-1">
                 <FaCode className="text-indigo-500" size={14} />
                 {pkg.code}
               </p>
             </div>
-            <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border ${status.className}`}>
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${status.className}`}>
               <StatusIcon size={14} />{status.text}
             </span>
           </div>
 
           {/* Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
             <InfoItem icon={<FaUserTie className="text-blue-500" />} label="Designation" value={formatDisplay(pkg.designation)} />
             <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment Type" value={formatDisplay(pkg.employment_type)} />
             <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
             <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Timing" value={`${pkg.shift_start} - ${pkg.shift_end}`} />
+            <InfoItem icon={<FaClock className="text-amber-500" />} label="Break Minutes" value={pkg.break_minutes} />
+            <InfoItem icon={<FaClock className="text-rose-500" />} label="Grace Minutes" value={pkg.grace_minutes} />
             <InfoItem icon={<FaTag className="text-indigo-500" />} label="Remarks" value={pkg.remarks || "—"} />
           </div>
 
@@ -692,20 +756,58 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
 
           {/* Weekends */}
           {pkg.weekends?.length > 0 && (
-            <div className="mt-4">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <FaCalendarAlt className="text-indigo-500" /> Weekend Configuration
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {pkg.weekends.map((w, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                    <span className="capitalize font-medium text-gray-700">{w.day}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${w.type === 'full' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {w.type === 'full' ? 'Full Day' : 'Half Day'}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+              <button
+                onClick={() => setShowWeekends(!showWeekends)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <FaCalendarAlt className="text-indigo-500" />
+                  <span className="text-sm font-semibold text-gray-700">Weekends</span>
+                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                    {pkg.weekends.length}
+                  </span>
+                </div>
+                <motion.div animate={{ rotate: showWeekends ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                  <FaChevronDown className="w-4 h-4 text-gray-400" />
+                </motion.div>
+              </button>
+
+              <AnimatePresence>
+                {showWeekends && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
+                      {pkg.weekends.map((weekend, idx) => (
+                        <motion.div
+                          key={`${weekend.day}-${idx}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-[10px] border border-indigo-100"
+                        >
+                          <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              weekend.type === "half"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-indigo-100 text-indigo-700"
+                            }`}
+                          >
+                            {weekend.type || "full"}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
@@ -917,7 +1019,7 @@ export default function InvitePackageManagement() {
 
       const result = await response.json();
       if (result.success) {
-        setPackages(result.data || []);
+        setPackages((result.data || []).map(normalizePackageRecord));
         const meta = result.meta;
         updatePagination({
           page: meta?.page || page,
@@ -1319,6 +1421,14 @@ export default function InvitePackageManagement() {
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <FaClock className="text-yellow-500" />
                             {pkg.shift_start} - {pkg.shift_end}
+                          </span>
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <FaClock className="text-amber-500" />
+                            Break {pkg.break_minutes}
+                          </span>
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <FaClock className="text-rose-500" />
+                            Grace {pkg.grace_minutes}
                           </span>
                         </div>
                       </div>

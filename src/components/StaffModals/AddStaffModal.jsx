@@ -27,7 +27,7 @@ import {
   FaChevronUp,
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
-import TimePickerField from "../TimePicker";
+import TimeDurationPickerField from "../TimeDurationPicker";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -71,8 +71,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [autoApprove, setAutoApprove] = useState(false);
   const [shiftStart, setShiftStart] = useState(DEFAULT_SHIFT_START);
   const [shiftEnd, setShiftEnd] = useState(DEFAULT_SHIFT_END);
-  const [breakTime, setBreakTime] = useState(DEFAULT_DURATION);
-  const [graceTime, setGraceTime] = useState(DEFAULT_DURATION);
+  const [breakMinutes, setBreakMinutes] = useState(DEFAULT_DURATION);
+  const [graceMinutes, setGraceMinutes] = useState(DEFAULT_DURATION);
   const [weekends, setWeekends] = useState([]); // Array of {day, type}
   
   const [invitePackages, setInvitePackages] = useState([]);
@@ -166,8 +166,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setAutoApprove(false);
     setShiftStart(DEFAULT_SHIFT_START);
     setShiftEnd(DEFAULT_SHIFT_END);
-    setBreakTime(DEFAULT_DURATION);
-    setGraceTime(DEFAULT_DURATION);
+    setBreakMinutes(DEFAULT_DURATION);
+    setGraceMinutes(DEFAULT_DURATION);
     setWeekends([]);
     setSelectedPackage(null);
     fetchPermissionPackages();
@@ -240,8 +240,12 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     // Shift Times
     if (pkg.shift_start) setShiftStart(pkg.shift_start);
     if (pkg.shift_end) setShiftEnd(pkg.shift_end);
-    if (pkg.break_time) setBreakTime(normalizeDuration(pkg.break_time));
-    if (pkg.grace_time) setGraceTime(normalizeDuration(pkg.grace_time));
+    if (typeof pkg.break_minutes !== "undefined") {
+      setBreakMinutes(normalizeDuration(pkg.break_minutes));
+    }
+    if (typeof pkg.grace_minutes !== "undefined") {
+      setGraceMinutes(normalizeDuration(pkg.grace_minutes));
+    }
 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
@@ -454,8 +458,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
         auto_approve: autoApprove,
         shift_start: shiftStart,
         shift_end: shiftEnd,
-        break_time: normalizeDuration(breakTime),
-        grace_time: normalizeDuration(graceTime),
+        break_minutes: normalizeDuration(breakMinutes),
+        grace_minutes: normalizeDuration(graceMinutes),
         weekends: weekends,
       };
 
@@ -486,8 +490,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setAutoApprove(false);
     setShiftStart(DEFAULT_SHIFT_START);
     setShiftEnd(DEFAULT_SHIFT_END);
-    setBreakTime(DEFAULT_DURATION);
-    setGraceTime(DEFAULT_DURATION);
+    setBreakMinutes(DEFAULT_DURATION);
+    setGraceMinutes(DEFAULT_DURATION);
     setWeekends([]);
     setSelectedPackage(null);
     setIsSubmitting(false);
@@ -800,15 +804,17 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             Shift Timings
                           </label>
                           <div className="grid grid-cols-2 gap-3">
-                            <TimePickerField
+                            <TimeDurationPickerField
                               label="Start Time"
                               value={shiftStart}
                               onChange={setShiftStart}
+                              mode="time"
                             />
-                            <TimePickerField
+                            <TimeDurationPickerField
                               label="End Time"
                               value={shiftEnd}
                               onChange={setShiftEnd}
+                              mode="time"
                             />
                           </div>
                         </div>
@@ -819,15 +825,17 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             Duration Settings
                           </label>
                           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <TimePickerField
-                              label="Break Time"
-                              value={breakTime}
-                              onChange={setBreakTime}
+                            <TimeDurationPickerField
+                              label="Break Minutes"
+                              value={breakMinutes}
+                              onChange={setBreakMinutes}
+                              mode="duration"
                             />
-                            <TimePickerField
-                              label="Grace Time"
-                              value={graceTime}
-                              onChange={setGraceTime}
+                            <TimeDurationPickerField
+                              label="Grace Minutes"
+                              value={graceMinutes}
+                              onChange={setGraceMinutes}
+                              mode="duration"
                             />
                           </div>
                         </div>

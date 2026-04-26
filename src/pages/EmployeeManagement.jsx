@@ -20,7 +20,7 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
-import TimePickerField from '../components/TimePicker';
+import TimeDurationPickerField from '../components/TimeDurationPicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -67,6 +67,10 @@ const INTERNAL_METHOD_OPTIONS = [
     { value: 'auto', label: 'Auto', icon: FaRobot, description: 'Automatic detection' }
 ];
 
+const DEFAULT_SHIFT_START = '09:00:00';
+const DEFAULT_SHIFT_END = '18:00:00';
+const DEFAULT_DURATION = '00:30';
+
 const EMPLOYEE_REQUEST_CACHE_TTL = 5000;
 let constantsRequestCache = { companyId: null, promise: null, data: null };
 let permissionPackagesRequestCache = { companyId: null, promise: null, data: null };
@@ -83,6 +87,31 @@ const InfoItem = ({ icon, label, value }) => (
         <div className="text-gray-800 font-medium">{value}</div>
     </div>
 );
+
+const normalizeDuration = (value, fallback = null) => {
+    if (value === null || typeof value === 'undefined' || value === '') return fallback;
+    if (typeof value === 'number') {
+        const hours = Math.floor(value / 60);
+        const minutes = value % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+    if (typeof value !== 'string') return fallback;
+    const [hours = '00', minutes = '00'] = value.split(':');
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
+
+const formatDurationDisplay = (value) => normalizeDuration(value, 'N/A');
+
+const normalizeEmployeeRecord = (employee) => ({
+    ...employee,
+    permission_package_id: employee?.permission_package_id ?? employee?.package_id ?? null,
+    break_minutes: normalizeDuration(
+        employee?.break_minutes,
+        DEFAULT_DURATION
+    ),
+    grace_minutes:
+        normalizeDuration(employee?.grace_minutes, DEFAULT_DURATION),
+});
 
 const EmployeeEditModal = ({
     selectedEmployee,
@@ -307,27 +336,50 @@ const EmployeeEditModal = ({
 
                         {/* Shift & Weekends Grid */}
                         <div className="grid gap-4 md:grid-cols-2">
-                            <div className="rounded-[10px] border border-slate-200 bg-white p-4">
-                                <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                    <FaClock className="h-4 w-4 text-indigo-500" />
-                                    Shift Timings
-                                </label>
+                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <FaClock className="h-4 w-4 text-indigo-500" />
+                                Shift Timings
+                            </label>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <TimePickerField
+                                    <TimeDurationPickerField
                                         label="Start Time"
                                         value={formData.shift_start}
                                         onChange={(val) => setFormData(prev => ({ ...prev, shift_start: val }))}
+                                        mode="time"
                                     />
-                                    <TimePickerField
-                                        label="End Time"
-                                        value={formData.shift_end}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
-                                    />
-                                </div>
+                                <TimeDurationPickerField
+                                    label="End Time"
+                                    value={formData.shift_end}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
+                                    mode="time"
+                                />
                             </div>
+                        </div>
 
-                            <div className="rounded-[10px] border border-slate-200 bg-white p-4">
-                                <button
+                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <FaClock className="h-4 w-4 text-indigo-500" />
+                                Duration Settings
+                            </label>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                <TimeDurationPickerField
+                                    label="Break Minutes"
+                                    value={formData.break_minutes}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, break_minutes: val }))}
+                                    mode="duration"
+                                />
+                                <TimeDurationPickerField
+                                    label="Grace Minutes"
+                                    value={formData.grace_minutes}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, grace_minutes: val }))}
+                                    mode="duration"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                            <button
                                     type="button"
                                     onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
                                     className="flex w-full items-center justify-between"
@@ -454,7 +506,8 @@ const EmployeeManagement = () => {
         employee_code: '', employment_type: '', salary_type: '',
         joining_date: '', status: '', permission_package_id: null,
         attendance_methods: [], auto_approve: false,
-        shift_start: '09:00:00', shift_end: '18:00:00',
+        shift_start: DEFAULT_SHIFT_START, shift_end: DEFAULT_SHIFT_END,
+        break_minutes: DEFAULT_DURATION, grace_minutes: DEFAULT_DURATION,
         weekends: []
     });
     const [weekendConfig, setWeekendConfig] = useState({
@@ -723,13 +776,17 @@ const EmployeeManagement = () => {
             }
 
             if (result.success) {
-                setEmployees(result.data);
+                const normalizedEmployees = (result.data || []).map(normalizeEmployeeRecord);
+                setEmployees(normalizedEmployees);
+
+                const paginationMeta = result.pagination || result.meta || {};
+                const totalPages = paginationMeta.total_pages || Math.max(1, Math.ceil((paginationMeta.total || normalizedEmployees.length || 0) / (paginationMeta.limit || pagination.limit)));
                 updatePagination({
-                    page: result.pagination?.page || page,
-                    limit: result.pagination?.limit || pagination.limit,
-                    total: result.pagination?.total || 0,
-                    total_pages: result.pagination?.total_pages || 1,
-                    is_last_page: result.pagination?.is_last_page ?? (page === result.pagination?.total_pages)
+                    page: paginationMeta.page || page,
+                    limit: paginationMeta.limit || pagination.limit,
+                    total: paginationMeta.total || normalizedEmployees.length || 0,
+                    total_pages: totalPages,
+                    is_last_page: paginationMeta.is_last_page ?? (paginationMeta.page || page) >= totalPages
                 });
             } else {
                 throw new Error(result.message || 'Failed to fetch employees');
@@ -775,6 +832,8 @@ const EmployeeManagement = () => {
                 auto_approve: employeeData.auto_approve ?? false,
                 shift_start: employeeData.shift_start,
                 shift_end: employeeData.shift_end,
+                break_minutes: employeeData.break_minutes,
+                grace_minutes: employeeData.grace_minutes,
                 weekends: employeeData.weekends
             };
 
@@ -818,7 +877,8 @@ const EmployeeManagement = () => {
             if (!constantsFetched.current) await fetchConstants();
             if (!permissionsFetched.current) await fetchPermissionPackages();
 
-            setSelectedEmployee(employee);
+            const normalizedEmployee = normalizeEmployeeRecord(employee);
+            setSelectedEmployee(normalizedEmployee);
 
             // Initialize attendance methods config
             const initialConfig = {};
@@ -845,24 +905,26 @@ const EmployeeManagement = () => {
             setAttendanceMethodsConfig(initialConfig);
 
             // Find the permission package
-            const selectedPackage = permissionPackages.find(p => p.value === employee.package_id);
+            const selectedPackage = permissionPackages.find(p => p.value === (normalizedEmployee.permission_package_id || normalizedEmployee.package_id));
 
             setFormData({
-                name: employee.name || '',
-                designation: employee.designation || '',
-                email: employee.email || '',
-                phone: employee.phone || '',
-                employee_code: employee.employee_code || '',
-                employment_type: employee.employment_type || '',
-                salary_type: employee.salary_type || '',
-                joining_date: employee.joining_date ? new Date(employee.joining_date).toISOString().split('T')[0] : '',
-                status: employee.status || '',
-                permission_package_id: employee.package_id || null,
+                name: normalizedEmployee.name || '',
+                designation: normalizedEmployee.designation || '',
+                email: normalizedEmployee.email || '',
+                phone: normalizedEmployee.phone || '',
+                employee_code: normalizedEmployee.employee_code || '',
+                employment_type: normalizedEmployee.employment_type || '',
+                salary_type: normalizedEmployee.salary_type || '',
+                joining_date: normalizedEmployee.joining_date ? new Date(normalizedEmployee.joining_date).toISOString().split('T')[0] : '',
+                status: normalizedEmployee.status || '',
+                permission_package_id: normalizedEmployee.permission_package_id || normalizedEmployee.package_id || null,
                 selectedPackage: selectedPackage || null,
-                auto_approve: employee.auto_approve ?? false,
-                shift_start: employee.shift_start || '09:00:00',
-                shift_end: employee.shift_end || '18:00:00',
-                weekends: Array.isArray(employee.weekends) ? employee.weekends : []
+                auto_approve: normalizedEmployee.auto_approve ?? false,
+                shift_start: normalizedEmployee.shift_start || DEFAULT_SHIFT_START,
+                shift_end: normalizedEmployee.shift_end || DEFAULT_SHIFT_END,
+                break_minutes: normalizeDuration(normalizedEmployee.break_minutes, DEFAULT_DURATION),
+                grace_minutes: normalizeDuration(normalizedEmployee.grace_minutes, DEFAULT_DURATION),
+                weekends: Array.isArray(normalizedEmployee.weekends) ? normalizedEmployee.weekends : []
             });
 
             setModalType(MODAL_TYPES.EDIT);
@@ -878,7 +940,7 @@ const EmployeeManagement = () => {
 
     const openViewModal = (emp) => {
         setShowPermissions(false);
-        setSelectedEmployee(emp);
+        setSelectedEmployee(normalizeEmployeeRecord(emp));
         setModalType(MODAL_TYPES.VIEW);
         setActiveActionMenu(null);
     };
@@ -898,7 +960,8 @@ const EmployeeManagement = () => {
     };
 
     const openWeekendModal = (employee) => {
-        setSelectedEmployee(employee);
+        const normalizedEmployee = normalizeEmployeeRecord(employee);
+        setSelectedEmployee(normalizedEmployee);
         
         // Initialize weekend config from employee data if available
         const initialConfig = {
@@ -906,8 +969,8 @@ const EmployeeManagement = () => {
             friday: 'none', saturday: 'none', sunday: 'none'
         };
 
-        if (employee.weekends && Array.isArray(employee.weekends)) {
-            employee.weekends.forEach(w => {
+        if (normalizedEmployee.weekends && Array.isArray(normalizedEmployee.weekends)) {
+            normalizedEmployee.weekends.forEach(w => {
                 const day = w.day.toLowerCase();
                 if (initialConfig.hasOwnProperty(day)) {
                     initialConfig[day] = w.type.toLowerCase();
@@ -925,21 +988,26 @@ const EmployeeManagement = () => {
         setSelectedEmployee(null);
         setShowPermissions(false);
         setAttendanceMethodsConfig({});
-        setFormData({
-            name: '',
-            designation: '',
-            email: '',
-            phone: '',
-            employee_code: '',
-            employment_type: '',
-            salary_type: '',
-            joining_date: '',
-            status: '',
-            permission_package_id: null,
-            selectedPackage: null,
-            attendance_methods: [],
-            auto_approve: false
-        });
+            setFormData({
+                name: '',
+                designation: '',
+                email: '',
+                phone: '',
+                employee_code: '',
+                employment_type: '',
+                salary_type: '',
+                joining_date: '',
+                status: '',
+                permission_package_id: null,
+                selectedPackage: null,
+                attendance_methods: [],
+                auto_approve: false,
+                shift_start: DEFAULT_SHIFT_START,
+                shift_end: DEFAULT_SHIFT_END,
+                break_minutes: DEFAULT_DURATION,
+                grace_minutes: DEFAULT_DURATION,
+                weekends: []
+            });
     };
 
     // ─── Form Handlers ───────────────────────────────────────────────────────
@@ -964,6 +1032,8 @@ const EmployeeManagement = () => {
             auto_approve: formData.auto_approve,
             shift_start: formData.shift_start,
             shift_end: formData.shift_end,
+            break_minutes: formData.break_minutes,
+            grace_minutes: formData.grace_minutes,
             weekends: formData.weekends
         });
 
@@ -1474,6 +1544,23 @@ const EmployeeManagement = () => {
                                             <InfoItem icon={<FaPhone className="text-orange-500" />} label="Phone" value={selectedEmployee.phone} />
                                             <InfoItem icon={<FaUserTag className="text-indigo-500" />} label="Employment Type" value={getEmploymentTypeDisplay(selectedEmployee.employment_type)} />
                                             <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
+                                            <InfoItem
+                                                icon={<FaClock className="text-indigo-500" />}
+                                                label="Schedule"
+                                                value={
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                                                            {`${selectedEmployee.shift_start || 'N/A'} - ${selectedEmployee.shift_end || 'N/A'}`}
+                                                        </span>
+                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                                                            Break Minutes {formatDurationDisplay(selectedEmployee.break_minutes)}
+                                                        </span>
+                                                        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                                                            Grace Minutes {formatDurationDisplay(selectedEmployee.grace_minutes)}
+                                                        </span>
+                                                    </div>
+                                                }
+                                            />
                                             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joining Date" value={formatDate(selectedEmployee.joining_date)} />
 
                                             {selectedEmployee.package_name && (

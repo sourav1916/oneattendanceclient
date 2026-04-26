@@ -27,7 +27,7 @@ import {
   FaChevronUp,
   FaSave,
 } from "react-icons/fa";
-import TimePickerField from "../TimePicker";
+import TimeDurationPickerField from "../TimeDurationPicker";
 import ModalScrollLock from "../ModalScrollLock";
 
 const ATTENDANCE_LABELS = {
@@ -72,8 +72,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [autoApprove, setAutoApprove] = useState(false);
   const [shiftStart, setShiftStart] = useState(DEFAULT_SHIFT_START);
   const [shiftEnd, setShiftEnd] = useState(DEFAULT_SHIFT_END);
-  const [breakTime, setBreakTime] = useState(DEFAULT_DURATION);
-  const [graceTime, setGraceTime] = useState(DEFAULT_DURATION);
+  const [breakMinutes, setBreakMinutes] = useState(DEFAULT_DURATION);
+  const [graceMinutes, setGraceMinutes] = useState(DEFAULT_DURATION);
   const [weekends, setWeekends] = useState([]); // Array of {day, type}
 
   const [invitePackages, setInvitePackages] = useState([]);
@@ -224,8 +224,12 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     // Shift Times
     if (pkg.shift_start) setShiftStart(pkg.shift_start);
     if (pkg.shift_end) setShiftEnd(pkg.shift_end);
-    if (pkg.break_time) setBreakTime(normalizeDuration(pkg.break_time));
-    if (pkg.grace_time) setGraceTime(normalizeDuration(pkg.grace_time));
+    if (typeof pkg.break_minutes !== "undefined") {
+      setBreakMinutes(normalizeDuration(pkg.break_minutes));
+    }
+    if (typeof pkg.grace_minutes !== "undefined") {
+      setGraceMinutes(normalizeDuration(pkg.grace_minutes));
+    }
 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
@@ -514,8 +518,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
 
       setShiftStart(staffData.shift_start || DEFAULT_SHIFT_START);
       setShiftEnd(staffData.shift_end || DEFAULT_SHIFT_END);
-      setBreakTime(normalizeDuration(staffData.break_time ?? staffData.break_minutes));
-      setGraceTime(normalizeDuration(staffData.grace_time));
+      setBreakMinutes(normalizeDuration(staffData.break_minutes));
+      setGraceMinutes(normalizeDuration(staffData.grace_minutes));
       setWeekends(Array.isArray(staffData.weekends) ? staffData.weekends : []);
       if (Array.isArray(staffData.weekends) && staffData.weekends.length > 0) {
         setIsWeekendsOpen(true);
@@ -561,8 +565,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       autoApprove: Boolean(staffData?.auto_approve),
       shiftStart: staffData?.shift_start ?? DEFAULT_SHIFT_START,
       shiftEnd: staffData?.shift_end ?? DEFAULT_SHIFT_END,
-      breakTime: normalizeDuration(staffData?.break_time ?? staffData?.break_minutes),
-      graceTime: normalizeDuration(staffData?.grace_time),
+      breakMinutes: normalizeDuration(staffData?.break_minutes),
+      graceMinutes: normalizeDuration(staffData?.grace_minutes),
       weekends: Array.isArray(staffData?.weekends) ? [...staffData.weekends].sort((a,b) => a.day.localeCompare(b.day)) : [],
     };
   }, [staffData]);
@@ -582,8 +586,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       autoApprove !== initialInviteState.autoApprove ||
       shiftStart !== initialInviteState.shiftStart ||
       shiftEnd !== initialInviteState.shiftEnd ||
-      breakTime !== initialInviteState.breakTime ||
-      graceTime !== initialInviteState.graceTime ||
+      breakMinutes !== initialInviteState.breakMinutes ||
+      graceMinutes !== initialInviteState.graceMinutes ||
       JSON.stringify([...weekends].sort((a,b) => a.day.localeCompare(b.day))) !== JSON.stringify(initialInviteState.weekends) ||
       JSON.stringify(currentAttendanceMethods) !== JSON.stringify(initialInviteState.attendanceMethods)
     );
@@ -597,8 +601,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     currentAttendanceMethods,
     shiftStart,
     shiftEnd,
-    breakTime,
-    graceTime,
+    breakMinutes,
+    graceMinutes,
     weekends,
     initialInviteState,
   ]);
@@ -655,8 +659,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         auto_approve: autoApprove,
         shift_start: shiftStart,
         shift_end: shiftEnd,
-        break_time: normalizeDuration(breakTime),
-        grace_time: normalizeDuration(graceTime),
+        break_minutes: normalizeDuration(breakMinutes),
+        grace_minutes: normalizeDuration(graceMinutes),
         weekends: weekends,
       };
 
@@ -687,8 +691,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setAutoApprove(false);
     setShiftStart(DEFAULT_SHIFT_START);
     setShiftEnd(DEFAULT_SHIFT_END);
-    setBreakTime(DEFAULT_DURATION);
-    setGraceTime(DEFAULT_DURATION);
+    setBreakMinutes(DEFAULT_DURATION);
+    setGraceMinutes(DEFAULT_DURATION);
     setWeekends([]);
     setSelectedPackage(null);
     setIsSubmitting(false);
@@ -934,15 +938,17 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               Shift Timings
                             </label>
                             <div className="grid grid-cols-2 gap-3">
-                              <TimePickerField
+                              <TimeDurationPickerField
                                 label="Start Time"
                                 value={shiftStart}
                                 onChange={setShiftStart}
+                                mode="time"
                               />
-                              <TimePickerField
+                              <TimeDurationPickerField
                                 label="End Time"
                                 value={shiftEnd}
                                 onChange={setShiftEnd}
+                                mode="time"
                               />
                             </div>
                           </div>
@@ -953,15 +959,17 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               Duration Settings
                             </label>
                             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                              <TimePickerField
-                                label="Break Time"
-                                value={breakTime}
-                                onChange={setBreakTime}
+                              <TimeDurationPickerField
+                                label="Break Minutes"
+                                value={breakMinutes}
+                                onChange={setBreakMinutes}
+                                mode="duration"
                               />
-                              <TimePickerField
-                                label="Grace Time"
-                                value={graceTime}
-                                onChange={setGraceTime}
+                              <TimeDurationPickerField
+                                label="Grace Minutes"
+                                value={graceMinutes}
+                                onChange={setGraceMinutes}
+                                mode="duration"
                               />
                             </div>
                           </div>

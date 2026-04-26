@@ -100,18 +100,11 @@ const normalizeInviteRecord = (invite) => ({
   ...invite,
   user_id: invite?.user?.id ?? invite?.user_id ?? null,
   permission_package_id: invite?.permission_package?.id ?? invite?.permission_package_id ?? null,
-  break_time: normalizeDuration(
-    typeof invite?.break_time !== "undefined" && invite?.break_time !== null
-      ? invite.break_time
-      : invite?.break_minutes,
+  break_minutes: normalizeDuration(
+    invite?.break_minutes,
     "00:30"
   ),
-  grace_time:
-    typeof invite?.grace_time === "undefined"
-      ? null
-      : invite?.grace_time === null
-        ? null
-        : normalizeDuration(invite.grace_time, "00:30"),
+  grace_minutes: normalizeDuration(invite?.grace_minutes, "00:30"),
 });
 
 // ─── Local Components ────────────────────────────────────────────────────────
@@ -358,10 +351,10 @@ export default function CompanyInvites() {
                       {`${invite.shift_start || "N/A"} - ${invite.shift_end || "N/A"}`}
                     </span>
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                      Break {formatDurationDisplay(invite.break_time)}
+                      Break Minutes {formatDurationDisplay(invite.break_minutes)}
                     </span>
                     <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
-                      Grace {formatDurationDisplay(invite.grace_time)}
+                      Grace Minutes {formatDurationDisplay(invite.grace_minutes)}
                     </span>
                   </div>
                 }
@@ -750,11 +743,11 @@ export default function CompanyInvites() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <FaClock className="text-amber-400" />
-                                  <span>Break: {formatDurationDisplay(invite.break_time)}</span>
+                                  <span>Break Minutes: {formatDurationDisplay(invite.break_minutes)}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <FaClock className="text-rose-400" />
-                                  <span>Grace: {formatDurationDisplay(invite.grace_time)}</span>
+                                  <span>Grace Minutes: {formatDurationDisplay(invite.grace_minutes)}</span>
                                 </div>
                               </div>
                             </td>
@@ -857,11 +850,11 @@ export default function CompanyInvites() {
                             </div>
                             <div className="flex items-center gap-1.5">
                               <FaClock className="text-amber-400" />
-                              <span>Break: {formatDurationDisplay(invite.break_time)}</span>
+                              <span>Break Minutes: {formatDurationDisplay(invite.break_minutes)}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <FaClock className="text-rose-400" />
-                              <span>Grace: {formatDurationDisplay(invite.grace_time)}</span>
+                              <span>Grace Minutes: {formatDurationDisplay(invite.grace_minutes)}</span>
                             </div>
                           </div>
                           <div className="flex justify-between items-center pt-2 border-t border-gray-100">
