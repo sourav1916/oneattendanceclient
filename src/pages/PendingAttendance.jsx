@@ -559,7 +559,7 @@ const PendingAttendance = ({ companyId }) => {
     return (
         <>
             <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+                <div className="max-w-7xl mx-auto ">
                     {/* Header */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
@@ -573,7 +573,7 @@ const PendingAttendance = ({ companyId }) => {
                                     Pending attendance
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600">
+                                    <h1 className="text-2xl sm:text-3xl font-black bg-clip-text whitespace-nowrap text-transparent bg-gradient-to-r from-amber-600 to-orange-600">
                                         Pending Attendance
                                     </h1>
                                     <p className="mt-1 break-words text-sm text-slate-500">
