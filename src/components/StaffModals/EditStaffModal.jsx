@@ -39,6 +39,21 @@ const ATTENDANCE_LABELS = {
   ip: "IP Address",
 };
 
+const DEFAULT_SHIFT_START = "09:00:00";
+const DEFAULT_SHIFT_END = "18:00:00";
+const DEFAULT_DURATION = "00:30";
+
+const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
+  if (typeof value === "number") {
+    const hours = Math.floor(value / 60);
+    const minutes = value % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+  if (!value || typeof value !== "string") return fallback;
+  const [hours = "00", minutes = "00"] = value.split(":");
+  return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+};
+
 function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled = false, submitTitle = "" }) {
   const { attendanceMethods: companyAttendanceMethods = [] } = useAuth();
 
@@ -55,8 +70,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [employmentType, setEmploymentType] = useState(null);
   const [selectedAttendanceMethods, setSelectedAttendanceMethods] = useState([]);
   const [autoApprove, setAutoApprove] = useState(false);
-  const [shiftStart, setShiftStart] = useState("09:00:00");
-  const [shiftEnd, setShiftEnd] = useState("18:00:00");
+  const [shiftStart, setShiftStart] = useState(DEFAULT_SHIFT_START);
+  const [shiftEnd, setShiftEnd] = useState(DEFAULT_SHIFT_END);
+  const [breakTime, setBreakTime] = useState(DEFAULT_DURATION);
+  const [graceTime, setGraceTime] = useState(DEFAULT_DURATION);
   const [weekends, setWeekends] = useState([]); // Array of {day, type}
 
   const [invitePackages, setInvitePackages] = useState([]);
@@ -207,6 +224,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     // Shift Times
     if (pkg.shift_start) setShiftStart(pkg.shift_start);
     if (pkg.shift_end) setShiftEnd(pkg.shift_end);
+    if (pkg.break_time) setBreakTime(normalizeDuration(pkg.break_time));
+    if (pkg.grace_time) setGraceTime(normalizeDuration(pkg.grace_time));
 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
@@ -429,6 +448,15 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           is_active: staffData.user.is_active,
           created_at: staffData.user.created_at || null,
         });
+      } else if (staffData.user_id) {
+        setSelectedUser({
+          id: staffData.user_id,
+          full_name: staffData.user_name || staffData.name || `User #${staffData.user_id}`,
+          email: staffData.email || "",
+          phone: staffData.phone || null,
+          is_active: staffData.is_active,
+          created_at: staffData.created_at || null,
+        });
       }
 
       if (staffData.designation) {
@@ -461,8 +489,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         );
       }
 
-      if (staffData.permission_package?.id) {
-        const found = permissionPackages.find((p) => p.value === staffData.permission_package.id);
+      const permissionPackageId = staffData.permission_package?.id ?? staffData.permission_package_id ?? null;
+      if (permissionPackageId) {
+        const found = permissionPackages.find((p) => p.value === permissionPackageId);
         setSelectedPermissionPackage(found || null);
       }
 
@@ -483,8 +512,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         setAutoApprove(false);
       }
 
-      setShiftStart(staffData.shift_start || "09:00:00");
-      setShiftEnd(staffData.shift_end || "18:00:00");
+      setShiftStart(staffData.shift_start || DEFAULT_SHIFT_START);
+      setShiftEnd(staffData.shift_end || DEFAULT_SHIFT_END);
+      setBreakTime(normalizeDuration(staffData.break_time ?? staffData.break_minutes));
+      setGraceTime(normalizeDuration(staffData.grace_time));
       setWeekends(Array.isArray(staffData.weekends) ? staffData.weekends : []);
       if (Array.isArray(staffData.weekends) && staffData.weekends.length > 0) {
         setIsWeekendsOpen(true);
@@ -507,8 +538,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const showInviteFields = Boolean(selectedUser || staffData);
 
   const initialInviteState = useMemo(() => {
-    const initialUserId = getResolvedUserId(staffData?.user);
-    const initialPermissionPackageId = staffData?.permission_package?.id ?? null;
+    const initialUserId = getResolvedUserId(staffData?.user) ?? staffData?.user_id ?? null;
+    const initialPermissionPackageId = staffData?.permission_package?.id ?? staffData?.permission_package_id ?? null;
     const initialAttendanceMethods = Array.isArray(staffData?.attendance_methods)
       ? staffData.attendance_methods
           .map((item) => {
@@ -528,8 +559,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       permissionPackageId: initialPermissionPackageId,
       attendanceMethods: initialAttendanceMethods,
       autoApprove: Boolean(staffData?.auto_approve),
-      shiftStart: staffData?.shift_start ?? "09:00:00",
-      shiftEnd: staffData?.shift_end ?? "18:00:00",
+      shiftStart: staffData?.shift_start ?? DEFAULT_SHIFT_START,
+      shiftEnd: staffData?.shift_end ?? DEFAULT_SHIFT_END,
+      breakTime: normalizeDuration(staffData?.break_time ?? staffData?.break_minutes),
+      graceTime: normalizeDuration(staffData?.grace_time),
       weekends: Array.isArray(staffData?.weekends) ? [...staffData.weekends].sort((a,b) => a.day.localeCompare(b.day)) : [],
     };
   }, [staffData]);
@@ -549,6 +582,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       autoApprove !== initialInviteState.autoApprove ||
       shiftStart !== initialInviteState.shiftStart ||
       shiftEnd !== initialInviteState.shiftEnd ||
+      breakTime !== initialInviteState.breakTime ||
+      graceTime !== initialInviteState.graceTime ||
       JSON.stringify([...weekends].sort((a,b) => a.day.localeCompare(b.day))) !== JSON.stringify(initialInviteState.weekends) ||
       JSON.stringify(currentAttendanceMethods) !== JSON.stringify(initialInviteState.attendanceMethods)
     );
@@ -562,6 +597,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     currentAttendanceMethods,
     shiftStart,
     shiftEnd,
+    breakTime,
+    graceTime,
     weekends,
     initialInviteState,
   ]);
@@ -618,6 +655,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         auto_approve: autoApprove,
         shift_start: shiftStart,
         shift_end: shiftEnd,
+        break_time: normalizeDuration(breakTime),
+        grace_time: normalizeDuration(graceTime),
         weekends: weekends,
       };
 
@@ -646,8 +685,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setSelectedPermissionPackage(null);
     setSelectedAttendanceMethods([]);
     setAutoApprove(false);
-    setShiftStart("09:00:00");
-    setShiftEnd("18:00:00");
+    setShiftStart(DEFAULT_SHIFT_START);
+    setShiftEnd(DEFAULT_SHIFT_END);
+    setBreakTime(DEFAULT_DURATION);
+    setGraceTime(DEFAULT_DURATION);
     setWeekends([]);
     setSelectedPackage(null);
     setIsSubmitting(false);
@@ -902,6 +943,25 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                                 label="End Time"
                                 value={shiftEnd}
                                 onChange={setShiftEnd}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <FaClock className="h-4 w-4 text-indigo-500" />
+                              Duration Settings
+                            </label>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                              <TimePickerField
+                                label="Break Time"
+                                value={breakTime}
+                                onChange={setBreakTime}
+                              />
+                              <TimePickerField
+                                label="Grace Time"
+                                value={graceTime}
+                                onChange={setGraceTime}
                               />
                             </div>
                           </div>

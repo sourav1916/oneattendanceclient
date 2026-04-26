@@ -68,14 +68,65 @@ const formatDateSimple = (date) => {
 
 const formatDisplay = (str) => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
 
+const minutesToDuration = (value) => {
+  if (value === null || typeof value === "undefined" || value === "") return null;
+  const minutes = Number(value);
+  if (Number.isNaN(minutes)) return null;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+};
+
+const normalizeDuration = (value, fallback = null) => {
+  if (value === null || typeof value === "undefined" || value === "") return fallback;
+  if (typeof value === "number") return minutesToDuration(value);
+  if (typeof value !== "string") return fallback;
+
+  const parts = value.split(":");
+  if (parts.length >= 2) {
+    return `${String(parts[0] || "00").padStart(2, "0")}:${String(parts[1] || "00").padStart(2, "0")}`;
+  }
+
+  return fallback;
+};
+
+const formatDurationDisplay = (value) => {
+  const normalized = normalizeDuration(value, null);
+  if (!normalized) return "N/A";
+  return normalized;
+};
+
+const normalizeInviteRecord = (invite) => ({
+  ...invite,
+  user_id: invite?.user?.id ?? invite?.user_id ?? null,
+  permission_package_id: invite?.permission_package?.id ?? invite?.permission_package_id ?? null,
+  break_time: normalizeDuration(
+    typeof invite?.break_time !== "undefined" && invite?.break_time !== null
+      ? invite.break_time
+      : invite?.break_minutes,
+    "00:30"
+  ),
+  grace_time:
+    typeof invite?.grace_time === "undefined"
+      ? null
+      : invite?.grace_time === null
+        ? null
+        : normalizeDuration(invite.grace_time, "00:30"),
+});
+
 // ─── Local Components ────────────────────────────────────────────────────────
 
-const InfoItem = ({ icon, label, value }) => (
-  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
-    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
-      {icon}{label}
-    </label>
-    <div className="text-gray-800 font-medium">{value}</div>
+const InfoItem = ({ icon, label, value, className = "" }) => (
+  <div className={`flex items-start gap-2 rounded-[10px] border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 px-3 py-2 ${className}`}>
+    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 border border-gray-200">
+      {icon}
+    </div>
+    <div className="min-w-0 flex-1">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-500 leading-none mb-1">
+        {label}
+      </div>
+      <div className="text-sm font-medium text-gray-800 leading-snug break-words">{value}</div>
+    </div>
   </div>
 );
 
@@ -127,7 +178,7 @@ export default function CompanyInvites() {
 
         const result = await response.json();
         if (result.success) {
-          setInvites(result.data || []);
+          setInvites((result.data || []).map(normalizeInviteRecord));
           const currentPage = Number(result.current_page ?? result.page ?? result.meta?.page ?? page);
           const perPage = Number(result.per_page ?? result.limit ?? result.meta?.limit ?? pagination.limit);
           const total = Number(result.total ?? result.meta?.total ?? result.data?.length ?? 0);
@@ -214,7 +265,7 @@ export default function CompanyInvites() {
   // ── Edit ───────────────────────────────────────────────────────────────────
   const handleEditClick = (invite) => {
     if (updateInviteAccess.disabled) return;
-    setEditingInvite(invite);
+    setEditingInvite(normalizeInviteRecord(invite));
     setIsEditModalOpen(true);
     setActiveActionMenu(null);
   };
@@ -263,6 +314,7 @@ export default function CompanyInvites() {
   const ViewModal = ({ invite, onClose }) => {
     const [showPermissions, setShowPermissions] = useState(false);
     const [showAttendance, setShowAttendance] = useState(false);
+    const [showWeekends, setShowWeekends] = useState(false);
     
     return (
       <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
@@ -270,33 +322,50 @@ export default function CompanyInvites() {
         onClick={onClose}>
         <ModalScrollLock />
         <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-          className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-[10px] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}>
-          <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
-            <h2 className="text-xl font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
+          <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
             <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300"><FaTimes size={20} /></button>
           </div>
-          <div className="p-6">
-            <div className="flex items-center gap-6 pb-6 border-b">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-[10px]">
-                <FaUserCircle className="text-white text-5xl" />
+          <div className="p-4">
+            <div className="flex items-center gap-4 pb-4 border-b">
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-[10px]">
+                <FaUserCircle className="text-white text-4xl" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-gray-800">{invite.user?.name || "No name"}</h3>
-                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                <h3 className="text-xl font-bold text-gray-800">{invite.user?.name || "No name"}</h3>
+                <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
                   <FaEnvelope className="text-blue-500" size={14} />{invite.user?.email}
                 </p>
                 {invite.user?.phone && (
-                  <p className="text-gray-600 flex items-center gap-2 mt-1">
+                  <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
                     <FaPhone className="text-green-500" size={14} />{invite.user.phone}
                   </p>
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
               <InfoItem icon={<FaBriefcase className="text-blue-500" />}   label="Designation"      value={formatDisplay(invite.designation)} />
               <InfoItem icon={<FaUserTie   className="text-purple-500" />} label="Employment Type"  value={formatDisplay(invite.employment_type)} />
               <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type"    value={formatDisplay(invite.salary_type)} />
+              <InfoItem
+                icon={<FaClock className="text-indigo-500" />}
+                label="Schedule"
+                value={
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
+                      {`${invite.shift_start || "N/A"} - ${invite.shift_end || "N/A"}`}
+                    </span>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                      Break {formatDurationDisplay(invite.break_time)}
+                    </span>
+                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                      Grace {formatDurationDisplay(invite.grace_time)}
+                    </span>
+                  </div>
+                }
+              />
               <InfoItem icon={<FaTag       className="text-orange-500" />} label="Status"
                 value={
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
@@ -308,10 +377,10 @@ export default function CompanyInvites() {
             </div>
 
             {invite.permissions?.length > 0 && (
-              <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+              <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
                 <button 
                   onClick={() => setShowPermissions(!showPermissions)}
-                  className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                   type="button"
                 >
                   <div className="flex items-center gap-2">
@@ -335,11 +404,11 @@ export default function CompanyInvites() {
                       transition={{ duration: 0.25, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto">
+                      <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
                         {invite.permissions.map((perm, idx) => (
                           <motion.div key={perm.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-100">
-                            <span className="font-medium text-gray-700">{perm.name}</span>
+                            className="flex items-center justify-between p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-100">
+                            <span className="text-sm font-medium text-gray-700">{perm.name}</span>
                             
                           </motion.div>
                         ))}
@@ -351,10 +420,10 @@ export default function CompanyInvites() {
             )}
 
             {invite.attendance_methods?.length > 0 && (
-              <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+              <div className="mt-3 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
                 <button 
                   onClick={() => setShowAttendance(!showAttendance)}
-                  className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                   type="button"
                 >
                   <div className="flex items-center gap-2">
@@ -378,14 +447,68 @@ export default function CompanyInvites() {
                       transition={{ duration: 0.25, ease: "easeInOut" }}
                       className="overflow-hidden"
                     >
-                      <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="p-3 bg-white flex flex-wrap gap-2">
                         {invite.attendance_methods.map((method, idx) => (
                           <motion.div key={`method-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-[10px] border border-purple-100">
-                            <span className="font-medium text-gray-700 capitalize">{method.method}</span>
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-full border border-purple-100">
+                            <span className="text-sm font-medium text-gray-700 capitalize">{method.method}</span>
                             {method.is_auto && (
                               <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
                             )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {invite.weekends?.length > 0 && (
+              <div className="mt-3 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+                <button
+                  onClick={() => setShowWeekends(!showWeekends)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  type="button"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-rose-500" />
+                    <span className="text-sm font-semibold text-gray-700">Weekends</span>
+                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-medium">
+                      {invite.weekends.length}
+                    </span>
+                  </div>
+                  <motion.div animate={{ rotate: showWeekends ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <FaChevronDown className="w-4 h-4 text-gray-400" />
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {showWeekends && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-3 bg-white flex flex-wrap gap-2">
+                        {invite.weekends.map((weekend, idx) => (
+                          <motion.div
+                            key={`${weekend.day}-${idx}`}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="inline-flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-rose-50 to-orange-50 rounded-full border border-rose-100"
+                          >
+                            <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${
+                              weekend.type === "half"
+                                ? "bg-amber-100 text-amber-700"
+                                : "bg-rose-100 text-rose-700"
+                            }`}>
+                              {weekend.type || "full"}
+                            </span>
                           </motion.div>
                         ))}
                       </div>
@@ -620,6 +743,20 @@ export default function CompanyInvites() {
                                 <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">{formatDisplay(invite.employment_type)}</span>
                                 <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">{formatDisplay(invite.salary_type)}</span>
                               </div>
+                              <div className="mt-2 space-y-1 text-[11px] text-gray-500">
+                                <div className="flex items-center gap-1.5">
+                                  <FaClock className="text-indigo-400" />
+                                  <span>Shift: {invite.shift_start || "N/A"} - {invite.shift_end || "N/A"}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <FaClock className="text-amber-400" />
+                                  <span>Break: {formatDurationDisplay(invite.break_time)}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <FaClock className="text-rose-400" />
+                                  <span>Grace: {formatDurationDisplay(invite.grace_time)}</span>
+                                </div>
+                              </div>
                             </td>
                           )}
                           {visibleColumns.showStatus && (
@@ -712,6 +849,20 @@ export default function CompanyInvites() {
                           <div className="flex flex-wrap gap-2">
                             <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">{formatDisplay(invite.employment_type)}</span>
                             <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{formatDisplay(invite.salary_type)}</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-1.5 pt-1 text-xs text-gray-500">
+                            <div className="flex items-center gap-1.5">
+                              <FaClock className="text-indigo-400" />
+                              <span>Shift: {invite.shift_start || "N/A"} - {invite.shift_end || "N/A"}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FaClock className="text-amber-400" />
+                              <span>Break: {formatDurationDisplay(invite.break_time)}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <FaClock className="text-rose-400" />
+                              <span>Grace: {formatDurationDisplay(invite.grace_time)}</span>
+                            </div>
                           </div>
                           <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                             <span className="text-xs text-gray-500 flex items-center gap-1">

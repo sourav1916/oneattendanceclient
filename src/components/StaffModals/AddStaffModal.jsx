@@ -38,6 +38,21 @@ const ATTENDANCE_LABELS = {
   ip: "IP Address",
 };
 
+const DEFAULT_SHIFT_START = "09:00:00";
+const DEFAULT_SHIFT_END = "18:00:00";
+const DEFAULT_DURATION = "00:30";
+
+const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
+  if (typeof value === "number") {
+    const hours = Math.floor(value / 60);
+    const minutes = value % 60;
+    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  }
+  if (!value || typeof value !== "string") return fallback;
+  const [hours = "00", minutes = "00"] = value.split(":");
+  return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`;
+};
+
 function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, submitTitle = "" }) {
   const { attendanceMethods: companyAttendanceMethods = [] } = useAuth();
 
@@ -54,8 +69,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [employmentType, setEmploymentType] = useState(null);
   const [selectedAttendanceMethods, setSelectedAttendanceMethods] = useState([]);
   const [autoApprove, setAutoApprove] = useState(false);
-  const [shiftStart, setShiftStart] = useState("09:00:00");
-  const [shiftEnd, setShiftEnd] = useState("18:00:00");
+  const [shiftStart, setShiftStart] = useState(DEFAULT_SHIFT_START);
+  const [shiftEnd, setShiftEnd] = useState(DEFAULT_SHIFT_END);
+  const [breakTime, setBreakTime] = useState(DEFAULT_DURATION);
+  const [graceTime, setGraceTime] = useState(DEFAULT_DURATION);
   const [weekends, setWeekends] = useState([]); // Array of {day, type}
   
   const [invitePackages, setInvitePackages] = useState([]);
@@ -147,8 +164,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setEmploymentType(null);
     setSelectedAttendanceMethods([]);
     setAutoApprove(false);
-    setShiftStart("09:00:00");
-    setShiftEnd("18:00:00");
+    setShiftStart(DEFAULT_SHIFT_START);
+    setShiftEnd(DEFAULT_SHIFT_END);
+    setBreakTime(DEFAULT_DURATION);
+    setGraceTime(DEFAULT_DURATION);
     setWeekends([]);
     setSelectedPackage(null);
     fetchPermissionPackages();
@@ -221,6 +240,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     // Shift Times
     if (pkg.shift_start) setShiftStart(pkg.shift_start);
     if (pkg.shift_end) setShiftEnd(pkg.shift_end);
+    if (pkg.break_time) setBreakTime(normalizeDuration(pkg.break_time));
+    if (pkg.grace_time) setGraceTime(normalizeDuration(pkg.grace_time));
 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
@@ -423,18 +444,20 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setIsSubmitting(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
-    const payload = {
-      user_id: selectedUser.id,
-      permission_package_id: selectedPermissionPackage?.value || null,
-      employment_type: employmentType.value,
-      salary_type: staffType.value,
-      designation: designation.value,
-      attendance_methods: selectedAttendanceMethods,
-      auto_approve: autoApprove,
-      shift_start: shiftStart,
-      shift_end: shiftEnd,
-      weekends: weekends,
-    };
+      const payload = {
+        user_id: selectedUser.id,
+        permission_package_id: selectedPermissionPackage?.value || null,
+        employment_type: employmentType.value,
+        salary_type: staffType.value,
+        designation: designation.value,
+        attendance_methods: selectedAttendanceMethods,
+        auto_approve: autoApprove,
+        shift_start: shiftStart,
+        shift_end: shiftEnd,
+        break_time: normalizeDuration(breakTime),
+        grace_time: normalizeDuration(graceTime),
+        weekends: weekends,
+      };
 
       const response = await apiCall("/company/invites/send", "POST", payload, company?.id);
       const data = await response.json();
@@ -461,8 +484,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setSelectedPermissionPackage(null);
     setSelectedAttendanceMethods([]);
     setAutoApprove(false);
-    setShiftStart("09:00:00");
-    setShiftEnd("18:00:00");
+    setShiftStart(DEFAULT_SHIFT_START);
+    setShiftEnd(DEFAULT_SHIFT_END);
+    setBreakTime(DEFAULT_DURATION);
+    setGraceTime(DEFAULT_DURATION);
     setWeekends([]);
     setSelectedPackage(null);
     setIsSubmitting(false);
@@ -784,6 +809,25 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                               label="End Time"
                               value={shiftEnd}
                               onChange={setShiftEnd}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                          <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <FaClock className="h-4 w-4 text-indigo-500" />
+                            Duration Settings
+                          </label>
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <TimePickerField
+                              label="Break Time"
+                              value={breakTime}
+                              onChange={setBreakTime}
+                            />
+                            <TimePickerField
+                              label="Grace Time"
+                              value={graceTime}
+                              onChange={setGraceTime}
                             />
                           </div>
                         </div>
