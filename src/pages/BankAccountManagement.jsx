@@ -455,7 +455,29 @@ const BankAccountManagement = () => {
   };
 
   const handleIfscChange = (value) => {
-    setFormData((prev) => ({ ...prev, ifsc_code: value.toUpperCase() }));
+    const nextIfsc = value.toUpperCase();
+
+    setFormData((prev) => {
+      const shouldClearFetchedFields = !nextIfsc.trim() || nextIfsc.length < 11 || nextIfsc !== lastIfscLookupRef.current;
+
+      if (!shouldClearFetchedFields) {
+        return { ...prev, ifsc_code: nextIfsc };
+      }
+
+      return {
+        ...prev,
+        ifsc_code: nextIfsc,
+        bank_name: '',
+        branch_name: '',
+        address: '',
+        city: '',
+        district: '',
+        state: '',
+        micr: '',
+        contact: '',
+        upi: false,
+      };
+    });
     resetIfscLookupState();
   };
 
