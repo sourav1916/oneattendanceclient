@@ -296,7 +296,7 @@ function AppContent() {
         <Route path="/leave-balance" element={<ProtectedRoute pageKey="leaveBalance"><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
         <Route path="/payroll-management" element={<ProtectedRoute pageKey="payrollManagement"><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><BankAccountManagement /></MainLayout></ProtectedRoute>} />
-        <Route path="/employee-profile/:employeeId" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-profile/:employeeId/:tabKey?" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

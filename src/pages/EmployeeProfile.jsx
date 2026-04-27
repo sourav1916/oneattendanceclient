@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaChevronDown, FaChevronUp, FaEye, FaShieldAlt,
   FaClock, FaMoneyBillWave, FaCalendarAlt, FaExchangeAlt,
   FaEnvelope, FaIdCard, FaCheckCircle, FaTimesCircle,
-  FaUserCircle, FaTimes, FaDollarSign, FaCalculator,
+  FaUserCircle, FaTimes, FaDollarSign, FaCalculator, FaPhone,
   FaChartBar, FaHandPaper, FaCalendarPlus, FaCalendarCheck,
   FaTag, FaBriefcase, FaMapMarkerAlt, FaNetworkWired,
-  FaArrowDown, FaArrowUp, FaUmbrellaBeach,
+  FaArrowDown, FaArrowUp, FaUmbrellaBeach, FaChevronRight,
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import Pagination, { usePagination } from "../components/PaginationComponent";
@@ -26,25 +26,8 @@ const TABS = [
   { key: "shifts", label: "Shifts", icon: <FaExchangeAlt size={12} /> },
   { key: "leaves", label: "Leaves", icon: <FaUmbrellaBeach size={12} /> },
 ];
-
-// ─── DEMO / FALLBACK DATA ─────────────────────────────────────────────────────
-const DEMO_PROFILE = {
-  employee: {
-    id: 5, code: "EMP-4-41-8CC7", designation: "hr_manager",
-    salary_type: "monthly", employment_type: "part_time", status: "active",
-    joining_date: "2026-04-16", weekends: { saturday: "half", sunday: "full" },
-    created_at: "2026-04-16 11:56:30",
-  },
-  user: {
-    id: 41, name: "XYZ Das", email: "xyz@gmail.com", phone: "6567777687",
-    is_active: true, last_login: "2026-04-17 11:59:48",
-  },
-  company: {
-    id: 4, name: "Hello World", legal_name: "Hello World Private Limited",
-    logo_url: "https://api-attendance.onesaas.in/uploads/images/2026/image-2026-4f9eed3a13ac9aae.jpg",
-    city: "Tufanganj - I", state: "West Bengal", country: "India",
-  },
-};
+const PROFILE_TAB_IDS = new Set(TABS.map((tab) => tab.key));
+const DEFAULT_PROFILE_TAB = "basic";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = (str) =>
@@ -76,6 +59,253 @@ const AVATAR_GRADIENTS = [
   "from-rose-500 to-red-600", "from-cyan-500 to-blue-500",
 ];
 const avatarGradient = (id) => AVATAR_GRADIENTS[(id || 0) % AVATAR_GRADIENTS.length];
+const PAGE_ACCENT = "from-green-600 to-emerald-600";
+const inFlightRequests = new Map();
+
+async function runDedupedRequest(key, requestFn) {
+  if (inFlightRequests.has(key)) {
+    return inFlightRequests.get(key);
+  }
+
+  const promise = Promise.resolve()
+    .then(requestFn)
+    .finally(() => {
+      inFlightRequests.delete(key);
+    });
+
+  inFlightRequests.set(key, promise);
+  return promise;
+}
+
+function ProfileHub({ eyebrow, title, description, accent = "slate", summary, tabs = [], activeTab, onTabChange, children }) {
+  const accentClass = {
+    slate: "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-700",
+    green: "inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700",
+    blue: "inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-700",
+    indigo: "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-indigo-700",
+    amber: "inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700",
+  }[accent] || "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-700";
+
+  const activeButtonStyles = {
+    slate: "bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-md",
+    green: "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md shadow-green-300",
+    blue: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300",
+    indigo: "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-300",
+    amber: "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md shadow-amber-300",
+  }[accent] || "bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-md";
+
+  return (
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl">
+        <motion.div
+          initial={{ opacity: 0, y: -14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-6 rounded-[10px] border border-slate-200 bg-white/90 p-2 shadow-xl shadow-slate-200/60 backdrop-blur "
+      >
+          {tabs?.length > 0 && (
+            <div className=" flex flex-wrap gap-2">
+              {tabs.map((tab) => {
+                const isActive = tab.id === activeTab;
+                const disabled = tab.disabled || false;
+                const Icon = tab.icon;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => !disabled && onTabChange && onTabChange(tab.id)}
+                    disabled={disabled}
+                    title={tab.title || tab.description || tab.label}
+                    className={`inline-flex items-center gap-2 rounded-[10px] border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                      isActive
+                        ? activeButtonStyles
+                        : disabled
+                          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    {Icon ? (typeof Icon === "function" ? <Icon size={13} /> : Icon) : null}
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        <div className="p-[10px] lg:p-2">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+export default function EmployeeProfilePage() {
+  const { employeeId, tabKey } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const mountedRef = useRef(false);
+  const requestedTab = new URLSearchParams(location.search).get("tab");
+  const activeTab = PROFILE_TAB_IDS.has(tabKey) ? tabKey : DEFAULT_PROFILE_TAB;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const candidateTab = PROFILE_TAB_IDS.has(requestedTab) ? requestedTab : activeTab;
+    const desiredPath = `/employee-profile/${employeeId}/${candidateTab}`;
+    const hasLegacyQuery = location.search.includes("tab=");
+    if (hasLegacyQuery || !tabKey || tabKey !== candidateTab || location.pathname !== desiredPath) {
+      navigate(desiredPath, { replace: true });
+    }
+  }, [activeTab, employeeId, location.pathname, location.search, navigate, requestedTab, tabKey]);
+
+  const fetchProfile = useCallback(async (id) => {
+    if (!id) {
+      if (mountedRef.current) {
+        setError("Missing employee id");
+        setProfile(null);
+      }
+      return;
+    }
+
+    try {
+      if (mountedRef.current) {
+        setLoading(true);
+        setError(null);
+        setProfile(null);
+      }
+
+      const { res, json } = await runDedupedRequest(`employee-profile:${id}`, async () => {
+        const companyStr = localStorage.getItem("company");
+        const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+        const response = await apiCall(`/employees/${id}?include=basic`, "GET", null, companyId);
+        const data = await response.json();
+        return { res: response, json: data };
+      });
+
+      if (!res.ok || !json.success) throw new Error(json.message || "Failed to fetch profile details");
+
+      const raw = json.data?.basic ?? json.data?.[0] ?? json.data ?? {};
+      if (mountedRef.current) {
+        setProfile({
+          employee: {
+            ...raw,
+            code: raw.employee_code || raw.code,
+          },
+          user: {
+            ...raw,
+            name: raw.user_name || raw.name,
+          },
+          company: {
+            ...raw,
+            name: raw.company_name || (raw.company?.name ?? "—"),
+            legal_name: raw.legal_name || (raw.company?.legal_name ?? "—"),
+            logo_url: raw.logo_url || raw.company?.logo_url,
+            city: raw.city || raw.company?.city,
+            state: raw.state || raw.company?.state,
+            country: raw.country || raw.company?.country,
+          },
+        });
+      }
+    } catch (err) {
+      if (mountedRef.current) {
+        setError(err.message || "Failed to load profile");
+        setProfile(null);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile(employeeId);
+  }, [employeeId, fetchProfile]);
+
+  const handleTabChange = useCallback((nextTab) => {
+    if (!PROFILE_TAB_IDS.has(nextTab) || nextTab === activeTab) return;
+    navigate(`/employee-profile/${employeeId}/${nextTab}`);
+  }, [activeTab, employeeId, navigate]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
+      <div className="mx-auto max-w-7xl">
+        {loading && (
+          <div className="flex flex-col items-center py-16 gap-2 text-slate-400">
+            <div className="w-5 h-5 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
+            <span className="text-sm">Fetching employee data…</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-[10px] px-4 py-2">
+            ⚠ {error}
+          </div>
+        )}
+
+        {!loading && !profile && !error && (
+          <div className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-6 text-center">
+            <p className="text-sm font-medium text-gray-700">No employee profile data found.</p>
+            <p className="text-xs text-gray-500 mt-1">This page now depends entirely on the `include=basic` response.</p>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {profile && !loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col gap-2"
+            >
+                  <ProfileCard data={profile} />
+
+              <ProfileHub
+                eyebrow={<><FaIdCard size={11} /> Employee Profile</>}
+                title="Employee Profile"
+                description="Detailed overview of employee performance, attendance, and employment records."
+                accent="green"
+                summary={(
+                  <div className="flex items-center gap-2 text-sm bg-gray-50 px-4 py-2 rounded-[10px] border border-gray-200">
+                    <FaUserCircle className="text-emerald-500" />
+                    <span className="font-medium text-gray-700">Staff Member</span>
+                  </div>
+                )}
+                tabs={TABS.map((tab) => ({
+                  id: tab.key,
+                  label: tab.label,
+                  icon: tab.icon,
+                  title: tab.label,
+                }))}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+              >
+                <div className="space-y-4">
+                  {activeTab !== DEFAULT_PROFILE_TAB && (
+                    <TabContent
+                      tabKey={activeTab}
+                      tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"}
+                      employeeId={profile.employee?.id ?? employeeId}
+                    />
+                  )}
+                </div>
+              </ProfileHub>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
 
 // ─── PILL STYLES ──────────────────────────────────────────────────────────────
 const STATUS_COLORS = {
@@ -217,7 +447,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
         className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
+        <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
           <div>
             <h3 className="text-base font-bold">{tabLabel} Details</h3>
             <p className="text-xs text-white/70 mt-0.5">Record information</p>
@@ -261,47 +491,40 @@ function ProfileCard({ data }) {
       transition={{ duration: 0.3 }}
       className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-5"
     >
-      <div className="flex items-start gap-4 flex-wrap">
+      <div className="flex items-start gap-4 flex-wrap pb-5 border-b border-gray-100">
         <div className={`w-[64px] h-[64px] rounded-[10px] bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none`}>
           {getInitials(u.name)}
         </div>
 
         <div className="flex-1 min-w-[160px]">
-          <h2 className="text-xl font-bold text-slate-800 leading-tight">{u.name}</h2>
-          <p className="text-sm text-slate-500 mt-0.5">{fmt(e.designation)}</p>
-          <div className="flex gap-1.5 flex-wrap mt-2">
+          <h2 className="text-2xl font-bold text-gray-800 leading-tight">{u.name}</h2>
+          <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+            <FaBriefcase className="text-emerald-500" size={12} />
+            {fmt(e.designation)}
+          </p>
+          <div className="flex flex-col gap-1 mt-2">
+            <p className="text-sm text-gray-600 flex items-center gap-2 break-all">
+              <FaEnvelope className="text-blue-500" size={12} />
+              <span>{u.email || "—"}</span>
+            </p>
+            <p className="text-sm text-gray-600 flex items-center gap-2">
+              <FaPhone className="text-emerald-500" size={12} />
+              <span>{u.phone || "—"}</span>
+            </p>
+          </div>
+          <div className="flex gap-1.5 flex-wrap mt-3">
             <Pill value={e.status} />
             <Pill value={e.employment_type} />
             <Pill value={e.salary_type} />
           </div>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-3">
             {c.logo_url && !imgErr && (
               <img src={c.logo_url} alt={c.name} onError={() => setImgErr(true)}
                 className="w-5 h-5 rounded object-contain border border-slate-200 bg-slate-50" />
             )}
-            <span className="text-sm text-slate-500">{c.name} · {c.city}, {c.state}</span>
+            <span className="text-sm text-gray-500">{c.name} · {c.city}, {c.state}</span>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 mt-4 pt-4 border-t border-slate-100">
-        {[
-          ["Employee Code", e.code],
-          ["Email", u.email],
-          ["Phone", u.phone || "—"],
-          ["Joining Date", fmtDate(e.joining_date)],
-          ["Created At", fmtDateTime(e.created_at)],
-          ["Company", c.legal_name],
-          ["Work Schedule", `${e.expected_work_minutes || 0} mins/day`],
-          ["Weekends", Array.isArray(e.weekends) 
-            ? e.weekends.map(w => `${fmt(w.day)} (${fmt(w.type)})`).join(", ") 
-            : "None"],
-        ].map(([label, val]) => (
-          <div key={label}>
-            <span className="block text-[11px] uppercase tracking-wider text-slate-400 mb-0.5">{label}</span>
-            <span className="text-sm font-medium text-slate-800 break-all">{val}</span>
-          </div>
-        ))}
       </div>
     </motion.div>
   );
@@ -758,7 +981,15 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const fetchRef = useRef(false);
+  const mountedRef = useRef(false);
   const normalizedTabKey = tabKey === "leave" ? "leaves" : tabKey === "shift" ? "shifts" : tabKey;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const ACCENT_MAP = {
     basic: "slate", permissions: "indigo", attendance: "blue", salary: "green",
@@ -770,19 +1001,28 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   const fetchData = useCallback(async (page, limit) => {
     if (fetchRef.current) return;
     fetchRef.current = true;
-    setLoading(true);
-    setWarn(false);
     try {
-      const companyStr = localStorage.getItem('company');
-      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      if (mountedRef.current) {
+        setLoading(true);
+        setWarn(false);
+      }
 
-      const res = await apiCall(
-        `/employees/${employeeId}?include=${normalizedTabKey}&page=${page}&limit=${limit}`,
-        'GET',
-        null,
-        companyId
+      const { res, json } = await runDedupedRequest(
+        `employee:${employeeId}:tab:${normalizedTabKey}:page:${page}:limit:${limit}`,
+        async () => {
+          const companyStr = localStorage.getItem('company');
+          const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+
+          const response = await apiCall(
+            `/employees/${employeeId}?include=${normalizedTabKey}&page=${page}&limit=${limit}`,
+            'GET',
+            null,
+            companyId
+          );
+          const data = await response.json();
+          return { res: response, json: data };
+        }
       );
-      const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.message || "API error");
 
       const rawData = json.data?.[normalizedTabKey] ?? json.data?.[tabKey] ?? json.data ?? [];
@@ -793,20 +1033,26 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
           : [];
       const meta = json.meta?.[normalizedTabKey] ?? json.meta?.[tabKey] ?? json.meta ?? {};
 
-      setRows(Array.isArray(dataArr) ? dataArr : []);
-      updatePagination({
-        page: Number(meta.page ?? page),
-        limit: Number(meta.limit ?? limit),
-        total: Number(meta.total ?? dataArr.length),
-        total_pages: Number(meta.total_pages ?? 1),
-        is_last_page: meta.is_last_page ?? true,
-      });
+      if (mountedRef.current) {
+        setRows(Array.isArray(dataArr) ? dataArr : []);
+        updatePagination({
+          page: Number(meta.page ?? page),
+          limit: Number(meta.limit ?? limit),
+          total: Number(meta.total ?? dataArr.length),
+          total_pages: Number(meta.total_pages ?? 1),
+          is_last_page: meta.is_last_page ?? true,
+        });
+      }
     } catch {
-      setRows([]);
-      setWarn(true);
-      updatePagination({ page, limit, total: 0, total_pages: 1, is_last_page: true });
+      if (mountedRef.current) {
+        setRows([]);
+        setWarn(true);
+        updatePagination({ page, limit, total: 0, total_pages: 1, is_last_page: true });
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
       fetchRef.current = false;
     }
   }, [employeeId, normalizedTabKey, tabKey, updatePagination]);
@@ -875,7 +1121,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       {/* Loading */}
       {loading && (
         <div className="flex flex-col items-center py-10 gap-2 text-slate-400">
-          <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
           <span className="text-sm">Loading {tabLabel.toLowerCase()}…</span>
         </div>
       )}
@@ -964,7 +1210,7 @@ function TabsPanel({ employeeId }) {
             onClick={() => setActiveTab(t.key)}
             className={`shrink-0 flex items-center gap-1.5 px-4 py-3 text-sm border-b-2 whitespace-nowrap transition-colors
               ${activeTab === t.key
-                ? "border-indigo-600 text-indigo-600 font-semibold"
+                ? "border-green-600 text-green-600 font-semibold"
                 : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
               }`}
           >
@@ -997,50 +1243,76 @@ function TabsPanel({ employeeId }) {
 }
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
-export default function EmployeeProfilePage() {
+function EmployeeProfilePageLegacy() {
   const { employeeId } = useParams();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const fetchProfile = useCallback(async (id) => {
-    if (!id) { setProfile(DEMO_PROFILE); return; }
-    setLoading(true);
-    setError(null);
-    setProfile(null);
+    if (!id) {
+      if (mountedRef.current) {
+        setError("Missing employee id");
+        setProfile(null);
+      }
+      return;
+    }
     try {
-      const companyStr = localStorage.getItem('company');
-      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      if (mountedRef.current) {
+        setLoading(true);
+        setError(null);
+        setProfile(null);
+      }
 
-      const res = await apiCall(`/employees/${id}?include=basic`, 'GET', null, companyId);
-      const json = await res.json();
+      const { res, json } = await runDedupedRequest(`employee-profile:${id}`, async () => {
+        const companyStr = localStorage.getItem('company');
+        const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+
+        const response = await apiCall(`/employees/${id}?include=basic`, 'GET', null, companyId);
+        const data = await response.json();
+        return { res: response, json: data };
+      });
       if (!res.ok || !json.success) throw new Error(json.message || "Failed to fetch profile details");
       // Normalise to { employee, user, company } shape
       const raw = json.data?.basic ?? json.data?.[0] ?? json.data ?? {};
-      setProfile({
-        employee: {
-          ...raw,
-          code: raw.employee_code || raw.code,
-        },
-        user: {
-          ...raw,
-          name: raw.user_name || raw.name,
-        },
-        company: {
-          ...raw,
-          name: raw.company_name || (raw.company?.name ?? '—'),
-          legal_name: raw.legal_name || (raw.company?.legal_name ?? '—'),
-          logo_url: raw.logo_url || raw.company?.logo_url,
-          city: raw.city || raw.company?.city,
-          state: raw.state || raw.company?.state,
-          country: raw.country || raw.company?.country,
-        },
-      });
+      if (mountedRef.current) {
+        setProfile({
+          employee: {
+            ...raw,
+            code: raw.employee_code || raw.code,
+          },
+          user: {
+            ...raw,
+            name: raw.user_name || raw.name,
+          },
+          company: {
+            ...raw,
+            name: raw.company_name || (raw.company?.name ?? '—'),
+            legal_name: raw.legal_name || (raw.company?.legal_name ?? '—'),
+            logo_url: raw.logo_url || raw.company?.logo_url,
+            city: raw.city || raw.company?.city,
+            state: raw.state || raw.company?.state,
+            country: raw.country || raw.company?.country,
+          },
+        });
+      }
     } catch (err) {
-      setError(err.message || "Failed to load profile");
-      setProfile(DEMO_PROFILE);
+      if (mountedRef.current) {
+        setError(err.message || "Failed to load profile");
+        setProfile(null);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -1055,14 +1327,14 @@ export default function EmployeeProfilePage() {
           className="flex flex-col sm:flex-row justify-between items-center mb-0 gap-4"
         >
           <div>
-            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+            <h1 className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-emerald-600">
               Employee Profile
             </h1>
-            <p className="text-xs text-gray-500 mt-1">Detailed overview of employee performance, attendance, and employment records.</p>
+            <p className="text-sm text-gray-500 mt-1">Detailed overview of employee performance, attendance, and employment records.</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-              <FaUserCircle className="text-indigo-500" />
+            <div className="flex items-center gap-2 text-sm bg-gray-50 px-4 py-2 rounded-[10px] border border-gray-200">
+              <FaUserCircle className="text-emerald-500" />
               <span className="font-medium text-gray-700">Staff Member</span>
             </div>
           </div>
@@ -1070,14 +1342,21 @@ export default function EmployeeProfilePage() {
 
         {loading && (
           <div className="flex flex-col items-center py-16 gap-2 text-slate-400">
-            <div className="w-5 h-5 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
             <span className="text-sm">Fetching employee data…</span>
           </div>
         )}
 
         {error && (
-          <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2">
-            ⚠ {error} — showing demo data
+          <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-[10px] px-4 py-2">
+            ⚠ {error}
+          </div>
+        )}
+
+        {!loading && !profile && !error && (
+          <div className="bg-white rounded-[10px] border border-gray-100 shadow-sm p-6 text-center">
+            <p className="text-sm font-medium text-gray-700">No employee profile data found.</p>
+            <p className="text-xs text-gray-500 mt-1">This page now depends entirely on the `include=basic` response.</p>
           </div>
         )}
 
