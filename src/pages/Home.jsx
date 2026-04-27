@@ -333,6 +333,21 @@ function HomePage() {
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:20px_20px]"></div>
 
           <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 lg:p-6 relative z-10">
+            <div className="mb-8 max-w-2xl">
+              <p
+                className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent"
+                style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif' }}
+              >
+                Welcome to OneAttendance
+              </p>
+              <h1 className="mt-3 max-w-4xl text-sm sm:text-base font-medium leading-relaxed text-slate-600">
+                Secure attendance, shift, leave, and payroll management in one platform.
+              </h1>
+              <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-xl">
+                Centralize daily operations, improve record accuracy, and manage your team with confidence.
+              </p>
+            </div>
+
             {/* Bottom: Action Chips */}
             <div className="flex flex-wrap gap-3 mt-8">
               <button

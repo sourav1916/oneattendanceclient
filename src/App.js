@@ -54,6 +54,8 @@ import {
   FaUserPlus,
   FaClock,
   FaBoxes,
+  FaFingerprint,
+  FaHistory,
 } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -167,6 +169,30 @@ const EMPLOYEE_HUB_TABS = [
   },
 ];
 
+const ATTENDANCE_HUB_TABS = [
+  {
+    id: "punch",
+    label: "Mark Attendance",
+    shortLabel: "Attendance",
+    description: "Mark your daily attendance and check-in status.",
+    icon: FaFingerprint,
+    pageKey: "attendance",
+    component: PunchAttendance,
+    accent: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  },
+  {
+    id: "history",
+    label: "Attendance History",
+    shortLabel: "History",
+    description: "View your past attendance records and logs.",
+    icon: FaHistory,
+    pageKey: "attendanceHistory",
+    component: AttendanceHistory,
+    accent: "bg-violet-50 text-violet-700 border-violet-200",
+  },
+];
+
+
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
 
@@ -202,8 +228,19 @@ function AppContent() {
         <Route path="/profile" element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>}/>
         <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
         <Route path="/company-invites" element={ <ProtectedRoute pageKey="companyInvites"><Navigate to="/employee-management?tab=invites" replace /></ProtectedRoute>}/>
-        <Route path="/attendance" element={<ProtectedRoute pageKey="attendance"><MainLayout><PunchAttendance /></MainLayout></ProtectedRoute>} />
-        <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><MainLayout><AttendanceHistory /></MainLayout></ProtectedRoute>} />
+        <Route path="/attendance" element={<ProtectedRoute pageKey="attendance"><MainLayout><TabbedManagementHub
+          routePath="/attendance"
+          defaultTab="punch"
+          title="Attendance Hub"
+          description="Mark your presence or review your past activity in one unified dashboard."
+          eyebrow={<><FaFingerprint size={11} /> Attendance</>}
+          accent="indigo"
+          tabs={ATTENDANCE_HUB_TABS}
+          accessDeniedTitle="No attendance tabs available"
+          accessDeniedDescription="Your current role does not have access to punch attendance or view history."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
+        <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><Navigate to="/attendance?tab=history" replace /></ProtectedRoute>} />
         <Route path="/my-shifts" element={<ProtectedRoute pageKey="myShifts"><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
         <Route path="/my-accounts" element={<ProtectedRoute pageKey="employeeBankAccount"><MainLayout><MyAccounts /></MainLayout></ProtectedRoute>} />

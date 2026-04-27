@@ -230,6 +230,17 @@ const EMPTY_FORM = {
   status: 'active',
 };
 
+const EMPTY_AUTO_LOCKED_FIELDS = {
+  bank_name: false,
+  branch_name: false,
+  address: false,
+  city: false,
+  district: false,
+  state: false,
+  micr: false,
+  contact: false,
+};
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const EmployeeBankAccountManagement = () => {
@@ -249,6 +260,7 @@ const EmployeeBankAccountManagement = () => {
   const [viewMode,         setViewMode        ] = useState('table');
   const [formData,         setFormData        ] = useState({ ...EMPTY_FORM });
   const [ifscLookupState,  setIfscLookupState ] = useState({ loading: false, error: '' });
+  const [autoLockedFields, setAutoLockedFields] = useState(EMPTY_AUTO_LOCKED_FIELDS);
   const ifscLookupRequestRef = useRef(0);
   const ifscLookupTimerRef = useRef(null);
   const lastIfscLookupRef = useRef('');
@@ -369,11 +381,31 @@ const EmployeeBankAccountManagement = () => {
     }
     lastIfscLookupRef.current = '';
     setIfscLookupState({ loading: false, error: '' });
+    setAutoLockedFields(EMPTY_AUTO_LOCKED_FIELDS);
     setShowModal(true);
   };
 
   const closeModal    = useCallback(() => { if (!saving) setShowModal(false); }, [saving]);
   const closeViewModal = useCallback(() => setViewModal({ open: false, account: null }), []);
+
+  const resetIfscLookupState = () => {
+    ifscLookupRequestRef.current += 1;
+    if (ifscLookupTimerRef.current) {
+      clearTimeout(ifscLookupTimerRef.current);
+      ifscLookupTimerRef.current = null;
+    }
+    lastIfscLookupRef.current = '';
+    setIfscLookupState({ loading: false, error: '' });
+    setAutoLockedFields(EMPTY_AUTO_LOCKED_FIELDS);
+  };
+
+  const handleIfscChange = (value) => {
+    setFormData((prev) => ({ ...prev, ifsc_code: value.toUpperCase() }));
+    resetIfscLookupState();
+  };
+
+  const lockedInputClass = (locked) => `${inputCls} ${locked ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`;
+  const lockedTextareaClass = (locked) => `${inputCls} resize-none ${locked ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`;
 
   const applyIfscLookup = useCallback(async (ifscValue, { silent = false } = {}) => {
     const ifsc = String(ifscValue || '').trim().toUpperCase();
@@ -396,6 +428,16 @@ const EmployeeBankAccountManagement = () => {
       }
 
       lastIfscLookupRef.current = ifsc;
+      setAutoLockedFields({
+        bank_name: !!details.bank_name,
+        branch_name: !!details.branch_name,
+        address: !!details.address,
+        city: !!details.city,
+        district: !!details.district,
+        state: !!details.state,
+        micr: !!details.micr,
+        contact: !!details.contact,
+      });
       setFormData((prev) => ({
         ...prev,
         ifsc_code: ifsc,
@@ -958,10 +1000,7 @@ const EmployeeBankAccountManagement = () => {
 
                     {/* Bank-only fields */}
                     {isBankType && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-5 overflow-hidden">
-                        <FormField label="Bank Name" required>
-                          <input type="text" value={formData.bank_name} onChange={(e) => setFormData(p => ({ ...p, bank_name: e.target.value }))} placeholder="e.g. HDFC Bank" className={inputCls} />
-                        </FormField>
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex flex-col gap-5 overflow-hidden">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <FormField label="Account Number" required>
                             <input type="text" value={formData.account_number} onChange={(e) => setFormData(p => ({ ...p, account_number: e.target.value }))} placeholder="98765432100" className={inputCls} />
@@ -972,7 +1011,7 @@ const EmployeeBankAccountManagement = () => {
                                 <input
                                   type="text"
                                   value={formData.ifsc_code}
-                                  onChange={(e) => setFormData(p => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))}
+                                  onChange={(e) => handleIfscChange(e.target.value)}
                                   placeholder="HDFC0005678"
                                   className={inputCls}
                                 />
@@ -991,31 +1030,83 @@ const EmployeeBankAccountManagement = () => {
                             </div>
                           </FormField>
                         </div>
+                        <FormField label="Bank Name" required>
+                          <input
+                            type="text"
+                            value={formData.bank_name}
+                            onChange={(e) => setFormData(p => ({ ...p, bank_name: e.target.value }))}
+                            readOnly={autoLockedFields.bank_name}
+                            placeholder="e.g. HDFC Bank"
+                            className={lockedInputClass(autoLockedFields.bank_name)}
+                          />
+                        </FormField>
                         <FormField label="Branch Name">
-                          <input type="text" value={formData.branch_name} onChange={(e) => setFormData(p => ({ ...p, branch_name: e.target.value }))} placeholder="e.g. Salt Lake Branch" className={inputCls} />
+                          <input
+                            type="text"
+                            value={formData.branch_name}
+                            onChange={(e) => setFormData(p => ({ ...p, branch_name: e.target.value }))}
+                            readOnly={autoLockedFields.branch_name}
+                            placeholder="e.g. Salt Lake Branch"
+                            className={lockedInputClass(autoLockedFields.branch_name)}
+                          />
                         </FormField>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <FormField label="City">
-                            <input type="text" value={formData.city} onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))} placeholder="City" className={inputCls} />
+                            <input
+                              type="text"
+                              value={formData.city}
+                              onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
+                              readOnly={autoLockedFields.city}
+                              placeholder="City"
+                              className={lockedInputClass(autoLockedFields.city)}
+                            />
                           </FormField>
                           <FormField label="District">
-                            <input type="text" value={formData.district} onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))} placeholder="District" className={inputCls} />
+                            <input
+                              type="text"
+                              value={formData.district}
+                              onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))}
+                              readOnly={autoLockedFields.district}
+                              placeholder="District"
+                              className={lockedInputClass(autoLockedFields.district)}
+                            />
                           </FormField>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <FormField label="State">
-                            <input type="text" value={formData.state} onChange={(e) => setFormData(p => ({ ...p, state: e.target.value }))} placeholder="State" className={inputCls} />
+                            <input
+                              type="text"
+                              value={formData.state}
+                              onChange={(e) => setFormData(p => ({ ...p, state: e.target.value }))}
+                              readOnly={autoLockedFields.state}
+                              placeholder="State"
+                              className={lockedInputClass(autoLockedFields.state)}
+                            />
                           </FormField>
                           <FormField label="MICR">
-                            <input type="text" value={formData.micr} onChange={(e) => setFormData(p => ({ ...p, micr: e.target.value }))} placeholder="736002507" className={inputCls} />
+                            <input
+                              type="text"
+                              value={formData.micr}
+                              onChange={(e) => setFormData(p => ({ ...p, micr: e.target.value }))}
+                              readOnly={autoLockedFields.micr}
+                              placeholder="736002507"
+                              className={lockedInputClass(autoLockedFields.micr)}
+                            />
                           </FormField>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <FormField label="Contact">
-                            <input type="text" value={formData.contact} onChange={(e) => setFormData(p => ({ ...p, contact: e.target.value }))} placeholder="Branch contact number" className={inputCls} />
+                            <input
+                              type="text"
+                              value={formData.contact}
+                              onChange={(e) => setFormData(p => ({ ...p, contact: e.target.value }))}
+                              readOnly={autoLockedFields.contact}
+                              placeholder="Branch contact number"
+                              className={lockedInputClass(autoLockedFields.contact)}
+                            />
                           </FormField>
                           <FormField label="UPI Enabled">
                             <div className="flex items-center justify-between rounded-[10px] border border-slate-200 bg-slate-50 px-4 py-3">
@@ -1036,8 +1127,9 @@ const EmployeeBankAccountManagement = () => {
                             rows="3"
                             value={formData.address}
                             onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
+                            readOnly={autoLockedFields.address}
                             placeholder="Bank branch address"
-                            className={`${inputCls} resize-none`}
+                            className={lockedTextareaClass(autoLockedFields.address)}
                           />
                         </FormField>
                       </motion.div>
