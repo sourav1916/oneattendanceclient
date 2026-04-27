@@ -32,7 +32,7 @@ const PERMISSION_ACCESS_CONFIG = {
       disableForCompanyOwner: true,
     },
     employeeBankAccount: {
-      permissions: null,
+      permissions: ["bnk_create", "bnk_view", "bnk_update", "bnk_delete"],
     },
     myInvites: { permissions: null },
     holidays: {
@@ -150,10 +150,10 @@ const PERMISSION_ACCESS_CONFIG = {
       },
     },
     employeeBankAccount: {
-      create: { permissions: null },
-      read: { permissions: null },
-      update: { permissions: null },
-      delete: { permissions: null },
+      create: { permissions: "bnk_create" },
+      read: { permissions: "bnk_view" },
+      update: { permissions: "bnk_update" },
+      delete: { permissions: "bnk_delete" },
     },
     companyInvites: {
       create: { permissions: "emp_invite" },
@@ -320,10 +320,10 @@ const PERMISSION_ACCESS_CONFIG = {
       },
     },
     bankAccountManagement: {
-      create: { permissions: null },
-      read: { permissions: null },
-      update: { permissions: null },
-      delete: { permissions: null },
+      create: { permissions: "bnk_create" },
+      read: { permissions: "bnk_view" },
+      update: { permissions: "bnk_update" },
+      delete: { permissions: "bnk_delete" },
     },
     workspace: {
       addStaff: { permissions: ["emp_create", "emp_invite"] },
