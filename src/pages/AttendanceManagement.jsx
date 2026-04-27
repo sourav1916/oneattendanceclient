@@ -392,7 +392,7 @@ const AttendanceManagement = ({ companyId }) => {
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [viewMode, setViewMode] = useState('table');
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('pending');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
@@ -619,8 +619,8 @@ const AttendanceManagement = ({ companyId }) => {
         </div>
       }
       tabs={[
-        { id: 'all', label: 'All Attendance', icon: FaListUl },
         { id: 'pending', label: 'Pending Attendance', icon: FaClock },
+        { id: 'all', label: 'All Attendance', icon: FaListUl },
       ]}
       activeTab={activeTab}
       onTabChange={setActiveTab}

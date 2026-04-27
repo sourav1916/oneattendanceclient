@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaCalendarAlt,
-  FaChartLine,
   FaCheckCircle,
   FaClock,
   FaExclamationCircle,
@@ -16,34 +15,30 @@ import {
   FaCoffee,
   FaWifi,
   FaTimes,
-  FaListUl,
   FaSpinner,
-  FaBan,
   FaHourglassHalf,
   FaPlay,
   FaPause,
-  FaCog,
-  FaTh
+  FaCog
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import apiCall from '../utils/api';
-import { fetchCurrentAttendanceStatus } from '../utils/attendanceStatus';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import { DatePickerField, DateRangePickerField } from '../components/DatePicker';
+import { DateRangePickerField } from '../components/DatePicker';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 10;
 
-const fetchAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE, dateParams = {} }) => {
+const fetchMyAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE, params = {} }) => {
   const queryParams = new URLSearchParams({
     page,
     limit,
-    ...dateParams,
+    ...params,
   }).toString();
-  return apiCall(`/attendance/history?${queryParams}`, 'GET', null, companyId);
+  return apiCall(`/attendance/my?${queryParams}`, 'GET', null, companyId);
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -54,27 +49,42 @@ const formatHours = (h) => {
   return `${hr}h ${Math.round((h - hr) * 60)}m`;
 };
 
-const getPunchLabel = (t) => ({ in: 'Punch In', out: 'Punch Out', break_start: 'Break Start', break_end: 'Break End' }[t] || t);
+const getPunchLabel = (t) => ({ 
+  in: 'Punch In', out: 'Punch Out', 
+  punch_in: 'Punch In', punch_out: 'Punch Out',
+  break_start: 'Break Start', break_end: 'Break End',
+  start_break: 'Break Start', end_break: 'Break End'
+}[t] || t);
 
-const getPunchStyle = (t) => ({
-  in:          { color: 'bg-emerald-100 text-emerald-600', icon: <FaSignInAlt  className="w-4 h-4" /> },
-  out:         { color: 'bg-rose-100    text-rose-600',    icon: <FaSignOutAlt className="w-4 h-4" /> },
-  break_start: { color: 'bg-amber-100   text-amber-600',   icon: <FaPause      className="w-4 h-4" /> },
-  break_end:   { color: 'bg-indigo-100  text-indigo-600',  icon: <FaPlay       className="w-4 h-4" /> },
-}[t] || { color: 'bg-slate-100 text-slate-600', icon: <FaClock className="w-4 h-4" /> });
-
-const formatTime = (ds) => !ds ? 'N/A' : new Date(ds).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+const getPunchStyle = (t) => {
+  const type = t?.toLowerCase();
+  if (type === 'in' || type === 'punch_in') 
+    return { color: 'bg-emerald-100 text-emerald-600', icon: <FaSignInAlt className="w-4 h-4" /> };
+  if (type === 'out' || type === 'punch_out') 
+    return { color: 'bg-rose-100 text-rose-600', icon: <FaSignOutAlt className="w-4 h-4" /> };
+  if (type === 'break_start' || type === 'start_break') 
+    return { color: 'bg-amber-100 text-amber-600', icon: <FaPause className="w-4 h-4" /> };
+  if (type === 'break_end' || type === 'end_break') 
+    return { color: 'bg-indigo-100 text-indigo-600', icon: <FaPlay className="w-4 h-4" /> };
+  return { color: 'bg-slate-100 text-slate-600', icon: <FaClock className="w-4 h-4" /> };
+};
 
 const formatDateTimeFull = (ds) => {
   if (!ds) return 'N/A';
   const d = new Date(ds);
+  if (isNaN(d)) {
+    // Check if it's just a time string like "13:14:25"
+    if (/^\d{2}:\d{2}:\d{2}$/.test(ds)) return ds;
+    return ds;
+  }
   return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
          d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
 const getApprovalStyle = (status) => {
   switch (status?.toLowerCase()) {
-    case 'approved': return { className: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: FaCheckCircle, text: 'Approved' };
+    case 'approved': 
+    case 'completed': return { className: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: FaCheckCircle, text: 'Approved' };
     case 'rejected': return { className: 'bg-rose-50 text-rose-700 border-rose-100', icon: FaTimesCircle, text: 'Rejected' };
     default: return { className: 'bg-amber-50 text-amber-700 border-amber-100', icon: FaClock, text: 'Pending' };
   }
@@ -99,9 +109,10 @@ const RecordTable = ({ records, onViewDetails }) => (
           {records.map((record, index) => {
             const approvalStyle = getApprovalStyle(record.status);
             const ApprovalIcon = approvalStyle.icon;
+            const displayType = record.punch_type || record.type;
             return (
               <motion.tr
-                key={record.id}
+                key={record.id || index}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
@@ -112,13 +123,13 @@ const RecordTable = ({ records, onViewDetails }) => (
                 </td>
                 <td className="px-6 py-4">
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600 capitalize">
-                    {getPunchLabel(record.punch_type || record.type)}
+                    {getPunchLabel(displayType)}
                   </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-col">
                     <span className="text-xs font-bold text-gray-500 uppercase">{record.method || record.attendance_method || 'N/A'}</span>
-                    <span className="text-[10px] text-gray-400">{record.location?.ip_address || record.ip_address || 'N/A'}</span>
+                    <span className="text-[10px] text-gray-400">{record.location?.ip_address || record.ip_address || record.meta?.method || 'N/A'}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -149,9 +160,10 @@ const RecordCards = ({ records, onViewDetails }) => (
     {records.map((record, index) => {
       const approvalStyle = getApprovalStyle(record.status);
       const ApprovalIcon = approvalStyle.icon;
+      const displayType = record.punch_type || record.type;
       return (
         <motion.div
-          key={record.id}
+          key={record.id || index}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: index * 0.05 }}
@@ -159,7 +171,7 @@ const RecordCards = ({ records, onViewDetails }) => (
         >
           <div className="mb-4 flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="truncate font-bold text-gray-800 text-base">{getPunchLabel(record.punch_type || record.type)}</h3>
+              <h3 className="truncate font-bold text-gray-800 text-base">{getPunchLabel(displayType)}</h3>
               <p className="text-xs text-gray-400 mt-0.5">{formatDateTimeFull(record.punch_time)}</p>
             </div>
             <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${approvalStyle.className}`}>
@@ -171,7 +183,7 @@ const RecordCards = ({ records, onViewDetails }) => (
           <div className="grid grid-cols-2 gap-3 mb-4">
              <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">Method</span>
-                <span className="text-xs font-bold text-gray-700 truncate block">{record.method || record.attendance_method || 'N/A'}</span>
+                <span className="text-xs font-bold text-gray-700 truncate block">{record.method || record.attendance_method || record.meta?.method || 'N/A'}</span>
              </div>
              <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">Status</span>
@@ -198,87 +210,96 @@ const AttendanceHistory = () => {
   const [activeSubTab, setActiveSubTab] = useState('today');
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [totalRecords, setTotalRecords] = useState(0);
 
   const [todaySummary, setTodaySummary] = useState(null);
-  const [loadingToday, setLoadingToday] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [viewMode, setViewMode] = useState('table');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const [dateFilter, setDateFilter] = useState({ start_date: '', end_date: '' });
+  const [dateFilter, setDateFilter] = useState({ from_date: '', to_date: '' });
   const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
 
-  const { pagination, goToPage, changeLimit } = usePagination({ initialLimit: ITEMS_PER_PAGE });
+  const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
+  const fetchLock = useRef(false);
 
-  // ─── Today's Summary Fetch ──────────────────────────────────────────────────
-  const fetchTodayStatus = useCallback(async () => {
-    setLoadingToday(true);
-    try {
-      const company = JSON.parse(localStorage.getItem('company'));
-      const data = await fetchCurrentAttendanceStatus(company?.id);
-      if (data.success) {
-        setTodaySummary(data.data.today_summary);
-      }
-    } catch (err) {
-      console.error('Error fetching today summary:', err);
-      toast.error(err.message || 'Failed to fetch today\'s summary');
-    } finally {
-      setLoadingToday(false);
-    }
-  }, []);
+  // ─── Unified Data Fetching ─────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (activeSubTab === 'today') {
-      fetchTodayStatus();
-    }
-  }, [activeSubTab, fetchTodayStatus]);
-
-  // ─── History Fetch Logic ────────────────────────────────────────────────────
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  const loadRecords = useCallback(async () => {
-    if (activeSubTab !== 'past') return;
+  const loadData = useCallback(async () => {
+    if (fetchLock.current) return;
+    fetchLock.current = true;
     setLoading(true);
     try {
       const company = JSON.parse(localStorage.getItem('company'));
-      const dateParams = {};
-      if (dateFilter.start_date) dateParams.start_date = dateFilter.start_date;
-      if (dateFilter.end_date) dateParams.end_date = dateFilter.end_date;
-      if (debouncedSearch) dateParams.search = debouncedSearch;
-
-      const response = await fetchAttendanceAPI({
-        companyId: company?.id,
+      
+      // Pagination only for history
+      const params = {
         page: pagination.page,
-        limit: pagination.limit,
-        dateParams
+        limit: pagination.limit
+      };
+
+      // Filters only applied for past activity search
+      if (activeSubTab === 'past') {
+        if (dateFilter.from_date) params.from_date = dateFilter.from_date;
+        if (dateFilter.to_date) params.to_date = dateFilter.to_date;
+        if (debouncedSearch) params.search = debouncedSearch;
+      }
+
+      const response = await fetchMyAttendanceAPI({
+        companyId: company?.id,
+        page: params.page,
+        limit: params.limit,
+        params
       });
 
       const data = await response.json();
       if (response.ok && data.success) {
-        setRecords(data.data.records);
-        setTotalRecords(data.data.total);
+        // 1. Map History
+        setRecords(data.history || []);
+        setTotalRecords(data.meta?.total || 0);
+
+        // 2. Map Today's Summary
+        const t = data.today;
+        if (t) {
+          const combinedPunches = [
+            ...(t.work_sessions || []).map(s => ({ ...s, punch_type: s.type, punch_time: `${t.date} ${s.time}`, method: s.meta?.method || 'N/A' })),
+            ...(t.break_sessions || []).map(s => ({ ...s, punch_type: s.type, punch_time: `${t.date} ${s.time}`, method: s.meta?.method || 'N/A' }))
+          ].sort((a, b) => new Date(a.punch_time) - new Date(b.punch_time));
+
+          setTodaySummary({
+            total_worked_hours: (t.summary?.work_minutes || 0) / 60,
+            total_break_minutes: t.summary?.break_minutes || 0,
+            total_punches: combinedPunches.length,
+            punches: combinedPunches,
+            status: t.status,
+            date: t.date
+          });
+        }
       } else {
-        toast.error(data.message || 'Failed to fetch attendance history');
+        toast.error(data.message || 'Failed to fetch attendance data');
       }
     } catch (err) {
+      console.error('Attendance fetch error:', err);
       toast.error('Error connecting to the server');
-      console.error(err);
     } finally {
       setLoading(false);
+      fetchLock.current = false;
     }
-  }, [activeSubTab, pagination.page, pagination.limit, debouncedSearch, dateFilter]);
+  }, [pagination.page, pagination.limit, dateFilter, debouncedSearch, activeSubTab]);
 
   useEffect(() => {
-    loadRecords();
-  }, [loadRecords]);
+    // Only set timeout if searchTerm is different from current debounced value
+    if (searchTerm === debouncedSearch) return;
+    
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm, debouncedSearch]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const openDetails = (record) => {
     setSelectedRecord(record);
@@ -327,7 +348,7 @@ const AttendanceHistory = () => {
         {activeSubTab === 'today' ? (
           /* ── Today's Activity Tab ────────────────────────────────────────── */
           <div className="space-y-6 max-w-6xl mx-auto">
-            {loadingToday ? (
+            {loading && !todaySummary ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <FaSpinner className="animate-spin text-4xl mb-4 text-indigo-500" />
                 <p className="text-sm font-medium">Fetching today's logs...</p>
@@ -432,8 +453,8 @@ const AttendanceHistory = () => {
                     value={dateFilter}
                     onChange={(val) => {
                       const updated = {
-                        start_date: val.start,
-                        end_date: val.end
+                        from_date: val.start,
+                        to_date: val.end
                       };
                       setDateFilter(updated);
                       if (val.start && val.end) {
@@ -512,7 +533,7 @@ const DetailsModal = ({ record, onClose }) => {
                 onClick={e => e.stopPropagation()}
             >
                 {/* Modal Header */}
-                <div className={`relative px-8 py-10 text-white ${record.status === 'approved' ? 'bg-emerald-500' : record.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500'}`}>
+                <div className={`relative px-8 py-10 text-white ${record.status === 'approved' || record.status === 'completed' ? 'bg-emerald-500' : record.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500'}`}>
                     <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-all">
                         <FaTimes size={18} />
                     </button>
@@ -569,10 +590,10 @@ const DetailsModal = ({ record, onClose }) => {
                             <div className="flex-1">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">System Metadata</span>
                                 <div className="flex flex-wrap gap-2">
-                                    <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">ID: {record.id}</span>
-                                    {(record.device_info || record.attendance_mode) && (
+                                    <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">ID: {record.id || 'N/A'}</span>
+                                    {(record.device_info || record.attendance_mode || record.meta?.method) && (
                                       <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100 uppercase">
-                                        MODE: {record.attendance_mode || record.device_info}
+                                        MODE: {record.attendance_mode || record.device_info || record.meta?.method}
                                       </span>
                                     )}
                                 </div>
