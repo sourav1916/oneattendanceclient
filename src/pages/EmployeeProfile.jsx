@@ -18,12 +18,13 @@ import { ManagementCard, ManagementTable } from "../components/common";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
+  { key: "basic", label: "Basic", icon: <FaIdCard size={12} /> },
   { key: "permissions", label: "Permissions", icon: <FaShieldAlt size={12} /> },
   { key: "attendance", label: "Attendance", icon: <FaClock size={12} /> },
   { key: "salary", label: "Salary", icon: <FaMoneyBillWave size={12} /> },
   { key: "payroll", label: "Payroll", icon: <FaCalendarAlt size={12} /> },
-  { key: "leave", label: "Leave", icon: <FaUmbrellaBeach size={12} /> },
-  { key: "shifts", label: "Shift", icon: <FaExchangeAlt size={12} /> },
+  { key: "shifts", label: "Shifts", icon: <FaExchangeAlt size={12} /> },
+  { key: "leaves", label: "Leaves", icon: <FaUmbrellaBeach size={12} /> },
 ];
 
 // ─── DEMO / FALLBACK DATA ─────────────────────────────────────────────────────
@@ -110,6 +111,23 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
   if (!isOpen || !item) return null;
 
   const renderFields = () => {
+    if (tabKey === "basic") {
+      return (
+        <>
+          <Field label="ID" value={item.id ?? item.employee_id} />
+          <Field label="Name" value={item.name || item.user_name || item.employee_name} highlight />
+          <Field label="Code" mono value={item.code || item.employee_code} />
+          <Field label="Email" value={item.email || item.user_email} />
+          <Field label="Phone" value={item.phone || item.mobile || "—"} />
+          <Field label="Designation" value={item.designation} />
+          <Field label="Employment Type" value={item.employment_type} />
+          <Field label="Salary Type" value={item.salary_type} />
+          <Field label="Status" value={<Pill value={item.status} />} />
+          <Field label="Joining Date" value={fmtDate(item.joining_date)} />
+          <Field label="Created At" value={fmtDateTime(item.created_at)} />
+        </>
+      );
+    }
     if (tabKey === "permissions") {
       return (
         <>
@@ -147,29 +165,29 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
       return (
         <>
           <Field label="ID" value={item.id} />
-          <Field label="Period" value={item.period || item.month} highlight />
-          <Field label="Gross" value={item.gross_amount || item.gross} />
-          <Field label="Deductions" value={item.deductions} />
-          <Field label="Net Pay" value={item.net_pay || item.net} />
+          <Field label="Payroll Period" value={fmtDate(item.payroll_period || item.period || item.month)} highlight />
+          <Field label="Total Earnings" value={item.total_earnings || item.gross_amount || item.gross} />
+          <Field label="Total Deductions" value={item.total_deductions || item.deductions} />
+          <Field label="Net Salary" value={item.net_salary || item.net_pay || item.net} />
           <Field label="Status" value={<Pill value={item.status} />} />
-          <Field label="Paid On" value={fmtDate(item.paid_on || item.paid_date)} />
         </>
       );
     }
-    if (tabKey === "leave") {
+    if (tabKey === "leaves") {
       return (
         <>
           <Field label="ID" value={item.id} />
           <Field label="Leave Type" value={item.leave_type || item.type} highlight />
-          <Field label="From" value={fmtDate(item.from_date || item.from)} />
-          <Field label="To" value={fmtDate(item.to_date || item.to)} />
-          <Field label="Days" value={formatDays(item.days)} />
+          <Field label="Start Date" value={fmtDate(item.start_date || item.from_date || item.from)} />
+          <Field label="End Date" value={fmtDate(item.end_date || item.to_date || item.to)} />
+          <Field label="Total Days" value={formatDays(item.total_days || item.days)} />
           <Field label="Status" value={<Pill value={item.status} />} />
           <Field label="Reason" value={item.reason} />
+          <Field label="Attachments" value={Array.isArray(item.attachments) ? `${item.attachments.length} file(s)` : "—"} />
         </>
       );
     }
-    if (tabKey === "shift") {
+    if (tabKey === "shifts") {
       return (
         <>
           <Field label="ID" value={item.id} />
@@ -351,6 +369,85 @@ function usePermissionsConfig(onView, width) {
   return { columns, cardRenderer, rowKey: "id" };
 }
 
+function useBasicConfig(onView, width) {
+  const columns = [
+    {
+      key: "name",
+      label: "Employee",
+      render: (e) => (
+        <div className="flex items-center gap-2 max-w-[220px]">
+          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">
+            <FaIdCard size={11} className="text-slate-500" />
+          </div>
+          <div className="min-w-0">
+            <span className="block font-medium text-gray-800 text-sm truncate min-w-0">
+              {e.name || e.user_name || e.employee_name || "—"}
+            </span>
+            <span className="block text-xs text-gray-400 truncate">
+              {e.email || e.user_email || "—"}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "code",
+      label: "Code",
+      render: (e) => (
+        <span className="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded">
+          {e.code || e.employee_code || "—"}
+        </span>
+      ),
+    },
+    width > 700 && {
+      key: "designation",
+      label: "Designation",
+      render: (e) => <span className="text-sm text-gray-700">{fmt(e.designation)}</span>,
+    },
+    width > 900 && {
+      key: "status",
+      label: "Status",
+      render: (e) => <Pill value={e.status} />,
+    },
+    width > 1100 && {
+      key: "joining_date",
+      label: "Joining Date",
+      render: (e) => <span className="text-sm text-gray-600">{fmtDate(e.joining_date)}</span>,
+    },
+  ].filter(Boolean);
+
+  const cardRenderer = (e, index, activeId, onToggle) => (
+    <ManagementCard
+      key={e.id || e.employee_id || e.code || index}
+      accent="slate"
+      delay={index * 0.04}
+      onClick={() => onView(e)}
+      activeId={activeId}
+      onToggle={onToggle}
+      menuId={`basic-${e.id || e.employee_id || e.code || index}`}
+      actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(e), className: "text-blue-600 hover:bg-blue-50" }]}
+      hoverable
+      title={e.name || e.user_name || e.employee_name || "Employee"}
+      subtitle={e.email || e.user_email || e.code || e.employee_code || "Basic record"}
+      eyebrow="Employee Summary"
+      badge={<Pill value={e.status} />}
+      footer={
+        <div className="flex w-full items-center justify-between text-xs text-gray-400">
+          <span>{e.designation ? fmt(e.designation) : "Employee"}</span>
+          <span>{fmtDate(e.joining_date)}</span>
+        </div>
+      }
+    >
+      <div className="flex flex-wrap gap-2">
+        <Pill value={e.employment_type} />
+        <Pill value={e.salary_type} />
+      </div>
+    </ManagementCard>
+  );
+
+  return { columns, cardRenderer, rowKey: (row, index) => row.id ?? row.employee_id ?? row.code ?? row.employee_code ?? `basic-${index}` };
+}
+
 function useAttendanceConfig(onView, width) {
   const columns = [
     {
@@ -485,22 +582,22 @@ function useSalaryConfig(onView, width) {
 function usePayrollConfig(onView, width) {
   const columns = [
     {
-      key: "period", label: "Period",
-      render: (p) => <span className="font-medium text-gray-800 text-sm">{p.period || p.month || "—"}</span>,
+      key: "payroll_period", label: "Payroll Period",
+      render: (p) => <span className="font-medium text-gray-800 text-sm">{fmtDate(p.payroll_period || p.period || p.month)}</span>,
     },
     width > 480 && {
-      key: "gross_amount", label: "Gross",
-      render: (p) => <span className="text-sm text-gray-700">{p.gross_amount || p.gross || "—"}</span>,
+      key: "total_earnings", label: "Total Earnings",
+      render: (p) => <span className="text-sm text-gray-700">{p.total_earnings || p.gross_amount || p.gross || "—"}</span>,
     },
     width > 800 && {
-      key: "deductions", label: "Deductions",
-      render: (p) => <span className="text-sm text-rose-600">{p.deductions || "—"}</span>,
+      key: "total_deductions", label: "Total Deductions",
+      render: (p) => <span className="text-sm text-rose-600">{p.total_deductions || p.deductions || "—"}</span>,
     },
     {
-      key: "net_pay", label: "Net Pay",
+      key: "net_salary", label: "Net Salary",
       render: (p) => (
         <span className="inline-flex whitespace-nowrap rounded-lg bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
-          {p.net_pay || p.net || "—"}
+          {p.net_salary || p.net_pay || p.net || "—"}
         </span>
       ),
     },
@@ -521,13 +618,13 @@ function usePayrollConfig(onView, width) {
       menuId={`pay-${p.id || index}`}
       actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" }]}
       hoverable
-      title={p.period || p.month || "Payroll"}
-      subtitle={`Paid: ${fmtDate(p.paid_on || p.paid_date)}`}
+      title={fmtDate(p.payroll_period || p.period || p.month) || "Payroll"}
+      subtitle={`Earnings: ${p.total_earnings || p.gross_amount || p.gross || "—"} · Deductions: ${p.total_deductions || p.deductions || "—"}`}
       eyebrow="Payroll Record"
       badge={<Pill value={p.status} />}
     >
       <div className="grid grid-cols-3 gap-2 text-center mt-1">
-        {[["Gross", p.gross_amount || p.gross, "blue"], ["Deductions", p.deductions, "red"], ["Net Pay", p.net_pay || p.net, "green"]].map(([lbl, val, clr]) => (
+        {[["Earnings", p.total_earnings || p.gross_amount || p.gross, "blue"], ["Deductions", p.total_deductions || p.deductions, "red"], ["Net", p.net_salary || p.net_pay || p.net, "green"]].map(([lbl, val, clr]) => (
           <div key={lbl} className={`rounded-[10px] border border-${clr}-100 bg-${clr}-50 p-2`}>
             <p className={`text-xs font-bold text-${clr}-700`}>{val || "—"}</p>
             <p className={`text-[11px] text-${clr}-500`}>{lbl}</p>
@@ -543,7 +640,7 @@ function usePayrollConfig(onView, width) {
 function useLeaveConfig(onView, width) {
   const columns = [
     {
-      key: "leave_type", label: "Type",
+      key: "leave_type", label: "Leave Type",
       render: (l) => (
         <span className="inline-flex whitespace-nowrap rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">
           {l.leave_type || l.type || "—"}
@@ -551,16 +648,16 @@ function useLeaveConfig(onView, width) {
       ),
     },
     width > 600 && {
-      key: "from_date", label: "From",
-      render: (l) => <span className="text-sm text-gray-600">{fmtDate(l.from_date || l.from)}</span>,
+      key: "start_date", label: "Start Date",
+      render: (l) => <span className="text-sm text-gray-600">{fmtDate(l.start_date || l.from_date || l.from)}</span>,
     },
     width > 600 && {
-      key: "to_date", label: "To",
-      render: (l) => <span className="text-sm text-gray-600">{fmtDate(l.to_date || l.to)}</span>,
+      key: "end_date", label: "End Date",
+      render: (l) => <span className="text-sm text-gray-600">{fmtDate(l.end_date || l.to_date || l.to)}</span>,
     },
     {
-      key: "days", label: "Days",
-      render: (l) => <span className="font-semibold text-gray-700 text-sm">{l.days || "—"}</span>,
+      key: "total_days", label: "Total Days",
+      render: (l) => <span className="font-semibold text-gray-700 text-sm">{formatDays(l.total_days || l.days)}</span>,
     },
     width > 800 && {
       key: "status", label: "Status",
@@ -580,13 +677,13 @@ function useLeaveConfig(onView, width) {
       actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(l), className: "text-blue-600 hover:bg-blue-50" }]}
       hoverable
       title={l.leave_type || l.type || "Leave"}
-      subtitle={`${fmtDate(l.from_date || l.from)} → ${fmtDate(l.to_date || l.to)}`}
+      subtitle={`${fmtDate(l.start_date || l.from_date || l.from)} → ${fmtDate(l.end_date || l.to_date || l.to)}`}
       eyebrow="Leave Record"
       badge={<Pill value={l.status} />}
       footer={
         <div className="flex w-full items-center justify-between text-xs text-gray-400">
-          <span>{l.days || "—"} day(s)</span>
-          <span>{fmtDate(l.applied_on || l.applied)}</span>
+          <span>{formatDays(l.total_days || l.days)} day(s)</span>
+          <span>{Array.isArray(l.attachments) ? `${l.attachments.length} attachment(s)` : "No attachments"}</span>
         </div>
       }
     >
@@ -661,12 +758,13 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const fetchRef = useRef(false);
+  const normalizedTabKey = tabKey === "leave" ? "leaves" : tabKey === "shift" ? "shifts" : tabKey;
 
   const ACCENT_MAP = {
-    permissions: "indigo", attendance: "blue", salary: "green",
-    payroll: "emerald", leave: "amber", shift: "violet",
+    basic: "slate", permissions: "indigo", attendance: "blue", salary: "green",
+    payroll: "emerald", leaves: "amber", shifts: "violet",
   };
-  const accent = ACCENT_MAP[tabKey] || "indigo";
+  const accent = ACCENT_MAP[normalizedTabKey] || "indigo";
 
   // ── data fetch ──
   const fetchData = useCallback(async (page, limit) => {
@@ -679,7 +777,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
 
       const res = await apiCall(
-        `/employees/${employeeId}?include=${tabKey}&page=${page}&limit=${limit}`,
+        `/employees/${employeeId}?include=${normalizedTabKey}&page=${page}&limit=${limit}`,
         'GET',
         null,
         companyId
@@ -687,8 +785,13 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       const json = await res.json();
       if (!res.ok || !json.success) throw new Error(json.message || "API error");
 
-      const dataArr = json.data?.[tabKey] ?? json.data ?? [];
-      const meta = json.meta?.[tabKey] ?? json.meta ?? {};
+      const rawData = json.data?.[normalizedTabKey] ?? json.data?.[tabKey] ?? json.data ?? [];
+      const dataArr = Array.isArray(rawData)
+        ? rawData
+        : rawData && typeof rawData === "object"
+          ? [rawData]
+          : [];
+      const meta = json.meta?.[normalizedTabKey] ?? json.meta?.[tabKey] ?? json.meta ?? {};
 
       setRows(Array.isArray(dataArr) ? dataArr : []);
       updatePagination({
@@ -706,11 +809,11 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       setLoading(false);
       fetchRef.current = false;
     }
-  }, [employeeId, tabKey, updatePagination]);
+  }, [employeeId, normalizedTabKey, tabKey, updatePagination]);
 
   useEffect(() => {
     fetchData(pagination.page, pagination.limit);
-  }, [tabKey, pagination.page, pagination.limit]);
+  }, [normalizedTabKey, pagination.page, pagination.limit]);
 
   // ── responsive width tracking ──
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -729,6 +832,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   // ── config per tab ──
   const onView = (item) => setSelectedItem(item);
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
+  const basicConfig = useBasicConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, effectiveWidth);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
   const payConfig = usePayrollConfig(onView, effectiveWidth);
@@ -736,14 +840,15 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   const shiftConfig = useShiftConfig(onView, effectiveWidth);
 
   const CONFIG_MAP = {
+    basic: basicConfig,
     permissions: permConfig,
     attendance: attConfig,
     salary: salConfig,
     payroll: payConfig,
-    leave: leaveConfig,
+    leaves: leaveConfig,
     shifts: shiftConfig,
   };
-  const { columns, cardRenderer, rowKey } = CONFIG_MAP[tabKey] || permConfig;
+  const { columns, cardRenderer, rowKey } = CONFIG_MAP[normalizedTabKey] || permConfig;
 
   const getActions = (row) => [
     { label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" },
@@ -842,7 +947,7 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
 
 // ─── TABS PANEL ───────────────────────────────────────────────────────────────
 function TabsPanel({ employeeId }) {
-  const [activeTab, setActiveTab] = useState("permissions");
+  const [activeTab, setActiveTab] = useState("basic");
 
   const activeConf = TABS.find((t) => t.key === activeTab) || TABS[0];
 
