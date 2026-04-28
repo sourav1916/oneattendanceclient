@@ -2,18 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   FaFingerprint, FaClock, FaCoffee, FaSignInAlt, FaSignOutAlt,
   FaMapMarkerAlt, FaCamera, FaIdCard, FaWifi, FaHandPaper,
-  FaTimesCircle, FaCalendarAlt, FaHistory,
-  FaPause, FaPlay, FaCheckCircle, FaEye, FaSpinner, FaTimes, FaCog
+  FaTimesCircle, FaCalendarAlt,
+  FaPause, FaPlay, FaSpinner, FaTimes
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
+import { FaBriefcase } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import { fetchCurrentAttendanceStatus } from '../utils/attendanceStatus';
 import { getPreciseLocation } from '../utils/geolocation';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import ManagementGrid from '../components/ManagementGrid';
-import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import SwipeConfirmationModal from '../components/SwipeConfirmationModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -33,236 +33,13 @@ const STATUS_CONFIG = {
   OFF_DUTY: { label: 'Off Duty', color: 'slate',   icon: FaTimesCircle }
 };
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-const getPunchLabel = (t) => ({ 
-  in: 'Punch In', out: 'Punch Out', 
-  punch_in: 'Punch In', punch_out: 'Punch Out',
-  break_start: 'Break Start', break_end: 'Break End',
-  start_break: 'Break Start', end_break: 'Break End'
-}[t] || t);
-
-const getApprovalStyle = (status) => {
-  switch (status?.toLowerCase()) {
-    case 'approved': 
-    case 'completed': return { className: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: FaCheckCircle, text: 'Approved' };
-    case 'rejected': return { className: 'bg-rose-50 text-rose-700 border-rose-100', icon: FaTimesCircle, text: 'Rejected' };
-    default: return { className: 'bg-amber-50 text-amber-700 border-amber-100', icon: FaClock, text: 'Pending' };
-  }
-};
-
-const formatDateTimeFull = (ds) => {
-  if (!ds) return 'N/A';
-  const d = new Date(ds);
-  if (isNaN(d)) {
-    if (/^\d{2}:\d{2}:\d{2}$/.test(ds)) return ds;
-    return ds;
-  }
-  return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
-         d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
-
-// ─── Shared Rendering Components ───────────────────────────────────────────
-
-const RecordTable = ({ records, onViewDetails }) => (
-  <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-    <div className="overflow-x-auto">
-      <table className="w-full text-left">
-        <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/50">
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Punch Time</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Type</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Method</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {records.map((record, index) => {
-            const displayType = record.punch_type || record.type;
-            return (
-              <motion.tr
-                key={record.id || index}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="group hover:bg-indigo-50/30 transition-colors"
-              >
-                <td className="px-6 py-4">
-                  <span className="text-sm font-medium text-gray-700">{formatDateTimeFull(record.punch_time)}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600 capitalize">
-                    {getPunchLabel(displayType)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-gray-500 uppercase">{record.method || record.attendance_method || 'N/A'}</span>
-                    <span className="text-[10px] text-gray-400">{record.location?.ip_address || record.ip_address || record.meta?.method || 'N/A'}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={() => onViewDetails(record)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-400 shadow-sm transition-all hover:border-indigo-200 hover:text-indigo-600 hover:shadow-indigo-100/50"
-                  >
-                    <FaEye size={16} />
-                  </button>
-                </td>
-              </motion.tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-const RecordCards = ({ records, onViewDetails }) => (
-  <ManagementGrid viewMode="card">
-    {records.map((record, index) => {
-      const displayType = record.punch_type || record.type;
-      return (
-        <motion.div
-          key={record.id || index}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: index * 0.05 }}
-          className="group relative rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-100/30 hover:border-indigo-200"
-        >
-          <div className="mb-4 flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate font-bold text-gray-800 text-base">{getPunchLabel(displayType)}</h3>
-              <p className="text-xs text-gray-400 mt-0.5">{formatDateTimeFull(record.punch_time)}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mb-4">
-             <div className="bg-gray-50 rounded-xl p-2.5">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">Method</span>
-                <span className="text-xs font-bold text-gray-700 truncate block">{record.method || record.attendance_method || record.meta?.method || 'N/A'}</span>
-             </div>
-             <div className="bg-gray-50 rounded-xl p-2.5">
-                <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">Status</span>
-                <span className="text-xs font-bold text-gray-700 capitalize">{record.status || 'Success'}</span>
-             </div>
-          </div>
-
-          <button
-            onClick={() => onViewDetails(record)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-50 py-3 text-xs font-bold text-indigo-700 transition-all hover:bg-indigo-600 hover:text-white"
-          >
-            <FaEye size={14} />
-            View Details
-          </button>
-        </motion.div>
-      );
-    })}
-  </ManagementGrid>
-);
-
-const DetailsModal = ({ record, onClose }) => {
-    const style = getApprovalStyle(record.status || 'approved');
-    const StatusIcon = style.icon;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40"
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="w-full max-w-lg overflow-hidden rounded-[30px] bg-white shadow-2xl"
-                onClick={e => e.stopPropagation()}
-            >
-                {/* Modal Header */}
-                <div className={`relative px-8 py-10 text-white ${record.status === 'rejected' ? 'bg-rose-500' : record.status === 'pending' ? 'bg-amber-500' : 'bg-emerald-500'}`}>
-                    <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-all">
-                        <FaTimes size={18} />
-                    </button>
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
-                            <FaClock size={32} />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-black uppercase tracking-tight">{record.employee_code || 'My Log'}</h2>
-                            <p className="text-white/80 font-bold opacity-80 uppercase text-xs tracking-widest mt-1">Punch Log Details</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Modal Content */}
-                <div className="p-8">
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Punch Time</span>
-                            <p className="font-bold text-gray-800 text-sm">{formatDateTimeFull(record.punch_time)}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Punch Type</span>
-                            <span className="inline-flex rounded-lg bg-gray-100 px-3 py-1 text-xs font-black text-gray-600 uppercase">{getPunchLabel(record.punch_type || record.type)}</span>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Method</span>
-                            <p className="font-bold text-gray-800 text-sm uppercase">{record.method || record.attendance_method || 'N/A'}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Status</span>
-                            <span className={`inline-flex items-center gap-1.5 rounded-full ${style.className} px-3 py-1 text-[10px] font-bold border border-current/10`}>
-                                <StatusIcon size={12} />
-                                {style.text.toUpperCase()}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100 space-y-4">
-                        <div className="flex items-start gap-4">
-                            <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                                <FaMapMarkerAlt size={16} />
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Location / IP Address</span>
-                                <p className="text-sm font-bold text-gray-700 leading-tight break-all">{record.location?.ip_address || record.ip_address || 'No IP Data Recorded'}</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-4 border-t border-gray-200/50 pt-4">
-                           <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                                <FaCog size={16} />
-                            </div>
-                            <div className="flex-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">System Metadata</span>
-                                <div className="flex flex-wrap gap-2">
-                                    <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">ID: {record.id || 'N/A'}</span>
-                                    {(record.attendance_mode || record.meta?.method) && (
-                                      <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100 uppercase">
-                                        MODE: {record.attendance_mode || record.meta?.method}
-                                      </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onClick={onClose} className="mt-8 w-full rounded-2xl bg-gray-900 py-4 text-sm font-bold text-white shadow-xl shadow-gray-200 transition-all hover:bg-black active:scale-[0.98]">
-                        Dismiss Details
-                    </button>
-                </div>
-            </motion.div>
-        </motion.div>
-    );
-};
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const PunchAttendance = () => {
   const { attendanceMethods, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const [activeTab, setActiveTab]         = useState(null);
   const [activeMode, setActiveMode]       = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
@@ -270,10 +47,7 @@ const PunchAttendance = () => {
 
   const [currentStatus, setCurrentStatus] = useState(null);
   const [allowedActions, setAllowedActions] = useState([]);
-  const [todaySummary, setTodaySummary]   = useState(null);
-  const [viewMode, setViewMode]           = useState('card');
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [modalOpen, setModalOpen]         = useState(false);
+  
   const [swipeModalOpen, setSwipeModalOpen] = useState(false);
   const [pendingAction, setPendingAction]   = useState(null);
 
@@ -313,17 +87,6 @@ const PunchAttendance = () => {
       if (data.success) {
         setCurrentStatus(data.data.status);
         setAllowedActions(data.data.allowed_actions || []);
-        
-        const t = data.data.today_summary;
-        if (t && (t.work_sessions || t.break_sessions)) {
-          const combinedPunches = [
-            ...(t.work_sessions || []).map(s => ({ ...s, punch_type: s.type, punch_time: `${t.date} ${s.time}`, method: s.meta?.method || 'N/A' })),
-            ...(t.break_sessions || []).map(s => ({ ...s, punch_type: s.type, punch_time: `${t.date} ${s.time}`, method: s.meta?.method || 'N/A' }))
-          ].sort((a, b) => new Date(a.punch_time) - new Date(b.punch_time));
-          setTodaySummary({ ...t, punches: combinedPunches });
-        } else {
-          setTodaySummary(t);
-        }
       }
     } catch (err) {
       console.error(err);
@@ -601,35 +364,6 @@ const PunchAttendance = () => {
           </div>
         </motion.div>
 
-        {/* ── Today's Activity Section ────────────────────────────────────── */}
-        {todaySummary?.punches?.length > 0 && (
-          <div className="mt-8 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="h-1 w-8 bg-indigo-500 rounded-full" />
-                <h3 className="text-lg font-extrabold text-slate-800">Today's Activity</h3>
-                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
-                  {todaySummary.punches.length} Logs
-                </span>
-              </div>
-              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="indigo" />
-            </div>
-
-            {viewMode === 'table' ? (
-              <RecordTable records={todaySummary.punches} onViewDetails={(r) => { setSelectedRecord(r); setModalOpen(true); }} />
-            ) : (
-              <RecordCards records={todaySummary.punches} onViewDetails={(r) => { setSelectedRecord(r); setModalOpen(true); }} />
-            )}
-          </div>
-        )}
-
-        {/* ── Detail Modal ────────────────────────────────────────────────── */}
-        <AnimatePresence>
-          {modalOpen && selectedRecord && (
-            <DetailsModal record={selectedRecord} onClose={() => { setModalOpen(false); setSelectedRecord(null); }} />
-          )}
-        </AnimatePresence>
-
         <SwipeConfirmationModal 
           isOpen={swipeModalOpen}
           onClose={() => setSwipeModalOpen(false)}
@@ -641,7 +375,7 @@ const PunchAttendance = () => {
         {/* ── Help tip ────────────────────────────────────────────────────── */}
         <motion.p
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
-          className="text-center text-slate-400 text-xs flex items-center justify-center gap-1.5 pb-4"
+          className="text-center text-slate-400 text-xs flex items-center justify-center gap-1.5 py-6"
         >
           <FaHandPaper className="w-3 h-3" />
           Ensure you are within the designated area for <span className="font-semibold uppercase">{activeTab}</span> validation

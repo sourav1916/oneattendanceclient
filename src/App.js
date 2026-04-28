@@ -206,7 +206,7 @@ const ATTENDANCE_MANAGEMENT_HUB_TABS = [
   },
   {
     id: "all",
-    label: "All Attendance",
+    label: "Past Attendance",
     shortLabel: "All",
     description: "Monitor all employee attendance records and punch logs.",
     icon: FaListUl,

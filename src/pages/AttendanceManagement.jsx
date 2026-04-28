@@ -4,7 +4,7 @@ import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
-  FaBan, FaComment, FaCog, FaTimes
+  FaBan, FaComment, FaCog, FaTimes, FaCoffee, FaBriefcase
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -18,11 +18,95 @@ import { DatePickerField } from '../components/DatePicker';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
+const ATTENDANCE_TYPE_CONFIG = {
+  work: {
+    value: 'work',
+    label: 'Attendance',
+    shortLabel: 'Attendence',
+    description: 'Punch in and punch out records',
+    startLabel: 'Punch In',
+    endLabel: 'Punch Out',
+    startKey: 'punch_in',
+    endKey: 'punch_out',
+    icon: FaBriefcase,
+    activeClassName: 'bg-blue-600 text-white shadow-sm',
+    inactiveClassName: 'text-gray-600 hover:text-blue-700 hover:bg-blue-50',
+    accentClassName: 'bg-blue-50 text-blue-700 border-blue-200'
+  },
+  break: {
+    value: 'break',
+    label: 'Break',
+    shortLabel: 'Break',
+    description: 'Break in and break out records',
+    startLabel: 'Break In',
+    endLabel: 'Break Out',
+    startKey: 'break_start',
+    endKey: 'break_end',
+    icon: FaCoffee,
+    activeClassName: 'bg-indigo-600 text-white shadow-sm',
+    inactiveClassName: 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50',
+    accentClassName: 'bg-indigo-50 text-indigo-700 border-indigo-200'
+  }
+};
+
+const getAttendanceTypeConfig = (type = 'work') => ATTENDANCE_TYPE_CONFIG[type] || ATTENDANCE_TYPE_CONFIG.work;
+
+const formatDateLabel = (value) => {
+  if (!value) return 'N/A';
+  const parsed = String(value).includes('T') ? new Date(value) : new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return 'N/A';
+  return parsed.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+const formatTimeLabel = (value) => {
+  if (!value) return 'N/A';
+  const parsed = new Date(`1970-01-01T${value}`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const renderRecordLabel = (record) => {
+  if (!record) return 'N/A';
+  return [record.time, record.method].filter(Boolean).join(' • ') || 'N/A';
+};
+
+const AttendanceTypeTabs = ({ value, onChange }) => (
+  <div className="mb-5 flex flex-wrap gap-2 rounded-[14px] border border-gray-200 bg-white p-2 shadow-sm">
+    {Object.values(ATTENDANCE_TYPE_CONFIG).map((tab) => {
+      const isActive = value === tab.value;
+      const Icon = tab.icon;
+
+      return (
+        <button
+          key={tab.value}
+          type="button"
+          onClick={() => onChange(tab.value)}
+          className={`inline-flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-all ${
+            isActive ? tab.activeClassName : tab.inactiveClassName
+          }`}
+          title={tab.description}
+        >
+          <Icon size={14} />
+          <span>{tab.label}</span>
+        </button>
+      );
+    })}
+  </div>
+);
+
 const attendanceAPI = {
-  fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}) => {
+  fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'work') => {
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
+      type: attendanceType,
       ...(search && { search })
     });
 
@@ -32,7 +116,7 @@ const attendanceAPI = {
       }
     });
 
-    const response = await apiCall(`/attendance/all-employees?${queryParams.toString()}`, 'GET', null, companyId);
+    const response = await apiCall(`/attendance/past-attendance?${queryParams.toString()}`, 'GET', null, companyId);
 
     if (!response.ok) {
       throw new Error('Failed to fetch attendance data');
@@ -72,10 +156,40 @@ const formatFilterLabel = (value) =>
     year: 'numeric'
   });
 
+const normalizeAttendanceRow = (row) => ({
+  ...row,
+  attendance_type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
+  punch_uid: row?.id,
+  attendance_date: row?.punch_date || null,
+  type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
+  attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || 'N/A',
+  start_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break In' : 'Punch In',
+  end_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break Out' : 'Punch Out',
+  start_time: row?.punch_in?.time || row?.break_start?.time || row?.start_time || null,
+  end_time: row?.punch_out?.time || row?.break_end?.time || row?.end_time || null,
+  start_record: row?.punch_in || row?.break_start || null,
+  end_record: row?.punch_out || row?.break_end || null,
+  status: row?.status || 'pending',
+  employee: {
+    id: row?.employee_id ?? null,
+    code: row?.employee_code ?? '',
+    name: row?.name ?? '',
+    designation: row?.designation ?? '',
+    email: row?.email ?? '',
+    phone: row?.phone ?? '',
+  },
+});
+
+const normalizeAttendanceResponse = (response) => {
+  if (!Array.isArray(response?.data)) return [];
+  return response.data.map(normalizeAttendanceRow);
+};
+
 const attendanceMatchesDateFilter = (attendance, filter) => {
   if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return true;
 
-  const punchDate = attendance?.punch_time ? new Date(attendance.punch_time) : null;
+  const sourceDate = attendance?.attendance_date || attendance?.punch_date || attendance?.punch_time || null;
+  const punchDate = sourceDate ? new Date(`${String(sourceDate).slice(0, 10)}T00:00:00`) : null;
   if (!punchDate || Number.isNaN(punchDate.getTime())) return false;
 
   if (filter.date) {
@@ -142,6 +256,9 @@ const PunchTypeBadge = ({ type }) => {
 
 const AttendanceDetailsModal = ({ attendance, onClose }) => {
   if (!attendance) return null;
+  const startRecord = attendance.start_record || attendance.punch_in || attendance.break_start;
+  const endRecord = attendance.end_record || attendance.punch_out || attendance.break_end;
+  const attendanceTypeMeta = getAttendanceTypeConfig(attendance.type);
 
   return (
     <motion.div
@@ -181,10 +298,6 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
                 <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.name}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Email</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.email}</p>
-              </div>
-              <div>
                 <label className="text-xs text-gray-500 uppercase">Employee Code</label>
                 <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.code}</p>
               </div>
@@ -201,15 +314,27 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="text-xs text-gray-500 uppercase">Punch Type</label>
+                <label className="text-xs text-gray-500 uppercase">Type</label>
                 <div className="mt-1">
-                  <PunchTypeBadge type={attendance.punch_type} />
+                  <PunchTypeBadge type={attendance.type} />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Punch Time</label>
+                <label className="text-xs text-gray-500 uppercase">Date</label>
                 <p className="font-medium text-gray-800 text-sm sm:text-base">
-                  {new Date(attendance.punch_time).toLocaleString()}
+                  {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
+                </p>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 uppercase">{attendanceTypeMeta.startLabel}</label>
+                <p className="font-medium text-gray-800 text-sm sm:text-base">
+                  {renderRecordLabel(startRecord)}
+                </p>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 uppercase">{attendanceTypeMeta.endLabel}</label>
+                <p className="font-medium text-gray-800 text-sm sm:text-base">
+                  {renderRecordLabel(endRecord)}
                 </p>
               </div>
               <div>
@@ -221,8 +346,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
               <div>
                 <label className="text-xs text-gray-500 uppercase">Method</label>
                 <p className="font-medium text-gray-800 text-sm sm:text-base">
-                  {attendance.attendance?.method || 'N/A'}
-                  {attendance.attendance?.mode && ` (${attendance.attendance.mode})`}
+                  {attendance.attendance_method || 'N/A'}
                 </p>
               </div>
             </div>
@@ -281,17 +405,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
 
 // Card View Component for Mobile
 const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, processingId, onToggleMenu, activeMenuId, approveDisabled, rejectDisabled, reviewMessage }) => {
-  const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
+  const typeMeta = getAttendanceTypeConfig(attendance.type);
 
   return (
     <motion.div
@@ -348,16 +462,16 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
 
       <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center flex-wrap gap-1">
-          <span className="text-gray-500 text-xs sm:text-sm">Punch Type:</span>
-          <PunchTypeBadge type={attendance.punch_type} />
-        </div>
-        <div className="flex justify-between items-center flex-wrap gap-1">
-          <span className="text-gray-500 text-xs sm:text-sm">Time:</span>
-          <span className="font-medium text-xs sm:text-sm">{formatTime(attendance.punch_time)}</span>
-        </div>
-        <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">Date:</span>
-          <span className="text-gray-700 text-xs sm:text-sm">{formatDate(attendance.punch_time)}</span>
+          <span className="text-gray-700 text-xs sm:text-sm">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</span>
+        </div>
+        <div className="flex justify-between items-center flex-wrap gap-1">
+          <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.startLabel}:</span>
+          <span className="font-medium text-xs sm:text-sm">{attendance.start_time ? formatTimeLabel(attendance.start_time) : 'N/A'}</span>
+        </div>
+        <div className="flex justify-between items-center flex-wrap gap-1">
+          <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.endLabel}:</span>
+          <span className="font-medium text-xs sm:text-sm">{attendance.end_time ? formatTimeLabel(attendance.end_time) : 'N/A'}</span>
         </div>
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">Status:</span>
@@ -365,7 +479,7 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
         </div>
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">Method:</span>
-          <span className="text-gray-700 text-xs sm:text-sm">{attendance.attendance?.method || 'N/A'}</span>
+          <span className="text-gray-700 text-xs sm:text-sm">{attendance.attendance_method || 'N/A'}</span>
         </div>
       </div>
     </motion.div>
@@ -389,10 +503,12 @@ const AttendanceManagement = ({ companyId }) => {
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [viewMode, setViewMode] = useState('table');
+  const [attendanceType, setAttendanceType] = useState('work');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
   const previousSearchRef = useRef('');
+  const previousTypeRef = useRef('work');
   const lastRequestKeyRef = useRef('');
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -401,6 +517,7 @@ const AttendanceManagement = ({ companyId }) => {
   const rejectAccess = checkActionAccess('attendanceManagement', 'reject');
   const attendanceReviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
   const attendanceDateFilterRef = useRef({});
+  const activeAttendanceTypeMeta = getAttendanceTypeConfig(attendanceType);
 
   // Handle window resize with debounce
   useEffect(() => {
@@ -420,8 +537,8 @@ const AttendanceManagement = ({ companyId }) => {
   const effectiveWidth = windowWidth - SIDEBAR_OFFSET;
 
   // Refined column visibility based on effective width to prevent overflow
-  const showPunchType = effectiveWidth >= 640;
-  const showDateTime = effectiveWidth >= 900;
+  const showDate = effectiveWidth >= 640;
+  const showTimes = effectiveWidth >= 900;
   const showMethod = effectiveWidth >= 1100;
 
   useEffect(() => {
@@ -438,7 +555,7 @@ const AttendanceManagement = ({ companyId }) => {
       setLoading(false);
       return;
     }
-    const requestKey = `${resolvedCompanyId}-${pagination.page}-${debouncedSearchTerm}-${pagination.limit}-${JSON.stringify(dateParams || {})}`;
+    const requestKey = `${resolvedCompanyId}-${attendanceType}-${pagination.page}-${debouncedSearchTerm}-${pagination.limit}-${JSON.stringify(dateParams || {})}`;
     if (!force && lastRequestKeyRef.current === requestKey) {
       return;
     }
@@ -451,7 +568,8 @@ const AttendanceManagement = ({ companyId }) => {
         pagination.page,
         itemsPerPage,
         debouncedSearchTerm,
-        dateParams
+        dateParams,
+        attendanceType
       );
 
       if (response.success) {
@@ -460,7 +578,7 @@ const AttendanceManagement = ({ companyId }) => {
         const total = response.total || 0;
         const totalPages = response.total_pages || response.last_page || Math.ceil(total / perPage) || 1;
 
-        setAttendances(Array.isArray(response.data) ? response.data : []);
+        setAttendances(normalizeAttendanceResponse(response));
         updatePagination({
           page: currentPage,
           limit: perPage,
@@ -479,9 +597,19 @@ const AttendanceManagement = ({ companyId }) => {
     } finally {
       setLoading(false);
     }
-  }, [resolvedCompanyId, pagination.page, pagination.limit, debouncedSearchTerm, itemsPerPage, updatePagination]);
+  }, [resolvedCompanyId, pagination.page, pagination.limit, debouncedSearchTerm, itemsPerPage, updatePagination, attendanceType]);
 
   useEffect(() => {
+    const typeChanged = previousTypeRef.current !== attendanceType;
+    if (typeChanged) {
+      previousTypeRef.current = attendanceType;
+      lastRequestKeyRef.current = '';
+      if (pagination.page !== 1) {
+        goToPage(1);
+        return;
+      }
+    }
+
     if (previousSearchRef.current !== debouncedSearchTerm && pagination.page !== 1) {
       previousSearchRef.current = debouncedSearchTerm;
       goToPage(1);
@@ -490,7 +618,7 @@ const AttendanceManagement = ({ companyId }) => {
 
     previousSearchRef.current = debouncedSearchTerm;
     fetchAttendances();
-  }, [pagination.page, debouncedSearchTerm, fetchAttendances, goToPage]);
+  }, [pagination.page, debouncedSearchTerm, attendanceType, fetchAttendances, goToPage]);
 
   const handleStatusUpdate = async (punchId, action) => {
     if (action === 'reject' && !notes.trim()) {
@@ -529,18 +657,6 @@ const AttendanceManagement = ({ companyId }) => {
     setSelectedAttendance(attendance);
     setShowModal(true);
     setActiveActionMenu(null);
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
   };
 
   const toggleActionMenu = (attendanceId) => {
@@ -602,8 +718,10 @@ const AttendanceManagement = ({ companyId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto ">
+    <div className="min-h-screen">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <AttendanceTypeTabs value={attendanceType} onChange={setAttendanceType} />
+
         {/* Consolidated Filter & View Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -616,7 +734,7 @@ const AttendanceManagement = ({ companyId }) => {
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
               <input
                 type="text"
-                placeholder="Search by employee name, email, or code..."
+                placeholder={`Search ${activeAttendanceTypeMeta.shortLabel.toLowerCase()} attendance by employee name, code, or email...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
@@ -675,7 +793,7 @@ const AttendanceManagement = ({ companyId }) => {
         ) : visibleAttendances.length === 0 ? (
           <div className="bg-white rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
             <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
-            <p className="text-gray-500 text-sm sm:text-base md:text-lg">No attendance records found</p>
+            <p className="text-gray-500 text-sm sm:text-base md:text-lg">No {activeAttendanceTypeMeta.shortLabel.toLowerCase()} attendance records found</p>
             <p className="text-gray-400 text-xs sm:text-sm mt-1">
               {dateFilterLabel !== 'Filter by date' ? `Try adjusting ${dateFilterLabel.toLowerCase()}` : 'Try adjusting your search'}
             </p>
@@ -693,8 +811,9 @@ const AttendanceManagement = ({ companyId }) => {
                     <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
                       <tr>
                         <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
-                        {showPunchType && <th className="px-6 py-4 font-semibold tracking-wider">Type</th>}
-                        {showDateTime && <th className="px-6 py-4 font-semibold tracking-wider">Date & Time</th>}
+                        {showDate && <th className="px-6 py-4 font-semibold tracking-wider">Date</th>}
+                        {showTimes && <th className="px-6 py-4 font-semibold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
+                        {showTimes && <th className="px-6 py-4 font-semibold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
                         <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
                         {showMethod && <th className="px-6 py-4 font-semibold tracking-wider">Method</th>}
                         <th className="px-6 py-4 text-center font-semibold tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
@@ -709,8 +828,8 @@ const AttendanceManagement = ({ companyId }) => {
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <FaUser className="text-blue-600" />
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${attendanceType === 'break' ? 'bg-indigo-100' : 'bg-blue-100'}`}>
+                                <FaUser className={`${attendanceType === 'break' ? 'text-indigo-600' : 'text-blue-600'}`} />
                               </div>
                               <div className="truncate max-w-[200px]">
                                 <p className="font-medium text-gray-900">{attendance.employee?.name}</p>
@@ -718,10 +837,11 @@ const AttendanceManagement = ({ companyId }) => {
                               </div>
                             </div>
                           </td>
-                          {showPunchType && <td className="px-6 py-4"><PunchTypeBadge type={attendance.punch_type} /></td>}
-                          {showDateTime && <td className="px-6 py-4">{formatDateTime(attendance.punch_time)}</td>}
+                          {showDate && <td className="px-6 py-4 whitespace-nowrap">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</td>}
+                          {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : 'N/A'}</td>}
+                          {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.end_time ? formatTimeLabel(attendance.end_time) : 'N/A'}</td>}
                           <td className="px-6 py-4"><StatusBadge status={attendance.status} /></td>
-                          {showMethod && <td className="px-6 py-4">{attendance.attendance?.method || 'N/A'}</td>}
+                          {showMethod && <td className="px-6 py-4">{attendance.attendance_method || 'N/A'}</td>}
                           <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <ActionMenu
                               menuId={attendance.id}
