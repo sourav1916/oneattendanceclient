@@ -233,8 +233,8 @@ const HolidayDetailsSidebar = ({ holidays, onClose, onMonthNavigate }) => {
                     className="flex items-start gap-4 p-4 rounded-[10px] bg-gray-50 border border-gray-100 hover:border-indigo-200 transition-all hover:bg-white hover:shadow-sm cursor-pointer active:scale-[0.98] group/item"
                   >
                     <div className={`w-3 h-3 rounded-full mt-1 shrink-0 group-hover/item:scale-125 transition-transform ${holiday.type === 'Observance' ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]' :
-                        holiday.is_optional === 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
-                          'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]'
+                      holiday.is_optional === 1 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' :
+                        'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]'
                       }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-black text-gray-900 leading-tight truncate group-hover/item:text-indigo-600 transition-colors">{holiday.name}</p>
@@ -326,13 +326,13 @@ const CompanyHolidayCalendar = () => {
   const handleMonthNavigate = useCallback((date) => {
     const normalized = toCalendarDate(date);
     if (!normalized) return;
-    
+
     // Select the day and show that month
     setSelectedDate(normalized);
     const targetMonth = new Date(normalized.getFullYear(), normalized.getMonth(), 1);
     setCurrentDate(targetMonth);
   }, []);
-  
+
   const handleDateClick = useCallback((date) => {
     const normalized = toCalendarDate(date);
     if (!normalized) return;
@@ -369,7 +369,7 @@ const CompanyHolidayCalendar = () => {
       const isToday = isSameDay(date, today);
       const holidays = getHolidaysForDate(date);
       const isHighlighted = selectedDate && isSameDay(date, selectedDate);
-      
+
       grid.push({
         date,
         dayNumber,
@@ -454,7 +454,7 @@ const CompanyHolidayCalendar = () => {
         </div>
 
         {/* Calendar Grid */}
-        <div className="bg-white rounded-3xl xsm:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-xl xsm:rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Weekday headers */}
           <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">
             {weekDays.map((day, idx) => (

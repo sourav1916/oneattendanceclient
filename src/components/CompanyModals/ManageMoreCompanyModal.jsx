@@ -126,9 +126,8 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
   const Icon = methodIcon(tab.value);
   return (
     <div
-      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${
-        active ? 'bg-indigo-50/50 rounded-t-2xl' : 'hover:bg-slate-50 rounded-[10px]'
-      } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${active ? 'bg-indigo-50/50 rounded-t-2xl' : 'hover:bg-slate-50 rounded-[10px]'
+        } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       <button
         type="button"
@@ -136,9 +135,8 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
         disabled={disabled}
         className="flex flex-1 items-center gap-4 text-left w-full overflow-hidden"
       >
-        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all ${
-          active ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-500'
-        }`}>
+        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all ${active ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-gray-100 text-gray-500'
+          }`}>
           <Icon size={16} />
         </span>
         <span className="min-w-0 flex-1">
@@ -162,10 +160,9 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
             }}
             disabled={disabled}
           />
-          <div className={`h-6 w-6 rounded-lg border-2 transition-all flex items-center justify-center ${
-            enabled ? 'border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200' : 'border-gray-300 bg-white'
-          }`}>
-             <FaCheck className={`text-white transition-all transform ${enabled ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} size={12} />
+          <div className={`h-6 w-6 rounded-lg border-2 transition-all flex items-center justify-center ${enabled ? 'border-emerald-500 bg-emerald-500 shadow-sm shadow-emerald-200' : 'border-gray-300 bg-white'
+            }`}>
+            <FaCheck className={`text-white transition-all transform ${enabled ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} size={12} />
           </div>
         </label>
       </div>
@@ -472,11 +469,10 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             <button
               type="button"
               onClick={() => toggleMethod('ip')}
-              className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all ${
-                enabledMethods.includes('ip')
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
-              }`}
+              className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all ${enabledMethods.includes('ip')
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
+                }`}
             >
               <span>{enabledMethods.includes('ip') ? 'IP Restriction Enabled' : 'IP Restriction Disabled'}</span>
               <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${enabledMethods.includes('ip') ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
@@ -585,11 +581,10 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             <button
               type="button"
               onClick={() => toggleMethod('gps')}
-              className={`flex items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all flex-1 ${
-                enabledMethods.includes('gps')
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
-              }`}
+              className={`flex items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all flex-1 ${enabledMethods.includes('gps')
+                ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
+                }`}
             >
               <span>{enabledMethods.includes('gps') ? 'GPS Enabled' : 'GPS Disabled'}</span>
               <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${enabledMethods.includes('gps') ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
@@ -609,9 +604,8 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <p className="text-sm font-semibold text-slate-900">{methodItem.label}</p>
               <p className="mt-1 text-xs text-slate-600">{methodItem.description}</p>
             </div>
-            <div className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-              methodItem.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
-            }`}>
+            <div className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${methodItem.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-500'
+              }`}>
               {methodItem.isAvailable ? 'Available' : 'Unavailable'}
             </div>
           </div>
@@ -632,11 +626,10 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
           type="button"
           onClick={() => toggleMethod(methodItem.value)}
           disabled={!methodItem.isAvailable}
-          className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all ${
-            methodEnabled
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
-          } ${!methodItem.isAvailable ? 'cursor-not-allowed opacity-50' : ''}`}
+          className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all ${methodEnabled
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+            : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
+            } ${!methodItem.isAvailable ? 'cursor-not-allowed opacity-50' : ''}`}
         >
           <span>{methodEnabled ? 'Enabled for company' : 'Disabled for company'}</span>
           <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${methodEnabled ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'}`}>
@@ -664,7 +657,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+            className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">

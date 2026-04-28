@@ -76,15 +76,17 @@ const fetchMyAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAG
     limit,
     ...params,
   }).toString();
-  
-  const endpoint = activeSubTab === 'today' 
+
+  const endpoint = activeSubTab === 'today'
     ? `/attendance/my/today-punches?${queryParams}`
     : `/attendance/my/past-punches?${queryParams}`;
-    
+
   return apiCall(endpoint, 'GET', null, companyId);
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
+
+const Placeholder = () => <span className="text-red-500 font-bold">---</span>;
 
 const formatHours = (h) => {
   if (!h) return '0h 0m';
@@ -92,8 +94,8 @@ const formatHours = (h) => {
   return `${hr}h ${Math.round((h - hr) * 60)}m`;
 };
 
-const getPunchLabel = (t) => ({ 
-  in: 'Punch In', out: 'Punch Out', 
+const getPunchLabel = (t) => ({
+  in: 'Punch In', out: 'Punch Out',
   punch_in: 'Punch In', punch_out: 'Punch Out',
   break_start: 'Break Start', break_end: 'Break End',
   start_break: 'Break Start', end_break: 'Break End'
@@ -101,31 +103,31 @@ const getPunchLabel = (t) => ({
 
 const getPunchStyle = (t) => {
   const type = t?.toLowerCase();
-  if (type === 'in' || type === 'punch_in') 
+  if (type === 'in' || type === 'punch_in')
     return { color: 'bg-emerald-100 text-emerald-600', icon: <FaSignInAlt className="w-4 h-4" /> };
-  if (type === 'out' || type === 'punch_out') 
+  if (type === 'out' || type === 'punch_out')
     return { color: 'bg-rose-100 text-rose-600', icon: <FaSignOutAlt className="w-4 h-4" /> };
-  if (type === 'break_start' || type === 'start_break') 
+  if (type === 'break_start' || type === 'start_break')
     return { color: 'bg-amber-100 text-amber-600', icon: <FaPause className="w-4 h-4" /> };
-  if (type === 'break_end' || type === 'end_break') 
+  if (type === 'break_end' || type === 'end_break')
     return { color: 'bg-indigo-100 text-indigo-600', icon: <FaPlay className="w-4 h-4" /> };
   return { color: 'bg-slate-100 text-slate-600', icon: <FaClock className="w-4 h-4" /> };
 };
 
 const formatDateTimeFull = (ds) => {
-  if (!ds) return 'N/A';
+  if (!ds) return <Placeholder />;
   const d = new Date(ds);
   if (isNaN(d)) {
     if (/^\d{2}:\d{2}:\d{2}$/.test(ds)) return ds;
     return ds;
   }
   return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
-         d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
 const getApprovalStyle = (status) => {
   switch (status?.toLowerCase()) {
-    case 'approved': 
+    case 'approved':
     case 'completed': return { className: 'bg-emerald-50 text-emerald-700 border-emerald-100', icon: FaCheckCircle, text: 'Approved' };
     case 'rejected': return { className: 'bg-rose-50 text-rose-700 border-rose-100', icon: FaTimesCircle, text: 'Rejected' };
     default: return { className: 'bg-amber-50 text-amber-700 border-amber-100', icon: FaClock, text: 'Pending' };
@@ -157,7 +159,7 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
               const ApprovalIcon = approvalStyle.icon;
               const startData = record[typeConfig.startKey];
               const endData = record[typeConfig.endKey];
-              
+
               return (
                 <motion.tr
                   key={record.id || index}
@@ -167,17 +169,17 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                   className="group hover:bg-indigo-50/30 transition-colors"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-bold text-gray-800">{record.date || 'N/A'}</span>
+                    <span className="text-sm font-bold text-gray-800">{record.date || <Placeholder />}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-700">{startData?.time || 'N/A'}</span>
+                      <span className="text-sm font-medium text-gray-700">{startData?.time || <Placeholder />}</span>
                       <span className="text-[10px] text-gray-400 uppercase font-bold">{startData?.method || ''}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-700">{endData?.time || 'N/A'}</span>
+                      <span className="text-sm font-medium text-gray-700">{endData?.time || <Placeholder />}</span>
                       <span className="text-[10px] text-gray-400 uppercase font-bold">{endData?.method || ''}</span>
                     </div>
                   </td>
@@ -228,11 +230,11 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05 }}
-            className="group relative rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-100/30 hover:border-indigo-200"
+            className="group relative rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-100/30 hover:border-indigo-200"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="truncate font-bold text-gray-800 text-base">{record.date || 'N/A'}</h3>
+                <h3 className="truncate font-bold text-gray-800 text-base">{record.date || <Placeholder />}</h3>
                 <p className="text-xs text-gray-400 mt-0.5">{typeConfig.label} Log</p>
               </div>
               <div className="flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
@@ -259,12 +261,12 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">{typeConfig.startLabel}</span>
-                <span className="text-xs font-bold text-gray-700 truncate block">{startData?.time || 'N/A'}</span>
+                <span className="text-xs font-bold text-gray-700 truncate block">{startData?.time || <Placeholder />}</span>
                 <span className="text-[9px] text-gray-400 uppercase font-bold">{startData?.method || ''}</span>
               </div>
               <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">{typeConfig.endLabel}</span>
-                <span className="text-xs font-bold text-gray-700 truncate block">{endData?.time || 'N/A'}</span>
+                <span className="text-xs font-bold text-gray-700 truncate block">{endData?.time || <Placeholder />}</span>
                 <span className="text-[9px] text-gray-400 uppercase font-bold">{endData?.method || ''}</span>
               </div>
             </div>
@@ -286,9 +288,8 @@ const AttendanceTypeTabs = ({ value, onChange }) => (
           key={tab.value}
           type="button"
           onClick={() => onChange(tab.value)}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${
-            isActive ? tab.activeClassName : tab.inactiveClassName
-          }`}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${isActive ? tab.activeClassName : tab.inactiveClassName
+            }`}
         >
           <Icon size={12} />
           <span>{tab.shortLabel}</span>
@@ -353,7 +354,7 @@ const AttendanceHistory = () => {
     setLoading(true);
     try {
       const company = JSON.parse(localStorage.getItem('company'));
-      
+
       const params = {
         page: pagination.page,
         limit: pagination.limit,
@@ -365,7 +366,7 @@ const AttendanceHistory = () => {
         if (dateFilter.to_date) params.to_date = dateFilter.to_date;
         if (debouncedSearch) params.search = debouncedSearch;
       } else {
-          if (debouncedSearch) params.search = debouncedSearch;
+        if (debouncedSearch) params.search = debouncedSearch;
       }
 
       const response = await fetchMyAttendanceAPI({
@@ -381,7 +382,7 @@ const AttendanceHistory = () => {
         setRecords(data.data || []);
         setTotalRecords(data.meta?.total || 0);
         if (activeSubTab === 'today' && data.summary) {
-           setTodaySummary(data.summary);
+          setTodaySummary(data.summary);
         }
       } else {
         toast.error(data.message || 'Failed to fetch attendance data');
@@ -424,34 +425,32 @@ const AttendanceHistory = () => {
   return (
     <div>
       {/* Compact Sub Tab & Type Switcher */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
         <div className="inline-flex rounded-xl bg-slate-100 p-1">
           <button
             onClick={() => setActiveSubTab('today')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${
-              activeSubTab === 'today'
-                ? 'bg-white text-indigo-600 shadow-sm scale-[1.02]'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${activeSubTab === 'today'
+              ? 'bg-white text-indigo-600 shadow-sm scale-[1.02]'
+              : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             <FaHistory size={12} className={activeSubTab === 'today' ? 'text-indigo-500' : ''} />
             Today
           </button>
           <button
             onClick={() => setActiveSubTab('past')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${
-              activeSubTab === 'past'
-                ? 'bg-white text-violet-600 shadow-sm scale-[1.02]'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${activeSubTab === 'past'
+              ? 'bg-white text-violet-600 shadow-sm scale-[1.02]'
+              : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             <FaCalendarAlt size={12} className={activeSubTab === 'past' ? 'text-violet-500' : ''} />
             Past
           </button>
         </div>
-        
+
         <div className="flex items-center gap-2">
-           <AttendanceTypeTabs value={activeType} onChange={setActiveType} />
+          <AttendanceTypeTabs value={activeType} onChange={setActiveType} />
         </div>
       </div>
 
@@ -475,8 +474,8 @@ const AttendanceHistory = () => {
                       { label: 'Break Taken', value: `${todaySummary.total_break_minutes}m`, from: 'from-amber-50', to: 'to-orange-50', textColor: 'text-amber-700', icon: <FaCoffee className="text-amber-500" /> },
                       { label: 'Total Punches', value: todaySummary.total_punches, from: 'from-indigo-50', to: 'to-blue-50', textColor: 'text-indigo-700', icon: <FaCheckCircle className="text-indigo-500" /> },
                     ].map(s => (
-                      <div key={s.label} className={`bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex items-center gap-4`}>
-                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${s.from} ${s.to} flex items-center justify-center shadow-inner`}>
+                      <div key={s.label} className={`bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex items-center gap-4`}>
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.from} ${s.to} flex items-center justify-center shadow-inner`}>
                           {s.icon}
                         </div>
                         <div>
@@ -489,7 +488,7 @@ const AttendanceHistory = () => {
                 )}
 
                 <div>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6">
                     <div className="flex items-center gap-3 w-full md:w-auto">
                       <div className="h-1 w-8 bg-indigo-500 rounded-full" />
                       <h3 className="text-lg font-extrabold text-slate-800">Today's Logs</h3>
@@ -519,7 +518,7 @@ const AttendanceHistory = () => {
                       />
                     )
                   ) : (
-                    <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200">
+                    <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-200">
                       <FaHistory className="mx-auto text-4xl text-slate-200 mb-3" />
                       <p className="text-slate-400 font-medium">No {activeType} records found for today.</p>
                     </div>
@@ -534,7 +533,7 @@ const AttendanceHistory = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-2"
+              className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
                 <div className="relative flex-1 w-full">
@@ -544,7 +543,7 @@ const AttendanceHistory = () => {
                     placeholder="Search by code, status, mode..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
+                    className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
                   />
                   {searchTerm && (
                     <button
@@ -579,7 +578,7 @@ const AttendanceHistory = () => {
                       }
                     }}
                     placeholder={dateFilterLabel}
-                    buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
+                    buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
                   />
                 </div>
                 <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
@@ -611,7 +610,7 @@ const AttendanceHistory = () => {
                 />
               )
             ) : (
-              <div className="rounded-3xl bg-white py-20 text-center shadow-sm border border-gray-100">
+              <div className="rounded-xl bg-white py-20 text-center shadow-sm border border-gray-100">
                 <FaCalendarAlt className="mx-auto mb-4 text-6xl text-gray-100" />
                 <h3 className="text-xl font-bold text-gray-400 uppercase tracking-widest">No Records Found</h3>
                 <p className="mt-1 text-sm text-gray-400">Try adjusting your search or filters.</p>
@@ -642,103 +641,103 @@ const AttendanceHistory = () => {
 };
 
 const DetailsModal = ({ record, onClose }) => {
-    const style = getApprovalStyle(record.status);
-    const StatusIcon = style.icon;
-    const activeType = record.activeType || 'work';
-    const typeConfig = getAttendanceTypeConfig(activeType);
-    const startData = record[typeConfig.startKey];
-    const endData = record[typeConfig.endKey];
+  const style = getApprovalStyle(record.status);
+  const StatusIcon = style.icon;
+  const activeType = record.activeType || 'work';
+  const typeConfig = getAttendanceTypeConfig(activeType);
+  const startData = record[typeConfig.startKey];
+  const endData = record[typeConfig.endKey];
 
-    return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40"
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="w-full max-w-lg overflow-hidden rounded-[30px] bg-white shadow-2xl"
-                onClick={e => e.stopPropagation()}
-            >
-                <div className={`relative px-8 py-10 text-white ${record.status === 'approved' || record.status === 'completed' ? 'bg-emerald-500' : record.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500'}`}>
-                    <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-all">
-                        <FaTimes size={18} />
-                    </button>
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md">
-                            <FaClock size={32} />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-black uppercase tracking-tight">{record.date || 'Log'}</h2>
-                            <p className="text-white/80 font-bold opacity-80 uppercase text-xs tracking-widest mt-1">{typeConfig.label} Details</p>
-                        </div>
-                    </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="w-full max-w-lg overflow-hidden rounded-[30px] bg-white shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className={`relative px-8 py-10 text-white ${record.status === 'approved' || record.status === 'completed' ? 'bg-emerald-500' : record.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500'}`}>
+          <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-all">
+            <FaTimes size={18} />
+          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
+              <FaClock size={32} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black uppercase tracking-tight">{record.date || <Placeholder />}</h2>
+              <p className="text-white/80 font-bold opacity-80 uppercase text-xs tracking-widest mt-1">{typeConfig.label} Details</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-8">
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Date</span>
+              <p className="font-bold text-gray-800 text-sm">{record.date || <Placeholder />}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Status</span>
+              <span className={`inline-flex items-center gap-1.5 rounded-full ${style.className} px-3 py-1 text-[10px] font-bold border border-current/10`}>
+                <StatusIcon size={12} />
+                {style.text.toUpperCase()}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
+              <p className="font-bold text-gray-800 text-sm">{startData?.time || <Placeholder />}</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold">{startData?.method || ''}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
+              <p className="font-bold text-gray-800 text-sm">{endData?.time || <Placeholder />}</p>
+              <p className="text-[10px] text-gray-400 uppercase font-bold">{endData?.method || ''}</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
+                <FaMapMarkerAlt size={16} />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">IP Address</span>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-gray-700 leading-tight break-all">Start: {startData?.ip || <Placeholder />}</p>
+                  <p className="text-sm font-bold text-gray-700 leading-tight break-all">End: {endData?.ip || <Placeholder />}</p>
                 </div>
+              </div>
+            </div>
 
-                <div className="p-8">
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Date</span>
-                            <p className="font-bold text-gray-800 text-sm">{record.date || 'N/A'}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Status</span>
-                            <span className={`inline-flex items-center gap-1.5 rounded-full ${style.className} px-3 py-1 text-[10px] font-bold border border-current/10`}>
-                                <StatusIcon size={12} />
-                                {style.text.toUpperCase()}
-                            </span>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
-                            <p className="font-bold text-gray-800 text-sm">{startData?.time || 'N/A'}</p>
-                            <p className="text-[10px] text-gray-400 uppercase font-bold">{startData?.method || ''}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
-                            <p className="font-bold text-gray-800 text-sm">{endData?.time || 'N/A'}</p>
-                            <p className="text-[10px] text-gray-400 uppercase font-bold">{endData?.method || ''}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100 space-y-4">
-                        <div className="flex items-start gap-4">
-                            <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                                <FaMapMarkerAlt size={16} />
-                            </div>
-                            <div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">IP Address</span>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-bold text-gray-700 leading-tight break-all">Start: {startData?.ip || 'N/A'}</p>
-                                    <p className="text-sm font-bold text-gray-700 leading-tight break-all">End: {endData?.ip || 'N/A'}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-start gap-4 border-t border-gray-200/50 pt-4">
-                           <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                                <FaCog size={16} />
-                            </div>
-                            <div className="flex-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">System Metadata</span>
-                                <div className="flex flex-wrap gap-2">
-                                    <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">ID: {record.id || 'N/A'}</span>
-                                    <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100 uppercase">TYPE: {activeType}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onClick={onClose} className="mt-8 w-full rounded-2xl bg-gray-900 py-4 text-sm font-bold text-white shadow-xl shadow-gray-200 transition-all hover:bg-black active:scale-[0.98]">
-                        Dismiss Details
-                    </button>
+            <div className="flex items-start gap-4 border-t border-gray-200/50 pt-4">
+              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
+                <FaCog size={16} />
+              </div>
+              <div className="flex-1">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">System Metadata</span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">ID: {record.id || <Placeholder />}</span>
+                  <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100 uppercase">TYPE: {activeType}</span>
                 </div>
-            </motion.div>
-        </motion.div>
-    );
+              </div>
+            </div>
+          </div>
+
+          <button onClick={onClose} className="mt-8 w-full rounded-xl bg-gray-900 py-4 text-sm font-bold text-white shadow-xl shadow-gray-200 transition-all hover:bg-black active:scale-[0.98]">
+            Dismiss Details
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
 };
 
 export default AttendanceHistory;

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaEnvelope, FaPhone, FaBuilding, FaMapMarkerAlt, FaShieldAlt,
-  FaCrown, FaCheckCircle, FaCalendarAlt, FaChevronRight, FaIdBadge,
-  FaGlobe, FaCity, FaUserCircle, FaHashtag, FaBolt, FaLayerGroup,
-  FaUserShield
+    FaEnvelope, FaPhone, FaBuilding, FaMapMarkerAlt, FaShieldAlt,
+    FaCrown, FaCheckCircle, FaCalendarAlt, FaChevronRight, FaIdBadge,
+    FaGlobe, FaCity, FaUserCircle, FaHashtag, FaBolt, FaLayerGroup,
+    FaUserShield
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
@@ -13,18 +13,18 @@ import { useAuth } from "../context/AuthContext";
 const PROFILE_TABS = ["Overview", "Companies", "Permissions"];
 
 const getInitials = (name) =>
-  name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+    name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 const formatDate = (iso) => {
-  if (!iso) return "N/A";
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric", month: "short", year: "numeric",
-  });
+    if (!iso) return "N/A";
+    return new Date(iso).toLocaleDateString("en-IN", {
+        day: "numeric", month: "short", year: "numeric",
+    });
 };
 
 const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
 };
 
 
@@ -50,7 +50,7 @@ export default function ProfilePage() {
     // Destructure directly from userDetails (which is response.data)
     const { user } = userDetails;
     const total_companies = companies.length;
-    
+
     // Format activeRole for display
     const role = activeRole
         ? activeRole.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -73,7 +73,7 @@ export default function ProfilePage() {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="bg-white/80 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6"
+                    className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6"
                 >
                     {/* Cover strip */}
                     <div className="h-28 bg-gradient-to-r from-indigo-600 to-purple-600 relative overflow-hidden">
@@ -139,25 +139,25 @@ export default function ProfilePage() {
                     </div>
                 </motion.div>
 
-                    <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm mb-6">
-                        {PROFILE_TABS.map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`relative flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-700"
-                                    }`}
-                            >
-                                {activeTab === tab && (
-                                    <motion.div
-                                        layoutId="activeTab"
-                                        className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md"
-                                        transition={{ type: "spring", stiffness: 300, damping: 28 }}
-                                    />
-                                )}
-                                <span className="relative z-10">{tab}</span>
-                            </button>
-                        ))}
-                    </div>
+                <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm mb-6">
+                    {PROFILE_TABS.map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`relative flex-1 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${activeTab === tab ? "text-white" : "text-slate-500 hover:text-slate-700"
+                                }`}
+                        >
+                            {activeTab === tab && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md"
+                                    transition={{ type: "spring", stiffness: 300, damping: 28 }}
+                                />
+                            )}
+                            <span className="relative z-10">{tab}</span>
+                        </button>
+                    ))}
+                </div>
 
                 {/* ── Tab Content ── */}
                 <AnimatePresence mode="wait">

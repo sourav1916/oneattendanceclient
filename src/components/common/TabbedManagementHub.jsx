@@ -93,7 +93,7 @@ export default function TabbedManagementHub({
       {ActiveComponent ? (
         <ActiveComponent />
       ) : (
-        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[10px] bg-slate-100 text-slate-400">
             {AccessDeniedIcon ? <AccessDeniedIcon size={20} /> : null}
           </div>

@@ -52,10 +52,12 @@ const ATTENDANCE_TYPE_CONFIG = {
 
 const getAttendanceTypeConfig = (type = 'work') => ATTENDANCE_TYPE_CONFIG[type] || ATTENDANCE_TYPE_CONFIG.work;
 
+const Placeholder = () => <span className="text-red-500 font-bold">---</span>;
+
 const formatDateLabel = (value) => {
-    if (!value) return 'N/A';
+    if (!value) return <Placeholder />;
     const parsed = String(value).includes('T') ? new Date(value) : new Date(`${value}T00:00:00`);
-    if (Number.isNaN(parsed.getTime())) return 'N/A';
+    if (Number.isNaN(parsed.getTime())) return <Placeholder />;
     return parsed.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -64,7 +66,7 @@ const formatDateLabel = (value) => {
 };
 
 const formatTimeLabel = (value) => {
-    if (!value) return 'N/A';
+    if (!value) return <Placeholder />;
     const parsed = new Date(`1970-01-01T${value}`);
     if (Number.isNaN(parsed.getTime())) return value;
     return parsed.toLocaleTimeString('en-US', {
@@ -74,8 +76,8 @@ const formatTimeLabel = (value) => {
 };
 
 const renderRecordLabel = (record) => {
-    if (!record) return 'N/A';
-    return [record.time, record.method].filter(Boolean).join(' • ') || 'N/A';
+    if (!record) return <Placeholder />;
+    return [record.time, record.method].filter(Boolean).join(' • ') || <Placeholder />;
 };
 
 const AttendanceTypeTabs = ({ value, onChange }) => (
@@ -166,7 +168,7 @@ const normalizePendingAttendanceRow = (row) => ({
     punch_uid: row?.id,
     attendance_date: row?.punch_date || null,
     type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
-    attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || 'N/A',
+    attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || <Placeholder />,
     start_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break In' : 'Punch In',
     end_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break Out' : 'Punch Out',
     start_time: row?.punch_in?.time || row?.break_start?.time || row?.start_time || null,
@@ -312,7 +314,7 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 uppercase">Email</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.email || attendance.email || 'N/A'}</p>
+                                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.email || attendance.email || <Placeholder />}</p>
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 uppercase">Employee Code</label>
@@ -320,11 +322,11 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 uppercase">Designation</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.designation || 'N/A'}</p>
+                                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.designation || <Placeholder />}</p>
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 uppercase">Phone</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.phone || attendance.phone || 'N/A'}</p>
+                                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.phone || attendance.phone || <Placeholder />}</p>
                             </div>
                         </div>
                     </div>
@@ -367,7 +369,7 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                             <div>
                                 <label className="text-xs text-gray-500 uppercase">Method</label>
                                 <p className="font-medium text-gray-800 text-sm sm:text-base">
-                                    {attendance.attendance_method || 'N/A'}
+                                    {attendance.attendance_method || <Placeholder />}
                                 </p>
                             </div>
                         </div>
@@ -400,8 +402,8 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                             {attendance.employee_name || attendance.employee?.name}
                         </h3>
                         <p className="text-xs text-gray-500 truncate">{attendance.employee_code || attendance.employee?.code}</p>
-                        <p className="text-xs text-gray-400 truncate">{attendance.employee?.designation || 'N/A'}</p>
-                        <p className="text-xs text-gray-400 truncate">{attendance.email || attendance.employee?.email || 'N/A'}</p>
+                        <p className="text-xs text-gray-400 truncate">{attendance.employee?.designation || <Placeholder />}</p>
+                        <p className="text-xs text-gray-400 truncate">{attendance.email || attendance.employee?.email || <Placeholder />}</p>
                     </div>
                 </div>
                 <div className="flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
@@ -444,11 +446,11 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.startLabel}:</span>
-                    <span className="font-medium text-xs sm:text-sm">{attendance.start_time ? formatTimeLabel(attendance.start_time) : 'N/A'}</span>
+                    <span className="font-medium text-xs sm:text-sm">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.endLabel}:</span>
-                    <span className="font-medium text-xs sm:text-sm">{attendance.end_time ? formatTimeLabel(attendance.end_time) : 'N/A'}</span>
+                    <span className="font-medium text-xs sm:text-sm">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">Status:</span>
@@ -680,7 +682,7 @@ const PendingAttendance = ({ companyId }) => {
     };
 
     const formatDateTime = (dateString) => {
-        if (!dateString) return 'N/A';
+        if (!dateString) return <Placeholder />;
         const date = new Date(dateString);
         return date.toLocaleString('en-US', {
             year: 'numeric',
@@ -828,11 +830,11 @@ const PendingAttendance = ({ companyId }) => {
                                                         </div>
                                                     </td>
                                                     {showDate && <td className="px-6 py-4 whitespace-nowrap">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</td>}
-                                                    {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : 'N/A'}</td>}
-                                                    {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.end_time ? formatTimeLabel(attendance.end_time) : 'N/A'}</td>}
-                                                    {showEmail && <td className="px-6 py-4">{attendance.email || attendance.employee?.email || 'N/A'}</td>}
+                                                    {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</td>}
+                                                    {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</td>}
+                                                    {showEmail && <td className="px-6 py-4">{attendance.email || attendance.employee?.email || <Placeholder />}</td>}
                                                     <td className="px-6 py-4"><StatusBadge status={attendance.status || 'pending'} /></td>
-                                                    {showMethod && <td className="px-6 py-4">{attendance.attendance_method || 'N/A'}</td>}
+                                                    {showMethod && <td className="px-6 py-4">{attendance.attendance_method || <Placeholder />}</td>}
                                                     <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                         <ActionMenu
                                                             menuId={attendance.punch_uid || attendance.punch_id || attendance.id}

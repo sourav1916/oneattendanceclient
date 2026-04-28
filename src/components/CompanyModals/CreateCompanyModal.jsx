@@ -261,7 +261,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+            className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sticky Header */}

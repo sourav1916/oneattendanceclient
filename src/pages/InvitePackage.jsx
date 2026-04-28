@@ -22,19 +22,19 @@ import TimeDurationPickerField from "../components/TimeDurationPicker";
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
 const modalVariants = {
-  hidden:  { opacity: 0, scale: 0.9,  y: 20 },
-  visible: { opacity: 1, scale: 1,    y: 0,  transition: { type: "spring", duration: 0.5 } },
-  exit:    { opacity: 0, scale: 0.9,  y: 20, transition: { duration: 0.3 } }
+  hidden: { opacity: 0, scale: 0.9, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
+  exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
 };
 
 const backdropVariants = {
-  hidden:  { opacity: 0 },
+  hidden: { opacity: 0 },
   visible: { opacity: 1 },
-  exit:    { opacity: 0 }
+  exit: { opacity: 0 }
 };
 
 
-const formatDisplay = (str) => 
+const formatDisplay = (str) =>
   str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
 
 const getStatusBadge = (isActive) => {
@@ -187,9 +187,8 @@ const WeekendConfig = ({ weekends, onChange }) => {
                       key={opt.value}
                       type="button"
                       onClick={() => updateWeekend(day.value, opt.value)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
-                        isActive ? opt.color + " shadow-md scale-105" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
-                      }`}
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${isActive ? opt.color + " shadow-md scale-105" : "text-gray-400 hover:text-gray-600 hover:bg-gray-50"
+                        }`}
                     >
                       {opt.label}
                     </button>
@@ -336,7 +335,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (submitDisabled) return;
-    
+
     setLoading(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -388,9 +387,9 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}>
-        
+
         <div className="flex items-center justify-between px-6 py-5 border-b bg-gradient-to-r from-indigo-50 to-blue-50">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
@@ -590,17 +589,15 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                           key={method.method}
                           type="button"
                           onClick={() => handleAttendanceToggle(method.method)}
-                          className={`flex flex-col items-start gap-1 rounded-[10px] border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${
-                            isSelected
-                              ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
-                              : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
-                          }`}
+                          className={`flex flex-col items-start gap-1 rounded-[10px] border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${isSelected
+                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
+                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
+                            }`}
                         >
                           <div className="flex w-full items-center justify-between gap-3">
                             <span className="font-semibold">{method.label || formatAttendanceMethod(method.method)}</span>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${
-                              isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
-                            }`}>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                              }`}>
                               {isSelected ? 'Selected' : 'Available'}
                             </span>
                           </div>
@@ -693,7 +690,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-[10px] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
-        
+
         <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-[10px]">
           <div className="flex items-center gap-3">
             <FaBox className="w-5 h-5" />
@@ -794,11 +791,10 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                         >
                           <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
                           <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              weekend.type === "half"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-indigo-100 text-indigo-700"
-                            }`}
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${weekend.type === "half"
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-indigo-100 text-indigo-700"
+                              }`}
                           >
                             {weekend.type || "full"}
                           </span>
@@ -814,13 +810,13 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
           {/* Permissions Section */}
           {pkg.permission_package_id && (
             <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden">
-              <button 
+              <button
                 onClick={() => setShowPermissions(!showPermissions)}
                 className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
                 type="button"
               >
                 <div className="flex items-center gap-2">
-                  <FaShieldAlt className="text-indigo-500" /> 
+                  <FaShieldAlt className="text-indigo-500" />
                   <span className="text-sm font-semibold text-gray-700">Permission Package</span>
                   {pkg.permission_package_name && (
                     <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
@@ -832,10 +828,10 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                   <FaChevronDown className="w-4 h-4 text-gray-400" />
                 </motion.div>
               </button>
-              
+
               <AnimatePresence>
                 {showPermissions && (
-                  <motion.div 
+                  <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
@@ -880,7 +876,7 @@ function DeletePackageModal({ isOpen, onClose, onConfirm, package: pkg, processi
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg overflow-hidden"
         onClick={e => e.stopPropagation()}>
-        
+
         <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white">
           <div className="flex items-center gap-2">
             <FaTrash className="w-5 h-5" />
@@ -897,7 +893,7 @@ function DeletePackageModal({ isOpen, onClose, onConfirm, package: pkg, processi
           </div>
           <p className="text-lg font-semibold text-gray-800 mb-2">Are you sure?</p>
           <p className="text-gray-500 mb-6">
-            You are about to delete <span className="font-semibold text-red-600">{pkg.name}</span> ({pkg.code}). 
+            You are about to delete <span className="font-semibold text-red-600">{pkg.name}</span> ({pkg.code}).
             This action cannot be undone.
           </p>
           <div className="flex gap-3 justify-center">
@@ -922,7 +918,7 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
   if (!isOpen || !pkg) return null;
 
   const isActivating = newStatus === true;
-  
+
   return (
     <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
@@ -931,7 +927,7 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
         className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
         onClick={e => e.stopPropagation()}>
-        
+
         <div className={`flex justify-between items-center p-5 border-b ${isActivating ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-amber-600 to-orange-600'} text-white`}>
           <div className="flex items-center gap-2">
             {isActivating ? <FaToggleOn className="w-5 h-5" /> : <FaToggleOff className="w-5 h-5" />}
@@ -950,7 +946,7 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
             {isActivating ? "Activate Package?" : "Deactivate Package?"}
           </p>
           <p className="text-gray-500 mb-6">
-            {isActivating 
+            {isActivating
               ? `Are you sure you want to activate "${pkg.name}"? Active packages can be used for new invitations.`
               : `Are you sure you want to deactivate "${pkg.name}"? Inactive packages won't appear in invite creation.`}
           </p>
@@ -959,9 +955,8 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
               Cancel
             </button>
             <button onClick={() => onConfirm(pkg.id, !pkg.is_active)} disabled={processing}
-              className={`px-5 py-2 rounded-xl text-white transition shadow-md flex items-center gap-2 disabled:opacity-50 ${
-                isActivating ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'
-              }`}>
+              className={`px-5 py-2 rounded-xl text-white transition shadow-md flex items-center gap-2 disabled:opacity-50 ${isActivating ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'
+                }`}>
               {processing && <FaSpinner className="w-4 h-4 animate-spin" />}
               {isActivating ? "Activate" : "Deactivate"}
             </button>
@@ -994,7 +989,7 @@ export default function InvitePackageManagement() {
   const isInitialLoad = useRef(true);
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
-  
+
   const createAccess = checkActionAccess("invitePackages", "create");
   const updateAccess = checkActionAccess("invitePackages", "update");
   const deleteAccess = checkActionAccess("invitePackages", "delete");
@@ -1008,12 +1003,12 @@ export default function InvitePackageManagement() {
 
     try {
       const company = JSON.parse(localStorage.getItem("company"));
-      const params = new URLSearchParams({ 
-        page: page.toString(), 
-        limit: pagination.limit.toString() 
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pagination.limit.toString()
       });
       if (search) params.append("search", search);
-      
+
       const response = await apiCall(`/company/invites/package-list?${params.toString()}`, 'GET', null, company?.id);
       if (!response.ok) throw new Error("Failed to fetch packages");
 
@@ -1479,13 +1474,13 @@ export default function InvitePackageManagement() {
             <ViewPackageModal isOpen={true} onClose={closeModal} package={selectedPackage} />
           )}
           {modalType === "delete" && selectedPackage && (
-            <DeletePackageModal 
-              isOpen={true} onClose={closeModal} onConfirm={handleDelete} 
-              package={selectedPackage} processing={processingId === selectedPackage.id} 
+            <DeletePackageModal
+              isOpen={true} onClose={closeModal} onConfirm={handleDelete}
+              package={selectedPackage} processing={processingId === selectedPackage.id}
             />
           )}
           {modalType === "toggle" && selectedPackage && (
-            <ToggleStatusModal 
+            <ToggleStatusModal
               isOpen={true} onClose={closeModal} onConfirm={handleToggleStatus}
               package={selectedPackage} processing={processingId === selectedPackage.id}
               newStatus={toggleNewStatus}

@@ -79,18 +79,18 @@ const SwipeConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, isLoad
           >
             {/* Header / Icon Section */}
             <div className={`relative px-8 pt-10 pb-6 text-center`}>
-              <button 
-                onClick={onClose} 
+              <button
+                onClick={onClose}
                 disabled={isLoading}
                 className={`absolute right-6 top-6 rounded-full bg-gray-100 p-2 text-gray-400 hover:bg-gray-200 transition-all ${isLoading ? 'opacity-0' : 'opacity-100'}`}
               >
                 <FaTimes size={14} />
               </button>
-              
-              <div className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br ${config.gradient} ${config.shadow} shadow-lg text-white`}>
+
+              <div className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-xl bg-gradient-to-br ${config.gradient} ${config.shadow} shadow-lg text-white`}>
                 <Icon size={32} />
               </div>
-              
+
               <h2 className="text-2xl font-black text-gray-800 tracking-tight">
                 Confirm {config.label}
               </h2>
@@ -101,9 +101,9 @@ const SwipeConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, isLoad
 
             {/* Swipe Area */}
             <div className="px-8 pb-10">
-              <div className="relative h-16 w-full rounded-2xl bg-gray-100 p-1 flex items-center border border-gray-200/50">
+              <div className="relative h-16 w-full rounded-xl bg-gray-100 p-1 flex items-center border border-gray-200/50">
                 {/* Track Hint Text */}
-                <motion.div 
+                <motion.div
                   style={{ opacity: isLoading ? 0 : opacity }}
                   className="absolute inset-0 flex items-center justify-center"
                 >
@@ -130,9 +130,9 @@ const SwipeConfirmationModal = ({ isOpen, onClose, onConfirm, actionType, isLoad
                 </motion.div>
 
                 {/* Progress Overlay (optional but looks nice) */}
-                <motion.div 
-                   className={`absolute left-1 top-1 bottom-1 rounded-xl bg-gradient-to-r ${config.gradient} opacity-20`}
-                   style={{ width: x, maxWidth: 'calc(100% - 8px)' }}
+                <motion.div
+                  className={`absolute left-1 top-1 bottom-1 rounded-xl bg-gradient-to-r ${config.gradient} opacity-20`}
+                  style={{ width: x, maxWidth: 'calc(100% - 8px)' }}
                 />
               </div>
 

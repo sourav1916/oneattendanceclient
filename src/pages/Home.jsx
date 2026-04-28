@@ -47,7 +47,7 @@ function HomePage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-slate-100"
+          className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-slate-100"
         >
           <div className="w-20 h-20 bg-amber-100 rounded-[10px] flex items-center justify-center mx-auto mb-6 transform rotate-3">
             <FaQuestionCircle className="w-10 h-10 text-amber-600" />
@@ -289,7 +289,7 @@ function HomePage() {
       {
         title: "Company Config",
         description: companySettingsAccess.allowed ? "Manage settings & shifts" : "No permission",
-        icon: FaCog, 
+        icon: FaCog,
         color: companySettingsAccess.allowed ? "from-slate-600 to-slate-800" : "from-slate-400 to-slate-500",
         onClick: () => companySettingsAccess.allowed && navigate('/company-settings'),
         gradient: companySettingsAccess.allowed ? "bg-gradient-to-r from-slate-600 to-slate-800" : "bg-slate-200",
