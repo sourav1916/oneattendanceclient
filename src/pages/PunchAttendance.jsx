@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import SwipeConfirmationModal from '../components/SwipeConfirmationModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -273,6 +274,8 @@ const PunchAttendance = () => {
   const [viewMode, setViewMode]           = useState('card');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen]         = useState(false);
+  const [swipeModalOpen, setSwipeModalOpen] = useState(false);
+  const [pendingAction, setPendingAction]   = useState(null);
 
   const isPunchedIn   = currentStatus === 'WORKING' || currentStatus === 'ON_BREAK';
   const isBreakActive = currentStatus === 'ON_BREAK';
@@ -365,10 +368,24 @@ const PunchAttendance = () => {
     } finally { setLoadingAction(null); }
   };
 
-  const handlePunchIn  = async () => { if (await callAttendanceAPI('/attendance/punch-in',   'punch-in'))  toast.success('Successfully Punched In!'); };
-  const handlePunchOut = async () => { if (await callAttendanceAPI('/attendance/punch-out',  'punch-out')) toast.success('Successfully Punched Out!'); };
-  const handleBreakIn  = async () => { if (await callAttendanceAPI('/attendance/break-in',   'break-in'))  toast.info('Break Started'); };
-  const handleBreakOut = async () => { if (await callAttendanceAPI('/attendance/break-out',  'break-out')) toast.success('Break Ended — Welcome back!'); };
+  const handlePunchIn  = () => { setPendingAction('punch-in');  setSwipeModalOpen(true); };
+  const handlePunchOut = () => { setPendingAction('punch-out'); setSwipeModalOpen(true); };
+  const handleBreakIn  = () => { setPendingAction('break-in');  setSwipeModalOpen(true); };
+  const handleBreakOut = () => { setPendingAction('break-out'); setSwipeModalOpen(true); };
+
+  const handleConfirmSwipe = async () => {
+    const action = pendingAction;
+    setSwipeModalOpen(false);
+    setPendingAction(null);
+
+    switch(action) {
+      case 'punch-in':  if (await callAttendanceAPI('/attendance/punch-in',   'punch-in'))  toast.success('Successfully Punched In!'); break;
+      case 'punch-out': if (await callAttendanceAPI('/attendance/punch-out',  'punch-out')) toast.success('Successfully Punched Out!'); break;
+      case 'break-in':  if (await callAttendanceAPI('/attendance/break-in',   'break-in'))  toast.info('Break Started'); break;
+      case 'break-out': if (await callAttendanceAPI('/attendance/break-out',  'break-out')) toast.success('Break Ended — Welcome back!'); break;
+      default: break;
+    }
+  };
 
   const isAllowed = (a) => allowedActions.includes(a);
 
@@ -612,6 +629,14 @@ const PunchAttendance = () => {
             <DetailsModal record={selectedRecord} onClose={() => { setModalOpen(false); setSelectedRecord(null); }} />
           )}
         </AnimatePresence>
+
+        <SwipeConfirmationModal 
+          isOpen={swipeModalOpen}
+          onClose={() => setSwipeModalOpen(false)}
+          onConfirm={handleConfirmSwipe}
+          actionType={pendingAction}
+          isLoading={!!loadingAction}
+        />
 
         {/* ── Help tip ────────────────────────────────────────────────────── */}
         <motion.p

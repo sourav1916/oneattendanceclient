@@ -346,7 +346,7 @@ const AttendanceHistory = () => {
       <div className="space-y-6">
         {activeSubTab === 'today' ? (
           /* ── Today's Activity Tab ────────────────────────────────────────── */
-          <div className="space-y-6 max-w-6xl mx-auto">
+          <div className="space-y-6 max-w-7xl mx-auto">
             {loading && !todaySummary ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <FaSpinner className="animate-spin text-4xl mb-4 text-indigo-500" />

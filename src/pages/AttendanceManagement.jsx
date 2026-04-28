@@ -672,10 +672,6 @@ const AttendanceManagement = ({ companyId }) => {
           <div className="flex justify-center items-center py-12">
             <FaSpinner className="animate-spin text-blue-500 text-3xl sm:text-4xl" />
           </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-[10px] p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
-            {error}
-          </div>
         ) : visibleAttendances.length === 0 ? (
           <div className="bg-white rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
             <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
