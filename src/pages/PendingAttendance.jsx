@@ -33,7 +33,7 @@ const pendingAttendanceAPI = {
             }
         });
 
-        const response = await apiCall(`/attendance/pending-punches?${queryParams.toString()}`, 'GET', null, companyId);
+        const response = await apiCall(`/attendance/pending-attendance?${queryParams.toString()}`, 'GET', null, companyId);
 
         if (!response.ok) {
             throw new Error('Failed to fetch pending attendance data');
@@ -42,7 +42,7 @@ const pendingAttendanceAPI = {
         return response.json();
     },
 
-    updateAttendanceStatus: async (companyId, punchId, action, notes = '') => {
+    updateAttendanceStatus: async (companyId, attendance, action, notes = '') => {
         let endpoint = '';
 
         if (action === 'approve') {
@@ -54,7 +54,11 @@ const pendingAttendanceAPI = {
         }
 
         const response = await apiCall(endpoint, 'PUT', {
-            punch_id: punchId,
+            punch_id: attendance?.punch_id || attendance?.punch_uid || attendance?.id || null,
+            employee_id: attendance?.employee_id || null,
+            attendance_date: attendance?.attendance_date || null,
+            punch_type: attendance?.punch_type || null,
+            punch_time: attendance?.punch_time || null,
             notes
         }, companyId);
 
@@ -71,6 +75,82 @@ const formatFilterLabel = (value) => new Date(`${value}T00:00:00`).toLocaleDateS
     day: 'numeric',
     year: 'numeric'
 });
+
+const buildPunchTime = (date, time) => {
+    if (!date || !time) return null;
+    return `${date}T${time}`;
+};
+
+const normalizePendingAttendanceResponse = (response) => {
+    const grouped = response?.pending_attendance;
+
+    if (!grouped || Array.isArray(grouped)) {
+        return Array.isArray(response?.data) ? response.data : [];
+    }
+
+    const flattened = [];
+
+    Object.entries(grouped).forEach(([attendanceDate, employees]) => {
+        (Array.isArray(employees) ? employees : []).forEach((employee) => {
+            const baseEmployee = {
+                employee_id: employee?.employee_id ?? null,
+                employee_code: employee?.employee_code ?? '',
+                name: employee?.name ?? '',
+                designation: employee?.designation ?? '',
+            };
+
+            const pushPunch = (punch, bucket, index) => {
+                if (!punch) return;
+
+                const punchTime = buildPunchTime(attendanceDate, punch.time);
+                const punchUid = [
+                    baseEmployee.employee_id ?? 'emp',
+                    attendanceDate,
+                    bucket,
+                    punch.type || 'punch',
+                    punch.time || index,
+                ].join('-');
+
+                flattened.push({
+                    punch_uid: punchUid,
+                    punch_id: punch.id ?? null,
+                    attendance_date: attendanceDate,
+                    punch_bucket: bucket,
+                    punch_type: punch.type,
+                    punch_time: punchTime,
+                    attendance_method: punch.method || 'N/A',
+                    attendance_mode: punch.method || null,
+                    location: {
+                        latitude: punch.latitude ?? null,
+                        longitude: punch.longitude ?? null,
+                        ip_address: punch.ip ?? null,
+                    },
+                    employee_id: baseEmployee.employee_id,
+                    employee_code: baseEmployee.employee_code,
+                    employee_name: baseEmployee.name,
+                    employee_designation: baseEmployee.designation,
+                    employee: {
+                        id: baseEmployee.employee_id,
+                        code: baseEmployee.employee_code,
+                        name: baseEmployee.name,
+                        designation: baseEmployee.designation,
+                    },
+                    status: 'pending',
+                });
+            };
+
+            (Array.isArray(employee?.working_punch) ? employee.working_punch : []).forEach((punch, index) => {
+                pushPunch(punch, 'working', index);
+            });
+
+            (Array.isArray(employee?.break_punch) ? employee.break_punch : []).forEach((punch, index) => {
+                pushPunch(punch, 'break', index);
+            });
+        });
+    });
+
+    return flattened.sort((a, b) => new Date(b.punch_time || 0) - new Date(a.punch_time || 0));
+};
 
 const pendingAttendanceMatchesDateFilter = (attendance, filter) => {
     if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return true;
@@ -235,6 +315,8 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
 
 // Card View Component for Mobile
 const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, processingId, onToggleMenu, activeMenuId, approveDisabled, rejectDisabled, reviewMessage }) => {
+    const recordKey = attendance.punch_uid || attendance.punch_id || attendance.id;
+
     const formatTime = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -269,23 +351,23 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                 </div>
                 <div className="flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                     <ActionMenu
-                        menuId={attendance.id}
+                        menuId={recordKey}
                         activeId={activeMenuId}
                         onToggle={(e, id) => onToggleMenu(id)}
                         actions={[
                             {
                                 label: 'Approve',
-                                icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
-                                onClick: () => onApprove(attendance.id),
-                                disabled: processingId === attendance.id || approveDisabled,
+                                icon: processingId === recordKey ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
+                                onClick: () => onApprove(attendance),
+                                disabled: processingId === recordKey || approveDisabled,
                                 title: approveDisabled ? reviewMessage : '',
                                 className: 'text-green-600 hover:bg-green-50'
                             },
                             {
                                 label: 'Reject',
-                                icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
-                                onClick: () => onReject(attendance.id),
-                                disabled: processingId === attendance.id || rejectDisabled,
+                                icon: processingId === recordKey ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
+                                onClick: () => onReject(attendance),
+                                disabled: processingId === recordKey || rejectDisabled,
                                 title: rejectDisabled ? reviewMessage : '',
                                 className: 'text-red-600 hover:bg-red-50'
                             },
@@ -307,7 +389,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">Date:</span>
-                    <span className="text-gray-700 text-xs sm:text-sm">{formatDate(attendance.punch_time)}</span>
+                    <span className="text-gray-700 text-xs sm:text-sm">{formatDate(attendance.punch_time || attendance.attendance_date)}</span>
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">Status:</span>
@@ -406,10 +488,10 @@ const PendingAttendance = ({ companyId }) => {
             if (response.success) {
                 const currentPage = response.current_page || response.page || pagination.page;
                 const perPage = response.per_page || response.limit || pagination.limit;
-                const total = response.total || 0;
+                const total = response.meta?.total_pending_punches || response.total || 0;
                 const totalPages = response.total_pages || response.last_page || Math.ceil(total / perPage) || 1;
 
-                setAttendances(response.data);
+                setAttendances(normalizePendingAttendanceResponse(response));
                 updatePagination({
                     page: currentPage,
                     limit: perPage,
@@ -483,29 +565,33 @@ const PendingAttendance = ({ companyId }) => {
     }, [attendances, dateFilterLabel]);
 
     // Handle status update
-    const handleStatusUpdate = async (punchId, action) => {
+    const handleStatusUpdate = async (attendance, action) => {
+        const punchKey = attendance?.punch_uid || attendance?.punch_id || attendance?.id;
+
         if (action === 'reject' && !notes.trim()) {
-            setSelectedAction({ punchId, action });
+            setSelectedAction({ attendance, action });
             setShowNotesModal(true);
             setActiveActionMenu(null);
             return;
         }
 
-        await processStatusUpdate(punchId, action, notes);
+        await processStatusUpdate(attendance, action, notes);
     };
 
-    const processStatusUpdate = async (punchId, action, notesText) => {
+    const processStatusUpdate = async (attendance, action, notesText) => {
+        const punchKey = attendance?.punch_uid || attendance?.punch_id || attendance?.id;
+
         try {
-            setProcessingId(punchId);
-            const response = await pendingAttendanceAPI.updateAttendanceStatus(resolvedCompanyId, punchId, action, notesText);
+            setProcessingId(punchKey);
+            const response = await pendingAttendanceAPI.updateAttendanceStatus(resolvedCompanyId, attendance, action, notesText);
 
             if (response.success) {
                 toast.success(`Attendance ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
-                fetchPendingAttendances(true);
-                setNotes('');
-                setShowNotesModal(false);
-                setSelectedAction(null);
-                setActiveActionMenu(null);
+            fetchPendingAttendances(true);
+            setNotes('');
+            setShowNotesModal(false);
+            setSelectedAction(null);
+            setActiveActionMenu(null);
             } else {
                 throw new Error(response.message || 'Failed to update status');
             }
@@ -607,7 +693,7 @@ const PendingAttendance = ({ companyId }) => {
                         <ManagementViewSwitcher
                             viewMode={viewMode}
                             onChange={setViewMode}
-                            accent="amber"
+                            accent="blue"
                         />
                     </div>
                 </motion.div>
@@ -615,7 +701,7 @@ const PendingAttendance = ({ companyId }) => {
                 {/* Loading State */}
                 {loading ? (
                     <div className="flex justify-center items-center py-12">
-                        <FaSpinner className="animate-spin text-amber-500 text-3xl sm:text-4xl" />
+                        <FaSpinner className="animate-spin text-blue-500 text-3xl sm:text-4xl" />
                     </div>
                 ) : visibleAttendances.length === 0 ? (
                     <div className="bg-white rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
@@ -639,7 +725,7 @@ const PendingAttendance = ({ companyId }) => {
                             >
                                 <div className="overflow-x-auto overflow-y-visible">
                                     <table className="w-full text-sm text-left text-gray-700">
-                                        <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                                        <thead className="xsm:hidden bg-gray-50 text-gray-600 uppercase text-xs">
                                             <tr>
                                                 <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
                                                 {showDateTime && <th className="px-6 py-4 font-semibold tracking-wider">Date & Time</th>}
@@ -652,7 +738,7 @@ const PendingAttendance = ({ companyId }) => {
                                         <tbody className="divide-y divide-gray-200">
                                             {visibleAttendances.map((attendance) => (
                                                 <motion.tr
-                                                    key={attendance.id}
+                                                    key={attendance.punch_uid || attendance.punch_id || attendance.id}
                                                     onClick={() => handleViewDetails(attendance)}
                                                     className="cursor-pointer hover:bg-gray-50 transition-colors"
                                                 >
@@ -673,23 +759,23 @@ const PendingAttendance = ({ companyId }) => {
                                                     {showMethod && <td className="px-6 py-4">{attendance.attendance_method || attendance.attendance?.method || 'N/A'}</td>}
                                                     <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                                         <ActionMenu
-                                                            menuId={attendance.id}
+                                                            menuId={attendance.punch_uid || attendance.punch_id || attendance.id}
                                                             activeId={activeActionMenu}
                                                             onToggle={(e, id) => toggleActionMenu(id)}
                                                             actions={[
                                                                 {
                                                                     label: 'Approve',
-                                                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
-                                                                    onClick: () => handleStatusUpdate(attendance.id, 'approve'),
-                                                                    disabled: processingId === attendance.id || approveAccess.disabled,
+                                                                    icon: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
+                                                                    onClick: () => handleStatusUpdate(attendance, 'approve'),
+                                                                    disabled: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) || approveAccess.disabled,
                                                                     title: approveAccess.disabled ? pendingReviewMessage : '',
                                                                     className: 'text-green-600 hover:bg-green-50'
                                                                 },
                                                                 {
                                                                     label: 'Reject',
-                                                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
-                                                                    onClick: () => handleStatusUpdate(attendance.id, 'reject'),
-                                                                    disabled: processingId === attendance.id || rejectAccess.disabled,
+                                                                    icon: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
+                                                                    onClick: () => handleStatusUpdate(attendance, 'reject'),
+                                                                    disabled: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) || rejectAccess.disabled,
                                                                     title: rejectAccess.disabled ? pendingReviewMessage : '',
                                                                     className: 'text-red-600 hover:bg-red-50'
                                                                 },
@@ -714,11 +800,11 @@ const PendingAttendance = ({ companyId }) => {
                             <ManagementGrid viewMode={viewMode}>
                                 {visibleAttendances.map((attendance) => (
                                     <PendingAttendanceCard
-                                        key={attendance.id}
+                                        key={attendance.punch_uid || attendance.punch_id || attendance.id}
                                         attendance={attendance}
                                         onViewDetails={handleViewDetails}
-                                        onApprove={(id) => handleStatusUpdate(id, 'approve')}
-                                        onReject={(id) => handleStatusUpdate(id, 'reject')}
+                                        onApprove={(attendanceItem) => handleStatusUpdate(attendanceItem, 'approve')}
+                                        onReject={(attendanceItem) => handleStatusUpdate(attendanceItem, 'reject')}
                                         processingId={processingId}
                                         onToggleMenu={(e, id) => toggleActionMenu(id)}
                                         activeMenuId={activeActionMenu}
@@ -796,7 +882,7 @@ const PendingAttendance = ({ companyId }) => {
                                     <button
                                         onClick={() => {
                                             if (notes.trim()) {
-                                                processStatusUpdate(selectedAction.punchId, selectedAction.action, notes);
+                                                processStatusUpdate(selectedAction.attendance, selectedAction.action, notes);
                                             } else {
                                                 toast.warning('Please provide a reason for rejection');
                                             }

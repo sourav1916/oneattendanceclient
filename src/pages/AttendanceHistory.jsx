@@ -26,6 +26,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import apiCall from '../utils/api';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ActionMenu from '../components/ActionMenu';
 import { DateRangePickerField } from '../components/DatePicker';
 
 // ─── API Integration ─────────────────────────────────────────────────────────
@@ -92,17 +93,19 @@ const getApprovalStyle = (status) => {
 
 // ─── Shared Rendering Components ───────────────────────────────────────────
 
-const RecordTable = ({ records, onViewDetails }) => (
-  <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu, showPunchTime, showType, showMethod }) => (
+  <div className="overflow-hidden rounded-[10px] bg-white border border-gray-100 shadow-sm">
     <div className="overflow-x-auto">
       <table className="w-full text-left">
-        <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/50">
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Punch Time</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Type</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Method</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</th>
-            <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500 text-right">Action</th>
+        <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-xs uppercase text-gray-600">
+          <tr>
+            {showPunchTime && <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">Punch Time</th>}
+            {showType && <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">Type</th>}
+            {showMethod && <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">Method</th>}
+            <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">Status</th>
+            <th className="px-4 lg:px-6 py-4 w-12 pr-4 text-right">
+              <FaCog className="ml-auto h-4 w-4" />
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -115,36 +118,49 @@ const RecordTable = ({ records, onViewDetails }) => (
                 key={record.id || index}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className="group hover:bg-indigo-50/30 transition-colors"
-              >
-                <td className="px-6 py-4">
-                  <span className="text-sm font-medium text-gray-700">{formatDateTimeFull(record.punch_time)}</span>
-                </td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600 capitalize">
-                    {getPunchLabel(displayType)}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-gray-500 uppercase">{record.method || record.attendance_method || 'N/A'}</span>
-                    <span className="text-[10px] text-gray-400">{record.location?.ip_address || record.ip_address || record.meta?.method || 'N/A'}</span>
-                  </div>
-                </td>
+              transition={{ delay: index * 0.03 }}
+              className="group hover:bg-indigo-50/30 transition-colors"
+            >
+                {showPunchTime && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm font-medium text-gray-700">{formatDateTimeFull(record.punch_time)}</span>
+                  </td>
+                )}
+                {showType && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600 capitalize">
+                      {getPunchLabel(displayType)}
+                    </span>
+                  </td>
+                )}
+                {showMethod && (
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-gray-500 uppercase">{record.method || record.attendance_method || 'N/A'}</span>
+                      <span className="text-[10px] text-gray-400">{record.location?.ip_address || record.ip_address || record.meta?.method || 'N/A'}</span>
+                    </div>
+                  </td>
+                )}
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${approvalStyle.className}`}>
                     <ApprovalIcon size={12} />
                     {approvalStyle.text}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <button
-                    onClick={() => onViewDetails(record)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-gray-200 text-gray-400 shadow-sm transition-all hover:border-indigo-200 hover:text-indigo-600 hover:shadow-indigo-100/50"
-                  >
-                    <FaEye size={16} />
-                  </button>
+                <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                  <ActionMenu
+                    menuId={record.id || index}
+                    activeId={activeActionMenu}
+                    onToggle={(e, id) => onToggleActionMenu(id)}
+                    actions={[
+                      {
+                        label: 'View Details',
+                        icon: <FaEye size={12} />,
+                        onClick: () => onViewDetails(record),
+                        className: 'text-blue-600 hover:bg-blue-50'
+                      }
+                    ]}
+                  />
                 </td>
               </motion.tr>
             );
@@ -155,7 +171,7 @@ const RecordTable = ({ records, onViewDetails }) => (
   </div>
 );
 
-const RecordCards = ({ records, onViewDetails }) => (
+const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu }) => (
   <ManagementGrid viewMode="card">
     {records.map((record, index) => {
       const approvalStyle = getApprovalStyle(record.status);
@@ -174,10 +190,25 @@ const RecordCards = ({ records, onViewDetails }) => (
               <h3 className="truncate font-bold text-gray-800 text-base">{getPunchLabel(displayType)}</h3>
               <p className="text-xs text-gray-400 mt-0.5">{formatDateTimeFull(record.punch_time)}</p>
             </div>
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${approvalStyle.className}`}>
-              <ApprovalIcon size={10} />
-              {approvalStyle.text}
-            </span>
+            <div className="flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${approvalStyle.className}`}>
+                <ApprovalIcon size={10} />
+                {approvalStyle.text}
+              </span>
+              <ActionMenu
+                menuId={record.id || index}
+                activeId={activeActionMenu}
+                onToggle={(e, id) => onToggleActionMenu(id)}
+                actions={[
+                  {
+                    label: 'View Details',
+                    icon: <FaEye size={12} />,
+                    onClick: () => onViewDetails(record),
+                    className: 'text-blue-600 hover:bg-blue-50'
+                  }
+                ]}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -191,13 +222,6 @@ const RecordCards = ({ records, onViewDetails }) => (
              </div>
           </div>
 
-          <button
-            onClick={() => onViewDetails(record)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-50 py-3 text-xs font-bold text-indigo-700 transition-all hover:bg-indigo-600 hover:text-white"
-          >
-            <FaEye size={14} />
-            View Details
-          </button>
         </motion.div>
       );
     })}
@@ -218,12 +242,27 @@ const AttendanceHistory = () => {
   const [viewMode, setViewMode] = useState('card');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
 
   const [dateFilter, setDateFilter] = useState({ from_date: '', to_date: '' });
   const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
 
   const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
   const fetchLock = useRef(false);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const showPunchTime = windowWidth > 480;
+  const showType = windowWidth >= 640;
+  const showMethod = windowWidth >= 900;
 
   // ─── Unified Data Fetching ─────────────────────────────────────────────────
 
@@ -306,6 +345,10 @@ const AttendanceHistory = () => {
     setModalOpen(true);
   };
 
+  const toggleActionMenu = (recordId) => {
+    setActiveActionMenu((current) => (current === recordId ? null : recordId));
+  };
+
   const closeModal = () => {
     setModalOpen(false);
     setSelectedRecord(null);
@@ -386,14 +429,27 @@ const AttendanceHistory = () => {
                         {todaySummary.punches?.length || 0} Punches
                       </span>
                     </div>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="indigo" />
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
                   </div>
 
                   {todaySummary.punches?.length > 0 ? (
                     viewMode === 'table' ? (
-                      <RecordTable records={todaySummary.punches} onViewDetails={openDetails} />
+                      <RecordTable
+                        records={todaySummary.punches}
+                        onViewDetails={openDetails}
+                        activeActionMenu={activeActionMenu}
+                        onToggleActionMenu={toggleActionMenu}
+                        showPunchTime={showPunchTime}
+                        showType={showType}
+                        showMethod={showMethod}
+                      />
                     ) : (
-                      <RecordCards records={todaySummary.punches} onViewDetails={openDetails} />
+                      <RecordCards
+                        records={todaySummary.punches}
+                        onViewDetails={openDetails}
+                        activeActionMenu={activeActionMenu}
+                        onToggleActionMenu={toggleActionMenu}
+                      />
                     )
                   ) : (
                     <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200">
@@ -468,7 +524,7 @@ const AttendanceHistory = () => {
                   />
                 </div>
                 <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
-                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
+                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
               </div>
             </motion.div>
 
@@ -479,9 +535,22 @@ const AttendanceHistory = () => {
               </div>
             ) : records.length > 0 ? (
               viewMode === 'table' ? (
-                <RecordTable records={records} onViewDetails={openDetails} />
+                <RecordTable
+                  records={records}
+                  onViewDetails={openDetails}
+                  activeActionMenu={activeActionMenu}
+                  onToggleActionMenu={toggleActionMenu}
+                  showPunchTime={showPunchTime}
+                  showType={showType}
+                  showMethod={showMethod}
+                />
               ) : (
-                <RecordCards records={records} onViewDetails={openDetails} />
+                <RecordCards
+                  records={records}
+                  onViewDetails={openDetails}
+                  activeActionMenu={activeActionMenu}
+                  onToggleActionMenu={toggleActionMenu}
+                />
               )
             ) : (
               <div className="rounded-3xl bg-white py-20 text-center shadow-sm border border-gray-100">

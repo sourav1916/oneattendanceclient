@@ -127,7 +127,7 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
             transition-all duration-150
             ${action.disabled
               ? 'cursor-not-allowed opacity-50 text-gray-400'
-              : `hover:bg-gray-50 hover:pl-4 ${action.className || 'text-gray-700 hover:text-purple-600'}`
+              : `hover:bg-blue-50 hover:pl-4 ${action.className || 'text-gray-700 hover:text-blue-600'}`
             }
           `}
         >
@@ -146,8 +146,8 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
           <button
             type="button"
             className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200
-                       bg-white text-gray-500 transition-all hover:border-purple-300
-                       hover:text-purple-600 hover:shadow-sm active:scale-95"
+                       bg-white text-gray-500 transition-all hover:border-blue-300
+                       hover:text-blue-600 hover:shadow-sm active:scale-95"
           >
             <FaEllipsisV size={14} />
           </button>
