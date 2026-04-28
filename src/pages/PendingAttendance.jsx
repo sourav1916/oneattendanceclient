@@ -2,12 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
-    FaUser, FaBuilding, FaMapMarkerAlt,
-    FaInfoCircle, FaEye, FaSpinner, FaChevronLeft,
-    FaChevronRight, FaHourglassStart, FaHourglassEnd, FaCheck,
-    FaBan, FaComment, FaHistory, FaUserCheck,
-    FaEllipsisV, FaFilter, FaCalendarAlt, FaEnvelope, FaIdCard,
-    FaTh, FaListUl, FaCog
+    FaUser, FaMapMarkerAlt,
+    FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
+    FaBan, FaComment, FaUserCheck,
+    FaTimes, FaCog
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -161,12 +159,12 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                 className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="sticky top-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 sm:p-6 rounded-t-2xl">
+                <div className="sticky top-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 sm:p-6 rounded-t-[10px] z-10">
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
                             <FaInfoCircle /> Pending Attendance Details
                         </h2>
-                        <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition">
+                        <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-[10px] transition">
                             <FaTimesCircle size={18} className="sm:w-5 sm:h-5" />
                         </button>
                     </div>
@@ -254,11 +252,11 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={() => onViewDetails(attendance)}
-            className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+            className="bg-white rounded-[10px] shadow-lg p-4 border border-gray-100 h-full flex flex-col"
         >
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-amber-100 to-orange-100 rounded-[10px] flex items-center justify-center flex-shrink-0">
                         <FaUser className="text-amber-600 text-base sm:text-xl" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -269,7 +267,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                         <p className="text-xs text-gray-400 truncate">{attendance.employee?.designation || 'N/A'}</p>
                     </div>
                 </div>
-                <div className="relative flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                     <ActionMenu
                         menuId={attendance.id}
                         activeId={activeMenuId}
@@ -302,9 +300,9 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onReject,
                 </div>
             </div>
 
-            <div className="space-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
+            <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center flex-wrap gap-1">
-                    <span className="text-gray-500 text-xs sm:text-sm">Punch Time:</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">Time:</span>
                     <span className="font-medium text-xs sm:text-sm">{formatTime(attendance.punch_time)}</span>
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
@@ -341,9 +339,7 @@ const PendingAttendance = ({ companyId }) => {
     const [selectedAction, setSelectedAction] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [viewMode, setViewMode] = useState('table');
-    const [windowWidth, setWindowWidth] = useState(() =>
-        typeof window !== 'undefined' ? window.innerWidth : 1440
-    );
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
     const previousSearchRef = useRef('');
@@ -355,9 +351,26 @@ const PendingAttendance = ({ companyId }) => {
     const rejectAccess = checkActionAccess('pendingAttendance', 'reject');
     const pendingReviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
 
-    const showEmail = windowWidth >= 1024;
-    const showMethod = windowWidth >= 768;
-    const showDateTime = windowWidth >= 540;
+    // Handle window resize with debounce
+    useEffect(() => {
+        let timeoutId;
+        const handleResize = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => setWindowWidth(window.innerWidth), 150);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            clearTimeout(timeoutId);
+        };
+    }, []);
+
+    const SIDEBAR_OFFSET = windowWidth >= 768 ? 80 : 0;
+    const effectiveWidth = windowWidth - SIDEBAR_OFFSET;
+
+    const showEmail = effectiveWidth >= 1024;
+    const showMethod = effectiveWidth >= 768;
+    const showDateTime = effectiveWidth >= 540;
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -366,13 +379,6 @@ const PendingAttendance = ({ companyId }) => {
 
         return () => clearTimeout(timer);
     }, [searchTerm]);
-
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        handleResize();
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     // Fetch pending attendances
     const fetchPendingAttendances = useCallback(async (force = false, dateParams = pendingDateFilterRef.current) => {
@@ -478,8 +484,6 @@ const PendingAttendance = ({ companyId }) => {
 
     // Handle status update
     const handleStatusUpdate = async (punchId, action) => {
-        const access = action === 'approve' ? approveAccess : rejectAccess;
-        if (access.disabled) return;
         if (action === 'reject' && !notes.trim()) {
             setSelectedAction({ punchId, action });
             setShowNotesModal(true);
@@ -512,15 +516,6 @@ const PendingAttendance = ({ companyId }) => {
         }
     };
 
-    // Handle page change
-    const handlePageChange = (page) => {
-        if (page !== pagination.page) {
-            goToPage(page);
-        }
-        setActiveActionMenu(null);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
     // Handle view details
     const handleViewDetails = (attendance) => {
         setSelectedAttendance(attendance);
@@ -528,7 +523,6 @@ const PendingAttendance = ({ companyId }) => {
         setActiveActionMenu(null);
     };
 
-    // Format date
     const formatDateTime = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
@@ -557,51 +551,17 @@ const PendingAttendance = ({ companyId }) => {
     }
 
     return (
-        <>
-            <div className="min-h-screen bg-gray-50">
-                <div className="max-w-7xl mx-auto ">
-                    {/* Header */}
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
-                    >
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                            <div className="space-y-2">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700">
-                                    <FaHistory size={11} className="text-amber-500" />
-                                    Pending attendance
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl sm:text-3xl font-black bg-clip-text whitespace-nowrap text-transparent bg-gradient-to-r from-amber-600 to-orange-600">
-                                        Pending Attendance
-                                    </h1>
-                                    <p className="mt-1 break-words text-sm text-slate-500">
-                                        Company ID: {resolvedCompanyId}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex w-full gap-4 sm:items-center justify-end">
-                                <div className="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 sm:px-4 sm:py-2 justify-between sm:justify-start shadow-sm">
-                                    <FaUserCheck className="text-amber-500 text-sm sm:text-base" />
-                                    <span className="text-xs sm:text-sm font-medium text-gray-700">
-                                        Pending: {pagination.total}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* Search */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 }}
-                        className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
-                    >
-                        <div className="flex items-center gap-4 flex-1">
-                            <div className="relative flex-1 w-full">
-                                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto ">
+                {/* Consolidated Filter Bar */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                >
+                    <div className="flex items-center gap-4 flex-1">
+                        <div className="relative flex-1 w-full">
+                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                             <input
                                 type="text"
                                 placeholder="Search by employee name, email, or code..."
@@ -614,224 +574,164 @@ const PendingAttendance = ({ companyId }) => {
                                     type="button"
                                     onClick={() => setSearchTerm('')}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
-                                    aria-label="Clear search"
-                                    title="Clear search"
                                 >
                                     <FaTimes size={12} />
                                 </button>
                             )}
-                            </div>
-
-                            {!loading && visibleAttendances.length > 0 && (
-                                <p className="text-sm text-gray-500 hidden xl:block">
-                                    <span className="font-semibold text-gray-800">{visibleAttendances.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> pending records
-                                    {debouncedSearchTerm && <span className="ml-1 text-green-600">· "{debouncedSearchTerm}"</span>}
-                                </p>
-                            )}
                         </div>
+                    </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <DatePickerField
-                                value=""
-                                onChange={handleDateFilterApply}
-                                placeholder={dateFilterLabel}
-                                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
-                                wrapperClassName="w-auto"
-                                popoverClassName="w-[min(92vw,24rem)]"
-                                initialTab="quick"
-                                mode="both"
-                            />
-                            {dateFilterLabel !== 'Filter by date' && (
-                                <button
-                                    type="button"
-                                    onClick={clearDateFilter}
-                                    className="p-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all"
-                                    title="Clear date filter"
-                                    aria-label="Clear date filter"
-                                >
-                                    <FaTimes size={14} />
-                                </button>
-                            )}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <DatePickerField
+                            value=""
+                            onChange={handleDateFilterApply}
+                            placeholder={dateFilterLabel}
+                            buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                            wrapperClassName="w-auto"
+                            popoverClassName="w-[min(92vw,24rem)]"
+                            initialTab="quick"
+                            mode="both"
+                        />
+                        {dateFilterLabel !== 'Filter by date' && (
+                            <button
+                                type="button"
+                                onClick={clearDateFilter}
+                                className="p-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                            >
+                                <FaTimes size={14} />
+                            </button>
+                        )}
 
-                            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+                        <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
 
-                            <ManagementViewSwitcher
-                                viewMode={viewMode}
-                                onChange={setViewMode}
-                                accent="green"
-                            />
-                        </div>
-                    </motion.div>
+                        <ManagementViewSwitcher
+                            viewMode={viewMode}
+                            onChange={setViewMode}
+                            accent="amber"
+                        />
+                    </div>
+                </motion.div>
 
-                    {/* Loading State */}
-                    {loading ? (
-                        <div className="flex justify-center items-center py-12">
-                            <FaSpinner className="animate-spin text-amber-500 text-3xl sm:text-4xl" />
-                        </div>
-                    ) : error ? (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
-                            {error}
-                        </div>
-                    ) : visibleAttendances.length === 0 ? (
-                        <div className="bg-white rounded-xl sm:rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
-                            <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
-                            <p className="text-gray-500 text-sm sm:text-base md:text-lg">No pending attendance records found</p>
-                            <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                                {debouncedSearchTerm
-                                    ? 'Try adjusting your search'
-                                    : dateFilterLabel !== 'Filter by date'
-                                        ? `Try adjusting ${dateFilterLabel.toLowerCase()}`
-                                        : 'All attendances have been processed'}
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                            {viewMode === 'table' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-[10px] shadow-xl overflow-visible"
-                                >
-                                    <div className="overflow-x-auto overflow-y-visible">
-                                        <table className="w-full text-sm text-left text-gray-700">
-                                            <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                                                <tr>
-                                                    <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Employee
-                                                    </th>
-                                                    {showDateTime && (
-                                                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                            Date & Time
-                                                        </th>
-                                                    )}
-                                                    {showEmail && (
-                                                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                            Email
-                                                        </th>
-                                                    )}
-                                                    <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        Status
-                                                    </th>
-                                                    {showMethod && (
-                                                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                            Method
-                                                        </th>
-                                                    )}
-                                                    <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                                        <FaCog className="w-4 h-4 mx-auto" />
-                                                    </th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-200">
-                                                {visibleAttendances.map((attendance) => (
-                                                    <motion.tr
-                                                        key={attendance.id}
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        onClick={() => handleViewDetails(attendance)}
-                                                        className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50"
-                                                    >
-                                                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                                            <div className="flex items-center gap-2 sm:gap-3">
-                                                                <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                                                    <FaUser className="text-amber-600 text-xs sm:text-sm md:text-base" />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="font-medium text-gray-900 text-xs sm:text-sm md:text-base truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
-                                                                        {attendance.employee_name || attendance.employee?.name}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500 truncate max-w-[100px] sm:max-w-[130px] md:max-w-[180px]">
-                                                                        {attendance.employee_code || attendance.employee?.code}
-                                                                    </p>
-                                                                </div>
+                {/* Loading State */}
+                {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <FaSpinner className="animate-spin text-amber-500 text-3xl sm:text-4xl" />
+                    </div>
+                ) : visibleAttendances.length === 0 ? (
+                    <div className="bg-white rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
+                        <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
+                        <p className="text-gray-500 text-sm sm:text-base md:text-lg">No pending attendance records found</p>
+                        <p className="text-gray-400 text-xs sm:text-sm mt-1">
+                            {debouncedSearchTerm
+                                ? 'Try adjusting your search'
+                                : dateFilterLabel !== 'Filter by date'
+                                    ? `Try adjusting ${dateFilterLabel.toLowerCase()}`
+                                    : 'All attendances have been processed'}
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        {viewMode === 'table' && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-white rounded-[10px] shadow-xl overflow-visible"
+                            >
+                                <div className="overflow-x-auto overflow-y-visible">
+                                    <table className="w-full text-sm text-left text-gray-700">
+                                        <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                                            <tr>
+                                                <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
+                                                {showDateTime && <th className="px-6 py-4 font-semibold tracking-wider">Date & Time</th>}
+                                                {showEmail && <th className="px-6 py-4 font-semibold tracking-wider">Email</th>}
+                                                <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
+                                                {showMethod && <th className="px-6 py-4 font-semibold tracking-wider">Method</th>}
+                                                <th className="px-6 py-4 text-center font-semibold tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {visibleAttendances.map((attendance) => (
+                                                <motion.tr
+                                                    key={attendance.id}
+                                                    onClick={() => handleViewDetails(attendance)}
+                                                    className="cursor-pointer hover:bg-gray-50 transition-colors"
+                                                >
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                                                <FaUser className="text-amber-600" />
                                                             </div>
-                                                        </td>
-                                                        {showDateTime && (
-                                                            <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                                                <div className="text-xs sm:text-sm text-gray-900 whitespace-nowrap">
-                                                                    {formatDateTime(attendance.punch_time)}
-                                                                </div>
-                                                            </td>
-                                                        )}
-                                                        {showEmail && (
-                                                            <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                                                <div className="text-xs sm:text-sm text-gray-900 truncate max-w-[150px] md:max-w-[200px]">
-                                                                    {attendance.employee_email || attendance.employee?.email}
-                                                                </div>
-                                                            </td>
-                                                        )}
-                                                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                                            <StatusBadge status={attendance.status || 'pending'} />
-                                                        </td>
-                                                        {showMethod && (
-                                                            <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-                                                                <div className="text-xs sm:text-sm text-gray-900">
-                                                                    {attendance.attendance_method || attendance.attendance?.method || 'N/A'}
-                                                                </div>
-                                                            </td>
-                                                        )}
-                                                        <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4" onClick={(e) => e.stopPropagation()}>
-                                                            <div className="relative flex justify-center">
-                                                                <ActionMenu
-                                                                    menuId={attendance.id}
-                                                                    activeId={activeActionMenu}
-                                                                    onToggle={(e, id) => toggleActionMenu(id)}
-                                                                    actions={[
-                                                                        {
-                                                                            label: 'Approve',
-                                                                            icon: processingId === attendance.id ? FaSpinner : FaCheck,
-                                                                            onClick: () => handleStatusUpdate(attendance.id, 'approve'),
-                                                                            disabled: processingId === attendance.id || approveAccess.disabled,
-                                                                            title: approveAccess.disabled ? pendingReviewMessage : '',
-                                                                            className: 'text-green-700 hover:bg-green-50'
-                                                                        },
-                                                                        {
-                                                                            label: 'Reject',
-                                                                            icon: processingId === attendance.id ? FaSpinner : FaBan,
-                                                                            onClick: () => handleStatusUpdate(attendance.id, 'reject'),
-                                                                            disabled: processingId === attendance.id || rejectAccess.disabled,
-                                                                            title: rejectAccess.disabled ? pendingReviewMessage : '',
-                                                                            className: 'text-red-700 hover:bg-red-50'
-                                                                        },
-                                                                        {
-                                                                            label: 'View Details',
-                                                                            icon: FaEye,
-                                                                            onClick: () => handleViewDetails(attendance),
-                                                                            className: 'text-blue-700 hover:bg-blue-50'
-                                                                        }
-                                                                    ]}
-                                                                />
+                                                            <div className="truncate max-w-[200px]">
+                                                                <p className="font-medium text-gray-900">{attendance.employee_name || attendance.employee?.name}</p>
+                                                                <p className="text-xs text-gray-500">{attendance.employee_code || attendance.employee?.code}</p>
                                                             </div>
-                                                        </td>
-                                                    </motion.tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                        </div>
+                                                    </td>
+                                                    {showDateTime && <td className="px-6 py-4">{formatDateTime(attendance.punch_time)}</td>}
+                                                    {showEmail && <td className="px-6 py-4">{attendance.employee_email || attendance.employee?.email}</td>}
+                                                    <td className="px-6 py-4"><StatusBadge status={attendance.status || 'pending'} /></td>
+                                                    {showMethod && <td className="px-6 py-4">{attendance.attendance_method || attendance.attendance?.method || 'N/A'}</td>}
+                                                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                                        <ActionMenu
+                                                            menuId={attendance.id}
+                                                            activeId={activeActionMenu}
+                                                            onToggle={(e, id) => toggleActionMenu(id)}
+                                                            actions={[
+                                                                {
+                                                                    label: 'Approve',
+                                                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
+                                                                    onClick: () => handleStatusUpdate(attendance.id, 'approve'),
+                                                                    disabled: processingId === attendance.id || approveAccess.disabled,
+                                                                    title: approveAccess.disabled ? pendingReviewMessage : '',
+                                                                    className: 'text-green-600 hover:bg-green-50'
+                                                                },
+                                                                {
+                                                                    label: 'Reject',
+                                                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
+                                                                    onClick: () => handleStatusUpdate(attendance.id, 'reject'),
+                                                                    disabled: processingId === attendance.id || rejectAccess.disabled,
+                                                                    title: rejectAccess.disabled ? pendingReviewMessage : '',
+                                                                    className: 'text-red-600 hover:bg-red-50'
+                                                                },
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={12} />,
+                                                                    onClick: () => handleViewDetails(attendance),
+                                                                    className: 'text-blue-600 hover:bg-blue-50'
+                                                                }
+                                                            ]}
+                                                        />
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        )}
 
+                        {viewMode === 'card' && (
+                            <ManagementGrid viewMode={viewMode}>
+                                {visibleAttendances.map((attendance) => (
+                                    <PendingAttendanceCard
+                                        key={attendance.id}
+                                        attendance={attendance}
+                                        onViewDetails={handleViewDetails}
+                                        onApprove={(id) => handleStatusUpdate(id, 'approve')}
+                                        onReject={(id) => handleStatusUpdate(id, 'reject')}
+                                        processingId={processingId}
+                                        onToggleMenu={(e, id) => toggleActionMenu(id)}
+                                        activeMenuId={activeActionMenu}
+                                        approveDisabled={approveAccess.disabled}
+                                        rejectDisabled={rejectAccess.disabled}
+                                        reviewMessage={pendingReviewMessage}
+                                    />
+                                ))}
+                            </ManagementGrid>
+                        )}
 
-                                </motion.div>
-                            )}
-                            {viewMode === 'card' && (
-                                <ManagementGrid viewMode={viewMode}>
-                                    {visibleAttendances.map((attendance) => (
-                                        <PendingAttendanceCard
-                                            key={attendance.id}
-                                            attendance={attendance}
-                                            onViewDetails={handleViewDetails}
-                                            onApprove={(id) => handleStatusUpdate(id, 'approve')}
-                                            onReject={(id) => handleStatusUpdate(id, 'reject')}
-                                            processingId={processingId}
-                                            onToggleMenu={toggleActionMenu}
-                                            activeMenuId={activeActionMenu}
-                                            approveDisabled={approveAccess.disabled}
-                                            rejectDisabled={rejectAccess.disabled}
-                                            reviewMessage={pendingReviewMessage}
-                                        />
-                                    ))}
-                                </ManagementGrid>
-                            )}
-                            {pagination.total > 0 && (
+                        {pagination.total > 0 && (
+                            <div className="mt-6">
                                 <Pagination
                                     currentPage={pagination.page}
                                     totalItems={pagination.total}
@@ -839,13 +739,12 @@ const PendingAttendance = ({ companyId }) => {
                                     onPageChange={goToPage}
                                     onLimitChange={changeLimit}
                                 />
-                            )}
-                        </>
-                    )}
-                </div>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
-            {/* Details Modal */}
             <AnimatePresence>
                 {showModal && selectedAttendance && (
                     <PendingDetailsModal
@@ -855,19 +754,14 @@ const PendingAttendance = ({ companyId }) => {
                 )}
             </AnimatePresence>
 
-            {/* Notes Modal for Rejection */}
             <AnimatePresence>
                 {showNotesModal && selectedAction && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
-                        onClick={() => {
-                            setShowNotesModal(false);
-                            setSelectedAction(null);
-                            setNotes('');
-                        }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
                     >
                         <ModalScrollLock />
                         <motion.div
@@ -877,24 +771,28 @@ const PendingAttendance = ({ companyId }) => {
                             className={NOTES_MODAL_CLASS}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 sm:p-5 md:p-6 rounded-t-2xl">
-                                <h2 className="text-base sm:text-lg md:text-xl font-semibold flex items-center gap-2">
+                            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 rounded-t-2xl">
+                                <h2 className="text-xl font-semibold flex items-center gap-2">
                                     <FaComment /> Rejection Notes
                                 </h2>
                             </div>
-                            <div className="flex flex-1 flex-col p-4 sm:p-5 md:p-6">
-                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                    Please provide a reason for rejection
-                                </label>
+                            <div className="p-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Please provide a reason for rejection</label>
                                 <textarea
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
                                     rows={4}
-                                    className="min-h-[140px] w-full flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition text-sm"
+                                    className="w-full p-3 border border-gray-300 rounded-[10px] focus:ring-2 focus:ring-amber-500 outline-none transition"
                                     placeholder="Enter rejection reason..."
                                     autoFocus
                                 />
-                                <div className="mt-4 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:gap-3">
+                                <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3">
+                                    <button
+                                        onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
+                                        className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-[10px] hover:bg-gray-200 transition font-medium"
+                                    >
+                                        Cancel
+                                    </button>
                                     <button
                                         onClick={() => {
                                             if (notes.trim()) {
@@ -903,21 +801,9 @@ const PendingAttendance = ({ companyId }) => {
                                                 toast.warning('Please provide a reason for rejection');
                                             }
                                         }}
-                                        disabled={rejectAccess.disabled}
-                                        title={rejectAccess.disabled ? pendingReviewMessage : ''}
-                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 sm:py-2 rounded-lg font-medium transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[10px] hover:bg-red-700 transition font-medium shadow-lg"
                                     >
                                         Submit Rejection
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setShowNotesModal(false);
-                                            setSelectedAction(null);
-                                            setNotes('');
-                                        }}
-                                        className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-1.5 sm:py-2 rounded-lg font-medium transition text-sm"
-                                    >
-                                        Cancel
                                     </button>
                                 </div>
                             </div>
@@ -925,10 +811,8 @@ const PendingAttendance = ({ companyId }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-        </>
+        </div>
     );
 };
 
 export default PendingAttendance;
-

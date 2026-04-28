@@ -56,6 +56,7 @@ import {
   FaBoxes,
   FaFingerprint,
   FaHistory,
+  FaListUl,
 } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -192,6 +193,29 @@ const ATTENDANCE_HUB_TABS = [
   },
 ];
 
+const ATTENDANCE_MANAGEMENT_HUB_TABS = [
+  {
+    id: "pending",
+    label: "Pending Requests",
+    shortLabel: "Pending",
+    description: "Review and approve employee attendance requests.",
+    icon: FaClock,
+    pageKey: "pendingAttendance",
+    component: PendingAttendance,
+    accent: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  {
+    id: "all",
+    label: "All Attendance",
+    shortLabel: "All",
+    description: "Monitor all employee attendance records and punch logs.",
+    icon: FaListUl,
+    pageKey: "attendanceManagement",
+    component: AttendanceManagement,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+];
+
 
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
@@ -244,7 +268,18 @@ function AppContent() {
         <Route path="/my-shifts" element={<ProtectedRoute pageKey="myShifts"><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
         <Route path="/my-accounts" element={<ProtectedRoute pageKey="employeeBankAccount"><MainLayout><MyAccounts /></MainLayout></ProtectedRoute>} />
-        <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><AttendanceManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><TabbedManagementHub
+          routePath="/attendance-management"
+          defaultTab="pending"
+          title="Attendance Management Hub"
+          description="Monitor and approve employee attendance records and punch logs from one unified dashboard."
+          eyebrow={<><FaClock size={11} /> Management</>}
+          accent="blue"
+          tabs={ATTENDANCE_MANAGEMENT_HUB_TABS}
+          accessDeniedTitle="No management tabs available"
+          accessDeniedDescription="Your current role does not have access to pending attendance or all attendance records."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
         <Route path="/salary-management" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><TabbedManagementHub
           routePath="/salary-management"
           defaultTab="salary"
@@ -272,7 +307,7 @@ function AppContent() {
           accessDeniedDescription="Your current role does not have access to leave requests, leave configuration, or leave balances."
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
-        <Route path="/pending-attendance" element={<ProtectedRoute pageKey="pendingAttendance"><MainLayout><PendingAttendance /></MainLayout></ProtectedRoute>} />
+        <Route path="/pending-attendance" element={<ProtectedRoute pageKey="pendingAttendance"><Navigate to="/attendance-management?tab=pending" replace /></ProtectedRoute>} />
         <Route path="/holiday-management" element={<ProtectedRoute pageKey="holidayManagement"><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
         <Route path="/holidays" element={<ProtectedRoute pageKey="holidays"><MainLayout><Holidays /></MainLayout></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute pageKey="help"><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />

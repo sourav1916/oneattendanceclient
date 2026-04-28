@@ -4,8 +4,7 @@ import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
-  FaBan, FaComment, FaHistory, FaUserCheck, FaCog,
-  FaEllipsisV, FaTimes, FaListUl
+  FaBan, FaComment, FaCog, FaTimes
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -16,8 +15,6 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { DatePickerField } from '../components/DatePicker';
-import { ManagementHub } from '../components/common';
-import PendingAttendance from './PendingAttendance';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -296,13 +293,13 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        onClick={() => onViewDetails(attendance)}
-        className="bg-white rounded-[10px] shadow-lg p-4 border border-gray-100 h-full flex flex-col"
-      >
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={() => onViewDetails(attendance)}
+      className="bg-white rounded-[10px] shadow-lg p-4 border border-gray-100 h-full flex flex-col"
+    >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-[10px] flex items-center justify-center flex-shrink-0">
@@ -392,7 +389,6 @@ const AttendanceManagement = ({ companyId }) => {
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [viewMode, setViewMode] = useState('table');
-  const [activeTab, setActiveTab] = useState('pending');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
@@ -422,10 +418,6 @@ const AttendanceManagement = ({ companyId }) => {
 
   const SIDEBAR_OFFSET = windowWidth >= 768 ? 80 : 0;
   const effectiveWidth = windowWidth - SIDEBAR_OFFSET;
-
-  const isMobile = windowWidth < 768;
-  const isTablet = windowWidth >= 768 && windowWidth < 1024;
-  const isDesktop = windowWidth >= 1024;
 
   // Refined column visibility based on effective width to prevent overflow
   const showPunchType = effectiveWidth >= 640;
@@ -468,7 +460,7 @@ const AttendanceManagement = ({ companyId }) => {
         const total = response.total || 0;
         const totalPages = response.total_pages || response.last_page || Math.ceil(total / perPage) || 1;
 
-        setAttendances(response.data);
+        setAttendances(Array.isArray(response.data) ? response.data : []);
         updatePagination({
           page: currentPage,
           limit: perPage,
@@ -592,8 +584,10 @@ const AttendanceManagement = ({ companyId }) => {
 
   const visibleAttendances = useMemo(() => {
     const filter = attendanceDateFilterRef.current;
-    if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return attendances;
-    return attendances.filter((attendance) => attendanceMatchesDateFilter(attendance, filter));
+    const list = Array.isArray(attendances) ? attendances : [];
+
+    if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return list;
+    return list.filter((attendance) => attendanceMatchesDateFilter(attendance, filter));
   }, [attendances, dateFilterLabel]);
 
   if (!resolvedCompanyId) {
@@ -608,67 +602,15 @@ const AttendanceManagement = ({ companyId }) => {
   }
 
   return (
-    <ManagementHub
-      eyebrow={<><FaClock size={11} /> Attendance</>}
-      title="Attendance Management"
-      description="Monitor and approve employee attendance records and punch logs."
-      accent="blue"
-      summary={
-        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
-          Total: <span className="font-semibold text-slate-900">{pagination.total}</span> records
-        </div>
-      }
-      tabs={[
-        { id: 'pending', label: 'Pending Attendance', icon: FaClock },
-        { id: 'all', label: 'All Attendance', icon: FaListUl },
-      ]}
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      contentClassName="pb-6"
-    >
-      {activeTab === 'pending' ? (
-        <PendingAttendance companyId={resolvedCompanyId} />
-      ) : (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto ">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
-        >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-purple-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-purple-700">
-                <FaClock size={11} />
-                Attendance management
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
-                  Attendance Management
-                </h1>
-                <p className="mt-1 max-w-2xl text-sm text-slate-500">
-                  Monitor and approve employee attendance records and punch logs.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
-                <FaCheckCircle className="text-purple-600" />
-                <span className="font-medium text-gray-700">{pagination.total}</span>
-                <span className="text-gray-500">records</span>
-              </div>
-          </div>
-        </motion.div>
-
-        {/* ─── Consolidated Filter & View Bar ─── */}
+        {/* Consolidated Filter & View Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
           className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
         >
-          {/* Left Section: Search & Result Info */}
+          {/* Left Section: Search */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
@@ -677,7 +619,7 @@ const AttendanceManagement = ({ companyId }) => {
                 placeholder="Search by employee name, email, or code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-sm"
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
               />
               {searchTerm && (
                 <button
@@ -688,12 +630,10 @@ const AttendanceManagement = ({ companyId }) => {
                 </button>
               )}
             </div>
-
           </div>
 
           {/* Right Section: Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Date Filter */}
             <div className="flex items-center gap-2">
               <DatePickerField
                 value=""
@@ -717,10 +657,8 @@ const AttendanceManagement = ({ companyId }) => {
               )}
             </div>
 
-            {/* Vertical Separator */}
             <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
 
-            {/* View Switcher */}
             <ManagementViewSwitcher
               viewMode={viewMode}
               onChange={setViewMode}
@@ -732,7 +670,7 @@ const AttendanceManagement = ({ companyId }) => {
         {/* Loading State */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <FaSpinner className="animate-spin text-purple-500 text-3xl sm:text-4xl" />
+            <FaSpinner className="animate-spin text-blue-500 text-3xl sm:text-4xl" />
           </div>
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-[10px] p-3 sm:p-4 text-red-700 text-center text-sm sm:text-base">
@@ -756,39 +694,39 @@ const AttendanceManagement = ({ companyId }) => {
               >
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
-                    <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
+                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
                       <tr>
-                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Employee</th>
-                        {showPunchType && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>}
-                        {showDateTime && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date & Time</th>}
-                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                        {showMethod && <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Method</th>}
-                        <th className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
+                        <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
+                        {showPunchType && <th className="px-6 py-4 font-semibold tracking-wider">Type</th>}
+                        {showDateTime && <th className="px-6 py-4 font-semibold tracking-wider">Date & Time</th>}
+                        <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
+                        {showMethod && <th className="px-6 py-4 font-semibold tracking-wider">Method</th>}
+                        <th className="px-6 py-4 text-center font-semibold tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {visibleAttendances.map((attendance) => (
-                      <motion.tr
-                        key={attendance.id}
-                        onClick={() => handleViewDetails(attendance)}
-                        className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
-                      >
-                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+                        <motion.tr
+                          key={attendance.id}
+                          onClick={() => handleViewDetails(attendance)}
+                          className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
-                                <FaUser className="text-purple-600" />
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <FaUser className="text-blue-600" />
                               </div>
                               <div className="truncate max-w-[200px]">
-                                <p className="font-medium text-gray-900 text-sm">{attendance.employee?.name}</p>
+                                <p className="font-medium text-gray-900">{attendance.employee?.name}</p>
                                 <p className="text-xs text-gray-500">{attendance.employee?.code}</p>
                               </div>
                             </div>
                           </td>
-                          {showPunchType && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4"><PunchTypeBadge type={attendance.punch_type} /></td>}
-                          {showDateTime && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-xs sm:text-sm">{formatDateTime(attendance.punch_time)}</td>}
-                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4"><StatusBadge status={attendance.status} /></td>
-                          {showMethod && <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-sm">{attendance.attendance?.method || 'N/A'}</td>}
-                          <td className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          {showPunchType && <td className="px-6 py-4"><PunchTypeBadge type={attendance.punch_type} /></td>}
+                          {showDateTime && <td className="px-6 py-4">{formatDateTime(attendance.punch_time)}</td>}
+                          <td className="px-6 py-4"><StatusBadge status={attendance.status} /></td>
+                          {showMethod && <td className="px-6 py-4">{attendance.attendance?.method || 'N/A'}</td>}
+                          <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <ActionMenu
                               menuId={attendance.id}
                               activeId={activeActionMenu}
@@ -801,7 +739,7 @@ const AttendanceManagement = ({ companyId }) => {
                                     onClick: () => handleStatusUpdate(attendance.id, 'approve'),
                                     disabled: processingId === attendance.id || approveAccess.disabled,
                                     title: approveAccess.disabled ? getAccessMessage(approveAccess) : '',
-                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                    className: 'text-green-600 hover:bg-green-50'
                                   },
                                   {
                                     label: 'Reject',
@@ -809,14 +747,14 @@ const AttendanceManagement = ({ companyId }) => {
                                     onClick: () => handleStatusUpdate(attendance.id, 'reject'),
                                     disabled: processingId === attendance.id || rejectAccess.disabled,
                                     title: rejectAccess.disabled ? getAccessMessage(rejectAccess) : '',
-                                    className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                    className: 'text-red-600 hover:bg-red-50'
                                   }
                                 ] : []),
                                 {
                                   label: 'View Details',
                                   icon: <FaEye size={12} />,
                                   onClick: () => handleViewDetails(attendance),
-                                  className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                  className: 'text-blue-600 hover:bg-blue-50'
                                 }
                               ]}
                             />
@@ -890,7 +828,7 @@ const AttendanceManagement = ({ companyId }) => {
               className={NOTES_MODAL_CLASS}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl">
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-2xl">
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   <FaComment /> Rejection Notes
                 </h2>
@@ -901,7 +839,7 @@ const AttendanceManagement = ({ companyId }) => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-[10px] focus:ring-2 focus:ring-purple-500 outline-none transition"
+                  className="w-full p-3 border border-gray-300 rounded-[10px] focus:ring-2 focus:ring-blue-500 outline-none transition"
                   placeholder="Enter rejection reason..."
                   autoFocus
                 />
@@ -931,8 +869,6 @@ const AttendanceManagement = ({ companyId }) => {
         )}
       </AnimatePresence>
     </div>
-      )}
-    </ManagementHub>
   );
 };
 

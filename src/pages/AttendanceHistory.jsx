@@ -156,7 +156,7 @@ const RecordTable = ({ records, onViewDetails }) => (
 );
 
 const RecordCards = ({ records, onViewDetails }) => (
-  <ManagementGrid>
+  <ManagementGrid viewMode="card">
     {records.map((record, index) => {
       const approvalStyle = getApprovalStyle(record.status);
       const ApprovalIcon = approvalStyle.icon;
@@ -215,7 +215,7 @@ const AttendanceHistory = () => {
   const [todaySummary, setTodaySummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [viewMode, setViewMode] = useState('table');
+  const [viewMode, setViewMode] = useState('card');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -315,7 +315,7 @@ const AttendanceHistory = () => {
 
   return (
     <div>
-      {/* Sub Tab Switcher & View Switcher */}
+      {/* Sub Tab Switcher */}
       <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-6 bg-white/50 p-4 rounded-3xl border border-slate-100">
         <div className="inline-flex rounded-2xl bg-slate-100 p-1.5 shadow-inner">
           <button
@@ -341,7 +341,6 @@ const AttendanceHistory = () => {
             Past Activity
           </button>
         </div>
-        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={activeSubTab === 'today' ? 'indigo' : 'violet'} />
       </div>
 
       <div className="space-y-6">
@@ -379,14 +378,15 @@ const AttendanceHistory = () => {
 
                 {/* Content based on View Mode */}
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm mb-6">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
                       <div className="h-1 w-8 bg-indigo-500 rounded-full" />
                       <h3 className="text-lg font-extrabold text-slate-800">Today's Logs</h3>
+                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
+                        {todaySummary.punches?.length || 0} Punches
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
-                      {todaySummary.punches?.length || 0} Punches
-                    </span>
+                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="indigo" />
                   </div>
 
                   {todaySummary.punches?.length > 0 ? (
@@ -447,7 +447,7 @@ const AttendanceHistory = () => {
               </div>
 
               {/* Right Section: Filters */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full md:w-auto">
                 <div className="relative">
                   <DateRangePickerField
                     value={dateFilter}
@@ -467,6 +467,8 @@ const AttendanceHistory = () => {
                     buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
                   />
                 </div>
+                <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
               </div>
             </motion.div>
 
