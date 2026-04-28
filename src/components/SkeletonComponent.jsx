@@ -9,7 +9,7 @@ export default function Skeleton() {
                 </div>
 
                 {/* Filters Skeleton */}
-                <div className="bg-white rounded-[10px] shadow-sm p-4 mb-6">
+                <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1">
                             <div className="h-12 w-full bg-gray-200 rounded-xl animate-pulse"></div>
@@ -21,7 +21,7 @@ export default function Skeleton() {
                 </div>
 
                 {/* Desktop Table Skeleton (hidden on mobile) */}
-                <div className="hidden lg:block bg-white rounded-[10px] shadow-sm overflow-hidden">
+                <div className="hidden lg:block bg-white rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead className="xsm:hidden bg-gray-50 border-b border-gray-200">
@@ -80,7 +80,7 @@ export default function Skeleton() {
                 {/* Mobile/Tablet Card Skeleton (visible on mobile/tablet) */}
                 <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[1, 2, 3, 4].map((item) => (
-                        <div key={`mobile-skeleton-${item}`} className="bg-white rounded-[10px] shadow-sm p-5">
+                        <div key={`mobile-skeleton-${item}`} className="bg-white rounded-xl shadow-sm p-5">
                             {/* Header */}
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
@@ -138,7 +138,7 @@ export default function Skeleton() {
                 </div>
 
                 {/* Pagination Skeleton */}
-                <div className="mt-4 bg-white rounded-[10px] shadow-sm px-4 py-3">
+                <div className="mt-4 bg-white rounded-xl shadow-sm px-4 py-3">
                     <div className="flex items-center justify-between">
                         <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
                         <div className="flex gap-2">

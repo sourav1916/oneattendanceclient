@@ -70,7 +70,7 @@ const AVATAR_GRADIENTS = [
 const avatarGradient = (id) => AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
             {icon}{label}
         </label>
@@ -124,7 +124,7 @@ const StatPill = ({ icon, value, label, color }) => {
         orange: 'bg-orange-50 text-orange-700 border-orange-100',
     };
     return (
-        <div className={`flex flex-col items-center px-3 py-2 rounded-[10px] border text-center min-w-0 ${colors[color]}`}>
+        <div className={`flex flex-col items-center px-3 py-2 rounded-xl border text-center min-w-0 ${colors[color]}`}>
             <span className="text-base font-bold">{formatDays(value)}</span>
             <span className="text-xs opacity-75 whitespace-nowrap">{label}</span>
         </div>
@@ -160,14 +160,14 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <FaUserCircle /> Employee Details
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
@@ -175,7 +175,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                     <div className="p-6">
                         {/* Employee Profile */}
                         <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className={`bg-gradient-to-br ${avatarGradient(employee.employee_id)} p-4 rounded-[10px]`}>
+                            <div className={`bg-gradient-to-br ${avatarGradient(employee.employee_id)} p-4 rounded-xl`}>
                                 <FaUserCircle className="text-white text-5xl" />
                             </div>
                             <div>
@@ -222,7 +222,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                         </div>
 
                         {/* Attendance Rate */}
-                        <div className="mt-6 bg-gray-50 rounded-[10px] p-4 border border-gray-200">
+                        <div className="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
                             <div className="flex justify-between items-center mb-3">
                                 <span className="text-sm font-semibold text-gray-700">Attendance Rate</span>
                                 <AttendanceBadge pct={s.attendance_percentage} />
@@ -236,7 +236,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 
                     <div className="px-6 pb-6">
                         <button onClick={onClose}
-                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-[10px] hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
+                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
                             Close
                         </button>
                     </div>
@@ -262,11 +262,11 @@ const EmployeeCard = ({ employee, index, onClick }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             onClick={onClick}
-            className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
+            className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group h-full"
         >
             {/* Top */}
             <div className="flex items-start gap-3 mb-4">
-                <div className={`w-12 h-12 rounded-[10px] bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
                     <span className="text-white font-bold text-base">{getInitials(u.name)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -284,15 +284,15 @@ const EmployeeCard = ({ employee, index, onClick }) => {
 
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2 mb-4">
-                <div className="bg-green-50 border border-green-100 rounded-[10px] p-2 text-center">
+                <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-green-700">{formatDays(s.worked_days)}</p>
                     <p className="text-xs text-green-500">Worked</p>
                 </div>
-                <div className="bg-blue-50 border border-blue-100 rounded-[10px] p-2 text-center">
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-blue-700">{formatHours(s.total_work_hours)}</p>
                     <p className="text-xs text-blue-500">Hours</p>
                 </div>
-                <div className="bg-red-50 border border-red-100 rounded-[10px] p-2 text-center">
+                <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-center">
                     <p className="text-sm font-bold text-red-600">{formatDays(s.absent_days)}</p>
                     <p className="text-xs text-red-400">Absent</p>
                 </div>
@@ -462,7 +462,7 @@ const EmployeesShifts = () => {
 
                 <div className="space-y-6">
                     {/* ─── Page Header ─── */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[10px] border border-gray-100 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                         <div>
                             <div className="flex items-center gap-2 text-blue-600 mb-1">
                                 <FaClock size={14} className="animate-pulse-slow" />
@@ -471,7 +471,7 @@ const EmployeesShifts = () => {
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Employee Shifts</h1>
                             <p className="text-sm text-slate-500 mt-1">Monitor and manage employee work schedules, attendance rates, and monthly summaries.</p>
                         </div>
-                        <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-[10px] border border-slate-100">
+                        <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">
                             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm text-blue-600">
                                 <FaUserCircle size={20} />
                             </div>
@@ -487,7 +487,7 @@ const EmployeesShifts = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                        className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
                     >
                         {/* Left Section: Search, Result Info & View Mode */}
                         <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -498,7 +498,7 @@ const EmployeesShifts = () => {
                                     placeholder="Search by name, email, or code..."
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+                                    className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
                                 />
                                 {searchTerm && (
                                     <button
@@ -519,7 +519,7 @@ const EmployeesShifts = () => {
                                 {/* Right Section: Controls */}
                                 <div className="flex items-center gap-3 justify-end">
                                     {/* Month Picker Controls */}
-                                    <div className="flex items-center gap-1 sm:gap-2 bg-slate-50 p-0.5 sm:p-1 rounded-[10px] border border-slate-200">
+                                    <div className="flex items-center gap-1 sm:gap-2 bg-slate-50 p-0.5 sm:p-1 rounded-xl border border-slate-200">
                                         <button
                                             onClick={() => navigateMonth(-1)}
                                             className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
@@ -542,7 +542,7 @@ const EmployeesShifts = () => {
                                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                                        className="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-[10px] shadow-2xl p-2 sm:p-3 grid grid-cols-3 gap-1.5 sm:gap-2 min-w-[200px] sm:min-w-[240px] z-[60]"
+                                                        className="absolute bottom-full mb-2 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl p-2 sm:p-3 grid grid-cols-3 gap-1.5 sm:gap-2 min-w-[200px] sm:min-w-[240px] z-[60]"
                                                     >
                                                         {MONTHS.map((m, i) => (
                                                             <button
@@ -591,7 +591,7 @@ const EmployeesShifts = () => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="text-center py-16 bg-white rounded-[10px] shadow-xl border border-gray-100"
+                            className="text-center py-16 bg-white rounded-xl shadow-xl border border-gray-100"
                         >
                             <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <FaUserCircle className="text-4xl text-gray-300" />
@@ -602,7 +602,7 @@ const EmployeesShifts = () => {
                             </p>
                             {debouncedSearch && (
                                 <button onClick={() => setSearchTerm('')}
-                                    className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 transition-all text-sm font-medium">
+                                    className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
                                     Clear Search
                                 </button>
                             )}
@@ -628,7 +628,7 @@ const EmployeesShifts = () => {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white rounded-[10px] shadow-xl overflow-visible"
+                            className="bg-white rounded-xl shadow-xl overflow-visible"
                         >
                             <div className="overflow-x-auto overflow-y-visible">
                                 <table className="w-full text-sm text-left text-gray-700">

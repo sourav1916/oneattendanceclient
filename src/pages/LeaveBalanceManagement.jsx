@@ -70,7 +70,7 @@ const isLowBalance = (remaining) => Number.parseFloat(remaining ?? 0) <= 1;
 
 const normalizeEmployeeBalances = (data, year) => {
   if (!data || !Array.isArray(data)) return [];
-  
+
   return data.map((employee) => ({
     employee_id: employee.employee_id || employee.employee?.id || employee.id,
     employee_name: employee.employee_name || employee.employee?.name || employee.name || 'N/A',
@@ -203,7 +203,7 @@ const SearchableSelect = ({
         {label}
       </label>
       <div
-        className={`relative cursor-pointer rounded-[10px] border border-slate-200 bg-slate-50/50 transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-50 ${disabled ? 'pointer-events-none' : ''}`}
+        className={`relative cursor-pointer rounded-xl border border-slate-200 bg-slate-50/50 transition focus-within:border-violet-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-50 ${disabled ? 'pointer-events-none' : ''}`}
         onClick={() => {
           if (disabled) return;
           setIsOpen(!isOpen);
@@ -227,7 +227,7 @@ const SearchableSelect = ({
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl"
+            className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
           >
             <div className="border-b border-slate-100 p-3">
               <div className="relative">
@@ -238,7 +238,7 @@ const SearchableSelect = ({
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full rounded-[10px] border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-violet-400 focus:bg-white"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none transition focus:border-violet-400 focus:bg-white"
                   onClick={(e) => e.stopPropagation()}
                 />
               </div>
@@ -273,18 +273,16 @@ const SearchableSelect = ({
 const PaidBadge = ({ isPaid, compact = false }) => (
   isPaid ? (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 ${
-        compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs font-semibold'
-      }`}
+      className={`inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs font-semibold'
+        }`}
     >
       <FaDollarSign size={compact ? 8 : 10} />
       PAID
     </span>
   ) : (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 text-slate-500 ${
-        compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs font-semibold'
-      }`}
+      className={`inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 text-slate-500 ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs font-semibold'
+        }`}
     >
       UNPAID
     </span>
@@ -292,16 +290,16 @@ const PaidBadge = ({ isPaid, compact = false }) => (
 );
 
 const ActionMenuButtons = (balance, onEdit, onDelete, onView, updateAccess, deleteAccess, updateMessage, deleteMessage) => [
-    { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onView(balance), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
-    { label: 'Edit Balance', icon: <FaEdit size={13} />, onClick: () => onEdit(balance), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-    { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(balance), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+  { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onView(balance), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+  { label: 'Edit Balance', icon: <FaEdit size={13} />, onClick: () => onEdit(balance), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+  { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(balance), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
 ];
 
 const StatCard = ({ stat }) => {
   const styles = STAT_STYLES[stat.color];
 
   return (
-    <div className="group relative overflow-hidden rounded-[10px] border border-white bg-white p-5 shadow-lg shadow-slate-200/50 transition duration-300 hover:shadow-xl sm:p-6">
+    <div className="group relative overflow-hidden rounded-xl border border-white bg-white p-5 shadow-lg shadow-slate-200/50 transition duration-300 hover:shadow-xl sm:p-6">
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${styles.glow}`} />
       <div className="relative z-10 flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -311,7 +309,7 @@ const StatCard = ({ stat }) => {
             {!stat.isCount && <span className="ml-1 text-xs font-bold uppercase text-slate-300">days</span>}
           </p>
         </div>
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] ${styles.iconWrap}`}>
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${styles.iconWrap}`}>
           <stat.icon size={20} />
         </div>
       </div>
@@ -320,7 +318,7 @@ const StatCard = ({ stat }) => {
 };
 
 const DetailItem = ({ label, value, className = '' }) => (
-  <div className={`rounded-[10px] border border-slate-100 bg-slate-50/80 p-4 ${className}`}>
+  <div className={`rounded-xl border border-slate-100 bg-slate-50/80 p-4 ${className}`}>
     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">{label}</p>
     <div className="mt-2 text-sm font-semibold text-slate-800">{value}</div>
   </div>
@@ -344,12 +342,12 @@ const MobileBalanceCard = ({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[10px] shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
+      className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
       onClick={() => onView(employee)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-12 h-12 rounded-[10px] bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 font-bold shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 font-bold shrink-0">
             {employee.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
           </div>
           <div className="min-w-0">
@@ -358,53 +356,53 @@ const MobileBalanceCard = ({
           </div>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
-           <ActionMenu
-              balance={employee}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onView={onView}
-              editDisabled={editDisabled}
-              deleteDisabled={deleteDisabled}
-              editMessage={editMessage}
-              deleteMessage={deleteMessage}
-            />
+          <ActionMenu
+            balance={employee}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onView={onView}
+            editDisabled={editDisabled}
+            deleteDisabled={deleteDisabled}
+            editMessage={editMessage}
+            deleteMessage={deleteMessage}
+          />
         </div>
       </div>
 
       <div className="mt-5 space-y-3">
-         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
-            <span>Assigned Leaves</span>
-            <span>Rem.</span>
-         </div>
-         <div className="grid gap-2">
-            {employee.leaves.slice(0, 3).map((leave, idx) => (
-               <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-[10px] border border-slate-100/50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-violet-400" />
-                    <span className="text-xs font-bold text-slate-700">{leave.code}</span>
-                  </div>
-                  <span className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {formatDays(leave.remaining)}d
-                  </span>
-               </div>
-            ))}
-            {employee.leaves.length > 3 && (
-               <div className="text-center py-1 text-[10px] font-bold text-slate-400 uppercase">
-                  + {employee.leaves.length - 3} more types
-               </div>
-            )}
-         </div>
+        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+          <span>Assigned Leaves</span>
+          <span>Rem.</span>
+        </div>
+        <div className="grid gap-2">
+          {employee.leaves.slice(0, 3).map((leave, idx) => (
+            <div key={idx} className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100/50">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-violet-400" />
+                <span className="text-xs font-bold text-slate-700">{leave.code}</span>
+              </div>
+              <span className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {formatDays(leave.remaining)}d
+              </span>
+            </div>
+          ))}
+          {employee.leaves.length > 3 && (
+            <div className="text-center py-1 text-[10px] font-bold text-slate-400 uppercase">
+              + {employee.leaves.length - 3} more types
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
-         <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Quota</p>
-            <p className="text-xl font-black text-slate-800">{formatDays(totalAllocated)}<span className="text-xs ml-1 text-slate-400">DAYS</span></p>
-         </div>
-         <div className="text-right">
-            <p className="text-[10px] font-bold text-slate-400 uppercase text-emerald-600">Total Rem.</p>
-            <p className="text-xl font-black text-emerald-600">{formatDays(totalRemaining)}<span className="text-xs ml-1 text-emerald-400">DAYS</span></p>
-         </div>
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase">Total Quota</p>
+          <p className="text-xl font-black text-slate-800">{formatDays(totalAllocated)}<span className="text-xs ml-1 text-slate-400">DAYS</span></p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-bold text-slate-400 uppercase text-emerald-600">Total Rem.</p>
+          <p className="text-xl font-black text-emerald-600">{formatDays(totalRemaining)}<span className="text-xs ml-1 text-emerald-400">DAYS</span></p>
+        </div>
       </div>
     </motion.div>
   );
@@ -430,7 +428,7 @@ const LeaveBalanceManagement = () => {
   // State for searchable selects
   const [employees, setEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
-  
+
   const [leaveConfigs, setLeaveConfigs] = useState([]);
   const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
 
@@ -454,12 +452,12 @@ const LeaveBalanceManagement = () => {
     setEmployeesLoading(true);
     try {
       const companyId = getCompanyId();
-      const url = search 
+      const url = search
         ? `/employees/all-list?search=${encodeURIComponent(search)}`
         : '/employees/all-list';
       const response = await apiCall(url, 'GET', null, companyId);
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setEmployees(result.data);
       } else {
@@ -478,12 +476,12 @@ const LeaveBalanceManagement = () => {
     setLeaveConfigsLoading(true);
     try {
       const companyId = getCompanyId();
-      const url = search 
+      const url = search
         ? `/leave/company?search=${encodeURIComponent(search)}`
         : '/leave/company';
       const response = await apiCall(url, 'GET', null, companyId);
       const result = await response.json();
-      
+
       if (result.success && result.data) {
         setLeaveConfigs(result.data);
       } else {
@@ -596,9 +594,8 @@ const LeaveBalanceManagement = () => {
       if (result.success) {
         toast.success(
           result.message ||
-            `Balance ${
-              modalMode === 'assign' ? 'assigned' : modalMode === 'edit' ? 'updated' : 'deleted'
-            } successfully`
+          `Balance ${modalMode === 'assign' ? 'assigned' : modalMode === 'edit' ? 'updated' : 'deleted'
+          } successfully`
         );
         setShowModal(false);
         await fetchData();
@@ -628,7 +625,7 @@ const LeaveBalanceManagement = () => {
       employee.employee_name?.toLowerCase().includes(normalizedSearch) ||
       employee.employee_code?.toLowerCase().includes(normalizedSearch) ||
       employee.email?.toLowerCase().includes(normalizedSearch) ||
-      employee.leaves.some(leave => 
+      employee.leaves.some(leave =>
         leave.name?.toLowerCase().includes(normalizedSearch) ||
         leave.type?.toLowerCase().includes(normalizedSearch) ||
         leave.code?.toLowerCase().includes(normalizedSearch)
@@ -784,9 +781,9 @@ const LeaveBalanceManagement = () => {
     Number(showMax);
 
   const ActionMenuButtons = (balance, onEdit, onDelete, onView, updateAccess, deleteAccess, updateMessage, deleteMessage) => [
-      { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onView(balance), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
-      { label: 'Edit Balance', icon: <FaEdit size={13} />, onClick: () => onEdit(balance), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-      { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(balance), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+    { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onView(balance), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+    { label: 'Edit Balance', icon: <FaEdit size={13} />, onClick: () => onEdit(balance), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+    { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(balance), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
   ];
 
   const columns = [
@@ -812,16 +809,16 @@ const LeaveBalanceManagement = () => {
         <div className="flex flex-wrap gap-1.5 max-w-[300px]">
           {employee.leaves.length > 0 ? (
             employee.leaves.map((leave, idx) => (
-              <div 
-                key={idx} 
-                className="group relative flex items-center gap-1.5 px-2 py-1 rounded-[10px] border border-slate-100 bg-slate-50 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all"
+              <div
+                key={idx}
+                className="group relative flex items-center gap-1.5 px-2 py-1 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-violet-200 hover:shadow-sm transition-all"
                 title={`${leave.name}: ${formatDays(leave.remaining)}/${formatDays(leave.total_allocated)} remaining`}
               >
                 <span className="text-[10px] font-bold text-violet-700">{leave.code}</span>
                 <div className="flex flex-col gap-0.5">
-                   <span className={`text-[9px] font-bold ${isLowBalance(leave.remaining) ? 'text-rose-500' : 'text-emerald-500'}`}>
-                     {formatDays(leave.remaining)}d
-                   </span>
+                  <span className={`text-[9px] font-bold ${isLowBalance(leave.remaining) ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    {formatDays(leave.remaining)}d
+                  </span>
                 </div>
               </div>
             ))
@@ -857,10 +854,10 @@ const LeaveBalanceManagement = () => {
 
   if (loading && balances.length === 0) return (
     <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-            <FaSpinner className="animate-spin text-violet-500 text-4xl" />
-            <p className="text-slate-400 font-medium animate-pulse">Initializing leave manager...</p>
-        </div>
+      <div className="flex flex-col items-center gap-4">
+        <FaSpinner className="animate-spin text-violet-500 text-4xl" />
+        <p className="text-slate-400 font-medium animate-pulse">Initializing leave manager...</p>
+      </div>
     </div>
   );
 
@@ -888,12 +885,12 @@ const LeaveBalanceManagement = () => {
         {!loading && balances.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-white rounded-[10px] p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div key={stat.label} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">{stat.label}</p>
                   <p className="text-2xl font-black text-slate-800 mt-1">{stat.isCount ? stat.value : formatDays(stat.value)}</p>
                 </div>
-                <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
                   <stat.icon size={18} />
                 </div>
               </div>
@@ -906,7 +903,7 @@ const LeaveBalanceManagement = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
           {/* Left Section: Search & Result Info */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -917,7 +914,7 @@ const LeaveBalanceManagement = () => {
                 placeholder="Search by name, code, or leave type..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
               />
               {searchTerm && (
                 <button
@@ -934,11 +931,10 @@ const LeaveBalanceManagement = () => {
                 <button
                   key={year}
                   onClick={() => setSelectedYear(year)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${
-                    selectedYear === year
+                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${selectedYear === year
                       ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-100'
                       : 'bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-600'
-                  }`}
+                    }`}
                 >
                   {year}
                 </button>
@@ -954,7 +950,7 @@ const LeaveBalanceManagement = () => {
               onClick={() => openModal('assign')}
               disabled={createAccess.disabled}
               title={createAccess.disabled ? createMessage : ''}
-              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-[10px] shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaPlus size={14} />
               <span className="text-sm">Assign Balance</span>
@@ -974,7 +970,7 @@ const LeaveBalanceManagement = () => {
 
         {/* Data View */}
         {totalItems === 0 && !loading ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-[10px] border-2 border-dashed border-slate-100">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-100">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><FaCalendarAlt size={24} /></div>
             <p className="text-slate-500 font-bold">No leave balances found</p>
             <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">{searchTerm ? `We couldn't find anything matching "${searchTerm}"` : "Employee leave balances will appear here."}</p>
@@ -1009,12 +1005,12 @@ const LeaveBalanceManagement = () => {
         {totalItems > 0 && (
           <div className="mt-8">
             <Pagination
-                currentPage={pagination.page}
-                totalItems={totalItems}
-                itemsPerPage={pagination.limit}
-                onPageChange={handlePageChange}
-                onLimitChange={changeLimit}
-                showInfo={true}
+              currentPage={pagination.page}
+              totalItems={totalItems}
+              itemsPerPage={pagination.limit}
+              onPageChange={handlePageChange}
+              onLimitChange={changeLimit}
+              showInfo={true}
             />
           </div>
         )}
@@ -1025,12 +1021,12 @@ const LeaveBalanceManagement = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
             onMouseDown={(event) => event.target === event.currentTarget && closeViewModal()}>
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[10px] shadow-2xl border border-gray-100 w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+              className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
               {/* Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white px-6 sm:px-8 py-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-[10px] flex items-center justify-center text-xl font-black shrink-0">
+                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-xl font-black shrink-0">
                       <FaUser size={22} />
                     </div>
                     <div className="min-w-0">
@@ -1042,31 +1038,31 @@ const LeaveBalanceManagement = () => {
                       </p>
                     </div>
                   </div>
-                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all shrink-0"><FaTimes size={20} /></button>
+                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0"><FaTimes size={20} /></button>
                 </div>
               </div>
 
               {/* Body */}
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                      <p className="text-sm font-bold text-emerald-600">Active Employment</p>
-                   </div>
-                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
+                  <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                    <p className="text-sm font-bold text-emerald-600">Active Employment</p>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Year</p>
                     <p className="text-sm font-bold text-slate-700">{viewModal.balance.leaves[0]?.year || selectedYear}</p>
-                   </div>
-                   <div className="col-span-2 sm:col-span-1 bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
+                  </div>
+                  <div className="col-span-2 sm:col-span-1 bg-slate-50 border border-slate-100 p-4 rounded-xl">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Leaves</p>
                     <p className="text-sm font-bold text-slate-700 underline decoration-violet-200 decoration-2">{viewModal.balance.leaves.length} Assigned Types</p>
-                   </div>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                       <FaIdCard className="text-violet-500" /> Allocated Balances
+                      <FaIdCard className="text-violet-500" /> Allocated Balances
                     </h3>
                     <span className="px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-[10px] font-black uppercase">Summary</span>
                   </div>
@@ -1074,38 +1070,38 @@ const LeaveBalanceManagement = () => {
                   <div className="grid gap-3">
                     {viewModal.balance.leaves.map((leave, idx) => (
                       <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}
-                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white border border-slate-100 rounded-[10px] shadow-sm hover:border-violet-200 hover:shadow-md transition-all group">
+                        className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-violet-200 hover:shadow-md transition-all group">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-[10px] text-[10px] font-bold">{leave.code}</span>
+                            <span className="px-2 py-0.5 bg-violet-50 text-violet-700 rounded-xl text-[10px] font-bold">{leave.code}</span>
                             <h4 className="font-bold text-slate-800 text-sm truncate">{leave.name}</h4>
                             <PaidBadge isPaid={leave.is_paid} compact />
                           </div>
-                          
+
                           <div className="grid grid-cols-3 gap-2">
-                             <div className="bg-slate-50/50 rounded-[10px] p-2">
-                                <p className="text-[9px] font-bold text-slate-400 uppercase">Total</p>
-                                <p className="text-xs font-bold text-slate-700">{formatDays(leave.total_allocated)}d</p>
-                             </div>
-                             <div className="bg-slate-50/50 rounded-[10px] p-2">
-                                <p className="text-[9px] font-bold text-slate-400 uppercase">Used</p>
-                                <p className="text-xs font-bold text-orange-600">{formatDays(leave.used)}d</p>
-                             </div>
-                             <div className="bg-slate-50/50 rounded-[10px] p-2">
-                                <p className="text-[9px] font-bold text-slate-400 uppercase">Rem.</p>
-                                <p className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>{formatDays(leave.remaining)}d</p>
-                             </div>
+                            <div className="bg-slate-50/50 rounded-xl p-2">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Total</p>
+                              <p className="text-xs font-bold text-slate-700">{formatDays(leave.total_allocated)}d</p>
+                            </div>
+                            <div className="bg-slate-50/50 rounded-xl p-2">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Used</p>
+                              <p className="text-xs font-bold text-orange-600">{formatDays(leave.used)}d</p>
+                            </div>
+                            <div className="bg-slate-50/50 rounded-xl p-2">
+                              <p className="text-[9px] font-bold text-slate-400 uppercase">Rem.</p>
+                              <p className={`text-xs font-black ${isLowBalance(leave.remaining) ? 'text-rose-600' : 'text-emerald-600'}`}>{formatDays(leave.remaining)}d</p>
+                            </div>
                           </div>
                         </div>
 
                         <div className="w-full sm:w-24 shrink-0">
-                           <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1.5">
-                              <div 
-                                className={`h-full rounded-full ${isLowBalance(leave.remaining) ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                                style={{ width: `${getRemainingPercentage(leave.remaining, leave.total_allocated)}%` }}
-                              />
-                           </div>
-                           <p className="text-[9px] font-black text-slate-400 text-center uppercase">{getRemainingPercentage(leave.remaining, leave.total_allocated).toFixed(0)}% Left</p>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1.5">
+                            <div
+                              className={`h-full rounded-full ${isLowBalance(leave.remaining) ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                              style={{ width: `${getRemainingPercentage(leave.remaining, leave.total_allocated)}%` }}
+                            />
+                          </div>
+                          <p className="text-[9px] font-black text-slate-400 text-center uppercase">{getRemainingPercentage(leave.remaining, leave.total_allocated).toFixed(0)}% Left</p>
                         </div>
                       </motion.div>
                     ))}
@@ -1115,11 +1111,11 @@ const LeaveBalanceManagement = () => {
 
               {/* Footer */}
               <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-[10px] font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
                   Close Window
                 </button>
-                <button onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[10px] font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2">
-                   <FaEdit /> Edit Balances
+                <button onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2">
+                  <FaEdit /> Edit Balances
                 </button>
               </div>
             </motion.div>
@@ -1145,9 +1141,8 @@ const LeaveBalanceManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`bg-white backdrop-blur-xl w-full max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${
-                modalMode === 'delete' ? 'max-w-md' : 'max-w-3xl'
-              }`}
+              className={`bg-white backdrop-blur-xl w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${modalMode === 'delete' ? 'max-w-md' : 'max-w-3xl'
+                }`}
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (
@@ -1155,7 +1150,7 @@ const LeaveBalanceManagement = () => {
                   <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                           <FaTrash className="text-white text-sm" />
                         </div>
                         <div>
@@ -1163,7 +1158,7 @@ const LeaveBalanceManagement = () => {
                           <p className="text-xs text-white/80">This action cannot be undone</p>
                         </div>
                       </div>
-                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
+                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6">
@@ -1176,7 +1171,7 @@ const LeaveBalanceManagement = () => {
                       type="button"
                       onClick={closeModal}
                       disabled={saving}
-                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
+                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
                     >
                       Cancel
                     </button>
@@ -1185,7 +1180,7 @@ const LeaveBalanceManagement = () => {
                       onClick={handleAction}
                       disabled={saving || deleteAccess.disabled}
                       title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {saving ? 'Deleting...' : 'Delete'}
                     </button>
@@ -1196,7 +1191,7 @@ const LeaveBalanceManagement = () => {
                   <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                           {modalMode === 'assign' ? <FaPlus /> : <FaEdit />}
                         </div>
                         <div>
@@ -1210,7 +1205,7 @@ const LeaveBalanceManagement = () => {
                           </p>
                         </div>
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
+                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all">
                         <FaTimes size={20} />
                       </button>
                     </div>
@@ -1230,13 +1225,13 @@ const LeaveBalanceManagement = () => {
                       getOptionValue={(employee) => employee.id}
                       renderOption={(employee) => (
                         <div className="flex items-center gap-3">
-                           <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
-                              {employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                           </div>
-                           <div className="min-w-0">
-                              <p className="font-semibold text-slate-800 text-sm truncate">{employee.name}</p>
-                              <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code} • {employee.email}</p>
-                           </div>
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
+                            {employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-slate-800 text-sm truncate">{employee.name}</p>
+                            <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code} • {employee.email}</p>
+                          </div>
                         </div>
                       )}
                     />
@@ -1254,7 +1249,7 @@ const LeaveBalanceManagement = () => {
                               leaves: [...prev.leaves, { leave_config_id: '', total_allocated: 0 }],
                             }))
                           }
-                          className="inline-flex items-center gap-1.5 rounded-[10px] border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
                         >
                           <FaPlus size={10} /> Add More
                         </button>
@@ -1262,11 +1257,11 @@ const LeaveBalanceManagement = () => {
 
                       <div className="grid gap-4">
                         {formData.leaves.map((row, idx) => (
-                          <motion.div 
-                            key={idx} 
-                            initial={{ opacity: 0, y: 10 }} 
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="relative rounded-[10px] border border-slate-100 bg-slate-50/60 p-4"
+                            className="relative rounded-xl border border-slate-100 bg-slate-50/60 p-4"
                           >
                             <div className="mb-3 flex items-center justify-between">
                               <span className="inline-flex items-center gap-1.5 rounded-lg bg-violet-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-violet-700">
@@ -1330,7 +1325,7 @@ const LeaveBalanceManagement = () => {
                                       ),
                                     }))
                                   }
-                                  className="w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5"
                                 />
                               </div>
                             </div>
@@ -1341,40 +1336,40 @@ const LeaveBalanceManagement = () => {
                   </div>
 
                   <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        disabled={saving}
-                        className="w-full rounded-[10px] border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        Discard
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleAction}
-                        disabled={
-                          saving || 
-                          !formData.employee_id || 
-                          (modalMode === 'assign'
-                            ? (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id))
-                            : (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id))) || 
-                          (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)
-                        }
-                        title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
-                        className="w-full rounded-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {saving ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <FaSpinner className="animate-spin" />
-                            <span>Processing...</span>
-                          </div>
-                        ) : modalMode === 'assign' ? (
-                          'Add Balance'
-                        ) : (
-                          'Save Changes'
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      disabled={saving}
+                      className="w-full rounded-xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      Discard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAction}
+                      disabled={
+                        saving ||
+                        !formData.employee_id ||
+                        (modalMode === 'assign'
+                          ? (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id))
+                          : (formData.leaves.length === 0 || formData.leaves.some(l => !l.leave_config_id))) ||
+                        (modalMode === 'assign' ? createAccess.disabled : updateAccess.disabled)
+                      }
+                      title={modalMode === 'assign' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
+                      className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {saving ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <FaSpinner className="animate-spin" />
+                          <span>Processing...</span>
+                        </div>
+                      ) : modalMode === 'assign' ? (
+                        'Add Balance'
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </button>
+                  </div>
                 </>
               )}
             </motion.div>

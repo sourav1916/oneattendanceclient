@@ -46,11 +46,10 @@ const AccountTypeBadge = ({ type, compact = false }) => {
   const isCash = type === 'cash';
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-semibold ${
-        isCash
+      className={`inline-flex items-center gap-1 rounded-full font-semibold ${isCash
           ? 'bg-amber-100 border border-amber-200 text-amber-700'
           : 'bg-indigo-100 border border-indigo-200 text-indigo-700'
-      } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}
+        } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}
     >
       {isCash ? <FaMoneyBillWave size={compact ? 8 : 10} /> : <FaUniversity size={compact ? 8 : 10} />}
       {isCash ? 'CASH' : 'BANK'}
@@ -62,11 +61,10 @@ const StatusBadge = ({ status, compact = false }) => {
   const isActive = status === 'active';
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-semibold ${
-        isActive
+      className={`inline-flex items-center gap-1 rounded-full font-semibold ${isActive
           ? 'bg-emerald-100 border border-emerald-200 text-emerald-700'
           : 'bg-slate-100 border border-slate-200 text-slate-500'
-      } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}
+        } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}
     >
       {isActive ? <FaCheck size={compact ? 7 : 9} /> : <FaTimes size={compact ? 7 : 9} />}
       {isActive ? 'ACTIVE' : 'INACTIVE'}
@@ -76,9 +74,8 @@ const StatusBadge = ({ status, compact = false }) => {
 
 const PrimaryBadge = ({ compact = false }) => (
   <span
-    className={`inline-flex items-center gap-1 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold ${
-      compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
-    }`}
+    className={`inline-flex items-center gap-1 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+      }`}
   >
     <FaStar size={compact ? 7 : 9} /> PRIMARY
   </span>
@@ -109,7 +106,7 @@ const ActionMenu = ({
     <div className="relative" ref={ref}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
-        className="p-2 rounded-[10px] hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all"
+        className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all"
       >
         <FaCog size={14} />
       </button>
@@ -119,7 +116,7 @@ const ActionMenu = ({
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            className="absolute right-0 top-full z-50 mt-1 w-44 rounded-[10px] border border-slate-100 bg-white shadow-xl overflow-hidden"
+            className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden"
           >
             {[
               { label: 'View Details', icon: <FaEye size={13} />, onClick: () => { onView(account); setOpen(false); }, disabled: false, className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
@@ -150,12 +147,12 @@ const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, delet
   <motion.div
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-[10px] shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
+    className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
     onClick={() => onView(account)}
   >
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-12 h-12 rounded-[10px] bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
           {account.account_type === 'cash' ? <FaMoneyBillWave size={18} /> : <FaUniversity size={18} />}
         </div>
         <div className="min-w-0">
@@ -178,19 +175,19 @@ const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, delet
 
     <div className="mt-4 space-y-2">
       {account.account_number && (
-        <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-[10px] border border-slate-100/50">
+        <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100/50">
           <span className="text-[10px] font-bold text-slate-400 uppercase">Account No.</span>
           <span className="text-xs font-black text-slate-700 font-mono">{maskAccount(account.account_number)}</span>
         </div>
       )}
       {account.ifsc_code && (
-        <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-[10px] border border-slate-100/50">
+        <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100/50">
           <span className="text-[10px] font-bold text-slate-400 uppercase">IFSC</span>
           <span className="text-xs font-black text-slate-700 font-mono">{account.ifsc_code}</span>
         </div>
       )}
       {account.branch_name && (
-        <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-[10px] border border-slate-100/50">
+        <div className="flex items-center justify-between p-3 bg-slate-50/50 rounded-xl border border-slate-100/50">
           <span className="text-[10px] font-bold text-slate-400 uppercase">Branch</span>
           <span className="text-xs font-bold text-slate-700">{account.branch_name}</span>
         </div>
@@ -208,8 +205,8 @@ const FormField = ({ label, children }) => (
   </div>
 );
 
-const inputCls = "w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 placeholder:font-normal placeholder:text-slate-400";
-const selectCls = "w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 cursor-pointer appearance-none";
+const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 placeholder:font-normal placeholder:text-slate-400";
+const selectCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 cursor-pointer appearance-none";
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
@@ -672,7 +669,7 @@ const BankAccountManagement = () => {
       visible: visibleColumns.showAccount,
       render: (account) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
             {account.account_type === 'cash' ? <FaMoneyBillWave size={14} /> : <FaUniversity size={14} />}
           </div>
           <div className="min-w-0">
@@ -758,12 +755,12 @@ const BankAccountManagement = () => {
         {!loading && accounts.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-white rounded-[10px] p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div key={stat.label} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">{stat.label}</p>
                   <p className="text-2xl font-black text-slate-800 mt-1">{stat.value}</p>
                 </div>
-                <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
                   <stat.icon size={18} />
                 </div>
               </div>
@@ -776,7 +773,7 @@ const BankAccountManagement = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
           {/* Left Section: Search */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -787,7 +784,7 @@ const BankAccountManagement = () => {
                 placeholder="Search by holder name, bank, account number, IFSC..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
               />
             </div>
 
@@ -801,7 +798,7 @@ const BankAccountManagement = () => {
         </motion.div>
 
         {totalItems === 0 && !loading ? (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-[10px] border-2 border-dashed border-slate-100">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-100">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300"><FaUniversity size={24} /></div>
             <p className="text-slate-500 font-bold">No accounts found</p>
             <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">
@@ -860,12 +857,12 @@ const BankAccountManagement = () => {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
             onMouseDown={(e) => e.target === e.currentTarget && closeViewModal()}>
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[10px] shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+              className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
               {/* Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-t-[10px] px-6 sm:px-8 py-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-[10px] flex items-center justify-center shrink-0">
+                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
                       {viewModal.account.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : <FaUniversity size={22} />}
                     </div>
                     <div className="min-w-0">
@@ -873,7 +870,7 @@ const BankAccountManagement = () => {
                       <p className="text-white/70 text-sm mt-1">{viewModal.account.bank_name || 'Cash Account'}</p>
                     </div>
                   </div>
-                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all shrink-0"><FaTimes size={20} /></button>
+                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0"><FaTimes size={20} /></button>
                 </div>
               </div>
 
@@ -894,7 +891,7 @@ const BankAccountManagement = () => {
                     { label: 'Branch', value: viewModal.account.branch_name || '—' },
                     { label: 'Created', value: viewModal.account.created_at ? new Date(viewModal.account.created_at).toLocaleDateString() : '—' },
                   ].map(({ label, value }) => (
-                    <div key={label} className="bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
+                    <div key={label} className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
                       <p className="text-sm font-bold text-slate-700 font-mono">{value}</p>
                     </div>
@@ -902,7 +899,7 @@ const BankAccountManagement = () => {
                 </div>
 
                 {/* Owner info */}
-                <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-[10px]">
+                <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-xl">
                   <FaShieldAlt className="text-violet-400 shrink-0" size={16} />
                   <div>
                     <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Owner Type</p>
@@ -913,13 +910,13 @@ const BankAccountManagement = () => {
 
               {/* Footer */}
               <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-[10px] font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
                   Close
                 </button>
                 <button
                   onClick={() => { closeViewModal(); openModal('edit', viewModal.account); }}
                   disabled={updateAccess.disabled}
-                  className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[10px] font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaEdit /> Edit Account
                 </button>
@@ -942,9 +939,8 @@ const BankAccountManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`bg-white w-full max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${
-                modalMode === 'delete' ? 'max-w-md' : 'max-w-2xl'
-              }`}
+              className={`bg-white w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${modalMode === 'delete' ? 'max-w-md' : 'max-w-2xl'
+                }`}
               onMouseDown={(e) => e.stopPropagation()}
             >
               {/* ── Delete ── */}
@@ -953,13 +949,13 @@ const BankAccountManagement = () => {
                   <div className="sticky top-0 z-10 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center"><FaTrash className="text-white text-sm" /></div>
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FaTrash className="text-white text-sm" /></div>
                         <div>
                           <h2 className="text-lg font-bold">Delete Bank Account</h2>
                           <p className="text-xs text-white/80">This action cannot be undone</p>
                         </div>
                       </div>
-                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
+                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto px-6 py-8 text-center space-y-4">
@@ -971,9 +967,9 @@ const BankAccountManagement = () => {
                     </p>
                   </div>
                   <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-                    <button type="button" onClick={closeModal} disabled={saving} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all disabled:opacity-60">Cancel</button>
+                    <button type="button" onClick={closeModal} disabled={saving} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60">Cancel</button>
                     <button type="button" onClick={handleAction} disabled={saving || deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                       {saving ? 'Deleting...' : 'Delete Account'}
                     </button>
                   </div>
@@ -984,7 +980,7 @@ const BankAccountManagement = () => {
                   <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                           {modalMode === 'create' ? <FaPlus /> : <FaEdit />}
                         </div>
                         <div>
@@ -992,7 +988,7 @@ const BankAccountManagement = () => {
                           <p className="text-xs text-white/80">{modalMode === 'create' ? 'Set up a new account or cash wallet' : `Editing: ${selectedAccount?.account_holder_name}`}</p>
                         </div>
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
+                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
 
@@ -1006,11 +1002,10 @@ const BankAccountManagement = () => {
                               key={type}
                               type="button"
                               onClick={() => setFormData((p) => ({ ...p, account_type: type }))}
-                              className={`flex items-center justify-center gap-2 py-3 rounded-[10px] border-2 font-bold text-sm transition-all ${
-                                formData.account_type === type
+                              className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.account_type === type
                                   ? 'border-violet-400 bg-violet-50 text-violet-700'
                                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                              }`}
+                                }`}
                             >
                               {type === 'cash' ? <FaMoneyBillWave size={14} /> : <FaUniversity size={14} />}
                               {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -1052,7 +1047,7 @@ const BankAccountManagement = () => {
                                   type="button"
                                   onClick={() => void applyIfscLookup(formData.ifsc_code)}
                                   disabled={ifscLookupState.loading || formData.ifsc_code.trim().length !== 11}
-                                  className="shrink-0 rounded-[10px] border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="shrink-0 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {ifscLookupState.loading ? 'Checking...' : 'Fetch'}
                                 </button>
@@ -1086,24 +1081,24 @@ const BankAccountManagement = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                           <FormField label="City">
-                          <input
-                            type="text"
-                            value={formData.city}
-                            onChange={(e) => setFormData((p) => ({ ...p, city: e.target.value }))}
-                            readOnly={autoLockedFields.city}
-                            placeholder="City"
-                            className={lockedInputClass(autoLockedFields.city)}
-                          />
+                            <input
+                              type="text"
+                              value={formData.city}
+                              onChange={(e) => setFormData((p) => ({ ...p, city: e.target.value }))}
+                              readOnly={autoLockedFields.city}
+                              placeholder="City"
+                              className={lockedInputClass(autoLockedFields.city)}
+                            />
                           </FormField>
                           <FormField label="District">
-                          <input
-                            type="text"
-                            value={formData.district}
-                            onChange={(e) => setFormData((p) => ({ ...p, district: e.target.value }))}
-                            readOnly={autoLockedFields.district}
-                            placeholder="District"
-                            className={lockedInputClass(autoLockedFields.district)}
-                          />
+                            <input
+                              type="text"
+                              value={formData.district}
+                              onChange={(e) => setFormData((p) => ({ ...p, district: e.target.value }))}
+                              readOnly={autoLockedFields.district}
+                              placeholder="District"
+                              className={lockedInputClass(autoLockedFields.district)}
+                            />
                           </FormField>
                         </div>
 
@@ -1142,7 +1137,7 @@ const BankAccountManagement = () => {
                             />
                           </FormField>
                           <FormField label="UPI Enabled">
-                            <div className="flex items-center justify-between rounded-[10px] border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                               <span className="text-sm font-semibold text-slate-600">{formData.upi ? 'Yes' : 'No'}</span>
                               <button
                                 type="button"
@@ -1181,7 +1176,7 @@ const BankAccountManagement = () => {
                     )}
 
                     {/* Primary toggle */}
-                    <div className="flex items-center justify-between p-4 rounded-[10px] border border-slate-100 bg-slate-50/60">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/60">
                       <div>
                         <p className="text-sm font-bold text-slate-700">Set as Primary Account</p>
                         <p className="text-[11px] text-slate-400 mt-0.5">Mark this as the default account for transactions</p>
@@ -1197,7 +1192,7 @@ const BankAccountManagement = () => {
                   </div>
 
                   <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
-                    <button type="button" onClick={closeModal} disabled={saving} className="w-full rounded-[10px] border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">
+                    <button type="button" onClick={closeModal} disabled={saving} className="w-full rounded-xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">
                       Discard
                     </button>
                     <button
@@ -1205,7 +1200,7 @@ const BankAccountManagement = () => {
                       onClick={handleAction}
                       disabled={saving || !formData.account_holder_name.trim() || (modalMode === 'create' ? createAccess.disabled : updateAccess.disabled)}
                       title={modalMode === 'create' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
-                      className="w-full rounded-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {saving ? (
                         <div className="flex items-center justify-center gap-2"><FaSpinner className="animate-spin" /><span>Saving...</span></div>

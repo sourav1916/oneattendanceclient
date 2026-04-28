@@ -726,7 +726,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
                   <FaUserCog className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -745,7 +745,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
             <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
               <div className="space-y-6">
                 {selectedUser && (
-                  <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 p-4">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <FaRegCheckCircle className="h-4 w-4 text-emerald-600" />
@@ -753,7 +753,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[10px] bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
                         {selectedUser.full_name?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                       <div className="min-w-0 flex-1 space-y-1">
@@ -774,7 +774,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                 )}
 
                 {selectedUser && (
-                  <div className="space-y-3 rounded-[10px] border border-indigo-100 bg-indigo-50/30 p-4">
+                  <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                       <FaListAlt className="h-4 w-4 text-indigo-500" />
                       Quick Fill via Package (Optional)
@@ -870,13 +870,13 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-[10px] border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500">
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500">
                         Invite fields are shown below.
                       </div>
                     )}
 
                     {showInviteFields && (
-                      <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                      <div className="rounded-xl border border-slate-200 bg-white p-4">
                         <div className="mb-3 flex items-center justify-between">
                           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                             <FaFingerprint className="h-4 w-4 text-indigo-500" />
@@ -914,7 +914,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
 
                     {showInviteFields && (
                       <>
-                        <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                             <FaCheck className="h-4 w-4 text-indigo-500" />
                             Attendance Settings
@@ -931,7 +931,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
-                          <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                          <div className="rounded-xl border border-slate-200 bg-white p-4">
                             <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
                               <FaClock className="h-4 w-4 text-indigo-500" />
                               Shift Timings
@@ -952,7 +952,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                             </div>
                           </div>
 
-                          <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                          <div className="rounded-xl border border-slate-200 bg-white p-4">
                             <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
                               <FaClock className="h-4 w-4 text-indigo-500" />
                               Duration Settings
@@ -973,7 +973,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                             </div>
                           </div>
 
-                          <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                          <div className="rounded-xl border border-slate-200 bg-white p-4">
                             <button
                               type="button"
                               onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
@@ -1053,7 +1053,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                 </AnimatePresence>
 
                 {isLoadingStaff && (
-                  <div className="rounded-[10px] border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
                     Loading invite details...
                   </div>
                 )}

@@ -3,7 +3,7 @@ const Sk = ({ className = "" }) => (
 );
 
 const StatCardSkeleton = () => (
-  <div className="bg-white rounded-[10px] p-5 flex flex-col gap-4">
+  <div className="bg-white rounded-xl p-5 flex flex-col gap-4">
     <div className="flex justify-between items-start">
       <Sk className="w-9 h-9 rounded-xl" />
       <Sk className="w-10 h-4 rounded-full" />
@@ -14,8 +14,8 @@ const StatCardSkeleton = () => (
 );
 
 const QuickActionSkeleton = () => (
-  <div className="bg-white rounded-[10px] p-5 flex flex-col gap-3">
-    <Sk className="w-12 h-12 rounded-[10px]" />
+  <div className="bg-white rounded-xl p-5 flex flex-col gap-3">
+    <Sk className="w-12 h-12 rounded-xl" />
     <Sk className="w-32 h-5 rounded-md" />
     <div className="flex justify-between items-center">
       <Sk className="w-40 h-4 rounded-md" />
@@ -84,7 +84,7 @@ export default function GlobalSkeleton() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-[10px] p-5 space-y-4">
+          <div className="bg-white rounded-xl p-5 space-y-4">
             <Sk className="w-36 h-5 rounded-md" />
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3">

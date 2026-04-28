@@ -121,7 +121,7 @@ const salaryOverlapsDateFilter = (salary, filter) => {
 // ─── Sub Components ───────────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
             {icon}{label}
         </label>
@@ -150,7 +150,7 @@ const ComponentRow = ({ component, currency }) => {
         employer_contribution: 'bg-purple-50 border-purple-100'
     };
     return (
-        <div className={`flex items-center justify-between p-3 rounded-[10px] border ${typeColors[component.type] || 'bg-gray-50 border-gray-100'}`}>
+        <div className={`flex items-center justify-between p-3 rounded-xl border ${typeColors[component.type] || 'bg-gray-50 border-gray-100'}`}>
             <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-gray-800 text-sm">{component.name}</p>
@@ -191,21 +191,21 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2">
                             <FaMoneyBillWave /> Salary Details
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
                             <FaTimes size={20} />
                         </button>
                     </div>
 
                     <div className="p-6">
                         <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className={`bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} p-4 rounded-[10px]`}>
+                            <div className={`bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} p-4 rounded-xl`}>
                                 <FaUserCircle className="text-white text-5xl" />
                             </div>
                             <div>
@@ -234,7 +234,7 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                             <InfoItem icon={<FaCalendarCheck className="text-yellow-500" />} label="Effective To" value={formatDateFull(salary.effective_to)} />
                         </div>
 
-                        <div className="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-[10px] p-4 border border-gray-200">
+                        <div className="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
                             <div className="flex justify-between items-center">
                                 <span className="text-sm font-semibold text-gray-600 flex items-center gap-2">
                                     <FaChartBar className="text-blue-500" /> CTC (Cost to Company)
@@ -415,12 +415,12 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                                     <FaEdit className="text-white text-sm" />
                                 </div>
                                 <div>
@@ -428,7 +428,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     <p className="text-xs text-white/80">{salary.employee?.name} · {salary.employee?.employee_code}</p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
                                 <FaTimes size={20} />
                             </button>
                         </div>
@@ -440,7 +440,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             <div className="flex gap-2">
                                 <select value={formData.currency}
                                     onChange={e => setFormData({ ...formData, currency: e.target.value })}
-                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
                                     {currencies.length > 0
                                         ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>)
                                         : <option value="USD">$ USD</option>}
@@ -452,7 +452,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                             setFormData({ ...formData, base_amount: val });
                                         }
                                     }}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
                             </div>
                         </div>
 
@@ -464,7 +464,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     onChange={(value) => setFormData({ ...formData, effective_from: value })}
                                     placeholder="Select effective from"
                                     mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
+                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
                                     popoverClassName="mt-2"
                                 />
                             </div>
@@ -475,7 +475,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     onChange={(value) => setFormData({ ...formData, effective_to: value })}
                                     placeholder="Select effective to"
                                     mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
+                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
                                     popoverClassName="mt-2"
                                 />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
@@ -499,7 +499,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     {formData.overrides.map((override, idx) => {
                                         const component = availableComponents.find(c => c.id === override.component_id);
                                         return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-[10px] border border-gray-100">
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
@@ -520,7 +520,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             )}
 
                             {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-200">
+                                <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
                                     <div className="flex items-center justify-between mb-3">
                                         <p className="text-sm font-semibold text-blue-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
                                         <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
@@ -585,8 +585,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         </div>
 
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[10px] font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                 {submitting ? 'Saving...' : 'Save Changes'}
                             </button>
@@ -690,26 +690,26 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 z-[10] bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center"><FaExchangeAlt className="text-white text-sm" /></div>
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FaExchangeAlt className="text-white text-sm" /></div>
                                 <div><h2 className="text-lg font-bold">Revise Salary</h2><p className="text-xs text-white/80">{salary.employee?.name} · Creates a new salary record</p></div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                         </div>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                        <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-100 rounded-[10px]">
+                        <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-100 rounded-xl">
                             <FaInfoCircle className="text-purple-500 mt-0.5 flex-shrink-0" size={14} />
                             <p className="text-xs text-purple-700">Revising salary creates a <span className="font-semibold">new salary record</span> for this employee. The previous record will remain in history.</p>
                         </div>
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
-                            <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
+                            <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
                                 {loadingPackages ? <option value="">Loading packages...</option>
                                     : packages.length === 0 ? <option value="">No packages found</option>
                                         : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
@@ -719,7 +719,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">New Base Amount *</label>
                             <div className="flex gap-2">
-                                <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
+                                <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
                                     {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
                                 </select>
                                 <input type="text" inputMode="decimal" placeholder="Enter new base amount" value={formData.base_amount}
@@ -729,7 +729,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                             setFormData({ ...formData, base_amount: val });
                                         }
                                     }}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
                             </div>
                             {salary.base_amount && (
                                 <p className="text-xs text-gray-400 mt-1">
@@ -747,11 +747,11 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
+                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
+                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
                         </div>
@@ -773,7 +773,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     {formData.overrides.map((override, idx) => {
                                         const component = availableComponents.find(c => c.id === override.component_id);
                                         return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-[10px] border border-gray-100">
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
@@ -794,7 +794,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                             )}
 
                             {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-[10px] border border-purple-200">
+                                <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
                                     <div className="flex items-center justify-between mb-3">
                                         <p className="text-sm font-semibold text-purple-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
                                         <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
@@ -859,8 +859,8 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         </div>
 
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-[10px] font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaExchangeAlt />}
                                 {submitting ? 'Revising...' : 'Revise Salary'}
                             </button>
@@ -979,14 +979,14 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-3xl px-6 sm:px-8 py-5">
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl px-6 sm:px-8 py-5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center shadow-md"><FaPlus className="text-white text-sm" /></div>
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-md"><FaPlus className="text-white text-sm" /></div>
                                 <div><h2 className="text-lg font-bold">Assign Salary</h2><p className="text-xs text-white/80">Assign salary to an employee</p></div>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300"><FaTimes size={20} /></button>
+                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
                         </div>
                     </div>
 
@@ -994,23 +994,23 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Employee *</label>
                             <div className="relative">
-                                <input type="text" placeholder="Search employee by name, code or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" disabled={!!selectedEmployee} />
+                                <input type="text" placeholder="Search employee by name, code or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" disabled={!!selectedEmployee} />
                                 <FaSearch className="absolute left-3 top-3.5 text-gray-400 text-sm" />
                             </div>
                             {!selectedEmployee && (
-                                <div className="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded-[10px] divide-y divide-gray-50">
+                                <div className="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
                                     {loading ? (<div className="p-4 text-center text-gray-400"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>)
                                         : filteredEmployees.length === 0 ? (<div className="p-4 text-center text-gray-400">No employees found</div>)
-                                        : filteredEmployees.map(emp => (
-                                            <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-[10px] bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></div>
-                                                <div className="flex-1 min-w-0"><p className="font-semibold text-gray-800 text-sm">{emp.name}</p><p className="text-xs text-gray-400">{emp.employee_code} • {emp.email}</p></div>
-                                            </button>
-                                        ))}
+                                            : filteredEmployees.map(emp => (
+                                                <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></div>
+                                                    <div className="flex-1 min-w-0"><p className="font-semibold text-gray-800 text-sm">{emp.name}</p><p className="text-xs text-gray-400">{emp.employee_code} • {emp.email}</p></div>
+                                                </button>
+                                            ))}
                                 </div>
                             )}
                             {selectedEmployee && (
-                                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-[10px] flex items-center justify-between">
+                                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></div>
                                         <div><p className="font-semibold text-gray-800 text-sm">{selectedEmployee.name}</p><p className="text-xs text-gray-500">{selectedEmployee.employee_code}</p></div>
@@ -1022,7 +1022,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
 
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
-                            <select value={formData.component_package_id} onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
+                            <select value={formData.component_package_id} onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
                                 {loadingPackages ? <option value="">Loading packages...</option>
                                     : packages.length === 0 ? <option value="">No packages found</option>
                                         : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
@@ -1032,7 +1032,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
                             <div className="flex gap-2">
-                                <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
+                                <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
                                     {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ US Dollar</option>}
                                 </select>
                                 <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
@@ -1042,18 +1042,18 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                             setFormData({ ...formData, base_amount: val });
                                         }
                                     }}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none" />
+                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none" />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
+                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
+                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
                                 <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
                             </div>
                         </div>
@@ -1075,7 +1075,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                     {formData.overrides.map((override, idx) => {
                                         const component = availableComponents.find(c => c.id === override.component_id);
                                         return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-[10px] border border-gray-100">
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
@@ -1096,7 +1096,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                             )}
 
                             {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-[10px] border border-green-200">
+                                <div className="mt-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
                                     <div className="flex items-center justify-between mb-3">
                                         <p className="text-sm font-semibold text-green-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
                                         <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
@@ -1161,8 +1161,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         </div>
 
                         <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting || submitDisabled} title={submitDisabled ? submitTitle : ""} className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[10px] font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
+                            <button type="submit" disabled={submitting || submitDisabled} title={submitDisabled ? submitTitle : ""} className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                 {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                 {submitting ? 'Assigning...' : 'Assign Salary'}
                             </button>
@@ -1182,10 +1182,10 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
                     <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
                         <h2 className="text-xl font-semibold flex items-center gap-2"><FaTrash /> Delete Salary Record</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all duration-300"><FaTimes size={20} /></button>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
                     </div>
                     <div className="flex flex-1 flex-col justify-center p-6 text-center">
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }} className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1194,8 +1194,8 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
                         <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
                         <p className="text-gray-500 mb-6">You are about to delete the salary record for <span className="font-semibold text-red-600">{salary.employee?.name}</span>. This action cannot be undone.</p>
                         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
-                            <button onClick={onClose} className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Keep</button>
-                            <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
+                            <button onClick={onClose} className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Keep</button>
+                            <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
                                 {processingId === salary.salary_id && <FaSpinner className="animate-spin" />}
                                 Delete Record
                             </button>
@@ -1248,11 +1248,11 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
         >
             <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-3 text-center">
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-center">
                         <p className="text-sm font-bold text-blue-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
                         <p className="text-xs text-blue-500">Base</p>
                     </div>
-                    <div className="rounded-[10px] border border-purple-100 bg-purple-50 p-3 text-center">
+                    <div className="rounded-xl border border-purple-100 bg-purple-50 p-3 text-center">
                         <p className="text-sm font-bold text-purple-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
                         <p className="text-xs text-purple-500">Net</p>
                     </div>
@@ -1490,39 +1490,39 @@ const SalaryManagement = () => {
             title="Salary Management"
             description="Assign and manage employee salaries with responsive table and card layouts."
             accent="green"
-                actions={
-                    <div className="flex items-center gap-3">
+            actions={
+                <div className="flex items-center gap-3">
 
-                        <ManagementButton
-                            tone="green"
+                    <ManagementButton
+                        tone="green"
                         variant="solid"
                         leftIcon={<FaPlus />}
                         onClick={() => setShowAssignModal(true)}
-                        >
-                            Assign Salary
-                        </ManagementButton>
+                    >
+                        Assign Salary
+                    </ManagementButton>
 
-                        <ManagementButton
-                            tone={showHistory ? 'violet' : 'slate'}
-                            variant={showHistory ? 'solid' : 'outline'}
-                            leftIcon={<FaHistory />}
-                            onClick={() => setShowHistory(!showHistory)}
-                            className="!py-2 !px-4 text-sm"
-                        >
-                            History
-                        </ManagementButton>
-                    </div>
-                }
+                    <ManagementButton
+                        tone={showHistory ? 'violet' : 'slate'}
+                        variant={showHistory ? 'solid' : 'outline'}
+                        leftIcon={<FaHistory />}
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="!py-2 !px-4 text-sm"
+                    >
+                        History
+                    </ManagementButton>
+                </div>
+            }
         >
             <div className="space-y-6">
 
                 {/* Stats */}
                 {!loading && visibleSalaries.length > 0 && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-[10px] p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total Employees</p><p className="text-2xl font-bold">{stats.total}</p></div>
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-[10px] p-4 text-white shadow-lg"><p className="text-xs opacity-80">Avg Base Salary</p><p className="text-2xl font-bold">{formatCurrency(stats.avgBase, stats.currency)}</p></div>
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-[10px] p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total CTC</p><p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, stats.currency)}</p></div>
-                        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-[10px] p-4 text-white shadow-lg"><p className="text-xs opacity-80">Active Salaries</p><p className="text-2xl font-bold">{stats.activeCount}</p></div>
+                        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total Employees</p><p className="text-2xl font-bold">{stats.total}</p></div>
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Avg Base Salary</p><p className="text-2xl font-bold">{formatCurrency(stats.avgBase, stats.currency)}</p></div>
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total CTC</p><p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, stats.currency)}</p></div>
+                        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Active Salaries</p><p className="text-2xl font-bold">{stats.activeCount}</p></div>
                     </motion.div>
                 )}
 
@@ -1531,7 +1531,7 @@ const SalaryManagement = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 }}
-                    className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                    className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
                 >
                     {/* Left Section: Search & Result Info */}
                     <div className="flex items-center gap-4 flex-1">
@@ -1542,7 +1542,7 @@ const SalaryManagement = () => {
                                 placeholder="Search by employee name, code or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm"
+                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm"
                             />
                             {searchTerm && (
                                 <button
@@ -1571,7 +1571,7 @@ const SalaryManagement = () => {
                                 value=""
                                 onChange={handleDateFilterApply}
                                 placeholder={dateFilterLabel}
-                                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                                 wrapperClassName="w-auto"
                                 popoverClassName="w-[min(92vw,24rem)]"
                                 initialTab="quick"
@@ -1581,7 +1581,7 @@ const SalaryManagement = () => {
                                 <button
                                     type="button"
                                     onClick={clearDateFilter}
-                                    className="p-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all"
+                                    className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all"
                                     title="Clear date filter"
                                 >
                                     <FaTimes size={14} />
@@ -1606,12 +1606,12 @@ const SalaryManagement = () => {
 
                 {/* Empty State */}
                 {!loading && visibleSalaries.length === 0 && (
-                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-[10px] shadow-xl border border-gray-100">
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-xl shadow-xl border border-gray-100">
                         <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4"><FaMoneyBillWave className="text-4xl text-gray-300" /></div>
                         <p className="text-xl font-semibold text-gray-600">No salary records found</p>
                         <p className="text-gray-400 mt-2 text-sm">{debouncedSearch ? `No results for "${debouncedSearch}"` : dateFilterLabel !== 'Filter by date' ? `No results for ${dateFilterLabel}` : 'Click "Assign Salary" to get started'}</p>
-                        {debouncedSearch && (<button onClick={() => setSearchTerm('')} className="mt-4 px-4 py-2 bg-green-50 text-green-600 rounded-[10px] hover:bg-green-100 transition-all text-sm font-medium">Clear Search</button>)}
-                        {!debouncedSearch && (<button onClick={() => setShowAssignModal(true)} className="mt-4 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-[10px] hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium">Assign Salary</button>)}
+                        {debouncedSearch && (<button onClick={() => setSearchTerm('')} className="mt-4 px-4 py-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all text-sm font-medium">Clear Search</button>)}
+                        {!debouncedSearch && (<button onClick={() => setShowAssignModal(true)} className="mt-4 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium">Assign Salary</button>)}
                     </motion.div>
                 )}
 

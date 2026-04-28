@@ -33,7 +33,7 @@ const STAT_STYLES = {
   violet: { iconWrap: 'bg-violet-50 text-violet-600' },
   emerald: { iconWrap: 'bg-emerald-50 text-emerald-600' },
   indigo: { iconWrap: 'bg-indigo-50 text-indigo-600' },
-  amber:  { iconWrap: 'bg-amber-50  text-amber-600'  },
+  amber: { iconWrap: 'bg-amber-50  text-amber-600' },
 };
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
@@ -41,11 +41,10 @@ const STAT_STYLES = {
 const AccountTypeBadge = ({ type, compact = false }) => {
   const isCash = type === 'cash';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${
-      isCash
+    <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${isCash
         ? 'bg-amber-100 border border-amber-200 text-amber-700'
         : 'bg-indigo-100 border border-indigo-200 text-indigo-700'
-    } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}>
+      } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}>
       {isCash ? <FaMoneyBillWave size={compact ? 8 : 10} /> : <FaUniversity size={compact ? 8 : 10} />}
       {isCash ? 'CASH' : 'BANK'}
     </span>
@@ -55,11 +54,10 @@ const AccountTypeBadge = ({ type, compact = false }) => {
 const StatusBadge = ({ status, compact = false }) => {
   const isActive = status === 'active';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${
-      isActive
+    <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${isActive
         ? 'bg-emerald-100 border border-emerald-200 text-emerald-700'
         : 'bg-slate-100 border border-slate-200 text-slate-500'
-    } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}>
+      } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}>
       {isActive ? <FaCheck size={compact ? 7 : 9} /> : <FaTimes size={compact ? 7 : 9} />}
       {isActive ? 'ACTIVE' : 'INACTIVE'}
     </span>
@@ -67,9 +65,8 @@ const StatusBadge = ({ status, compact = false }) => {
 };
 
 const PrimaryBadge = ({ compact = false }) => (
-  <span className={`inline-flex items-center gap-1 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold ${
-    compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
-  }`}>
+  <span className={`inline-flex items-center gap-1 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'
+    }`}>
     <FaStar size={compact ? 7 : 9} /> PRIMARY
   </span>
 );
@@ -99,9 +96,9 @@ const ActionMenu = ({ account, onEdit, onDelete, onView, editDisabled, deleteDis
   }, []);
 
   const items = [
-    { label: 'View Details', icon: <FaEye size={13} />,  onClick: () => { onView(account);   setOpen(false); }, disabled: false,          title: '',                                    cls: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
-    { label: 'Edit Account', icon: <FaEdit size={13} />, onClick: () => { onEdit(account);   setOpen(false); }, disabled: editDisabled,   title: editDisabled   ? editMessage   : '', cls: 'text-blue-600  hover:text-blue-700  hover:bg-blue-50'   },
-    { label: 'Delete',       icon: <FaTrash size={13} />,onClick: () => { onDelete(account); setOpen(false); }, disabled: deleteDisabled, title: deleteDisabled ? deleteMessage : '', cls: 'text-red-600   hover:text-red-700   hover:bg-red-50'    },
+    { label: 'View Details', icon: <FaEye size={13} />, onClick: () => { onView(account); setOpen(false); }, disabled: false, title: '', cls: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+    { label: 'Edit Account', icon: <FaEdit size={13} />, onClick: () => { onEdit(account); setOpen(false); }, disabled: editDisabled, title: editDisabled ? editMessage : '', cls: 'text-blue-600  hover:text-blue-700  hover:bg-blue-50' },
+    { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { onDelete(account); setOpen(false); }, disabled: deleteDisabled, title: deleteDisabled ? deleteMessage : '', cls: 'text-red-600   hover:text-red-700   hover:bg-red-50' },
   ];
 
   return (
@@ -113,7 +110,7 @@ const ActionMenu = ({ account, onEdit, onDelete, onView, editDisabled, deleteDis
       <AnimatePresence>
         {open && (
           <motion.div initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            className="absolute right-0 top-full z-50 mt-1 w-44 rounded-[10px] border border-slate-100 bg-white shadow-xl overflow-hidden">
+            className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden">
             {items.map((item) => (
               <button key={item.label} type="button" onClick={item.onClick} disabled={item.disabled} title={item.title}
                 className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${item.cls}`}>
@@ -132,13 +129,13 @@ const ActionMenu = ({ account, onEdit, onDelete, onView, editDisabled, deleteDis
 const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, deleteDisabled, editMessage, deleteMessage }) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-[10px] shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
+    className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 cursor-pointer hover:shadow-md transition-all duration-300 group h-full flex flex-col"
     onClick={() => onView(account)}
   >
     {/* Top row */}
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-12 h-12 rounded-[10px] bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
           {account.account_type === 'cash' ? <FaMoneyBillWave size={18} /> : <FaUniversity size={18} />}
         </div>
         <div className="min-w-0">
@@ -161,7 +158,7 @@ const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, delet
 
     {/* Card-style account number */}
     {account.account_type === 'bank' && (
-      <div className="mt-4 rounded-[10px] bg-gradient-to-br from-violet-600 to-indigo-700 p-4 text-white">
+      <div className="mt-4 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 p-4 text-white">
         <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2">Account Number</p>
         <p className="font-mono text-sm font-bold tracking-widest">{maskAccount(account.account_number)}</p>
         {account.ifsc_code && (
@@ -206,8 +203,8 @@ const FormField = ({ label, required, children }) => (
   </div>
 );
 
-const inputCls  = "w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 placeholder:font-normal placeholder:text-slate-400";
-const selectCls = "w-full rounded-[10px] border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 cursor-pointer appearance-none";
+const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 placeholder:font-normal placeholder:text-slate-400";
+const selectCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 cursor-pointer appearance-none";
 
 // ─── Empty form ───────────────────────────────────────────────────────────────
 
@@ -248,18 +245,18 @@ const EmployeeBankAccountManagement = () => {
   const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const isMountedRef = useRef(true);
 
-  const [accounts,         setAccounts        ] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [filteredAccounts, setFilteredAccounts] = useState([]);
-  const [loading,          setLoading         ] = useState(true);
-  const [searchTerm,       setSearchTerm      ] = useState('');
-  const [viewModal,        setViewModal       ] = useState({ open: false, account: null });
-  const [showModal,        setShowModal       ] = useState(false);
-  const [modalMode,        setModalMode       ] = useState('create');
-  const [selectedAccount,  setSelectedAccount ] = useState(null);
-  const [saving,           setSaving          ] = useState(false);
-  const [viewMode,         setViewMode        ] = useState('table');
-  const [formData,         setFormData        ] = useState({ ...EMPTY_FORM });
-  const [ifscLookupState,  setIfscLookupState ] = useState({ loading: false, error: '' });
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewModal, setViewModal] = useState({ open: false, account: null });
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState('create');
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState('table');
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [ifscLookupState, setIfscLookupState] = useState({ loading: false, error: '' });
   const [autoLockedFields, setAutoLockedFields] = useState(EMPTY_AUTO_LOCKED_FIELDS);
   const ifscLookupRequestRef = useRef(0);
   const ifscLookupTimerRef = useRef(null);
@@ -267,9 +264,9 @@ const EmployeeBankAccountManagement = () => {
 
   const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
 
-  const createAccess  = checkActionAccess('employeeBankAccount', 'create');
-  const updateAccess  = checkActionAccess('employeeBankAccount', 'update');
-  const deleteAccess  = checkActionAccess('employeeBankAccount', 'delete');
+  const createAccess = checkActionAccess('employeeBankAccount', 'create');
+  const updateAccess = checkActionAccess('employeeBankAccount', 'update');
+  const deleteAccess = checkActionAccess('employeeBankAccount', 'delete');
   const createMessage = getAccessMessage(createAccess);
   const updateMessage = getAccessMessage(updateAccess);
   const deleteMessage = getAccessMessage(deleteAccess);
@@ -287,8 +284,8 @@ const EmployeeBankAccountManagement = () => {
     setLoading(true);
     try {
       const companyId = getCompanyId();
-      const response  = await apiCall('/bank-accounts/employee/list', 'GET', null, companyId);
-      const result    = await response.json();
+      const response = await apiCall('/bank-accounts/employee/list', 'GET', null, companyId);
+      const result = await response.json();
       if (result.success) {
         setAccounts(result.data || []);
       } else {
@@ -312,11 +309,11 @@ const EmployeeBankAccountManagement = () => {
     if (!q) { setFilteredAccounts(accounts); return; }
     setFilteredAccounts(accounts.filter(a =>
       a.account_holder_name?.toLowerCase().includes(q) ||
-      a.bank_name?.toLowerCase().includes(q)           ||
-      a.account_number?.toLowerCase().includes(q)      ||
-      a.ifsc_code?.toLowerCase().includes(q)           ||
-      a.branch_name?.toLowerCase().includes(q)         ||
-      a.account_type?.toLowerCase().includes(q)        ||
+      a.bank_name?.toLowerCase().includes(q) ||
+      a.account_number?.toLowerCase().includes(q) ||
+      a.ifsc_code?.toLowerCase().includes(q) ||
+      a.branch_name?.toLowerCase().includes(q) ||
+      a.account_type?.toLowerCase().includes(q) ||
       a.status?.toLowerCase().includes(q)
     ));
   }, [accounts, searchTerm]);
@@ -338,38 +335,38 @@ const EmployeeBankAccountManagement = () => {
   // ── Stats ──────────────────────────────────────────────────────────────────
 
   const stats = useMemo(() => [
-    { label: 'Total Accounts', value: accounts.length,                                      icon: FaCreditCard,     color: 'violet', },
-    { label: 'Active',         value: accounts.filter(a => a.status === 'active').length,   icon: FaCheck,          color: 'emerald', },
-    { label: 'Bank Accounts',  value: accounts.filter(a => a.account_type === 'bank').length, icon: FaUniversity,   color: 'indigo', },
-    { label: 'Primary Set',    value: accounts.filter(a => a.is_primary).length,            icon: FaStar,           color: 'amber', },
+    { label: 'Total Accounts', value: accounts.length, icon: FaCreditCard, color: 'violet', },
+    { label: 'Active', value: accounts.filter(a => a.status === 'active').length, icon: FaCheck, color: 'emerald', },
+    { label: 'Bank Accounts', value: accounts.filter(a => a.account_type === 'bank').length, icon: FaUniversity, color: 'indigo', },
+    { label: 'Primary Set', value: accounts.filter(a => a.is_primary).length, icon: FaStar, color: 'amber', },
   ], [accounts]);
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
 
   const openModal = (mode, account = null) => {
     if (mode === 'create' && createAccess.disabled) return;
-    if (mode === 'edit'   && updateAccess.disabled) return;
+    if (mode === 'edit' && updateAccess.disabled) return;
     if (mode === 'delete' && deleteAccess.disabled) return;
     setModalMode(mode);
     setSelectedAccount(account);
     if (account && mode !== 'delete') {
       setFormData({
-        bank_id:              account.bank_id,
-        account_type:         account.account_type || 'bank',
-        bank_name:            account.bank_name            || '',
-        account_holder_name:  account.account_holder_name  || '',
-        account_number:       account.account_number       || '',
-        ifsc_code:            account.ifsc_code            || '',
-        branch_name:          account.branch_name          || '',
-        address:              account.address              || '',
-        city:                 account.city                 || '',
-        district:             account.district             || '',
-        state:                account.state                || '',
-        micr:                 account.micr                 || '',
-        contact:              account.contact              || '',
-        upi:                  account.upi ?? false,
-        is_primary:           account.is_primary           || false,
-        status:               account.status               || 'active',
+        bank_id: account.bank_id,
+        account_type: account.account_type || 'bank',
+        bank_name: account.bank_name || '',
+        account_holder_name: account.account_holder_name || '',
+        account_number: account.account_number || '',
+        ifsc_code: account.ifsc_code || '',
+        branch_name: account.branch_name || '',
+        address: account.address || '',
+        city: account.city || '',
+        district: account.district || '',
+        state: account.state || '',
+        micr: account.micr || '',
+        contact: account.contact || '',
+        upi: account.upi ?? false,
+        is_primary: account.is_primary || false,
+        status: account.status || 'active',
       });
     } else if (!account) {
       setFormData({ ...EMPTY_FORM, account_type: 'bank' });
@@ -385,7 +382,7 @@ const EmployeeBankAccountManagement = () => {
     setShowModal(true);
   };
 
-  const closeModal    = useCallback(() => { if (!saving) setShowModal(false); }, [saving]);
+  const closeModal = useCallback(() => { if (!saving) setShowModal(false); }, [saving]);
   const closeViewModal = useCallback(() => setViewModal({ open: false, account: null }), []);
 
   const resetIfscLookupState = () => {
@@ -533,15 +530,15 @@ const EmployeeBankAccountManagement = () => {
     if (modalMode !== 'delete') {
       if (!formData.account_holder_name.trim()) { toast.error('Account holder name is required'); return; }
       if (formData.account_type === 'bank') {
-        if (!formData.bank_name.trim())     { toast.error('Bank name is required');    return; }
-        if (!formData.account_number.trim()){ toast.error('Account number is required'); return; }
-        if (!formData.ifsc_code.trim())     { toast.error('IFSC code is required');    return; }
+        if (!formData.bank_name.trim()) { toast.error('Bank name is required'); return; }
+        if (!formData.account_number.trim()) { toast.error('Account number is required'); return; }
+        if (!formData.ifsc_code.trim()) { toast.error('IFSC code is required'); return; }
       }
     }
 
     setSaving(true);
     try {
-      const companyId  = getCompanyId();
+      const companyId = getCompanyId();
       const employeeId = employee?.id ?? employee?.employee_id ?? user?.id ?? null;
       let response;
 
@@ -551,40 +548,40 @@ const EmployeeBankAccountManagement = () => {
 
       if (modalMode === 'create') {
         const payload = {
-          employee_id:          employeeId,
-          account_type:         'bank',
-          account_holder_name:  formData.account_holder_name,
-          is_primary:           formData.is_primary,
-          bank_name:            formData.bank_name,
-          account_number:       formData.account_number,
-          ifsc_code:            formData.ifsc_code,
-          branch_name:          formData.branch_name,
-          address:              formData.address,
-          city:                 formData.city,
-          district:             formData.district,
-          state:                formData.state,
-          micr:                 formData.micr,
-          contact:              formData.contact,
-          upi:                  formData.upi,
+          employee_id: employeeId,
+          account_type: 'bank',
+          account_holder_name: formData.account_holder_name,
+          is_primary: formData.is_primary,
+          bank_name: formData.bank_name,
+          account_number: formData.account_number,
+          ifsc_code: formData.ifsc_code,
+          branch_name: formData.branch_name,
+          address: formData.address,
+          city: formData.city,
+          district: formData.district,
+          state: formData.state,
+          micr: formData.micr,
+          contact: formData.contact,
+          upi: formData.upi,
         };
         response = await apiCall('/bank-accounts/create', 'POST', payload, companyId || company?.id || null);
       } else if (modalMode === 'edit') {
         const payload = {
-          bank_id:             formData.bank_id,
-          bank_name:           formData.bank_name,
+          bank_id: formData.bank_id,
+          bank_name: formData.bank_name,
           account_holder_name: formData.account_holder_name,
-          account_number:      formData.account_number,
-          ifsc_code:           formData.ifsc_code,
-          branch_name:         formData.branch_name,
-          address:             formData.address,
-          city:                formData.city,
-          district:            formData.district,
-          state:               formData.state,
-          micr:                formData.micr,
-          contact:             formData.contact,
-          upi:                 formData.upi,
-          is_primary:          formData.is_primary,
-          status:              formData.status,
+          account_number: formData.account_number,
+          ifsc_code: formData.ifsc_code,
+          branch_name: formData.branch_name,
+          address: formData.address,
+          city: formData.city,
+          district: formData.district,
+          state: formData.state,
+          micr: formData.micr,
+          contact: formData.contact,
+          upi: formData.upi,
+          is_primary: formData.is_primary,
+          status: formData.status,
         };
         response = await apiCall('/bank-accounts/update', 'PUT', payload, companyId);
       } else if (modalMode === 'delete') {
@@ -619,7 +616,7 @@ const EmployeeBankAccountManagement = () => {
       label: 'Account',
       render: (account) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
             {account.account_type === 'cash' ? <FaMoneyBillWave size={14} /> : <FaUniversity size={14} />}
           </div>
           <div className="min-w-0">
@@ -703,12 +700,12 @@ const EmployeeBankAccountManagement = () => {
         {!loading && accounts.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-white rounded-[10px] p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+              <div key={stat.label} className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">{stat.label}</p>
                   <p className="text-2xl font-black text-slate-800 mt-1">{stat.value}</p>
                 </div>
-                <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[stat.color].iconWrap}`}>
                   <stat.icon size={18} />
                 </div>
               </div>
@@ -721,7 +718,7 @@ const EmployeeBankAccountManagement = () => {
           const primary = accounts.find(a => a.is_primary && a.account_type === 'bank');
           return (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-              <div className="relative overflow-hidden rounded-[10px] bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-xl shadow-violet-200">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-xl shadow-violet-200">
                 {/* Decorative circles */}
                 <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
                 <div className="pointer-events-none absolute -bottom-6 right-16 h-28 w-28 rounded-full bg-white/5" />
@@ -756,7 +753,7 @@ const EmployeeBankAccountManagement = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
           {/* Left Section: Search */}
           <div className="relative flex-1">
@@ -766,7 +763,7 @@ const EmployeeBankAccountManagement = () => {
               placeholder="Search by bank name, account number, IFSC..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
+              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
             />
           </div>
 
@@ -778,7 +775,7 @@ const EmployeeBankAccountManagement = () => {
 
         {totalItems === 0 && !loading ? (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-20 bg-white rounded-[10px] border-2 border-dashed border-slate-100">
+            className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-100">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
               <FaUniversity size={24} />
             </div>
@@ -794,9 +791,9 @@ const EmployeeBankAccountManagement = () => {
             rowKey={(row) => row.bank_id}
             onRowClick={(row) => setViewModal({ open: true, account: row })}
             getActions={(row) => [
-              { label: 'View Details', icon: <FaEye size={13} />,   onClick: () => setViewModal({ open: true, account: row }),  className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
-              { label: 'Edit Account', icon: <FaEdit size={13} />,  onClick: () => openModal('edit', row),   disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-              { label: 'Delete',       icon: <FaTrash size={13} />, onClick: () => openModal('delete', row), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' },
+              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+              { label: 'Edit Account', icon: <FaEdit size={13} />, onClick: () => openModal('edit', row), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+              { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => openModal('delete', row), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' },
             ]}
             accent="violet"
           />
@@ -839,13 +836,13 @@ const EmployeeBankAccountManagement = () => {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
             onMouseDown={(e) => e.target === e.currentTarget && closeViewModal()}>
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-[10px] shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+              className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
 
               {/* Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-t-[10px] px-6 sm:px-8 py-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-[10px] flex items-center justify-center shrink-0">
+                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
                       {viewModal.account.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : <FaUniversity size={22} />}
                     </div>
                     <div className="min-w-0">
@@ -853,7 +850,7 @@ const EmployeeBankAccountManagement = () => {
                       <p className="text-white/70 text-sm mt-1">{viewModal.account.bank_name || 'Cash Account'}</p>
                     </div>
                   </div>
-                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all shrink-0">
+                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0">
                     <FaTimes size={20} />
                   </button>
                 </div>
@@ -870,7 +867,7 @@ const EmployeeBankAccountManagement = () => {
 
                 {/* Card visual for bank accounts */}
                 {viewModal.account.account_type === 'bank' && (
-                  <div className="relative overflow-hidden rounded-[10px] bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
+                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
                     <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
                     <div className="pointer-events-none absolute -bottom-4 right-12 h-20 w-20 rounded-full bg-white/5" />
                     <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-3">Account Number</p>
@@ -888,12 +885,12 @@ const EmployeeBankAccountManagement = () => {
                 {/* Details grid */}
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: 'IFSC Code',  value: viewModal.account.ifsc_code   || '—' },
-                    { label: 'Branch',     value: viewModal.account.branch_name  || '—' },
-                    { label: 'Added On',   value: viewModal.account.created_at ? new Date(viewModal.account.created_at).toLocaleDateString() : '—' },
+                    { label: 'IFSC Code', value: viewModal.account.ifsc_code || '—' },
+                    { label: 'Branch', value: viewModal.account.branch_name || '—' },
+                    { label: 'Added On', value: viewModal.account.created_at ? new Date(viewModal.account.created_at).toLocaleDateString() : '—' },
                     { label: 'Live Status', value: viewModal.account.is_active ? 'Active' : 'Inactive' },
                   ].map(({ label, value }) => (
-                    <div key={label} className="bg-slate-50 border border-slate-100 p-4 rounded-[10px]">
+                    <div key={label} className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
                       <p className="text-sm font-bold text-slate-700">{value}</p>
                     </div>
@@ -901,7 +898,7 @@ const EmployeeBankAccountManagement = () => {
                 </div>
 
                 {/* Security note */}
-                <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-[10px]">
+                <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-xl">
                   <FaShieldAlt className="text-violet-400 shrink-0" size={16} />
                   <p className="text-xs text-violet-600 font-medium">Your account details are encrypted and stored securely.</p>
                 </div>
@@ -909,13 +906,13 @@ const EmployeeBankAccountManagement = () => {
 
               {/* Footer */}
               <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-[10px] font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
                   Close
                 </button>
                 <button
                   onClick={() => { closeViewModal(); openModal('edit', viewModal.account); }}
                   disabled={updateAccess.disabled}
-                  className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-[10px] font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FaEdit /> Edit Account
                 </button>
@@ -938,9 +935,8 @@ const EmployeeBankAccountManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`bg-white w-full max-h-[90vh] rounded-[10px] shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${
-                modalMode === 'delete' ? 'max-w-md' : 'max-w-2xl'
-              }`}
+              className={`bg-white w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${modalMode === 'delete' ? 'max-w-md' : 'max-w-2xl'
+                }`}
               onMouseDown={(e) => e.stopPropagation()}
             >
 
@@ -950,13 +946,13 @@ const EmployeeBankAccountManagement = () => {
                   <div className="sticky top-0 z-10 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center"><FaTrash className="text-white text-sm" /></div>
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FaTrash className="text-white text-sm" /></div>
                         <div>
                           <h2 className="text-lg font-bold">Remove Account</h2>
                           <p className="text-xs text-white/80">This action cannot be undone</p>
                         </div>
                       </div>
-                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
+                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto px-6 py-8 text-center space-y-4">
@@ -968,9 +964,9 @@ const EmployeeBankAccountManagement = () => {
                     </p>
                   </div>
                   <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-                    <button type="button" onClick={closeModal} disabled={saving} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-[10px] font-medium hover:bg-gray-200 transition-all disabled:opacity-60">Cancel</button>
+                    <button type="button" onClick={closeModal} disabled={saving} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60">Cancel</button>
                     <button type="button" onClick={handleAction} disabled={saving || deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
                       {saving ? 'Removing...' : 'Remove Account'}
                     </button>
                   </div>
@@ -981,7 +977,7 @@ const EmployeeBankAccountManagement = () => {
                   <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-[10px] flex items-center justify-center">
+                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                           {modalMode === 'create' ? <FaPlus /> : <FaEdit />}
                         </div>
                         <div>
@@ -991,14 +987,14 @@ const EmployeeBankAccountManagement = () => {
                           </p>
                         </div>
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-[10px] transition-all"><FaTimes size={20} /></button>
+                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
 
                   <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 space-y-5">
 
                     {modalMode === 'create' && (
-                      <div className="rounded-[10px] border border-violet-100 bg-violet-50/70 px-4 py-3">
+                      <div className="rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-3">
                         <div className="flex items-center gap-2 text-sm font-bold text-violet-700">
                           <FaUniversity size={14} />
                           Bank Account
@@ -1041,7 +1037,7 @@ const EmployeeBankAccountManagement = () => {
                                   type="button"
                                   onClick={() => void applyIfscLookup(formData.ifsc_code)}
                                   disabled={ifscLookupState.loading || formData.ifsc_code.trim().length !== 11}
-                                  className="shrink-0 rounded-[10px] border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="shrink-0 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {ifscLookupState.loading ? 'Checking...' : 'Fetch'}
                                 </button>
@@ -1131,7 +1127,7 @@ const EmployeeBankAccountManagement = () => {
                             />
                           </FormField>
                           <FormField label="UPI Enabled">
-                            <div className="flex items-center justify-between rounded-[10px] border border-slate-200 bg-slate-50 px-4 py-3">
+                            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                               <span className="text-sm font-semibold text-slate-600">{formData.upi ? 'Yes' : 'No'}</span>
                               <button
                                 type="button"
@@ -1170,7 +1166,7 @@ const EmployeeBankAccountManagement = () => {
                     )}
 
                     {/* Primary toggle */}
-                    <div className="flex items-center justify-between p-4 rounded-[10px] border border-slate-100 bg-slate-50/60">
+                    <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/60">
                       <div>
                         <p className="text-sm font-bold text-slate-700">Set as Primary Account</p>
                         <p className="text-[11px] text-slate-400 mt-0.5">Salary and reimbursements will be credited here</p>
@@ -1187,7 +1183,7 @@ const EmployeeBankAccountManagement = () => {
 
                   <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
                     <button type="button" onClick={closeModal} disabled={saving}
-                      className="w-full rounded-[10px] border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">
+                      className="w-full rounded-xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">
                       Discard
                     </button>
                     <button
@@ -1200,7 +1196,7 @@ const EmployeeBankAccountManagement = () => {
                         (modalMode === 'create' ? createAccess.disabled : updateAccess.disabled)
                       }
                       title={modalMode === 'create' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
-                      className="w-full rounded-[10px] bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {saving ? (
                         <div className="flex items-center justify-center gap-2"><FaSpinner className="animate-spin" /><span>Saving...</span></div>

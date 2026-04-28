@@ -66,7 +66,7 @@ const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
   return (
     <div className="flex flex-col items-center">
       <span className="text-[8px] font-black text-slate-400 border-b border-slate-100 w-full text-center pb-1 mb-1.5 uppercase tracking-tighter">{label}</span>
-      <div 
+      <div
         ref={columnRef}
         className="h-28 overflow-y-auto no-scrollbar snap-y snap-mandatory scroll-smooth w-10 bg-slate-50/50 rounded-lg border border-slate-100"
       >
@@ -77,8 +77,8 @@ const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
               type="button"
               onClick={() => onSelect(item)}
               className={`w-full py-1 text-xs font-bold transition-all duration-150 flex items-center justify-center snap-center
-                ${selected === item 
-                  ? "bg-indigo-600 text-white shadow-sm scale-105 rounded-md mx-0.5 w-[calc(100%-4px)]" 
+                ${selected === item
+                  ? "bg-indigo-600 text-white shadow-sm scale-105 rounded-md mx-0.5 w-[calc(100%-4px)]"
                   : "text-slate-400 hover:text-indigo-600"}
               `}
             >
@@ -95,7 +95,7 @@ export const TimePicker = ({ value, onApply, onClose }) => {
   const { h: initialH, m: initialM, s: initialS } = parseTime(value);
   const [h, setH] = useState(initialH);
   const [m, setM] = useState(initialM);
-  
+
   const hRef = useRef(null);
   const mRef = useRef(null);
 
@@ -110,7 +110,7 @@ export const TimePicker = ({ value, onApply, onClose }) => {
         if (btn) mRef.current.scrollTop = btn.offsetTop - mRef.current.offsetTop - 45;
       }
     };
-    
+
     const timer = setTimeout(scrollToSelected, 100);
     return () => clearTimeout(timer);
   }, [h, m]);
@@ -121,8 +121,8 @@ export const TimePicker = ({ value, onApply, onClose }) => {
   };
 
   return (
-    <div 
-      className="bg-white rounded-[10px] shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden w-full max-w-[200px] flex flex-col font-sans"
+    <div
+      className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden w-full max-w-[200px] flex flex-col font-sans"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
@@ -192,10 +192,10 @@ export const TimePicker = ({ value, onApply, onClose }) => {
   );
 };
 
-export const TimePickerField = ({ 
-  value, 
-  onChange, 
-  placeholder = "Time", 
+export const TimePickerField = ({
+  value,
+  onChange,
+  placeholder = "Time",
   label,
   required = false,
   className = ""
@@ -259,9 +259,9 @@ export const TimePickerField = ({
           {label} {required && <span className="text-red-500">*</span>}
         </label>
       )}
-      
+
       <div className="relative">
-        <div 
+        <div
           ref={triggerRef}
           onClick={() => setIsOpen(true)}
           className={`

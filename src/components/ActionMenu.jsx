@@ -20,7 +20,7 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
   // triggerTop = top of trigger button, triggerBottom = bottom of trigger button
   const [coords, setCoords] = useState({ triggerTop: 0, triggerBottom: 0, triggerRight: 0 });
   const triggerRef = useRef(null);
-  const menuRef    = useRef(null);
+  const menuRef = useRef(null);
 
   const isMenuOpen = activeId !== undefined ? activeId === menuId : isOpen;
 
@@ -28,9 +28,9 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setCoords({
-        triggerTop:    rect.top,
+        triggerTop: rect.top,
         triggerBottom: rect.bottom,
-        triggerRight:  rect.right,
+        triggerRight: rect.right,
       });
     }
   };
@@ -58,7 +58,7 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
 
     const handleClickOutside = (e) => {
       if (
-        menuRef.current    && !menuRef.current.contains(e.target) &&
+        menuRef.current && !menuRef.current.contains(e.target) &&
         triggerRef.current && !triggerRef.current.contains(e.target)
       ) {
         closeMenu();
@@ -69,25 +69,25 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
     const handleEscape = (e) => { if (e.key === 'Escape') closeMenu(); };
 
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown',   handleEscape);
-    window.addEventListener('scroll',      handleScroll, true);
+    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('scroll', handleScroll, true);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown',   handleEscape);
-      window.removeEventListener('scroll',      handleScroll, true);
+      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [isMenuOpen]); 
+  }, [isMenuOpen]);
   // ── Position (all viewport-relative for position:fixed) ──────────────────────
-  const menuWidth  = 192;
+  const menuWidth = 192;
   const menuHeight = actions.length * 44 + 16;
 
   // Default: open below-right of trigger, aligned to right edge of trigger
-  let top  = coords.triggerBottom + 6;
-  let left = coords.triggerRight  - menuWidth;
+  let top = coords.triggerBottom + 6;
+  let left = coords.triggerRight - menuWidth;
 
   // Clamp horizontally
-  if (left < 8)                                 left = 8;
+  if (left < 8) left = 8;
   if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
 
   // Flip above if not enough room below
@@ -101,16 +101,16 @@ const ActionMenu = ({ actions = [], activeId, onToggle, menuId, trigger }) => {
       ref={menuRef}
       key={`action-menu-${String(menuId ?? 'default')}`}
       initial={{ opacity: 0, scale: 0.95, y: -6 }}
-      animate={{ opacity: 1, scale: 1,    y: 0  }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.13, ease: 'easeOut' }}
       style={{
         position: 'fixed',
-        top:      `${top}px`,
-        left:     `${left}px`,
-        zIndex:   9999,
-        width:    `${menuWidth}px`,
+        top: `${top}px`,
+        left: `${left}px`,
+        zIndex: 9999,
+        width: `${menuWidth}px`,
       }}
-      className="overflow-hidden rounded-[10px] border border-gray-100 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl ring-1 ring-black/5"
+      className="overflow-hidden rounded-xl border border-gray-100 bg-white/95 p-1.5 shadow-2xl backdrop-blur-xl ring-1 ring-black/5"
     >
       {actions.map((action, index) => (
         <button

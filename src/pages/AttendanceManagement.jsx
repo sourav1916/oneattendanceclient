@@ -16,7 +16,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { DatePickerField } from '../components/DatePicker';
 
-const NOTES_MODAL_CLASS = "bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
+const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
 const ATTENDANCE_TYPE_CONFIG = {
   work: {
@@ -90,9 +90,8 @@ const AttendanceTypeTabs = ({ value, onChange }) => (
           key={tab.value}
           type="button"
           onClick={() => onChange(tab.value)}
-          className={`inline-flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-[10px] px-4 py-2.5 text-sm font-semibold transition-all ${
-            isActive ? tab.activeClassName : tab.inactiveClassName
-          }`}
+          className={`inline-flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${isActive ? tab.activeClassName : tab.inactiveClassName
+            }`}
           title={tab.description}
         >
           <Icon size={14} />
@@ -275,7 +274,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 20 }}
-        className="bg-white rounded-[10px] shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-[10px] z-10">
@@ -283,7 +282,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
             <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
               <FaInfoCircle /> Attendance Details
             </h2>
-            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-[10px] transition">
+            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition">
               <FaTimesCircle size={18} className="sm:w-5 sm:h-5" />
             </button>
           </div>
@@ -414,11 +413,11 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => onViewDetails(attendance)}
-      className="bg-white rounded-[10px] shadow-lg p-4 border border-gray-100 h-full flex flex-col"
+      className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 h-full flex flex-col"
     >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-[10px] flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl flex items-center justify-center flex-shrink-0">
             <FaUser className="text-purple-600 text-base sm:text-xl" />
           </div>
           <div className="min-w-0 flex-1">
@@ -728,7 +727,7 @@ const AttendanceManagement = ({ companyId }) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
           {/* Left Section: Search */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -739,7 +738,7 @@ const AttendanceManagement = ({ companyId }) => {
                 placeholder={`Search ${activeAttendanceTypeMeta.shortLabel.toLowerCase()} attendance by employee name, code, or email...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
               />
               {searchTerm && (
                 <button
@@ -759,7 +758,7 @@ const AttendanceManagement = ({ companyId }) => {
                 value=""
                 onChange={handleDateFilterApply}
                 placeholder={dateFilterLabel}
-                buttonClassName="inline-flex items-center gap-2 rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                 wrapperClassName="w-auto"
                 popoverClassName="w-[min(92vw,24rem)]"
                 initialTab="quick"
@@ -769,7 +768,7 @@ const AttendanceManagement = ({ companyId }) => {
                 <button
                   type="button"
                   onClick={clearDateFilter}
-                  className="p-2.5 rounded-[10px] border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                  className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
                   title="Clear date filter"
                 >
                   <FaTimes size={14} />
@@ -793,7 +792,7 @@ const AttendanceManagement = ({ companyId }) => {
             <FaSpinner className="animate-spin text-blue-500 text-3xl sm:text-4xl" />
           </div>
         ) : visibleAttendances.length === 0 ? (
-          <div className="bg-white rounded-[10px] shadow-lg p-8 sm:p-10 md:p-12 text-center">
+          <div className="bg-white rounded-xl shadow-lg p-8 sm:p-10 md:p-12 text-center">
             <FaClock className="text-4xl sm:text-5xl md:text-6xl text-gray-300 mx-auto mb-3 sm:mb-4" />
             <p className="text-gray-500 text-sm sm:text-base md:text-lg">No {activeAttendanceTypeMeta.shortLabel.toLowerCase()} attendance records found</p>
             <p className="text-gray-400 text-xs sm:text-sm mt-1">
@@ -806,19 +805,19 @@ const AttendanceManagement = ({ companyId }) => {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[10px] shadow-xl overflow-visible"
+                className="bg-white rounded-xl shadow-xl overflow-visible"
               >
                 <div className="overflow-x-auto overflow-y-visible">
                   <table className="w-full text-sm text-left text-gray-700">
-                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+                    <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
-                        {showDate && <th className="px-6 py-4 font-semibold tracking-wider">Date</th>}
-                        {showTimes && <th className="px-6 py-4 font-semibold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
-                        {showTimes && <th className="px-6 py-4 font-semibold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
-                        <th className="px-6 py-4 font-semibold tracking-wider">Status</th>
-                        {showMethod && <th className="px-6 py-4 font-semibold tracking-wider">Method</th>}
-                        <th className="px-6 py-4 text-center font-semibold tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
+                        <th className="px-6 py-4 font-bold tracking-wider">Employee</th>
+                        {showDate && <th className="px-6 py-4 font-bold tracking-wider">Date</th>}
+                        {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
+                        {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
+                        <th className="px-6 py-4 font-bold tracking-wider">Status</th>
+                        {showMethod && <th className="px-6 py-4 font-bold tracking-wider">Method</th>}
+                        <th className="px-6 py-4 text-center font-bold tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -957,14 +956,14 @@ const AttendanceManagement = ({ companyId }) => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-[10px] focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                   placeholder="Enter rejection reason..."
                   autoFocus
                 />
                 <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3">
                   <button
                     onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-[10px] hover:bg-gray-200 transition font-medium"
+                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
                   >
                     Cancel
                   </button>
@@ -976,7 +975,7 @@ const AttendanceManagement = ({ companyId }) => {
                         toast.warning('Please provide a reason for rejection');
                       }
                     }}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-[10px] hover:bg-red-700 transition font-medium shadow-lg"
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium shadow-lg"
                   >
                     Submit Rejection
                   </button>

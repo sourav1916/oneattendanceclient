@@ -199,7 +199,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="rounded-[10px] bg-white p-4 shadow-md border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+      className="rounded-xl bg-white p-4 shadow-md border border-gray-100 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
       onClick={() => onViewDetails(leave)}
     >
       <div className="mb-3 flex items-start justify-between">
@@ -302,7 +302,7 @@ const Modal = ({ open, title, subtitle, onClose, children }) => {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-[10px] bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-xl rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 rounded-t-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 text-white">
           <div className="min-w-0">
             <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
@@ -314,7 +314,7 @@ const Modal = ({ open, title, subtitle, onClose, children }) => {
         </div>
         <div className="max-h-[82vh] overflow-y-auto p-4 sm:p-5">{children}</div>
       </div>
-      </div>
+    </div>
   );
 };
 
@@ -979,7 +979,7 @@ const MyLeave = () => {
         <button
           type="button"
           onClick={() => setShowApply(true)}
-          className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-fuchsia-700"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-fuchsia-700"
         >
           <FaPlus />
           Apply Leave
@@ -993,28 +993,28 @@ const MyLeave = () => {
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4"
         >
-          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaCalendarCheck className="text-violet-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Total</p>
             </div>
             <p className="text-xl font-bold text-gray-800 sm:text-2xl">{stats.total}</p>
           </div>
-          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaSpinner className="text-yellow-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Pending</p>
             </div>
             <p className="text-xl font-bold text-yellow-600 sm:text-2xl">{stats.pending}</p>
           </div>
-          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaEye className="text-green-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Approved</p>
             </div>
             <p className="text-xl font-bold text-green-600 sm:text-2xl">{stats.approved}</p>
           </div>
-          <div className="rounded-[10px] bg-white p-3 shadow-md sm:p-4">
+          <div className="rounded-xl bg-white p-3 shadow-md sm:p-4">
             <div className="mb-1 flex items-center gap-2">
               <FaTimes className="text-red-500 text-sm sm:text-base" />
               <p className="text-xs text-gray-500 uppercase">Rejected</p>
@@ -1046,13 +1046,13 @@ const MyLeave = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
           <div className="flex items-center gap-4 flex-1">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
               <input
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm"
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm"
                 placeholder="Search leaves by type or reason..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -1077,7 +1077,7 @@ const MyLeave = () => {
 
           <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
             <select
-              className="min-w-[150px] rounded-[10px] border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+              className="min-w-[150px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -1101,7 +1101,7 @@ const MyLeave = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="rounded-[10px] bg-white shadow-xl overflow-visible"
+          className="rounded-xl bg-white shadow-xl overflow-visible"
         >
           {loading ? (
             <div className="flex justify-center py-16">

@@ -34,7 +34,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false, badge 
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="md:col-span-2 border border-gray-200 rounded-[10px] overflow-hidden">
+    <div className="md:col-span-2 border border-gray-200 rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -509,7 +509,7 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4"
           onClick={() => setShowPreview(false)}
         >
-          <div className="relative bg-white rounded-[10px] p-4 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="relative bg-white rounded-xl p-4 max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setShowPreview(false)}
               className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100">
               <FaTimes className="w-4 h-4 text-gray-600" />

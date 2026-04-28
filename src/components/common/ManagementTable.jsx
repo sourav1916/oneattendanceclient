@@ -59,7 +59,7 @@ export default function ManagementTable({
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={joinClasses('overflow-hidden rounded-[10px] bg-white', cardClass, containerClassName, className)}
+      className={joinClasses('overflow-hidden rounded-xl bg-white', cardClass, containerClassName, className)}
     >
       <div className={joinClasses('overflow-x-auto', tableClassName)}>
         <table className="w-full text-left text-sm text-gray-700">

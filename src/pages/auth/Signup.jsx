@@ -428,7 +428,7 @@ const Signup = () => {
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, type: "spring" }}
-              className="bg-white/95 backdrop-blur-lg p-8 rounded-[10px] shadow-2xl"
+              className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl"
             >
               {/* Header */}
               <motion.div
@@ -438,7 +438,7 @@ const Signup = () => {
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.1 }}
                   transition={{ duration: 0.5 }}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-[10px] text-white text-3xl shadow-lg"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-xl text-white text-3xl shadow-lg"
                 >
                   <FaUserShield />
                 </motion.div>

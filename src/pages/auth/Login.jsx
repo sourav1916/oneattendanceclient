@@ -48,13 +48,13 @@ const Login = () => {
   useEffect(() => {
     if (showCompanySelection) {
       window.history.pushState(null, "", window.location.href);
-      
+
       const handlePopState = (e) => {
         e.preventDefault();
         window.history.pushState(null, "", window.location.href);
         toast.warning("Please select a company to continue");
       };
-      
+
       window.addEventListener("popstate", handlePopState);
       return () => window.removeEventListener("popstate", handlePopState);
     }
@@ -119,7 +119,7 @@ const Login = () => {
       setLoadingAction("request-otp");
       const res = await apiCall('/auth/login/request-otp', 'POST', { email, password });
       const data = await res.json();
-      
+
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
 
       setOtpSent(true);
@@ -147,7 +147,7 @@ const Login = () => {
 
       // Fetch precise location if possible
       toast.info("Capturing precise location...", { autoClose: 1500 });
-      
+
       let locationData = null;
       try {
         locationData = await getPreciseLocation();
@@ -168,9 +168,9 @@ const Login = () => {
 
       const res = await apiCall('/auth/login/verify-otp', 'POST', payload);
       const data = await res.json();
-      
+
       if (!res.ok) throw new Error(data.message || "OTP verification failed");
-      
+
       await login(data.token);
       toast.success("Login successful 🎉");
     } catch (err) {
@@ -234,7 +234,7 @@ const Login = () => {
     <>
       <style>{animationStyles}</style>
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 flex items-center justify-center p-5 relative overflow-hidden">
-        
+
         {/* Animated Background */}
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(20)].map((_, i) => (
@@ -262,7 +262,7 @@ const Login = () => {
         </motion.div>
 
         <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full max-w-6xl relative z-10">
-          
+
           {/* Left Content */}
           <motion.div variants={itemVariants} className="mb-10 lg:mb-0 lg:w-1/2 text-white px-4 lg:px-8">
             <motion.h1 initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, type: "spring" }} className="text-5xl lg:text-6xl font-bold leading-tight">
@@ -283,12 +283,12 @@ const Login = () => {
 
           {/* Right Card */}
           <motion.div variants={itemVariants} className="w-full lg:w-96">
-            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-[10px] shadow-2xl">
+            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl">
               <AnimatePresence mode="wait">
                 {!showCompanySelection ? (
                   <motion.div key="login" initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 50, opacity: 0 }}>
                     <div className="flex flex-col items-center mb-8">
-                      <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-[10px] text-white text-3xl shadow-lg">
+                      <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl text-white text-3xl shadow-lg">
                         <FaUserShield />
                       </motion.div>
                       <h2 className="text-2xl font-bold text-gray-800 mt-4">{otpSent ? 'Verify OTP' : 'Secure Login'}</h2>

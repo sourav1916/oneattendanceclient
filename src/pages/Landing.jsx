@@ -255,17 +255,17 @@ export default function LandingPage() {
                   y: -10,
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 }}
-                className="group relative p-6 rounded-[10px] bg-white shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
+                className="group relative p-6 rounded-xl bg-white shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer"
               >
                 <motion.div
-                  className="absolute inset-0 rounded-[10px] bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                   style={{
                     backgroundImage: `linear-gradient(to right, ${feature.color})`,
                     filter: "blur(20px)",
                     zIndex: -1
                   }}
                 />
-                <div className={`w-20 h-20 mx-auto ${feature.bgColor} rounded-[10px] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <div className={`w-20 h-20 mx-auto ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
                   <feature.icon className={`w-10 h-10 ${feature.iconColor}`} />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
@@ -292,7 +292,7 @@ export default function LandingPage() {
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] p-8 text-center"
+                className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-8 text-center"
                 whileHover={{ scale: 1.05 }}
               >
                 <stat.icon className="w-12 h-12 mx-auto text-blue-600 mb-4" />
@@ -365,7 +365,7 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05, boxShadow: "0 30px 30px -15px rgba(0, 0, 0, 0.3)" }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/signup')}
-              className="px-10 py-4 bg-white text-blue-600 font-bold text-lg rounded-[10px] shadow-2xl flex items-center justify-center gap-2 group"
+              className="px-10 py-4 bg-white text-blue-600 font-bold text-lg rounded-xl shadow-2xl flex items-center justify-center gap-2 group"
             >
               Create Free Account
               <motion.div
@@ -381,7 +381,7 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/login')}
-              className="px-10 py-4 font-semibold text-lg rounded-[10px] border-2 border-white hover:bg-white/20 transition-all duration-200"
+              className="px-10 py-4 font-semibold text-lg rounded-xl border-2 border-white hover:bg-white/20 transition-all duration-200"
             >
               Login Now
             </motion.button>

@@ -82,7 +82,7 @@ const getEmployeeListCacheKey = ({ companyId, page, limit, search }) =>
 // ─── Helper Components ───────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-[10px] border border-gray-200">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">{icon}{label}</label>
         <div className="text-gray-800 font-medium">{value}</div>
     </div>
@@ -160,7 +160,7 @@ const EmployeeEditModal = ({
         <div className="flex flex-col h-full">
             <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
                         <FaUserCog className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -171,7 +171,7 @@ const EmployeeEditModal = ({
                 <button
                     type="button"
                     onClick={closeModal}
-                    className="flex h-9 w-9 items-center justify-center rounded-[10px] text-slate-500 hover:bg-white hover:text-slate-700"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700"
                 >
                     <FaTimes className="h-4 w-4" />
                 </button>
@@ -186,9 +186,9 @@ const EmployeeEditModal = ({
                 ) : (
                     <div className="space-y-6 pb-20">
                         {/* Status Card */}
-                        <div className="rounded-[10px] border border-emerald-200 bg-emerald-50 p-4">
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                             <div className="flex items-start gap-4">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-[10px] bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
                                     {formData.name?.charAt(0)?.toUpperCase() || "E"}
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-1">
@@ -233,10 +233,10 @@ const EmployeeEditModal = ({
                                 <Select
                                     options={permissionPackages}
                                     value={formData.selectedPackage || null}
-                                    onChange={(option) => setFormData(prev => ({ 
-                                        ...prev, 
-                                        selectedPackage: option, 
-                                        permission_package_id: option?.value || null 
+                                    onChange={(option) => setFormData(prev => ({
+                                        ...prev,
+                                        selectedPackage: option,
+                                        permission_package_id: option?.value || null
                                     }))}
                                     placeholder="Select permission package"
                                     isClearable
@@ -277,7 +277,7 @@ const EmployeeEditModal = ({
 
                         {/* Attendance Section */}
                         <div className="space-y-4">
-                            <div className="rounded-[10px] border border-slate-200 bg-white p-4">
+                            <div className="rounded-xl border border-slate-200 bg-white p-4">
                                 <div className="mb-3 flex items-center justify-between">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                         <FaFingerprint className="h-4 w-4 text-indigo-500" />
@@ -294,11 +294,10 @@ const EmployeeEditModal = ({
                                                     key={method.id}
                                                     type="button"
                                                     onClick={() => method.available && handleToggleMethod(method.id)}
-                                                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                                                        active
+                                                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
                                                             ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
                                                             : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
-                                                    } ${!method.available ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                        } ${!method.available ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     {active && <FaCheck className="h-3 w-3" />}
                                                     {method.name}
@@ -307,13 +306,13 @@ const EmployeeEditModal = ({
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="rounded-[10px] border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
                                         No attendance methods available.
                                     </div>
                                 )}
                             </div>
 
-                            <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                                 <div className="flex items-center justify-between">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                         <FaCheck className="h-4 w-4 text-indigo-500" />
@@ -322,13 +321,11 @@ const EmployeeEditModal = ({
                                     <button
                                         type="button"
                                         onClick={() => setFormData(prev => ({ ...prev, auto_approve: !prev.auto_approve }))}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                            formData.auto_approve ? 'bg-indigo-600' : 'bg-slate-300'
-                                        }`}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.auto_approve ? 'bg-indigo-600' : 'bg-slate-300'
+                                            }`}
                                     >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                            formData.auto_approve ? 'translate-x-6' : 'translate-x-1'
-                                        }`} />
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.auto_approve ? 'translate-x-6' : 'translate-x-1'
+                                            }`} />
                                     </button>
                                 </div>
                             </div>
@@ -336,11 +333,11 @@ const EmployeeEditModal = ({
 
                         {/* Shift & Weekends Grid */}
                         <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
-                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <FaClock className="h-4 w-4 text-indigo-500" />
-                                Shift Timings
-                            </label>
+                            <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaClock className="h-4 w-4 text-indigo-500" />
+                                    Shift Timings
+                                </label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <TimeDurationPickerField
                                         label="Start Time"
@@ -348,38 +345,38 @@ const EmployeeEditModal = ({
                                         onChange={(val) => setFormData(prev => ({ ...prev, shift_start: val }))}
                                         mode="time"
                                     />
-                                <TimeDurationPickerField
-                                    label="End Time"
-                                    value={formData.shift_end}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
-                                    mode="time"
-                                />
+                                    <TimeDurationPickerField
+                                        label="End Time"
+                                        value={formData.shift_end}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, shift_end: val }))}
+                                        mode="time"
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
-                            <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <FaClock className="h-4 w-4 text-indigo-500" />
-                                Duration Settings
-                            </label>
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                <TimeDurationPickerField
-                                    label="Break Minutes"
-                                    value={formData.break_minutes}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, break_minutes: val }))}
-                                    mode="duration"
-                                />
-                                <TimeDurationPickerField
-                                    label="Grace Minutes"
-                                    value={formData.grace_minutes}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, grace_minutes: val }))}
-                                    mode="duration"
-                                />
+                            <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaClock className="h-4 w-4 text-indigo-500" />
+                                    Duration Settings
+                                </label>
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                    <TimeDurationPickerField
+                                        label="Break Minutes"
+                                        value={formData.break_minutes}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, break_minutes: val }))}
+                                        mode="duration"
+                                    />
+                                    <TimeDurationPickerField
+                                        label="Grace Minutes"
+                                        value={formData.grace_minutes}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, grace_minutes: val }))}
+                                        mode="duration"
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="rounded-[10px] border border-slate-200 bg-white p-4">
-                            <button
+                            <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                <button
                                     type="button"
                                     onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
                                     className="flex w-full items-center justify-between"
@@ -408,15 +405,14 @@ const EmployeeEditModal = ({
                                                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
                                                     const config = (formData.weekends || []).find(w => w.day === day);
                                                     return (
-                                                        <div key={day} className="flex items-center justify-between gap-2 rounded-[10px] border border-slate-100 bg-slate-50/50 p-2">
+                                                        <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => toggleWeekend(day)}
-                                                                className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                                                    config 
-                                                                        ? 'bg-indigo-600 text-white shadow-md' 
+                                                                className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${config
+                                                                        ? 'bg-indigo-600 text-white shadow-md'
                                                                         : 'bg-white text-slate-600 border border-slate-200'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
                                                                     {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
@@ -430,11 +426,10 @@ const EmployeeEditModal = ({
                                                                             key={type}
                                                                             type="button"
                                                                             onClick={() => updateWeekendType(day, type)}
-                                                                            className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                                                                                config.type === type 
-                                                                                    ? 'bg-slate-900 text-white' 
+                                                                            className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${config.type === type
+                                                                                    ? 'bg-slate-900 text-white'
                                                                                     : 'text-slate-400'
-                                                                            }`}
+                                                                                }`}
                                                                         >
                                                                             {type}
                                                                         </button>
@@ -459,7 +454,7 @@ const EmployeeEditModal = ({
                     type="button"
                     onClick={closeModal}
                     disabled={loading}
-                    className="rounded-[10px] border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
                 >
                     Cancel
                 </button>
@@ -470,7 +465,7 @@ const EmployeeEditModal = ({
                     disabled={loading || constantsLoading || permissionsLoading || updateDisabled}
                     title={updateDisabled ? getAccessMessage : ''}
                     onClick={handleEdit}
-                    className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:scale-[1.02] disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:scale-[1.02] disabled:opacity-50"
                 >
                     {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSave className="h-4 w-4" />}
                     Update Employee
@@ -962,7 +957,7 @@ const EmployeeManagement = () => {
     const openWeekendModal = (employee) => {
         const normalizedEmployee = normalizeEmployeeRecord(employee);
         setSelectedEmployee(normalizedEmployee);
-        
+
         // Initialize weekend config from employee data if available
         const initialConfig = {
             monday: 'none', tuesday: 'none', wednesday: 'none', thursday: 'none',
@@ -988,26 +983,26 @@ const EmployeeManagement = () => {
         setSelectedEmployee(null);
         setShowPermissions(false);
         setAttendanceMethodsConfig({});
-            setFormData({
-                name: '',
-                designation: '',
-                email: '',
-                phone: '',
-                employee_code: '',
-                employment_type: '',
-                salary_type: '',
-                joining_date: '',
-                status: '',
-                permission_package_id: null,
-                selectedPackage: null,
-                attendance_methods: [],
-                auto_approve: false,
-                shift_start: DEFAULT_SHIFT_START,
-                shift_end: DEFAULT_SHIFT_END,
-                break_minutes: DEFAULT_DURATION,
-                grace_minutes: DEFAULT_DURATION,
-                weekends: []
-            });
+        setFormData({
+            name: '',
+            designation: '',
+            email: '',
+            phone: '',
+            employee_code: '',
+            employment_type: '',
+            salary_type: '',
+            joining_date: '',
+            status: '',
+            permission_package_id: null,
+            selectedPackage: null,
+            attendance_methods: [],
+            auto_approve: false,
+            shift_start: DEFAULT_SHIFT_START,
+            shift_end: DEFAULT_SHIFT_END,
+            break_minutes: DEFAULT_DURATION,
+            grace_minutes: DEFAULT_DURATION,
+            weekends: []
+        });
     };
 
     // ─── Form Handlers ───────────────────────────────────────────────────────
@@ -1063,7 +1058,7 @@ const EmployeeManagement = () => {
         setLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            
+
             // Format weekends for payload: only include those with type 'half' or 'full'
             const weekends = Object.entries(weekendConfig)
                 .filter(([, type]) => type !== 'none')
@@ -1104,7 +1099,7 @@ const EmployeeManagement = () => {
         }));
     };
 
-    const handleInternalMethodChange = () => {};
+    const handleInternalMethodChange = () => { };
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -1220,7 +1215,7 @@ const EmployeeManagement = () => {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
+                className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
             >
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-2">
@@ -1253,7 +1248,7 @@ const EmployeeManagement = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+                className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
             >
                 {/* Left Section: Search, Result Info & View Mode */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -1264,7 +1259,7 @@ const EmployeeManagement = () => {
                             placeholder="Search employees by name, email, or code..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
+                            className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm"
                         />
                         {searchTerm && (
                             <button
@@ -1281,7 +1276,7 @@ const EmployeeManagement = () => {
                             Showing <span className="font-semibold text-gray-800">{employees.length}</span> staff members
                         </p>
                     )}
-                    
+
 
                     <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
 
@@ -1296,7 +1291,7 @@ const EmployeeManagement = () => {
             {loading && !employees.length && <SkeletonComponent />}
 
             {!loading && employees.length === 0 && (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-[10px] shadow-xl">
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-xl shadow-xl">
                     <FaUserCircle className="text-8xl text-gray-300 mx-auto mb-4" />
                     <p className="text-xl text-gray-500">No employees found</p>
                     <p className="text-gray-400 mt-2">Try adjusting your search or add new employees</p>
@@ -1307,7 +1302,7 @@ const EmployeeManagement = () => {
                 <>
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-[10px] shadow-xl overflow-hidden"
+                            className="bg-white rounded-xl shadow-xl overflow-hidden"
                         >
                             <div className="overflow-x-auto overflow-y-visible">
                                 <table className="w-full text-sm text-left text-gray-700">
@@ -1337,7 +1332,7 @@ const EmployeeManagement = () => {
                                                         <div className="flex items-center gap-3">
 
                                                             {/* Avatar Circle */}
-                                                            <div className="w-10 h-10 flex items-center justify-center rounded-[10px] bg-purple-100">
+                                                            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-purple-100">
                                                                 <FaUser className="text-purple-500 text-sm" />
                                                             </div>
 
@@ -1351,7 +1346,7 @@ const EmployeeManagement = () => {
                                                 )}
                                                 {visibleColumns.showDesignation && (
                                                     <td className="px-6 py-4">
-                                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-[10px] text-xs font-medium truncate max-w-[120px] inline-block">
+                                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-xs font-medium truncate max-w-[120px] inline-block">
                                                             {getDesignationDisplay(emp.designation)}
                                                         </span>
                                                     </td>
@@ -1363,10 +1358,10 @@ const EmployeeManagement = () => {
                                                     <td className="px-6 py-4"><div className="flex items-center gap-2"><FaPhone className="text-gray-400 text-xs" /><span>{emp.phone}</span></div></td>
                                                 )}
                                                 {visibleColumns.showType && (
-                                                    <td className="px-6 py-4"><span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-[10px] text-xs font-medium">{getEmploymentTypeDisplay(emp.employment_type)}</span></td>
+                                                    <td className="px-6 py-4"><span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-xl text-xs font-medium">{getEmploymentTypeDisplay(emp.employment_type)}</span></td>
                                                 )}
                                                 {visibleColumns.showStatus && (
-                                                    <td className="px-6 py-4"><span className={`px-3 py-1 rounded-[10px] text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span></td>
+                                                    <td className="px-6 py-4"><span className={`px-3 py-1 rounded-xl text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span></td>
                                                 )}
                                                 {visibleColumns.showJoiningDate && (
                                                     <td className="px-6 py-4"><div className="flex items-center gap-2"><FaCalendarAlt className="text-gray-400 text-xs" /><span>{formatDate(emp.joining_date)}</span></div></td>
@@ -1433,18 +1428,18 @@ const EmployeeManagement = () => {
                             {employees.map((emp, index) => (
                                 <motion.div key={emp.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
                                     onClick={() => openEmployeeProfile(emp)}
-                                    className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                    className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                 >
                                     <div className="flex items-start gap-4">
-                                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-[10px]">
+                                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
                                             <FaUserCircle className="text-white text-3xl" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-start">
                                                 <h3 className="font-bold text-lg text-gray-800 truncate">{emp.name}</h3>
-                                                <span className={`px-3 py-1 rounded-[10px] text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span>
+                                                <span className={`px-3 py-1 rounded-xl text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span>
                                             </div>
-                                            <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-[10px] inline-block">{emp.employee_code}</p>
+                                            <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-xl inline-block">{emp.employee_code}</p>
                                             <div className="mt-3 space-y-2">
                                                 <p className="text-sm text-gray-600 flex items-center gap-2"><FaBriefcase className="text-blue-500" />{getDesignationDisplay(emp.designation)}</p>
                                                 <p className="text-xs text-gray-500 flex items-center gap-2"><FaEnvelope className="text-gray-400" />{emp.email}</p>
@@ -1457,11 +1452,11 @@ const EmployeeManagement = () => {
                                         </div>
                                     </div>
                                     <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => openEmployeeProfile(emp)} disabled={readEmployeeAccess.disabled} title={readEmployeeAccess.disabled ? getAccessMessage(readEmployeeAccess) : ''} className="p-3 bg-indigo-50 text-indigo-600 rounded-[10px] hover:bg-indigo-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaUserCircle size={16} /></button>
-                                        <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
-                                        <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-[10px] hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
-                                        <button onClick={() => openWeekendModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-purple-50 text-purple-600 rounded-[10px] hover:bg-purple-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaCalendarAlt size={16} /></button>
-                                        <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-[10px] hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
+                                        <button onClick={() => openEmployeeProfile(emp)} disabled={readEmployeeAccess.disabled} title={readEmployeeAccess.disabled ? getAccessMessage(readEmployeeAccess) : ''} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaUserCircle size={16} /></button>
+                                        <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
+                                        <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
+                                        <button onClick={() => openWeekendModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaCalendarAlt size={16} /></button>
+                                        <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                                     </div>
                                 </motion.div>
                             ))}
@@ -1494,10 +1489,10 @@ const EmployeeManagement = () => {
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
                             className={`relative w-full bg-white shadow-2xl overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
-                                    ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col rounded-[10px]'
-                                    : modalType === MODAL_TYPES.EDIT
-                                        ? 'max-w-4xl h-[90vh] flex flex-col rounded-[10px] border border-slate-200'
-                                        : 'max-w-4xl max-h-[90vh] rounded-[10px]'
+                                ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col rounded-xl'
+                                : modalType === MODAL_TYPES.EDIT
+                                    ? 'max-w-4xl h-[90vh] flex flex-col rounded-xl border border-slate-200'
+                                    : 'max-w-4xl max-h-[90vh] rounded-xl'
                                 }`}
                             onClick={e => e.stopPropagation()}
                         >
@@ -1507,7 +1502,7 @@ const EmployeeManagement = () => {
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-[10px] flex items-center justify-center shadow-lg shadow-indigo-200">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
                                                     <FaEye className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
@@ -1519,7 +1514,7 @@ const EmployeeManagement = () => {
                                                 whileHover={{ scale: 1.1, rotate: 90 }}
                                                 whileTap={{ scale: 0.9 }}
                                                 onClick={closeModal}
-                                                className="w-8 h-8 rounded-[10px] hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                                className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors"
                                             >
                                                 <FaTimes className="w-5 h-5 text-gray-400" />
                                             </motion.button>
@@ -1528,7 +1523,7 @@ const EmployeeManagement = () => {
                                     <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="col-span-2 flex items-center gap-6 pb-6 border-b">
-                                                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-[10px]">
+                                                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-xl">
                                                     <FaUserCircle className="text-white text-5xl" />
                                                 </div>
                                                 <div>
@@ -1566,7 +1561,7 @@ const EmployeeManagement = () => {
                                             {selectedEmployee.package_name && (
                                                 <div className="col-span-2 mt-4">
                                                     <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><FaShieldAlt className="text-blue-500" /> Permission Package</label>
-                                                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-[10px] border border-indigo-200">
+                                                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-200">
                                                         <div className="flex items-center gap-3">
                                                             <FaShieldAlt className="text-indigo-500 text-xl" />
                                                             <div>
@@ -1581,13 +1576,13 @@ const EmployeeManagement = () => {
                                             )}
 
                                             {selectedEmployee.permissions?.length > 0 && (
-                                                <div className="col-span-2 mt-4 border border-gray-200 rounded-[10px] overflow-hidden">
-                                                    <button 
+                                                <div className="col-span-2 mt-4 border border-gray-200 rounded-xl overflow-hidden">
+                                                    <button
                                                         onClick={() => setShowPermissions(!showPermissions)}
                                                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <FaShieldAlt className="text-indigo-500" /> 
+                                                            <FaShieldAlt className="text-indigo-500" />
                                                             <span className="text-sm font-semibold text-gray-700">Permissions</span>
                                                             <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
                                                                 {selectedEmployee.permissions.length}
@@ -1599,21 +1594,21 @@ const EmployeeManagement = () => {
                                                     </button>
                                                     <AnimatePresence>
                                                         {showPermissions && (
-                                                            <motion.div 
+                                                            <motion.div
                                                                 initial={{ height: 0, opacity: 0 }}
                                                                 animate={{ height: "auto", opacity: 1 }}
                                                                 exit={{ height: 0, opacity: 0 }}
                                                                 className="overflow-hidden"
                                                             >
                                                                 <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        {selectedEmployee.permissions.map((perm, idx) => (
-                                                            <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                                                                className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-[10px] border border-green-200"
-                                                            >
-                                                                <span className="font-medium text-gray-700">{perm.name}</span>
-                                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-mono">{perm.code}</span>
-                                                            </motion.div>
-                                                        ))}
+                                                                    {selectedEmployee.permissions.map((perm, idx) => (
+                                                                        <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
+                                                                            className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"
+                                                                        >
+                                                                            <span className="font-medium text-gray-700">{perm.name}</span>
+                                                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-mono">{perm.code}</span>
+                                                                        </motion.div>
+                                                                    ))}
                                                                 </div>
                                                             </motion.div>
                                                         )}
@@ -1627,7 +1622,7 @@ const EmployeeManagement = () => {
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                         {selectedEmployee.attendance_methods.map((method, idx) => (
                                                             <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                                                                className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-200"
+                                                                className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200"
                                                             >
                                                                 <div className="flex items-center justify-between">
                                                                     <span className="font-medium text-gray-700 capitalize">{method.method}</span>
@@ -1652,15 +1647,14 @@ const EmployeeManagement = () => {
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                         {selectedEmployee.weekends.map((w, idx) => (
                                                             <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                                                                className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-[10px] border border-purple-200"
+                                                                className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200"
                                                             >
                                                                 <div className="flex items-center justify-between">
                                                                     <span className="font-medium text-gray-700 capitalize">{w.day}</span>
-                                                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                                                        w.type?.toLowerCase() === 'full' 
-                                                                        ? 'bg-indigo-100 text-indigo-700' 
-                                                                        : 'bg-blue-100 text-blue-700'
-                                                                    }`}>
+                                                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${w.type?.toLowerCase() === 'full'
+                                                                            ? 'bg-indigo-100 text-indigo-700'
+                                                                            : 'bg-blue-100 text-blue-700'
+                                                                        }`}>
                                                                         {w.type?.toLowerCase() === 'full' ? 'Full Day' : 'Half Day'}
                                                                     </span>
                                                                 </div>
@@ -1671,7 +1665,7 @@ const EmployeeManagement = () => {
                                             )}
                                         </div>
                                         <div className="mt-6 flex justify-end">
-                                            <button onClick={closeModal} className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-[10px] hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">Close</button>
+                                            <button onClick={closeModal} className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">Close</button>
                                         </div>
                                     </div>
                                 </>
@@ -1704,7 +1698,7 @@ const EmployeeManagement = () => {
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-[10px] flex items-center justify-center shadow-lg shadow-emerald-200">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
                                                     <FaEdit className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
@@ -1745,7 +1739,7 @@ const EmployeeManagement = () => {
                                                                 <FaUserCircle className="w-4 h-4 text-indigo-500" />
                                                                 Employee
                                                             </label>
-                                                            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[10px] border border-blue-100">
+                                                            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                                                                 <div className="flex items-center gap-3">
                                                                     <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-semibold text-lg">
                                                                         {formData.name?.charAt(0).toUpperCase()}
@@ -1900,7 +1894,7 @@ const EmployeeManagement = () => {
                                                                 <motion.div
                                                                     initial={{ opacity: 0, y: -8 }}
                                                                     animate={{ opacity: 1, y: 0 }}
-                                                                    className="mt-2 p-3 bg-indigo-50 border border-indigo-100 rounded-[10px]"
+                                                                    className="mt-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl"
                                                                 >
                                                                     <p className="text-xs font-semibold text-indigo-700 mb-2 flex items-center gap-1">
                                                                         <FaCheck className="w-3 h-3" />
@@ -1945,7 +1939,7 @@ const EmployeeManagement = () => {
                                                                     return (
                                                                         <div
                                                                             key={method.id}
-                                                                            className={`border rounded-[10px] transition-all duration-200 overflow-hidden ${isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
+                                                                            className={`border rounded-xl transition-all duration-200 overflow-hidden ${isEnabled ? 'border-indigo-200 bg-indigo-50/30 shadow-sm' : 'border-gray-200 bg-white'
                                                                                 } ${!method.available ? 'opacity-60' : ''}`}
                                                                         >
                                                                             <div className="flex items-center justify-between p-4">
@@ -2025,7 +2019,7 @@ const EmployeeManagement = () => {
                                                                 })}
                                                             </div>
                                                         </motion.div>
-                                                        
+
                                                         <motion.div
                                                             initial={{ y: 20, opacity: 0 }}
                                                             animate={{ y: 0, opacity: 1 }}
@@ -2046,7 +2040,7 @@ const EmployeeManagement = () => {
                                                                 </button>
                                                             </div>
 
-                                                            <div className="p-4 bg-gray-50 rounded-[10px] border border-gray-100">
+                                                            <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                                                                 {selectedEmployee?.weekends?.length > 0 ? (
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {selectedEmployee.weekends.map((w, idx) => (
@@ -2076,7 +2070,7 @@ const EmployeeManagement = () => {
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={closeModal}
                                                 disabled={loading}
-                                                className="px-5 py-2.5 rounded-[10px] border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 Cancel
                                             </motion.button>
@@ -2086,7 +2080,7 @@ const EmployeeManagement = () => {
                                                 whileTap={{ scale: 0.98 }}
                                                 disabled={loading || constantsLoading || permissionsLoading || updateEmployeeAccess.disabled}
                                                 title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''}
-                                                className="px-5 py-2.5 rounded-[10px] bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                             >
                                                 {loading ? (
                                                     <>
@@ -2111,7 +2105,7 @@ const EmployeeManagement = () => {
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-[10px] flex items-center justify-center shadow-lg shadow-purple-200">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200">
                                                     <FaCalendarAlt className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
@@ -2132,15 +2126,15 @@ const EmployeeManagement = () => {
                                     <form onSubmit={handleWeekendSubmit} className="p-6">
                                         <div className="space-y-4 max-h-[calc(100vh-350px)] overflow-y-auto pr-2 custom-scrollbar">
                                             {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                                                <div key={day} className="flex items-center justify-between p-4 bg-gray-50 rounded-[10px] border border-gray-100 group transition-all hover:bg-white hover:shadow-md hover:border-purple-200">
+                                                <div key={day} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md hover:border-purple-200">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-[10px] bg-white flex items-center justify-center shadow-sm text-purple-600 font-bold uppercase text-xs group-hover:bg-purple-50">
+                                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-purple-600 font-bold uppercase text-xs group-hover:bg-purple-50">
                                                             {day.substring(0, 3)}
                                                         </div>
                                                         <span className="capitalize font-medium text-gray-700">{day}</span>
                                                     </div>
-                                                    
-                                                    <div className="flex bg-white p-1 rounded-[10px] shadow-inner border border-gray-200">
+
+                                                    <div className="flex bg-white p-1 rounded-xl shadow-inner border border-gray-200">
                                                         {[
                                                             { value: 'none', label: 'Working', color: 'bg-gray-100 text-gray-600' },
                                                             { value: 'half', label: 'Half Day', color: 'bg-blue-500 text-white' },
@@ -2152,11 +2146,10 @@ const EmployeeManagement = () => {
                                                                     key={opt.value}
                                                                     type="button"
                                                                     onClick={() => setWeekendConfig(prev => ({ ...prev, [day]: opt.value }))}
-                                                                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
-                                                                        isActive 
-                                                                        ? `${opt.color} shadow-lg scale-105 ring-2 ring-white` 
-                                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                                                                    }`}
+                                                                    className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${isActive
+                                                                            ? `${opt.color} shadow-lg scale-105 ring-2 ring-white`
+                                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                                        }`}
                                                                 >
                                                                     {opt.label}
                                                                 </button>
@@ -2174,7 +2167,7 @@ const EmployeeManagement = () => {
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={closeModal}
                                                 disabled={loading}
-                                                className="px-6 py-2.5 rounded-[10px] border border-gray-200 text-gray-600 font-medium hover:bg-white transition-all duration-200 text-sm"
+                                                className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white transition-all duration-200 text-sm"
                                             >
                                                 Cancel
                                             </motion.button>
@@ -2183,7 +2176,7 @@ const EmployeeManagement = () => {
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
                                                 disabled={loading}
-                                                className="px-6 py-2.5 rounded-[10px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-purple-200 flex items-center gap-2"
+                                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-purple-200 flex items-center gap-2"
                                             >
                                                 {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                                 Save Configuration
@@ -2199,7 +2192,7 @@ const EmployeeManagement = () => {
                                     <div className="px-6 py-5 border-b border-gray-100">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-[10px] flex items-center justify-center shadow-lg shadow-red-200">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
                                                     <FaTrash className="w-6 h-6 text-white" />
                                                 </div>
                                                 <div>
@@ -2228,9 +2221,9 @@ const EmployeeManagement = () => {
                                             You are about to delete <span className="font-semibold text-red-600">{selectedEmployee.name}</span>. This action cannot be undone.
                                         </p>
                                         <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row sm:gap-4">
-                                            <button onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-[10px] text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
+                                            <button onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
                                             <button onClick={handleDelete} disabled={loading || deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''}
-                                                className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-[10px] hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                                                className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                                             >
                                                 {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={14} />}
                                                 Delete Employee

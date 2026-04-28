@@ -139,7 +139,7 @@ const normalizePackageRecord = (pkg) => ({
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value, className = "" }) => (
-  <div className={`flex items-start gap-2 rounded-[10px] border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 px-3 py-2 ${className}`}>
+  <div className={`flex items-start gap-2 rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 px-3 py-2 ${className}`}>
     <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/80 border border-gray-200">
       {icon}
     </div>
@@ -589,7 +589,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                           key={method.method}
                           type="button"
                           onClick={() => handleAttendanceToggle(method.method)}
-                          className={`flex flex-col items-start gap-1 rounded-[10px] border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${isSelected
+                          className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${isSelected
                             ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
                             : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
                             }`}
@@ -616,14 +616,14 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     })}
                   </div>
                 ) : (
-                  <div className="rounded-[10px] border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
                     No attendance methods are available for the current company.
                   </div>
                 )}
               </div>
 
               {/* Auto Approve Toggle */}
-              <div className="rounded-[10px] border border-gray-200 bg-white p-4">
+              <div className="rounded-xl border border-gray-200 bg-white p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50">
@@ -688,7 +688,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-[10px] shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}>
 
         <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-[10px]">
@@ -696,7 +696,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
             <FaBox className="w-5 h-5" />
             <h2 className="text-lg font-semibold">Package Details</h2>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition">
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition">
             <FaTimes size={18} />
           </button>
         </div>
@@ -753,7 +753,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
 
           {/* Weekends */}
           {pkg.weekends?.length > 0 && (
-            <div className="mt-4 border border-gray-200 rounded-[10px] overflow-hidden shadow-sm">
+            <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
               <button
                 onClick={() => setShowWeekends(!showWeekends)}
                 className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -787,7 +787,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-[10px] border border-indigo-100"
+                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100"
                         >
                           <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
                           <span
@@ -809,7 +809,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
 
           {/* Permissions Section */}
           {pkg.permission_package_id && (
-            <div className="mt-6 border border-gray-200 rounded-[10px] overflow-hidden">
+            <div className="mt-6 border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowPermissions(!showPermissions)}
                 className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -874,7 +874,7 @@ function DeletePackageModal({ isOpen, onClose, onConfirm, package: pkg, processi
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-[10px] shadow-2xl w-full max-w-lg overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
         onClick={e => e.stopPropagation()}>
 
         <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white">
@@ -925,7 +925,7 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
       onClick={onClose}>
       <ModalScrollLock />
       <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
         onClick={e => e.stopPropagation()}>
 
         <div className={`flex justify-between items-center p-5 border-b ${isActivating ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-amber-600 to-orange-600'} text-white`}>
@@ -1170,7 +1170,7 @@ export default function InvitePackageManagement() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-[10px] border border-gray-100 bg-white p-5 shadow-sm"
+          className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
@@ -1215,7 +1215,7 @@ export default function InvitePackageManagement() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-[10px] border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
           {/* Left Section: Search & Result Info */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -1226,7 +1226,7 @@ export default function InvitePackageManagement() {
                 placeholder="Search by name, code, or designation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm"
+                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm"
               />
               {searchTerm && (
                 <button
@@ -1257,7 +1257,7 @@ export default function InvitePackageManagement() {
         {/* Empty State */}
         {!loading && packages.length === 0 && (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-            className="text-center py-16 bg-white rounded-[10px] shadow-xl">
+            className="text-center py-16 bg-white rounded-xl shadow-xl">
             <FaBox className="text-8xl text-gray-300 mx-auto mb-4" />
             <p className="text-xl text-gray-500">No packages found</p>
             <p className="text-gray-400 mt-2">
@@ -1275,7 +1275,7 @@ export default function InvitePackageManagement() {
         {/* Table View */}
         {!loading && packages.length > 0 && viewMode === "table" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-            className="bg-white rounded-[10px] shadow-xl overflow-hidden">
+            className="bg-white rounded-xl shadow-xl overflow-hidden">
             <div className="overflow-hidden">
               <table className="w-full table-fixed text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs xsm:hidden">
@@ -1391,9 +1391,9 @@ export default function InvitePackageManagement() {
                 <motion.div key={pkg.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => readAccess.enabled && openModal(pkg, "view")}
-                  className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                  className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="flex items-start gap-4">
-                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-[10px]">
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl">
                       <FaBox className="text-white text-2xl" />
                     </div>
                     <div className="flex-1 min-w-0">

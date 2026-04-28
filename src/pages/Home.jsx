@@ -49,14 +49,14 @@ function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-md mx-auto p-8 bg-white/80 backdrop-blur-xl rounded-xl shadow-xl border border-slate-100"
         >
-          <div className="w-20 h-20 bg-amber-100 rounded-[10px] flex items-center justify-center mx-auto mb-6 transform rotate-3">
+          <div className="w-20 h-20 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-6 transform rotate-3">
             <FaQuestionCircle className="w-10 h-10 text-amber-600" />
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-2">Session Expired</h2>
           <p className="text-slate-600 mb-8">Please login again to continue</p>
           <button
             onClick={() => window.location.href = '/login'}
-            className="group px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-[10px] font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
+            className="group px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
           >
             Go to Login
             <FaArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -352,7 +352,7 @@ function HomePage() {
             <div className="flex flex-wrap gap-3 mt-8">
               <button
                 onClick={() => canPunch && navigate('/attendance')}
-                className={`group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-[10px] shadow-sm transition-all duration-300 ${!canPunch ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:shadow-md hover:border-indigo-300'}`}
+                className={`group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-xl shadow-sm transition-all duration-300 ${!canPunch ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:shadow-md hover:border-indigo-300'}`}
               >
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${!canPunch ? 'bg-slate-100' : 'bg-indigo-50 group-hover/chip:bg-indigo-600'}`}>
                   <FaFingerprint className={`w-4 h-4 ${!canPunch ? 'text-slate-400' : 'text-indigo-600 group-hover/chip:text-white'}`} />
@@ -361,7 +361,7 @@ function HomePage() {
               </button>
               <button
                 onClick={() => navigate('/my-invites')}
-                className="group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-[10px] shadow-sm hover:shadow-md hover:border-pink-300 transition-all duration-300"
+                className="group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-pink-300 transition-all duration-300"
               >
                 <div className="w-8 h-8 bg-pink-50 rounded-xl flex items-center justify-center group-hover/chip:bg-pink-600 transition-colors">
                   <FaEnvelope className="w-4 h-4 text-pink-600 group-hover/chip:text-white" />
@@ -404,7 +404,7 @@ function HomePage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={action.onClick}
-              className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-[10px] p-5 border border-slate-200 hover:shadow-lg transition-all duration-300 text-left ${action.disabled ? 'opacity-60 cursor-not-allowed grayscale' : ''}`}
+              className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-xl p-5 border border-slate-200 hover:shadow-lg transition-all duration-300 text-left ${action.disabled ? 'opacity-60 cursor-not-allowed grayscale' : ''}`}
             >
               <div className={`absolute inset-0 ${action.gradient} opacity-0 ${!action.disabled && 'group-hover:opacity-10'} transition-opacity duration-300`}></div>
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-r ${action.color} shadow-lg`}>

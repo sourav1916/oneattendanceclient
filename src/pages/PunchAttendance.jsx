@@ -163,7 +163,7 @@ const PunchAttendance = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white p-8 rounded-xl shadow-xl border border-slate-100 text-center max-w-sm w-full"
         >
-          <div className="w-16 h-16 bg-rose-50 rounded-[10px] flex items-center justify-center mx-auto mb-5">
+          <div className="w-16 h-16 bg-rose-50 rounded-xl flex items-center justify-center mx-auto mb-5">
             <FaTimesCircle className="w-8 h-8 text-rose-500" />
           </div>
           <h2 className="text-xl font-bold text-slate-800 mb-2">Access Restricted</h2>
@@ -191,7 +191,7 @@ const PunchAttendance = () => {
         disabled={!allowed || !!loadingAction}
         className={`
           relative flex flex-col items-center justify-center gap-3
-          w-full py-8 sm:py-10 rounded-[10px] sm:rounded-xl font-bold text-white text-base sm:text-lg
+          w-full py-8 sm:py-10 rounded-xl sm:rounded-xl font-bold text-white text-base sm:text-lg
           transition-all duration-300 overflow-hidden
           ${allowed ? `${gradient} ${shadow}` : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'}
         `}
@@ -234,7 +234,7 @@ const PunchAttendance = () => {
       {/* ── Main Card ───────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="bg-white/90 backdrop-blur-xl rounded-[10px] sm:rounded-xl shadow-xl shadow-indigo-100/40 border border-slate-200/60 overflow-hidden"
+        className="bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl shadow-indigo-100/40 border border-slate-200/60 overflow-hidden"
       >
         {/* Method Tabs — icon-only on xs, icon+label on sm+ */}
         <div className="flex gap-1 p-3 bg-slate-50/70 border-b border-slate-100 overflow-x-auto no-scrollbar">

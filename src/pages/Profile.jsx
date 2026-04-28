@@ -91,7 +91,7 @@ export default function ProfilePage() {
                                 initial={{ scale: 0.6, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ type: "spring", stiffness: 200, damping: 18, delay: 0.15 }}
-                                className="relative w-20 h-20 rounded-[10px] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl border-4 border-white"
+                                className="relative w-20 h-20 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl border-4 border-white"
                             >
                                 <span className="text-2xl font-black text-white">
                                     {getInitials(user.name)}
@@ -108,7 +108,7 @@ export default function ProfilePage() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.3 }}
-                                className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-[10px] self-start sm:self-auto"
+                                className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl self-start sm:self-auto"
                             >
                                 <FaCrown className="text-amber-500 text-sm" />
                                 <span className="text-amber-700 font-semibold text-sm">{role}</span>
@@ -139,7 +139,7 @@ export default function ProfilePage() {
                     </div>
                 </motion.div>
 
-                <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm mb-6">
+                <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm mb-6">
                     {PROFILE_TABS.map((tab) => (
                         <button
                             key={tab}
@@ -173,7 +173,7 @@ export default function ProfilePage() {
                             className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                         >
                             {/* Contact card */}
-                            <div className="bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
                                     <div className="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center">
                                         <FaIdBadge className="text-indigo-500 text-xs" />
@@ -241,7 +241,7 @@ export default function ProfilePage() {
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: i * 0.08 }}
                                         whileHover={{ x: 4 }}
-                                        className="bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all duration-200"
+                                        className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-all duration-200"
                                     >
                                         <div className={`w-11 h-11 ${item.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
                                             <item.icon className={`${item.iconColor} w-5 h-5`} />
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                             className="flex flex-col gap-4"
                         >
                             {/* Count pill */}
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm self-start">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm self-start">
                                 <FaLayerGroup className="text-indigo-500 text-sm" />
                                 <p className="text-sm font-semibold text-slate-700">
                                     {total_companies} {total_companies === 1 ? "Company" : "Companies"} found
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.1, type: "spring", stiffness: 180, damping: 22 }}
-                                    className="bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                                    className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"
                                 >
                                     {/* Header row */}
                                     <button
@@ -381,7 +381,7 @@ export default function ProfilePage() {
                             className="flex flex-col gap-4"
                         >
                             {/* Info banner */}
-                            <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-[10px]">
+                            <div className="flex items-start gap-3 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
                                 <div className="w-8 h-8 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <FaShieldAlt className="text-indigo-500 text-xs" />
                                 </div>
@@ -401,7 +401,7 @@ export default function ProfilePage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: i * 0.1, type: "spring", stiffness: 200, damping: 22 }}
                                     whileHover={{ scale: 1.01 }}
-                                    className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-[10px] border border-slate-200 shadow-sm p-5 hover:shadow-lg transition-all duration-300"
+                                    className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-lg transition-all duration-300"
                                 >
                                     {/* Hover gradient wash */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none" />

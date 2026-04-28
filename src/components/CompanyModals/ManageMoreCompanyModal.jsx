@@ -126,7 +126,7 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
   const Icon = methodIcon(tab.value);
   return (
     <div
-      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${active ? 'bg-indigo-50/50 rounded-t-2xl' : 'hover:bg-slate-50 rounded-[10px]'
+      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${active ? 'bg-indigo-50/50 rounded-t-2xl' : 'hover:bg-slate-50 rounded-xl'
         } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       <button
@@ -391,7 +391,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
     if (methodItem.value === 'ip') {
       return (
         <div className="space-y-4">
-          <div className="rounded-[10px] border border-indigo-100 bg-indigo-50 p-4">
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
             <p className="text-sm font-semibold text-indigo-900">Manage IP addresses</p>
             <p className="mt-1 text-xs text-indigo-700">
               These IPs will be sent as `company_ips` to the company update API.
@@ -429,19 +429,19 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
                 }
               }}
               placeholder="Enter IP address"
-              className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
             />
             <button
               type="button"
               onClick={addIp}
-              className="inline-flex items-center gap-2 rounded-[10px] bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
             >
               <FaPlus size={12} />
               Add
             </button>
           </div>
 
-          <div className="flex items-center justify-between rounded-[10px] border border-gray-100 bg-gray-50 px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-gray-700">Auto detect or clear IPs</p>
               <p className="text-xs text-gray-400">Auto detect stores the current request IP. Clear removes all restrictions.</p>
@@ -469,7 +469,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             <button
               type="button"
               onClick={() => toggleMethod('ip')}
-              className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all ${enabledMethods.includes('ip')
+              className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${enabledMethods.includes('ip')
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
                 }`}
@@ -487,7 +487,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
     if (methodItem.value === 'gps') {
       return (
         <div className="space-y-4">
-          <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-4">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
             <p className="text-sm font-semibold text-blue-900">GPS attendance settings</p>
             <p className="mt-1 text-xs text-blue-700">
               Update the company address and coordinates used for location-based attendance.
@@ -500,7 +500,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.address_line1}
                 onChange={(e) => setAddress((prev) => ({ ...prev, address_line1: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="Street, building, landmark"
               />
             </label>
@@ -509,7 +509,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.address_line2}
                 onChange={(e) => setAddress((prev) => ({ ...prev, address_line2: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="Apartment, suite, etc."
               />
             </label>
@@ -518,7 +518,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.city}
                 onChange={(e) => setAddress((prev) => ({ ...prev, city: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="City"
               />
             </label>
@@ -527,7 +527,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.state}
                 onChange={(e) => setAddress((prev) => ({ ...prev, state: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="State"
               />
             </label>
@@ -536,7 +536,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.postal_code}
                 onChange={(e) => setAddress((prev) => ({ ...prev, postal_code: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="Postal code"
               />
             </label>
@@ -545,7 +545,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.country}
                 onChange={(e) => setAddress((prev) => ({ ...prev, country: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="Country"
               />
             </label>
@@ -554,7 +554,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.latitude}
                 onChange={(e) => setAddress((prev) => ({ ...prev, latitude: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="Latitude"
               />
             </label>
@@ -563,7 +563,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               <input
                 value={address.longitude}
                 onChange={(e) => setAddress((prev) => ({ ...prev, longitude: e.target.value }))}
-                className="w-full rounded-[10px] border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                 placeholder="Longitude"
               />
             </label>
@@ -573,7 +573,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             <button
               type="button"
               onClick={handleUseCurrentLocation}
-              className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 flex-1"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 flex-1"
             >
               <FaLocationArrow size={12} />
               Use current location
@@ -581,7 +581,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             <button
               type="button"
               onClick={() => toggleMethod('gps')}
-              className={`flex items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all flex-1 ${enabledMethods.includes('gps')
+              className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-semibold transition-all flex-1 ${enabledMethods.includes('gps')
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
                 }`}
@@ -598,7 +598,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
 
     return (
       <div className="space-y-4">
-        <div className="rounded-[10px] border border-slate-100 bg-slate-50 p-4">
+        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">{methodItem.label}</p>
@@ -626,7 +626,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
           type="button"
           onClick={() => toggleMethod(methodItem.value)}
           disabled={!methodItem.isAvailable}
-          className={`flex w-full items-center justify-between rounded-[10px] border px-4 py-3 text-sm font-semibold transition-all ${methodEnabled
+          className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${methodEnabled
             ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
             : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-200 hover:bg-emerald-50'
             } ${!methodItem.isAvailable ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -694,7 +694,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
               </div>
 
               {loadingMethods ? (
-                <div className="flex items-center justify-center rounded-[10px] border border-dashed border-gray-200 bg-white p-8 text-sm text-gray-400">
+                <div className="flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-8 text-sm text-gray-400">
                   <FaSpinner className="mr-2 animate-spin text-indigo-500" />
                   Loading methods...
                 </div>
@@ -704,7 +704,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
                     const isActive = activeMethod === tab.value;
                     const isEnabled = enabledMethods.includes(tab.value);
                     return (
-                      <div key={tab.value} className={`bg-white rounded-[10px] border transition-all duration-300 ${isActive ? 'border-indigo-200 shadow-lg ring-1 ring-indigo-50' : 'border-gray-200 shadow-sm hover:shadow-md'}`}>
+                      <div key={tab.value} className={`bg-white rounded-xl border transition-all duration-300 ${isActive ? 'border-indigo-200 shadow-lg ring-1 ring-indigo-50' : 'border-gray-200 shadow-sm hover:shadow-md'}`}>
                         <MethodTabButton
                           tab={tab}
                           active={isActive}
@@ -733,7 +733,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
                     );
                   })}
                   {availableMethods.length === 0 && (
-                    <div className="rounded-[10px] border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-400">
                       No attendance methods found.
                     </div>
                   )}

@@ -69,7 +69,7 @@ export default function TabbedManagementHub({
       accent={accent}
       summary={
         currentTab ? (
-          <div className="flex items-center gap-2 rounded-[10px] border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             <span className={`inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-semibold ${currentTab.accent || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
               {CurrentIcon && <CurrentIcon size={12} />}
               {currentTab.shortLabel || currentTab.label}
@@ -94,7 +94,7 @@ export default function TabbedManagementHub({
         <ActiveComponent />
       ) : (
         <div className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[10px] bg-slate-100 text-slate-400">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
             {AccessDeniedIcon ? <AccessDeniedIcon size={20} /> : null}
           </div>
           <h2 className="text-lg font-bold text-slate-800">{accessDeniedTitle}</h2>

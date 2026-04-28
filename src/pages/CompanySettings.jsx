@@ -25,14 +25,14 @@ import ManageMoreCompanyModal from '../components/CompanyModals/ManageMoreCompan
 // ─── Variants ─────────────────────────────────────────────────────────────────
 
 const modalVariants = {
-    hidden:  { opacity: 0, scale: 0.92, y: 24 },
-    visible: { opacity: 1, scale: 1,    y: 0,  transition: { type: 'spring', duration: 0.45 } },
-    exit:    { opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.25 } }
+    hidden: { opacity: 0, scale: 0.92, y: 24 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.45 } },
+    exit: { opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.25 } }
 };
 const backdropVariants = {
-    hidden:  { opacity: 0 },
+    hidden: { opacity: 0 },
     visible: { opacity: 1 },
-    exit:    { opacity: 0 }
+    exit: { opacity: 0 }
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ function formatDateTime(str) {
 // FIXED: Parse IPs to handle both object and string formats
 function parseIPs(ips) {
     if (!ips) return [];
-    
+
     // If it's not an array, try to parse or handle as string
     if (!Array.isArray(ips)) {
         if (typeof ips === 'string') {
@@ -85,26 +85,26 @@ function parseIPs(ips) {
             return [];
         }
     }
-    
+
     if (ips.length === 0) return [];
-    
+
     // Check if first item has ip_v4 property (object format from API)
     if (ips[0] && typeof ips[0] === 'object' && ips[0].ip_v4) {
         return ips.map(item => item.ip_v4).filter(Boolean);
     }
-    
+
     // Handle array of strings
     if (typeof ips[0] === 'string') {
         return ips;
     }
-    
+
     return [];
 }
 
 // ─── Small Reusable Components ────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gray-50 p-4 rounded-[10px] border border-gray-100">
+    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
             {icon} {label}
         </label>
@@ -126,13 +126,13 @@ const SummaryCard = ({ icon, label, value, gradient, delay = 0 }) => (
     <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay, duration: 0.4 }}
-        className={`bg-gradient-to-r ${gradient} rounded-[10px] p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300`}>
+        className={`bg-gradient-to-r ${gradient} rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300`}>
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-xs opacity-80 mb-1">{label}</p>
                 <p className="text-3xl font-bold">{value}</p>
             </div>
-            <div className="w-11 h-11 bg-white/20 rounded-[10px] flex items-center justify-center text-xl">
+            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-xl">
                 {icon}
             </div>
         </div>
@@ -153,18 +153,18 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
                     onClick={e => e.stopPropagation()}>
 
                     {/* Header */}
-                    <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-t-3xl z-10 flex justify-between items-center">
+                    <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-t-xl z-10 flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-white/20 rounded-[10px] flex items-center justify-center">
+                            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
                                 <FaBuilding className="text-base" />
                             </div>
                             <h2 className="text-lg font-bold">Company Details</h2>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px] transition-all">
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
                             <FaTimes size={17} />
                         </button>
                     </div>
@@ -172,7 +172,7 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                     <div className="p-6 space-y-6">
                         {/* Identity */}
                         <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-gray-100">
-                            <div className="w-20 h-20 rounded-[10px] flex items-center justify-center text-2xl font-black overflow-hidden shadow-lg ring-4 ring-white flex-shrink-0"
+                            <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow-lg ring-4 ring-white flex-shrink-0"
                                 style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                 {company.logo_url
                                     ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
@@ -194,12 +194,12 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                                 <span className="w-1 h-3 bg-blue-500 rounded-full" /> Address Details
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaRoad className="text-blue-400" />}         label="Address Line 1" value={company.address_line1} />
-                                <InfoItem icon={<FaRoad className="text-blue-400" />}         label="Address Line 2" value={company.address_line2} />
-                                <InfoItem icon={<FaCity className="text-blue-400" />}         label="City"           value={company.city} />
-                                <InfoItem icon={<FaGlobe className="text-blue-400" />}        label="State"          value={company.state} />
-                                <InfoItem icon={<FaMapMarkerAlt className="text-blue-400" />} label="Postal Code"    value={company.postal_code} />
-                                <InfoItem icon={<FaGlobe className="text-blue-400" />}        label="Country"        value={company.country || 'India'} />
+                                <InfoItem icon={<FaRoad className="text-blue-400" />} label="Address Line 1" value={company.address_line1} />
+                                <InfoItem icon={<FaRoad className="text-blue-400" />} label="Address Line 2" value={company.address_line2} />
+                                <InfoItem icon={<FaCity className="text-blue-400" />} label="City" value={company.city} />
+                                <InfoItem icon={<FaGlobe className="text-blue-400" />} label="State" value={company.state} />
+                                <InfoItem icon={<FaMapMarkerAlt className="text-blue-400" />} label="Postal Code" value={company.postal_code} />
+                                <InfoItem icon={<FaGlobe className="text-blue-400" />} label="Country" value={company.country || 'India'} />
                             </div>
                         </div>
 
@@ -209,9 +209,9 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                                 <span className="w-1 h-3 bg-indigo-500 rounded-full" /> Location & Network
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude"  value={company.latitude} />
+                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude" value={company.latitude} />
                                 <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Longitude" value={company.longitude} />
-                                <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-[10px] border border-indigo-100">
+                                <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
                                     <label className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
                                         <FaNetworkWired /> IP Addresses
                                     </label>
@@ -234,21 +234,21 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                                 <span className="w-1 h-3 bg-gray-300 rounded-full" /> System Info
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaHistory className="text-gray-400" />}    label="Created"     value={formatDateTime(company.created_at)} />
-                                <InfoItem icon={<FaHistory className="text-gray-400" />}    label="Updated"     value={formatDateTime(company.updated_at)} />
-                                <InfoItem icon={<FaUserCheck className="text-gray-400" />}  label="Created By"  value={company.created_by?.name} />
-                                <InfoItem icon={<FaUserCheck className="text-gray-400" />}  label="Updated By"  value={company.updated_by?.name} />
+                                <InfoItem icon={<FaHistory className="text-gray-400" />} label="Created" value={formatDateTime(company.created_at)} />
+                                <InfoItem icon={<FaHistory className="text-gray-400" />} label="Updated" value={formatDateTime(company.updated_at)} />
+                                <InfoItem icon={<FaUserCheck className="text-gray-400" />} label="Created By" value={company.created_by?.name} />
+                                <InfoItem icon={<FaUserCheck className="text-gray-400" />} label="Updated By" value={company.updated_by?.name} />
                             </div>
                         </div>
                     </div>
 
                     <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
                         <button onClick={() => { onEdit(company); onClose(); }}
-                            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-[10px] hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
+                            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
                             <FaEdit size={14} /> Edit Company
                         </button>
                         <button onClick={() => { onDelete(company); onClose(); }}
-                            className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-[10px] hover:from-red-500 hover:to-rose-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
+                            className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-xl hover:from-red-500 hover:to-rose-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
                             <FaTrash size={14} /> Delete
                         </button>
                     </div>
@@ -269,11 +269,11 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-[10px] shadow-2xl w-full max-w-md overflow-hidden"
+                    className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
                     onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 flex justify-between items-center p-5 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-t-3xl">
+                    <div className="sticky top-0 flex justify-between items-center p-5 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-t-xl">
                         <h2 className="text-lg font-bold flex items-center gap-2"><FaTrash /> Delete Company</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-[10px]"><FaTimes size={17} /></button>
+                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl"><FaTimes size={17} /></button>
                     </div>
                     <div className="p-6 sm:p-8 text-center">
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', duration: 0.5 }}
@@ -287,11 +287,11 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
                         </p>
                         <div className="flex gap-3">
                             <button onClick={onClose}
-                                className="flex-1 py-3 border-2 border-gray-100 rounded-[10px] text-gray-600 hover:bg-gray-50 font-semibold transition-all">
+                                className="flex-1 py-3 border-2 border-gray-100 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold transition-all">
                                 Keep
                             </button>
                             <button onClick={() => onConfirm(company.id)} disabled={deleting}
-                                className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-[10px] hover:from-red-500 hover:to-rose-600 flex items-center justify-center gap-2 font-semibold disabled:opacity-50 shadow-md">
+                                className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-xl hover:from-red-500 hover:to-rose-600 flex items-center justify-center gap-2 font-semibold disabled:opacity-50 shadow-md">
                                 {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
                                 {deleting ? 'Deleting...' : 'Delete Now'}
                             </button>
@@ -306,20 +306,20 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const CompanyManagement = () => {
-    const [companies, setCompanies]             = useState([]);
-    const [loading, setLoading]                 = useState(false);
-    const [isInitialLoad, setIsInitialLoad]     = useState(true);
-    const [deleting, setDeleting]               = useState(false);
-    const [searchTerm, setSearchTerm]           = useState('');
+    const [companies, setCompanies] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [deleting, setDeleting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [viewMode, setViewMode]               = useState('table');
+    const [viewMode, setViewMode] = useState('table');
     const [activeActionMenu, setActiveActionMenu] = useState(null);
-    const [deleteTarget, setDeleteTarget]       = useState(null);
-    const [detailTarget, setDetailTarget]       = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [detailTarget, setDetailTarget] = useState(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalTarget, setEditModalTarget] = useState(null);
     const [manageMoreTarget, setManageMoreTarget] = useState(null);
-    const [windowWidth, setWindowWidth]         = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -342,7 +342,7 @@ const CompanyManagement = () => {
         try {
             let url = `/company/list?page=${page}&limit=${pagination.limit}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
-            const res    = await apiCall(url, 'GET');
+            const res = await apiCall(url, 'GET');
             const result = await res.json();
             if (result.success) {
                 setCompanies(result.data || []);
@@ -394,7 +394,7 @@ const CompanyManagement = () => {
     const handleDelete = async (id) => {
         setDeleting(true);
         try {
-            const res    = await apiCall('/company/delete', 'DELETE', { id });
+            const res = await apiCall('/company/delete', 'DELETE', { id });
             const result = await res.json();
             if (!result.success) throw new Error(result.message);
             toast.success('Company deleted successfully!');
@@ -413,10 +413,10 @@ const CompanyManagement = () => {
                 id: id,
                 ...changedFields
             };
-            
-            const res    = await apiCall('/company/update', 'PUT', payload);
+
+            const res = await apiCall('/company/update', 'PUT', payload);
             const result = await res.json();
-            
+
             if (result.success) {
                 toast.success('Company updated successfully!');
                 setEditModalTarget(null);
@@ -450,18 +450,18 @@ const CompanyManagement = () => {
     };
 
     const stats = {
-        total:    pagination.total || 0,
-        active:   companies.filter(c => c.is_active).length,
+        total: pagination.total || 0,
+        active: companies.filter(c => c.is_active).length,
         withLogo: companies.filter(c => c.logo_url).length,
-        withIP:   companies.filter(c => parseIPs(c.company_ips || []).length > 0).length,
+        withIP: companies.filter(c => parseIPs(c.company_ips || []).length > 0).length,
     };
 
-    const isMobile   = windowWidth < 640;
-    const isTablet   = windowWidth < 1024;
-    const showLegal    = !isMobile;
+    const isMobile = windowWidth < 640;
+    const isTablet = windowWidth < 1024;
+    const showLegal = !isMobile;
     const showLocation = !isMobile;
-    const showIP       = !isTablet;
-    const showCreated  = !isTablet;
+    const showIP = !isTablet;
+    const showCreated = !isTablet;
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
@@ -488,7 +488,7 @@ const CompanyManagement = () => {
                         </div>
                         <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
                             onClick={() => setCreateModalOpen(true)}
-                            className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-[10px] shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
+                            className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
                             <FaPlus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
                             <span className="text-sm">Add Company</span>
                             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -498,10 +498,10 @@ const CompanyManagement = () => {
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                    <SummaryCard icon={<FaBuilding />}     label="Total Companies" value={stats.total}    gradient="from-blue-400 to-indigo-500"   delay={0.05} />
-                    <SummaryCard icon={<FaCheckCircle />}  label="Active"          value={stats.active}   gradient="from-emerald-400 to-teal-500"  delay={0.10} />
-                    <SummaryCard icon={<FaNetworkWired />} label="IP Restricted"   value={stats.withIP}   gradient="from-violet-400 to-purple-500" delay={0.15} />
-                    <SummaryCard icon={<FaMapMarkerAlt />} label="With Logo"       value={stats.withLogo} gradient="from-orange-400 to-amber-500"  delay={0.20} />
+                    <SummaryCard icon={<FaBuilding />} label="Total Companies" value={stats.total} gradient="from-blue-400 to-indigo-500" delay={0.05} />
+                    <SummaryCard icon={<FaCheckCircle />} label="Active" value={stats.active} gradient="from-emerald-400 to-teal-500" delay={0.10} />
+                    <SummaryCard icon={<FaNetworkWired />} label="IP Restricted" value={stats.withIP} gradient="from-violet-400 to-purple-500" delay={0.15} />
+                    <SummaryCard icon={<FaMapMarkerAlt />} label="With Logo" value={stats.withLogo} gradient="from-orange-400 to-amber-500" delay={0.20} />
                 </div>
 
                 {/* Search */}
@@ -512,7 +512,7 @@ const CompanyManagement = () => {
                             placeholder="Search by company name, city, or state..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-10 py-3.5 bg-white border border-gray-200 rounded-[10px] focus:ring-4 focus:ring-blue-500/15 focus:border-blue-400 outline-none shadow-sm transition-all text-sm" />
+                            className="w-full pl-11 pr-10 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/15 focus:border-blue-400 outline-none shadow-sm transition-all text-sm" />
                         {searchTerm && (
                             <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                                 <FaTimes />
@@ -539,7 +539,7 @@ const CompanyManagement = () => {
                 {/* Empty State */}
                 {!loading && companies.length === 0 && (
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-[10px] shadow-md border border-gray-100 p-16 text-center">
+                        className="bg-white rounded-xl shadow-md border border-gray-100 p-16 text-center">
                         <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
                             <FaBuilding className="text-4xl text-blue-200" />
                         </div>
@@ -548,25 +548,25 @@ const CompanyManagement = () => {
                             {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Company" to get started'}
                         </p>
                         {debouncedSearch
-                            ? <button onClick={() => setSearchTerm('')} className="mt-4 px-5 py-2 bg-blue-50 text-blue-600 rounded-[10px] hover:bg-blue-100 text-sm font-semibold">Clear Search</button>
-                            : <button onClick={() => setCreateModalOpen(true)} className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-[10px] text-sm font-semibold shadow-lg">Add Company</button>}
+                            ? <button onClick={() => setSearchTerm('')} className="mt-4 px-5 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 text-sm font-semibold">Clear Search</button>
+                            : <button onClick={() => setCreateModalOpen(true)} className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-lg">Add Company</button>}
                     </motion.div>
                 )}
 
                 {/* Table View */}
                 {!loading && companies.length > 0 && viewMode === 'table' && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-[10px] shadow-md overflow-hidden border border-gray-100">
+                        className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="xsm:hidden bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
                                     <tr>
                                         <th className="px-6 py-4 font-semibold tracking-wider">Company</th>
-                                        {showLegal    && <th className="px-5 py-4 font-semibold tracking-wider">Legal Name</th>}
+                                        {showLegal && <th className="px-5 py-4 font-semibold tracking-wider">Legal Name</th>}
                                         {showLocation && <th className="px-5 py-4 font-semibold tracking-wider">Location</th>}
-                                        {showIP       && <th className="px-5 py-4 font-semibold tracking-wider">IP Address</th>}
+                                        {showIP && <th className="px-5 py-4 font-semibold tracking-wider">IP Address</th>}
                                         <th className="px-5 py-4 font-semibold tracking-wider">Status</th>
-                                        {showCreated  && <th className="px-5 py-4 font-semibold tracking-wider">Created</th>}
+                                        {showCreated && <th className="px-5 py-4 font-semibold tracking-wider">Created</th>}
                                         <th className="px-5 py-4 text-right font-semibold tracking-wider"><FaCog className="w-4 h-4 ml-auto" /></th>
                                     </tr>
                                 </thead>
@@ -583,7 +583,7 @@ const CompanyManagement = () => {
                                                 {/* Company */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-[10px] flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
+                                                        <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
                                                             style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                                             {company.logo_url
                                                                 ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
@@ -646,10 +646,10 @@ const CompanyManagement = () => {
                                                         activeId={activeActionMenu}
                                                         onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                                                         actions={[
-                                                            { label: 'View Details', icon: <FaEye size={13} />,   onClick: () => setDetailTarget(company),    className: 'text-blue-600 hover:bg-blue-50' },
-                                                            { label: 'Edit',         icon: <FaEdit size={13} />,  onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(company), className: 'text-blue-600 hover:bg-blue-50' },
+                                                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
                                                             { label: 'Manage More', icon: <FaCog size={13} />, onClick: () => setManageMoreTarget(company), className: 'text-slate-700 hover:bg-slate-100' },
-                                                            { label: 'Delete',       icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company),    className: 'text-red-500 hover:bg-red-50' },
+                                                            { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company), className: 'text-red-500 hover:bg-red-50' },
                                                         ]}
                                                     />
                                                 </td>
@@ -672,12 +672,12 @@ const CompanyManagement = () => {
                                 <motion.div key={company.id}
                                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                                     onClick={() => setDetailTarget(company)}
-                                    className="bg-white rounded-[10px] shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
+                                    className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
 
                                     {/* Header */}
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-[10px] flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
+                                            <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
                                                 style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                                 {company.logo_url
                                                     ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
@@ -727,10 +727,10 @@ const CompanyManagement = () => {
                                             activeId={activeActionMenu}
                                             onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                                             actions={[
-                                                { label: 'View Details', icon: <FaEye size={13} />,   onClick: () => setDetailTarget(company),    className: 'text-blue-600 hover:bg-blue-50' },
-                                                { label: 'Edit',         icon: <FaEdit size={13} />,  onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                                { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(company), className: 'text-blue-600 hover:bg-blue-50' },
+                                                { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
                                                 { label: 'Manage More', icon: <FaCog size={13} />, onClick: () => setManageMoreTarget(company), className: 'text-slate-700 hover:bg-slate-100' },
-                                                { label: 'Delete',       icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company),    className: 'text-red-500 hover:bg-red-50' },
+                                                { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company), className: 'text-red-500 hover:bg-red-50' },
                                             ]}
                                         />
                                     </div>
@@ -759,7 +759,7 @@ const CompanyManagement = () => {
                     <CompanyDetailModal
                         company={detailTarget}
                         onClose={() => setDetailTarget(null)}
-                        onEdit={(c)  => { setDetailTarget(null); setEditModalTarget(c); }}
+                        onEdit={(c) => { setDetailTarget(null); setEditModalTarget(c); }}
                         onDelete={(c) => { setDetailTarget(null); setDeleteTarget(c); }}
                     />
                 )}

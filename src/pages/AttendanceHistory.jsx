@@ -139,16 +139,16 @@ const getApprovalStyle = (status) => {
 const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu, activeType }) => {
   const typeConfig = getAttendanceTypeConfig(activeType);
   return (
-    <div className="overflow-hidden rounded-[10px] bg-white border border-gray-100 shadow-sm">
+    <div className="overflow-hidden rounded-xl bg-white border border-gray-100 shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-xs uppercase text-gray-600">
+          <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-xs uppercase text-gray-600 font-bold tracking-wider border-b border-gray-200">
             <tr>
-              <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">Date</th>
-              <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">{typeConfig.startLabel}</th>
-              <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">{typeConfig.endLabel}</th>
-              <th className="px-4 lg:px-6 py-4 font-semibold tracking-wider">Status</th>
-              <th className="px-4 lg:px-6 py-4 w-12 pr-4 text-right">
+              <th className="px-6 py-4">Date</th>
+              <th className="px-6 py-4">{typeConfig.startLabel}</th>
+              <th className="px-6 py-4">{typeConfig.endLabel}</th>
+              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4 w-12 pr-4 text-right">
                 <FaCog className="ml-auto h-4 w-4" />
               </th>
             </tr>
