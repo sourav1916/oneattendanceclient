@@ -126,7 +126,7 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
   const Icon = methodIcon(tab.value);
   return (
     <div
-      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${active ? 'bg-indigo-50/50 rounded-t-2xl' : 'hover:bg-slate-50 rounded-xl'
+      className={`relative flex items-center gap-3 px-4 py-3 sm:py-4 transition-all ${active ? 'bg-indigo-50/50 rounded-t-xl' : 'hover:bg-slate-50 rounded-xl'
         } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
     >
       <button

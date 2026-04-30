@@ -934,7 +934,7 @@ const PendingAttendance = ({ companyId }) => {
                             className={NOTES_MODAL_CLASS}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 rounded-t-2xl">
+                            <div className="bg-gradient-to-r from-amber-600 to-orange-600 text-white p-6 rounded-t-xl">
                                 <h2 className="text-xl font-semibold flex items-center gap-2">
                                     <FaComment /> Rejection Notes
                                 </h2>

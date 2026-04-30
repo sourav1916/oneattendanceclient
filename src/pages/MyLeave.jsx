@@ -303,7 +303,7 @@ const Modal = ({ open, title, subtitle, onClose, children }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
       <div className="w-full max-w-xl rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-3 rounded-t-2xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 text-white">
+        <div className="flex items-start justify-between gap-3 rounded-t-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 text-white">
           <div className="min-w-0">
             <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
             {subtitle && <p className="mt-0.5 text-[11px] text-white/80 sm:text-xs">{subtitle}</p>}
