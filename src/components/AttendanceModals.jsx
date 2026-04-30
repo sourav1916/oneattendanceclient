@@ -38,30 +38,39 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
     const [loading, setLoading] = useState(false);
     const [employeesLoading, setEmployeesLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
         employee_id: null,
         attendance_date: new Date().toISOString().split('T')[0],
         punch_type: 'work',
         punch_in: '09:00:00',
-        punch_out: '18:00:00',
-        method: 'manual'
+        punch_out: '18:00:00'
     });
 
     useEffect(() => {
-        if (isOpen && companyId) {
-            fetchEmployees();
+        if (!searchTerm.trim()) {
+            setEmployees([]);
+            setEmployeesLoading(false);
+            return;
         }
-    }, [isOpen, companyId]);
 
-    const fetchEmployees = async () => {
         setEmployeesLoading(true);
+        const delayDebounceFn = setTimeout(() => {
+            fetchEmployees(searchTerm);
+        }, 400);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
+
+    const fetchEmployees = async (search = '') => {
         try {
-            const response = await apiCall('/employees/list?limit=1000', 'GET', null, companyId);
+            const response = await apiCall(`/employees/all-list?search=${encodeURIComponent(search)}`, 'GET', null, companyId);
             const result = await response.json();
             if (result.success) {
                 setEmployees((result.data || []).map(emp => ({
                     value: emp.id,
-                    label: emp.name,
+                    label: `${emp.name} (${emp.employee_code || 'N/A'})`,
+                    name: emp.name,
                     employee_code: emp.employee_code
                 })));
             }
@@ -83,7 +92,8 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
         try {
             const response = await apiCall('/attendance/create', 'POST', {
                 ...formData,
-                employee_id: formData.employee_id.value
+                employee_id: formData.employee_id.value,
+                method: 'manual' // Default to manual as field is removed
             }, companyId);
             const result = await response.json();
             if (result.success) {
@@ -142,7 +152,10 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                             isLoading={employeesLoading}
                             value={formData.employee_id}
                             onChange={(val) => setFormData(prev => ({ ...prev, employee_id: val }))}
-                            placeholder="Search and select employee..."
+                            onInputChange={(val) => setSearchTerm(val)}
+                            placeholder="Type to search employee..."
+                            noOptionsMessage={() => searchTerm ? "No employees found" : "Type to search..."}
+                            filterOption={() => true} // Let server handle filtering
                         />
                     </div>
 
@@ -168,7 +181,9 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Punch In Time</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                {formData.punch_type === 'break' ? 'Break In Time' : 'Punch In Time'}
+                            </label>
                             <TimeDurationPickerField
                                 value={formData.punch_in}
                                 onChange={(val) => setFormData(prev => ({ ...prev, punch_in: val }))}
@@ -177,7 +192,9 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Punch Out Time</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                {formData.punch_type === 'break' ? 'Break Out Time' : 'Punch Out Time'}
+                            </label>
                             <TimeDurationPickerField
                                 value={formData.punch_out}
                                 onChange={(val) => setFormData(prev => ({ ...prev, punch_out: val }))}
@@ -185,17 +202,6 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                                 className="w-full h-10"
                             />
                         </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                            <FaHandPaper size={12} className="text-blue-500" /> Method
-                        </label>
-                        <SelectField
-                            options={METHOD_OPTIONS}
-                            value={METHOD_OPTIONS.find(o => o.value === formData.method)}
-                            onChange={(val) => setFormData(prev => ({ ...prev, method: val.value }))}
-                        />
                     </div>
                 </form>
 
