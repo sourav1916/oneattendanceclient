@@ -108,9 +108,9 @@ const normalizeAttendanceRow = (row) => ({
   ...row,
   attendance_type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
   punch_uid: row?.id,
-  attendance_date: row?.punch_date || null,
+  attendance_date: row?.punch_date || row?.attendance_date || null,
   type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
-  attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || <Placeholder />,
+  attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || 'manual',
   start_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break In' : 'Punch In',
   end_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break Out' : 'Punch Out',
   start_time: row?.punch_in?.time || row?.break_start?.time || row?.start_time || null,
@@ -118,6 +118,9 @@ const normalizeAttendanceRow = (row) => ({
   start_record: row?.punch_in || row?.break_start || null,
   end_record: row?.punch_out || row?.break_end || null,
   status: row?.status || 'pending',
+  notes: row?.notes || '',
+  reviewed_by: row?.reviewed_by_name || row?.reviewed_by || null,
+  reviewed_at: row?.reviewed_at || null,
   employee: {
     id: row?.employee_id ?? null,
     code: row?.employee_code ?? '',
@@ -210,118 +213,183 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
 
   return (
     <motion.div
+      className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
-      onClick={onClose}
     >
       <ModalScrollLock />
       <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 18 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 18 }}
+        transition={{ type: "spring", damping: 25, stiffness: 280 }}
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 sm:p-6 rounded-t-[10px] z-10">
+        <div className="shrink-0 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 p-5 sm:px-6 sm:py-5 z-10">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-              <FaInfoCircle /> Attendance Details
+            <h2 className="text-xl font-bold flex items-center gap-3 text-slate-900">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
+                <FaInfoCircle className="text-white h-6 w-6" />
+              </div>
+              Attendance Details
             </h2>
-            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition">
-              <FaTimesCircle size={18} className="sm:w-5 sm:h-5" />
+            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50">
+              <FaTimesCircle size={20} />
             </button>
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-          <div className="border-b pb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <FaUser className="text-purple-500" /> Employee Information
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="text-xs text-gray-500 uppercase">Name</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.name}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Name</label>
+                <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.name}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Employee Code</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.code}</p>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Code</label>
+                <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.code}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Designation</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.designation}</p>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Designation</label>
+                <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.designation}</p>
               </div>
             </div>
           </div>
 
-          <div className="border-b pb-4">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FaClock className="text-purple-500" /> Attendance Details
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <FaClock className="text-purple-500" /> Attendance Log
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs text-gray-500 uppercase">Type</label>
-                <div className="mt-1">
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Type</label>
+                <div className="mt-0.5">
                   <PunchTypeBadge type={attendance.type} />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Date</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base">
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label>
+                <p className="font-medium text-gray-800 text-sm">
                   {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
                 </p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">{attendanceTypeMeta.startLabel}</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base">
-                  {renderRecordLabel(startRecord)}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 uppercase">{attendanceTypeMeta.endLabel}</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base">
-                  {renderRecordLabel(endRecord)}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 uppercase">Status</label>
-                <div className="mt-1">
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Status</label>
+                <div className="mt-0.5">
                   <StatusBadge status={attendance.status} />
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase">Method</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base">
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeMeta.startLabel}</label>
+                <p className="font-medium text-gray-800 text-sm">
+                  {renderRecordLabel(startRecord)}
+                </p>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeMeta.endLabel}</label>
+                <p className="font-medium text-gray-800 text-sm">
+                  {renderRecordLabel(endRecord)}
+                </p>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Method</label>
+                <p className="font-medium text-gray-800 text-sm capitalize">
                   {attendance.attendance_method || <Placeholder />}
                 </p>
               </div>
+              {attendance.notes && (
+                <div className="col-span-2 sm:col-span-3">
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold flex items-center gap-1">
+                    <FaComment className="text-purple-500" /> Notes
+                  </label>
+                  <p className="font-medium text-gray-700 text-xs mt-1 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                    {attendance.notes}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {(attendance.location?.latitude || attendance.location?.ip_address) && (
-            <div className="border-b pb-4">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          {attendance.reviewed_at && (
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <FaCheckCircle className="text-green-500" /> Review Info
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">By</label>
+                  <p className="font-medium text-gray-800 text-sm">
+                    {attendance.reviewed_by || 'System'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">At</label>
+                  <p className="font-medium text-gray-800 text-sm">
+                    {attendance.reviewed_at}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(attendance.punch_in?.punch_in_latitude || attendance.punch_out?.punch_out_latitude || attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.latitude) && (
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <FaMapMarkerAlt className="text-purple-500" /> Location & Device
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {attendance.location?.latitude && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {(attendance.punch_in?.punch_in_latitude || attendance.location?.latitude) && (
                   <>
                     <div>
-                      <label className="text-xs text-gray-500 uppercase">Latitude</label>
-                      <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.location.latitude}</p>
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Lat</label>
+                      <p className="font-medium text-gray-800 text-[11px] truncate">
+                        {attendance.punch_in?.punch_in_latitude || attendance.location?.latitude}
+                      </p>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 uppercase">Longitude</label>
-                      <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.location.longitude}</p>
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Long</label>
+                      <p className="font-medium text-gray-800 text-[11px] truncate">
+                        {attendance.punch_in?.punch_in_longitude || attendance.location?.longitude}
+                      </p>
                     </div>
                   </>
                 )}
-                {attendance.location?.ip_address && (
-                  <div className="sm:col-span-2">
-                    <label className="text-xs text-gray-500 uppercase">IP Address</label>
-                    <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.location.ip_address}</p>
+                {attendance.punch_out?.punch_out_latitude && (
+                  <>
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Lat</label>
+                      <p className="font-medium text-gray-800 text-[11px] truncate">
+                        {attendance.punch_out.punch_out_latitude}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Long</label>
+                      <p className="font-medium text-gray-800 text-[11px] truncate">
+                        {attendance.punch_out.punch_out_longitude}
+                      </p>
+                    </div>
+                  </>
+                )}
+                {(attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.ip_address) && (
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">IP Address</label>
+                    <p className="font-medium text-gray-800 text-[11px] truncate">
+                        {[attendance.punch_in?.ip, attendance.punch_out?.ip, attendance.location?.ip_address].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' / ')}
+                    </p>
                   </div>
                 )}
               </div>
