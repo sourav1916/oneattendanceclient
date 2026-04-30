@@ -107,7 +107,7 @@ export default function ManagementHub({
           )}
         </motion.div>
 
-        <div className={`p-[10px] lg:p-2 ${contentClassName || ""}`}>{children}</div>
+        <div className={`p-[0px] lg:p-2 ${contentClassName || ""}`}>{children}</div>
       </div>
     </div>
   );

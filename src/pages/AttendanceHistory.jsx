@@ -30,41 +30,11 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import { DateRangePickerField } from '../components/DatePicker';
 import { FaBriefcase } from 'react-icons/fa';
+import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const ATTENDANCE_TYPE_CONFIG = {
-  work: {
-    value: 'work',
-    label: 'Attendance',
-    shortLabel: 'Attendence',
-    description: 'Punch in and punch out records',
-    startLabel: 'Punch In',
-    endLabel: 'Punch Out',
-    startKey: 'punch_in',
-    endKey: 'punch_out',
-    icon: FaBriefcase,
-    activeClassName: 'bg-indigo-600 text-white shadow-md scale-[1.02]',
-    inactiveClassName: 'text-slate-500 hover:text-indigo-700 hover:bg-indigo-50',
-    accentClassName: 'bg-indigo-50 text-indigo-700 border-indigo-200'
-  },
-  break: {
-    value: 'break',
-    label: 'Break',
-    shortLabel: 'Break',
-    description: 'Break in and break out records',
-    startLabel: 'Break In',
-    endLabel: 'Break Out',
-    startKey: 'break_start',
-    endKey: 'break_end',
-    icon: FaCoffee,
-    activeClassName: 'bg-violet-600 text-white shadow-md scale-[1.02]',
-    inactiveClassName: 'text-slate-500 hover:text-violet-700 hover:bg-violet-50',
-    accentClassName: 'bg-violet-50 text-violet-700 border-violet-200'
-  }
-};
-
-const getAttendanceTypeConfig = (type = 'work') => ATTENDANCE_TYPE_CONFIG[type] || ATTENDANCE_TYPE_CONFIG.work;
+// Configuration moved to shared AttendanceTypeTabs component
 
 // ─── API Integration ─────────────────────────────────────────────────────────
 
@@ -277,27 +247,7 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
   );
 };
 
-const AttendanceTypeTabs = ({ value, onChange }) => (
-  <div className="flex flex-wrap gap-1 rounded-xl border border-gray-100 bg-gray-50/50 p-1 w-fit">
-    {Object.values(ATTENDANCE_TYPE_CONFIG).map((tab) => {
-      const isActive = value === tab.value;
-      const Icon = tab.icon;
-
-      return (
-        <button
-          key={tab.value}
-          type="button"
-          onClick={() => onChange(tab.value)}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${isActive ? tab.activeClassName : tab.inactiveClassName
-            }`}
-        >
-          <Icon size={12} />
-          <span>{tab.shortLabel}</span>
-        </button>
-      );
-    })}
-  </div>
-);
+// AttendanceTypeTabs moved to shared component
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -533,7 +483,7 @@ const AttendanceHistory = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
+              className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2 mb-2"
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
                 <div className="relative flex-1 w-full">

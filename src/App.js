@@ -224,7 +224,7 @@ function AppContent() {
   // Show loading state
   if (loading) {
     return (
-      <GlobalSkeleton/>
+      <GlobalSkeleton />
     );
   }
 
@@ -248,10 +248,10 @@ function AppContent() {
         />
 
         {/* Protected Routes - Only accessible after company selection */}
-        <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>}/>
-        <Route path="/profile" element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>}/>
-        <Route path="/settings" element={ <ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute> }/>
-        <Route path="/company-invites" element={ <ProtectedRoute pageKey="companyInvites"><Navigate to="/employee-management?tab=invites" replace /></ProtectedRoute>}/>
+        <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute> <MainLayout> <ProfilePage /> </MainLayout> </ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute> <MainLayout> <SettingsPage /> </MainLayout> </ProtectedRoute>} />
+        <Route path="/company-invites" element={<ProtectedRoute pageKey="companyInvites"><Navigate to="/employee-management?tab=invites" replace /></ProtectedRoute>} />
         <Route path="/attendance" element={<ProtectedRoute pageKey="attendance"><MainLayout><TabbedManagementHub
           routePath="/attendance"
           defaultTab="punch"
@@ -310,9 +310,9 @@ function AppContent() {
         <Route path="/pending-attendance" element={<ProtectedRoute pageKey="pendingAttendance"><Navigate to="/attendance-management?tab=pending" replace /></ProtectedRoute>} />
         <Route path="/holiday-management" element={<ProtectedRoute pageKey="holidayManagement"><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
         <Route path="/holidays" element={<ProtectedRoute pageKey="holidays"><MainLayout><Holidays /></MainLayout></ProtectedRoute>} />
-        <Route path="/help" element={<ProtectedRoute pageKey="help"><MainLayout><HelpPage /></MainLayout></ProtectedRoute> } />
-        <Route path="/my-leaves" element={<ProtectedRoute pageKey="myLeaves"><MainLayout><MyLeave /></MainLayout></ProtectedRoute> } />
-        <Route path="/my-invites" element={<ProtectedRoute pageKey="myInvites"><MainLayout> <MyInvites /></MainLayout></ProtectedRoute> }/>
+        <Route path="/help" element={<ProtectedRoute pageKey="help"><MainLayout><HelpPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-leaves" element={<ProtectedRoute pageKey="myLeaves"><MainLayout><MyLeave /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-invites" element={<ProtectedRoute pageKey="myInvites"><MainLayout> <MyInvites /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-management" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><TabbedManagementHub
           routePath="/employee-management"
           defaultTab="employees"

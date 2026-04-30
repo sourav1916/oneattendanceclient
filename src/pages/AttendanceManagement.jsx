@@ -4,7 +4,7 @@ import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
-  FaBan, FaComment, FaCog, FaTimes, FaCoffee, FaBriefcase
+  FaBan, FaComment, FaCog, FaTimes, FaCoffee, FaBriefcase, FaPlus, FaEdit
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -15,41 +15,13 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { DatePickerField } from '../components/DatePicker';
+import { CreateAttendanceModal, EditAttendanceModal } from '../components/AttendanceModals';
+import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
+import { ManagementHub, ManagementButton } from '../components/common';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
-const ATTENDANCE_TYPE_CONFIG = {
-  work: {
-    value: 'work',
-    label: 'Attendance',
-    shortLabel: 'Attendence',
-    description: 'Punch in and punch out records',
-    startLabel: 'Punch In',
-    endLabel: 'Punch Out',
-    startKey: 'punch_in',
-    endKey: 'punch_out',
-    icon: FaBriefcase,
-    activeClassName: 'bg-blue-600 text-white shadow-sm',
-    inactiveClassName: 'text-gray-600 hover:text-blue-700 hover:bg-blue-50',
-    accentClassName: 'bg-blue-50 text-blue-700 border-blue-200'
-  },
-  break: {
-    value: 'break',
-    label: 'Break',
-    shortLabel: 'Break',
-    description: 'Break in and break out records',
-    startLabel: 'Break In',
-    endLabel: 'Break Out',
-    startKey: 'break_start',
-    endKey: 'break_end',
-    icon: FaCoffee,
-    activeClassName: 'bg-indigo-600 text-white shadow-sm',
-    inactiveClassName: 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50',
-    accentClassName: 'bg-indigo-50 text-indigo-700 border-indigo-200'
-  }
-};
-
-const getAttendanceTypeConfig = (type = 'work') => ATTENDANCE_TYPE_CONFIG[type] || ATTENDANCE_TYPE_CONFIG.work;
+// Configuration moved to shared AttendanceTypeTabs component
 
 const Placeholder = () => <span className="text-red-500 font-bold">---</span>;
 
@@ -79,29 +51,6 @@ const renderRecordLabel = (record) => {
   return [record.time, record.method].filter(Boolean).join(' • ') || <Placeholder />;
 };
 
-const AttendanceTypeTabs = ({ value, onChange }) => (
-  <div className="mb-5 flex flex-wrap gap-2 rounded-[14px] border border-gray-200 bg-white p-2 shadow-sm">
-    {Object.values(ATTENDANCE_TYPE_CONFIG).map((tab) => {
-      const isActive = value === tab.value;
-      const Icon = tab.icon;
-
-      return (
-        <button
-          key={tab.value}
-          type="button"
-          onClick={() => onChange(tab.value)}
-          className={`inline-flex min-w-[120px] flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all ${isActive ? tab.activeClassName : tab.inactiveClassName
-            }`}
-          title={tab.description}
-        >
-          <Icon size={14} />
-          <span>{tab.label}</span>
-        </button>
-      );
-    })}
-  </div>
-);
-
 const attendanceAPI = {
   fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'work') => {
     const queryParams = new URLSearchParams({
@@ -129,10 +78,8 @@ const attendanceAPI = {
   updateAttendanceStatus: async (companyId, punchId, action, notes = '') => {
     let endpoint = '';
 
-    if (action === 'approve') {
+    if (action === 'verify' || action === 'approve') {
       endpoint = '/attendance/approve';
-    } else if (action === 'reject') {
-      endpoint = '/attendance/reject';
     } else {
       throw new Error('Invalid action type');
     }
@@ -143,7 +90,7 @@ const attendanceAPI = {
     }, companyId);
 
     if (!response.ok) {
-      throw new Error(`Failed to ${action} attendance`);
+      throw new Error(`Failed to verify attendance`);
     }
 
     return response.json();
@@ -405,7 +352,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
 };
 
 // Card View Component for Mobile
-const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, processingId, onToggleMenu, activeMenuId, approveDisabled, rejectDisabled, reviewMessage }) => {
+const AttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, processingId, onToggleMenu, activeMenuId, approveDisabled, reviewMessage }) => {
   const typeMeta = getAttendanceTypeConfig(attendance.type);
 
   return (
@@ -434,22 +381,20 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onReject, proces
             actions={[
               ...(attendance.status === 'pending' ? [
                 {
-                  label: 'Approve',
+                  label: 'Verify',
                   icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
                   onClick: () => onApprove(attendance.id),
                   disabled: processingId === attendance.id || approveDisabled,
                   title: approveDisabled ? reviewMessage : '',
                   className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                },
-                {
-                  label: 'Reject',
-                  icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
-                  onClick: () => onReject(attendance.id),
-                  disabled: processingId === attendance.id || rejectDisabled,
-                  title: rejectDisabled ? reviewMessage : '',
-                  className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
                 }
               ] : []),
+              {
+                label: 'Edit',
+                icon: <FaEdit size={12} />,
+                onClick: () => onEdit(attendance),
+                className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+              },
               {
                 label: 'View Details',
                 icon: <FaEye size={12} />,
@@ -503,6 +448,8 @@ const AttendanceManagement = ({ companyId }) => {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [selectedAction, setSelectedAction] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [attendanceType, setAttendanceType] = useState('work');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -515,8 +462,7 @@ const AttendanceManagement = ({ companyId }) => {
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const itemsPerPage = pagination.limit;
   const approveAccess = checkActionAccess('attendanceManagement', 'approve');
-  const rejectAccess = checkActionAccess('attendanceManagement', 'reject');
-  const attendanceReviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
+  const attendanceReviewMessage = getAccessMessage(approveAccess);
   const attendanceDateFilterRef = useRef({});
   const activeAttendanceTypeMeta = getAttendanceTypeConfig(attendanceType);
 
@@ -622,14 +568,7 @@ const AttendanceManagement = ({ companyId }) => {
   }, [pagination.page, debouncedSearchTerm, attendanceType, fetchAttendances, goToPage]);
 
   const handleStatusUpdate = async (punchId, action) => {
-    if (action === 'reject' && !notes.trim()) {
-      setSelectedAction({ punchId, action });
-      setShowNotesModal(true);
-      setActiveActionMenu(null);
-      return;
-    }
-
-    await processStatusUpdate(punchId, action, notes);
+    await processStatusUpdate(punchId, action, '');
   };
 
   const processStatusUpdate = async (punchId, action, notesText) => {
@@ -638,14 +577,12 @@ const AttendanceManagement = ({ companyId }) => {
       const response = await attendanceAPI.updateAttendanceStatus(resolvedCompanyId, punchId, action, notesText);
 
       if (response.success) {
-        toast.success(`Attendance ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
+        toast.success(`Attendance verified successfully`);
         fetchAttendances(true);
-        setNotes('');
-        setShowNotesModal(false);
         setSelectedAction(null);
         setActiveActionMenu(null);
       } else {
-        throw new Error(response.message || 'Failed to update status');
+        throw new Error(response.message || 'Failed to verify');
       }
     } catch (err) {
       toast.error(err.message);
@@ -657,6 +594,12 @@ const AttendanceManagement = ({ companyId }) => {
   const handleViewDetails = (attendance) => {
     setSelectedAttendance(attendance);
     setShowModal(true);
+    setActiveActionMenu(null);
+  };
+
+  const handleEditAttendance = (attendance) => {
+    setSelectedAttendance(attendance);
+    setShowEditModal(true);
     setActiveActionMenu(null);
   };
 
@@ -719,15 +662,34 @@ const AttendanceManagement = ({ companyId }) => {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <ManagementHub
+      eyebrow={<><FaClock size={11} /> Management</>}
+      title="Attendance Records"
+      description="Monitor and manage all employee attendance records and punch logs."
+      accent="blue"
+      actions={
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <ManagementButton
+            tone="blue"
+            variant="solid"
+            leftIcon={<FaPlus />}
+            onClick={() => setShowCreateModal(true)}
+            className="sm:flex"
+          >
+            <span>Create<span className="hidden lg:inline"> Attendance</span></span>
+          </ManagementButton>
+        </div>
+      }
+    >
+      <div className="max-w-screen-2xl mx-auto px-2">
         <AttendanceTypeTabs value={attendanceType} onChange={setAttendanceType} />
+
 
         {/* Consolidated Filter & View Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
         >
           {/* Left Section: Search */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
@@ -851,22 +813,20 @@ const AttendanceManagement = ({ companyId }) => {
                               actions={[
                                 ...(attendance.status === 'pending' ? [
                                   {
-                                    label: 'Approve',
+                                    label: 'Verify',
                                     icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
-                                    onClick: () => handleStatusUpdate(attendance.id, 'approve'),
+                                    onClick: () => handleStatusUpdate(attendance.id, 'verify'),
                                     disabled: processingId === attendance.id || approveAccess.disabled,
-                                    title: approveAccess.disabled ? getAccessMessage(approveAccess) : '',
+                                    title: approveAccess.disabled ? attendanceReviewMessage : '',
                                     className: 'text-green-600 hover:bg-green-50'
                                   },
-                                  {
-                                    label: 'Reject',
-                                    icon: processingId === attendance.id ? <FaSpinner className="animate-spin" size={12} /> : <FaBan size={12} />,
-                                    onClick: () => handleStatusUpdate(attendance.id, 'reject'),
-                                    disabled: processingId === attendance.id || rejectAccess.disabled,
-                                    title: rejectAccess.disabled ? getAccessMessage(rejectAccess) : '',
-                                    className: 'text-red-600 hover:bg-red-50'
-                                  }
                                 ] : []),
+                                {
+                                  label: 'Edit',
+                                  icon: <FaEdit size={12} />,
+                                  onClick: () => handleEditAttendance(attendance),
+                                  className: 'text-indigo-600 hover:bg-indigo-50'
+                                },
                                 {
                                   label: 'View Details',
                                   icon: <FaEye size={12} />,
@@ -891,13 +851,12 @@ const AttendanceManagement = ({ companyId }) => {
                     key={attendance.id}
                     attendance={attendance}
                     onViewDetails={handleViewDetails}
-                    onApprove={(id) => handleStatusUpdate(id, 'approve')}
-                    onReject={(id) => handleStatusUpdate(id, 'reject')}
+                    onApprove={(id) => handleStatusUpdate(id, 'verify')}
+                    onEdit={handleEditAttendance}
                     processingId={processingId}
                     onToggleMenu={(e, id) => toggleActionMenu(id)}
                     activeMenuId={activeActionMenu}
                     approveDisabled={approveAccess.disabled}
-                    rejectDisabled={rejectAccess.disabled}
                     reviewMessage={attendanceReviewMessage}
                   />
                 ))}
@@ -929,63 +888,28 @@ const AttendanceManagement = ({ companyId }) => {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showNotesModal && selectedAction && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
-          >
-            <ModalScrollLock />
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className={NOTES_MODAL_CLASS}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-t-xl">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <FaComment /> Rejection Notes
-                </h2>
-              </div>
-              <div className="p-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Please provide a reason for rejection</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={4}
-                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
-                  placeholder="Enter rejection reason..."
-                  autoFocus
-                />
-                <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3">
-                  <button
-                    onClick={() => { setShowNotesModal(false); setSelectedAction(null); setNotes(''); }}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (notes.trim()) {
-                        processStatusUpdate(selectedAction.punchId, selectedAction.action, notes);
-                      } else {
-                        toast.warning('Please provide a reason for rejection');
-                      }
-                    }}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium shadow-lg"
-                  >
-                    Submit Rejection
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+        {showCreateModal && (
+          <CreateAttendanceModal
+            isOpen={showCreateModal}
+            onClose={() => setShowCreateModal(false)}
+            companyId={resolvedCompanyId}
+            onSuccess={() => fetchAttendances(true)}
+          />
         )}
       </AnimatePresence>
-    </div>
+
+      <AnimatePresence>
+        {showEditModal && selectedAttendance && (
+          <EditAttendanceModal
+            isOpen={showEditModal}
+            onClose={() => { setShowEditModal(false); setSelectedAttendance(null); }}
+            companyId={resolvedCompanyId}
+            onSuccess={() => fetchAttendances(true)}
+            attendance={selectedAttendance}
+          />
+        )}
+      </AnimatePresence>
+    </ManagementHub>
   );
 };
 
