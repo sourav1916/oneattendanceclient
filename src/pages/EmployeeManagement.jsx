@@ -82,9 +82,12 @@ const getEmployeeListCacheKey = ({ companyId, page, limit, search }) =>
 // ─── Helper Components ───────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">{icon}{label}</label>
-        <div className="text-gray-800 font-medium">{value}</div>
+    <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100 hover:bg-white hover:shadow-sm transition-all group">
+        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 mb-0.5 group-hover:text-indigo-500 transition-colors">
+            {icon}
+            {label}
+        </label>
+        <div className="text-slate-700 text-sm font-semibold truncate">{value}</div>
     </div>
 );
 
@@ -157,10 +160,11 @@ const EmployeeEditModal = ({
     };
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
+        <div className="flex flex-col flex-1 min-h-0">
+        <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+            <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
                         <FaUserCog className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -171,11 +175,12 @@ const EmployeeEditModal = ({
                 <button
                     type="button"
                     onClick={closeModal}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"
                 >
                     <FaTimes className="h-4 w-4" />
                 </button>
             </div>
+        </div>
 
             <form onSubmit={handleEdit} className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
                 {(constantsLoading || permissionsLoading) ? (
@@ -1478,197 +1483,209 @@ const EmployeeManagement = () => {
             {/* Modals */}
             <AnimatePresence>
                 {modalType !== MODAL_TYPES.NONE && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
-                        onClick={closeModal}
+                    <motion.div
+                        className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                     >
                         <ModalScrollLock />
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={closeModal}
+                        />
+
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 18 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className={`relative w-full bg-white shadow-2xl overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
-                                ? 'max-w-lg max-h-[90vh] overflow-y-auto flex flex-col rounded-xl'
-                                : modalType === MODAL_TYPES.EDIT
-                                    ? 'max-w-4xl h-[90vh] flex flex-col rounded-xl border border-slate-200'
-                                    : 'max-w-4xl max-h-[90vh] rounded-xl'
+                            exit={{ scale: 0.95, opacity: 0, y: 18 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 280 }}
+                            className={`relative w-full bg-white shadow-2xl overflow-hidden z-10 flex flex-col ${modalType === MODAL_TYPES.DELETE_CONFIRM
+                                    ? 'max-w-lg rounded-xl'
+                                    : 'max-w-4xl max-h-[90vh] rounded-xl border border-slate-200'
                                 }`}
                             onClick={e => e.stopPropagation()}
                         >
                             {/* VIEW MODAL */}
                             {modalType === MODAL_TYPES.VIEW && selectedEmployee && (
-                                <>
-                                    <div className="px-6 py-5 border-b border-gray-100">
-                                        <div className="flex items-center justify-between">
+                                <div className="flex flex-col flex-1 min-h-0">
+                                    <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+                                        <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                                                    <FaEye className="w-6 h-6 text-white" />
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
+                                                    <FaInfoCircle className="h-6 w-6 text-white" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-gray-900">Employee Details</h2>
-                                                    <p className="text-sm text-gray-500 mt-0.5">View comprehensive employee information</p>
+                                                    <h2 className="text-xl font-bold text-slate-900">Employee Details</h2>
+                                                    <p className="text-sm text-slate-500">Comprehensive profile overview</p>
                                                 </div>
                                             </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 90 }}
-                                                whileTap={{ scale: 0.9 }}
+                                            <button
                                                 onClick={closeModal}
-                                                className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"
                                             >
-                                                <FaTimes className="w-5 h-5 text-gray-400" />
-                                            </motion.button>
+                                                <FaTimes className="h-4 w-4" />
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="p-6 max-h-[calc(100vh-200px)] overflow-y-auto custom-scrollbar">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="col-span-2 flex items-center gap-6 pb-6 border-b">
-                                                <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-xl">
-                                                    <FaUserCircle className="text-white text-5xl" />
+
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                                        {/* Profile Card */}
+                                        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-2xl font-bold text-white shadow-lg">
+                                                    {selectedEmployee.name?.charAt(0).toUpperCase()}
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-2xl font-bold text-gray-800">{selectedEmployee.name}</h3>
-                                                    <p className="text-gray-600 flex items-center gap-2 mt-1"><FaBriefcase className="text-blue-500" />{getDesignationDisplay(selectedEmployee.designation)}</p>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="text-xl font-bold text-slate-900 truncate">{selectedEmployee.name}</h3>
+                                                    <div className="flex flex-wrap gap-2 mt-1">
+                                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100">
+                                                            {getDesignationDisplay(selectedEmployee.designation)}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 rounded-lg text-xs font-bold border ${getStatusClassName(selectedEmployee.status)}`}>
+                                                            {getStatusDisplay(selectedEmployee.status)}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <InfoItem icon={<FaIdCard className="text-blue-500" />} label="Employee Code" value={selectedEmployee.employee_code} />
-                                            <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Status"
-                                                value={<span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusClassName(selectedEmployee.status)}`}>{getStatusDisplay(selectedEmployee.status)}</span>}
-                                            />
-                                            <InfoItem icon={<FaEnvelope className="text-green-500" />} label="Email" value={selectedEmployee.email} />
-                                            <InfoItem icon={<FaPhone className="text-orange-500" />} label="Phone" value={selectedEmployee.phone} />
-                                            <InfoItem icon={<FaUserTag className="text-indigo-500" />} label="Employment Type" value={getEmploymentTypeDisplay(selectedEmployee.employment_type)} />
-                                            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
-                                            <InfoItem
-                                                icon={<FaClock className="text-indigo-500" />}
-                                                label="Schedule"
-                                                value={
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
-                                                            {`${selectedEmployee.shift_start || 'N/A'} - ${selectedEmployee.shift_end || 'N/A'}`}
-                                                        </span>
-                                                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                                                            Break Minutes {formatDurationDisplay(selectedEmployee.break_minutes)}
-                                                        </span>
-                                                        <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
-                                                            Grace Minutes {formatDurationDisplay(selectedEmployee.grace_minutes)}
-                                                        </span>
-                                                    </div>
-                                                }
-                                            />
-                                            <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joining Date" value={formatDate(selectedEmployee.joining_date)} />
+                                        </div>
 
-                                            {selectedEmployee.package_name && (
-                                                <div className="col-span-2 mt-4">
-                                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><FaShieldAlt className="text-blue-500" /> Permission Package</label>
-                                                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-200">
-                                                        <div className="flex items-center gap-3">
-                                                            <FaShieldAlt className="text-indigo-500 text-xl" />
-                                                            <div>
-                                                                <h4 className="font-semibold text-gray-900">{selectedEmployee.package_name}</h4>
-                                                                {selectedEmployee.group_code && (
-                                                                    <p className="text-xs text-gray-500 font-mono mt-1">{selectedEmployee.group_code}</p>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                        {/* Information Grid */}
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                            <InfoItem icon={<FaIdCard />} label="Employee Code" value={selectedEmployee.employee_code} />
+                                            <InfoItem icon={<FaEnvelope />} label="Email Address" value={selectedEmployee.email} />
+                                            <InfoItem icon={<FaPhone />} label="Phone Number" value={selectedEmployee.phone || 'N/A'} />
+                                            <InfoItem icon={<FaBriefcase />} label="Employment" value={getEmploymentTypeDisplay(selectedEmployee.employment_type)} />
+                                            <InfoItem icon={<FaDollarSign />} label="Salary Type" value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
+                                            <InfoItem icon={<FaCalendarAlt />} label="Joining Date" value={formatDate(selectedEmployee.joining_date)} />
+                                        </div>
+
+                                        {/* Work Schedule */}
+                                        <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                <FaClock className="text-indigo-500" /> Work Schedule
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                <div className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Shift Hours</span>
+                                                    <span className="text-xs font-bold text-slate-700">{selectedEmployee.shift_start || 'N/A'} - {selectedEmployee.shift_end || 'N/A'}</span>
                                                 </div>
-                                            )}
+                                                <div className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Break Time</span>
+                                                    <span className="text-xs font-bold text-slate-700">{formatDurationDisplay(selectedEmployee.break_minutes)}</span>
+                                                </div>
+                                                <div className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Grace Period</span>
+                                                    <span className="text-xs font-bold text-slate-700">{formatDurationDisplay(selectedEmployee.grace_minutes)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                            {selectedEmployee.permissions?.length > 0 && (
-                                                <div className="col-span-2 mt-4 border border-gray-200 rounded-xl overflow-hidden">
-                                                    <button
-                                                        onClick={() => setShowPermissions(!showPermissions)}
-                                                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                                        {/* Permission Package (Collapsible) */}
+                                        {selectedEmployee.package_name && (
+                                            <div className="rounded-xl border border-indigo-100 bg-indigo-50/30 overflow-hidden">
+                                                <button
+                                                    onClick={() => setShowPermissions(!showPermissions)}
+                                                    className="w-full flex items-center justify-between p-4 hover:bg-indigo-50/50 transition-colors"
+                                                >
+                                                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                                        <FaShieldAlt className="text-indigo-500" /> Security & Access
+                                                    </h4>
+                                                    <motion.div
+                                                        animate={{ rotate: showPermissions ? 180 : 0 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"
                                                     >
-                                                        <div className="flex items-center gap-2">
-                                                            <FaShieldAlt className="text-indigo-500" />
-                                                            <span className="text-sm font-semibold text-gray-700">Permissions</span>
-                                                            <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                                                                {selectedEmployee.permissions.length}
-                                                            </span>
-                                                        </div>
-                                                        <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                                                            <FaChevronDown className="w-4 h-4 text-gray-400" />
-                                                        </motion.div>
-                                                    </button>
-                                                    <AnimatePresence>
-                                                        {showPermissions && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: "auto", opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="p-4 bg-white grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                    {selectedEmployee.permissions.map((perm, idx) => (
-                                                                        <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                                                                            className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200"
-                                                                        >
-                                                                            <span className="font-medium text-gray-700">{perm.name}</span>
-                                                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-mono">{perm.code}</span>
-                                                                        </motion.div>
-                                                                    ))}
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            )}
+                                                        <FaChevronDown size={10} />
+                                                    </motion.div>
+                                                </button>
 
-                                            {selectedEmployee.attendance_methods?.length > 0 && (
-                                                <div className="col-span-2 mt-4">
-                                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><FaUserCheck className="text-indigo-500" /> Attendance Methods</label>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                        {selectedEmployee.attendance_methods.map((method, idx) => (
-                                                            <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                                                                className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200"
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="font-medium text-gray-700 capitalize">{method.method}</span>
-                                                                    <div className="flex gap-2">
-                                                                        {(method.is_manual === 1 || method.is_manual === true) && (
-                                                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Manual</span>
-                                                                        )}
-                                                                        {(method.is_auto === 1 || method.is_auto === true) && (
-                                                                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Auto</span>
+                                                <AnimatePresence>
+                                                    {showPermissions && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="px-4 pb-4">
+                                                                <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-sm">
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <span className="text-sm font-bold text-slate-700">{selectedEmployee.package_name}</span>
+                                                                        {selectedEmployee.group_code && (
+                                                                            <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg">
+                                                                                {selectedEmployee.group_code}
+                                                                            </span>
                                                                         )}
                                                                     </div>
+                                                                    {selectedEmployee.permissions?.length > 0 ? (
+                                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                                            {selectedEmployee.permissions.map((perm, idx) => (
+                                                                                <span key={idx} className="px-2 py-1 bg-slate-50 text-slate-600 text-[10px] font-bold rounded-lg border border-slate-100">
+                                                                                    {perm.name}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <p className="text-[10px] text-slate-400 italic">No specific permissions assigned</p>
+                                                                    )}
                                                                 </div>
-                                                            </motion.div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        )}
+
+                                        {/* Methods & Holidays */}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {selectedEmployee.attendance_methods?.length > 0 && (
+                                                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                        <FaUserCheck className="text-blue-500" /> Attendance Methods
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {selectedEmployee.attendance_methods.map((method, idx) => (
+                                                            <div key={idx} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[10px] font-bold text-slate-700 shadow-sm flex items-center gap-1.5 capitalize">
+                                                                <div className="w-1 h-1 rounded-full bg-blue-500"></div>
+                                                                {method.method}
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>
                                             )}
 
                                             {selectedEmployee.weekends?.length > 0 && (
-                                                <div className="col-span-2 mt-4">
-                                                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3"><FaCalendarAlt className="text-purple-500" /> Weekly Holidays</label>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                        <FaCalendarAlt className="text-purple-500" /> Weekly Holidays
+                                                    </h4>
+                                                    <div className="flex flex-wrap gap-1.5">
                                                         {selectedEmployee.weekends.map((w, idx) => (
-                                                            <motion.div key={idx} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                                                                className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200"
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="font-medium text-gray-700 capitalize">{w.day}</span>
-                                                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${w.type?.toLowerCase() === 'full'
-                                                                            ? 'bg-indigo-100 text-indigo-700'
-                                                                            : 'bg-blue-100 text-blue-700'
-                                                                        }`}>
-                                                                        {w.type?.toLowerCase() === 'full' ? 'Full Day' : 'Half Day'}
-                                                                    </span>
-                                                                </div>
-                                                            </motion.div>
+                                                            <div key={idx} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[10px] font-bold text-slate-700 shadow-sm flex items-center gap-1.5 capitalize">
+                                                                <div className="w-1 h-1 rounded-full bg-purple-500"></div>
+                                                                {w.day}
+                                                                <span className="text-[9px] text-slate-400 font-normal ml-0.5">({w.type})</span>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="mt-6 flex justify-end">
-                                            <button onClick={closeModal} className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">Close</button>
-                                        </div>
                                     </div>
-                                </>
+
+                                    <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+                                        <button
+                                            onClick={closeModal}
+                                            className="px-6 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
                             )}
 
                             {/* EDIT MODAL */}

@@ -169,10 +169,6 @@ const WeekendConfig = ({ weekends, onChange }) => {
 
   return (
     <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-        <FaCalendarAlt className="w-4 h-4 text-purple-500" />
-        Weekend / Holiday Configuration
-      </label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {WEEKDAYS.map((day) => {
           const currentType = getWeekendType(day.value);
@@ -227,6 +223,9 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
   const [permissionPackages, setPermissionPackages] = useState([]);
   const [constants, setConstants] = useState({ designations: [], salary_types: [], employment_types: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
+  const [showAttendanceMethods, setShowAttendanceMethods] = useState(false);
+  const [showWeekends, setShowWeekends] = useState(false);
+
   const attendanceMethods = useMemo(() => companyAttendanceMethods, [companyAttendanceMethods]);
 
   // Fetch options
@@ -390,7 +389,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={e => e.stopPropagation()}>
 
-        <div className="flex items-center justify-between px-6 py-5 border-b bg-gradient-to-r from-indigo-50 to-blue-50">
+        <div className="flex items-center justify-between px-6 py-5 border-b bg-white">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
               {isEditing ? <FaEdit className="w-6 h-6 text-white" /> : <FaPlus className="w-6 h-6 text-white" />}
@@ -567,59 +566,117 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                 </div>
               </div>
 
-              {/* Weekend Config */}
-              <WeekendConfig
-                weekends={formData.weekends}
-                onChange={(newWeekends) => setFormData(prev => ({ ...prev, weekends: newWeekends }))}
-              />
+              {/* Weekend Config (Collapsible) */}
+              <div className="rounded-xl border border-gray-200 bg-gray-50/30 overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => setShowWeekends(!showWeekends)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-gray-100/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-purple-500" />
+                    <span className="text-sm font-semibold text-gray-700">Weekend / Holiday Configuration</span>
+                    {formData.weekends?.length > 0 && (
+                      <span className="ml-1 px-2 py-0.5 text-[10px] rounded-full bg-purple-100 text-purple-700 font-bold">
+                        {formData.weekends.length}
+                      </span>
+                    )}
+                  </div>
+                  <motion.div
+                    animate={{ rotate: showWeekends ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FaChevronDown className="w-4 h-4 text-gray-400" />
+                  </motion.div>
+                </button>
 
-              {/* Attendance Methods */}
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                  <FaUserCheck className="w-4 h-4 text-indigo-500" />
-                  Attendance Methods
-                </label>
-                {attendanceMethods.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    {attendanceMethods.map((method) => {
-                      const isSelected = formData.attendance_methods.includes(method.method);
+                <AnimatePresence>
+                  {showWeekends && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4">
+                        <WeekendConfig
+                          weekends={formData.weekends}
+                          onChange={(newWeekends) => setFormData(prev => ({ ...prev, weekends: newWeekends }))}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-                      return (
-                        <button
-                          key={method.method}
-                          type="button"
-                          onClick={() => handleAttendanceToggle(method.method)}
-                          className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all duration-200 ${isSelected
-                            ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
-                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
-                            }`}
-                        >
-                          <div className="flex w-full items-center justify-between gap-3">
-                            <span className="font-semibold">{method.label || formatAttendanceMethod(method.method)}</span>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
-                              }`}>
-                              {isSelected ? 'Selected' : 'Available'}
-                            </span>
+              {/* Attendance Methods (Collapsible) */}
+              <div className="rounded-xl border border-gray-200 bg-gray-50/30 overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => setShowAttendanceMethods(!showAttendanceMethods)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-gray-100/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaUserCheck className="text-indigo-500" />
+                    <span className="text-sm font-semibold text-gray-700">Attendance Methods</span>
+                    {formData.attendance_methods?.length > 0 && (
+                      <span className="ml-1 px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-bold">
+                        {formData.attendance_methods.length}
+                      </span>
+                    )}
+                  </div>
+                  <motion.div
+                    animate={{ rotate: showAttendanceMethods ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FaChevronDown className="w-4 h-4 text-gray-400" />
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {showAttendanceMethods && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4">
+                        {attendanceMethods.length > 0 ? (
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {attendanceMethods.map((method) => {
+                              const isSelected = formData.attendance_methods.includes(method.method);
+
+                              return (
+                                <button
+                                  key={method.method}
+                                  type="button"
+                                  onClick={() => handleAttendanceToggle(method.method)}
+                                  className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 ${isSelected
+                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
+                                    : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
+                                    }`}
+                                >
+                                  <div className="flex w-full items-center justify-between gap-3">
+                                    <span className="font-semibold">{method.label || formatAttendanceMethod(method.method)}</span>
+                                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                                      }`}>
+                                      {isSelected ? 'Selected' : 'Available'}
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
-                          {method.is_auto && (
-                            <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                              Auto method
-                            </span>
-                          )}
-                          {method.is_manual && (
-                            <span className={`text-xs ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
-                              Manual method
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
-                    No attendance methods are available for the current company.
-                  </div>
-                )}
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                            No attendance methods are available for the current company.
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Auto Approve Toggle */}
@@ -683,183 +740,182 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
   const StatusIcon = status.icon;
 
   return (
-    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-      className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
-      onClick={onClose}>
-      <ModalScrollLock />
-      <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}>
+    <AnimatePresence mode="wait">
+      {isOpen && (
+        <motion.div
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <ModalScrollLock />
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 18 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 18 }}
+            transition={{ type: "spring", damping: 25, stiffness: 280 }}
+            className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200"
+            onClick={e => e.stopPropagation()}
+          >
 
-        <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-t-[10px]">
-          <div className="flex items-center gap-3">
-            <FaBox className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">Package Details</h2>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition">
-            <FaTimes size={18} />
-          </button>
-        </div>
-
-        <div className="p-4">
-          {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b">
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">{pkg.name}</h3>
-              <p className="text-gray-500 flex items-center gap-2 mt-1">
-                <FaCode className="text-indigo-500" size={14} />
-                {pkg.code}
-              </p>
-            </div>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${status.className}`}>
-              <StatusIcon size={14} />{status.text}
-            </span>
-          </div>
-
-          {/* Info Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
-            <InfoItem icon={<FaUserTie className="text-blue-500" />} label="Designation" value={formatDisplay(pkg.designation)} />
-            <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment Type" value={formatDisplay(pkg.employment_type)} />
-            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
-            <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Timing" value={`${pkg.shift_start} - ${pkg.shift_end}`} />
-            <InfoItem icon={<FaClock className="text-amber-500" />} label="Break Minutes" value={pkg.break_minutes} />
-            <InfoItem icon={<FaClock className="text-rose-500" />} label="Grace Minutes" value={pkg.grace_minutes} />
-            <InfoItem icon={<FaTag className="text-indigo-500" />} label="Remarks" value={pkg.remarks || "—"} />
-          </div>
-
-          {/* Auto Approve */}
-          <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">Auto Approve Attendance</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${pkg.auto_approve ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
-              {pkg.auto_approve ? "Enabled" : "Disabled"}
-            </span>
-          </div>
-
-          {/* Attendance Methods */}
-          {pkg.attendance_methods?.length > 0 && (
-            <div className="mt-4">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                <FaUserCheck className="text-purple-500" /> Attendance Methods
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {pkg.attendance_methods.map((method, idx) => (
-                  <span key={idx} className="px-3 py-1.5 bg-purple-50 text-purple-700 rounded-xl text-sm font-medium capitalize border border-purple-200">
-                    {formatAttendanceMethod(method)}
-                  </span>
-                ))}
+            {/* Header */}
+            <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-100">
+                    <FaBox className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">Package Details</h2>
+                    <p className="text-sm text-slate-500">Comprehensive configuration overview</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
+                >
+                  <FaTimes className="h-4 w-4" />
+                </button>
               </div>
             </div>
-          )}
 
-          {/* Weekends */}
-          {pkg.weekends?.length > 0 && (
-            <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <button
-                onClick={() => setShowWeekends(!showWeekends)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                type="button"
-              >
-                <div className="flex items-center gap-2">
-                  <FaCalendarAlt className="text-indigo-500" />
-                  <span className="text-sm font-semibold text-gray-700">Weekends</span>
-                  <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                    {pkg.weekends.length}
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scrollbar">
+              {/* Profile Card */}
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-indigo-600 shadow-sm border border-indigo-100">
+                      <FaBriefcase size={24} />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-bold text-slate-900 truncate">{pkg.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold border border-indigo-100 uppercase tracking-wider">
+                          {pkg.code}
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[10px] font-bold border uppercase tracking-wider ${status.className}`}>
+                          <StatusIcon size={10} />{status.text}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Information Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <InfoItem icon={<FaUserTie className="text-blue-500" />} label="Designation" value={formatDisplay(pkg.designation)} />
+                <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment" value={formatDisplay(pkg.employment_type)} />
+                <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
+                <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Start" value={pkg.shift_start} />
+                <InfoItem icon={<FaClock className="text-amber-500" />} label="Shift End" value={pkg.shift_end} />
+                <InfoItem icon={<FaClock className="text-rose-500" />} label="Break Time" value={pkg.break_minutes} />
+                <InfoItem icon={<FaClock className="text-indigo-500" />} label="Grace Period" value={pkg.grace_minutes} />
+                <InfoItem icon={<FaTag className="text-slate-500" />} label="Remarks" value={pkg.remarks || "—"} className="col-span-2" />
+              </div>
+
+              {/* Advanced Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Auto Approve */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${pkg.auto_approve ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <FaCheckCircle size={16} />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">Auto Approve Attendance</span>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${pkg.auto_approve ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}>
+                    {pkg.auto_approve ? "Enabled" : "Disabled"}
                   </span>
                 </div>
-                <motion.div animate={{ rotate: showWeekends ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <FaChevronDown className="w-4 h-4 text-gray-400" />
-                </motion.div>
-              </button>
 
-              <AnimatePresence>
-                {showWeekends && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: "easeInOut" }}
-                    className="overflow-hidden"
-                  >
-                    <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
-                      {pkg.weekends.map((weekend, idx) => (
-                        <motion.div
-                          key={`${weekend.day}-${idx}`}
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100"
-                        >
-                          <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
-                          <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${weekend.type === "half"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-indigo-100 text-indigo-700"
-                              }`}
-                          >
-                            {weekend.type || "full"}
-                          </span>
-                        </motion.div>
+                {/* Attendance Methods */}
+                {pkg.attendance_methods?.length > 0 && (
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FaUserCheck className="text-indigo-500" size={16} />
+                      <span className="text-sm font-semibold text-slate-700">Methods</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {pkg.attendance_methods.map((method, idx) => (
+                        <span key={idx} className="px-2 py-0.5 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold capitalize border border-slate-100">
+                          {formatAttendanceMethod(method)}
+                        </span>
                       ))}
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </div>
-          )}
+              </div>
 
-          {/* Permissions Section */}
-          {pkg.permission_package_id && (
-            <div className="mt-6 border border-gray-200 rounded-xl overflow-hidden">
-              <button
-                onClick={() => setShowPermissions(!showPermissions)}
-                className="w-full flex items-center justify-between px-4 py-4 bg-gray-50 hover:bg-gray-100 transition-colors"
-                type="button"
-              >
-                <div className="flex items-center gap-2">
-                  <FaShieldAlt className="text-indigo-500" />
-                  <span className="text-sm font-semibold text-gray-700">Permission Package</span>
-                  {pkg.permission_package_name && (
-                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                      {pkg.permission_package_name}
-                    </span>
-                  )}
-                </div>
-                <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                  <FaChevronDown className="w-4 h-4 text-gray-400" />
-                </motion.div>
-              </button>
-
-              <AnimatePresence>
-                {showPermissions && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
+              {/* Weekends (Collapsible) */}
+              {pkg.weekends?.length > 0 && (
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => setShowWeekends(!showWeekends)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                    type="button"
                   >
-                    <div className="p-4 bg-white">
-                      {pkg.permissions && pkg.permissions.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {pkg.permissions.map((perm, idx) => (
-                            <div key={perm.id || idx} className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg">
-                              <span className="text-sm text-gray-700">{perm.name}</span>
-                              <span className="text-xs text-indigo-600 font-mono">{perm.code}</span>
+                    <div className="flex items-center gap-2">
+                      <FaCalendarAlt className="text-indigo-500" />
+                      <span className="text-sm font-semibold text-slate-700">Weekends / Holidays</span>
+                      <span className="ml-1 px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-bold">
+                        {pkg.weekends.length}
+                      </span>
+                    </div>
+                    <motion.div animate={{ rotate: showWeekends ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                      <FaChevronDown className="w-4 h-4 text-slate-400" />
+                    </motion.div>
+                  </button>
+
+                  <AnimatePresence>
+                    {showWeekends && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {pkg.weekends.map((weekend, idx) => (
+                            <div
+                              key={`${weekend.day}-${idx}`}
+                              className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100"
+                            >
+                              <span className="text-sm font-medium text-slate-700 capitalize">{weekend.day}</span>
+                              <span
+                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${weekend.type === "half"
+                                  ? "bg-blue-100 text-blue-700 border border-blue-200"
+                                  : "bg-indigo-100 text-indigo-700 border border-indigo-200"
+                                  }`}
+                              >
+                                {weekend.type || "full"}
+                              </span>
                             </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="text-center text-gray-500 py-4">No permissions found for this package</p>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
+
+            {/* Footer */}
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4 flex justify-end">
+              <button
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition-all shadow-sm"
+              >
+                Close Details
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

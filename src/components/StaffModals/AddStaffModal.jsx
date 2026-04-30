@@ -563,7 +563,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
             transition={{ type: "spring", damping: 25, stiffness: 280 }}
             className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50 px-6 py-5">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
                   <FaUserPlus className="h-6 w-6 text-white" />
