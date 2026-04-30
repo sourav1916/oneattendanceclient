@@ -5,7 +5,7 @@ import {
     FaChartBar, FaEdit, FaTrash, FaInfoCircle,
     FaListUl, FaTh, FaPercentage, FaDollarSign,
     FaBuilding, FaBalanceScale, FaTag, FaToggleOn, FaToggleOff, FaEye,
-    FaSearch, FaClock, FaBriefcase, FaUserCircle, FaCog
+    FaSearch, FaClock, FaBriefcase, FaUserCircle, FaCog, FaSave, FaIdCard
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -101,95 +101,117 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
 
     return (
         <AnimatePresence>
-            <motion.div
-                variants={backdropVariants}
-                initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}
-            >
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div
-                    variants={modalVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div className={`sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r ${tc.gradient} text-white rounded-t-[10px]`}>
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <FaMoneyBillWave /> Component Details
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                            <FaTimes size={20} />
-                        </button>
-                    </div>
-
-                    <div className="p-6">
-                        <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className={`bg-gradient-to-br ${tc.gradient} p-4 rounded-xl`}>
-                                <FaMoneyBillWave className="text-white text-4xl" />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-4">
+                            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${tc.gradient} shadow-lg shadow-slate-200`}>
+                                <FaMoneyBillWave className="h-7 w-7 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-800">{component.name}</h3>
-                                <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                    <FaTag className="text-blue-500" size={14} />Code: {component.code}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                            <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Component Type" value={formatTypeLabel(component.type)} />
-                            <InfoItem icon={<FaPercentage className="text-indigo-500" />} label="Calculation Type" value={<span className="capitalize">{component.calc_type}</span>} />
-                            <InfoItem icon={<FaChartBar className="text-emerald-500" />} label="Value" value={formatCalcValue(component.calc_type, component.calc_value)} />
-                            <InfoItem
-                                icon={<FaBalanceScale className="text-orange-500" />}
-                                label="Taxable"
-                                value={
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${component.is_taxable ? 'bg-orange-100 text-orange-800 border-orange-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                        {component.is_taxable ? 'Taxable' : 'Non-Taxable'}
-                                    </span>
-                                }
-                            />
-                            <InfoItem
-                                icon={<FaBuilding className="text-blue-500" />}
-                                label="Statutory"
-                                value={
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${component.is_statutory ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                        {component.is_statutory ? 'Statutory' : 'Non-Statutory'}
-                                    </span>
-                                }
-                            />
-                            <InfoItem
-                                icon={<FaToggleOn className="text-green-500" />}
-                                label="Status"
-                                value={
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${component.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                <h2 className="text-xl font-bold text-slate-900 leading-tight">{component.name}</h2>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">{component.code}</span>
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${component.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${component.is_active ? 'bg-green-500' : 'bg-slate-400'}`} />
                                         {component.is_active ? 'Active' : 'Inactive'}
                                     </span>
-                                }
-                            />
+                                </div>
+                            </div>
                         </div>
+                        <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all border border-transparent hover:border-slate-100">
+                            <FaTimes className="h-5 w-5" />
+                        </button>
+                    </div>
 
-                        <div className="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <p className="text-xs text-gray-500 flex items-center gap-2">
-                                <FaInfoCircle className="text-blue-400" />
-                                Component ID: #{component.id} · Created: {formatDate(component.created_at)}
-                            </p>
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
+                        <div className="p-6 space-y-6">
+                            {/* Summary Stats */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Type</p>
+                                    <p className={`text-sm font-black uppercase ${tc.text}`}>{formatTypeLabel(component.type)}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Calculation</p>
+                                    <p className="text-sm font-black text-slate-900 uppercase">{component.calc_type}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Default Value</p>
+                                    <p className="text-sm font-black text-indigo-600 uppercase">{formatCalcValue(component.calc_type, component.calc_value)}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                                    <p className={`text-sm font-black uppercase ${component.is_active ? 'text-green-600' : 'text-slate-400'}`}>{component.is_active ? 'Active' : 'Disabled'}</p>
+                                </div>
+                            </div>
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Flags Section */}
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Configuration Flags</p>
+                                    </div>
+                                    <div className="divide-y divide-slate-50">
+                                        <div className="flex items-center justify-between px-4 py-3.5">
+                                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                <FaBalanceScale className="text-orange-500" /> Taxable Component
+                                            </span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${component.is_taxable ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-400'}`}>
+                                                {component.is_taxable ? 'YES' : 'NO'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between px-4 py-3.5">
+                                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                <FaBuilding className="text-blue-500" /> Statutory Component
+                                            </span>
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${component.is_statutory ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
+                                                {component.is_statutory ? 'YES' : 'NO'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Metadata Section */}
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">System Metadata</p>
+                                    </div>
+                                    <div className="divide-y divide-slate-50">
+                                        <div className="flex items-center justify-between px-4 py-3.5">
+                                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                <FaClock className="text-indigo-500" /> Date Created
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-800">{formatDate(component.created_at)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between px-4 py-3.5">
+                                            <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                <FaIdCard className="text-slate-400" /> Component ID
+                                            </span>
+                                            <span className="text-xs font-mono font-bold text-slate-800">#{component.id}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="px-6 pb-6 flex gap-3">
-                        <button
-                            onClick={() => { onEdit(component); onClose(); }}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-medium flex items-center justify-center gap-2"
-                        >
-                            <FaEdit size={14} /> Edit Component
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                            Close
                         </button>
-                        <button
-                            onClick={() => { onDelete(component); onClose(); }}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 transition-all duration-300 font-medium flex items-center justify-center gap-2"
-                        >
-                            <FaTrash size={14} /> Delete
-                        </button>
+                        <div className="flex gap-2 flex-[2]">
+                            <button onClick={() => { onEdit(component); onClose(); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100">
+                                <FaEdit /> Edit
+                            </button>
+                            <button onClick={() => { onDelete(component); onClose(); }} className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-100">
+                                <FaTrash /> Delete
+                            </button>
+                        </div>
                     </div>
                 </motion.div>
             </motion.div>
@@ -240,151 +262,129 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
 
     return (
         <AnimatePresence>
-            <motion.div
-                variants={backdropVariants}
-                initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}
-            >
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div
-                    variants={modalVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            {isEdit ? <FaEdit /> : <FaPlus />} {isEdit ? 'Edit Component' : 'New Component'}
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                            <FaTimes size={20} />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-200">
+                                {isEdit ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">{isEdit ? 'Edit Component' : 'New Component'}</h2>
+                                <p className="text-sm text-slate-500 font-medium">Configure salary element</p>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
                         </button>
                     </div>
 
-                    <div className="p-6 space-y-4">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Code *</label>
-                                <input
-                                    value={form.code}
-                                    onChange={e => setField('code', e.target.value.toUpperCase())}
-                                    placeholder="e.g. HRA"
-                                    className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.code ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
-                                />
-                                {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
+                        <div className="p-6 space-y-6">
+                            {/* Identifiers */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Component Code *</label>
+                                    <input value={form.code} onChange={e => setField('code', e.target.value.toUpperCase())} placeholder="e.g. BASIC"
+                                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all ${errors.code ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
+                                    {errors.code && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.code}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Component Name *</label>
+                                    <input value={form.name} onChange={e => setField('name', e.target.value)} placeholder="e.g. Basic Salary"
+                                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all ${errors.name ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
+                                    {errors.name && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.name}</p>}
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Name *</label>
-                                <input
-                                    value={form.name}
-                                    onChange={e => setField('name', e.target.value)}
-                                    placeholder="e.g. House Rent Allowance"
-                                    className={`w-full px-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.name ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
-                                />
-                                {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
-                            </div>
-                        </div>
 
-                        <div>
-                            <label className="text-xs font-semibold text-gray-600 mb-2 block">Component Type *</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                {COMPONENT_TYPES.map(t => {
-                                    const tc = getTypeConfig(t.value);
-                                    const active = form.type === t.value;
+                            {/* Type Selection */}
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Component Type</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {COMPONENT_TYPES.map(t => {
+                                        const tc = getTypeConfig(t.value);
+                                        const active = form.type === t.value;
+                                        return (
+                                            <button key={t.value} type="button" onClick={() => setField('type', t.value)}
+                                                className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-2 ${active ? `bg-white ${tc.text} border-indigo-500 shadow-md` : `bg-white text-slate-400 border-slate-100 hover:border-slate-200`}`}>
+                                                {t.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Calculation Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Calculation Method</label>
+                                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                                        {CALC_TYPES.map(ct => (
+                                            <button key={ct.value} type="button" onClick={() => setField('calc_type', ct.value)}
+                                                className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${form.calc_type === ct.value ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                                                <span className="text-sm">{ct.icon}</span> {ct.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Default Value ({form.calc_type === 'percentage' ? '%' : '₹'})</label>
+                                    <div className="relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                                            {form.calc_type === 'percentage' ? '%' : '₹'}
+                                        </div>
+                                        <input type="text" inputMode="decimal" value={form.calc_value}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                if (val === '' || /^\d*\.?\d*$/.test(val)) setField('calc_value', val);
+                                            }}
+                                            placeholder="0.00"
+                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-bold focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all ${errors.calc_value ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
+                                    </div>
+                                    {errors.calc_value && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.calc_value}</p>}
+                                </div>
+                            </div>
+
+                            {/* Flags */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                                {[
+                                    { key: 'is_taxable', label: 'Taxable', sub: 'Apply income tax', icon: <FaBalanceScale /> },
+                                    { key: 'is_statutory', label: 'Statutory', sub: 'Govt. regulated', icon: <FaBuilding /> },
+                                    { key: 'is_active', label: 'Status', sub: 'Currently active', icon: <FaToggleOn /> },
+                                ].map(toggle => {
+                                    const isOn = form[toggle.key];
                                     return (
-                                        <button
-                                            key={t.value}
-                                            type="button"
-                                            onClick={() => setField('type', t.value)}
-                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border ${active ? `bg-gradient-to-r ${tc.gradient} text-white border-transparent shadow-md` : `${tc.bg} ${tc.text} ${tc.border} hover:shadow-sm`}`}
-                                        >
-                                            {t.label}
-                                        </button>
+                                        <div key={toggle.key} onClick={() => setField(toggle.key, !isOn)}
+                                            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${isOn ? 'bg-indigo-50/50 border-indigo-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${isOn ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                                    {toggle.icon}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-800 leading-tight">{toggle.label}</p>
+                                                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">{toggle.sub}</p>
+                                                </div>
+                                            </div>
+                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isOn ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                                                <div className={`w-4 h-4 bg-white rounded-full transition-transform ${isOn ? 'translate-x-4' : 'translate-x-0'}`} />
+                                            </div>
+                                        </div>
                                     );
                                 })}
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs font-semibold text-gray-600 mb-2 block">Calculation Type *</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {CALC_TYPES.map(ct => (
-                                        <button
-                                            key={ct.value}
-                                            type="button"
-                                            onClick={() => setField('calc_type', ct.value)}
-                                            className={`py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center justify-center gap-1 ${form.calc_type === ct.value ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-md' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-300'}`}
-                                        >
-                                            <span className="font-bold">{ct.icon}</span> {ct.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-semibold text-gray-600 mb-1 block">
-                                    Value {form.calc_type === 'percentage' ? '(%)' : '(₹)'} *
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">
-                                        {form.calc_type === 'percentage' ? '%' : '₹'}
-                                    </span>
-                                    <input
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={form.calc_value}
-                                        onChange={e => {
-                                            const val = e.target.value.replace(/[^0-9.]/g, '');
-                                            if (val === '' || /^\d*\.?\d*$/.test(val)) setField('calc_value', val);
-                                        }}
-                                        placeholder="0.00"
-                                        className={`w-full pl-8 pr-3 py-2.5 rounded-xl border text-sm transition-all outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 ${errors.calc_value ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-gray-50 focus:bg-white'}`}
-                                    />
-                                </div>
-                                {errors.calc_value && <p className="text-xs text-red-500 mt-1">{errors.calc_value}</p>}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            {[
-                                { key: 'is_taxable', label: 'Taxable', sub: 'Subject to tax', color: 'orange' },
-                                { key: 'is_statutory', label: 'Statutory', sub: 'Govt. regulated', color: 'blue' },
-                            ].map(toggle => {
-                                const colorMap = { orange: 'from-orange-500 to-amber-500', blue: 'from-blue-500 to-indigo-500', green: 'from-green-500 to-emerald-500' };
-                                const isOn = form[toggle.key];
-                                return (
-                                    <button
-                                        key={toggle.key}
-                                        type="button"
-                                        onClick={() => setField(toggle.key, !isOn)}
-                                        className={`p-3 rounded-xl border text-left transition-all duration-200 ${isOn ? `bg-gradient-to-br ${colorMap[toggle.color]} text-white border-transparent shadow-md` : 'bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                                    >
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs font-bold">{toggle.label}</span>
-                                            {isOn ? <FaToggleOn size={16} /> : <FaToggleOff size={16} className="text-gray-400" />}
-                                        </div>
-                                        <p className={`text-xs ${isOn ? 'text-white/80' : 'text-gray-400'}`}>{toggle.sub}</p>
-                                    </button>
-                                );
-                            })}
-                        </div>
                     </div>
 
-                    <div className="px-6 pb-6 flex gap-3">
-                        <button
-                            onClick={onClose}
-                            className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium"
-                        >
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
                             Cancel
                         </button>
-                        <button
-                            onClick={handleSubmit}
-                            disabled={saving}
-                            className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-                        >
-                            {saving ? <FaSpinner className="animate-spin" /> : (isEdit ? <FaEdit /> : <FaPlus />)}
-                            {saving ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Component')}
+                        <button onClick={handleSubmit} disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-indigo-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
+                            {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Component'}
                         </button>
                     </div>
                 </motion.div>
@@ -400,51 +400,60 @@ const DeleteConfirmModal = ({ component, onClose, onConfirm, deleting }) => {
 
     return (
         <AnimatePresence>
-            <motion.div
-                variants={backdropVariants}
-                initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}
-            >
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div
-                    variants={modalVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className={CONFIRM_MODAL_CLASS}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <FaTrash /> Delete Component
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                            <FaTimes size={20} />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600 shadow-sm border border-rose-100">
+                                <FaTrash className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Delete Component</h2>
+                                <p className="text-sm text-slate-500 font-medium">Confirmation required</p>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
                         </button>
                     </div>
-                    <div className="flex flex-1 flex-col justify-center p-6 text-center">
-                        <motion.div
-                            initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
-                            className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
-                        >
-                            <FaExclamationTriangle className="text-4xl text-red-600" />
+
+                    <div className="p-8 text-center space-y-6">
+                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-24 h-24 bg-gradient-to-br from-rose-50 to-red-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-xl shadow-rose-100/50">
+                            <FaExclamationTriangle className="text-4xl text-rose-500" />
                         </motion.div>
-                        <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
-                        <p className="text-gray-500 mb-6">
-                            You are about to delete the component{" "}
-                            <span className="font-semibold text-red-600">{component.name}</span>.
-                            This action cannot be undone.
-                        </p>
-                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
-                            <button onClick={onClose}
-                                className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">
-                                Keep
-                            </button>
-                            <button onClick={() => onConfirm(component.id)} disabled={deleting}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
-                                {deleting && <FaSpinner className="animate-spin" />}
-                                Delete Component
-                            </button>
+                        
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-bold text-slate-900">Are you absolutely sure?</h3>
+                            <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                                You are about to permanently delete the salary component <span className="font-bold text-slate-900 underline decoration-rose-200 underline-offset-4">{component.name}</span>. This action cannot be undone and may affect existing salary packages.
+                            </p>
                         </div>
+
+                        {/* Summary of component to be deleted */}
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
+                            <div className="text-left">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</p>
+                                <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">{formatTypeLabel(component.type)}</p>
+                            </div>
+                            <div className="h-8 w-px bg-slate-200" />
+                            <div className="text-right">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Value</p>
+                                <p className="text-xs font-bold text-slate-800">{formatCalcValue(component.calc_type, component.calc_value)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                            Keep Component
+                        </button>
+                        <button onClick={() => onConfirm(component.id)} disabled={deleting} className="flex-1 py-3 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-rose-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-rose-200">
+                            {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                            {deleting ? 'Deleting...' : 'Delete Permanently'}
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>

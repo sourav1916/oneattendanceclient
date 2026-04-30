@@ -181,86 +181,119 @@ const SalaryDetailModal = ({ salary, onClose }) => {
 
     return (
         <AnimatePresence>
-            <motion.div
-                variants={backdropVariants}
-                initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}
-            >
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div
-                    variants={modalVariants}
-                    initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-[10px]">
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <FaMoneyBillWave /> Salary Details
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                            <FaTimes size={20} />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-3xl max-h-[90vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-4">
+                            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} shadow-lg shadow-slate-200`}>
+                                <span className="text-xl font-bold text-white">{getInitials(salary.employee?.name)}</span>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900 leading-tight">{salary.employee?.name}</h2>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold">{salary.employee?.employee_code}</span>
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${status.className}`}>
+                                        <StatusIcon size={10} />{status.text}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all border border-transparent hover:border-slate-100">
+                            <FaTimes className="h-5 w-5" />
                         </button>
                     </div>
 
-                    <div className="p-6">
-                        <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className={`bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} p-4 rounded-xl`}>
-                                <FaUserCircle className="text-white text-5xl" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-gray-800">{salary.employee?.name || "No name"}</h3>
-                                <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                    <FaIdCard className="text-blue-500" size={14} />{salary.employee?.employee_code}
-                                </p>
-                                <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                    <FaEnvelope className="text-green-500" size={14} />{salary.employee?.email}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                            <InfoItem icon={<FaDollarSign className="text-blue-500" />} label="Base Amount" value={formatCurrency(salary.base_amount, salary.currency)} />
-                            <InfoItem icon={<FaCalculator className="text-purple-500" />} label="Gross Salary" value={formatCurrency(salary.gross_salary, salary.currency)} />
-                            <InfoItem icon={<FaChartBar className="text-orange-500" />} label="Total Deductions" value={formatCurrency(salary.total_deductions, salary.currency)} />
-                            <InfoItem icon={<FaMoneyBillWave className="text-emerald-500" />} label="Net Salary" value={formatCurrency(salary.net_salary, salary.currency)} />
-                            <InfoItem icon={<FaBriefcase className="text-indigo-500" />} label="Salary Package" value={salary.package?.name || "N/A"} />
-                            <InfoItem icon={<FaTag className="text-rose-500" />} label="Status" value={
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
-                                    <StatusIcon size={12} />{status.text}
-                                </span>
-                            } />
-                            <InfoItem icon={<FaCalendarAlt className="text-cyan-500" />} label="Effective From" value={formatDateFull(salary.effective_from)} />
-                            <InfoItem icon={<FaCalendarCheck className="text-yellow-500" />} label="Effective To" value={formatDateFull(salary.effective_to)} />
-                        </div>
-
-                        <div className="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm font-semibold text-gray-600 flex items-center gap-2">
-                                    <FaChartBar className="text-blue-500" /> CTC (Cost to Company)
-                                </span>
-                                <span className="text-xl font-bold text-gray-800">{formatCurrency(salary.ctc, salary.currency)}</span>
-                            </div>
-                            <div className="flex justify-between items-center mt-2">
-                                <span className="text-sm font-semibold text-gray-600 flex items-center gap-2">
-                                    <FaHandPaper className="text-purple-500" /> Employer Contributions
-                                </span>
-                                <span className="text-lg font-semibold text-purple-600">{formatCurrency(salary.employer_contributions, salary.currency)}</span>
-                            </div>
-                        </div>
-
-                        {salary.components?.length > 0 && (
-                            <div className="mt-6">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
-                                    <FaCalculator className="text-green-500" /> Salary Components
-                                </label>
-                                <div className="space-y-2">
-                                    {salary.components.map((comp, idx) => (
-                                        <ComponentRow key={idx} component={comp} currency={salary.currency} />
-                                    ))}
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
+                        <div className="p-6 space-y-6">
+                            {/* Key Metrics Grid */}
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Amount</p>
+                                    <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, salary.currency)}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Salary</p>
+                                    <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, salary.currency)}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gross Salary</p>
+                                    <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, salary.currency)}</p>
+                                </div>
+                                <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
+                                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Total CTC</p>
+                                    <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, salary.currency)}</p>
                                 </div>
                             </div>
-                        )}
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Details Table */}
+                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Configuration Details</p>
+                                    </div>
+                                    <div className="divide-y divide-slate-50">
+                                        {[
+                                            { label: 'Salary Package', value: salary.package?.name || 'Custom', icon: <FaBriefcase className="text-indigo-500" /> },
+                                            { label: 'Effective From', value: formatDateFull(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
+                                            { label: 'Effective To', value: formatDateFull(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
+                                            { label: 'Deductions', value: formatCurrency(salary.total_deductions, salary.currency), icon: <FaChartBar className="text-rose-500" /> },
+                                            { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, salary.currency), icon: <FaHandPaper className="text-purple-500" /> },
+                                        ].map((item, idx) => (
+                                            <div key={idx} className="flex items-center justify-between px-4 py-3.5">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-xs">
+                                                        {item.icon}
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-slate-500">{item.label}</span>
+                                                </div>
+                                                <span className="text-xs font-bold text-slate-800">{item.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Components List */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between px-1">
+                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Salary Components</p>
+                                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{salary.components?.length || 0} Total</span>
+                                    </div>
+                                    <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                                        {salary.components?.map((comp, idx) => (
+                                            <div key={idx} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:border-slate-300">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-1.5 h-8 rounded-full ${comp.type === 'earning' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]' : comp.type === 'deduction' ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.4)]'}`} />
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-sm font-bold text-slate-800 leading-none">{comp.name}</p>
+                                                            {comp.is_overridden === 1 && (
+                                                                <span className="text-[8px] font-black uppercase tracking-tighter bg-amber-100 text-amber-700 px-1 py-0.5 rounded border border-amber-200">Overridden</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-400 mt-1 font-mono">{comp.code} · {comp.calc_type}: {comp.calc_value}{comp.calc_type === 'percentage' ? '%' : ''}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, salary.currency)}</p>
+                                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-red-600' : 'text-purple-600'}`}>
+                                                        {comp.type.replace('_', ' ')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4">
+                        <button onClick={onClose} className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                            Close Details
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>
@@ -371,7 +404,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.base_amount || !formData.effective_from) {
-            toast.warning('Please fill all required fields'); return;
+            toast.warning('Please fill required fields');
+            return;
         }
         setSubmitting(true);
         try {
@@ -384,214 +418,188 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
                 effective_to: formData.effective_to || null,
-                overrides: formData.overrides.map(o => ({
-                    ...o,
-                    effective_to: o.effective_to || null
-                }))
+                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
             };
             const response = await apiCall('/salary/update-salary', 'PUT', payload, company?.id);
             const result = await response.json();
-            if (result.success) {
-                toast.success('Salary updated successfully!');
-                onSuccess();
-                onClose();
-            } else {
-                toast.error(result.message || 'Failed to update salary');
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error('Failed to update salary');
-        } finally {
-            setSubmitting(false);
-        }
+            if (result.success) { toast.success('Salary updated successfully!'); onSuccess(); onClose(); }
+            else { toast.error(result.message || 'Failed to update salary'); }
+        } catch (e) { console.error(e); toast.error('Failed to update salary'); } finally { setSubmitting(false); }
     };
 
     if (!isOpen || !salary) return null;
 
     return (
         <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={onClose}>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
-                    onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                    <FaEdit className="text-white text-sm" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-bold">Edit Salary</h2>
-                                    <p className="text-xs text-white/80">{salary.employee?.name} · {salary.employee?.employee_code}</p>
-                                </div>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
+                                <FaEdit className="h-6 w-6 text-white" />
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
-                                <FaTimes size={20} />
-                            </button>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Edit Salary</h2>
+                                <p className="text-sm text-slate-500">{salary.employee?.name} · {salary.employee?.employee_code}</p>
+                            </div>
                         </div>
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
+                        </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
-                            <div className="flex gap-2">
-                                <select value={formData.currency}
-                                    onChange={e => setFormData({ ...formData, currency: e.target.value })}
-                                    className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
-                                    {currencies.length > 0
-                                        ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>)
-                                        : <option value="USD">$ USD</option>}
-                                </select>
-                                <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                    onChange={e => {
-                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                            setFormData({ ...formData, base_amount: val });
-                                        }
-                                    }}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
+                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                        <div className="p-6 space-y-5">
+                            {/* Base Amount */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField
-                                    value={formData.effective_from}
-                                    onChange={(value) => setFormData({ ...formData, effective_from: value })}
-                                    placeholder="Select effective from"
-                                    mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
-                                    popoverClassName="mt-2"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField
-                                    value={formData.effective_to}
-                                    onChange={(value) => setFormData({ ...formData, effective_to: value })}
-                                    placeholder="Select effective to"
-                                    mode="single"
-                                    buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-left"
-                                    popoverClassName="mt-2"
-                                />
-                                <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
-                            </div>
-                        </div>
-
-                        <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <FaCalculator className="text-blue-500" /> Component Overrides
-                                </label>
-                                <button type="button"
-                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
-                                    className="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all flex items-center gap-1">
-                                    <FaPlus size={10} /> Add Override
-                                </button>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
+                                <div className="flex gap-2">
+                                    <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
+                                        {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
+                                    </select>
+                                    <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                            if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                        }}
+                                        className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
+                                </div>
                             </div>
 
-                            {formData.overrides.length > 0 && (
-                                <div className="space-y-2 mb-3">
-                                    {formData.overrides.map((override, idx) => {
-                                        const component = availableComponents.find(c => c.id === override.component_id);
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
-                                                        </span>
-                                                    </div>
-                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-blue-500"><FaEdit size={12} /></button>
-                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                            {/* Package Visualization (Read-only in Edit) */}
+                            {salary.package && (
+                                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Salary Package: {salary.package.name}</label>
+                                        <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold uppercase">Locked</span>
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5 bg-white p-2.5 rounded-lg border border-slate-100">
+                                        <FaInfoCircle className="text-slate-400" /> Package cannot be changed during Edit. Use "Revise Package" for a new structure.
+                                    </div>
                                 </div>
                             )}
 
-                            {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-sm font-semibold text-blue-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
-                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
+                                    <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
+                                    <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                            </div>
+
+                            <div className="border-t border-slate-100 pt-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                        <FaCalculator className="text-blue-500" /> Component Overrides
+                                    </label>
+                                    <button type="button"
+                                        onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                        className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                                        <FaPlus size={8} /> Add Override
+                                    </button>
+                                </div>
+
+                                {formData.overrides.length > 0 && (
+                                    <div className="space-y-2 mb-3">
+                                        {formData.overrides.map((override, idx) => {
+                                            const component = availableComponents.find(c => c.id === override.component_id);
+                                            return (
+                                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm transition-all hover:bg-slate-100/50">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <p className="font-bold text-slate-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                            <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold uppercase tracking-wider ${override.calc_type === 'percentage' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-purple-100 text-purple-700 border border-purple-200'}`}>
+                                                                {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                            </span>
+                                                        </div>
+                                                        {override.reason && <p className="text-[11px] text-slate-400 mt-1 italic">"{override.reason}"</p>}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button type="button" onClick={() => editOverride(idx)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><FaEdit size={12} /></button>
+                                                        <button type="button" onClick={() => removeOverride(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={12} /></button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
-                                            <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                                                <option value="">Select component</option>
-                                                {availableComponents.map(comp => (
-                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>
-                                                ))}
-                                            </select>
+                                )}
+
+                                {showOverrideForm && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 p-4 bg-white rounded-xl border-2 border-blue-100 shadow-xl shadow-blue-100/50">
+                                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
+                                            <p className="text-sm font-bold text-blue-900 flex items-center gap-2 uppercase tracking-widest">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="p-1 text-slate-400 hover:text-slate-600"><FaTimes /></button>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="space-y-4">
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calc Type</label>
-                                                <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                                                    <option value="percentage">Percentage (%)</option>
-                                                    <option value="fixed">Fixed Amount</option>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component *</label>
+                                                <select value={overrideForm.component_id} onChange={e => {
+                                                    const compId = e.target.value;
+                                                    const comp = availableComponents.find(c => String(c.id) === String(compId));
+                                                    setOverrideForm(prev => ({
+                                                        ...prev,
+                                                        component_id: compId,
+                                                        calc_type: comp ? comp.calc_type : prev.calc_type,
+                                                        calc_value: comp ? String(comp.calc_value) : prev.calc_value,
+                                                    }));
+                                                }}
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+                                                    <option value="">Select component</option>
+                                                    {availableComponents.map(comp => (
+                                                        <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
+                                                    ))}
                                                 </select>
                                             </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Calc Type</label>
+                                                    <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed">Fixed Amount</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value *</label>
+                                                    <input type="text" inputMode="decimal" placeholder="Value" value={overrideForm.calc_value}
+                                                        onChange={e => {
+                                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                            if (val === '' || /^\d*\.?\d*$/.test(val)) { setOverrideForm({ ...overrideForm, calc_value: val }); }
+                                                        }}
+                                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all" />
+                                                </div>
+                                            </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
-                                                <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
-                                                    value={overrideForm.calc_value}
-                                                    onChange={e => {
-                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                                            setOverrideForm({ ...overrideForm, calc_value: val });
-                                                        }
-                                                    }}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason</label>
+                                                <input type="text" placeholder="Reason" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all" />
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <button type="button" onClick={addOverride} className="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-200">
+                                                    {editingOverride !== null ? 'Update' : 'Add Override'}
+                                                </button>
+                                                <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-100 transition-all">Cancel</button>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-                                                <DatePickerField value={overrideForm.effective_from} onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })} placeholder="From" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left" popoverClassName="mt-2" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-                                                <DatePickerField value={overrideForm.effective_to} onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })} placeholder="To" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left" popoverClassName="mt-2" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
-                                            <input type="text" placeholder="e.g., Special HRA" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                                        </div>
-                                        <div className="flex gap-2 pt-1">
-                                            <button type="button" onClick={addOverride} className="flex-1 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all">
-                                                {editingOverride !== null ? 'Update' : 'Add'}
-                                            </button>
-                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                                {submitting ? 'Saving...' : 'Save Changes'}
-                            </button>
+                                    </motion.div>
+                                )}
+                            </div>
                         </div>
                     </form>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                            {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                            {submitting ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
@@ -604,12 +612,31 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [currencies, setCurrencies] = useState([]);
+    const [loadingPackages, setLoadingPackages] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [showOverrideForm, setShowOverrideForm] = useState(false);
     const [editingOverride, setEditingOverride] = useState(null);
 
     const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', overrides: [] });
     const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
+
+    // Derived: Selected package details
+    const selectedPackage = useMemo(() =>
+        packages.find(p => String(p.id) === String(formData.component_package_id)),
+        [packages, formData.component_package_id]
+    );
+
+    // Derived: Components in selected package
+    const packageComponentIds = useMemo(() =>
+        selectedPackage?.items?.map(item => item.component_id) || [],
+        [selectedPackage]
+    );
+
+    // Filtered components for override dropdown
+    const filteredAvailableComponents = useMemo(() =>
+        availableComponents.filter(comp => !packageComponentIds.includes(comp.id)),
+        [availableComponents, packageComponentIds]
+    );
 
     useEffect(() => {
         if (isOpen && salary) {
@@ -618,6 +645,18 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         }
     }, [isOpen, salary]);
 
+    const handlePackageChange = (packageId) => {
+        const pkg = packages.find(p => String(p.id) === String(packageId));
+        const pkgCompIds = pkg?.items?.map(item => item.component_id) || [];
+
+        setFormData(prev => ({
+            ...prev,
+            component_package_id: packageId,
+            // Remove overrides that now conflict with the new package
+            overrides: prev.overrides.filter(o => !pkgCompIds.includes(o.component_id))
+        }));
+    };
+
     const loadPackages = async () => {
         setLoadingPackages(true);
         try {
@@ -625,11 +664,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) setPackages(result.data || []);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoadingPackages(false);
-        }
+        } catch (e) { console.error(e); } finally { setLoadingPackages(false); }
     };
     const loadComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (e) { console.error(e); } };
     const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types); } catch (e) { console.error(e); } };
@@ -649,223 +684,238 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
-            toast.warning('Please fill all required fields');
+            toast.warning('Please fill required fields');
             return;
         }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const payload = {
+                salary_id: salary.salary_id,
                 employee_id: salary.employee?.id,
                 component_package_id: parseInt(formData.component_package_id),
                 base_amount: parseFloat(formData.base_amount),
                 currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
                 effective_to: formData.effective_to || null,
-                overrides: formData.overrides.map(o => ({
-                    ...o,
-                    effective_to: o.effective_to || null
-                }))
+                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
             };
             const response = await apiCall('/salary/revise-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) {
-                toast.success('Salary revised successfully!');
-                onSuccess();
-                onClose();
-            } else {
-                toast.error(result.message || 'Failed to revise salary');
-            }
-        } catch (e) {
-            console.error(e);
-            toast.error('Failed to revise salary');
-        } finally {
-            setSubmitting(false);
-        }
+            if (result.success) { toast.success('Salary structure revised successfully!'); onSuccess(); onClose(); }
+            else { toast.error(result.message || 'Failed to revise salary'); }
+        } catch (error) { console.error(error); toast.error('Failed to revise salary'); }
+        finally { setSubmitting(false); }
     };
 
     if (!isOpen || !salary) return null;
 
     return (
         <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FaExchangeAlt className="text-white text-sm" /></div>
-                                <div><h2 className="text-lg font-bold">Revise Salary</h2><p className="text-xs text-white/80">{salary.employee?.name} · Creates a new salary record</p></div>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
+                                <FaLayerGroup className="h-6 w-6 text-white" />
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Revise Salary Structure</h2>
+                                <p className="text-sm text-slate-500">{salary.employee?.name} · {salary.employee?.employee_code}</p>
+                            </div>
                         </div>
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
+                        </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                        <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-100 rounded-xl">
-                            <FaInfoCircle className="text-purple-500 mt-0.5 flex-shrink-0" size={14} />
-                            <p className="text-xs text-purple-700">Revising salary creates a <span className="font-semibold">new salary record</span> for this employee. The previous record will remain in history.</p>
-                        </div>
+                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                        <div className="p-6 space-y-5">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Salary Package */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Salary Package *</label>
+                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm">
+                                        {loadingPackages ? <option value="">Loading packages...</option>
+                                            : packages.length === 0 ? <option value="">No packages found</option>
+                                                : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                                    </select>
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
-                            <select value={formData.component_package_id} onChange={e => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
-                                {loadingPackages ? <option value="">Loading packages...</option>
-                                    : packages.length === 0 ? <option value="">No packages found</option>
-                                        : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">New Base Amount *</label>
-                            <div className="flex gap-2">
-                                <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none">
-                                    {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
-                                </select>
-                                <input type="text" inputMode="decimal" placeholder="Enter new base amount" value={formData.base_amount}
-                                    onChange={e => {
-                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                            setFormData({ ...formData, base_amount: val });
-                                        }
-                                    }}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none" />
-                            </div>
-                            {salary.base_amount && (
-                                <p className="text-xs text-gray-400 mt-1">
-                                    Current: {formatCurrency(salary.base_amount, salary.currency)}
-                                    {formData.base_amount && parseFloat(formData.base_amount) !== salary.base_amount && (
-                                        <span className={`ml-2 font-semibold ${parseFloat(formData.base_amount) > salary.base_amount ? 'text-green-600' : 'text-red-600'}`}>
-                                            {parseFloat(formData.base_amount) > salary.base_amount ? '▲' : '▼'}
-                                            {Math.abs(((parseFloat(formData.base_amount) - salary.base_amount) / salary.base_amount) * 100).toFixed(1)}%
-                                        </span>
-                                    )}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-left" popoverClassName="mt-2" />
-                                <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
-                            </div>
-                        </div>
-
-                        <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <FaCalculator className="text-purple-500" /> Component Overrides
-                                </label>
-                                <button type="button"
-                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
-                                    className="px-3 py-1.5 text-sm bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-all flex items-center gap-1">
-                                    <FaPlus size={10} /> Add Override
-                                </button>
+                                {/* Base Amount */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
+                                    <div className="flex gap-2">
+                                        <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-semibold">
+                                            {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
+                                        </select>
+                                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                            }}
+                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-semibold" />
+                                    </div>
+                                </div>
                             </div>
 
-                            {formData.overrides.length > 0 && (
-                                <div className="space-y-2 mb-3">
-                                    {formData.overrides.map((override, idx) => {
-                                        const component = availableComponents.find(c => c.id === override.component_id);
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
-                                                        </span>
+                            {/* Package Preview Visualization */}
+                            <AnimatePresence>
+                                {selectedPackage && selectedPackage.items?.length > 0 && (
+                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Package Preview: {selectedPackage.name}</label>
+                                            <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase">{selectedPackage.items.length} Components</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {selectedPackage.items.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className={`w-1.5 h-6 rounded-full ${item.type === 'earning' ? 'bg-green-400' : item.type === 'deduction' ? 'bg-red-400' : 'bg-purple-400'}`} />
+                                                        <div className="truncate">
+                                                            <p className="text-[11px] font-bold text-slate-700 leading-tight">{item.name}</p>
+                                                            <p className="text-[9px] text-slate-400 font-mono uppercase tracking-tight">{item.code}</p>
+                                                        </div>
                                                     </div>
-                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className="text-[11px] font-bold text-indigo-600">
+                                                            {item.calc_type === 'percentage' ? `${item.calc_value}%` : `${item.calc_value}`}
+                                                        </p>
+                                                        <p className="text-[8px] text-slate-400 uppercase font-bold">{item.calc_type}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-purple-500"><FaEdit size={12} /></button>
-                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-sm font-semibold text-purple-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
-                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
-                                            <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
-                                                <option value="">Select component</option>
-                                                {availableComponents.map(comp => (
-                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>
-                                                ))}
-                                            </select>
+                                            ))}
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
+                                    <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
+                                    <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                            </div>
+
+                            <div className="border-t border-slate-100 pt-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                        <FaCalculator className="text-indigo-500" /> Component Overrides
+                                    </label>
+                                    <button type="button"
+                                        onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                        className="text-[10px] px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all font-bold border border-indigo-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                                        <FaPlus size={8} /> Add Override
+                                    </button>
+                                </div>
+
+                                {formData.overrides.length > 0 && (
+                                    <div className="space-y-2 mb-3">
+                                        {formData.overrides.map((override, idx) => {
+                                            const component = availableComponents.find(c => c.id === override.component_id);
+                                            return (
+                                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm transition-all hover:bg-slate-100/50">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <p className="font-bold text-slate-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                            <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold uppercase tracking-wider ${override.calc_type === 'percentage' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                                                                {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                            </span>
+                                                        </div>
+                                                        {override.reason && <p className="text-[11px] text-slate-400 mt-1 italic">"{override.reason}"</p>}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button type="button" onClick={() => editOverride(idx)} className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"><FaEdit size={12} /></button>
+                                                        <button type="button" onClick={() => removeOverride(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={12} /></button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {showOverrideForm && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 p-4 bg-white rounded-xl border-2 border-indigo-100 shadow-xl shadow-indigo-100/50">
+                                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
+                                            <p className="text-sm font-bold text-indigo-900 flex items-center gap-2 uppercase tracking-widest">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="p-1 text-slate-400 hover:text-slate-600"><FaTimes /></button>
+                                        </div>
+                                        <div className="space-y-4">
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calc Type</label>
-                                                <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
-                                                    <option value="percentage">Percentage (%)</option>
-                                                    <option value="fixed">Fixed Amount</option>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component *</label>
+                                                <select value={overrideForm.component_id} onChange={e => {
+                                                    const compId = e.target.value;
+                                                    const comp = filteredAvailableComponents.find(c => String(c.id) === String(compId));
+                                                    setOverrideForm(prev => ({
+                                                        ...prev,
+                                                        component_id: compId,
+                                                        calc_type: comp ? comp.calc_type : prev.calc_type,
+                                                        calc_value: comp ? String(comp.calc_value) : prev.calc_value,
+                                                    }));
+                                                }}
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
+                                                    <option value="">Select component</option>
+                                                    {filteredAvailableComponents.map(comp => (
+                                                        <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
+                                                    ))}
                                                 </select>
+                                                {filteredAvailableComponents.length === 0 && availableComponents.length > 0 && (
+                                                    <p className="text-[10px] text-amber-600 mt-1 italic flex items-center gap-1">
+                                                        <FaInfoCircle size={10} /> All available components are already in the selected package.
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Calc Type</label>
+                                                    <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed">Fixed Amount</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value *</label>
+                                                    <input type="text" inputMode="decimal" placeholder="Value" value={overrideForm.calc_value}
+                                                        onChange={e => {
+                                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                            if (val === '' || /^\d*\.?\d*$/.test(val)) { setOverrideForm({ ...overrideForm, calc_value: val }); }
+                                                        }}
+                                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                                                </div>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
-                                                <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
-                                                    value={overrideForm.calc_value}
-                                                    onChange={e => {
-                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                                            setOverrideForm({ ...overrideForm, calc_value: val });
-                                                        }
-                                                    }}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason</label>
+                                                <input type="text" placeholder="Reason" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <button type="button" onClick={addOverride} className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-200">
+                                                    {editingOverride !== null ? 'Update' : 'Add Override'}
+                                                </button>
+                                                <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-100 transition-all">Cancel</button>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-                                                <DatePickerField value={overrideForm.effective_from} onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })} placeholder="From" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left" popoverClassName="mt-2" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-                                                <DatePickerField value={overrideForm.effective_to} onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })} placeholder="To" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-left" popoverClassName="mt-2" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
-                                            <input type="text" placeholder="e.g., Special HRA" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
-                                        </div>
-                                        <div className="flex gap-2 pt-1">
-                                            <button type="button" onClick={addOverride} className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all">
-                                                {editingOverride !== null ? 'Update' : 'Add'}
-                                            </button>
-                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                {submitting ? <FaSpinner className="animate-spin" /> : <FaExchangeAlt />}
-                                {submitting ? 'Revising...' : 'Revise Salary'}
-                            </button>
+                                    </motion.div>
+                                )}
+                            </div>
                         </div>
                     </form>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
+                            {submitting ? <FaSpinner className="animate-spin" /> : <FaHistory />}
+                            {submitting ? 'Revising...' : 'Revise Structure'}
+                        </button>
+                    </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
@@ -889,9 +939,40 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', overrides: [] });
     const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
 
+    // Derived: Selected package details
+    const selectedPackage = useMemo(() =>
+        packages.find(p => String(p.id) === String(formData.component_package_id)),
+        [packages, formData.component_package_id]
+    );
+
+    // Derived: Components in selected package (to filter overrides)
+    const packageComponentIds = useMemo(() =>
+        selectedPackage?.items?.map(item => item.component_id) || [],
+        [selectedPackage]
+    );
+
+    // Filtered components for the override dropdown
+    const filteredAvailableComponents = useMemo(() =>
+        availableComponents.filter(comp => !packageComponentIds.includes(comp.id)),
+        [availableComponents, packageComponentIds]
+    );
+
     useEffect(() => {
         if (isOpen) { loadEmployeesWithoutSalary(); loadSalaryPackages(); loadSalaryComponents(); loadCurrencies(); }
     }, [isOpen]);
+
+    // Handle package change and clean up conflicting overrides
+    const handlePackageChange = (packageId) => {
+        const pkg = packages.find(p => String(p.id) === String(packageId));
+        const pkgCompIds = pkg?.items?.map(item => item.component_id) || [];
+
+        setFormData(prev => ({
+            ...prev,
+            component_package_id: packageId,
+            // Remove overrides that are now in the package
+            overrides: prev.overrides.filter(o => !pkgCompIds.includes(o.component_id))
+        }));
+    };
 
     const loadEmployeesWithoutSalary = async () => { setLoading(true); try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/employees-without-salary', 'GET', null, company?.id); const result = await response.json(); if (result.success) setEmployees(result.data || []); } catch (error) { console.error('Failed to load employees:', error); } finally { setLoading(false); } };
     const loadSalaryPackages = async () => {
@@ -902,13 +983,11 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
             const result = await response.json();
             if (result.success) {
                 setPackages(result.data || []);
-                if (result.data?.length > 0) setFormData(prev => ({ ...prev, component_package_id: result.data[0].id }));
+                if (result.data?.length > 0 && !formData.component_package_id) {
+                    setFormData(prev => ({ ...prev, component_package_id: result.data[0].id }));
+                }
             }
-        } catch (error) {
-            console.error('Failed to load packages:', error);
-        } finally {
-            setLoadingPackages(false);
-        }
+        } catch (error) { console.error('Failed to load packages:', error); } finally { setLoadingPackages(false); }
     };
     const loadSalaryComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (error) { console.error('Failed to load salary components:', error); } };
     const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) { setCurrencies(result.data.currency_types); const keys = result.data.currency_types.map(c => c.key); setFormData(prev => ({ ...prev, currency: keys.includes(prev.currency) ? prev.currency : (keys[0] || 'USD') })); } } catch (error) { console.error('Failed to load currencies:', error); } };
@@ -932,14 +1011,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (submitDisabled) return;
-        if (!selectedEmployee) {
-            toast.warning('Please select an employee');
-            return;
-        }
-        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) {
-            toast.warning('Please fill all required fields');
-            return;
-        }
+        if (!selectedEmployee) { toast.warning('Please select an employee'); return; }
+        if (!formData.base_amount || !formData.effective_from || !formData.component_package_id) { toast.warning('Please fill all required fields'); return; }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
@@ -950,224 +1023,255 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                 currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
                 effective_to: formData.effective_to || null,
-                overrides: formData.overrides.map(o => ({
-                    ...o,
-                    effective_to: o.effective_to || null
-                }))
+                overrides: formData.overrides.map(o => ({ ...o, effective_to: o.effective_to || null }))
             };
             const response = await apiCall('/salary/assign-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) {
-                toast.success('Salary assigned successfully!');
-                onSuccess();
-                onClose();
-                resetForm();
-            } else {
-                toast.error(result.message || 'Failed to assign salary');
-            }
-        } catch (error) {
-            console.error('Error assigning salary:', error);
-            toast.error('Failed to assign salary');
-        } finally {
-            setSubmitting(false);
-        }
+            if (result.success) { toast.success('Salary assigned successfully!'); onSuccess(); onClose(); resetForm(); }
+            else { toast.error(result.message || 'Failed to assign salary'); }
+        } catch (error) { console.error('Error assigning salary:', error); toast.error('Failed to assign salary'); }
+        finally { setSubmitting(false); }
     };
 
     if (!isOpen) return null;
 
     return (
         <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 z-[10] bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl px-6 sm:px-8 py-5">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center shadow-md"><FaPlus className="text-white text-sm" /></div>
-                                <div><h2 className="text-lg font-bold">Assign Salary</h2><p className="text-xs text-white/80">Assign salary to an employee</p></div>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-200">
+                                <FaPlus className="h-6 w-6 text-white" />
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Assign Salary</h2>
+                                <p className="text-sm text-slate-500">Configure salary profile for employee</p>
+                            </div>
                         </div>
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
+                        </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Employee *</label>
-                            <div className="relative">
-                                <input type="text" placeholder="Search employee by name, code or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all" disabled={!!selectedEmployee} />
-                                <FaSearch className="absolute left-3 top-3.5 text-gray-400 text-sm" />
-                            </div>
-                            {!selectedEmployee && (
-                                <div className="mt-2 max-h-48 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
-                                    {loading ? (<div className="p-4 text-center text-gray-400"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>)
-                                        : filteredEmployees.length === 0 ? (<div className="p-4 text-center text-gray-400">No employees found</div>)
-                                            : filteredEmployees.map(emp => (
-                                                <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></div>
-                                                    <div className="flex-1 min-w-0"><p className="font-semibold text-gray-800 text-sm">{emp.name}</p><p className="text-xs text-gray-400">{emp.employee_code} • {emp.email}</p></div>
-                                                </button>
-                                            ))}
-                                </div>
-                            )}
-                            {selectedEmployee && (
-                                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></div>
-                                        <div><p className="font-semibold text-gray-800 text-sm">{selectedEmployee.name}</p><p className="text-xs text-gray-500">{selectedEmployee.employee_code}</p></div>
-                                    </div>
-                                    <button type="button" onClick={() => setSelectedEmployee(null)} className="text-red-400 hover:text-red-600"><FaTimes /></button>
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Salary Package *</label>
-                            <select value={formData.component_package_id} onChange={(e) => setFormData({ ...formData, component_package_id: e.target.value })} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
-                                {loadingPackages ? <option value="">Loading packages...</option>
-                                    : packages.length === 0 ? <option value="">No packages found</option>
-                                        : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Base Amount *</label>
-                            <div className="flex gap-2">
-                                <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-28 px-3 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none">
-                                    {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ US Dollar</option>}
-                                </select>
-                                <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                    onChange={e => {
-                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                            setFormData({ ...formData, base_amount: val });
-                                        }
-                                    }}
-                                    className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
+                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                        <div className="p-6 space-y-5">
+                            {/* Employee Selection */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective From *</label>
-                                <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select effective from" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Effective To</label>
-                                <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Select effective to" mode="single" buttonClassName="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none text-left" popoverClassName="mt-2" />
-                                <p className="text-xs text-gray-400 mt-1">Leave empty for ongoing</p>
-                            </div>
-                        </div>
-
-                        <div className="border-t border-gray-200 pt-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                    <FaCalculator className="text-green-500" /> Component Overrides
-                                </label>
-                                <button type="button"
-                                    onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
-                                    className="px-3 py-1.5 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all flex items-center gap-1">
-                                    <FaPlus size={10} /> Add Override
-                                </button>
-                            </div>
-
-                            {formData.overrides.length > 0 && (
-                                <div className="space-y-2 mb-3">
-                                    {formData.overrides.map((override, idx) => {
-                                        const component = availableComponents.find(c => c.id === override.component_id);
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <p className="font-semibold text-gray-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded ${override.calc_type === 'percentage' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                            {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
-                                                        </span>
-                                                    </div>
-                                                    {override.reason && <p className="text-xs text-gray-400 mt-0.5">{override.reason}</p>}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button type="button" onClick={() => editOverride(idx)} className="p-1.5 text-gray-400 hover:text-green-500"><FaEdit size={12} /></button>
-                                                    <button type="button" onClick={() => removeOverride(idx)} className="p-1.5 text-gray-400 hover:text-red-500"><FaTimes size={12} /></button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Employee *</label>
+                                <div className="relative">
+                                    <input type="text" placeholder="Search employee by name, code or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm" disabled={!!selectedEmployee} />
+                                    <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
                                 </div>
-                            )}
-
-                            {showOverrideForm && (
-                                <div className="mt-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-sm font-semibold text-green-800">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
-                                        <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Component *</label>
-                                            <select value={overrideForm.component_id} onChange={e => setOverrideForm({ ...overrideForm, component_id: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
-                                                <option value="">Select component</option>
-                                                {availableComponents.map(comp => (
-                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code}) - {comp.type}</option>
+                                {!selectedEmployee && searchTerm && (
+                                    <div className="mt-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50 bg-white shadow-lg z-20">
+                                        {loading ? (<div className="p-4 text-center text-slate-400 text-sm"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>)
+                                            : filteredEmployees.length === 0 ? (<div className="p-4 text-center text-slate-400 text-sm">No employees found</div>)
+                                                : filteredEmployees.map(emp => (
+                                                    <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></div>
+                                                        <div className="flex-1 min-w-0"><p className="font-bold text-slate-800 text-sm">{emp.name}</p><p className="text-[11px] text-slate-400">{emp.employee_code} • {emp.email}</p></div>
+                                                    </button>
                                                 ))}
-                                            </select>
+                                    </div>
+                                )}
+                                {selectedEmployee && (
+                                    <div className="mt-2 p-3 bg-green-50/50 border border-green-100 rounded-xl flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center shadow-sm`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></div>
+                                            <div><p className="font-bold text-slate-800 text-sm">{selectedEmployee.name}</p><p className="text-[11px] text-slate-500">{selectedEmployee.employee_code}</p></div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Calc Type</label>
-                                                <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500">
-                                                    <option value="percentage">Percentage (%)</option>
-                                                    <option value="fixed">Fixed Amount</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">Value *</label>
-                                                <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? 'e.g. 30' : 'e.g. 5000'}
-                                                    value={overrideForm.calc_value}
-                                                    onChange={e => {
-                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                                            setOverrideForm({ ...overrideForm, calc_value: val });
-                                                        }
-                                                    }}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">From</label>
-                                                <DatePickerField value={overrideForm.effective_from} onChange={(value) => setOverrideForm({ ...overrideForm, effective_from: value })} placeholder="From" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-left" popoverClassName="mt-2" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-semibold text-gray-600 mb-1">To</label>
-                                                <DatePickerField value={overrideForm.effective_to} onChange={(value) => setOverrideForm({ ...overrideForm, effective_to: value })} placeholder="To" mode="single" buttonClassName="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 text-left" popoverClassName="mt-2" />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-gray-600 mb-1">Reason</label>
-                                            <input type="text" placeholder="e.g., Special HRA" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg outline-none text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500" />
-                                        </div>
-                                        <div className="flex gap-2 pt-1">
-                                            <button type="button" onClick={addOverride} className="flex-1 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg text-sm font-medium hover:from-green-700 hover:to-emerald-700 transition-all">
-                                                {editingOverride !== null ? 'Update' : 'Add'}
-                                            </button>
-                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                                        </div>
+                                        <button type="button" onClick={() => setSelectedEmployee(null)} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><FaTimes size={12} /></button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Salary Package */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package *</label>
+                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm">
+                                        {loadingPackages ? <option value="">Loading packages...</option>
+                                            : packages.length === 0 ? <option value="">No packages found</option>
+                                                : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                                    </select>
+                                </div>
+
+                                {/* Base Amount */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
+                                    <div className="flex gap-2">
+                                        <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold">
+                                            {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
+                                        </select>
+                                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                            }}
+                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold" />
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
 
-                        <div className="flex gap-3 pt-4 border-t border-gray-100">
-                            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                            <button type="submit" disabled={submitting || submitDisabled} title={submitDisabled ? submitTitle : ""} className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                                {submitting ? 'Assigning...' : 'Assign Salary'}
-                            </button>
+                            {/* Package Preview Visualization */}
+                            <AnimatePresence>
+                                {selectedPackage && selectedPackage.items?.length > 0 && (
+                                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Package Preview: {selectedPackage.name}</label>
+                                            <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold uppercase">{selectedPackage.items.length} Components</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                                            {selectedPackage.items.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100 shadow-sm">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div className={`w-1.5 h-6 rounded-full ${item.type === 'earning' ? 'bg-green-400' : item.type === 'deduction' ? 'bg-red-400' : 'bg-purple-400'}`} />
+                                                        <div className="truncate">
+                                                            <p className="text-[11px] font-bold text-slate-700 leading-tight">{item.name}</p>
+                                                            <p className="text-[9px] text-slate-400 font-mono uppercase tracking-tight">{item.code}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right flex-shrink-0">
+                                                        <p className="text-[11px] font-bold text-indigo-600">
+                                                            {item.calc_type === 'percentage' ? `${item.calc_value}%` : `${item.calc_value}`}
+                                                        </p>
+                                                        <p className="text-[8px] text-slate-400 uppercase font-bold">{item.calc_type}</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
+                                    <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
+                                    <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                            </div>
+
+                            <div className="border-t border-slate-100 pt-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                        <FaCalculator className="text-indigo-500" /> Component Overrides
+                                    </label>
+                                    <button type="button"
+                                        onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
+                                        className="text-[10px] px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all font-bold border border-indigo-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                                        <FaPlus size={8} /> Add Override
+                                    </button>
+                                </div>
+
+                                {formData.overrides.length > 0 && (
+                                    <div className="space-y-2 mb-3">
+                                        {formData.overrides.map((override, idx) => {
+                                            const component = availableComponents.find(c => c.id === override.component_id);
+                                            return (
+                                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-sm transition-all hover:bg-slate-100/50">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <p className="font-bold text-slate-800 text-sm">{component?.name || `Component ${override.component_id}`}</p>
+                                                            <span className={`text-[10px] px-2 py-0.5 rounded-lg font-bold uppercase tracking-wider ${override.calc_type === 'percentage' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                                                                {override.calc_type}: {override.calc_value}{override.calc_type === 'percentage' ? '%' : ''}
+                                                            </span>
+                                                        </div>
+                                                        {override.reason && <p className="text-[11px] text-slate-400 mt-1 italic">"{override.reason}"</p>}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button type="button" onClick={() => editOverride(idx)} className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"><FaEdit size={12} /></button>
+                                                        <button type="button" onClick={() => removeOverride(idx)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={12} /></button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {showOverrideForm && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 p-4 bg-white rounded-xl border-2 border-indigo-100 shadow-xl shadow-indigo-100/50">
+                                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-50">
+                                            <p className="text-sm font-bold text-indigo-900 flex items-center gap-2 uppercase tracking-widest">{editingOverride !== null ? 'Edit Override' : 'New Override'}</p>
+                                            <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="p-1 text-slate-400 hover:text-slate-600"><FaTimes /></button>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component *</label>
+                                                <select value={overrideForm.component_id} onChange={e => {
+                                                    const compId = e.target.value;
+                                                    const comp = filteredAvailableComponents.find(c => String(c.id) === String(compId));
+                                                    setOverrideForm(prev => ({
+                                                        ...prev,
+                                                        component_id: compId,
+                                                        calc_type: comp ? comp.calc_type : prev.calc_type,
+                                                        calc_value: comp ? String(comp.calc_value) : prev.calc_value,
+                                                    }));
+                                                }}
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
+                                                    <option value="">Select component</option>
+                                                    {filteredAvailableComponents.map(comp => (
+                                                        <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
+                                                    ))}
+                                                </select>
+                                                {filteredAvailableComponents.length === 0 && availableComponents.length > 0 && (
+                                                    <p className="text-[10px] text-amber-600 mt-1 italic flex items-center gap-1">
+                                                        <FaInfoCircle size={10} /> All available components are already in the selected package.
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Calc Type</label>
+                                                    <select value={overrideForm.calc_type} onChange={e => setOverrideForm({ ...overrideForm, calc_type: e.target.value })}
+                                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all">
+                                                        <option value="percentage">Percentage (%)</option>
+                                                        <option value="fixed">Fixed Amount</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value *</label>
+                                                    <input type="text" inputMode="decimal" placeholder={overrideForm.calc_type === 'percentage' ? '30%' : '5000'}
+                                                        value={overrideForm.calc_value}
+                                                        onChange={e => {
+                                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                            if (val === '' || /^\d*\.?\d*$/.test(val)) { setOverrideForm({ ...overrideForm, calc_value: val }); }
+                                                        }}
+                                                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason</label>
+                                                <input type="text" placeholder="e.g., Performance Bonus" value={overrideForm.reason} onChange={e => setOverrideForm({ ...overrideForm, reason: e.target.value })}
+                                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" />
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <button type="button" onClick={addOverride} className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-200">
+                                                    {editingOverride !== null ? 'Update' : 'Add Override'}
+                                                </button>
+                                                <button type="button" onClick={() => { setShowOverrideForm(false); setEditingOverride(null); }} className="px-4 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-100 transition-all">Cancel</button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </div>
                         </div>
                     </form>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                        <button onClick={handleSubmit} disabled={submitting || submitDisabled} title={submitDisabled ? submitTitle : ""} className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200">
+                            {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                            {submitting ? 'Assigning...' : 'Assign Salary'}
+                        </button>
+                    </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
@@ -1180,26 +1284,60 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
     if (!isOpen || !salary) return null;
     return (
         <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
-                        <h2 className="text-xl font-semibold flex items-center gap-2"><FaTrash /> Delete Salary Record</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
-                    </div>
-                    <div className="flex flex-1 flex-col justify-center p-6 text-center">
-                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }} className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaBan className="text-4xl text-red-600" />
-                        </motion.div>
-                        <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
-                        <p className="text-gray-500 mb-6">You are about to delete the salary record for <span className="font-semibold text-red-600">{salary.employee?.name}</span>. This action cannot be undone.</p>
-                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:gap-4">
-                            <button onClick={onClose} className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Keep</button>
-                            <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl">
-                                {processingId === salary.salary_id && <FaSpinner className="animate-spin" />}
-                                Delete Record
-                            </button>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
+                                <FaTrash className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900">Delete Salary Record</h2>
+                                <p className="text-sm text-slate-500 font-medium">Confirmation required</p>
+                            </div>
                         </div>
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
+                        </button>
+                    </div>
+
+                    <div className="p-8 text-center space-y-6">
+                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-24 h-24 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-xl shadow-red-100/50">
+                            <FaExclamationCircle className="text-4xl text-red-500" />
+                        </motion.div>
+                        
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-bold text-slate-900">Are you absolutely sure?</h3>
+                            <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                                You are about to permanently delete the salary record for <span className="font-bold text-slate-900 underline decoration-red-200 underline-offset-4">{salary.employee?.name}</span>. This action cannot be undone and will affect historical payroll data.
+                            </p>
+                        </div>
+
+                        {/* Summary of record to be deleted */}
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
+                            <div className="text-left">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Base Amount</p>
+                                <p className="text-sm font-bold text-slate-800">{formatCurrency(salary.base_amount, salary.currency)}</p>
+                            </div>
+                            <div className="h-8 w-px bg-slate-200" />
+                            <div className="text-right">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Effective From</p>
+                                <p className="text-sm font-bold text-slate-800">{formatDate(salary.effective_from)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                            Keep Record
+                        </button>
+                        <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
+                            {processingId === salary.salary_id ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                            {processingId === salary.salary_id ? 'Deleting...' : 'Delete Permanently'}
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>
