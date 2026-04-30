@@ -59,107 +59,173 @@ const getPermissionPackagesCacheKey = ({ companyId, page, limit, search }) =>
 
 // ─── Package Form ─────────────────────────────────────────────────────────────
 const PackageFormBody = ({
-  onSubmit, isEdit = false,
   formData, onInputChange, onTogglePermission, onSelectAll, onClearAll,
-  allPermissions, permsLoading, loading, onClose,
-  submitDisabled = false, submitTitle = '',
-}) => (
-  <form onSubmit={onSubmit} className="p-3 sm:p-6">
-    {permsLoading ? (
-      <div className="flex justify-center py-12 text-center">
-        <div>
-          <FaSpinner className="animate-spin text-4xl text-blue-600 mx-auto mb-3" />
-          <p className="text-gray-500">Loading permissions...</p>
-        </div>
-      </div>
-    ) : (
-      <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <FaLayerGroup className="text-blue-500" /> Package Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text" name="package_name" value={formData.package_name}
-              onChange={onInputChange} required placeholder="e.g. HR Manager Package"
-              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 bg-white hover:border-gray-400 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <FaCode className="text-purple-500" /> Group Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text" name="group_code" value={formData.group_code}
-              onChange={onInputChange} required placeholder="e.g. HR_MGR"
-              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all duration-300 bg-white hover:border-gray-400 text-sm uppercase"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-              <FaAlignLeft className="text-emerald-500" /> Description
-            </label>
-            <input
-              type="text" name="description" value={formData.description}
-              onChange={onInputChange} placeholder="Brief description..."
-              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all duration-300 bg-white hover:border-gray-400 text-sm"
-            />
-          </div>
-        </div>
+  allPermissions, permsLoading
+}) => {
+  const [isPermissionsExpanded, setIsPermissionsExpanded] = useState(false);
 
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <FaShieldAlt className="text-blue-500" /> Assign Permissions
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">{formData.permissions.length} selected</span>
-            </h3>
-            <div className="flex gap-2">
-              <button type="button" onClick={onSelectAll} className="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-medium border border-blue-200">Select All</button>
-              <button type="button" onClick={onClearAll} className="text-xs px-3 py-1 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-all font-medium border border-gray-200">Clear All</button>
+  return (
+    <div className="p-4 sm:p-5 space-y-4">
+      {permsLoading ? (
+        <div className="flex justify-center py-12 text-center">
+          <div>
+            <FaSpinner className="animate-spin text-4xl text-indigo-600 mx-auto mb-3" />
+            <p className="text-slate-500">Loading permissions...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                <FaLayerGroup className="text-indigo-500" /> Package Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="package_name"
+                value={formData.package_name}
+                onChange={onInputChange}
+                required
+                placeholder="e.g. HR Manager Package"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all bg-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                <FaCode className="text-purple-500" /> Group Code <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="group_code"
+                value={formData.group_code}
+                onChange={onInputChange}
+                required
+                placeholder="e.g. HR_MGR"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all bg-white text-sm uppercase"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                <FaAlignLeft className="text-emerald-500" /> Description
+              </label>
+              <input
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={onInputChange}
+                placeholder="Brief description..."
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all bg-white text-sm"
+              />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 rounded-xl">
-            {allPermissions.map((perm) => {
-              const isSelected = formData.permissions.includes(perm.id);
-              return (
-                <motion.div key={perm.id} whileTap={{ scale: 0.97 }}
-                  onClick={() => onTogglePermission(perm.id)}
-                  className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${isSelected ? 'border-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50' : 'border-gray-200 bg-gray-50 hover:border-blue-200 hover:bg-blue-50/40'}`}
+
+          {/* Permissions Selection */}
+          <div className="border border-slate-100 rounded-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setIsPermissionsExpanded(!isPermissionsExpanded)}
+              className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 shadow-sm">
+                  <FaShieldAlt size={14} />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    Assign Permissions
+                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-bold border border-indigo-100 uppercase tracking-wider">
+                      {formData.permissions.length} Selected
+                    </span>
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-medium">Click to {isPermissionsExpanded ? 'collapse' : 'expand and configure'}</p>
+                </div>
+              </div>
+              <motion.div
+                animate={{ rotate: isPermissionsExpanded ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <FaChevronRight className="text-slate-400 text-xs" />
+              </motion.div>
+            </button>
+
+            <AnimatePresence>
+              {isPermissionsExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
                 >
-                  <div className={`mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border-2 transition-all duration-200 ${isSelected ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
-                    {isSelected && <FaCheck size={8} className="text-white" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-gray-800 leading-tight">{perm.name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5 font-mono">{perm.code}</p>
+                  <div className="p-4 bg-white border-t border-slate-100 space-y-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={onSelectAll}
+                        className="text-[10px] px-2.5 py-1.5 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 transition-all font-bold border border-slate-200 shadow-sm"
+                      >
+                        SELECT ALL
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onClearAll}
+                        className="text-[10px] px-2.5 py-1.5 bg-white text-slate-600 rounded-lg hover:bg-slate-50 transition-all font-bold border border-slate-200 shadow-sm"
+                      >
+                        CLEAR ALL
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[30vh] overflow-y-auto pr-1 custom-scrollbar">
+                      {allPermissions.map((perm) => {
+                        const isSelected = formData.permissions.includes(perm.id);
+                        return (
+                          <motion.div
+                            key={perm.id}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => onTogglePermission(perm.id)}
+                            className={`flex items-start gap-2.5 px-2.5 py-2 rounded-xl border transition-all duration-200 ${isSelected
+                              ? 'border-indigo-500 bg-indigo-50/30'
+                              : 'border-slate-100 bg-slate-50/50 hover:border-indigo-200 hover:bg-indigo-50/20'
+                              }`}
+                          >
+                            <div className={`mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${isSelected
+                              ? 'bg-indigo-600 border-indigo-600'
+                              : 'border-slate-300 bg-white'
+                              }`}>
+                              {isSelected && <FaCheck size={8} className="text-white" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-slate-800 leading-tight">{perm.name}</p>
+                              <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-tight">{perm.code}</p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                      {allPermissions.length === 0 && (
+                        <div className="col-span-2 text-center py-8 text-slate-400 text-sm italic">
+                          No permissions available
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                      <p className="text-[11px] text-indigo-700 flex items-start gap-2">
+                        <FaInfoCircle className="text-indigo-500 flex-shrink-0 mt-0.5" />
+                        <span>
+                          Click permissions to toggle selection. All selected permissions will be assigned to this package and grant access to corresponding features.
+                        </span>
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
-              );
-            })}
-            {allPermissions.length === 0 && (
-              <div className="col-span-2 text-center py-6 text-gray-400 text-sm">No permissions available</div>
-            )}
+              )}
+            </AnimatePresence>
           </div>
-          <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-            <p className="text-xs text-blue-700 flex items-center gap-1">
-              <FaInfoCircle className="text-blue-500 flex-shrink-0" />
-              Click permissions to toggle selection. All selected permissions will be assigned to this package.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-4 mt-4 border-t border-gray-100">
-          <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-          <button type="submit" disabled={loading || submitDisabled} title={submitTitle}
-            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? <FaSpinner className="animate-spin" /> : <FaCheck size={12} />}
-            {isEdit ? 'Update Package' : 'Create Package'}
-          </button>
-        </div>
-      </>
-    )}
-  </form>
-);
+        </>
+      )}
+    </div>
+  );
+};
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 const PermissionManagement = () => {
@@ -535,7 +601,7 @@ const PermissionManagement = () => {
               placeholder="Search packages by name, code, or description..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm"
+              className="w-full pl-11 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm"
             />
             {searchTerm && (
               <button
@@ -774,253 +840,272 @@ const PermissionManagement = () => {
       )}
 
       {/* Modals */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {modalType !== MODAL_TYPES.NONE && (
-          <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-            className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+          <motion.div
+            variants={backdropVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={closeModal}
           >
             <ModalScrollLock />
-            <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-              className={`bg-white backdrop-blur-xl rounded-xl shadow-2xl border border-gray-100 w-full flex flex-col overflow-hidden ${modalType === MODAL_TYPES.DELETE_CONFIRM
-                  ? 'max-w-md max-h-[90vh]'
-                  : 'max-w-4xl max-h-[90vh]'
-                }`}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 18 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 18 }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className={`relative w-full ${modalType === MODAL_TYPES.DELETE_CONFIRM ? 'max-w-md' : 'max-w-4xl'} max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200`}
               onClick={e => e.stopPropagation()}
             >
-              {/* VIEW */}
-              {modalType === MODAL_TYPES.VIEW && selectedPackage && (
-                <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-purple-700 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-                    <div className="flex items-center justify-between">
+              {/* CREATE & EDIT Modals */}
+              {(modalType === MODAL_TYPES.CREATE || modalType === MODAL_TYPES.EDIT) && (
+                <form onSubmit={modalType === MODAL_TYPES.CREATE ? handleCreate : handleEdit} className="flex flex-col h-full overflow-hidden">
+                  {/* Header */}
+                  <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
+                    <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <FaShieldAlt className="text-white text-sm" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-100">
+                          {modalType === MODAL_TYPES.CREATE ? <FaPlus className="h-5 w-5 text-white" /> : <FaEdit className="h-5 w-5 text-white" />}
                         </div>
-                        <div className="min-w-0">
-                          <h2 className="text-lg font-bold truncate">{selectedPackage.package_name}</h2>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 border border-white/30 text-white rounded-full text-xs font-semibold"><FaCode size={8} />{selectedPackage.group_code}</span>
-                            <span className="text-xs text-white/70">{selectedPackage.permissions?.length || 0} permissions</span>
+                        <div>
+                          <h2 className="text-lg font-bold text-slate-900">
+                            {modalType === MODAL_TYPES.CREATE ? 'Create Permission Package' : 'Edit Package'}
+                          </h2>
+                          <p className="text-[11px] text-slate-500">
+                            {modalType === MODAL_TYPES.CREATE ? 'Configure a new permission package' : `Editing ${selectedPackage?.package_name}`}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={closeModal}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all bg-white border border-slate-100"
+                      >
+                        <FaTimes className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <PackageFormBody
+                      formData={formData}
+                      onInputChange={handleInputChange}
+                      onTogglePermission={togglePermission}
+                      onSelectAll={() => setFormData(prev => ({ ...prev, permissions: allPermissions.map(p => p.id) }))}
+                      onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
+                      allPermissions={allPermissions}
+                      permsLoading={permsLoading}
+                    />
+                  </div>
+
+                  {/* Footer */}
+                  <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-3.5 flex justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-[13px] hover:bg-slate-100 transition-all shadow-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading || (modalType === MODAL_TYPES.CREATE ? createAccess.disabled : updateAccess.disabled)}
+                      className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-[13px] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+                      {modalType === MODAL_TYPES.CREATE ? 'Create Package' : 'Update Package'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* VIEW & PERM_LIST Modals */}
+              {(modalType === MODAL_TYPES.VIEW || modalType === MODAL_TYPES.PERM_LIST) && selectedPackage && (
+                <>
+                  {/* Header */}
+                  <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-100">
+                          <FaShieldAlt className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-slate-900">{selectedPackage.package_name}</h2>
+                          <p className="text-[11px] text-slate-500">Package Details & Permissions</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={closeModal}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all bg-white border border-slate-100"
+                      >
+                        <FaTimes className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar">
+                    {/* Profile Card */}
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 shadow-sm">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm border border-indigo-100">
+                            <FaShieldAlt size={20} />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-lg font-bold text-slate-900 truncate">{selectedPackage.package_name}</h3>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-bold border border-indigo-100 uppercase tracking-wider">
+                                {selectedPackage.group_code}
+                              </span>
+                              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-bold border border-emerald-100 uppercase tracking-wider">
+                                Active
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all flex-shrink-0"><FaTimes size={20} /></button>
+                      {selectedPackage.description && (
+                        <p className="mt-3 text-[11px] text-slate-500 leading-relaxed bg-white/50 p-2.5 rounded-lg border border-slate-100">
+                          {selectedPackage.description}
+                        </p>
+                      )}
                     </div>
-                    {selectedPackage.description && <p className="mt-3 text-xs text-white/70 leading-relaxed">{selectedPackage.description}</p>}
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 sm:px-8 py-6 space-y-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3 sm:p-4 text-center">
-                        <p className="text-2xl sm:text-3xl font-bold text-blue-600">{selectedPackage.permissions?.length || 0}</p>
-                        <p className="text-xs text-blue-500 font-medium mt-1">Total Permissions</p>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 text-center">
+                        <p className="text-xl font-black text-indigo-600">{selectedPackage.permissions?.length || 0}</p>
+                        <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">Permissions</p>
                       </div>
-                      <div className="bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-xl p-3 sm:p-4 text-center">
-                        <p className="text-lg sm:text-xl font-bold text-purple-600 truncate">{selectedPackage.group_code}</p>
-                        <p className="text-xs text-purple-500 font-medium mt-1">Group Code</p>
+                      <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-3 text-center">
+                        <p className="text-base font-black text-purple-600 truncate">{selectedPackage.group_code}</p>
+                        <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wider mt-0.5">Group Code</p>
                       </div>
-                      <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-100 rounded-xl p-3 sm:p-4 text-center">
-                        <p className="text-lg sm:text-xl font-bold text-emerald-600">Active</p>
-                        <p className="text-xs text-emerald-500 font-medium mt-1">Package Status</p>
+                      <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-center col-span-2 md:col-span-1">
+                        <p className="text-base font-black text-emerald-600">Standard</p>
+                        <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mt-0.5">Package Level</p>
                       </div>
                     </div>
+
+                    {/* Permissions List */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                          <span className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center"><FaShieldAlt size={10} className="text-blue-600" /></span>
+                        <h4 className="text-[12px] font-bold text-slate-700 flex items-center gap-2">
+                          <FaShieldAlt className="text-indigo-500" size={12} />
                           Assigned Permissions
                         </h4>
-                        <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">{selectedPackage.permissions?.length || 0} total</span>
+                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-bold uppercase tracking-wider">
+                          {selectedPackage.permissions?.length || 0} Total
+                        </span>
                       </div>
+
                       {selectedPackage.permissions?.length > 0 ? (
-                        <div className="space-y-2 max-h-[36vh] overflow-y-auto pr-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {(selectedPackage.permissions || []).map((permEntry, idx) => {
                             const perm = normalisePermission(permEntry);
                             const displayCode = perm?.code ?? (typeof permEntry === 'object' ? permEntry?.code : `#${permEntry}`);
                             const displayName = perm?.name ?? (typeof permEntry === 'object' ? permEntry?.name : 'Unknown Permission');
-                            const displayAction = perm?.action ?? (typeof permEntry === 'object' ? permEntry?.action : '');
                             return (
-                              <motion.div key={idx} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.035 }}
-                                className="flex items-center gap-3 px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm transition-all duration-200 group">
-                                <span className="w-6 h-6 rounded-lg bg-gray-100 group-hover:bg-blue-100 text-gray-500 group-hover:text-blue-600 text-xs font-bold flex items-center justify-center flex-shrink-0 transition-colors">{idx + 1}</span>
-                                <span className={`px-2 py-0.5 rounded-lg text-xs font-bold border flex-shrink-0 ${getGroupColor(idx)}`}>{displayCode}</span>
+                              <div key={idx} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 transition-all group">
+                                <span className="w-5 h-5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 text-[9px] font-bold flex items-center justify-center flex-shrink-0 transition-colors">
+                                  {idx + 1}
+                                </span>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-semibold text-gray-800 leading-tight">{displayName}</p>
-                                  {displayAction && <p className="text-xs text-gray-400 font-mono mt-0.5">{displayAction}</p>}
+                                  <p className="text-[11px] font-bold text-slate-800 truncate">{displayName}</p>
+                                  <p className="text-[8px] text-slate-400 font-mono mt-0.5 uppercase tracking-tight">{displayCode}</p>
                                 </div>
-                                <div className="w-6 h-6 rounded-full bg-green-50 border border-green-200 flex items-center justify-center flex-shrink-0"><FaCheck size={9} className="text-green-500" /></div>
-                              </motion.div>
+                                <div className="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                                  <FaCheck size={7} className="text-emerald-500" />
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
                       ) : (
-                        <div className="text-center py-10 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                          <div className="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3"><FaBan className="text-2xl text-gray-300" /></div>
-                          <p className="text-sm font-medium text-gray-400">No permissions assigned</p>
-                          <p className="text-xs text-gray-300 mt-1">Click edit to add permissions</p>
+                        <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                          <FaBan className="text-2xl text-slate-300 mx-auto mb-1.5" />
+                          <p className="text-[12px] font-bold text-slate-400">No permissions assigned</p>
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-                    <button onClick={closeModal} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
-                    <button onClick={() => openEditModal(selectedPackage)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={12} /> Edit Package</button>
+
+                  {/* Footer */}
+                  <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-3.5 flex justify-end gap-2.5">
+                    <button
+                      onClick={closeModal}
+                      className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-[13px] hover:bg-slate-100 transition-all shadow-sm"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => openEditModal(selectedPackage)}
+                      disabled={updateAccess.disabled}
+                      className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-[13px] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FaEdit size={12} /> Edit Package
+                    </button>
                   </div>
                 </>
               )}
 
-              {/* PERM LIST */}
-              {modalType === MODAL_TYPES.PERM_LIST && selectedPackage && (
-                <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-indigo-600 to-purple-700 text-white rounded-t-xl px-6 sm:px-8 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <FaShieldAlt className="text-white text-sm" />
-                        </div>
-                        <div className="min-w-0">
-                          <h2 className="text-lg font-bold truncate">{selectedPackage.package_name}</h2>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-white/20 border border-white/30 text-white rounded-full text-xs font-semibold"><FaCode size={8} />{selectedPackage.group_code}</span>
-                            <span className="text-xs text-white/70">{selectedPackage.permissions?.length || 0} permissions assigned</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all flex-shrink-0"><FaTimes size={20} /></button>
-                    </div>
-                    {selectedPackage.description && <p className="mt-2.5 text-xs text-white/70 leading-relaxed line-clamp-2">{selectedPackage.description}</p>}
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 sm:px-8 py-6 space-y-4">
-                    {selectedPackage.permissions?.length > 0 ? (
-                      <>
-                        <div className="flex items-center justify-between px-1">
-                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">All Permissions</p>
-                          <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold">{selectedPackage.permissions.length} total</span>
-                        </div>
-                        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
-                          {(selectedPackage.permissions || []).map((permEntry, idx) => {
-                            const perm = normalisePermission(permEntry);
-                            const displayCode = perm?.code ?? (typeof permEntry === 'object' ? permEntry?.code : `#${permEntry}`);
-                            const displayName = perm?.name ?? (typeof permEntry === 'object' ? permEntry?.name : 'Unknown Permission');
-                            const displayAction = perm?.action ?? (typeof permEntry === 'object' ? permEntry?.action : '');
-                            return (
-                              <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }}
-                                className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50/40 hover:shadow-sm transition-all duration-200 group">
-                                <span className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-indigo-100 text-gray-500 group-hover:text-indigo-600 text-xs font-bold flex items-center justify-center flex-shrink-0 transition-colors">{String(idx + 1).padStart(2, '0')}</span>
-                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex-shrink-0 ${getGroupColor(idx)}`}>{displayCode}</span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-semibold text-gray-800 leading-tight">{displayName}</p>
-                                  {displayAction && <p className="text-xs text-gray-400 font-mono mt-0.5">{displayAction}</p>}
-                                </div>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 border border-green-200 text-green-600 rounded-full text-xs font-semibold flex-shrink-0"><FaCheck size={8} /> Allowed</span>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                        <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4"><FaBan className="text-3xl text-gray-300" /></div>
-                        <p className="text-sm font-semibold text-gray-400">No permissions assigned</p>
-                        <p className="text-xs text-gray-300 mt-1">Edit this package to add permissions</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-                    <button onClick={closeModal} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
-                    <button onClick={() => openEditModal(selectedPackage)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={12} /> Edit Package</button>
-                  </div>
-                </>
-              )}
-
-              {/* CREATE */}
-              {modalType === MODAL_TYPES.CREATE && (
-                <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-xl px-6 sm:px-8 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                          <FaPlus className="text-white text-sm" />
-                        </div>
-                        <div>
-                          <h2 className="text-lg font-bold">Create Permission Package</h2>
-                          <p className="text-xs text-white/80">Configure a new permission package</p>
-                        </div>
-                      </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-                    <PackageFormBody
-                      onSubmit={handleCreate} isEdit={false} formData={formData}
-                      onInputChange={handleInputChange} onTogglePermission={togglePermission}
-                      onSelectAll={() => setFormData(prev => ({ ...prev, permissions: allPermissions.map(p => p.id) }))}
-                      onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
-                      allPermissions={allPermissions} permsLoading={permsLoading} loading={loading} onClose={closeModal}
-                      submitDisabled={createAccess.disabled} submitTitle={createAccess.disabled ? getAccessMessage(createAccess) : ''}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* EDIT */}
-              {modalType === MODAL_TYPES.EDIT && selectedPackage && (
-                <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-t-xl px-6 sm:px-8 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                          <FaEdit className="text-white text-sm" />
-                        </div>
-                        <div>
-                          <h2 className="text-lg font-bold">Edit Package</h2>
-                          <p className="text-xs text-white/80">Editing {selectedPackage.package_name}</p>
-                        </div>
-                      </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
-                    </div>
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-                    <PackageFormBody
-                      onSubmit={handleEdit} isEdit={true} formData={formData}
-                      onInputChange={handleInputChange} onTogglePermission={togglePermission}
-                      onSelectAll={() => setFormData(prev => ({ ...prev, permissions: allPermissions.map(p => p.id) }))}
-                      onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
-                      allPermissions={allPermissions} permsLoading={permsLoading} loading={loading} onClose={closeModal}
-                      submitDisabled={updateAccess.disabled} submitTitle={updateAccess.disabled ? getAccessMessage(updateAccess) : ''}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* DELETE CONFIRM */}
+              {/* DELETE CONFIRM Modal */}
               {modalType === MODAL_TYPES.DELETE_CONFIRM && selectedPackage && (
                 <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-xl px-6 py-5">
-                    <div className="flex items-center justify-between">
+                  {/* Header */}
+                  <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
+                    <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                          <FaTrash className="text-white text-sm" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-rose-100">
+                          <FaTrash className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <h2 className="text-lg font-bold">Delete Package</h2>
-                          <p className="text-xs text-white/80">{selectedPackage.package_name}</p>
+                          <h2 className="text-lg font-bold text-slate-900">Delete Package</h2>
+                          <p className="text-[11px] text-slate-500">Confirm permanent removal</p>
                         </div>
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                      <button
+                        onClick={closeModal}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all bg-white border border-slate-100"
+                      >
+                        <FaTimes className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6 text-center">
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      You are about to delete <span className="font-semibold text-red-600">{selectedPackage.package_name}</span>. This action cannot be undone.
-                    </p>
+
+                  {/* Body */}
+                  <div className="flex-1 overflow-y-auto p-5 text-center space-y-3">
+                    <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner border border-rose-100">
+                      <FaTrash size={28} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[13px] text-slate-600 font-medium">
+                        Are you sure you want to delete <span className="font-bold text-slate-900">{selectedPackage.package_name}</span>?
+                      </p>
+                      <p className="text-[11px] text-slate-400 leading-relaxed px-4">
+                        This action will permanently remove this permission package. Any employees assigned to this package will lose their current access settings.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-                    <button onClick={closeModal} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                    <button onClick={handleDelete} disabled={loading || deleteAccess.disabled} title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                      {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={12} />}
-                      Delete Package
+
+                  {/* Footer */}
+                  <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-3.5 flex gap-2.5">
+                    <button
+                      onClick={closeModal}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-bold text-[13px] hover:bg-slate-100 transition-all shadow-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={loading || deleteAccess.disabled}
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-[13px] hover:from-red-700 hover:to-rose-700 transition-all shadow-lg shadow-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaTrash size={12} />}
+                      Delete Now
                     </button>
                   </div>
                 </>
