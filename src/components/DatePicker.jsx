@@ -1,6 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { FaCheck, FaUndo, FaExclamationTriangle, FaTimesCircle, FaCheckCircle, FaInfoCircle } from "react-icons/fa";
+import { FaCheck, FaUndo, FaExclamationTriangle, FaTimesCircle, FaCheckCircle, FaInfoCircle, FaTimes } from "react-icons/fa";
+
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+`;
+document.head.appendChild(style);
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const MONTHS = [
@@ -44,34 +57,7 @@ function startOfDay(d) {
   return c;
 }
 
-function getAnchoredPopoverPosition(triggerEl, popoverEl, offset = 8) {
-  if (!triggerEl || !popoverEl) return null;
-
-  const triggerRect = triggerEl.getBoundingClientRect();
-  const popoverRect = popoverEl.getBoundingClientRect();
-  const margin = 8;
-
-  let top = triggerRect.bottom + offset;
-  let left = triggerRect.left;
-
-  if (left + popoverRect.width > window.innerWidth - margin) {
-    left = Math.max(margin, window.innerWidth - popoverRect.width - margin);
-  }
-
-  if (left < margin) {
-    left = margin;
-  }
-
-  if (top + popoverRect.height > window.innerHeight - margin) {
-    top = Math.max(margin, triggerRect.top - popoverRect.height - offset);
-  }
-
-  if (top < margin) {
-    top = margin;
-  }
-
-  return { top, left };
-}
+// Anchoring logic removed for full-page modal behavior
 
 // ── Quick-select presets ──────────────────────────────────────────────
 function getPresets() {
@@ -86,12 +72,12 @@ function getPresets() {
   const lastMonthEnd = new Date(t.getFullYear(), t.getMonth(), 0);
 
   return [
-    { key: "today",     label: "Today",        sub: fmt(t),                         single: t },
-    { key: "yesterday", label: "Yesterday",    sub: fmt(yesterday),                  single: yesterday },
-    { key: "tomorrow",  label: "Tomorrow",     sub: fmt(tomorrow),                   single: tomorrow },
-    { key: "last7",     label: "Last 7 days",  sub: `${fmt(last7start)} – ${fmt(t)}`, range: [last7start, t], single: last7start },
-    { key: "last30",    label: "Last 30 days", sub: `${fmt(last30start)} – ${fmt(t)}`, range: [last30start, t], single: last30start },
-    { key: "lastMonth", label: "Last month",   sub: `${fmt(lastMonthStart)} – ${fmt(lastMonthEnd)}`, range: [lastMonthStart, lastMonthEnd], single: lastMonthStart },
+    { key: "today", label: "Today", sub: fmt(t), single: t },
+    { key: "yesterday", label: "Yesterday", sub: fmt(yesterday), single: yesterday },
+    { key: "tomorrow", label: "Tomorrow", sub: fmt(tomorrow), single: tomorrow },
+    { key: "last7", label: "Last 7 days", sub: `${fmt(last7start)} – ${fmt(t)}`, range: [last7start, t], single: last7start },
+    { key: "last30", label: "Last 30 days", sub: `${fmt(last30start)} – ${fmt(t)}`, range: [last30start, t], single: last30start },
+    { key: "lastMonth", label: "Last month", sub: `${fmt(lastMonthStart)} – ${fmt(lastMonthEnd)}`, range: [lastMonthStart, lastMonthEnd], single: lastMonthStart },
   ];
 }
 
@@ -122,7 +108,7 @@ function Calendar({ mode, viewDate, onViewChange, selectedSingle, onSelectSingle
   function getDayClass(date) {
     const isPast = minThreshold && date < minThreshold;
     const base = "w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs select-none transition-colors duration-100 " + (isPast ? "cursor-not-allowed text-gray-200 " : "cursor-pointer ");
-    
+
     if (mode === "single") {
       if (sameDay(date, selectedSingle)) return base + "bg-blue-500 text-white rounded-lg font-medium";
       if (sameDay(date, today)) return base + "bg-blue-100 text-blue-700 rounded-lg font-medium";
@@ -374,7 +360,7 @@ export default function DatePicker({
   const toast = toastConfig[feedbackType] || toastConfig.info;
 
   return (
-    <div className="w-[min(calc(100vw-0.5rem),19rem)] w-full max-w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden font-sans max-h-[calc(100vh-6rem)] flex flex-col">
+    <div className="w-full h-full sm:max-h-[calc(100vh-6rem)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden font-sans flex flex-col">
       {/* Header */}
       <div className="px-3 sm:px-4 pt-2.5 sm:pt-3 pb-2 border-b border-gray-100">
         <p className="text-[9px] text-gray-400 mb-1.5 uppercase tracking-widest font-semibold">Selected</p>
@@ -401,11 +387,10 @@ export default function DatePicker({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`min-w-0 flex-1 py-2 text-[10px] sm:text-[11px] font-medium transition-colors border-b-2 ${
-              tab === t.key
+            className={`min-w-0 flex-1 py-2 text-[10px] sm:text-[11px] font-medium transition-colors border-b-2 ${tab === t.key
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-400 hover:text-gray-600"
-            }`}
+              }`}
           >
             {t.label}
           </button>
@@ -426,11 +411,10 @@ export default function DatePicker({
                     : { type: "range", start: p.range[0], end: p.range[1] };
                   onApply?.(result);
                 }}
-                className={`w-full flex flex-col items-start px-2.5 py-2 rounded-lg border text-left transition-all ${
-                  quickKey === p.key
+                className={`w-full flex flex-col items-start px-2.5 py-2 rounded-lg border text-left transition-all ${quickKey === p.key
                     ? "bg-blue-50 border-blue-300"
                     : "border-gray-100 hover:bg-gray-50 hover:border-gray-200"
-                }`}
+                  }`}
               >
                 <span className={`text-xs font-medium ${quickKey === p.key ? "text-blue-700" : "text-gray-700"}`}>
                   {p.label}
@@ -462,7 +446,7 @@ export default function DatePicker({
             <p className="text-[10px] text-center text-gray-400 mb-2 h-4 px-1">
               {!rangeStart ? "Click to set start date" :
                 !rangeEnd ? "Click to set end date" :
-                `${fmt(rangeStart)} → ${fmt(rangeEnd)}`}
+                  `${fmt(rangeStart)} → ${fmt(rangeEnd)}`}
             </p>
             <Calendar
               mode="range"
@@ -517,50 +501,27 @@ export function DatePickerField({
   const triggerRef = useRef(null);
   const popoverRef = useRef(null);
   const selectedDate = parseDateValue(value);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (!open) return;
 
-    const updatePosition = () => {
-      const nextPosition = getAnchoredPopoverPosition(triggerRef.current, popoverRef.current);
-      if (nextPosition) {
-        setPosition(nextPosition);
-      }
-    };
-
     const handlePointerDown = (event) => {
-      if (
-        popoverRef.current?.contains(event.target) ||
-        triggerRef.current?.contains(event.target)
-      ) {
-        return;
-      }
+      if (popoverRef.current?.contains(event.target)) return;
       setOpen(false);
     };
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     };
-
-    updatePosition();
-    const rafId = window.requestAnimationFrame(updatePosition);
 
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("touchstart", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
 
     return () => {
-      window.cancelAnimationFrame(rafId);
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
     };
   }, [open]);
 
@@ -582,43 +543,53 @@ export function DatePickerField({
 
       {open &&
         createPortal(
-          <div
-            ref={popoverRef}
-            data-datepicker-portal="true"
-            className={`fixed z-[9999] ${popoverClassName}`.trim()}
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-            }}
-          >
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 shadow-sm hover:bg-white hover:text-gray-700"
-              >
-                Close
-              </button>
-              <DatePicker
-                mode={mode}
-                initialTab={initialTab}
-                initialSingle={selectedDate}
-                minDate={minDate}
-                maxDays={maxDays}
-                showQuickSelect={showQuickSelect}
-                onReset={() => onChange?.("")}
-                onApply={(result) => {
-                  if (result?.type === "single") {
-                    onChange?.(toIsoDate(result.date));
-                  } else if (result?.type === "range") {
-                    onChange?.({
-                      start: toIsoDate(result.start),
-                      end: toIsoDate(result.end),
-                    });
-                  }
-                  setOpen(false);
-                }}
-              />
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+              onClick={() => setOpen(false)}
+            />
+
+            <div
+              ref={popoverRef}
+              data-datepicker-portal="true"
+              className={`relative z-[10002] ${popoverClassName}`.trim()}
+              style={window.innerWidth < 640 ? {
+                width: '90%',
+                height: '70%',
+              } : {
+                width: '100%',
+                maxWidth: '22rem',
+              }}
+            >
+              <div className="relative h-full w-full animate-[zoomIn_0.2s_ease-out]">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="absolute right-2 top-2 z-20 rounded-full bg-white/90 p-2 text-gray-500 shadow-sm hover:bg-white hover:text-red-500 transition-colors" title="Close"
+                >
+                  <FaTimes size={12} />
+                </button>
+                <DatePicker
+                  mode={mode}
+                  initialTab={initialTab}
+                  initialSingle={selectedDate}
+                  minDate={minDate}
+                  maxDays={maxDays}
+                  showQuickSelect={showQuickSelect}
+                  onReset={() => onChange?.("")}
+                  onApply={(result) => {
+                    if (result?.type === "single") {
+                      onChange?.(toIsoDate(result.date));
+                    } else if (result?.type === "range") {
+                      onChange?.({
+                        start: toIsoDate(result.start),
+                        end: toIsoDate(result.end),
+                      });
+                    }
+                    setOpen(false);
+                  }}
+                />
+              </div>
             </div>
           </div>,
           document.body
@@ -647,50 +618,27 @@ export function DateRangePickerField({
   const endValue = value?.end || value?.end_date || value?.to || "";
   const startDate = parseDateValue(startValue);
   const endDate = parseDateValue(endValue);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (!open) return;
 
-    const updatePosition = () => {
-      const nextPosition = getAnchoredPopoverPosition(triggerRef.current, popoverRef.current);
-      if (nextPosition) {
-        setPosition(nextPosition);
-      }
-    };
-
     const handlePointerDown = (event) => {
-      if (
-        popoverRef.current?.contains(event.target) ||
-        triggerRef.current?.contains(event.target)
-      ) {
-        return;
-      }
+      if (popoverRef.current?.contains(event.target)) return;
       setOpen(false);
     };
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
+      if (event.key === "Escape") setOpen(false);
     };
-
-    updatePosition();
-    const rafId = window.requestAnimationFrame(updatePosition);
 
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("touchstart", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("scroll", updatePosition, true);
-    window.addEventListener("resize", updatePosition);
 
     return () => {
-      window.cancelAnimationFrame(rafId);
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
     };
   }, [open]);
 
@@ -720,48 +668,58 @@ export function DateRangePickerField({
 
       {open &&
         createPortal(
-          <div
-            ref={popoverRef}
-            data-datepicker-portal="true"
-            className={`fixed z-[9999] ${popoverClassName}`.trim()}
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-            }}
-          >
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 shadow-sm hover:bg-white hover:text-gray-700"
-              >
-                Close
-              </button>
-              <DatePicker
-                mode={mode}
-                initialTab={initialTab}
-                initialRangeStart={startDate}
-                initialRangeEnd={endDate}
-                minDate={minDate}
-                maxDays={maxDays}
-                showQuickSelect={showQuickSelect}
-                onReset={() => onChange?.({ start: "", end: "" })}
-                onApply={(result) => {
-                  if (result?.type === "range") {
-                    onChange?.({
-                      start: toIsoDate(result.start),
-                      end: toIsoDate(result.end),
-                    });
-                  } else if (result?.type === "single") {
-                    const iso = toIsoDate(result.date);
-                    onChange?.({
-                      start: iso,
-                      end: iso,
-                    });
-                  }
-                  setOpen(false);
-                }}
-              />
+          <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+              onClick={() => setOpen(false)}
+            />
+
+            <div
+              ref={popoverRef}
+              data-datepicker-portal="true"
+              className={`relative z-[10002] ${popoverClassName}`.trim()}
+              style={window.innerWidth < 640 ? {
+                width: '90%',
+                height: '70%',
+              } : {
+                width: '100%',
+                maxWidth: '22rem',
+              }}
+            >
+              <div className="relative h-full w-full animate-[zoomIn_0.2s_ease-out]">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="absolute right-2 top-2 z-20 rounded-full bg-white/90 p-2 text-gray-500 shadow-sm hover:bg-white hover:text-red-500 transition-colors" title="Close"
+                >
+                  <FaTimes size={12} />
+                </button>
+                <DatePicker
+                  mode={mode}
+                  initialTab={initialTab}
+                  initialRangeStart={startDate}
+                  initialRangeEnd={endDate}
+                  minDate={minDate}
+                  maxDays={maxDays}
+                  showQuickSelect={showQuickSelect}
+                  onReset={() => onChange?.({ start: "", end: "" })}
+                  onApply={(result) => {
+                    if (result?.type === "range") {
+                      onChange?.({
+                        start: toIsoDate(result.start),
+                        end: toIsoDate(result.end),
+                      });
+                    } else if (result?.type === "single") {
+                      const iso = toIsoDate(result.date);
+                      onChange?.({
+                        start: iso,
+                        end: iso,
+                      });
+                    }
+                    setOpen(false);
+                  }}
+                />
+              </div>
             </div>
           </div>,
           document.body
