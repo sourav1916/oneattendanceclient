@@ -91,6 +91,11 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Force fixed overlays to ignore parent space-y margins */
+.fixed.inset-0 {
+  margin-top: 0 !important;
+}
+
 /* DatePicker toast slide-down animation */
 @keyframes slideDown {
   from {
