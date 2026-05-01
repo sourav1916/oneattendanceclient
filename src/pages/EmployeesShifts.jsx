@@ -70,11 +70,11 @@ const AVATAR_GRADIENTS = [
 const avatarGradient = (id) => AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 
 const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
+    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-3 rounded-xl border border-gray-200">
+        <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-1">
             {icon}{label}
         </label>
-        <div className="text-gray-800 font-medium">{value}</div>
+        <div className="text-gray-800 text-sm font-medium">{value}</div>
     </div>
 );
 
@@ -160,37 +160,43 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                 <motion.div
                     variants={modalVariants}
                     initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                            <FaUserCircle /> Employee Details
-                        </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300">
-                            <FaTimes size={20} />
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-200">
+                                <FaUserCircle className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Employee Details</h2>
+                                <p className="text-xs text-slate-500">Overview of attendance and statistics</p>
+                            </div>
+                        </div>
+                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-4 w-4" />
                         </button>
                     </div>
 
-                    <div className="p-6">
+                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6">
                         {/* Employee Profile */}
-                        <div className="flex items-center gap-6 pb-6 border-b">
-                            <div className={`bg-gradient-to-br ${avatarGradient(employee.employee_id)} p-4 rounded-xl`}>
-                                <FaUserCircle className="text-white text-5xl" />
+                        <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+                            <div className={`bg-gradient-to-br ${avatarGradient(employee.employee_id)} p-3 rounded-xl`}>
+                                <FaUserCircle className="text-white text-4xl" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-800">{u.name || employee.name || 'Unknown'}</h3>
-                                <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                    <FaIdCard className="text-blue-500" size={14} />{employee.employee_code}
+                                <h3 className="text-xl font-bold text-gray-800">{u.name || employee.name || 'Unknown'}</h3>
+                                <p className="text-xs text-gray-600 flex items-center gap-2 mt-1">
+                                    <FaIdCard className="text-blue-500" size={12} />{employee.employee_code}
                                 </p>
-                                <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                    <FaBriefcase className="text-purple-500" size={14} />{designationLabel(employee.designation)}
+                                <p className="text-xs text-gray-600 flex items-center gap-2 mt-0.5">
+                                    <FaBriefcase className="text-purple-500" size={12} />{designationLabel(employee.designation)}
                                 </p>
                             </div>
                         </div>
 
                         {/* Contact Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                             <InfoItem icon={<FaEnvelope className="text-blue-500" />} label="Email" value={u.email || 'N/A'} />
                             <InfoItem icon={<FaPhone className="text-green-500" />} label="Phone" value={u.phone || 'N/A'} />
                             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joined Date" value={formatDate(employee.joining_date)} />
@@ -208,8 +214,8 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                         </div>
 
                         {/* Monthly Stats */}
-                        <div className="mt-6">
-                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+                        <div className="mt-4">
+                            <label className="text-xs font-semibold text-gray-700 flex items-center gap-2 mb-2">
                                 <FaChartBar className="text-blue-500" /> Monthly Breakdown ({MONTHS[s.month - 1]} {s.year})
                             </label>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -222,24 +228,23 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                         </div>
 
                         {/* Attendance Rate */}
-                        <div className="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <div className="flex justify-between items-center mb-3">
-                                <span className="text-sm font-semibold text-gray-700">Attendance Rate</span>
+                        <div className="mt-4 bg-gray-50 rounded-xl p-3 border border-gray-200">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-semibold text-gray-700">Attendance Rate</span>
                                 <AttendanceBadge pct={s.attendance_percentage} />
                             </div>
                             <MiniStatBar worked={s.worked_days} total={s.total_days_in_month} pct={s.attendance_percentage} />
-                            <p className="text-xs text-gray-500 mt-3">
+                            <p className="text-[10px] text-gray-500 mt-2">
                                 Average {formatHours(s.average_hours_per_day)} / working day
                             </p>
                         </div>
-                    </div>
-
-                    <div className="px-6 pb-6">
-                        <button onClick={onClose}
-                            className="w-full py-2.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium">
-                            Close
-                        </button>
-                    </div>
+                        </div>
+                        <div className="px-4 sm:px-6 pb-4">
+                            <button onClick={onClose}
+                                className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-medium">
+                                Close
+                            </button>
+                        </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
