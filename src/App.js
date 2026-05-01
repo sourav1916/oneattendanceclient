@@ -17,7 +17,6 @@ import MyAccounts from "./pages/MyAccounts";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
-import MyShifts from "./pages/MyShifts";
 import MySalary from "./pages/MySalary";
 import SalaryManagement from "./pages/SalaryManagement";
 import SalaryComponentsManagement from "./pages/SalaryComponentsManagement";
@@ -30,7 +29,7 @@ import AttendanceManagement from "./pages/AttendanceManagement";
 import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
 import CompanyHolidays from "./pages/HolidayManagement";
-import Holidays from "./pages/Holidays";
+import MyCalendar from "./pages/MyCalendar";
 import PayrollManagement from "./pages/PayrollManagement";
 import BankAccountManagement from "./pages/BankAccountManagement";
 import CompanySettings from "./pages/CompanySettings";
@@ -265,7 +264,6 @@ function AppContent() {
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><Navigate to="/attendance?tab=history" replace /></ProtectedRoute>} />
-        <Route path="/my-shifts" element={<ProtectedRoute pageKey="myShifts"><MainLayout><MyShifts /></MainLayout></ProtectedRoute>} />
         <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
         <Route path="/my-accounts" element={<ProtectedRoute pageKey="employeeBankAccount"><MainLayout><MyAccounts /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><TabbedManagementHub
@@ -309,7 +307,7 @@ function AppContent() {
         /></MainLayout></ProtectedRoute>} />
         <Route path="/pending-attendance" element={<ProtectedRoute pageKey="pendingAttendance"><Navigate to="/attendance-management?tab=pending" replace /></ProtectedRoute>} />
         <Route path="/holiday-management" element={<ProtectedRoute pageKey="holidayManagement"><MainLayout><CompanyHolidays /></MainLayout></ProtectedRoute>} />
-        <Route path="/holidays" element={<ProtectedRoute pageKey="holidays"><MainLayout><Holidays /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-calendar" element={<ProtectedRoute pageKey="holidays"><MainLayout><MyCalendar /></MainLayout></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute pageKey="help"><MainLayout><HelpPage /></MainLayout></ProtectedRoute>} />
         <Route path="/my-leaves" element={<ProtectedRoute pageKey="myLeaves"><MainLayout><MyLeave /></MainLayout></ProtectedRoute>} />
         <Route path="/my-invites" element={<ProtectedRoute pageKey="myInvites"><MainLayout> <MyInvites /></MainLayout></ProtectedRoute>} />

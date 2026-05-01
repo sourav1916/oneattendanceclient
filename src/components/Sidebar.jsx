@@ -53,12 +53,6 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       pageKey: 'attendance'
     },
     {
-      icon: FaCalendarAlt,
-      label: 'My Shifts',
-      path: '/my-shifts',
-      pageKey: 'myShifts'
-    },
-    {
       icon: FaUmbrellaBeach,
       label: 'My Leaves',
       path: '/my-leaves',
@@ -84,8 +78,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     },
     {
       icon: FaCalendarAlt,
-      label: 'Holidays',
-      path: '/holidays',
+      label: 'My Calendar',
+      path: '/my-calendar',
       pageKey: 'holidays'
     },
     {
@@ -486,3 +480,5 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 };
 
 export default Sidebar;
+
+

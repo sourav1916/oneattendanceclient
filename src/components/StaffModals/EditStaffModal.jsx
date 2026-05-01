@@ -722,7 +722,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 18 }}
             transition={{ type: "spring", damping: 25, stiffness: 280 }}
-            className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200"
+            className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
               <div className="flex items-center gap-3">

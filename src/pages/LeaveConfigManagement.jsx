@@ -30,6 +30,7 @@ import ModalScrollLock from '../components/ModalScrollLock';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SharedActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import { ManagementButton, ManagementHub } from '../components/common';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
@@ -797,9 +798,28 @@ const LeaveConfigManagement = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 font-sans md:p-6">
-      <div className="mx-auto max-w-7xl">
-
+    <ManagementHub
+      eyebrow={<><FaCog size={11} /> Settings</>}
+      title="Leave Configuration"
+      description="Configure and manage available leave types, accrual rules, and policies for your organization."
+      accent="violet"
+      actions={
+        <div className="flex items-center justify-end gap-2">
+          <ManagementButton
+            tone="violet"
+            variant="solid"
+            leftIcon={<FaPlus />}
+            onClick={openCreateModal}
+            disabled={createAccess.disabled}
+            title={createAccess.disabled ? createMessage : ''}
+            size="sm"
+          >
+            <span>Create</span>
+          </ManagementButton>
+        </div>
+      }
+    >
+      <div className="max-w-screen-2xl mx-auto px-2">
         {/* ─── Consolidated Filter & View Bar ─── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -808,7 +828,7 @@ const LeaveConfigManagement = () => {
           className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
         >
           {/* Left Section: Search & Result Info */}
-          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+          <div className="flex items-center gap-4 flex-1">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
               <input
@@ -816,7 +836,7 @@ const LeaveConfigManagement = () => {
                 placeholder="Search leave types by name or code..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
+                className="w-full pl-11 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
               />
               {searchTerm && (
                 <button
@@ -828,20 +848,15 @@ const LeaveConfigManagement = () => {
               )}
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={openCreateModal}
-              disabled={createAccess.disabled}
-              title={createAccess.disabled ? createMessage : ''}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:from-violet-700 hover:to-indigo-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
-            >
-              <FaPlus size={12} /> New Leave Type
-            </motion.button>
+            {!loading && records.length > 0 && (
+              <p className="text-sm text-gray-500 hidden xl:block">
+                <span className="font-semibold text-gray-800">{records.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> types
+              </p>
+            )}
           </div>
 
           {/* Right Section: View Switcher */}
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-4">
             <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
             <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
           </div>
@@ -1085,7 +1100,7 @@ const LeaveConfigManagement = () => {
           />
         )}
       </AnimatePresence>
-    </div>
+    </ManagementHub>
   );
 };
 

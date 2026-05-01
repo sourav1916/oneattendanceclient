@@ -170,15 +170,6 @@ function HomePage() {
         disabled: !attendanceHistoryAccess.allowed
       },
       {
-        title: "My Shifts",
-        description: myShiftsAccess.allowed ? "View shift hours and summaries" : "No permission",
-        icon: FaClock,
-        color: myShiftsAccess.allowed ? "from-blue-500 to-indigo-500" : "from-slate-400 to-slate-500",
-        onClick: () => myShiftsAccess.allowed && navigate('/my-shifts'),
-        gradient: myShiftsAccess.allowed ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-slate-200",
-        disabled: !myShiftsAccess.allowed
-      },
-      {
         title: "My Salary",
         description: mySalaryAccess.allowed ? "View financial logs" : "No permission",
         icon: FaFileInvoiceDollar,
@@ -278,11 +269,11 @@ function HomePage() {
         disabled: !holidayMgmtAccess.allowed
       },
       {
-        title: "Holidays",
-        description: holidaysAccess.allowed ? "View company holiday calendars" : "Select company first",
+        title: "My Calendar",
+        description: holidaysAccess.allowed ? "View attendance & holiday calendars" : "Select company first",
         icon: FaRegCalendarAlt,
         color: holidaysAccess.allowed ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
-        onClick: () => holidaysAccess.allowed && navigate('/holidays'),
+        onClick: () => holidaysAccess.allowed && navigate('/my-calendar'),
         gradient: holidaysAccess.allowed ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
         disabled: !holidaysAccess.allowed
       },

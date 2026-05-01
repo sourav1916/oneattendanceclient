@@ -1,0 +1,251 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaCalendarAlt,
+  FaSpinner,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaUmbrellaBeach,
+  FaInfoCircle,
+  FaUser,
+} from 'react-icons/fa';
+import apiCall from '../utils/api';
+import { ManagementHub } from '../components/common';
+
+const MyCalendar = () => {
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [calendarData, setCalendarData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const month = currentDate.getMonth() + 1;
+  const year = currentDate.getFullYear();
+
+  useEffect(() => {
+    const fetchCalendar = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+        const response = await apiCall(`/shifts/my-calendar?month=${month}&year=${year}`, 'GET', null, companyId);
+        const json = await response.json();
+        if (json.success) {
+          setCalendarData(json.data);
+        } else {
+          setError(json.message || 'Failed to fetch calendar');
+        }
+      } catch (err) {
+        setError('Network error. Please try again.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCalendar();
+  }, [month, year]);
+
+  const changeMonth = (delta) => {
+    setCurrentDate(new Date(year, currentDate.getMonth() + delta, 1));
+  };
+
+  const calendarGrid = useMemo(() => {
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const prevMonthDays = new Date(year, month - 1, 0).getDate();
+    
+    const grid = [];
+    const totalCells = 42;
+
+    for (let i = 0; i < totalCells; i++) {
+      let dateObj;
+      let isCurrentMonth = true;
+      if (i < firstDay) {
+        const day = prevMonthDays - (firstDay - i - 1);
+        dateObj = new Date(year, month - 2, day);
+        isCurrentMonth = false;
+      } else if (i >= firstDay + daysInMonth) {
+        const day = i - (firstDay + daysInMonth) + 1;
+        dateObj = new Date(year, month, day);
+        isCurrentMonth = false;
+      } else {
+        const day = i - firstDay + 1;
+        dateObj = new Date(year, month - 1, day);
+        isCurrentMonth = true;
+      }
+      
+      const dateStr = dateObj.toISOString().split('T')[0];
+      const dayData = calendarData?.days?.[dateStr] || null;
+      
+      grid.push({
+        date: dateObj,
+        dayNumber: dateObj.getDate(),
+        isCurrentMonth,
+        data: dayData,
+        isToday: new Date().toDateString() === dateObj.toDateString()
+      });
+    }
+    return grid;
+  }, [calendarData, month, year]);
+
+  const getStatusStyles = (status, isCurrentMonth) => {
+    if (!isCurrentMonth) return 'bg-gray-50/50 text-gray-300';
+    switch (status) {
+      case 'present': return 'bg-emerald-50 border-emerald-100 text-emerald-700';
+      case 'absent': return 'bg-rose-50 border-rose-100 text-rose-700';
+      case 'holiday': return 'bg-amber-50 border-amber-100 text-amber-700';
+      case 'weekend': return 'bg-slate-50 border-slate-100 text-slate-600';
+      case 'leave': return 'bg-violet-50 border-violet-100 text-violet-700';
+      default: return 'bg-white border-gray-100 text-gray-700';
+    }
+  };
+
+  return (
+    <ManagementHub
+      eyebrow={<><FaCalendarAlt size={11} /> Dashboard</>}
+      title="My Calendar"
+      description="View your attendance, holidays, and leave schedules in one place."
+      accent="indigo"
+    >
+      <div className="max-w-screen-2xl mx-auto px-4 pb-8">
+        {/* Top Summary Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+          <SummaryCard label="Present" value={calendarData?.summary?.total_present || 0} icon={FaCheckCircle} color="text-emerald-600" bg="bg-emerald-50" />
+          <SummaryCard label="Absent" value={calendarData?.summary?.total_absent || 0} icon={FaTimesCircle} color="text-rose-600" bg="bg-rose-50" />
+          <SummaryCard label="Holidays" value={calendarData?.summary?.total_holidays || 0} icon={FaUmbrellaBeach} color="text-amber-600" bg="bg-amber-50" />
+          <SummaryCard label="Leaves" value={calendarData?.summary?.total_leave || 0} icon={FaInfoCircle} color="text-violet-600" bg="bg-violet-50" />
+          <SummaryCard label="Weekends" value={calendarData?.summary?.total_weekends || 0} icon={FaCalendarAlt} color="text-slate-600" bg="bg-slate-50" />
+          <SummaryCard label="Attendance %" value={`${calendarData?.summary?.attendance_percentage || 0}%`} icon={FaSpinner} color="text-indigo-600" bg="bg-indigo-50" />
+        </div>
+
+        {/* Calendar Main Section */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-100">
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-black text-gray-900">
+                {currentDate.toLocaleString('default', { month: 'long' })} {year}
+              </h2>
+              <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><FaChevronLeft className="w-3 h-3" /></button>
+                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-widest text-indigo-600 hover:bg-white hover:shadow-sm rounded-lg transition-all">Today</button>
+                <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all"><FaChevronRight className="w-3 h-3" /></button>
+              </div>
+            </div>
+            
+            {calendarData && (
+              <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
+                <FaUser className="text-indigo-600" />
+                <div className="text-left">
+                  <p className="text-xs font-black text-indigo-900 leading-none">{calendarData.name}</p>
+                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">{calendarData.employee_code}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Grid Headers */}
+          <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+              <div key={d} className="py-3 text-center text-xs font-black text-gray-400 uppercase tracking-widest">{d}</div>
+            ))}
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-px bg-gray-100 relative">
+            {loading && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                <FaSpinner className="w-10 h-10 animate-spin text-indigo-600" />
+              </div>
+            )}
+            {calendarGrid.map((cell, idx) => (
+              <div
+                key={idx}
+                className={`min-h-[120px] p-2 transition-all ${getStatusStyles(cell.data?.status, cell.isCurrentMonth)} ${cell.isToday ? 'ring-2 ring-indigo-500 ring-inset z-[1]' : ''}`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className={`text-sm font-black ${cell.isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}`}>
+                    {cell.dayNumber}
+                  </span>
+                  {cell.isToday && (
+                    <span className="text-[9px] font-black bg-indigo-600 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">Today</span>
+                  )}
+                </div>
+                
+                {cell.data && cell.isCurrentMonth && (
+                  <div className="space-y-1">
+                    <StatusBadge status={cell.data.status} type={cell.data.type} />
+                    {cell.data.name && (
+                      <p className="text-[10px] font-bold leading-tight break-words">{cell.data.name}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Legend */}
+        <div className="mt-6 flex flex-wrap justify-center gap-6">
+          <LegendItem color="bg-emerald-500" label="Present" />
+          <LegendItem color="bg-rose-500" label="Absent" />
+          <LegendItem color="bg-amber-500" label="Holiday" />
+          <LegendItem color="bg-violet-500" label="Leave" />
+          <LegendItem color="bg-slate-400" label="Weekend" />
+        </div>
+      </div>
+    </ManagementHub>
+  );
+};
+
+const SummaryCard = ({ label, value, icon: Icon, color, bg }) => (
+  <div className={`${bg} p-4 rounded-2xl border border-white shadow-sm flex items-center gap-4`}>
+    <div className={`p-3 rounded-xl bg-white/80 ${color}`}><Icon size={20} /></div>
+    <div>
+      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</p>
+      <p className={`text-xl font-black ${color.replace('text-', 'text-gray-900')}`}>{value}</p>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status, type }) => {
+  const labels = {
+    present: 'Present',
+    absent: 'Absent',
+    holiday: 'Holiday',
+    weekend: 'Weekend',
+    leave: 'Leave'
+  };
+  
+  const colors = {
+    present: 'bg-emerald-600',
+    absent: 'bg-rose-600',
+    holiday: 'bg-amber-600',
+    weekend: 'bg-slate-500',
+    leave: 'bg-violet-600'
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      <span className={`${colors[status] || 'bg-gray-400'} text-white text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter`}>
+        {labels[status] || status}
+      </span>
+      {type && (
+        <span className="bg-white/50 text-gray-700 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-tighter border border-black/5">
+          {type}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const LegendItem = ({ color, label }) => (
+  <div className="flex items-center gap-2">
+    <div className={`w-3 h-3 rounded-full ${color}`}></div>
+    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{label}</span>
+  </div>
+);
+
+export default MyCalendar;
