@@ -140,8 +140,8 @@ const InfoRow = ({ icon, label, value }) => (
 
 const EmployeeDetailModal = ({ employee, onClose }) => {
     if (!employee) return null;
-    const s = employee.summary;
-    const u = employee.user;
+    const s = employee.summary || {};
+    const u = employee.user || {};
 
     const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
     const statusColor = employee.status === 'active'
@@ -179,7 +179,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                                 <FaUserCircle className="text-white text-5xl" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-800">{u.name}</h3>
+                                <h3 className="text-2xl font-bold text-gray-800">{u.name || employee.name || 'Unknown'}</h3>
                                 <p className="text-gray-600 flex items-center gap-2 mt-1">
                                     <FaIdCard className="text-blue-500" size={14} />{employee.employee_code}
                                 </p>
@@ -191,7 +191,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 
                         {/* Contact Info */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                            <InfoItem icon={<FaEnvelope className="text-blue-500" />} label="Email" value={u.email} />
+                            <InfoItem icon={<FaEnvelope className="text-blue-500" />} label="Email" value={u.email || 'N/A'} />
                             <InfoItem icon={<FaPhone className="text-green-500" />} label="Phone" value={u.phone || 'N/A'} />
                             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joined Date" value={formatDate(employee.joining_date)} />
                             <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Employment Type" value={designationLabel(employee.employment_type)} />
@@ -249,8 +249,8 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 // ─── Employee Card (Grid) ─────────────────────────────────────────────────────
 
 const EmployeeCard = ({ employee, index, onClick }) => {
-    const s = employee.summary;
-    const u = employee.user;
+    const s = employee.summary || {};
+    const u = employee.user || {};
     const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
     const statusColor = employee.status === 'active'
         ? 'bg-green-50 text-green-700 border-green-200'
@@ -267,10 +267,10 @@ const EmployeeCard = ({ employee, index, onClick }) => {
             {/* Top */}
             <div className="flex items-start gap-3 mb-4">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
-                    <span className="text-white font-bold text-base">{getInitials(u.name)}</span>
+                    <span className="text-white font-bold text-base">{getInitials(u.name || employee.name || '')}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 truncate text-sm">{u.name}</h3>
+                    <h3 className="font-bold text-gray-800 truncate text-sm">{u.name || employee.name || 'Unknown'}</h3>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{designationLabel(employee.designation)}</p>
                     <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColor}`}>
@@ -647,8 +647,8 @@ const EmployeesShifts = () => {
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {employees.map((emp, index) => {
-                                            const s = emp.summary;
-                                            const u = emp.user;
+                                            const s = emp.summary || {};
+                                            const u = emp.user || {};
                                             const statusColor = emp.status === 'active'
                                                 ? 'bg-green-100 text-green-800 border-green-200'
                                                 : 'bg-gray-100 text-gray-600 border-gray-200';
@@ -665,13 +665,13 @@ const EmployeesShifts = () => {
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
-                                                                {getInitials(u.name)}
+                                                                {getInitials(u.name || emp.name || '')}
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <p className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">{u.name}</p>
+                                                                <p className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">{u.name || emp.name || 'Unknown'}</p>
                                                                 <p className="text-xs text-gray-500 flex items-center gap-1">
                                                                     <FaEnvelope className="text-gray-400 flex-shrink-0" size={10} />
-                                                                    <span className="truncate max-w-[120px] md:max-w-none">{u.email}</span>
+                                                                    <span className="truncate max-w-[120px] md:max-w-none">{u.email || 'N/A'}</span>
                                                                 </p>
                                                                 <p className="text-xs text-gray-400 font-mono">{emp.employee_code}</p>
                                                             </div>
