@@ -303,16 +303,16 @@ export const TimeDurationPickerField = ({
         <div
           ref={triggerRef}
           onClick={() => setIsOpen(true)}
-          className={`flex h-[32px] cursor-pointer items-center gap-2 rounded-lg border px-2 transition-all duration-200 ${
+          className={`flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 transition-all duration-200 ${
             isOpen
               ? "border-indigo-500 ring-2 ring-indigo-50"
               : "border-slate-200 bg-white shadow-sm hover:border-indigo-300"
           }`}
         >
-          <div className={`rounded-md p-1 transition-all ${value ? "text-indigo-600" : "text-slate-400"}`}>
-            {mode === "time" ? <FaClock size={10} /> : <FaHourglassHalf size={10} />}
+          <div className={`rounded-md transition-all ${value ? "text-indigo-600" : "text-slate-400"}`}>
+            {mode === "time" ? <FaClock size={12} /> : <FaHourglassHalf size={12} />}
           </div>
-          <span className={`flex-1 text-xs font-bold ${value ? "text-slate-900" : "text-slate-400"}`}>
+          <span className={`flex-1 text-sm ${value ? "text-slate-900" : "text-slate-400"}`}>
             {displayValue || placeholder || defaultPlaceholder}
           </span>
           {value && (

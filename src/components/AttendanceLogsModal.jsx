@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaHistory, FaSpinner, FaClock, FaUser, FaCheckCircle, FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
 import apiCall from '../utils/api';
@@ -36,15 +36,31 @@ const formatTime = (timeString) => {
   return parsed.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
+const formatLogData = (data) => {
+  if (!data) return '';
+  if (typeof data === 'object') {
+    return Object.entries(data)
+      .map(([key, val]) => `${key}: ${val}`)
+      .join(', ');
+  }
+  return String(data);
+};
+
 const AttendanceLogsModal = ({ id, type, onClose }) => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const lastFetchedKeyRef = useRef('');
 
   useEffect(() => {
     const fetchLogs = async () => {
+      const requestKey = `${id}-${type}`;
+      if (lastFetchedKeyRef.current === requestKey) return;
+
       setLoading(true);
       setError(null);
+      lastFetchedKeyRef.current = requestKey;
+
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
         const response = await apiCall(`/attendance/logs?id=${id}&type=${type}`, 'GET', null, companyId);
@@ -59,6 +75,7 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
       } catch (err) {
         console.error('Fetch logs error:', err);
         setError('Error connecting to the server');
+        lastFetchedKeyRef.current = '';
       } finally {
         setLoading(false);
       }
@@ -83,7 +100,7 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-200"
+        className="relative w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden rounded-xl bg-white shadow-xl border border-slate-200 m-auto min-h-[70vh] min-h-[50vh]"
         onClick={e => e.stopPropagation()}
       >
         <div className="shrink-0 flex items-center justify-between border-b border-slate-100 px-6 py-5 bg-white z-10">
@@ -131,77 +148,71 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
               <p className="text-slate-500 font-medium">No history logs available for this record.</p>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="relative border-l-2 border-indigo-100 ml-4 space-y-8 pb-4">
-                {logs.map((log, index) => {
-                  const style = getStatusBadge(log.status);
-                  const StatusIcon = style.icon;
+            <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-sm bg-white">
+              <table className="w-full text-sm text-left text-slate-600 min-w-[650px]">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                  <tr>
+                    <th className="px-4 py-3">Timestamp</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Start Punch</th>
+                    <th className="px-4 py-3">End Punch</th>
+                    <th className="px-4 py-3">Updated By</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {logs.map((log, index) => {
+                    const style = getStatusBadge(log.status);
+                    const StatusIcon = style.icon;
 
-                  return (
-                    <motion.div
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      key={log.id || index}
-                      className="relative pl-6 sm:pl-8"
-                    >
-                      {/* Timeline Dot */}
-                      <div className="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full bg-white border-2 border-indigo-400 shadow-sm ring-4 ring-white" />
-
-                      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-                        <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-3 bg-slate-50/80 px-4 py-3 border-b border-slate-100">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            <FaClock size={12} className="text-slate-400" />
+                    return (
+                      <tr key={log.id || index} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                            <FaClock size={11} className="text-slate-400" />
                             {formatDateTime(log.updated_at)}
                           </div>
-                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${style.className}`}>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${style.className}`}>
                             <StatusIcon size={10} />
                             {style.text.toUpperCase()}
                           </span>
-                        </div>
-
-                        <div className="p-4 sm:p-5">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100/50">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Start</span>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-bold text-slate-800">{formatTime(log.start?.time)}</span>
-                                {log.start?.method && (
-                                  <span className="text-[9px] px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-500 uppercase font-bold">{log.start.method}</span>
-                                )}
-                              </div>
-                              {log.start?.data && <p className="text-xs text-slate-500 truncate" title={log.start.data}>{log.start.data}</p>}
-                            </div>
-
-                            <div className="bg-slate-50 rounded-lg p-3 border border-slate-100/50">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">End</span>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm font-bold text-slate-800">{formatTime(log.end?.time)}</span>
-                                {log.end?.method && (
-                                  <span className="text-[9px] px-1.5 py-0.5 bg-white border border-slate-200 rounded text-slate-500 uppercase font-bold">{log.end.method}</span>
-                                )}
-                              </div>
-                              {log.end?.data && <p className="text-xs text-slate-500 truncate" title={log.end.data}>{log.end.data}</p>}
-                            </div>
+                        </td>
+                        <td className="px-4 py-3 max-w-[180px]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-slate-700">{formatTime(log.start?.time)}</span>
+                            {log.start?.method && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 uppercase font-bold">{log.start.method}</span>
+                            )}
                           </div>
-
-                          {(log.updated_by?.name || log.updated_by?.id) && (
-                            <div className="flex items-center gap-2 mt-2 pt-4 border-t border-slate-100">
-                              <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                                <FaUser size={10} />
+                          {log.start?.data && <div className="text-[10px] text-slate-500 truncate" title={formatLogData(log.start.data)}>{formatLogData(log.start.data)}</div>}
+                        </td>
+                        <td className="px-4 py-3 max-w-[180px]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-slate-700">{formatTime(log.end?.time)}</span>
+                            {log.end?.method && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 uppercase font-bold">{log.end.method}</span>
+                            )}
+                          </div>
+                          {log.end?.data && <div className="text-[10px] text-slate-500 truncate" title={formatLogData(log.end.data)}>{formatLogData(log.end.data)}</div>}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {(log.updated_by?.name || log.updated_by?.id) ? (
+                            <div className="flex items-center gap-2">
+                              <div className="h-5 w-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                                <FaUser size={8} />
                               </div>
-                              <div>
-                                <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold block leading-none mb-0.5">Updated By</span>
-                                <span className="text-xs font-bold text-slate-700">{log.updated_by?.name || `ID: ${log.updated_by?.id}`}</span>
-                              </div>
+                              <span className="text-xs font-semibold text-slate-700">{log.updated_by?.name || `ID: ${log.updated_by?.id}`}</span>
                             </div>
+                          ) : (
+                            <span className="text-xs text-slate-400">---</span>
                           )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

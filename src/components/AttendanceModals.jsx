@@ -208,7 +208,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                             value={formData.punch_date}
                                             onChange={(val) => setFormData(prev => ({ ...prev, punch_date: val }))}
                                             mode="single"
-                                            buttonClassName="w-full h-10 bg-white border-slate-200 rounded-xl"
+                                            buttonClassName="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all text-sm"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -315,8 +315,8 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
     const [formData, setFormData] = useState({
         attendance_date: new Date().toISOString().split('T')[0],
         punch_type: 'work',
-        punch_in: '09:00:00',
-        punch_out: '18:00:00',
+        punch_in: null,
+        punch_out: null,
         notes: ''
     });
 
@@ -325,8 +325,8 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
             setFormData({
                 attendance_date: attendance.attendance_date || attendance.punch_date || new Date().toISOString().split('T')[0],
                 punch_type: attendance.punch_type || 'work',
-                punch_in: attendance.start_time || '09:00:00',
-                punch_out: attendance.end_time || '18:00:00',
+                punch_in: attendance.start_time || null,
+                punch_out: attendance.end_time || null,
                 notes: attendance.notes || ''
             });
         }
@@ -430,7 +430,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             value={formData.attendance_date}
                                             onChange={(val) => setFormData(prev => ({ ...prev, attendance_date: val }))}
                                             mode="single"
-                                            buttonClassName="w-full h-10 bg-white border-slate-200 rounded-xl"
+                                            buttonClassName="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all text-sm"
                                         />
                                     </div>
                                     <div className="space-y-2">
