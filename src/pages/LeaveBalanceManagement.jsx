@@ -1006,23 +1006,23 @@ const LeaveBalanceManagement = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white px-6 sm:px-8 py-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-xl font-black shrink-0">
-                      <FaUser size={22} />
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-xl font-bold truncate leading-tight">{viewModal.balance.employee_name}</h2>
-                      <p className="text-white/70 text-sm mt-1 flex items-center gap-2">
-                        <span className="font-mono">{viewModal.balance.employee_code}</span>
-                        <span>•</span>
-                        <span className="truncate">{selectedYear} Balance</span>
-                      </p>
-                    </div>
+              <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-indigo-200">
+                    <FaUser className="h-6 w-6 text-white" />
                   </div>
-                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0"><FaTimes size={20} /></button>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">{viewModal.balance.employee_name}</h2>
+                    <p className="text-sm text-slate-500 flex items-center gap-2">
+                      <span className="font-mono">{viewModal.balance.employee_code}</span>
+                      <span>•</span>
+                      <span className="truncate">{selectedYear} Balance</span>
+                    </p>
+                  </div>
                 </div>
+                <button onClick={closeViewModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                  <FaTimes size={20} />
+                </button>
               </div>
 
               {/* Body */}
@@ -1187,27 +1187,25 @@ const LeaveBalanceManagement = () => {
                 </>
               ) : (
                 <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                          {modalMode === 'assign' ? <FaPlus /> : <FaEdit />}
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-bold">
-                            {modalMode === 'assign' ? 'Assign Leave Balance' : 'Edit Leave Balance'}
-                          </h2>
-                          <p className="text-xs text-white/80">
-                            {modalMode === 'assign'
-                              ? 'Allocate new leave types to employees'
-                              : `Editing: ${selectedBalance?.employee_name}`}
-                          </p>
-                        </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-indigo-200">
+                        {modalMode === 'assign' ? <FaPlus className="h-6 w-6 text-white" /> : <FaEdit className="h-6 w-6 text-white" />}
                       </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all">
-                        <FaTimes size={20} />
-                      </button>
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">
+                          {modalMode === 'assign' ? 'Assign Leave Balance' : 'Edit Leave Balance'}
+                        </h2>
+                        <p className="text-sm text-slate-500">
+                          {modalMode === 'assign'
+                            ? 'Allocate new leave balances to employees'
+                            : `Updating balance for ${selectedBalance?.employee_name}`}
+                        </p>
+                      </div>
                     </div>
+                    <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                      <FaTimes className="h-4 w-4" />
+                    </button>
                   </div>
 
                   <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
