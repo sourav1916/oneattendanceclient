@@ -4,7 +4,7 @@ import {
   FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
   FaUser, FaBuilding, FaMapMarkerAlt,
   FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
-  FaBan, FaComment, FaCog, FaTimes, FaCoffee, FaBriefcase, FaPlus, FaEdit
+  FaBan, FaComment, FaCog, FaTimes, FaCoffee, FaBriefcase, FaPlus, FaEdit, FaHistory
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -18,6 +18,7 @@ import { DatePickerField } from '../components/DatePicker';
 import { CreateAttendanceModal, EditAttendanceModal } from '../components/AttendanceModals';
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
+import AttendanceLogsModal from '../components/AttendanceLogsModal';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -420,7 +421,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
 };
 
 // Card View Component for Mobile
-const AttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, processingId, onToggleMenu, activeMenuId, approveDisabled, reviewMessage }) => {
+const AttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, onLogs, processingId, onToggleMenu, activeMenuId, approveDisabled, reviewMessage }) => {
   const typeMeta = getAttendanceTypeConfig(attendance.type);
 
   return (
@@ -468,6 +469,12 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, processi
                 icon: <FaEye size={12} />,
                 onClick: () => onViewDetails(attendance),
                 className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              },
+              {
+                label: 'Logs',
+                icon: <FaHistory size={12} />,
+                onClick: () => onLogs(attendance),
+                className: 'text-slate-600 hover:text-slate-700 hover:bg-slate-50'
               }
             ]}
           />
@@ -518,6 +525,7 @@ const AttendanceManagement = ({ companyId }) => {
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [logsModalRecord, setLogsModalRecord] = useState(null);
   const [viewMode, setViewMode] = useState('table');
   const [attendanceType, setAttendanceType] = useState('work');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -905,6 +913,12 @@ const AttendanceManagement = ({ companyId }) => {
                                   icon: <FaEye size={12} />,
                                   onClick: () => handleViewDetails(attendance),
                                   className: 'text-blue-600 hover:bg-blue-50'
+                                },
+                                {
+                                  label: 'Logs',
+                                  icon: <FaHistory size={12} />,
+                                  onClick: () => setLogsModalRecord(attendance),
+                                  className: 'text-slate-600 hover:bg-slate-50'
                                 }
                               ]}
                             />
@@ -926,6 +940,7 @@ const AttendanceManagement = ({ companyId }) => {
                     onViewDetails={handleViewDetails}
                     onApprove={(id) => handleStatusUpdate(id, 'verify')}
                     onEdit={handleEditAttendance}
+                    onLogs={(attendance) => setLogsModalRecord(attendance)}
                     processingId={processingId}
                     onToggleMenu={(e, id) => toggleActionMenu(id)}
                     activeMenuId={activeActionMenu}
@@ -980,6 +995,16 @@ const AttendanceManagement = ({ companyId }) => {
             companyId={resolvedCompanyId}
             onSuccess={() => fetchAttendances(true)}
             attendance={selectedAttendance}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {logsModalRecord && (
+          <AttendanceLogsModal
+            id={logsModalRecord.id}
+            type={logsModalRecord.type || attendanceType}
+            onClose={() => setLogsModalRecord(null)}
           />
         )}
       </AnimatePresence>

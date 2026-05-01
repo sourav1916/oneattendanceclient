@@ -31,6 +31,7 @@ import ActionMenu from '../components/ActionMenu';
 import { DateRangePickerField } from '../components/DatePicker';
 import { FaBriefcase } from 'react-icons/fa';
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
+import AttendanceLogsModal from '../components/AttendanceLogsModal';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ const getApprovalStyle = (status) => {
 
 // ─── Shared Rendering Components ───────────────────────────────────────────
 
-const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu, activeType }) => {
+const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu, activeType, onLogs }) => {
   const typeConfig = getAttendanceTypeConfig(activeType);
   return (
     <div className="overflow-hidden rounded-xl bg-white border border-gray-100 shadow-sm">
@@ -170,6 +171,12 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                           icon: <FaEye size={12} />,
                           onClick: () => onViewDetails(record),
                           className: 'text-blue-600 hover:bg-blue-50'
+                        },
+                        {
+                          label: 'Logs',
+                          icon: <FaHistory size={12} />,
+                          onClick: () => onLogs(record),
+                          className: 'text-slate-600 hover:bg-slate-50'
                         }
                       ]}
                     />
@@ -184,7 +191,7 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
   );
 };
 
-const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu, activeType }) => {
+const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionMenu, activeType, onLogs }) => {
   const typeConfig = getAttendanceTypeConfig(activeType);
   return (
     <ManagementGrid viewMode="card">
@@ -222,6 +229,12 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                       icon: <FaEye size={12} />,
                       onClick: () => onViewDetails(record),
                       className: 'text-blue-600 hover:bg-blue-50'
+                    },
+                    {
+                      label: 'Logs',
+                      icon: <FaHistory size={12} />,
+                      onClick: () => onLogs(record),
+                      className: 'text-slate-600 hover:bg-slate-50'
                     }
                   ]}
                 />
@@ -266,6 +279,7 @@ const AttendanceHistory = () => {
   const [viewMode, setViewMode] = useState('card');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [logsModalRecord, setLogsModalRecord] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
   const [windowWidth, setWindowWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -457,6 +471,7 @@ const AttendanceHistory = () => {
                         activeActionMenu={activeActionMenu}
                         onToggleActionMenu={toggleActionMenu}
                         activeType={activeType}
+                        onLogs={setLogsModalRecord}
                       />
                     ) : (
                       <RecordCards
@@ -465,6 +480,7 @@ const AttendanceHistory = () => {
                         activeActionMenu={activeActionMenu}
                         onToggleActionMenu={toggleActionMenu}
                         activeType={activeType}
+                        onLogs={setLogsModalRecord}
                       />
                     )
                   ) : (
@@ -549,6 +565,7 @@ const AttendanceHistory = () => {
                   activeActionMenu={activeActionMenu}
                   onToggleActionMenu={toggleActionMenu}
                   activeType={activeType}
+                  onLogs={setLogsModalRecord}
                 />
               ) : (
                 <RecordCards
@@ -557,6 +574,7 @@ const AttendanceHistory = () => {
                   activeActionMenu={activeActionMenu}
                   onToggleActionMenu={toggleActionMenu}
                   activeType={activeType}
+                  onLogs={setLogsModalRecord}
                 />
               )
             ) : (
@@ -584,6 +602,16 @@ const AttendanceHistory = () => {
       <AnimatePresence>
         {modalOpen && selectedRecord && (
           <DetailsModal record={selectedRecord} onClose={closeModal} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {logsModalRecord && (
+          <AttendanceLogsModal
+            id={logsModalRecord.id}
+            type={logsModalRecord.type || activeType}
+            onClose={() => setLogsModalRecord(null)}
+          />
         )}
       </AnimatePresence>
     </div>
