@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaChevronLeft,
@@ -22,8 +22,37 @@ const MyCalendar = () => {
 
   const month = currentDate.getMonth() + 1;
   const year = currentDate.getFullYear();
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const lastFetchedKeyRef = useRef(null);
+
+  const calendarSummary = useMemo(() => {
+    if (!calendarData) return null;
+    let present = 0, absent = 0, holidays = 0, leaves = 0, weekends = 0;
+    Object.values(calendarData).forEach(day => {
+      if (day.status === 'present') present++;
+      else if (day.status === 'absent') absent++;
+      else if (day.status === 'holiday') holidays++;
+      else if (day.status === 'leave') leaves++;
+      else if (day.status === 'weekend') weekends++;
+    });
+    const totalWorkingDays = present + absent + leaves;
+    const attendance_percentage = totalWorkingDays > 0 ? ((present / totalWorkingDays) * 100).toFixed(1) : 0;
+    
+    return {
+      total_present: present,
+      total_absent: absent,
+      total_holidays: holidays,
+      total_leave: leaves,
+      total_weekends: weekends,
+      attendance_percentage
+    };
+  }, [calendarData]);
 
   useEffect(() => {
+    const fetchKey = `${month}-${year}`;
+    if (lastFetchedKeyRef.current === fetchKey) return;
+    lastFetchedKeyRef.current = fetchKey;
+
     const fetchCalendar = async () => {
       setLoading(true);
       setError(null);
@@ -77,7 +106,7 @@ const MyCalendar = () => {
       }
       
       const dateStr = dateObj.toISOString().split('T')[0];
-      const dayData = calendarData?.days?.[dateStr] || null;
+      const dayData = calendarData?.[dateStr] || null;
       
       grid.push({
         date: dateObj,
@@ -112,12 +141,12 @@ const MyCalendar = () => {
       <div className="max-w-screen-2xl mx-auto px-4 pb-8">
         {/* Top Summary Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-          <SummaryCard label="Present" value={calendarData?.summary?.total_present || 0} icon={FaCheckCircle} color="text-emerald-600" bg="bg-emerald-50" />
-          <SummaryCard label="Absent" value={calendarData?.summary?.total_absent || 0} icon={FaTimesCircle} color="text-rose-600" bg="bg-rose-50" />
-          <SummaryCard label="Holidays" value={calendarData?.summary?.total_holidays || 0} icon={FaUmbrellaBeach} color="text-amber-600" bg="bg-amber-50" />
-          <SummaryCard label="Leaves" value={calendarData?.summary?.total_leave || 0} icon={FaInfoCircle} color="text-violet-600" bg="bg-violet-50" />
-          <SummaryCard label="Weekends" value={calendarData?.summary?.total_weekends || 0} icon={FaCalendarAlt} color="text-slate-600" bg="bg-slate-50" />
-          <SummaryCard label="Attendance %" value={`${calendarData?.summary?.attendance_percentage || 0}%`} icon={FaSpinner} color="text-indigo-600" bg="bg-indigo-50" />
+          <SummaryCard label="Present" value={calendarSummary?.total_present || 0} icon={FaCheckCircle} color="text-emerald-600" bg="bg-emerald-50" />
+          <SummaryCard label="Absent" value={calendarSummary?.total_absent || 0} icon={FaTimesCircle} color="text-rose-600" bg="bg-rose-50" />
+          <SummaryCard label="Holidays" value={calendarSummary?.total_holidays || 0} icon={FaUmbrellaBeach} color="text-amber-600" bg="bg-amber-50" />
+          <SummaryCard label="Leaves" value={calendarSummary?.total_leave || 0} icon={FaInfoCircle} color="text-violet-600" bg="bg-violet-50" />
+          <SummaryCard label="Weekends" value={calendarSummary?.total_weekends || 0} icon={FaCalendarAlt} color="text-slate-600" bg="bg-slate-50" />
+          <SummaryCard label="Attendance %" value={`${calendarSummary?.attendance_percentage || 0}%`} icon={FaSpinner} color="text-indigo-600" bg="bg-indigo-50" />
         </div>
 
         {/* Calendar Main Section */}
@@ -135,12 +164,14 @@ const MyCalendar = () => {
               </div>
             </div>
             
-            {calendarData && (
+            {user?.name && (
               <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
                 <FaUser className="text-indigo-600" />
                 <div className="text-left">
-                  <p className="text-xs font-black text-indigo-900 leading-none">{calendarData.name}</p>
-                  <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">{calendarData.employee_code}</p>
+                  <p className="text-xs font-black text-indigo-900 leading-none">{user.name}</p>
+                  {user.employee?.employee_code && (
+                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">{user.employee.employee_code}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -175,10 +206,21 @@ const MyCalendar = () => {
                 </div>
                 
                 {cell.data && cell.isCurrentMonth && (
-                  <div className="space-y-1">
-                    <StatusBadge status={cell.data.status} type={cell.data.type} />
-                    {cell.data.name && (
-                      <p className="text-[10px] font-bold leading-tight break-words">{cell.data.name}</p>
+                  <div className="space-y-1 mt-1">
+                    <StatusBadge 
+                      status={cell.data.status} 
+                      type={cell.data.is_leave?.type || cell.data.is_weekend?.type} 
+                    />
+                    {cell.data.status === 'holiday' && cell.data.is_holiday?.name && (
+                      <p className="text-[10px] font-bold leading-tight break-words text-amber-700/80">{cell.data.is_holiday.name}</p>
+                    )}
+                    {cell.data.status === 'leave' && cell.data.is_leave?.name && (
+                      <p className="text-[10px] font-bold leading-tight break-words text-violet-700/80">{cell.data.is_leave.name}</p>
+                    )}
+                    {cell.data.status === 'present' && cell.data.worked?.work_hour && (
+                      <div className="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1 py-0.5 rounded uppercase tracking-tighter mt-1">
+                        {cell.data.worked.work_hour}
+                      </div>
                     )}
                   </div>
                 )}

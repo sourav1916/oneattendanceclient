@@ -558,6 +558,11 @@ const LeaveBalanceManagement = () => {
         toast.error('Please keep at least one leave type');
         return;
       }
+    } else if (modalMode === 'delete') {
+      if (!formData.leave_config_id) {
+        toast.error('Please select a leave type to delete');
+        return;
+      }
     }
 
     setSaving(true);
@@ -586,7 +591,7 @@ const LeaveBalanceManagement = () => {
       } else if (modalMode === 'delete') {
         response = await apiCall('/leave/delete-balance', 'DELETE', {
           employee_id: selectedBalance.employee_id,
-          leave_config_id: selectedBalance.leave_config_id,
+          leave_config_id: formData.leave_config_id,
         }, getCompanyId());
       }
 
@@ -1161,10 +1166,27 @@ const LeaveBalanceManagement = () => {
                       <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
                     </div>
                   </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6">
+                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6 space-y-4">
                     <p className="text-gray-600 text-sm leading-relaxed text-center">
-                      Are you sure you want to delete this leave balance? This cannot be undone.
+                      Select the leave balance you want to delete for <span className="font-bold">{selectedBalance?.employee_name}</span>. This cannot be undone.
                     </p>
+                    <div className="max-w-xs mx-auto">
+                      <SearchableSelect
+                        label="Leave Type to Delete"
+                        placeholder="Choose..."
+                        value={formData.leave_config_id}
+                        onChange={(val) => setFormData(prev => ({ ...prev, leave_config_id: val }))}
+                        options={selectedBalance?.leaves || []}
+                        getOptionLabel={(l) => `${l.name} (${l.code})`}
+                        getOptionValue={(l) => l.leave_config_id}
+                        renderOption={(l) => (
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-slate-800 text-sm">{l.name}</span>
+                            <span className="text-[10px] font-bold text-slate-400">{l.code}</span>
+                          </div>
+                        )}
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
                     <button
@@ -1178,7 +1200,7 @@ const LeaveBalanceManagement = () => {
                     <button
                       type="button"
                       onClick={handleAction}
-                      disabled={saving || deleteAccess.disabled}
+                      disabled={saving || !formData.leave_config_id || deleteAccess.disabled}
                       title={deleteAccess.disabled ? deleteMessage : ''}
                       className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
