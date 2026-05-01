@@ -33,27 +33,31 @@ const customSelectStyles = {
     }),
 };
 
-export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess }) => {
+export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, forcedType }) => {
     const [loading, setLoading] = useState(false);
     const [employeesLoading, setEmployeesLoading] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
         employee_id: null,
-        attendance_date: new Date().toISOString().split('T')[0],
-        punch_type: 'work',
-        punch_in: '09:00:00',
-        punch_out: '18:00:00'
+        punch_date: new Date().toISOString().split('T')[0],
+        type: forcedType || 'work',
+        start_time: null,
+        end_time: null,
+        notes: '',
+        is_deductible: 0
     });
 
     useEffect(() => {
         if (!isOpen) return;
         setFormData({
             employee_id: null,
-            attendance_date: new Date().toISOString().split('T')[0],
-            punch_type: 'work',
-            punch_in: '09:00:00',
-            punch_out: '18:00:00'
+            punch_date: new Date().toISOString().split('T')[0],
+            type: forcedType || 'work',
+            start_time: null,
+            end_time: null,
+            notes: '',
+            is_deductible: 0
         });
         setSearchTerm('');
         setEmployees([]);
@@ -102,10 +106,20 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
 
         setLoading(true);
         try {
-            const response = await apiCall('/attendance/create', 'POST', {
-                ...formData,
-                employee_id: formData.employee_id.value
-            }, companyId);
+            const payload = {
+                type: formData.type,
+                employee_id: formData.employee_id.value,
+                punch_date: formData.punch_date,
+                start_time: formData.start_time,
+                end_time: formData.end_time,
+                notes: formData.notes
+            };
+
+            if (formData.type === 'break') {
+                payload.is_deductible = formData.is_deductible;
+            }
+
+            const response = await apiCall('/attendance/create', 'POST', payload, companyId);
             const result = await response.json();
             if (result.success) {
                 toast.success('Attendance created successfully');
@@ -144,7 +158,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 18 }}
                         transition={{ type: "spring", damping: 25, stiffness: 280 }}
-                        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
+                        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
                     >
                         <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
                             <div className="flex justify-between items-center">
@@ -191,8 +205,8 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                                             <FaCalendarAlt className="h-4 w-4 text-indigo-500" /> Date
                                         </label>
                                         <DatePickerField
-                                            value={formData.attendance_date}
-                                            onChange={(val) => setFormData(prev => ({ ...prev, attendance_date: val }))}
+                                            value={formData.punch_date}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, punch_date: val }))}
                                             mode="single"
                                             buttonClassName="w-full h-12 bg-white border-slate-200 rounded-xl"
                                         />
@@ -203,8 +217,9 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                                         </label>
                                         <SelectField
                                             options={TYPE_OPTIONS}
-                                            value={TYPE_OPTIONS.find(o => o.value === formData.punch_type)}
-                                            onChange={(val) => setFormData(prev => ({ ...prev, punch_type: val.value }))}
+                                            value={TYPE_OPTIONS.find(o => o.value === formData.type)}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, type: val.value }))}
+                                            isDisabled={!!forcedType}
                                             styles={customSelectStyles}
                                         />
                                     </div>
@@ -214,11 +229,11 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                             <FaClock className="h-4 w-4 text-indigo-500" />
-                                            {formData.punch_type === 'break' ? 'Break In Time' : 'Punch In Time'}
+                                            {formData.type === 'break' ? 'Break In Time' : 'Punch In Time'}
                                         </label>
                                         <TimeDurationPickerField
-                                            value={formData.punch_in}
-                                            onChange={(val) => setFormData(prev => ({ ...prev, punch_in: val }))}
+                                            value={formData.start_time}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, start_time: val }))}
                                             mode="time"
                                             className="w-full h-12"
                                         />
@@ -226,15 +241,45 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess })
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                             <FaClock className="h-4 w-4 text-indigo-500" />
-                                            {formData.punch_type === 'break' ? 'Break Out Time' : 'Punch Out Time'}
+                                            {formData.type === 'break' ? 'Break Out Time' : 'Punch Out Time'}
                                         </label>
                                         <TimeDurationPickerField
-                                            value={formData.punch_out}
-                                            onChange={(val) => setFormData(prev => ({ ...prev, punch_out: val }))}
+                                            value={formData.end_time}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, end_time: val }))}
                                             mode="time"
                                             className="w-full h-12"
                                         />
                                     </div>
+                                </div>
+
+                                {formData.type === 'break' && (
+                                    <div className="space-y-2">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                            <FaCheck className="h-4 w-4 text-indigo-500" /> Is Deductible
+                                        </label>
+                                        <SelectField
+                                            options={[
+                                                { value: 1, label: 'Yes, Deduct from work hours' },
+                                                { value: 0, label: 'No, Paid break' }
+                                            ]}
+                                            value={{ value: formData.is_deductible, label: formData.is_deductible === 1 ? 'Yes, Deduct from work hours' : 'No, Paid break' }}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, is_deductible: val.value }))}
+                                            styles={customSelectStyles}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaStickyNote className="h-4 w-4 text-indigo-500" /> Notes
+                                    </label>
+                                    <textarea
+                                        value={formData.notes}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                                        placeholder="Add manual entry notes..."
+                                        className="w-full border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm resize-none"
+                                        rows={3}
+                                    />
                                 </div>
                             </form>
                         </div>
@@ -340,7 +385,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 18 }}
                         transition={{ type: "spring", damping: 25, stiffness: 280 }}
-                        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
+                        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
                     >
                         <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
                             <div className="flex justify-between items-center">

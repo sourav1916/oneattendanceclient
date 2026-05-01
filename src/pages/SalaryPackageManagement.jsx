@@ -799,38 +799,24 @@ const SalaryPackages = () => {
     const totalComponents = packages.reduce((s, p) => s + (p.items?.length || 0), 0);
 
     const emptyState = (
-        <ManagementCard
-            accent="blue"
-            className="mx-auto max-w-xl"
-            hoverable={false}
-            bodyClassName="pt-0"
-        >
-            <div className="text-center py-10">
-                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-violet-100">
-                    <FaBriefcase className="text-4xl text-gray-300" />
-                </div>
-                <p className="text-xl font-semibold text-gray-700">No packages found</p>
-                <p className="mt-2 text-sm text-gray-400">
-                    {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Create your first salary package to get started'}
-                </p>
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                    {debouncedSearch ? (
-                        <ManagementButton tone="blue" variant="soft" onClick={() => setSearchTerm('')}>
-                            Clear Search
-                        </ManagementButton>
-                    ) : (
-                        <ManagementButton
-                            tone="blue"
-                            variant="solid"
-                            leftIcon={<FaPlus />}
-                            onClick={openCreate}
-                        >
-                            Create Package
-                        </ManagementButton>
-                    )}
-                </div>
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-16 bg-white rounded-xl shadow-xl border border-gray-100">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaBriefcase className="text-4xl text-gray-300" />
             </div>
-        </ManagementCard>
+            <p className="text-xl font-semibold text-gray-600">No packages found</p>
+            <p className="text-gray-400 mt-2 text-sm">
+                {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Create your first salary package to get started'}
+            </p>
+            {debouncedSearch ? (
+                <button onClick={() => setSearchTerm('')} className="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-sm font-medium">
+                    Clear Search
+                </button>
+            ) : (
+                <button onClick={openCreate} className="mt-4 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all text-sm font-medium">
+                    Create Package
+                </button>
+            )}
+        </motion.div>
     );
 
     if (isInitialLoad && loading) return <SkeletonComponent />;

@@ -880,6 +880,7 @@ const PendingAttendance = ({ companyId }) => {
                         onClose={() => setShowCreateModal(false)}
                         companyId={resolvedCompanyId}
                         onSuccess={() => fetchPendingAttendances(true)}
+                        forcedType={attendanceType}
                     />
                 )}
             </AnimatePresence>

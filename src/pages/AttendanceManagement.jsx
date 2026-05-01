@@ -232,7 +232,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 18 }}
         transition={{ type: "spring", damping: 25, stiffness: 280 }}
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
+        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
@@ -388,7 +388,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
                   <div className="col-span-2 sm:col-span-1">
                     <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">IP Address</label>
                     <p className="font-medium text-gray-800 text-[11px] truncate">
-                        {[attendance.punch_in?.ip, attendance.punch_out?.ip, attendance.location?.ip_address].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' / ')}
+                      {[attendance.punch_in?.ip, attendance.punch_out?.ip, attendance.location?.ip_address].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' / ')}
                     </p>
                   </div>
                 )}
@@ -962,6 +962,7 @@ const AttendanceManagement = ({ companyId }) => {
             onClose={() => setShowCreateModal(false)}
             companyId={resolvedCompanyId}
             onSuccess={() => fetchAttendances(true)}
+            forcedType={attendanceType}
           />
         )}
       </AnimatePresence>

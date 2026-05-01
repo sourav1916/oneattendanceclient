@@ -315,6 +315,19 @@ export const TimeDurationPickerField = ({
           <span className={`flex-1 text-xs font-bold ${value ? "text-slate-900" : "text-slate-400"}`}>
             {displayValue || placeholder || defaultPlaceholder}
           </span>
+          {value && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange(null);
+              }}
+              className="group/clear rounded-md p-1 text-slate-300 transition-all hover:bg-red-50 hover:text-red-500"
+              title="Clear time"
+            >
+              <FaTimes size={10} />
+            </button>
+          )}
         </div>
 
         {isOpen &&
