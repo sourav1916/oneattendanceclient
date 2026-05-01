@@ -18,7 +18,7 @@ const TYPE_OPTIONS = [
 const customSelectStyles = {
     control: (base, state) => ({
         ...base,
-        minHeight: "48px",
+        minHeight: "40px",
         borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
         boxShadow: state.isFocused ? "0 0 0 3px rgba(99, 102, 241, 0.1)" : "none",
         "&:hover": { borderColor: "#6366f1" },
@@ -158,13 +158,13 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 18 }}
                         transition={{ type: "spring", damping: 25, stiffness: 280 }}
-                        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
+                        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10 m-auto"
                     >
-                        <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+                        <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                                        <FaPlus className="h-6 w-6 text-white" />
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
+                                        <FaPlus className="h-5 w-5 text-white" />
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-bold text-slate-900">Create Attendance</h2>
@@ -180,8 +180,8 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-6 py-6">
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="flex-1 overflow-y-auto px-5 py-4">
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                         <FaUser className="h-4 w-4 text-indigo-500" /> Employee <span className="text-red-500">*</span>
@@ -208,7 +208,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                             value={formData.punch_date}
                                             onChange={(val) => setFormData(prev => ({ ...prev, punch_date: val }))}
                                             mode="single"
-                                            buttonClassName="w-full h-12 bg-white border-slate-200 rounded-xl"
+                                            buttonClassName="w-full h-10 bg-white border-slate-200 rounded-xl"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -225,7 +225,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                             <FaClock className="h-4 w-4 text-indigo-500" />
@@ -235,7 +235,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                             value={formData.start_time}
                                             onChange={(val) => setFormData(prev => ({ ...prev, start_time: val }))}
                                             mode="time"
-                                            className="w-full h-12"
+                                            className="w-full h-10"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -247,7 +247,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                             value={formData.end_time}
                                             onChange={(val) => setFormData(prev => ({ ...prev, end_time: val }))}
                                             mode="time"
-                                            className="w-full h-12"
+                                            className="w-full h-10"
                                         />
                                     </div>
                                 </div>
@@ -284,7 +284,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                             </form>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-5 py-3 shrink-0">
                             <button
                                 type="button"
                                 onClick={onClose}
@@ -385,13 +385,13 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 18 }}
                         transition={{ type: "spring", damping: 25, stiffness: 280 }}
-                        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
+                        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10 m-auto"
                     >
-                        <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+                        <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                                        <FaClock className="h-6 w-6 text-white" />
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
+                                        <FaClock className="h-5 w-5 text-white" />
                                     </div>
                                     <div>
                                         <h2 className="text-xl font-bold text-slate-900">Edit Attendance</h2>
@@ -407,8 +407,8 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-6 py-6">
-                            <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="flex-1 overflow-y-auto px-5 py-4">
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                         <FaUser className="h-4 w-4 text-indigo-500" /> Employee <span className="text-red-500">*</span>
@@ -430,7 +430,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             value={formData.attendance_date}
                                             onChange={(val) => setFormData(prev => ({ ...prev, attendance_date: val }))}
                                             mode="single"
-                                            buttonClassName="w-full h-12 bg-white border-slate-200 rounded-xl"
+                                            buttonClassName="w-full h-10 bg-white border-slate-200 rounded-xl"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -447,7 +447,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                             <FaClock className="h-4 w-4 text-indigo-500" />
@@ -457,7 +457,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             value={formData.punch_in}
                                             onChange={(val) => setFormData(prev => ({ ...prev, punch_in: val }))}
                                             mode="time"
-                                            className="w-full h-12"
+                                            className="w-full h-10"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -469,7 +469,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             value={formData.punch_out}
                                             onChange={(val) => setFormData(prev => ({ ...prev, punch_out: val }))}
                                             mode="time"
-                                            className="w-full h-12"
+                                            className="w-full h-10"
                                         />
                                     </div>
                                 </div>
@@ -489,7 +489,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                             </form>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-5 py-3 shrink-0">
                             <button
                                 type="button"
                                 onClick={onClose}

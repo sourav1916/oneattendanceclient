@@ -709,7 +709,7 @@ const PendingAttendance = ({ companyId }) => {
                         onClick={() => setShowCreateModal(true)}
                         size="sm"
                     >
-                        <span>Create<span className="hidden lg:inline"> Attendance</span></span>
+                        <span>Create</span>
                     </ManagementButton>
                 </div>
             }
