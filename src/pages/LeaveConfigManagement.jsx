@@ -235,24 +235,22 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
         <ModalScrollLock />
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-          className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+          className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <FaEye className="text-white text-sm" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold">Leave Type Details</h2>
-                  <p className="text-xs text-white/80">{record.name} · {record.code}</p>
-                </div>
+          <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-indigo-200">
+                <FaEye className="h-6 w-6 text-white" />
               </div>
-              <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
-                <FaTimes size={20} />
-              </button>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Leave Type Details</h2>
+                <p className="text-sm text-slate-500">{record.name} · {record.code}</p>
+              </div>
             </div>
+            <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+              <FaTimes className="h-4 w-4" />
+            </button>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
@@ -328,22 +326,22 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
       initial={{ scale: 0.9, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }}
       exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-      className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+      className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <FaTrash className="text-white text-sm" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold">Delete Leave Type</h2>
-              <p className="text-xs text-white/80">{leaveType?.name}</p>
-            </div>
+      <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-rose-200">
+            <FaTrash className="h-6 w-6 text-white" />
           </div>
-          <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Delete Leave Type</h2>
+            <p className="text-sm text-slate-500">{leaveType?.name}</p>
+          </div>
         </div>
+        <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+          <FaTimes className="h-4 w-4" />
+        </button>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6">
         <p className="text-gray-600 text-sm leading-relaxed text-center">
@@ -441,24 +439,22 @@ const FormModal = ({
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }}
         exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-        className="bg-white backdrop-blur-xl w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+        className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-[10] bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                {isEdit ? <FaEdit className="text-white text-sm" /> : <FaPlus className="text-white text-sm" />}
-              </div>
-              <div>
-                <h2 className="text-lg font-bold">{isEdit ? 'Edit Leave Type' : 'Create Leave Type'}</h2>
-                <p className="text-xs text-white/80">{isEdit ? `Editing ${form.name}` : 'Configure a new leave type'}</p>
-              </div>
+        <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg shadow-indigo-200">
+              {isEdit ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
             </div>
-            <button type="button" onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
-              <FaTimes size={20} />
-            </button>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">{isEdit ? 'Edit Leave Type' : 'Create Leave Type'}</h2>
+              <p className="text-sm text-slate-500">{isEdit ? `Editing ${form.name}` : 'Configure a new leave type'}</p>
+            </div>
           </div>
+          <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+            <FaTimes className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 px-6 sm:px-8 py-6">

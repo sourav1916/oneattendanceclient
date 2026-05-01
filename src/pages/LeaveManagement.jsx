@@ -474,20 +474,20 @@ const LeaveManagement = () => {
                     {detailLeave && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setDetailLeave(null)}>
                             <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="bg-white backdrop-blur-xl w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="sticky top-0 z-[10] bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                                <FaEye className="text-white text-sm" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-lg font-bold">Leave Details</h2>
-                                                <p className="text-xs text-white/80">{detailLeave.employee_name} · <StatusBadge status={detailLeave.status} /></p>
-                                            </div>
+                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
+                                            <FaEye className="h-6 w-6 text-white" />
                                         </div>
-                                        <button onClick={() => setDetailLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-slate-900">Leave Details</h2>
+                                            <div className="flex items-center gap-2 mt-0.5"><span className="text-sm text-slate-500">{detailLeave.employee_name}</span> <StatusBadge status={detailLeave.status} /></div>
+                                        </div>
                                     </div>
+                                    <button onClick={() => setDetailLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                                        <FaTimes className="h-4 w-4" />
+                                    </button>
                                 </div>
                                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
                                     <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
@@ -533,20 +533,20 @@ const LeaveManagement = () => {
                     {approveLeave && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setApproveLeave(null)}>
                             <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="sticky top-0 z-[10] bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-t-[10px] px-6 py-5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                                <FaCheck className="text-white text-sm" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-lg font-bold">Approve Leave</h2>
-                                                <p className="text-xs text-white/80">{approveLeave.employee_name}</p>
-                                            </div>
+                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-green-200">
+                                            <FaCheck className="h-6 w-6 text-white" />
                                         </div>
-                                        <button onClick={() => setApproveLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-slate-900">Approve Leave</h2>
+                                            <p className="text-sm text-slate-500">{approveLeave.employee_name}</p>
+                                        </div>
                                     </div>
+                                    <button onClick={() => setApproveLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                                        <FaTimes className="h-4 w-4" />
+                                    </button>
                                 </div>
                                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 py-6">
                                     <p className="text-gray-600 text-sm leading-relaxed">Are you sure you want to approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>?</p>
@@ -569,20 +569,20 @@ const LeaveManagement = () => {
                     {rejectLeave && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setRejectLeave(null)}>
                             <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="bg-white backdrop-blur-xl w-full max-w-md max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="sticky top-0 z-[10] bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-t-[10px] px-6 py-5">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                                <FaTrash className="text-white text-sm" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-lg font-bold">Reject Leave</h2>
-                                                <p className="text-xs text-white/80">{rejectLeave.employee_name}</p>
-                                            </div>
+                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-200">
+                                            <FaTrash className="h-6 w-6 text-white" />
                                         </div>
-                                        <button onClick={() => setRejectLeave(null)} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-slate-900">Reject Leave</h2>
+                                            <p className="text-sm text-slate-500">{rejectLeave.employee_name}</p>
+                                        </div>
                                     </div>
+                                    <button onClick={() => setRejectLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                                        <FaTimes className="h-4 w-4" />
+                                    </button>
                                 </div>
                                 <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 py-6">
                                     <p className="text-gray-600 text-sm leading-relaxed">Please provide a reason for rejecting <span className="font-bold text-gray-800">{rejectLeave.employee_name}</span>'s request.</p>

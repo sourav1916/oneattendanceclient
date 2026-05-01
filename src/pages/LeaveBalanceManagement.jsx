@@ -17,7 +17,6 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import YearPicker from '../components/YearPicker';
 
 const ITEMS_PER_PAGE = 10;
-const YEAR_OPTIONS = [2024, 2025, 2026, 2027];
 const FETCH_BATCH_SIZE = 100;
 const employeeBalanceRequests = new Map();
 
@@ -936,7 +935,6 @@ const LeaveBalanceManagement = () => {
               <YearPicker
                 value={selectedYear}
                 onChange={setSelectedYear}
-                options={YEAR_OPTIONS}
               />
             </div>
           </div>
@@ -1006,7 +1004,7 @@ const LeaveBalanceManagement = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
             onMouseDown={(event) => event.target === event.currentTarget && closeViewModal()}>
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-2xl flex flex-col overflow-hidden max-h-[90vh]">
+              className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden">
               {/* Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white px-6 sm:px-8 py-6">
                 <div className="flex items-start justify-between">
@@ -1126,25 +1124,24 @@ const LeaveBalanceManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`bg-white backdrop-blur-xl w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${modalMode === 'delete' ? 'max-w-md' : 'max-w-3xl'
-                }`}
+              className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (
                 <>
-                  <div className="sticky top-0 z-[10] bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                          <FaTrash className="text-white text-sm" />
-                        </div>
-                        <div>
-                          <h2 className="text-lg font-bold">Delete Leave Balance</h2>
-                          <p className="text-xs text-white/80">This action cannot be undone</p>
-                        </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-rose-200">
+                        <FaTrash className="h-6 w-6 text-white" />
                       </div>
-                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">Delete Leave Balance</h2>
+                        <p className="text-sm text-slate-500">This action cannot be undone</p>
+                      </div>
                     </div>
+                    <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                      <FaTimes className="h-4 w-4" />
+                    </button>
                   </div>
                   <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6 space-y-4">
                     <p className="text-gray-600 text-sm leading-relaxed text-center">
