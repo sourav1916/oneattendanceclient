@@ -273,50 +273,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
   );
 };
 
-const Modal = ({ open, title, subtitle, onClose, children }) => {
-  useEffect(() => {
-    if (open) {
-      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-      const originalStyle = {
-        overflow: document.body.style.overflow,
-        paddingRight: document.body.style.paddingRight,
-        height: document.body.style.height
-      };
 
-      document.body.style.overflow = 'hidden';
-      document.body.style.height = '100vh';
-      document.documentElement.style.overflow = 'hidden';
-      if (scrollBarWidth > 0) {
-        document.body.style.paddingRight = `${scrollBarWidth}px`;
-      }
-
-      return () => {
-        document.body.style.overflow = originalStyle.overflow;
-        document.body.style.paddingRight = originalStyle.paddingRight;
-        document.body.style.height = originalStyle.height;
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [open]);
-
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className="w-full max-w-xl rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-3 rounded-t-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 text-white">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
-            {subtitle && <p className="mt-0.5 text-[11px] text-white/80 sm:text-xs">{subtitle}</p>}
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 transition hover:bg-white/20">
-            <FaTimes />
-          </button>
-        </div>
-        <div className="max-h-[82vh] overflow-y-auto p-4 sm:p-5">{children}</div>
-      </div>
-    </div>
-  );
-};
 
 const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClose, onSuccess }) => {
   const [form, setForm] = useState({
@@ -475,13 +432,27 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
   };
 
   return (
-    <Modal
-      open={open}
-      title={title}
-      subtitle={isEditing ? 'Edit the request and keep it within your remaining balance.' : 'Create a new request and stay within your remaining balance.'}
-      onClose={onClose}
-    >
-      <form onSubmit={submit} className="space-y-3">
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+          <ModalScrollLock />
+          <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-3xl max-h-[85vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
+               <div className="flex items-center gap-3">
+                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${isEditing ? 'from-purple-500 to-fuchsia-600 shadow-purple-200' : 'from-violet-500 to-purple-600 shadow-violet-200'} shadow-lg`}>
+                       {isEditing ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
+                   </div>
+                   <div>
+                       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+                       <p className="text-sm text-slate-500">{isEditing ? 'Edit the request and keep it within your remaining balance.' : 'Create a new request and stay within your remaining balance.'}</p>
+                   </div>
+               </div>
+               <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                   <FaTimes className="h-4 w-4" />
+               </button>
+            </div>
+            <form onSubmit={submit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6 space-y-5">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Mode</p>
@@ -792,16 +763,19 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
           )}
         </div>
 
-        <div className="flex gap-2 pt-2">
-          <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-gray-200 bg-white py-2 text-sm font-medium text-gray-700" disabled={saving}>
-            Cancel
-          </button>
-          <button type="submit" disabled={saving || isUploading} className="flex-1 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 py-2 text-sm font-medium text-white disabled:opacity-50">
-            {saving ? <FaSpinner className="inline animate-spin" /> : 'Save'}
-          </button>
-        </div>
-      </form>
-    </Modal>
+              </div>
+              <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-white">
+                <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all" disabled={saving}>Cancel</button>
+                <button type="submit" disabled={saving || isUploading} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-fuchsia-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                  {saving ? <FaSpinner className="animate-spin" /> : (isEditing ? <FaEdit /> : <FaPlus />)}
+                  {saving ? 'Saving...' : 'Save Application'}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -1243,95 +1217,112 @@ const MyLeave = () => {
       </div>
 
       {/* Modals */}
-      <Modal open={!!viewLeave} title="Leave Details" onClose={() => setViewLeave(null)}>
+      <AnimatePresence>
         {viewLeave && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs text-gray-500">Leave Type</p>
-                <LeaveTypeBadge name={viewLeave.leave_type_name} isPaid={viewLeave.is_paid} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Status</p>
-                <StatusBadge status={viewLeave.status} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Start Date</p>
-                <p className="font-medium">{formatDate(viewLeave.start_date)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">End Date</p>
-                <p className="font-medium">{formatDate(viewLeave.end_date)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Duration</p>
-                <p className="font-medium">
-                  {formatDays(viewLeave.total_days)} day(s)
-                  {viewLeave.is_half_day && ` (${viewLeave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Applied On</p>
-                <p className="font-medium">{formatDateTime(viewLeave.applied_at)}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Reason</p>
-              <div className="mt-1 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">{viewLeave.reason || 'N/A'}</div>
-            </div>
-            {viewLeave.approval_remarks && (
-              <div>
-                <p className="text-xs text-gray-500">Remarks</p>
-                <div className="mt-1 rounded-lg bg-yellow-50 p-3 text-sm text-gray-700">{viewLeave.approval_remarks}</div>
-              </div>
-            )}
-            {viewLeave.attachments?.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Attachments</p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {viewLeave.attachments.map((file) => {
-                    const isImage = isImageAttachment(file);
-                    return (
-                      <a
-                        key={file.id}
-                        href={file.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="group overflow-hidden rounded-xl border border-gray-200 bg-gray-50 transition-all hover:border-purple-300 hover:shadow-md"
-                      >
-                        <div className="relative aspect-square flex items-center justify-center">
-                          {isImage ? (
-                            <img
-                              src={file.file_url}
-                              alt={file.original_name}
-                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = 'https://placehold.co/100x100?text=Error';
-                              }}
-                            />
-                          ) : (
-                            <div className="flex flex-col items-center gap-2 text-gray-400">
-                              <FaPaperclip size={24} />
-                              <span className="px-2 text-center text-[10px] font-medium line-clamp-2">{file.original_name}</span>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 text-transparent transition-all group-hover:bg-black/20 group-hover:text-white">
-                            <FaEye size={20} />
-                          </div>
-                        </div>
-                        <div className="border-t bg-white px-2 py-1.5">
-                          <p className="truncate text-[10px] font-medium text-gray-600">{file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}</p>
-                        </div>
-                      </a>
-                    );
-                  })}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setViewLeave(null)}>
+            <ModalScrollLock />
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[85vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 shadow-lg shadow-fuchsia-200">
+                    <FaEye className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900">Leave Details</h2>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <StatusBadge status={viewLeave.status} />
+                    </div>
+                  </div>
                 </div>
+                <button type="button" onClick={() => setViewLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                  <FaTimes className="h-4 w-4" />
+                </button>
               </div>
-            )}
-          </div>
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
+                <div className="p-4 bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-xl border border-violet-100">
+                  <h3 className="text-2xl font-black text-slate-800">{viewLeave.leave_type_name}</h3>
+                  <p className="text-violet-600 mt-1 font-semibold text-sm">{viewLeave.is_paid ? 'Paid Leave' : 'Unpaid Leave'} · {formatDays(viewLeave.total_days)} Days {viewLeave.is_half_day && `(${viewLeave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Start Date</label>
+                    <div className="text-gray-800 font-medium">{formatDate(viewLeave.start_date)}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">End Date</label>
+                    <div className="text-gray-800 font-medium">{formatDate(viewLeave.end_date)}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Applied On</label>
+                    <div className="text-gray-800 font-medium">{formatDateTime(viewLeave.applied_at)}</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Status</label>
+                    <div className="text-gray-800 font-medium"><StatusBadge status={viewLeave.status} /></div>
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Reason / Description</label>
+                  <div className="text-gray-700 text-sm italic leading-relaxed">"{viewLeave.reason || 'No reason provided.'}"</div>
+                </div>
+                {viewLeave.approval_remarks && (
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                    <label className="text-xs font-semibold text-amber-600 uppercase tracking-wider block mb-2">Approval Remarks</label>
+                    <div className="text-amber-800 text-sm">{viewLeave.approval_remarks}</div>
+                  </div>
+                )}
+                {viewLeave.attachments?.length > 0 && (
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Attachments</label>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {viewLeave.attachments.map((file) => {
+                        const isImage = isImageAttachment(file);
+                        return (
+                          <a
+                            key={file.id}
+                            href={file.file_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-violet-300 hover:shadow-md"
+                          >
+                            <div className="relative aspect-square flex items-center justify-center bg-gray-50">
+                              {isImage ? (
+                                <img
+                                  src={file.file_url}
+                                  alt={file.original_name}
+                                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = 'https://placehold.co/100x100?text=Error';
+                                  }}
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center gap-2 text-gray-400">
+                                  <FaPaperclip size={24} />
+                                  <span className="px-2 text-center text-[10px] font-medium line-clamp-2">{file.original_name}</span>
+                                </div>
+                              )}
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/0 text-transparent transition-all group-hover:bg-black/20 group-hover:text-white">
+                                <FaEye size={20} />
+                              </div>
+                            </div>
+                            <div className="border-t border-gray-100 bg-white px-2 py-1.5">
+                              <p className="truncate text-[10px] font-medium text-gray-600">{file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}</p>
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100 bg-white">
+                <button type="button" onClick={() => setViewLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-      </Modal>
+      </AnimatePresence>
 
       <LeaveFormModal
         open={showApply}
@@ -1343,7 +1334,7 @@ const MyLeave = () => {
         onSuccess={() => {
           goToPage(1);
           loadBalances();
-          loadLeaves(1);
+          loadLeaves(1, true);
         }}
       />
 
@@ -1355,7 +1346,7 @@ const MyLeave = () => {
         initialLeave={editLeave}
         onClose={() => setEditLeave(null)}
         onSuccess={() => {
-          loadLeaves(pagination.page);
+          loadLeaves(pagination.page, true);
           loadBalances();
         }}
       />
