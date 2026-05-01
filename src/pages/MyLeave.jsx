@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
   FaCalendarAlt,
   FaEdit,
@@ -831,9 +831,17 @@ const MyLeave = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const loadLeaves = useCallback(async (targetPage = pagination.page) => {
+  const lastRequestKeyRef = useRef('');
+
+  const loadLeaves = useCallback(async (targetPage = pagination.page, force = false) => {
+    const requestKey = `${targetPage}-${pagination.limit}`;
+    if (!force && lastRequestKeyRef.current === requestKey) {
+      return;
+    }
+
     setLoading(true);
     try {
+      lastRequestKeyRef.current = requestKey;
       const result = await request(
         `/leave/my-applications?page=${targetPage}&limit=${pagination.limit}`
       );
@@ -855,10 +863,10 @@ const MyLeave = () => {
         is_last_page: (result.meta?.page || targetPage) >= totalPages,
       });
     } catch (error) {
+      lastRequestKeyRef.current = '';
       toast.error(error.message || 'Failed to load leaves');
     } finally {
       setLoading(false);
-      setIsInitialLoad(false);
     }
   }, [pagination.page, pagination.limit, updatePagination]);
 
@@ -886,8 +894,13 @@ const MyLeave = () => {
     }
   }, []);
 
+  const initialFetchDoneRef = useRef(false);
+
   // Initial load - only once
   useEffect(() => {
+    if (initialFetchDoneRef.current) return;
+    initialFetchDoneRef.current = true;
+
     const loadInitialData = async () => {
       await Promise.all([
         loadLeaveTypes(),
@@ -896,14 +909,12 @@ const MyLeave = () => {
       ]);
     };
     loadInitialData();
-  }, []); // Empty dependency array - runs once on mount
+  }, [loadLeaveTypes, loadBalances, loadLeaves]);
 
   // Handle page changes
   useEffect(() => {
-    if (!isInitialLoad) {
-      loadLeaves(pagination.page);
-    }
-  }, [pagination.page, isInitialLoad, loadLeaves]);
+    loadLeaves(pagination.page);
+  }, [pagination.page, loadLeaves]);
 
   useEffect(() => {
     let timer;
