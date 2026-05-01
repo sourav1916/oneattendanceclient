@@ -1124,7 +1124,7 @@ const LeaveBalanceManagement = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+              className={`relative bg-white backdrop-blur-xl w-full max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${modalMode === 'delete' ? 'max-w-md' : 'max-w-4xl'}`}
               onMouseDown={(event) => event.stopPropagation()}
             >
               {modalMode === 'delete' ? (

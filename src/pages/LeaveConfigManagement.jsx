@@ -326,7 +326,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
       initial={{ scale: 0.9, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }}
       exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }}
-      className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+      className="relative bg-white backdrop-blur-xl w-full max-w-md max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">

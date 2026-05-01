@@ -5,7 +5,7 @@ const YearPicker = ({
   value, 
   onChange, 
   options,
-  minYear = 2010, 
+  minYear = 2020, 
   maxYear = new Date().getFullYear() + 5,
   className = ""
 }) => {
