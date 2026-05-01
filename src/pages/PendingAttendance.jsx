@@ -701,12 +701,13 @@ const PendingAttendance = ({ companyId }) => {
             description="Review and approve employee attendance requests."
             accent="amber"
             actions={
-                <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="flex items-center justify-end gap-2">
                     <ManagementButton
                         tone="blue"
                         variant="solid"
                         leftIcon={<FaPlus />}
                         onClick={() => setShowCreateModal(true)}
+                        size="sm"
                     >
                         <span>Create<span className="hidden lg:inline"> Attendance</span></span>
                     </ManagementButton>
@@ -818,7 +819,7 @@ const PendingAttendance = ({ companyId }) => {
                                                         <ToggleSwitch
                                                             isOn={isSelectionMode}
                                                             onToggle={toggleSelectionMode}
-                                                            accent="amber"
+                                                            accent="blue"
                                                         />
                                                         <span>Employee</span>
                                                     </div>
@@ -837,11 +838,11 @@ const PendingAttendance = ({ companyId }) => {
                                                 <motion.tr
                                                     key={attendance.punch_uid || attendance.punch_id || attendance.id}
                                                     onClick={() => handleViewDetails(attendance)}
-                                                    className={`cursor-pointer transition-colors ${
+                                                    className={`cursor-pointer transition-all duration-300 ${
                                                         selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id) 
                                                             ? 'bg-amber-50/50' 
                                                             : (!attendance.start_time || !attendance.end_time) 
-                                                                ? 'bg-red-50/50 hover:bg-red-100/50' 
+                                                                ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60' 
                                                                 : 'hover:bg-gray-50'
                                                     }`}
                                                 >
@@ -883,8 +884,8 @@ const PendingAttendance = ({ companyId }) => {
                                                                 label: 'Verify',
                                                                 icon: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
                                                                 onClick: () => handleStatusUpdate(attendance, 'verify'),
-                                                                disabled: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) || approveAccess.disabled,
-                                                                title: approveAccess.disabled ? pendingReviewMessage : '',
+                                                                disabled: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) || approveAccess.disabled || !attendance.start_time || !attendance.end_time,
+                                                                title: approveAccess.disabled ? pendingReviewMessage : (!attendance.start_time || !attendance.end_time) ? "Cannot verify record with missing punch times" : "",
                                                                 className: 'text-green-600 hover:bg-green-50'
                                                             },
                                                             {

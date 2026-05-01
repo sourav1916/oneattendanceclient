@@ -500,21 +500,6 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, processi
   );
 };
 
-// Helper Components
-const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
-  <div
-    onClick={(e) => { e.stopPropagation(); onToggle(); }}
-    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
-  >
-    <motion.div
-      className="bg-white w-2.5 h-2.5 rounded-full shadow-md"
-      initial={false}
-      animate={{ x: isOn ? 20 : 0 }}
-      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-    />
-  </div>
-);
-
 // Main Component
 const AttendanceManagement = ({ companyId }) => {
   const { checkActionAccess, getAccessMessage } = usePermissionAccess();
@@ -536,8 +521,6 @@ const AttendanceManagement = ({ companyId }) => {
   const [viewMode, setViewMode] = useState('table');
   const [attendanceType, setAttendanceType] = useState('work');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
   const previousSearchRef = useRef('');
@@ -628,7 +611,6 @@ const AttendanceManagement = ({ companyId }) => {
       toast.error(err.message);
     } finally {
       setLoading(false);
-      setSelectedIds([]); // Clear selection on fetch
     }
   }, [resolvedCompanyId, pagination.page, pagination.limit, debouncedSearchTerm, itemsPerPage, updatePagination, attendanceType]);
 
@@ -666,8 +648,6 @@ const AttendanceManagement = ({ companyId }) => {
       if (response.success) {
         toast.success(idsArray.length > 1 ? 'Records verified successfully' : 'Attendance verified successfully');
         fetchAttendances(true);
-        setSelectedIds([]); // Clear selection
-        setIsSelectionMode(false); // Exit selection mode
         setSelectedAction(null);
         setActiveActionMenu(null);
       } else {
@@ -678,38 +658,6 @@ const AttendanceManagement = ({ companyId }) => {
     } finally {
       setProcessingId(null);
     }
-  };
-
-    const hasIncompleteSelection = selectedIds.some(id => {
-      const att = attendances.find(a => a.id === id);
-      return att && (!att.start_time || !att.end_time);
-    });
-
-    const handleBulkVerify = () => {
-    if (selectedIds.length === 0) return;
-    handleStatusUpdate(selectedIds, 'verify');
-  };
-
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(prev => {
-      if (prev) {
-        setSelectedIds([]);
-      }
-      return !prev;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.length === visibleAttendances.filter(a => a.status === 'pending').length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(visibleAttendances.filter(a => a.status === 'pending').map(a => a.id));
-    }
-  };
-
-  const toggleSelectRow = (e, id) => {
-    e.stopPropagation();
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
   const handleViewDetails = (attendance) => {
@@ -789,12 +737,13 @@ const AttendanceManagement = ({ companyId }) => {
       description="Monitor and manage all employee attendance records and punch logs."
       accent="blue"
       actions={
-        <div className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="flex items-center justify-end gap-2">
           <ManagementButton
             tone="blue"
             variant="solid"
             leftIcon={<FaPlus />}
             onClick={() => setShowCreateModal(true)}
+            size="sm"
           >
             <span>Create<span className="hidden lg:inline"> Attendance</span></span>
           </ManagementButton>
@@ -893,24 +842,7 @@ const AttendanceManagement = ({ companyId }) => {
                   <table className="w-full text-sm text-left text-gray-700">
                     <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 font-bold tracking-wider">
-                          <div className="flex items-center gap-4">
-                            <ToggleSwitch
-                              isOn={isSelectionMode}
-                              onToggle={toggleSelectionMode}
-                              accent="blue"
-                            />
-                            {isSelectionMode && (
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.length > 0 && selectedIds.length === visibleAttendances.filter(a => a.status === 'pending').length}
-                                onChange={toggleSelectAll}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                              />
-                            )}
-                            <span>Employee</span>
-                          </div>
-                        </th>
+                        <th className="px-6 py-4 font-bold tracking-wider">Employee</th>
                         {showDate && <th className="px-6 py-4 font-bold tracking-wider">Date</th>}
                         {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
                         {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
@@ -924,28 +856,14 @@ const AttendanceManagement = ({ companyId }) => {
                         <motion.tr
                           key={attendance.id}
                           onClick={() => handleViewDetails(attendance)}
-                          className={`cursor-pointer transition-colors ${
-                            selectedIds.includes(attendance.id) 
-                              ? 'bg-blue-50/50' 
-                              : (!attendance.start_time || !attendance.end_time) 
-                                ? 'bg-red-50/50 hover:bg-red-100/50' 
+                          className={`cursor-pointer transition-all duration-300 ${
+                            (!attendance.start_time || !attendance.end_time) 
+                                ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60' 
                                 : 'hover:bg-gray-50'
                           }`}
                         >
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-4">
-                              {isSelectionMode && (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedIds.includes(attendance.id)}
-                                    onChange={(e) => toggleSelectRow(e, attendance.id)}
-                                    disabled={attendance.status !== 'pending'}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-30"
-                                  />
-                                </div>
-                              )}
-                              <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${attendanceType === 'break' ? 'bg-indigo-100' : 'bg-blue-100'}`}>
                                   <FaUser className={`${attendanceType === 'break' ? 'text-indigo-600' : 'text-blue-600'}`} />
                                 </div>
@@ -954,7 +872,6 @@ const AttendanceManagement = ({ companyId }) => {
                                   <p className="text-xs text-gray-500">{attendance.employee?.code}</p>
                                 </div>
                               </div>
-                            </div>
                           </td>
                           {showDate && <td className="px-6 py-4 whitespace-nowrap">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</td>}
                           {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</td>}
@@ -1064,41 +981,6 @@ const AttendanceManagement = ({ companyId }) => {
             onSuccess={() => fetchAttendances(true)}
             attendance={selectedAttendance}
           />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {selectedIds.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
-          >
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
-              <span className="text-sm font-black text-slate-800">{selectedIds.length} Selected</span>
-            </div>
-            <div className="h-10 w-px bg-gray-200 mx-2"></div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
-                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                Close
-              </button>
-              <ManagementButton
-                tone="green"
-                variant="solid"
-                leftIcon={processingId === 'bulk' ? <FaSpinner className="animate-spin" /> : <FaCheck />}
-                onClick={handleBulkVerify}
-                disabled={processingId === 'bulk' || approveAccess.disabled || hasIncompleteSelection}
-                className={`shadow-lg ${hasIncompleteSelection ? 'opacity-50 cursor-not-allowed grayscale' : 'shadow-green-200'}`}
-                title={hasIncompleteSelection ? "Some selected records are missing punch times" : ""}
-              >
-                Verify All
-              </ManagementButton>
-            </div>
-          </motion.div>
         )}
       </AnimatePresence>
     </ManagementHub>
