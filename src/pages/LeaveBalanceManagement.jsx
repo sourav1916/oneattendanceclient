@@ -14,6 +14,7 @@ import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import YearPicker from '../components/YearPicker';
 
 const ITEMS_PER_PAGE = 10;
 const YEAR_OPTIONS = [2024, 2025, 2026, 2027];
@@ -931,38 +932,17 @@ const LeaveBalanceManagement = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              {YEAR_OPTIONS.map((year) => (
-                <button
-                  key={year}
-                  onClick={() => setSelectedYear(year)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${selectedYear === year
-                      ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-100'
-                      : 'bg-white border-slate-200 text-slate-500 hover:border-violet-200 hover:text-violet-600'
-                    }`}
-                >
-                  {year}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <YearPicker
+                value={selectedYear}
+                onChange={setSelectedYear}
+                options={YEAR_OPTIONS}
+              />
             </div>
           </div>
 
           {/* Right Section: Controls */}
           <div className="flex items-center gap-3 justify-between sm:justify-end">
-            <motion.button
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => openModal('assign')}
-              disabled={createAccess.disabled}
-              title={createAccess.disabled ? createMessage : ''}
-              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaPlus size={14} />
-              <span className="text-sm">Assign Balance</span>
-            </motion.button>
-
-            {/* Vertical Separator */}
-            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
 
             {/* View Switcher */}
             <ManagementViewSwitcher
