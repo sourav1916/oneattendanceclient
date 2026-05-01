@@ -76,7 +76,7 @@ const pendingAttendanceAPI = {
         return response.json();
     },
 
-    updateAttendanceStatus: async (companyId, attendance, action, notes = '') => {
+    updateAttendanceStatus: async (companyId, punchIds, action, notes = '') => {
         let endpoint = '';
 
         if (action === 'verify' || action === 'approve') {
@@ -86,11 +86,7 @@ const pendingAttendanceAPI = {
         }
 
         const response = await apiCall(endpoint, 'PUT', {
-            punch_id: attendance?.punch_id || attendance?.punch_uid || attendance?.id || null,
-            employee_id: attendance?.employee_id || null,
-            attendance_date: attendance?.attendance_date || null,
-            punch_type: attendance?.punch_type || null,
-            punch_time: attendance?.punch_time || null,
+            punch_ids: Array.isArray(punchIds) ? punchIds : [punchIds],
             notes
         }, companyId);
 
@@ -405,6 +401,20 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, p
     );
 };
 
+const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
+    <div
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+    >
+        <motion.div
+            className="bg-white w-3 h-3 rounded-full shadow-md"
+            initial={false}
+            animate={{ x: isOn ? 20 : 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+    </div>
+);
+
 // Main Component
 const PendingAttendance = ({ companyId }) => {
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
@@ -426,6 +436,8 @@ const PendingAttendance = ({ companyId }) => {
     const [viewMode, setViewMode] = useState('table');
     const [attendanceType, setAttendanceType] = useState('work');
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
     const previousSearchRef = useRef('');
@@ -516,6 +528,7 @@ const PendingAttendance = ({ companyId }) => {
             toast.error(err.message);
         } finally {
             setLoading(false);
+            setSelectedIds([]); // Clear selection on fetch
         }
     }, [resolvedCompanyId, pagination.page, pagination.limit, debouncedSearchTerm, itemsPerPage, updatePagination, attendanceType]);
 
@@ -581,21 +594,22 @@ const PendingAttendance = ({ companyId }) => {
         return attendances.filter((attendance) => pendingAttendanceMatchesDateFilter(attendance, filter));
     }, [attendances, dateFilterLabel]);
 
-    // Handle status update
     const handleStatusUpdate = async (attendance, action) => {
-        await processStatusUpdate(attendance, action, '');
+        const punchKey = attendance?.punch_uid || attendance?.punch_id || attendance?.id;
+        await processStatusUpdate(punchKey, action, '');
     };
 
-    const processStatusUpdate = async (attendance, action, notesText) => {
-        const punchKey = attendance?.punch_uid || attendance?.punch_id || attendance?.id;
-
+    const processStatusUpdate = async (punchIds, action, notesText) => {
         try {
-            setProcessingId(punchKey);
-            const response = await pendingAttendanceAPI.updateAttendanceStatus(resolvedCompanyId, attendance, action, notesText);
+            const idsArray = Array.isArray(punchIds) ? punchIds : [punchIds];
+            setProcessingId(idsArray.length === 1 ? idsArray[0] : 'bulk');
+            const response = await pendingAttendanceAPI.updateAttendanceStatus(resolvedCompanyId, idsArray, action, notesText);
 
             if (response.success) {
-                toast.success(`Attendance verified successfully`);
+                toast.success(idsArray.length > 1 ? 'Records verified successfully' : 'Attendance verified successfully');
                 fetchPendingAttendances(true);
+                setSelectedIds([]); // Clear selection
+                setIsSelectionMode(false); // Exit selection mode
                 setSelectedAction(null);
                 setActiveActionMenu(null);
             } else {
@@ -606,6 +620,38 @@ const PendingAttendance = ({ companyId }) => {
         } finally {
             setProcessingId(null);
         }
+    };
+
+    const hasIncompleteSelection = selectedIds.some(id => {
+        const att = visibleAttendances.find(a => (a.punch_uid || a.punch_id || a.id) === id);
+        return att && (!att.start_time || !att.end_time);
+    });
+
+    const handleBulkVerify = () => {
+        if (selectedIds.length === 0) return;
+        processStatusUpdate(selectedIds, 'verify', '');
+    };
+
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(prev => {
+            if (prev) {
+                setSelectedIds([]);
+            }
+            return !prev;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === visibleAttendances.filter(a => a.status === 'pending').length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(visibleAttendances.filter(a => a.status === 'pending').map(a => a.punch_uid || a.punch_id || a.id));
+        }
+    };
+
+    const toggleSelectRow = (e, id) => {
+        e.stopPropagation();
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
     // Handle view details
@@ -661,7 +707,6 @@ const PendingAttendance = ({ companyId }) => {
                         variant="solid"
                         leftIcon={<FaPlus />}
                         onClick={() => setShowCreateModal(true)}
-                        className="sm:flex"
                     >
                         <span>Create<span className="hidden lg:inline"> Attendance</span></span>
                     </ManagementButton>
@@ -759,7 +804,25 @@ const PendingAttendance = ({ companyId }) => {
                                     <table className="w-full text-sm text-left text-gray-700">
                                         <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs border-b border-gray-200">
                                             <tr>
-                                                <th className="px-6 py-4 font-bold tracking-wider">Employee</th>
+                                                <th className="px-6 py-4 font-bold tracking-wider">
+                                                    <div className="flex items-center gap-4">
+
+                                                        {isSelectionMode && (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedIds.length > 0 && selectedIds.length === visibleAttendances.filter(a => a.status === 'pending').length}
+                                                                onChange={toggleSelectAll}
+                                                                className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                                            />
+                                                        )}
+                                                        <ToggleSwitch
+                                                            isOn={isSelectionMode}
+                                                            onToggle={toggleSelectionMode}
+                                                            accent="amber"
+                                                        />
+                                                        <span>Employee</span>
+                                                    </div>
+                                                </th>
                                                 {showDate && <th className="px-6 py-4 font-bold tracking-wider">Date</th>}
                                                 {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
                                                 {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
@@ -774,16 +837,34 @@ const PendingAttendance = ({ companyId }) => {
                                                 <motion.tr
                                                     key={attendance.punch_uid || attendance.punch_id || attendance.id}
                                                     onClick={() => handleViewDetails(attendance)}
-                                                    className="cursor-pointer hover:bg-gray-50 transition-colors"
+                                                    className={`cursor-pointer transition-colors ${
+                                                        selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id) 
+                                                            ? 'bg-amber-50/50' 
+                                                            : (!attendance.start_time || !attendance.end_time) 
+                                                                ? 'bg-red-50/50 hover:bg-red-100/50' 
+                                                                : 'hover:bg-gray-50'
+                                                    }`}
                                                 >
                                                     <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${attendanceType === 'break' ? 'bg-indigo-100' : 'bg-amber-100'}`}>
-                                                                <FaUser className="text-amber-600" />
-                                                            </div>
-                                                            <div className="truncate max-w-[200px]">
-                                                                <p className="font-medium text-gray-900">{attendance.employee_name || attendance.employee?.name}</p>
-                                                                <p className="text-xs text-gray-500">{attendance.employee_code || attendance.employee?.code}</p>
+                                                        <div className="flex items-center gap-4">
+                                                            {isSelectionMode && (
+                                                                <div onClick={(e) => e.stopPropagation()}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id)}
+                                                                        onChange={(e) => toggleSelectRow(e, attendance.punch_uid || attendance.punch_id || attendance.id)}
+                                                                        className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${attendanceType === 'break' ? 'bg-indigo-100' : 'bg-amber-100'}`}>
+                                                                    <FaUser className="text-amber-600" />
+                                                                </div>
+                                                                <div className="truncate max-w-[200px]">
+                                                                    <p className="font-medium text-gray-900">{attendance.employee_name || attendance.employee?.name}</p>
+                                                                    <p className="text-xs text-gray-500">{attendance.employee_code || attendance.employee?.code}</p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -894,6 +975,41 @@ const PendingAttendance = ({ companyId }) => {
                         onSuccess={() => fetchPendingAttendances(true)}
                         attendance={selectedAttendance}
                     />
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {selectedIds.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 100 }}
+                        className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
+                    >
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
+                            <span className="text-sm font-black text-slate-800">{selectedIds.length} Selected</span>
+                        </div>
+                        <div className="h-10 w-px bg-gray-200 mx-2"></div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
+                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                Close
+                            </button>
+                            <ManagementButton
+                                tone="green"
+                                variant="solid"
+                                leftIcon={processingId === 'bulk' ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                onClick={handleBulkVerify}
+                                disabled={processingId === 'bulk' || approveAccess.disabled || hasIncompleteSelection}
+                                className={`shadow-lg ${hasIncompleteSelection ? 'opacity-50 cursor-not-allowed grayscale' : 'shadow-green-200'}`}
+                                title={hasIncompleteSelection ? "Some selected records are missing punch times" : ""}
+                            >
+                                Verify All
+                            </ManagementButton>
+                        </div>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </ManagementHub>
