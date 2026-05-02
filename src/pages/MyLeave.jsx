@@ -488,332 +488,332 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
       {open && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
           <ModalScrollLock />
-          <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-3xl max-h-[85vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
-               <div className="flex items-center gap-3">
-                   <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${isEditing ? 'from-purple-500 to-fuchsia-600 shadow-purple-200' : 'from-violet-500 to-purple-600 shadow-violet-200'} shadow-lg`}>
-                       {isEditing ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
-                   </div>
-                   <div>
-                       <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-                       <p className="text-sm text-slate-500">{isEditing ? 'Edit the request and keep it within your remaining balance.' : 'Create a new request and stay within your remaining balance.'}</p>
-                   </div>
-               </div>
-               <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
-                   <FaTimes className="h-4 w-4" />
-               </button>
+              <div className="flex items-center gap-3">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${isEditing ? 'from-purple-500 to-fuchsia-600 shadow-purple-200' : 'from-violet-500 to-purple-600 shadow-violet-200'} shadow-lg`}>
+                  {isEditing ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+                  <p className="text-sm text-slate-500">{isEditing ? 'Edit the request and keep it within your remaining balance.' : 'Create a new request and stay within your remaining balance.'}</p>
+                </div>
+              </div>
+              <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                <FaTimes className="h-4 w-4" />
+              </button>
             </div>
             <form onSubmit={submit} className="flex flex-col flex-1 min-h-0">
               <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-6 py-6 space-y-5">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Mode</p>
-            <p className="mt-0.5 text-sm font-semibold text-purple-700">{isEditing ? 'Edit request' : 'New request'}</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Balance</p>
-            <p className="mt-0.5 text-sm font-semibold text-gray-800">{balanceLabel}</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Available balance</p>
-                <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">
-                  {selectedLeaveType ? selectedLeaveType.name : 'Select a leave type'}
-                </p>
-                <p className="truncate text-[11px] text-gray-500">
-                  {selectedLeaveType?.code ? `Code ${selectedLeaveType.code}` : 'Balance comes from the list API'}
-                </p>
-              </div>
-              <div className="flex flex-col items-end">
-                <p className={`text-2xl font-bold ${remainingDays <= 1 ? 'text-rose-600' : 'text-purple-600'}`}>
-                  {selectedLeaveType ? formatDays(remainingDays) : '0'}
-                </p>
-                <p className="text-[10px] uppercase tracking-wide text-gray-400">day(s) left</p>
-              </div>
-            </div>
-            {selectedLeaveBalance?.balance && (
-              <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
-                <span>Used {formatDays(selectedLeaveBalance.balance.used ?? 0)}</span>
-                <span>Total {formatDays(selectedLeaveBalance.balance.total ?? 0)}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Leave Type</label>
-            <select
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-              value={form.leave_config_id}
-              onChange={(e) => setForm((prev) => ({ ...prev, leave_config_id: e.target.value }))}
-              required
-            >
-              <option value="">Select leave type</option>
-              {leaveTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}{type.code ? ` (${type.code})` : ''} {!type.is_paid && '(Unpaid)'}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2 md:items-start">
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <input
-                type="checkbox"
-                checked={form.is_half_day}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setForm((prev) => ({
-                    ...prev,
-                    is_half_day: checked,
-                    half_day_type: checked ? "first_half" : "",
-                  }));
-                }}
-              />
-              Half day
-            </label>
-
-            <div className="mt-3 flex gap-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="half_day_type"
-                  value="first_half"
-                  checked={form.half_day_type === "first_half"}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      is_half_day: true,
-                      half_day_type: e.target.value,
-                    }))
-                  }
-                />
-                First Half
-              </label>
-
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="half_day_type"
-                  value="second_half"
-                  checked={form.half_day_type === "second_half"}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      is_half_day: true,
-                      half_day_type: e.target.value,
-                    }))
-                  }
-                />
-                Second Half
-              </label>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-sm">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
-              <span className={`text-[11px] font-medium ${overBalance ? 'text-rose-600' : 'text-gray-400'}`}>
-                {selectedDays ? `${formatDays(selectedDays)} day(s) selected` : 'Select within balance'}
-              </span>
-            </div>
-            <DateRangePickerField
-              value={{ start: form.start_date, end: form.end_date }}
-              onChange={handleDateChange}
-              placeholder="Select leave dates"
-              buttonClassName="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
-              popoverClassName="mt-2"
-              initialTab="single"
-              mode="range"
-              showQuickSelect={false}
-              minDate={new Date()}
-              maxDays={selectedLeaveType ? Math.max(0, remainingDays) : null}
-            />
-            {selectedLeaveType && (
-              <p className={`mt-2 text-[11px] ${overBalance ? 'text-rose-600' : 'text-gray-500'}`}>
-                {overBalance
-                  ? `Selected range exceeds the available ${formatDays(remainingDays)} day balance.`
-                  : 'The picker will stop at your current balance.'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Reason
-          </label>
-          <textarea
-            rows={3}
-            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
-            placeholder="Please provide a reason for your leave..."
-            value={form.reason}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                reason: e.target.value,
-              }))
-            }
-            required
-          />
-        </div>
-
-
-
-        {initialLeave?.attachments?.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current Attachments</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {initialLeave.attachments.map((file) => {
-                const marked = form.deleted_attachments.includes(file.id);
-                const isImage = isImageAttachment(file);
-                return (
-                  <div key={file.id} className={`group relative overflow-hidden rounded-lg border transition-all ${marked ? 'border-red-200 opacity-60' : 'border-gray-200'}`}>
-                    <div className="flex aspect-square items-center justify-center bg-gray-50">
-                      {isImage ? (
-                        <img
-                          src={file.file_url}
-                          alt={file.original_name}
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = 'https://placehold.co/100x100?text=Error';
-                          }}
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-gray-400">
-                          <FaPaperclip size={24} />
-                          <span className="px-2 text-center text-[10px] line-clamp-2">{file.original_name}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          deleted_attachments: marked
-                            ? prev.deleted_attachments.filter((id) => id !== file.id)
-                            : [...prev.deleted_attachments, file.id],
-                        }))
-                      }
-                      className={`absolute inset-0 flex flex-col items-center justify-center gap-1 transition-all ${marked ? 'bg-red-500/80 text-white' : 'bg-black/0 text-transparent hover:bg-black/40 hover:text-white'}`}
-                    >
-                      {marked ? (
-                        <>
-                          <FaPlus className="rotate-45" />
-                          <span className="text-[10px] font-bold">Restore</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaTrash size={14} />
-                          <span className="text-[10px] font-bold">Remove</span>
-                        </>
-                      )}
-                    </button>
-
-                    <div className="border-t bg-gray-50 px-2 py-1 text-[10px] truncate text-gray-500">
-                      {file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}
-                    </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-purple-400">Mode</p>
+                    <p className="mt-0.5 text-sm font-semibold text-purple-700">{isEditing ? 'Edit request' : 'New request'}</p>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Modern File Upload ── */}
-        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Add Attachments</label>
-
-          {/* Drop Zone */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50'); }}
-            onDragLeave={(e) => e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50');
-              const dt = e.dataTransfer;
-              if (dt?.files) handleAttachmentChange({ target: { files: dt.files } });
-            }}
-            className="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-white px-4 py-5 text-center transition-colors hover:border-purple-300 hover:bg-purple-50/40"
-          >
-            <input
-              type="file"
-              multiple
-              accept=".pdf,.jpg,.jpeg,.png,.webp"
-              onChange={handleAttachmentChange}
-              disabled={isUploading}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            />
-
-            {/* Upload icon */}
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white">
-              <FaUpload className="text-sm text-gray-400" />
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-700">
-                Drop files here or <span className="text-purple-600">click to browse</span>
-              </p>
-              <p className="mt-0.5 text-xs text-gray-400">JPG, JPEG, PNG, WEBP and PDF files only</p>
-            </div>
-          </div>
-
-          {/* Uploading indicator */}
-          {isUploading && (
-            <div className="mt-2 flex items-center gap-2 text-purple-600">
-              <FaSpinner className="animate-spin text-xs" />
-              <span className="text-xs font-medium">Uploading files…</span>
-            </div>
-          )}
-
-          {/* Preview Grid */}
-          {attachmentPreviews.length > 0 && (
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {attachmentPreviews.map((preview, index) => (
-                <div key={preview.key} className="group relative aspect-square overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                  {/* Thumbnail */}
-                  <div className="h-full w-full">
-                    {preview.isImage ? (
-                      <img src={preview.url} alt={preview.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 p-2 text-center">
-                        <FaPaperclip className="text-lg text-orange-400" />
-                        <span className="line-clamp-2 break-all text-[10px] text-gray-500">{preview.name}</span>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Balance</p>
+                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{balanceLabel}</p>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Available balance</p>
+                        <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">
+                          {selectedLeaveType ? selectedLeaveType.name : 'Select a leave type'}
+                        </p>
+                        <p className="truncate text-[11px] text-gray-500">
+                          {selectedLeaveType?.code ? `Code ${selectedLeaveType.code}` : 'Balance comes from the list API'}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <p className={`text-2xl font-bold ${remainingDays <= 1 ? 'text-rose-600' : 'text-purple-600'}`}>
+                          {selectedLeaveType ? formatDays(remainingDays) : '0'}
+                        </p>
+                        <p className="text-[10px] uppercase tracking-wide text-gray-400">day(s) left</p>
+                      </div>
+                    </div>
+                    {selectedLeaveBalance?.balance && (
+                      <div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>Used {formatDays(selectedLeaveBalance.balance.used ?? 0)}</span>
+                        <span>Total {formatDays(selectedLeaveBalance.balance.total ?? 0)}</span>
                       </div>
                     )}
                   </div>
+                </div>
 
-                  {/* File name footer */}
-                  <div className="absolute bottom-0 left-0 right-0 truncate border-t border-gray-200 bg-white/90 px-1.5 py-1 text-[9px] text-gray-500 backdrop-blur-sm">
-                    {preview.name}
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Leave Type</label>
+                    <select
+                      className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                      value={form.leave_config_id}
+                      onChange={(e) => setForm((prev) => ({ ...prev, leave_config_id: e.target.value }))}
+                      required
+                    >
+                      <option value="">Select leave type</option>
+                      {leaveTypes.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}{type.code ? ` (${type.code})` : ''} {!type.is_paid && '(Unpaid)'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 md:items-start">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={form.is_half_day}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setForm((prev) => ({
+                            ...prev,
+                            is_half_day: checked,
+                            half_day_type: checked ? "first_half" : "",
+                          }));
+                        }}
+                      />
+                      Half day
+                    </label>
+
+                    <div className="mt-3 flex gap-4">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="half_day_type"
+                          value="first_half"
+                          checked={form.half_day_type === "first_half"}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              is_half_day: true,
+                              half_day_type: e.target.value,
+                            }))
+                          }
+                        />
+                        First Half
+                      </label>
+
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="radio"
+                          name="half_day_type"
+                          value="second_half"
+                          checked={form.half_day_type === "second_half"}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              is_half_day: true,
+                              half_day_type: e.target.value,
+                            }))
+                          }
+                        />
+                        Second Half
+                      </label>
+                    </div>
                   </div>
 
-                  {/* Remove button */}
-                  <button
-                    type="button"
-                    onClick={() =>
+                  <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-sm">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500">Date Range</label>
+                      <span className={`text-[11px] font-medium ${overBalance ? 'text-rose-600' : 'text-gray-400'}`}>
+                        {selectedDays ? `${formatDays(selectedDays)} day(s) selected` : 'Select within balance'}
+                      </span>
+                    </div>
+                    <DateRangePickerField
+                      value={{ start: form.start_date, end: form.end_date }}
+                      onChange={handleDateChange}
+                      placeholder="Select leave dates"
+                      buttonClassName="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm shadow-sm transition focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                      popoverClassName="mt-2"
+                      initialTab="single"
+                      mode="range"
+                      showQuickSelect={false}
+                      minDate={new Date()}
+                      maxDays={selectedLeaveType ? Math.max(0, remainingDays) : null}
+                    />
+                    {selectedLeaveType && (
+                      <p className={`mt-2 text-[11px] ${overBalance ? 'text-rose-600' : 'text-gray-500'}`}>
+                        {overBalance
+                          ? `Selected range exceeds the available ${formatDays(remainingDays)} day balance.`
+                          : 'The picker will stop at your current balance.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Reason
+                  </label>
+                  <textarea
+                    rows={3}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                    placeholder="Please provide a reason for your leave..."
+                    value={form.reason}
+                    onChange={(e) =>
                       setForm((prev) => ({
                         ...prev,
-                        attachments: prev.attachments.filter((_, i) => i !== index),
+                        reason: e.target.value,
                       }))
                     }
-                    className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                  >
-                    <FaTimes size={8} />
-                  </button>
+                    required
+                  />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+
+
+                {initialLeave?.attachments?.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Current Attachments</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {initialLeave.attachments.map((file) => {
+                        const marked = form.deleted_attachments.includes(file.id);
+                        const isImage = isImageAttachment(file);
+                        return (
+                          <div key={file.id} className={`group relative overflow-hidden rounded-lg border transition-all ${marked ? 'border-red-200 opacity-60' : 'border-gray-200'}`}>
+                            <div className="flex aspect-square items-center justify-center bg-gray-50">
+                              {isImage ? (
+                                <img
+                                  src={file.file_url}
+                                  alt={file.original_name}
+                                  className="h-full w-full object-cover"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = 'https://placehold.co/100x100?text=Error';
+                                  }}
+                                />
+                              ) : (
+                                <div className="flex flex-col items-center gap-2 text-gray-400">
+                                  <FaPaperclip size={24} />
+                                  <span className="px-2 text-center text-[10px] line-clamp-2">{file.original_name}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  deleted_attachments: marked
+                                    ? prev.deleted_attachments.filter((id) => id !== file.id)
+                                    : [...prev.deleted_attachments, file.id],
+                                }))
+                              }
+                              className={`absolute inset-0 flex flex-col items-center justify-center gap-1 transition-all ${marked ? 'bg-red-500/80 text-white' : 'bg-black/0 text-transparent hover:bg-black/40 hover:text-white'}`}
+                            >
+                              {marked ? (
+                                <>
+                                  <FaPlus className="rotate-45" />
+                                  <span className="text-[10px] font-bold">Restore</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FaTrash size={14} />
+                                  <span className="text-[10px] font-bold">Remove</span>
+                                </>
+                              )}
+                            </button>
+
+                            <div className="border-t bg-gray-50 px-2 py-1 text-[10px] truncate text-gray-500">
+                              {file.original_name || (file.file_url ? file.file_url.split('/').pop() : 'Attachment')}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Modern File Upload ── */}
+                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">Add Attachments</label>
+
+                  {/* Drop Zone */}
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-purple-400', 'bg-purple-50'); }}
+                    onDragLeave={(e) => e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50')}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('border-purple-400', 'bg-purple-50');
+                      const dt = e.dataTransfer;
+                      if (dt?.files) handleAttachmentChange({ target: { files: dt.files } });
+                    }}
+                    className="relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 bg-white px-4 py-5 text-center transition-colors hover:border-purple-300 hover:bg-purple-50/40"
+                  >
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={handleAttachmentChange}
+                      disabled={isUploading}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+
+                    {/* Upload icon */}
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white">
+                      <FaUpload className="text-sm text-gray-400" />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">
+                        Drop files here or <span className="text-purple-600">click to browse</span>
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-400">JPG, JPEG, PNG, WEBP and PDF files only</p>
+                    </div>
+                  </div>
+
+                  {/* Uploading indicator */}
+                  {isUploading && (
+                    <div className="mt-2 flex items-center gap-2 text-purple-600">
+                      <FaSpinner className="animate-spin text-xs" />
+                      <span className="text-xs font-medium">Uploading files…</span>
+                    </div>
+                  )}
+
+                  {/* Preview Grid */}
+                  {attachmentPreviews.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {attachmentPreviews.map((preview, index) => (
+                        <div key={preview.key} className="group relative aspect-square overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+                          {/* Thumbnail */}
+                          <div className="h-full w-full">
+                            {preview.isImage ? (
+                              <img src={preview.url} alt={preview.name} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 p-2 text-center">
+                                <FaPaperclip className="text-lg text-orange-400" />
+                                <span className="line-clamp-2 break-all text-[10px] text-gray-500">{preview.name}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* File name footer */}
+                          <div className="absolute bottom-0 left-0 right-0 truncate border-t border-gray-200 bg-white/90 px-1.5 py-1 text-[9px] text-gray-500 backdrop-blur-sm">
+                            {preview.name}
+                          </div>
+
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                attachments: prev.attachments.filter((_, i) => i !== index),
+                              }))
+                            }
+                            className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <FaTimes size={8} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
               </div>
               <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-white">
