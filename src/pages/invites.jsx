@@ -613,8 +613,6 @@ export default function MyInvites() {
 
   if (isInitialLoad && loading) return <Skeleton />;
 
-  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
   return (
     <ManagementHub
       eyebrow={<><FaShieldAlt size={11} /> Invitations</>}
@@ -627,14 +625,14 @@ export default function MyInvites() {
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 px-2 lg:px-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
-          <div className="flex items-center gap-4 flex-1">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
               <input
@@ -655,14 +653,14 @@ export default function MyInvites() {
             </div>
 
             {!loading && invites.length > 0 && (
-              <p className="text-sm text-gray-500 hidden xl:block">
+              <p className="text-sm text-gray-500 hidden xl:block shrink-0">
                 <span className="font-semibold text-gray-800">{invites.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> invitations
                 {debouncedSearchTerm && <span className="ml-1 text-violet-600">· "{debouncedSearchTerm}"</span>}
               </p>
             )}
           </div>
 
-          <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
+          <div className="flex w-full md:w-auto items-center justify-between md:justify-end gap-3">
             <div className="flex items-center gap-2">
               <select
                 value={statusFilter}
