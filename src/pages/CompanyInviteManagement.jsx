@@ -496,8 +496,8 @@ export default function CompanyInvites() {
                           >
                             <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${weekend.type === "half"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-rose-100 text-rose-700"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-rose-100 text-rose-700"
                               }`}>
                               {weekend.type || "full"}
                             </span>
@@ -585,7 +585,7 @@ export default function CompanyInvites() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
+            <div className="flex flex-row sm:items-center gap-3 justify-end">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaUserCheck className="h-4 w-4 text-blue-500" />
                 <span className="font-medium text-gray-700">{invites.length}</span>
@@ -601,7 +601,7 @@ export default function CompanyInvites() {
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2.5 font-bold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FaEnvelope size={14} />
-                <span className="text-sm">Create Invite</span>
+                <span className="text-sm">Create</span>
               </motion.button>
             </div>
           </div>

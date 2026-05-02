@@ -1002,7 +1002,7 @@ const MyLeave = () => {
         <button
           type="button"
           onClick={() => setShowApply(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 font-semibold text-white shadow-lg transition hover:from-violet-700 hover:to-fuchsia-700"
+          className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
         >
           <FaPlus />
           Apply Leave

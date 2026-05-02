@@ -18,7 +18,6 @@ import { ManagementCard, ManagementTable } from "../components/common";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: "basic", label: "Basic", icon: <FaIdCard size={12} /> },
   { key: "permissions", label: "Permissions", icon: <FaShieldAlt size={12} /> },
   { key: "attendance", label: "Attendance", icon: <FaClock size={12} /> },
   { key: "salary", label: "Salary", icon: <FaMoneyBillWave size={12} /> },
@@ -27,7 +26,7 @@ const TABS = [
   { key: "leaves", label: "Leaves", icon: <FaUmbrellaBeach size={12} /> },
 ];
 const PROFILE_TAB_IDS = new Set(TABS.map((tab) => tab.key));
-const DEFAULT_PROFILE_TAB = "basic";
+const DEFAULT_PROFILE_TAB = "permissions";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = (str) =>
@@ -289,13 +288,11 @@ export default function EmployeeProfilePage() {
                 onTabChange={handleTabChange}
               >
                 <div className="space-y-4">
-                  {activeTab !== DEFAULT_PROFILE_TAB && (
-                    <TabContent
-                      tabKey={activeTab}
-                      tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"}
-                      employeeId={profile.employee?.id ?? employeeId}
-                    />
-                  )}
+                  <TabContent
+                    tabKey={activeTab}
+                    tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"}
+                    employeeId={profile.employee?.id ?? employeeId}
+                  />
                 </div>
               </ProfileHub>
             </motion.div>
@@ -1077,7 +1074,6 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   // ── config per tab ──
   const onView = (item) => setSelectedItem(item);
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
-  const basicConfig = useBasicConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, effectiveWidth);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
   const payConfig = usePayrollConfig(onView, effectiveWidth);
@@ -1085,7 +1081,6 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   const shiftConfig = useShiftConfig(onView, effectiveWidth);
 
   const CONFIG_MAP = {
-    basic: basicConfig,
     permissions: permConfig,
     attendance: attConfig,
     salary: salConfig,

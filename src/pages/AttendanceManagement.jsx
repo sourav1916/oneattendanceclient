@@ -746,15 +746,13 @@ const AttendanceManagement = ({ companyId }) => {
       accent="blue"
       actions={
         <div className="flex items-center justify-end gap-2">
-          <ManagementButton
-            tone="blue"
-            variant="solid"
-            leftIcon={<FaPlus />}
+          <button
             onClick={() => setShowCreateModal(true)}
-            size="sm"
+            className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
           >
+            <FaPlus />
             <span>Create</span>
-          </ManagementButton>
+          </button>
         </div>
       }
     >
@@ -864,22 +862,21 @@ const AttendanceManagement = ({ companyId }) => {
                         <motion.tr
                           key={attendance.id}
                           onClick={() => handleViewDetails(attendance)}
-                          className={`cursor-pointer transition-all duration-300 ${
-                            (!attendance.start_time || !attendance.end_time) 
-                                ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60' 
-                                : 'hover:bg-gray-50'
-                          }`}
+                          className={`cursor-pointer transition-all duration-300 ${(!attendance.start_time || !attendance.end_time)
+                              ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
+                              : 'hover:bg-gray-50'
+                            }`}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${attendanceType === 'break' ? 'bg-indigo-100' : 'bg-blue-100'}`}>
-                                  <FaUser className={`${attendanceType === 'break' ? 'text-indigo-600' : 'text-blue-600'}`} />
-                                </div>
-                                <div className="truncate max-w-[200px]">
-                                  <p className="font-medium text-gray-900">{attendance.employee?.name}</p>
-                                  <p className="text-xs text-gray-500">{attendance.employee?.code}</p>
-                                </div>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${attendanceType === 'break' ? 'bg-indigo-100' : 'bg-blue-100'}`}>
+                                <FaUser className={`${attendanceType === 'break' ? 'text-indigo-600' : 'text-blue-600'}`} />
                               </div>
+                              <div className="truncate max-w-[200px]">
+                                <p className="font-medium text-gray-900">{attendance.employee?.name}</p>
+                                <p className="text-xs text-gray-500">{attendance.employee?.code}</p>
+                              </div>
+                            </div>
                           </td>
                           {showDate && <td className="px-6 py-4 whitespace-nowrap">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</td>}
                           {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</td>}

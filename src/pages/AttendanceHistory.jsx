@@ -456,7 +456,7 @@ const AttendanceHistory = () => {
 
                 <div>
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6">
-                    <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center justify-between gap-3 w-full md:w-auto">
                       <div className="h-1 w-8 bg-indigo-500 rounded-full" />
                       <h3 className="text-lg font-extrabold text-slate-800">Today's Logs</h3>
                       <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
@@ -530,7 +530,7 @@ const AttendanceHistory = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center justify-between gap-3 w-full md:w-auto">
                 <div className="relative">
                   <DateRangePickerField
                     value={dateFilter}

@@ -1244,7 +1244,7 @@ export default function InvitePackageManagement() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
+            <div className="flex flex-row sm:items-center gap-3 justify-end">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaBox className="h-4 w-4 text-indigo-500" />
                 <span className="font-medium text-gray-700">{pagination.total}</span>
@@ -1257,10 +1257,10 @@ export default function InvitePackageManagement() {
                 onClick={() => !createAccess.disabled && setIsCreateModalOpen(true)}
                 disabled={createAccess.disabled}
                 title={createAccess.disabled ? getAccessMessage(createAccess) : ""}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
               >
                 <FaPlus className="h-4 w-4" />
-                Create Package
+                Create
               </motion.button>
             </div>
           </div>

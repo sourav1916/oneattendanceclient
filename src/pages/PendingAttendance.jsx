@@ -702,15 +702,13 @@ const PendingAttendance = ({ companyId }) => {
             accent="amber"
             actions={
                 <div className="flex items-center justify-end gap-2">
-                    <ManagementButton
-                        tone="blue"
-                        variant="solid"
-                        leftIcon={<FaPlus />}
+                    <button
                         onClick={() => setShowCreateModal(true)}
-                        size="sm"
+                        className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
                     >
+                        <FaPlus />
                         <span>Create</span>
-                    </ManagementButton>
+                    </button>
                 </div>
             }
         >
@@ -838,13 +836,12 @@ const PendingAttendance = ({ companyId }) => {
                                                 <motion.tr
                                                     key={attendance.punch_uid || attendance.punch_id || attendance.id}
                                                     onClick={() => handleViewDetails(attendance)}
-                                                    className={`cursor-pointer transition-all duration-300 ${
-                                                        selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id) 
-                                                            ? 'bg-amber-50/50' 
-                                                            : (!attendance.start_time || !attendance.end_time) 
-                                                                ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60' 
+                                                    className={`cursor-pointer transition-all duration-300 ${selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id)
+                                                            ? 'bg-amber-50/50'
+                                                            : (!attendance.start_time || !attendance.end_time)
+                                                                ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
                                                                 : 'hover:bg-gray-50'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
