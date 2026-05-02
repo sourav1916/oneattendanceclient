@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import { FaUmbrellaBeach, FaCalendarAlt } from 'react-icons/fa';
+import { ManagementHub } from '../components/common';
 
 // ==================== ICONS (inline SVG to avoid FA sizing issues) ====================
 const Icon = {
@@ -769,18 +771,13 @@ const HolidayManagementCalendar = () => {
   const isCurrentMonthToday = currentYear === today.getFullYear() && currentMonth === today.getMonth();
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      {/* Top Bar */}
-      <div className="bg-white border-b border-gray-100 max-w-7xl rounded-xl mx-auto top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Holiday Management Calendar</h1>
-            <p className="text-xs text-gray-400 mt-1">Manage corporate and national holidays for your organization.</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl m-auto mt-4 space-y-4">
+    <ManagementHub
+      eyebrow={<><FaUmbrellaBeach size={11} /> Holiday Management</>}
+      title="Holiday Management Calendar"
+      description="Manage corporate and national holidays for your organization."
+      accent="indigo"
+    >
+      <div className="space-y-4 p-2 lg:p-0">
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
@@ -934,7 +931,7 @@ const HolidayManagementCalendar = () => {
           />
         )}
       </AnimatePresence>
-    </div>
+    </ManagementHub>
   );
 };
 
