@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-    FaClock, FaCalendarAlt, FaChevronLeft, FaChevronRight,
+    FaClock, FaCalendarAlt, FaChevronLeft, FaLayerGroup,
     FaUserCircle, FaSpinner, FaBriefcase, FaCheckCircle,
     FaTimesCircle, FaSearch, FaTimes, FaChartBar,
     FaInfoCircle, FaEnvelope, FaPhone, FaIdCard, FaUserTag,
@@ -185,7 +185,7 @@ const SalaryDetailModal = ({ salary, onClose }) => {
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-3xl max-h-[90vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
                         <div className="flex items-center gap-4">
@@ -314,7 +314,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const [currencies, setCurrencies] = useState([]);
     const [submitting, setSubmitting] = useState(false);
     const [showOverrideForm, setShowOverrideForm] = useState(false);
-    const [editingOverride, setEditingOverride] = useState(null);
 
     const [formData, setFormData] = useState({
         base_amount: '',
@@ -325,7 +324,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         components: []
     });
 
-
     useEffect(() => {
         if (isOpen && salary) {
             setFormData({
@@ -335,11 +333,9 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 effective_to: salary.effective_to ? salary.effective_to.split('T')[0] : '',
                 component_package_id: salary.package?.id || '',
                 components: (salary.components || []).map(c => ({
-                    component_id: c.id, // Mapping the component's ID from response
+                    component_id: c.id,
                     calc_type: c.calc_type,
                     calc_value: c.calc_value,
-                    effective_from: salary.effective_from ? salary.effective_from.split('T')[0] : '',
-                    effective_to: salary.effective_to ? salary.effective_to.split('T')[0] : '',
                     reason: c.reason || ''
                 }))
             });
@@ -365,8 +361,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             component_id: item.component_id,
             calc_type: item.calc_type,
             calc_value: item.calc_value,
-            effective_from: formData.effective_from || '',
-            effective_to: null,
             reason: `Default from ${pkg.name} package`
         }));
         setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
@@ -388,7 +382,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
         } catch (e) { console.error(e); }
     };
-
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -426,7 +419,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
                         <div className="flex items-center gap-3">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
@@ -445,7 +437,16 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                         <div className="p-6 space-y-5">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Salary Package (Optional for Edit) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
+                                    <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
+                                    <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
                                     <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
@@ -453,8 +454,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                         {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
                                     </select>
                                 </div>
-
-                                {/* Base Amount */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
                                     <div className="flex gap-2">
@@ -470,8 +469,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* No dates for Revise as per latest API */}
 
                             <div className="border-t border-slate-100 pt-5">
                                 <div className="flex items-center justify-between mb-3">
@@ -555,7 +552,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                 const compId = e.target.value;
                                                 const comp = availableComponents.find(c => String(c.id) === String(compId));
                                                 if (comp) {
-                                                    setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', effective_from: formData.effective_from, effective_to: null, reason: '' }], component_package_id: '' });
+                                                    setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
                                                     setShowOverrideForm(false);
                                                 }
                                             }}
@@ -572,7 +569,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                         </div>
                     </form>
 
-                    {/* Footer */}
                     <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
                         <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
                         <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
@@ -592,85 +588,72 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [currencies, setCurrencies] = useState([]);
-    const [loadingPackages, setLoadingPackages] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [showOverrideForm, setShowOverrideForm] = useState(false);
-    const [editingOverride, setEditingOverride] = useState(null);
 
-    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', components: [] });
-    const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
-
-    // Derived: Selected package details
-    const selectedPackage = useMemo(() =>
-        packages.find(p => String(p.id) === String(formData.component_package_id)),
-        [packages, formData.component_package_id]
-    );
-
-    // Derived: Component IDs already in the list (to filter dropdown)
-    const existingComponentIds = useMemo(() =>
-        formData.components.map(comp => comp.component_id),
-        [formData.components]
-    );
-
-    // Filtered components for dropdown
-    const filteredAvailableComponents = useMemo(() =>
-        availableComponents.filter(comp => !existingComponentIds.includes(comp.id)),
-        [availableComponents, existingComponentIds]
-    );
+    const [formData, setFormData] = useState({
+        base_amount: '',
+        currency: 'USD',
+        component_package_id: '',
+        components: []
+    });
 
     useEffect(() => {
         if (isOpen && salary) {
-            setFormData({ component_package_id: salary.package?.id || '', base_amount: salary.base_amount || '', currency: salary.currency || 'USD', effective_from: '', effective_to: '', components: [] });
-            loadPackages(); loadComponents(); loadCurrencies();
+            setFormData({
+                base_amount: salary.base_amount || '',
+                currency: salary.currency || 'USD',
+                component_package_id: salary.package?.id || '',
+                components: (salary.components || []).map(c => ({
+                    component_id: c.id,
+                    calc_type: c.calc_type,
+                    calc_value: c.calc_value,
+                    reason: c.reason || ''
+                }))
+            });
+            loadComponents();
+            loadCurrencies();
+            loadSalaryPackages();
         }
     }, [isOpen, salary]);
 
-    // Handle package change and fill components (Quick Fill)
-    const handlePackageChange = (packageId) => {
-        const pkg = packages.find(p => String(p.id) === String(packageId));
-        if (!pkg) return;
-
-        // Map package items to the components structure for the form
-        const packageComponents = (pkg.items || []).map(item => ({
-            component_id: item.component_id,
-            calc_type: item.calc_type,
-            calc_value: item.calc_value,
-            effective_from: formData.effective_from || '',
-            effective_to: null,
-            reason: `Default from ${pkg.name} package`
-        }));
-
-        setFormData(prev => ({
-            ...prev,
-            component_package_id: packageId,
-            // When choosing a package, we replace existing components with package defaults
-            components: packageComponents
-        }));
-    };
-
-    const loadPackages = async () => {
-        setLoadingPackages(true);
+    const loadSalaryPackages = async () => {
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) setPackages(result.data || []);
-        } catch (e) { console.error(e); } finally { setLoadingPackages(false); }
-    };
-    const loadComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (e) { console.error(e); } };
-    const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types); } catch (e) { console.error(e); } };
-
-    const addOverride = () => {
-        if (!overrideForm.component_id || !overrideForm.calc_value) { toast.warning('Please fill component and value'); return; }
-        const newOverride = { component_id: parseInt(overrideForm.component_id), calc_type: overrideForm.calc_type, calc_value: parseFloat(overrideForm.calc_value), effective_from: overrideForm.effective_from || formData.effective_from, effective_to: overrideForm.effective_to || null, reason: overrideForm.reason || '' };
-        if (editingOverride !== null) { const updated = [...formData.components]; updated[editingOverride] = newOverride; setFormData({ ...formData, components: updated, component_package_id: '' }); setEditingOverride(null); }
-        else { setFormData({ ...formData, components: [...formData.components, newOverride], component_package_id: '' }); }
-        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
-        setShowOverrideForm(false);
+        } catch (error) { console.error('Failed to load packages:', error); }
     };
 
-    const editOverride = (index) => { const o = formData.components[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
-    const removeOverride = (index) => { setFormData({ ...formData, components: formData.components.filter((_, i) => i !== index), component_package_id: '' }); };
+    const handlePackageChange = (packageId) => {
+        const pkg = packages.find(p => String(p.id) === String(packageId));
+        if (!pkg) return;
+        const packageComponents = (pkg.items || []).map(item => ({
+            component_id: item.component_id,
+            calc_type: item.calc_type,
+            calc_value: item.calc_value,
+            reason: `Default from ${pkg.name} package`
+        }));
+        setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
+    };
+
+    const loadComponents = async () => {
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) setAvailableComponents(result.data || []);
+        } catch (e) { console.error(e); }
+    };
+
+    const loadCurrencies = async () => {
+        try {
+            const response = await apiCall('/constants/?type=currency', 'GET');
+            const result = await response.json();
+            if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
+        } catch (e) { console.error(e); }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -706,15 +689,14 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
-                                <FaLayerGroup className="h-6 w-6 text-white" />
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-200">
+                                <FaExchangeAlt className="h-6 w-6 text-white" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">Revise Salary Structure</h2>
+                                <h2 className="text-xl font-bold text-slate-900">Revise Salary</h2>
                                 <p className="text-sm text-slate-500">{salary.employee?.name} · {salary.employee?.employee_code}</p>
                             </div>
                         </div>
@@ -725,33 +707,18 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                         <div className="p-6 space-y-5">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
-                                    <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" popoverClassName="mt-2" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
-                                    <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" popoverClassName="mt-2" />
-                                </div>
-                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Salary Package */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
-                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm">
+                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
                                         <option value="">Custom / Manual</option>
-                                        {loadingPackages ? <option value="">Loading packages...</option>
-                                            : packages.length === 0 ? <option value="">No packages found</option>
-                                                : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                                        {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
                                     </select>
                                 </div>
-
-                                {/* Base Amount */}
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Base Amount *</label>
                                     <div className="flex gap-2">
-                                        <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-semibold">
+                                        <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
                                             {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
                                         </select>
                                         <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
@@ -759,24 +726,19 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                 const val = e.target.value.replace(/[^0-9.]/g, '');
                                                 if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
                                             }}
-                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-semibold" />
+                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
                                     </div>
                                 </div>
                             </div>
-                            
-
-
-
-                            
 
                             <div className="border-t border-slate-100 pt-5">
                                 <div className="flex items-center justify-between mb-3">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                        <FaCalculator className="text-indigo-500" /> Salary Components
+                                        <FaCalculator className="text-blue-500" /> Salary Components
                                     </label>
                                     <button type="button"
-                                        onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
-                                        className="text-[10px] px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all font-bold border border-indigo-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                                        onClick={() => setShowOverrideForm(true)}
+                                        className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
                                         <FaPlus size={8} /> Add Component
                                     </button>
                                 </div>
@@ -788,18 +750,13 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                             return (
                                                 <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
                                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                                        {/* Component Info */}
                                                         <div className="md:col-span-4">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">
-                                                                Component
-                                                            </label>
-                                                            <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700">
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
+                                                            <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
                                                                 {componentData?.name || `Component ${comp.component_id}`}
                                                                 <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
                                                             </div>
                                                         </div>
-
-                                                        {/* Calc Type */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
                                                             <select 
@@ -809,20 +766,16 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                                     updated[idx].calc_type = e.target.value;
                                                                     setFormData({ ...formData, components: updated, component_package_id: '' });
                                                                 }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold"
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
                                                             >
                                                                 <option value="percentage">Percentage (%)</option>
                                                                 <option value="fixed">Fixed Amount</option>
                                                             </select>
                                                         </div>
-
-                                                        {/* Calc Value */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
                                                             <input 
-                                                                type="text" 
-                                                                inputMode="decimal"
-                                                                value={comp.calc_value} 
+                                                                type="text" inputMode="decimal" value={comp.calc_value} 
                                                                 onChange={e => {
                                                                     const val = e.target.value.replace(/[^0-9.]/g, '');
                                                                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
@@ -831,39 +784,15 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                                         setFormData({ ...formData, components: updated, component_package_id: '' });
                                                                     }
                                                                 }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
                                                             />
                                                         </div>
-
-                                                        {/* Action Buttons */}
                                                         <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => {
-                                                                    const updated = formData.components.filter((_, i) => i !== idx);
-                                                                    setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                }}
-                                                                className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                                title="Remove Component"
-                                                            >
-                                                                <FaTimes size={14} />
-                                                            </button>
+                                                            <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
                                                         </div>
-
-                                                        {/* Reason - Full Width */}
                                                         <div className="md:col-span-12">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Reason for this component value..."
-                                                                value={comp.reason || ''} 
-                                                                onChange={e => {
-                                                                    const updated = [...formData.components];
-                                                                    updated[idx].reason = e.target.value;
-                                                                    setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all italic text-slate-500"
-                                                            />
+                                                            <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -872,62 +801,40 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                     </div>
                                 )}
 
-                                {/* Add New Component Form (Simplified as Inline Add) */}
                                 {showOverrideForm && (
-                                    <div className="mt-4 p-4 bg-indigo-50/50 rounded-xl border-2 border-dashed border-indigo-200">
+                                    <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">
                                         <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-bold text-indigo-900 uppercase tracking-widest">Select Component to Add</p>
+                                            <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
                                             <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                                         </div>
-                                        <div className="flex gap-3">
-                                            <select 
-                                                value={overrideForm.component_id} 
-                                                onChange={e => {
-                                                    const compId = e.target.value;
-                                                    const comp = filteredAvailableComponents.find(c => String(c.id) === String(compId));
-                                                    if (comp) {
-                                                        const newComp = {
-                                                            component_id: comp.id,
-                                                            calc_type: comp.calc_type || 'percentage',
-                                                            calc_value: comp.calc_value || '',
-                                                            effective_from: formData.effective_from,
-                                                            effective_to: null,
-                                                            reason: ''
-                                                        };
-                                                        setFormData({ 
-                                                            ...formData, 
-                                                            components: [...formData.components, newComp],
-                                                            component_package_id: '' 
-                                                        });
-                                                        setShowOverrideForm(false);
-                                                        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
-                                                    }
-                                                }}
-                                                className="flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold"
-                                            >
-                                                <option value="">Choose a component...</option>
-                                                {filteredAvailableComponents.map(comp => (
-                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        {filteredAvailableComponents.length === 0 && (
-                                            <p className="text-[10px] text-amber-600 mt-2 italic flex items-center gap-1">
-                                                <FaInfoCircle size={10} /> No more components available to add.
-                                            </p>
-                                        )}
+                                        <select 
+                                            value="" 
+                                            onChange={e => {
+                                                const compId = e.target.value;
+                                                const comp = availableComponents.find(c => String(c.id) === String(compId));
+                                                if (comp) {
+                                                    setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
+                                                    setShowOverrideForm(false);
+                                                }
+                                            }}
+                                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
+                                        >
+                                            <option value="">Choose a component...</option>
+                                            {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
+                                                <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 )}
                             </div>
                         </div>
                     </form>
 
-                    {/* Footer */}
                     <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
                         <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
-                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
-                            {submitting ? <FaSpinner className="animate-spin" /> : <FaHistory />}
-                            {submitting ? 'Revising...' : 'Revise Structure'}
+                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-200">
+                            {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                            {submitting ? 'Revising...' : 'Revise Salary'}
                         </button>
                     </div>
                 </motion.div>
@@ -1153,7 +1060,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                             </div>
 
 
-                            
+
 
                             <div className="border-t border-slate-100 pt-5">
                                 <div className="flex items-center justify-between mb-3">
@@ -1188,8 +1095,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                         {/* Calc Type */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                            <select 
-                                                                value={comp.calc_type} 
+                                                            <select
+                                                                value={comp.calc_type}
                                                                 onChange={e => {
                                                                     const updated = [...formData.components];
                                                                     updated[idx].calc_type = e.target.value;
@@ -1205,10 +1112,10 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                         {/* Calc Value */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
-                                                            <input 
-                                                                type="text" 
+                                                            <input
+                                                                type="text"
                                                                 inputMode="decimal"
-                                                                value={comp.calc_value} 
+                                                                value={comp.calc_value}
                                                                 onChange={e => {
                                                                     const val = e.target.value.replace(/[^0-9.]/g, '');
                                                                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
@@ -1223,8 +1130,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
 
                                                         {/* Action Buttons */}
                                                         <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
-                                                            <button 
-                                                                type="button" 
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => {
                                                                     const updated = formData.components.filter((_, i) => i !== idx);
                                                                     setFormData({ ...formData, components: updated, component_package_id: '' });
@@ -1239,10 +1146,10 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                         {/* Reason - Full Width */}
                                                         <div className="md:col-span-12">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                            <input 
-                                                                type="text" 
+                                                            <input
+                                                                type="text"
                                                                 placeholder="Reason for this component value..."
-                                                                value={comp.reason || ''} 
+                                                                value={comp.reason || ''}
                                                                 onChange={e => {
                                                                     const updated = [...formData.components];
                                                                     updated[idx].reason = e.target.value;
@@ -1266,8 +1173,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                             <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                                         </div>
                                         <div className="flex gap-3">
-                                            <select 
-                                                value={overrideForm.component_id} 
+                                            <select
+                                                value={overrideForm.component_id}
                                                 onChange={e => {
                                                     const compId = e.target.value;
                                                     const comp = filteredAvailableComponents.find(c => String(c.id) === String(compId));
@@ -1280,10 +1187,10 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                             effective_to: null,
                                                             reason: ''
                                                         };
-                                                        setFormData({ 
-                                                            ...formData, 
+                                                        setFormData({
+                                                            ...formData,
                                                             components: [...formData.components, newComp],
-                                                            component_package_id: '' 
+                                                            component_package_id: ''
                                                         });
                                                         setShowOverrideForm(false);
                                                         setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
@@ -1330,57 +1237,44 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
-                                <FaTrash className="h-5 w-5" />
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
+                                <FaTrash className="h-4 w-4" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">Delete Salary Record</h2>
-                                <p className="text-sm text-slate-500 font-medium">Confirmation required</p>
+                                <h2 className="text-lg font-bold text-slate-900">Delete Salary Record</h2>
+                                <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Confirmation</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-4 w-4" />
+                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-3.5 w-3.5" />
                         </button>
                     </div>
 
-                    <div className="p-8 text-center space-y-6">
-                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-24 h-24 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-xl shadow-red-100/50">
-                            <FaExclamationCircle className="text-4xl text-red-500" />
+                    <div className="p-6 text-center space-y-4">
+                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-16 h-16 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-lg shadow-red-100/50">
+                            <FaExclamationCircle className="text-2xl text-red-500" />
                         </motion.div>
 
-                        <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-slate-900">Are you absolutely sure?</h3>
-                            <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
-                                You are about to permanently delete the salary record for <span className="font-bold text-slate-900 underline decoration-red-200 underline-offset-4">{salary.employee?.name}</span>. This action cannot be undone and will affect historical payroll data.
+                        <div className="space-y-1">
+                            <h3 className="text-base font-bold text-slate-900">Are you sure?</h3>
+                            <p className="text-xs text-slate-500 leading-relaxed px-4">
+                                Permanently delete the salary record for <span className="font-bold text-slate-900">{salary.employee?.name}</span>?
                             </p>
-                        </div>
-
-                        {/* Summary of record to be deleted */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
-                            <div className="text-left">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Base Amount</p>
-                                <p className="text-sm font-bold text-slate-800">{formatCurrency(salary.base_amount, salary.currency)}</p>
-                            </div>
-                            <div className="h-8 w-px bg-slate-200" />
-                            <div className="text-right">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Effective From</p>
-                                <p className="text-sm font-bold text-slate-800">{formatDate(salary.effective_from)}</p>
-                            </div>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Keep Record
+                    <div className="border-t border-slate-100 bg-slate-50 px-5 py-3.5 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                            Keep
                         </button>
-                        <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
+                        <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
                             {processingId === salary.salary_id ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-                            {processingId === salary.salary_id ? 'Deleting...' : 'Delete Permanently'}
+                            {processingId === salary.salary_id ? 'Deleting...' : 'Delete'}
                         </button>
                     </div>
                 </motion.div>

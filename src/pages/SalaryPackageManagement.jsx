@@ -399,57 +399,44 @@ const DeleteModal = ({ pkg, onClose, onConfirm, deleting }) => {
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
                 <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
-                                <FaTrash className="h-5 w-5" />
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
+                                <FaTrash className="h-4 w-4" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900">Delete Package</h2>
-                                <p className="text-sm text-slate-500 font-medium">Confirmation required</p>
+                                <h2 className="text-lg font-bold text-slate-900">Delete Package</h2>
+                                <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Confirmation</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-4 w-4" />
+                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
+                            <FaTimes className="h-3.5 w-3.5" />
                         </button>
                     </div>
 
-                    <div className="p-8 text-center space-y-6">
-                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-24 h-24 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-xl shadow-red-100/50">
-                            <FaExclamationTriangle className="text-4xl text-red-500" />
+                    <div className="p-6 text-center space-y-4">
+                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-16 h-16 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-lg shadow-red-100/50">
+                            <FaExclamationTriangle className="text-2xl text-red-500" />
                         </motion.div>
 
-                        <div className="space-y-2">
-                            <h3 className="text-xl font-bold text-slate-900">Are you absolutely sure?</h3>
-                            <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
-                                You are about to permanently delete the salary package <span className="font-bold text-slate-900 underline decoration-red-200 underline-offset-4">{pkg.name}</span>. This may affect employees currently assigned to this package.
+                        <div className="space-y-1">
+                            <h3 className="text-base font-bold text-slate-900">Are you sure?</h3>
+                            <p className="text-xs text-slate-500 leading-relaxed px-4">
+                                Permanently delete the salary package <span className="font-bold text-slate-900">{pkg.name}</span>? This may affect assigned employees.
                             </p>
-                        </div>
-
-                        {/* Summary of package to be deleted */}
-                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between">
-                            <div className="text-left">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Package Code</p>
-                                <p className="text-sm font-bold text-slate-800">{pkg.code}</p>
-                            </div>
-                            <div className="h-8 w-px bg-slate-200" />
-                            <div className="text-right">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Components</p>
-                                <p className="text-sm font-bold text-slate-800">{pkg.items?.length || 0} Items</p>
-                            </div>
                         </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Keep Package
+                    <div className="border-t border-slate-100 bg-slate-50 px-5 py-3.5 flex gap-3">
+                        <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                            Keep
                         </button>
-                        <button onClick={() => onConfirm(pkg.id)} disabled={deleting} className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
+                        <button onClick={() => onConfirm(pkg.id)} disabled={deleting} className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
                             {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-                            {deleting ? 'Deleting...' : 'Delete Permanently'}
+                            {deleting ? 'Deleting...' : 'Delete'}
                         </button>
                     </div>
                 </motion.div>
