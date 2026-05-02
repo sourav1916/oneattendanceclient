@@ -771,16 +771,16 @@ const HolidayManagementCalendar = () => {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+      <div className="bg-white border-b border-gray-100 max-w-7xl rounded-xl mx-auto top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Holiday Calendar</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Holiday Management Calendar</h1>
             <p className="text-xs text-gray-400 mt-1">Manage corporate and national holidays for your organization.</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
+      <div className="max-w-7xl m-auto mt-4 space-y-4">
         {/* Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[

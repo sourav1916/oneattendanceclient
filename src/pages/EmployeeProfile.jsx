@@ -969,6 +969,7 @@ function useShiftConfig(onView, width) {
 
 // ─── GENERIC TAB CONTENT ──────────────────────────────────────────────────────
 function TabContent({ tabKey, tabLabel, employeeId }) {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [warn, setWarn] = useState(false);
@@ -1108,7 +1109,17 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
             {pagination.total > rows.length && <> of <span className="font-semibold text-gray-800">{pagination.total}</span></>}
             {" "}{tabLabel.toLowerCase()} records
           </p>
-          <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
+          <div className="flex items-center gap-2">
+            {normalizedTabKey === 'salary' && (
+              <button
+                onClick={() => navigate(`/employee-salary-history/${employeeId}`)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all shadow-sm"
+              >
+                <FaHistory size={10} /> History
+              </button>
+            )}
+            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
+          </div>
         </div>
       )}
 

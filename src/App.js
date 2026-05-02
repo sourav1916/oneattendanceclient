@@ -38,6 +38,7 @@ import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ScrollToTop from "./components/ScrollToTop";
 import ProfilePage from "./pages/Profile";
 import EmployeeProfile from "./pages/EmployeeProfile";
+import EmployeeSalaryHistory from "./pages/EmployeeSalaryHistory";
 import {
   TabbedManagementHub,
 } from "./components/common";
@@ -330,6 +331,7 @@ function AppContent() {
         <Route path="/payroll-management" element={<ProtectedRoute pageKey="payrollManagement"><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><BankAccountManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-profile/:employeeId/:tabKey?" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-salary-history/:employeeId" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><EmployeeSalaryHistory /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
