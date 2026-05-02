@@ -32,6 +32,7 @@ import { DateRangePickerField } from '../components/DatePicker';
 import { FaBriefcase } from 'react-icons/fa';
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
+import ModalScrollLock from '../components/ModalScrollLock';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -137,7 +138,8 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="group hover:bg-indigo-50/30 transition-colors"
+                  onClick={() => onViewDetails(record)}
+                  className="group hover:bg-indigo-50/30 transition-colors cursor-pointer"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-bold text-gray-800">{record.date || <Placeholder />}</span>
@@ -207,7 +209,8 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.05 }}
-            className="group relative rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-100/30 hover:border-indigo-200"
+            onClick={() => onViewDetails(record)}
+            className="group relative rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-100/30 hover:border-indigo-200 cursor-pointer"
           >
             <div className="mb-4 flex items-start justify-between gap-2">
               <div className="min-w-0">
@@ -276,7 +279,7 @@ const AttendanceHistory = () => {
   const [todaySummary, setTodaySummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('table');
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [logsModalRecord, setLogsModalRecord] = useState(null);
@@ -628,90 +631,108 @@ const DetailsModal = ({ record, onClose }) => {
 
   return (
     <motion.div
+      className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-black/40"
-      onClick={onClose}
     >
+      <ModalScrollLock />
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 18 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-        className="w-full max-w-lg overflow-hidden rounded-[30px] bg-white shadow-2xl"
-        onClick={e => e.stopPropagation()}
+        exit={{ scale: 0.95, opacity: 0, y: 18 }}
+        transition={{ type: "spring", damping: 25, stiffness: 280 }}
+        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto flex flex-col m-auto"
       >
-        <div className={`relative px-8 py-10 text-white ${record.status === 'approved' || record.status === 'completed' ? 'bg-emerald-500' : record.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500'}`}>
-          <button onClick={onClose} className="absolute right-6 top-6 rounded-full bg-white/20 p-2 text-white hover:bg-white/30 transition-all">
-            <FaTimes size={18} />
-          </button>
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md">
-              <FaClock size={32} />
+        <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
+              <FaClock className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black uppercase tracking-tight">{record.date || <Placeholder />}</h2>
-              <p className="text-white/80 font-bold opacity-80 uppercase text-xs tracking-widest mt-1">{typeConfig.label} Details</p>
+              <h2 className="text-xl font-bold text-slate-900">{record.date || <Placeholder />}</h2>
+              <p className="text-sm text-slate-500">{typeConfig.label} Details</p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+          >
+            <FaTimes className="h-4 w-4" />
+          </button>
         </div>
 
-        <div className="p-8">
-          <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="overflow-y-auto px-6 py-6 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Date</span>
-              <p className="font-bold text-gray-800 text-sm">{record.date || <Placeholder />}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Date</span>
+              <p className="font-bold text-slate-800 text-sm">{record.date || <Placeholder />}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Status</span>
-              <span className={`inline-flex items-center gap-1.5 rounded-full ${style.className} px-3 py-1 text-[10px] font-bold border border-current/10`}>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Status</span>
+              <span className={`inline-flex items-center gap-1.5 rounded-full ${style.className} px-3 py-1 text-[10px] font-bold border`}>
                 <StatusIcon size={12} />
                 {style.text.toUpperCase()}
               </span>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
-              <p className="font-bold text-gray-800 text-sm">{startData?.time || <Placeholder />}</p>
-              <p className="text-[10px] text-gray-400 uppercase font-bold">{startData?.method || ''}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
+              <p className="font-bold text-slate-800 text-sm">{startData?.time || <Placeholder />}</p>
+              <p className="text-[10px] text-slate-400 uppercase font-bold">{startData?.method || ''}</p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
-              <p className="font-bold text-gray-800 text-sm">{endData?.time || <Placeholder />}</p>
-              <p className="text-[10px] text-gray-400 uppercase font-bold">{endData?.method || ''}</p>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
+              <p className="font-bold text-slate-800 text-sm">{endData?.time || <Placeholder />}</p>
+              <p className="text-[10px] text-slate-400 uppercase font-bold">{endData?.method || ''}</p>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
             <div className="flex items-start gap-4">
-              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                <FaMapMarkerAlt size={16} />
+              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+                <FaMapMarkerAlt size={14} />
               </div>
               <div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">IP Address</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">IP Address</span>
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-gray-700 leading-tight break-all">Start: {startData?.ip || <Placeholder />}</p>
-                  <p className="text-sm font-bold text-gray-700 leading-tight break-all">End: {endData?.ip || <Placeholder />}</p>
+                  <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start: {startData?.ip || <Placeholder />}</p>
+                  <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End: {endData?.ip || <Placeholder />}</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-4 border-t border-gray-200/50 pt-4">
-              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-gray-400 shadow-sm flex-shrink-0">
-                <FaCog size={16} />
+            <div className="flex items-start gap-4 border-t border-slate-200 pt-4">
+              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+                <FaCog size={14} />
               </div>
               <div className="flex-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">System Metadata</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">System Metadata</span>
                 <div className="flex flex-wrap gap-2">
-                  <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100">ID: {record.id || <Placeholder />}</span>
-                  <span className="bg-white px-2 py-1 rounded-lg text-[10px] font-bold text-gray-500 border border-gray-100 uppercase">TYPE: {activeType}</span>
+                  <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">ID: {record.id || <Placeholder />}</span>
+                  <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200 uppercase">TYPE: {activeType}</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <button onClick={onClose} className="mt-8 w-full rounded-xl bg-gray-900 py-4 text-sm font-bold text-white shadow-xl shadow-gray-200 transition-all hover:bg-black active:scale-[0.98]">
-            Dismiss Details
-          </button>
+        <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex justify-end shrink-0">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+          >
+            Close
+          </motion.button>
         </div>
       </motion.div>
     </motion.div>

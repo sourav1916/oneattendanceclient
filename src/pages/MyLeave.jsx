@@ -193,7 +193,7 @@ const LeaveBalanceCard = ({ type, balance }) => {
 };
 
 // Leave Card Component for Mobile
-const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
+const LeaveCard = ({ leave, onViewDetails, onEdit, onCancel }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -226,18 +226,17 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
                     icon: <FaEdit size={12} />,
                     onClick: () => onEdit(leave),
                     className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
-                  },
+                  }
+                ]
+                : []),
+              ...(['pending', 'approved'].includes(leave.status)
+                ? [
                   {
-                    label: 'Delete',
-                    icon: deletingId === leave.id ? (
-                      <FaSpinner className="animate-spin" size={12} />
-                    ) : (
-                      <FaTrash size={12} />
-                    ),
-                    onClick: () => onDelete(leave.id),
-                    disabled: deletingId === leave.id,
+                    label: 'Cancel',
+                    icon: <FaTimes size={12} />,
+                    onClick: () => onCancel(leave),
                     className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                  },
+                  }
                 ]
                 : []),
             ]}
@@ -274,6 +273,59 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onDelete, deletingId }) => {
 };
 
 
+
+const CancelLeaveModal = ({ leave, onClose, onSuccess }) => {
+  const [remarks, setRemarks] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleCancel = async () => {
+    setSubmitting(true);
+    try {
+      await request('/leave/cancel', 'POST', { id: leave.id, remarks });
+      toast.success('Leave cancelled successfully');
+      onSuccess();
+      onClose();
+    } catch (error) {
+      toast.error(error.message || 'Failed to cancel leave');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {leave && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <ModalScrollLock />
+          <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
+            <div className="border-b border-gray-100 bg-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Cancel Leave</h3>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><FaTimes /></button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">Are you sure you want to cancel this leave? Please provide a reason.</p>
+              <textarea
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                placeholder="Remarks for cancellation..."
+                rows={3}
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100">
+              <button onClick={onClose} className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all">Back</button>
+              <button onClick={handleCancel} disabled={submitting || !remarks.trim()} className="flex-1 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {submitting ? <FaSpinner className="animate-spin" /> : <FaTimes />}
+                Confirm Cancel
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClose, onSuccess }) => {
   const [form, setForm] = useState({
@@ -802,7 +854,7 @@ const MyLeave = () => {
   const [viewLeave, setViewLeave] = useState(null);
   const [editLeave, setEditLeave] = useState(null);
   const [showApply, setShowApply] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+  const [cancellingLeave, setCancellingLeave] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const lastRequestKeyRef = useRef('');
@@ -934,20 +986,6 @@ const MyLeave = () => {
       );
     });
   }, [leaves, search, status]);
-
-  const removeLeave = async (id) => {
-    setDeletingId(id);
-    try {
-      await request(`/leave/delete/${id}`, 'DELETE');
-      toast.success('Leave deleted successfully');
-      await loadLeaves(pagination.page);
-      await loadBalances();
-    } catch (error) {
-      toast.error(error.message || 'Failed to delete leave');
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const handlePageChange = (nextPage) => {
     goToPage(nextPage);
@@ -1151,18 +1189,17 @@ const MyLeave = () => {
                                         icon: <FaEdit size={12} />,
                                         onClick: () => setEditLeave(leave),
                                         className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
-                                      },
+                                      }
+                                    ]
+                                    : []),
+                                  ...(['pending', 'approved'].includes(leave.status)
+                                    ? [
                                       {
-                                        label: 'Delete',
-                                        icon: deletingId === leave.id ? (
-                                          <FaSpinner className="animate-spin" size={12} />
-                                        ) : (
-                                          <FaTrash size={12} />
-                                        ),
-                                        onClick: () => removeLeave(leave.id),
-                                        disabled: deletingId === leave.id,
+                                        label: 'Cancel',
+                                        icon: <FaTimes size={12} />,
+                                        onClick: () => setCancellingLeave(leave),
                                         className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                                      },
+                                      }
                                     ]
                                     : []),
                                 ]}
@@ -1185,8 +1222,7 @@ const MyLeave = () => {
                         leave={leave}
                         onViewDetails={setViewLeave}
                         onEdit={setEditLeave}
-                        onDelete={removeLeave}
-                        deletingId={deletingId}
+                        onCancel={setCancellingLeave}
                       />
                     ))}
                   </AnimatePresence>
@@ -1345,6 +1381,15 @@ const MyLeave = () => {
         balances={balances}
         initialLeave={editLeave}
         onClose={() => setEditLeave(null)}
+        onSuccess={() => {
+          loadLeaves(pagination.page, true);
+          loadBalances();
+        }}
+      />
+
+      <CancelLeaveModal
+        leave={cancellingLeave}
+        onClose={() => setCancellingLeave(null)}
         onSuccess={() => {
           loadLeaves(pagination.page, true);
           loadBalances();
