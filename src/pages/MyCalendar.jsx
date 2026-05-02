@@ -338,61 +338,67 @@ const DayDetailsModal = ({ cell, onClose }) => {
         </div>
         
         <div className="p-5 overflow-y-auto flex-1 space-y-4">
-          {!data ? (
-            <p className="text-center text-gray-500 py-8">No data available for this date.</p>
-          ) : (
-            <>
-              {data.status === 'holiday' && data.is_holiday && (
-                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
-                  <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-1">Holiday Info</h4>
-                  <p className="font-bold text-amber-900">{data.is_holiday.name}</p>
-                </div>
-              )}
-              
-              {data.status === 'leave' && data.is_leave && (
-                <div className="bg-violet-50 p-4 rounded-xl border border-violet-100">
-                  <h4 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-1">Leave Info</h4>
-                  <p className="font-bold text-violet-900">{data.is_leave.name}</p>
-                  {data.is_leave.type && <p className="text-sm text-violet-700 mt-1">Type: {data.is_leave.type}</p>}
-                </div>
-              )}
-              
-              {data.worked && (
-                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                  <h4 className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-3">Work Info</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {data.worked.punch_in && (
-                      <div>
-                        <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch In</p>
-                        <p className="font-black text-emerald-900">{data.worked.punch_in}</p>
-                      </div>
-                    )}
-                    {data.worked.punch_out && (
-                      <div>
-                        <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch Out</p>
-                        <p className="font-black text-emerald-900">{data.worked.punch_out}</p>
-                      </div>
-                    )}
-                    {data.worked.work_hour && (
-                      <div>
-                        <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Total Hours</p>
-                        <p className="font-black text-emerald-900">{data.worked.work_hour}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+          {/* Holiday Section */}
+          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+            <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-1">Holiday Info</h4>
+            {data?.is_holiday && Object.keys(data.is_holiday).length > 0 ? (
+              <p className="font-bold text-amber-900">{data.is_holiday.name}</p>
+            ) : (
+              <p className="text-xs italic text-amber-600/50">No record found</p>
+            )}
+          </div>
+          
+          {/* Leave Section */}
+          <div className="bg-violet-50 p-4 rounded-xl border border-violet-100">
+            <h4 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-1">Leave Info</h4>
+            {data?.is_leave && Object.keys(data.is_leave).length > 0 ? (
+              <>
+                <p className="font-bold text-violet-900">{data.is_leave.name}</p>
+                {data.is_leave.type && <p className="text-sm text-violet-700 mt-1">Type: {data.is_leave.type}</p>}
+              </>
+            ) : (
+              <p className="text-xs italic text-violet-600/50">No record found</p>
+            )}
+          </div>
 
-              {Object.keys(data).length > 0 && (
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mt-4">
-                   <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Raw Details</h4>
-                   <pre className="text-[10px] text-gray-700 whitespace-pre-wrap overflow-x-auto">
-                     {JSON.stringify(data, null, 2)}
-                   </pre>
-                </div>
-              )}
-            </>
-          )}
+          {/* Weekend Section */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Weekend Info</h4>
+            {data?.is_weekend && Object.keys(data.is_weekend).length > 0 ? (
+              <p className="font-bold text-slate-900">{data.is_weekend.name || 'Weekend'}</p>
+            ) : (
+              <p className="text-xs italic text-slate-400/60">No record found</p>
+            )}
+          </div>
+          
+          {/* Work Section */}
+          <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+            <h4 className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-3">Work Info</h4>
+            {data?.worked && Object.keys(data.worked).length > 0 ? (
+              <div className="grid grid-cols-2 gap-4">
+                {data.worked.punch_in && (
+                  <div>
+                    <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch In</p>
+                    <p className="font-black text-emerald-900">{data.worked.punch_in}</p>
+                  </div>
+                )}
+                {data.worked.punch_out && (
+                  <div>
+                    <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch Out</p>
+                    <p className="font-black text-emerald-900">{data.worked.punch_out}</p>
+                  </div>
+                )}
+                {data.worked.work_hour && (
+                  <div>
+                    <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Total Hours</p>
+                    <p className="font-black text-emerald-900">{data.worked.work_hour}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs italic text-emerald-600/50">No record found</p>
+            )}
+          </div>
         </div>
       </motion.div>
     </motion.div>
