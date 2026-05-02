@@ -609,7 +609,7 @@ const SalaryComponents = () => {
         setDeleting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components/delete', 'POST', { id }, company?.id);
+            const response = await apiCall('/salary/components/delete', 'DELETE', { id }, company?.id);
             const result = await response.json();
             if (result.success) {
                 toast.success('Component deleted successfully!');

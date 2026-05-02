@@ -671,7 +671,7 @@ const SalaryPackages = () => {
         setDeleting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/salary/components/delete-package', 'POST', { package_id: pkgId }, company?.id);
+            const response = await apiCall('/salary/components/delete-package', 'DELETE', { package_id: pkgId }, company?.id);
             const result = await response.json();
             if (!result.success) throw new Error(result.message);
             toast.success('Package deleted successfully');
