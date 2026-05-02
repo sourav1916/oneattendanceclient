@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaChevronDown, FaChevronUp, FaEye, FaShieldAlt,
+  FaChevronDown, FaHistory, FaEye, FaShieldAlt,
   FaClock, FaMoneyBillWave, FaCalendarAlt, FaExchangeAlt,
   FaEnvelope, FaIdCard, FaCheckCircle, FaTimesCircle,
   FaUserCircle, FaTimes, FaDollarSign, FaCalculator, FaPhone,
