@@ -285,7 +285,7 @@ const EmployeeSalaryHistory = () => {
                 </ManagementButton>
             }
         >
-            <div className="space-y-6">
+            <div className="space-y-6 p-2 lg:p-0">
                 {/* Filter Bar */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                     <div className="relative flex-1">
