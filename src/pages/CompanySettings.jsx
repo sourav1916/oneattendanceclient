@@ -169,7 +169,7 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                         </button>
                     </div>
 
-                    <div className="p-6 space-y-6">
+                    <div className="p-6 space-y-6 p-2 lg:p-0">
                         {/* Identity */}
                         <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-gray-100">
                             <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow-lg ring-4 ring-white flex-shrink-0"

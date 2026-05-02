@@ -315,7 +315,7 @@ const LeaveManagement = () => {
             description="Manage and review employee leave requests, approvals and history."
             accent="blue"
         >
-            <div className="space-y-6">
+            <div className="space-y-6 p-2 lg:p-0">
                 {/* Stats */}
                 {!loading && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -311,7 +311,7 @@ const Login = () => {
                         </motion.button>
                       </div>
                     ) : (
-                      <div className="space-y-6">
+                      <div className="space-y-6 p-2 lg:p-0">
                         <div className="flex justify-center gap-2">
                           {otp.map((digit, index) => (
                             <input key={index} id={`otp-${index}`} type="text" maxLength="1" value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} disabled={isLoading} className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />

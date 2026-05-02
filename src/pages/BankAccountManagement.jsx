@@ -47,8 +47,8 @@ const AccountTypeBadge = ({ type, compact = false }) => {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full font-semibold ${isCash
-          ? 'bg-amber-100 border border-amber-200 text-amber-700'
-          : 'bg-indigo-100 border border-indigo-200 text-indigo-700'
+        ? 'bg-amber-100 border border-amber-200 text-amber-700'
+        : 'bg-indigo-100 border border-indigo-200 text-indigo-700'
         } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}
     >
       {isCash ? <FaMoneyBillWave size={compact ? 8 : 10} /> : <FaUniversity size={compact ? 8 : 10} />}
@@ -62,8 +62,8 @@ const StatusBadge = ({ status, compact = false }) => {
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full font-semibold ${isActive
-          ? 'bg-emerald-100 border border-emerald-200 text-emerald-700'
-          : 'bg-slate-100 border border-slate-200 text-slate-500'
+        ? 'bg-emerald-100 border border-emerald-200 text-emerald-700'
+        : 'bg-slate-100 border border-slate-200 text-slate-500'
         } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}
     >
       {isActive ? <FaCheck size={compact ? 7 : 9} /> : <FaTimes size={compact ? 7 : 9} />}
@@ -750,7 +750,7 @@ const BankAccountManagement = () => {
         </ManagementButton>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 p-2 lg:p-0">
         {/* Stats */}
         {!loading && accounts.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -875,7 +875,7 @@ const BankAccountManagement = () => {
               </div>
 
               {/* Body */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 space-y-6">
+              <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 space-y-6 p-2 lg:p-0">
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2">
                   <AccountTypeBadge type={viewModal.account.account_type} />
@@ -1003,8 +1003,8 @@ const BankAccountManagement = () => {
                               type="button"
                               onClick={() => setFormData((p) => ({ ...p, account_type: type }))}
                               className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold text-sm transition-all ${formData.account_type === type
-                                  ? 'border-violet-400 bg-violet-50 text-violet-700'
-                                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                                ? 'border-violet-400 bg-violet-50 text-violet-700'
+                                : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
                                 }`}
                             >
                               {type === 'cash' ? <FaMoneyBillWave size={14} /> : <FaUniversity size={14} />}

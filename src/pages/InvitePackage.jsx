@@ -411,7 +411,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
               <span className="ml-3 text-gray-500">Loading options...</span>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-6 p-2 lg:p-0">
               {/* Basic Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>

@@ -208,7 +208,7 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 p-2 lg:p-0">
                             {/* Key Metrics Grid */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -498,8 +498,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                         </div>
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                            <select 
-                                                                value={comp.calc_type} 
+                                                            <select
+                                                                value={comp.calc_type}
                                                                 onChange={e => {
                                                                     const updated = [...formData.components];
                                                                     updated[idx].calc_type = e.target.value;
@@ -513,8 +513,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                         </div>
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
-                                                            <input 
-                                                                type="text" inputMode="decimal" value={comp.calc_value} 
+                                                            <input
+                                                                type="text" inputMode="decimal" value={comp.calc_value}
                                                                 onChange={e => {
                                                                     const val = e.target.value.replace(/[^0-9.]/g, '');
                                                                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
@@ -546,8 +546,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                             <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
                                             <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                                         </div>
-                                        <select 
-                                            value="" 
+                                        <select
+                                            value=""
                                             onChange={e => {
                                                 const compId = e.target.value;
                                                 const comp = availableComponents.find(c => String(c.id) === String(compId));
@@ -759,8 +759,8 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                         </div>
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                            <select 
-                                                                value={comp.calc_type} 
+                                                            <select
+                                                                value={comp.calc_type}
                                                                 onChange={e => {
                                                                     const updated = [...formData.components];
                                                                     updated[idx].calc_type = e.target.value;
@@ -774,8 +774,8 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                                         </div>
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
-                                                            <input 
-                                                                type="text" inputMode="decimal" value={comp.calc_value} 
+                                                            <input
+                                                                type="text" inputMode="decimal" value={comp.calc_value}
                                                                 onChange={e => {
                                                                     const val = e.target.value.replace(/[^0-9.]/g, '');
                                                                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
@@ -807,8 +807,8 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                                             <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
                                             <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                                         </div>
-                                        <select 
-                                            value="" 
+                                        <select
+                                            value=""
                                             onChange={e => {
                                                 const compId = e.target.value;
                                                 const comp = availableComponents.find(c => String(c.id) === String(compId));
@@ -1366,7 +1366,6 @@ const SalaryManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [viewMode, setViewMode] = useState('table');
-    const [showHistory, setShowHistory] = useState(false);
     const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
     const [selectedSalary, setSelectedSalary] = useState(null);
     const [showAssignModal, setShowAssignModal] = useState(false);
@@ -1410,7 +1409,6 @@ const SalaryManagement = () => {
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const queryParams = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
-            if (showHistory) queryParams.append('history', 'true');
             if (search) queryParams.append('search', search);
             Object.entries(dateParams || {}).forEach(([key, value]) => { if (value !== undefined && value !== null && String(value).trim() !== '') queryParams.append(key, String(value)); });
             const url = `/salary/employees-salaries?${queryParams.toString()}`;
@@ -1427,7 +1425,7 @@ const SalaryManagement = () => {
             } else { throw new Error(result.message || "Failed to fetch salaries"); }
         } catch (e) { toast.error(e.message || "Failed to load salary records."); console.error(e); }
         finally { setLoading(false); fetchInProgress.current = false; setIsInitialLoad(false); }
-    }, [pagination.page, pagination.limit, debouncedSearch, showHistory, updatePagination]);
+    }, [pagination.page, pagination.limit, debouncedSearch, updatePagination]);
 
     const handlePageChange = useCallback((newPage) => { if (newPage !== pagination.page) goToPage(newPage); }, [pagination.page, goToPage]);
 
@@ -1460,7 +1458,7 @@ const SalaryManagement = () => {
             if (pagination.page !== 1) goToPage(1);
             else fetchSalaries(1, debouncedSearch, true);
         }
-    }, [debouncedSearch, showHistory]);
+    }, [debouncedSearch]);
 
     useEffect(() => {
         if (!isInitialLoad && !fetchInProgress.current) fetchSalaries(pagination.page, debouncedSearch, true);
@@ -1603,20 +1601,10 @@ const SalaryManagement = () => {
                     >
                         Assign Salary
                     </ManagementButton>
-
-                    <ManagementButton
-                        tone={showHistory ? 'violet' : 'slate'}
-                        variant={showHistory ? 'solid' : 'outline'}
-                        leftIcon={<FaHistory />}
-                        onClick={() => setShowHistory(!showHistory)}
-                        className="!py-2 !px-4 text-sm"
-                    >
-                        History
-                    </ManagementButton>
                 </div>
             }
         >
-            <div className="space-y-6">
+            <div className="space-y-6 p-2 lg:p-0">
 
                 {/* Stats */}
                 {!loading && visibleSalaries.length > 0 && (

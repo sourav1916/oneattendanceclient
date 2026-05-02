@@ -102,7 +102,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 p-2 lg:p-0">
                             {/* Summary Stats */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -125,7 +125,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
 
                             {/* Details Grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-6">
+                                <div className="space-y-6 p-2 lg:p-0">
                                     {/* Description */}
                                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Package Description</p>
@@ -279,7 +279,7 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 p-2 lg:p-0">
                             {/* Basic Info */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
@@ -827,7 +827,7 @@ const SalaryPackages = () => {
                 </div>
             }
         >
-            <div className="space-y-6">
+            <div className="space-y-6 p-2 lg:p-0">
                 {/* Stats Row */}
                 {!loading && packages.length > 0 && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-4">

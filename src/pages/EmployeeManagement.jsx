@@ -161,26 +161,26 @@ const EmployeeEditModal = ({
 
     return (
         <div className="flex flex-col flex-1 min-h-0">
-        <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                        <FaUserCog className="h-6 w-6 text-white" />
+            <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
+                            <FaUserCog className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900">Edit Employee</h2>
+                            <p className="text-sm text-slate-500">Update configuration and accessibility</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900">Edit Employee</h2>
-                        <p className="text-sm text-slate-500">Update configuration and accessibility</p>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={closeModal}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"
+                    >
+                        <FaTimes className="h-4 w-4" />
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    onClick={closeModal}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"
-                >
-                    <FaTimes className="h-4 w-4" />
-                </button>
             </div>
-        </div>
 
             <form onSubmit={handleEdit} className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
                 {(constantsLoading || permissionsLoading) ? (
@@ -189,7 +189,7 @@ const EmployeeEditModal = ({
                         <span className="ml-3 text-sm font-medium text-slate-500">Loading data...</span>
                     </div>
                 ) : (
-                    <div className="space-y-6 pb-20">
+                    <div className="space-y-6 p-2 lg:p-0 pb-20">
                         {/* Status Card */}
                         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                             <div className="flex items-start gap-4">
@@ -300,8 +300,8 @@ const EmployeeEditModal = ({
                                                     type="button"
                                                     onClick={() => method.available && handleToggleMethod(method.id)}
                                                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
-                                                            ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                                                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                                        ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                                                        : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
                                                         } ${!method.available ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                 >
                                                     {active && <FaCheck className="h-3 w-3" />}
@@ -415,8 +415,8 @@ const EmployeeEditModal = ({
                                                                 type="button"
                                                                 onClick={() => toggleWeekend(day)}
                                                                 className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${config
-                                                                        ? 'bg-indigo-600 text-white shadow-md'
-                                                                        : 'bg-white text-slate-600 border border-slate-200'
+                                                                    ? 'bg-indigo-600 text-white shadow-md'
+                                                                    : 'bg-white text-slate-600 border border-slate-200'
                                                                     }`}
                                                             >
                                                                 <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
@@ -432,8 +432,8 @@ const EmployeeEditModal = ({
                                                                             type="button"
                                                                             onClick={() => updateWeekendType(day, type)}
                                                                             className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${config.type === type
-                                                                                    ? 'bg-slate-900 text-white'
-                                                                                    : 'text-slate-400'
+                                                                                ? 'bg-slate-900 text-white'
+                                                                                : 'text-slate-400'
                                                                                 }`}
                                                                         >
                                                                             {type}
@@ -1504,8 +1504,8 @@ const EmployeeManagement = () => {
                             exit={{ scale: 0.95, opacity: 0, y: 18 }}
                             transition={{ type: "spring", damping: 25, stiffness: 280 }}
                             className={`relative w-full bg-white shadow-2xl overflow-hidden z-10 flex flex-col ${modalType === MODAL_TYPES.DELETE_CONFIRM
-                                    ? 'max-w-lg rounded-xl'
-                                    : 'max-w-4xl max-h-[90vh] rounded-xl border border-slate-200'
+                                ? 'max-w-lg rounded-xl'
+                                : 'max-w-4xl max-h-[90vh] rounded-xl border border-slate-200'
                                 }`}
                             onClick={e => e.stopPropagation()}
                         >
@@ -1744,7 +1744,7 @@ const EmployeeManagement = () => {
                                             <div className="">
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-h-[calc(100vh-400px)] overflow-y-auto custom-scrollbar">
                                                     {/* Left Column */}
-                                                    <div className="space-y-6">
+                                                    <div className="space-y-6 p-2 lg:p-0">
                                                         {/* Employee Display */}
                                                         <motion.div
                                                             initial={{ x: -20, opacity: 0 }}
@@ -1933,7 +1933,7 @@ const EmployeeManagement = () => {
                                                     </div>
 
                                                     {/* Right Column - Attendance Methods */}
-                                                    <div className="space-y-6">
+                                                    <div className="space-y-6 p-2 lg:p-0">
                                                         <motion.div
                                                             initial={{ y: 20, opacity: 0 }}
                                                             animate={{ y: 0, opacity: 1 }}
@@ -2164,8 +2164,8 @@ const EmployeeManagement = () => {
                                                                     type="button"
                                                                     onClick={() => setWeekendConfig(prev => ({ ...prev, [day]: opt.value }))}
                                                                     className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${isActive
-                                                                            ? `${opt.color} shadow-lg scale-105 ring-2 ring-white`
-                                                                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                                                                        ? `${opt.color} shadow-lg scale-105 ring-2 ring-white`
+                                                                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                                                         }`}
                                                                 >
                                                                     {opt.label}

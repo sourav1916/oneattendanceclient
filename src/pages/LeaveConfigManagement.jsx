@@ -457,7 +457,7 @@ const FormModal = ({
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 px-6 sm:px-8 py-6">
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 p-2 lg:p-0 px-6 sm:px-8 py-6">
 
           {!isEdit && leaveTypeOptions.length > 0 && (
             <div>
@@ -476,8 +476,8 @@ const FormModal = ({
                       }}
                       title={opt.description}
                       className={`rounded-xl border px-3 py-1.5 text-xs font-medium transition ${form.code === opt.value.toUpperCase()
-                          ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
-                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-violet-50 hover:border-violet-300'
+                        ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md'
+                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-violet-50 hover:border-violet-300'
                         }`}
                     >
                       <span className="font-bold">{opt.value}</span> — {opt.label}

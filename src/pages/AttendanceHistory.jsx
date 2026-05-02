@@ -431,7 +431,7 @@ const AttendanceHistory = () => {
 
       <div className="space-y-4">
         {activeSubTab === 'today' ? (
-          <div className="space-y-6 max-w-7xl mx-auto">
+          <div className="space-y-6 p-2 lg:p-0 max-w-7xl mx-auto">
             {loading && records.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-slate-400">
                 <FaSpinner className="animate-spin text-4xl mb-4 text-indigo-500" />
@@ -678,7 +678,7 @@ const DetailsModal = ({ record, onClose }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-6 space-y-6">
+        <div className="overflow-y-auto px-6 py-6 space-y-6 p-2 lg:p-0">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Date</span>
@@ -708,31 +708,31 @@ const DetailsModal = ({ record, onClose }) => {
           </div>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
-            {((startData && startData.method !== 'manual' && (startData.ip || startData.lat || startData.lng)) || 
+            {((startData && startData.method !== 'manual' && (startData.ip || startData.lat || startData.lng)) ||
               (endData && endData.method !== 'manual' && (endData.ip || endData.lat || endData.lng))) && (
-              <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
-                <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
-                  <FaMapMarkerAlt size={14} />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Location & Device</span>
-                  <div className="space-y-1">
-                    {startData && startData.method !== 'manual' && (
-                      <>
-                        {startData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start IP: {startData.ip}</p>}
-                        {(startData.lat || startData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start GPS: {startData.lat || 'N/A'}, {startData.lng || 'N/A'}</p>}
-                      </>
-                    )}
-                    {endData && endData.method !== 'manual' && (
-                      <>
-                        {endData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End IP: {endData.ip}</p>}
-                        {(endData.lat || endData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End GPS: {endData.lat || 'N/A'}, {endData.lng || 'N/A'}</p>}
-                      </>
-                    )}
+                <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
+                  <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+                    <FaMapMarkerAlt size={14} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Location & Device</span>
+                    <div className="space-y-1">
+                      {startData && startData.method !== 'manual' && (
+                        <>
+                          {startData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start IP: {startData.ip}</p>}
+                          {(startData.lat || startData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start GPS: {startData.lat || 'N/A'}, {startData.lng || 'N/A'}</p>}
+                        </>
+                      )}
+                      {endData && endData.method !== 'manual' && (
+                        <>
+                          {endData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End IP: {endData.ip}</p>}
+                          {(endData.lat || endData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End GPS: {endData.lat || 'N/A'}, {endData.lng || 'N/A'}</p>}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="flex items-start gap-4">
               <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">

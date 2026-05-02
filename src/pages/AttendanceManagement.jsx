@@ -250,7 +250,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 p-2 lg:p-0">
           <div className="border-b border-gray-100 pb-4">
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <FaUser className="text-purple-500" /> Employee Information
@@ -863,8 +863,8 @@ const AttendanceManagement = ({ companyId }) => {
                           key={attendance.id}
                           onClick={() => handleViewDetails(attendance)}
                           className={`cursor-pointer transition-all duration-300 ${(!attendance.start_time || !attendance.end_time)
-                              ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
-                              : 'hover:bg-gray-50'
+                            ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
+                            : 'hover:bg-gray-50'
                             }`}
                         >
                           <td className="px-6 py-4">

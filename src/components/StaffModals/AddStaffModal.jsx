@@ -582,7 +582,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
             </div>
 
             <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
-              <div className="space-y-6">
+              <div className="space-y-6 p-2 lg:p-0">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <FaSearch className="h-4 w-4 text-indigo-500" />
@@ -675,7 +675,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.2 }}
-                      className="space-y-6"
+                      className="space-y-6 p-2 lg:p-0"
                     >
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-3">

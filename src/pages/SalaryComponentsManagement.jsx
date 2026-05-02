@@ -127,7 +127,7 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 p-2 lg:p-0">
                             {/* Summary Stats */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -282,7 +282,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6">
+                        <div className="p-6 space-y-6 p-2 lg:p-0">
                             {/* Identifiers */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
@@ -772,7 +772,7 @@ const SalaryComponents = () => {
                 </div>
             }
         >
-            <div className="space-y-6">
+            <div className="space-y-6 p-2 lg:p-0">
                 {/* Stats */}
                 {!loading && components.length > 0 && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">

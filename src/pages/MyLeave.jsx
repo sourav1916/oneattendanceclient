@@ -1009,7 +1009,7 @@ const MyLeave = () => {
         </button>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 p-2 lg:p-0">
         {/* Statistics Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

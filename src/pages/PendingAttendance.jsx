@@ -248,7 +248,7 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 p-2 lg:p-0">
                     <div className="border-b pb-4">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                             <FaUser className="text-amber-500" /> Employee Information
@@ -841,10 +841,10 @@ const PendingAttendance = ({ companyId }) => {
                                                     key={attendance.punch_uid || attendance.punch_id || attendance.id}
                                                     onClick={() => handleViewDetails(attendance)}
                                                     className={`cursor-pointer transition-all duration-300 ${selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id)
-                                                            ? 'bg-amber-50/50'
-                                                            : (!attendance.start_time || !attendance.end_time)
-                                                                ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
-                                                                : 'hover:bg-gray-50'
+                                                        ? 'bg-amber-50/50'
+                                                        : (!attendance.start_time || !attendance.end_time)
+                                                            ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
+                                                            : 'hover:bg-gray-50'
                                                         }`}
                                                 >
                                                     <td className="px-6 py-4">

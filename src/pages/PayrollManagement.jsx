@@ -520,7 +520,7 @@ const PayrollManagement = () => {
 
                 {/* Right Section: Controls */}
                 <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
-                    
+
                     {/* Vertical Separator */}
                     <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
 
@@ -1006,7 +1006,7 @@ const PayrollManagement = () => {
 
                                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                                         <form onSubmit={handleGenerate} className="p-6">
-                                            <div className="space-y-6">
+                                            <div className="space-y-6 p-2 lg:p-0">
                                                 {/* Generation Mode Selection */}
                                                 <div>
                                                     <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -1028,13 +1028,13 @@ const PayrollManagement = () => {
                                                                 }));
                                                             }}
                                                             className={`p-4 rounded-xl border-2 transition-all duration-200 ${generationMode === GENERATION_MODES.INDIVIDUAL
-                                                                    ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                                                                    : 'border-gray-200 bg-white hover:border-emerald-200'
+                                                                ? 'border-emerald-500 bg-emerald-50 shadow-lg'
+                                                                : 'border-gray-200 bg-white hover:border-emerald-200'
                                                                 }`}
                                                         >
                                                             <FaUser className={`mx-auto mb-2 text-2xl ${generationMode === GENERATION_MODES.INDIVIDUAL
-                                                                    ? 'text-emerald-600'
-                                                                    : 'text-gray-400'
+                                                                ? 'text-emerald-600'
+                                                                : 'text-gray-400'
                                                                 }`} />
                                                             <div className="font-semibold text-sm text-gray-800">Individual</div>
                                                             <div className="text-xs text-gray-500 mt-1">Single employee</div>
@@ -1054,13 +1054,13 @@ const PayrollManagement = () => {
                                                                 }));
                                                             }}
                                                             className={`p-4 rounded-xl border-2 transition-all duration-200 ${generationMode === GENERATION_MODES.MULTIPLE
-                                                                    ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                                                                    : 'border-gray-200 bg-white hover:border-emerald-200'
+                                                                ? 'border-emerald-500 bg-emerald-50 shadow-lg'
+                                                                : 'border-gray-200 bg-white hover:border-emerald-200'
                                                                 }`}
                                                         >
                                                             <FaUserFriends className={`mx-auto mb-2 text-2xl ${generationMode === GENERATION_MODES.MULTIPLE
-                                                                    ? 'text-emerald-600'
-                                                                    : 'text-gray-400'
+                                                                ? 'text-emerald-600'
+                                                                : 'text-gray-400'
                                                                 }`} />
                                                             <div className="font-semibold text-sm text-gray-800">Multiple</div>
                                                             <div className="text-xs text-gray-500 mt-1">Select employees</div>
@@ -1080,13 +1080,13 @@ const PayrollManagement = () => {
                                                                 }));
                                                             }}
                                                             className={`p-4 rounded-xl border-2 transition-all duration-200 ${generationMode === GENERATION_MODES.ALL
-                                                                    ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                                                                    : 'border-gray-200 bg-white hover:border-emerald-200'
+                                                                ? 'border-emerald-500 bg-emerald-50 shadow-lg'
+                                                                : 'border-gray-200 bg-white hover:border-emerald-200'
                                                                 }`}
                                                         >
                                                             <FaUsers className={`mx-auto mb-2 text-2xl ${generationMode === GENERATION_MODES.ALL
-                                                                    ? 'text-emerald-600'
-                                                                    : 'text-gray-400'
+                                                                ? 'text-emerald-600'
+                                                                : 'text-gray-400'
                                                                 }`} />
                                                             <div className="font-semibold text-sm text-gray-800">All Employees</div>
                                                             <div className="text-xs text-gray-500 mt-1">Everyone at once</div>

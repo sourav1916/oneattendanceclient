@@ -48,7 +48,7 @@ export default function GlobalSkeleton() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 space-y-4 p-3 sm:space-y-6 sm:p-6">
+        <main className="flex-1 space-y-4 p-3 sm:space-y-6 p-2 lg:p-0 sm:p-6">
 
           {/* Top meta row */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

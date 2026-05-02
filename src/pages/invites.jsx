@@ -441,8 +441,8 @@ export default function MyInvites() {
                             <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
                             <span
                               className={`text-xs px-2 py-0.5 rounded-full font-medium ${weekend.type === "half"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-indigo-100 text-indigo-700"
+                                ? "bg-blue-100 text-blue-700"
+                                : "bg-indigo-100 text-indigo-700"
                                 }`}
                             >
                               {weekend.type || "full"}
@@ -625,7 +625,7 @@ export default function MyInvites() {
         </div>
       }
     >
-      <div className="space-y-6 px-2 lg:px-0">
+      <div className="space-y-6 p-2 lg:p-0 px-2 lg:px-0">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

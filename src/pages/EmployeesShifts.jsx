@@ -238,13 +238,13 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                                 Average {formatHours(s.average_hours_per_day)} / working day
                             </p>
                         </div>
-                        </div>
-                        <div className="px-4 sm:px-6 pb-4">
-                            <button onClick={onClose}
-                                className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-medium">
-                                Close
-                            </button>
-                        </div>
+                    </div>
+                    <div className="px-4 sm:px-6 pb-4">
+                        <button onClick={onClose}
+                            className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-medium">
+                            Close
+                        </button>
+                    </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
@@ -465,7 +465,7 @@ const EmployeesShifts = () => {
         <div className="min-h-screen p-3 md:p-6 font-sans">
             <div className="max-w-7xl mx-auto">
 
-                <div className="space-y-6">
+                <div className="space-y-6 p-2 lg:p-0">
                     {/* ─── Page Header ─── */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                         <div>

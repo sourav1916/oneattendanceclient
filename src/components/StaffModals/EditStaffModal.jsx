@@ -743,7 +743,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
             </div>
 
             <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
-              <div className="space-y-6">
+              <div className="space-y-6 p-2 lg:p-0">
                 {selectedUser && (
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
@@ -799,7 +799,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="space-y-6"
+                    className="space-y-6 p-2 lg:p-0"
                   >
                     {showInviteFields ? (
                       <div className="grid gap-4 md:grid-cols-2">
