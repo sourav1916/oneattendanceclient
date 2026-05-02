@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fa';
 import apiCall from '../utils/api';
 import { ManagementHub } from '../components/common';
+import ModalScrollLock from '../components/ModalScrollLock';
 
 const MyCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -119,6 +120,8 @@ const MyCalendar = () => {
     return grid;
   }, [calendarData, month, year]);
 
+  const [selectedCell, setSelectedCell] = useState(null);
+
   const getStatusStyles = (status, isCurrentMonth) => {
     if (!isCurrentMonth) return 'bg-gray-50/50 text-gray-300';
     switch (status) {
@@ -194,7 +197,8 @@ const MyCalendar = () => {
             {calendarGrid.map((cell, idx) => (
               <div
                 key={idx}
-                className={`min-h-[120px] p-2 transition-all ${getStatusStyles(cell.data?.status, cell.isCurrentMonth)} ${cell.isToday ? 'ring-2 ring-indigo-500 ring-inset z-[1]' : ''}`}
+                onClick={() => setSelectedCell(cell)}
+                className={`min-h-[120px] p-2 transition-all cursor-pointer hover:opacity-90 ${getStatusStyles(cell.data?.status, cell.isCurrentMonth)} ${cell.isToday ? 'ring-2 ring-indigo-500 ring-inset z-[1]' : ''}`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <span className={`text-sm font-black ${cell.isCurrentMonth ? 'text-gray-900' : 'text-gray-300'}`}>
@@ -238,6 +242,11 @@ const MyCalendar = () => {
           <LegendItem color="bg-slate-400" label="Weekend" />
         </div>
       </div>
+      <AnimatePresence>
+        {selectedCell && (
+          <DayDetailsModal cell={selectedCell} onClose={() => setSelectedCell(null)} />
+        )}
+      </AnimatePresence>
     </ManagementHub>
   );
 };
@@ -289,5 +298,105 @@ const LegendItem = ({ color, label }) => (
     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{label}</span>
   </div>
 );
+
+const DayDetailsModal = ({ cell, onClose }) => {
+  if (!cell) return null;
+  const { date, data } = cell;
+  
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <ModalScrollLock />
+      <motion.div
+        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        initial={{ scale: 0.95, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 20 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50">
+          <div>
+            <h3 className="text-lg font-black text-gray-900">{formattedDate}</h3>
+            {data?.status && (
+              <div className="mt-1">
+                <StatusBadge status={data.status} type={data.is_leave?.type || data.is_weekend?.type} />
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-600 rounded-xl transition-colors">
+            <FaTimesCircle size={20} />
+          </button>
+        </div>
+        
+        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+          {!data ? (
+            <p className="text-center text-gray-500 py-8">No data available for this date.</p>
+          ) : (
+            <>
+              {data.status === 'holiday' && data.is_holiday && (
+                <div className="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                  <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-1">Holiday Info</h4>
+                  <p className="font-bold text-amber-900">{data.is_holiday.name}</p>
+                </div>
+              )}
+              
+              {data.status === 'leave' && data.is_leave && (
+                <div className="bg-violet-50 p-4 rounded-xl border border-violet-100">
+                  <h4 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-1">Leave Info</h4>
+                  <p className="font-bold text-violet-900">{data.is_leave.name}</p>
+                  {data.is_leave.type && <p className="text-sm text-violet-700 mt-1">Type: {data.is_leave.type}</p>}
+                </div>
+              )}
+              
+              {data.worked && (
+                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                  <h4 className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-3">Work Info</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {data.worked.punch_in && (
+                      <div>
+                        <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch In</p>
+                        <p className="font-black text-emerald-900">{data.worked.punch_in}</p>
+                      </div>
+                    )}
+                    {data.worked.punch_out && (
+                      <div>
+                        <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch Out</p>
+                        <p className="font-black text-emerald-900">{data.worked.punch_out}</p>
+                      </div>
+                    )}
+                    {data.worked.work_hour && (
+                      <div>
+                        <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Total Hours</p>
+                        <p className="font-black text-emerald-900">{data.worked.work_hour}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {Object.keys(data).length > 0 && (
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mt-4">
+                   <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-3">Raw Details</h4>
+                   <pre className="text-[10px] text-gray-700 whitespace-pre-wrap overflow-x-auto">
+                     {JSON.stringify(data, null, 2)}
+                   </pre>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
 
 export default MyCalendar;

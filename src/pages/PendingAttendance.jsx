@@ -222,29 +222,33 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4 sm:px-6"
             onClick={onClose}
         >
             <ModalScrollLock />
             <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+                initial={{ scale: 0.95, opacity: 0, y: 18 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 18 }}
+                transition={{ type: "spring", damping: 25, stiffness: 280 }}
+                className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="sticky top-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 sm:p-6 rounded-t-[10px] z-10">
+                <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                            <FaInfoCircle /> Pending Attendance Details
+                        <h2 className="text-xl font-bold flex items-center gap-3 text-slate-900">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-100">
+                                <FaInfoCircle className="text-white h-6 w-6" />
+                            </div>
+                            Pending Attendance Details
                         </h2>
-                        <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition">
-                            <FaTimesCircle size={18} className="sm:w-5 sm:h-5" />
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50">
+                            <FaTimesCircle size={20} />
                         </button>
                     </div>
                 </div>
 
-                <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     <div className="border-b pb-4">
                         <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                             <FaUser className="text-amber-500" /> Employee Information

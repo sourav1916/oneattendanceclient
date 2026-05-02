@@ -147,13 +147,17 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-700">{startData?.time || <Placeholder />}</span>
-                      <span className="text-[10px] text-gray-400 uppercase font-bold">{startData?.method || ''}</span>
+                      {startData?.method && startData.method !== 'manual' && (
+                        <span className="text-[10px] text-gray-400 uppercase font-bold">{startData.method}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-700">{endData?.time || <Placeholder />}</span>
-                      <span className="text-[10px] text-gray-400 uppercase font-bold">{endData?.method || ''}</span>
+                      {endData?.method && endData.method !== 'manual' && (
+                        <span className="text-[10px] text-gray-400 uppercase font-bold">{endData.method}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -248,12 +252,16 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
               <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">{typeConfig.startLabel}</span>
                 <span className="text-xs font-bold text-gray-700 truncate block">{startData?.time || <Placeholder />}</span>
-                <span className="text-[9px] text-gray-400 uppercase font-bold">{startData?.method || ''}</span>
+                {startData?.method && startData.method !== 'manual' && (
+                  <span className="text-[9px] text-gray-400 uppercase font-bold">{startData.method}</span>
+                )}
               </div>
               <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">{typeConfig.endLabel}</span>
                 <span className="text-xs font-bold text-gray-700 truncate block">{endData?.time || <Placeholder />}</span>
-                <span className="text-[9px] text-gray-400 uppercase font-bold">{endData?.method || ''}</span>
+                {endData?.method && endData.method !== 'manual' && (
+                  <span className="text-[9px] text-gray-400 uppercase font-bold">{endData.method}</span>
+                )}
               </div>
             </div>
           </motion.div>
@@ -650,7 +658,7 @@ const DetailsModal = ({ record, onClose }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 18 }}
         transition={{ type: "spring", damping: 25, stiffness: 280 }}
-        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto flex flex-col m-auto"
+        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto flex flex-col"
       >
         <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 shrink-0">
           <div className="flex items-center gap-3">
@@ -686,30 +694,47 @@ const DetailsModal = ({ record, onClose }) => {
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
               <p className="font-bold text-slate-800 text-sm">{startData?.time || <Placeholder />}</p>
-              <p className="text-[10px] text-slate-400 uppercase font-bold">{startData?.method || ''}</p>
+              {startData?.method && startData.method !== 'manual' && (
+                <p className="text-[10px] text-slate-400 uppercase font-bold">{startData.method}</p>
+              )}
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
               <p className="font-bold text-slate-800 text-sm">{endData?.time || <Placeholder />}</p>
-              <p className="text-[10px] text-slate-400 uppercase font-bold">{endData?.method || ''}</p>
+              {endData?.method && endData.method !== 'manual' && (
+                <p className="text-[10px] text-slate-400 uppercase font-bold">{endData.method}</p>
+              )}
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
-                <FaMapMarkerAlt size={14} />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">IP Address</span>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start: {startData?.ip || <Placeholder />}</p>
-                  <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End: {endData?.ip || <Placeholder />}</p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
+            {((startData && startData.method !== 'manual' && (startData.ip || startData.lat || startData.lng)) || 
+              (endData && endData.method !== 'manual' && (endData.ip || endData.lat || endData.lng))) && (
+              <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
+                <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+                  <FaMapMarkerAlt size={14} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Location & Device</span>
+                  <div className="space-y-1">
+                    {startData && startData.method !== 'manual' && (
+                      <>
+                        {startData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start IP: {startData.ip}</p>}
+                        {(startData.lat || startData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start GPS: {startData.lat || 'N/A'}, {startData.lng || 'N/A'}</p>}
+                      </>
+                    )}
+                    {endData && endData.method !== 'manual' && (
+                      <>
+                        {endData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End IP: {endData.ip}</p>}
+                        {(endData.lat || endData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End GPS: {endData.lat || 'N/A'}, {endData.lng || 'N/A'}</p>}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="flex items-start gap-4 border-t border-slate-200 pt-4">
+            <div className="flex items-start gap-4">
               <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
                 <FaCog size={14} />
               </div>
