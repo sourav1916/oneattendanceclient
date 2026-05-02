@@ -15,6 +15,7 @@ import Pagination, { usePagination } from '../components/PaginationComponent';
 import ModalScrollLock from '../components/ModalScrollLock';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import ActionMenu from '../components/ActionMenu';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -98,26 +99,22 @@ const PayrollViewModal = ({ payroll, employee, onClose }) => {
 
     return (
         <>
-            <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-indigo-600">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shadow-lg">
-                            <FaFileInvoiceDollar className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-white">Payroll Details</h2>
-                            <p className="text-sm text-blue-100 mt-0.5">{MONTHS[p.month - 1]} {p.year}</p>
-                        </div>
+            <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-5 sticky top-0 z-[10]">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                        <FaFileInvoiceDollar className="w-6 h-6 text-white" />
                     </div>
-                    <motion.button whileHover={{ scale: 1.1, rotate: 90 }} whileTap={{ scale: 0.9 }} onClick={onClose}
-                        className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
-                    >
-                        <FaTimes className="w-4 h-4 text-white" />
-                    </motion.button>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900">Payroll Details</h2>
+                        <p className="text-sm text-slate-500 mt-0.5">{MONTHS[p.month - 1]} {p.year}</p>
+                    </div>
                 </div>
+                <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                    <FaTimes className="h-4 w-4" />
+                </button>
             </div>
 
-            <div className="p-6 max-h-[calc(100vh-220px)] overflow-y-auto custom-scrollbar">
+            <div className="flex-1 min-h-0 p-6 overflow-y-auto custom-scrollbar">
                 {/* Employee Info */}
                 <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 mb-6">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
@@ -232,6 +229,7 @@ const MyPayroll = () => {
     const [viewMode, setViewMode] = useState('table');
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 12);
     const fetchInProgress = useRef(false);
@@ -369,7 +367,7 @@ const MyPayroll = () => {
     const totalNet = payrollData.reduce((s, r) => s + parseFloat(r.payroll?.net_salary || 0), 0);
     const latestPayroll = payrollData[0]?.payroll;
 
-    const openViewModal = (item) => { setSelectedPayroll(item); setModalType(MODAL_TYPES.VIEW); };
+    const openViewModal = (item) => { setSelectedPayroll(item); setModalType(MODAL_TYPES.VIEW); setActiveActionMenu(null); };
     const closeModal = () => { setModalType(MODAL_TYPES.NONE); setSelectedPayroll(null); };
 
     const handlePageChange = useCallback((newPage) => {
@@ -603,11 +601,18 @@ const MyPayroll = () => {
                                                         </td>
                                                     )}
                                                     <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                                        <button onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
-                                                            className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all hover:scale-110 duration-200"
-                                                        >
-                                                            <FaEye size={14} />
-                                                        </button>
+                                                        <ActionMenu
+                                                            activeId={activeActionMenu}
+                                                            onToggle={(e, id) => setActiveActionMenu((curr) => (curr === id ? null : id))}
+                                                            menuId={`table-${p.id}`}
+                                                            actions={[
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye />,
+                                                                    onClick: () => openViewModal(item)
+                                                                }
+                                                            ]}
+                                                        />
                                                     </td>
                                                 </motion.tr>
                                             );
@@ -702,11 +707,18 @@ const MyPayroll = () => {
                                                     <span className="text-purple-600">+{parseFloat(p.overtime_hours).toFixed(1)}h OT</span>
                                                 )}
                                             </div>
-                                            <button onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
-                                                className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"
-                                            >
-                                                <FaEye size={14} />
-                                            </button>
+                                            <ActionMenu
+                                                activeId={activeActionMenu}
+                                                onToggle={(e, id) => setActiveActionMenu((curr) => (curr === id ? null : id))}
+                                                menuId={`card-${p.id}`}
+                                                actions={[
+                                                    {
+                                                        label: 'View Details',
+                                                        icon: <FaEye />,
+                                                        onClick: () => openViewModal(item)
+                                                    }
+                                                ]}
+                                            />
                                         </div>
                                     </motion.div>
                                 );
@@ -739,7 +751,7 @@ const MyPayroll = () => {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-xl shadow-2xl overflow-hidden"
+                            className="relative w-full max-w-4xl max-h-[80vh] m-auto flex flex-col bg-white rounded-xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
                             {modalType === MODAL_TYPES.VIEW && (
