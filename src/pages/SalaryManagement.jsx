@@ -335,7 +335,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 components: (salary.components || []).map(c => ({
                     component_id: c.id,
                     calc_type: c.calc_type,
-                    calc_value: c.calc_value,
+                    calc_value: parseFloat(c.calc_value || 0).toFixed(2),
                     reason: c.reason || ''
                 }))
             });
@@ -360,7 +360,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         const packageComponents = (pkg.items || []).map(item => ({
             component_id: item.component_id,
             calc_type: item.calc_type,
-            calc_value: item.calc_value,
+            calc_value: parseFloat(item.calc_value || 0).toFixed(2),
             reason: `Default from ${pkg.name} package`
         }));
         setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
@@ -607,7 +607,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 components: (salary.components || []).map(c => ({
                     component_id: c.id,
                     calc_type: c.calc_type,
-                    calc_value: c.calc_value,
+                    calc_value: parseFloat(c.calc_value || 0).toFixed(2),
                     reason: c.reason || ''
                 }))
             });
@@ -632,7 +632,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         const packageComponents = (pkg.items || []).map(item => ({
             component_id: item.component_id,
             calc_type: item.calc_type,
-            calc_value: item.calc_value,
+            calc_value: parseFloat(item.calc_value || 0).toFixed(2),
             reason: `Default from ${pkg.name} package`
         }));
         setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
@@ -891,7 +891,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
         const packageComponents = (pkg.items || []).map(item => ({
             component_id: item.component_id,
             calc_type: item.calc_type,
-            calc_value: item.calc_value,
+            calc_value: parseFloat(item.calc_value || 0).toFixed(2),
             effective_from: formData.effective_from || '', // Use current form date or empty
             effective_to: null,
             reason: `Default from ${pkg.name} package`
