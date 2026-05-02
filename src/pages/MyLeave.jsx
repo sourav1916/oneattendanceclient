@@ -281,7 +281,7 @@ const CancelLeaveModal = ({ leave, onClose, onSuccess }) => {
   const handleCancel = async () => {
     setSubmitting(true);
     try {
-      await request('/leave/cancel', 'POST', { id: leave.id, remarks });
+      await request('/leave/cancel', 'PUT', { id: leave.id, remarks });
       toast.success('Leave cancelled successfully');
       onSuccess();
       onClose();
