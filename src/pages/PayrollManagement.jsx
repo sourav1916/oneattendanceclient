@@ -447,7 +447,7 @@ const PayrollManagement = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="space-y-6">
 
             {/* Header */}
             <motion.div

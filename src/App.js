@@ -31,6 +31,7 @@ import PermissionManagement from "./pages/PermissionManagement";
 import CompanyHolidays from "./pages/HolidayManagement";
 import MyCalendar from "./pages/MyCalendar";
 import PayrollManagement from "./pages/PayrollManagement";
+import PayrollAdjustment from "./pages/PayrollAdjustment";
 import BankAccountManagement from "./pages/BankAccountManagement";
 import CompanySettings from "./pages/CompanySettings";
 import EmployeesShifts from "./pages/EmployeesShifts";
@@ -60,6 +61,29 @@ import {
 } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+const PAYROLL_HUB_TABS = [
+  {
+    id: "payroll",
+    label: "Payroll Management",
+    shortLabel: "Payroll",
+    description: "Generate and manage employee payroll records.",
+    icon: FaFileInvoiceDollar,
+    pageKey: "payrollManagement",
+    component: PayrollManagement,
+    accent: "bg-green-50 text-green-700 border-green-200",
+  },
+  {
+    id: "adjustments",
+    label: "Payroll Adjustments",
+    shortLabel: "Adjustments",
+    description: "Manage bonuses, fines, and ledger adjustments.",
+    icon: FaCalculator,
+    pageKey: "payrollManagement",
+    component: PayrollAdjustment,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+];
 
 const SALARY_HUB_TABS = [
   {
@@ -328,7 +352,19 @@ function AppContent() {
         <Route path="/permission-management" element={<ProtectedRoute pageKey="permissionManagement"><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-config" element={<ProtectedRoute pageKey="leaveConfig"><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
         <Route path="/leave-balance" element={<ProtectedRoute pageKey="leaveBalance"><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
-        <Route path="/payroll-management" element={<ProtectedRoute pageKey="payrollManagement"><MainLayout><PayrollManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/payroll-management" element={<ProtectedRoute pageKey="payrollManagement"><MainLayout><TabbedManagementHub
+          routePath="/payroll-management"
+          defaultTab="payroll"
+          title="Payroll Hub"
+          description="Manage employee payroll generation, view records, and add adjustments like bonuses and fines."
+          eyebrow={<><FaFileInvoiceDollar size={11} /> Payroll Hub</>}
+          accent="green"
+          tabs={PAYROLL_HUB_TABS}
+          accessDeniedTitle="No payroll tabs available"
+          accessDeniedDescription="Your current role does not have access to payroll management or adjustments."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
+        <Route path="/payroll-adjustments" element={<ProtectedRoute pageKey="payrollManagement"><Navigate to="/payroll-management?tab=adjustments" replace /></ProtectedRoute>} />
         <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><BankAccountManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-profile/:employeeId/:tabKey?" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-salary-history/:employeeId" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><EmployeeSalaryHistory /></MainLayout></ProtectedRoute>} />
