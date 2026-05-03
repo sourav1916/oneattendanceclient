@@ -163,19 +163,24 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                     className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-purple-200">
-                                <FaUserCircle className="h-5 w-5 text-white" />
+                    <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10 rounded-t-xl">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 border border-indigo-100 shadow-sm">
+                                    <FaUserCircle className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">Employee Details</h2>
+                                    <p className="text-sm text-slate-500">Overview of attendance and statistics</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">Employee Details</h2>
-                                <p className="text-xs text-slate-500">Overview of attendance and statistics</p>
-                            </div>
+                            <button
+                                onClick={onClose}
+                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
+                            >
+                                <FaTimes className="h-4 w-4" />
+                            </button>
                         </div>
-                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-4 w-4" />
-                        </button>
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6">
@@ -239,7 +244,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             </p>
                         </div>
                     </div>
-                    <div className="px-4 sm:px-6 pb-4 flex justify-end">
+                    <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
                         <button onClick={onClose}
                             className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
                             Close

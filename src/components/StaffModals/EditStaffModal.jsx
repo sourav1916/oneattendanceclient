@@ -722,27 +722,27 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 18 }}
             transition={{ type: "spring", damping: 25, stiffness: 280 }}
-            className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto"
+            className="relative w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
+            <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-200">
-                  <FaUserCog className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 border border-indigo-100 shadow-sm">
+                  <FaUserCog className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Edit Staff Invitation</h2>
+                  <h2 className="text-xl font-bold text-slate-800">Edit Staff Invitation</h2>
                   <p className="text-sm text-slate-500">Update configuration for this staff member</p>
                 </div>
               </div>
               <button
                 onClick={handleClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
               >
                 <FaTimes className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
+            <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
               <div className="space-y-6 p-2 lg:p-0">
                 {selectedUser && (
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
@@ -1060,7 +1060,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
+            <div className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

@@ -161,21 +161,21 @@ const EmployeeEditModal = ({
 
     return (
         <div className="flex flex-col flex-1 min-h-0">
-            <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+            <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10 rounded-t-xl">
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                            <FaUserCog className="h-6 w-6 text-white" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 border border-indigo-100 shadow-sm">
+                            <FaUserCog className="h-6 w-6" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-slate-900">Edit Employee</h2>
+                            <h2 className="text-xl font-bold text-slate-800">Edit Employee</h2>
                             <p className="text-sm text-slate-500">Update configuration and accessibility</p>
                         </div>
                     </div>
                     <button
                         type="button"
                         onClick={closeModal}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
                     >
                         <FaTimes className="h-4 w-4" />
                     </button>
@@ -1512,20 +1512,20 @@ const EmployeeManagement = () => {
                             {/* VIEW MODAL */}
                             {modalType === MODAL_TYPES.VIEW && selectedEmployee && (
                                 <div className="flex flex-col flex-1 min-h-0">
-                                    <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
+                                    <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10 rounded-t-xl">
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                                                    <FaInfoCircle className="h-6 w-6 text-white" />
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 border border-indigo-100 shadow-sm">
+                                                    <FaInfoCircle className="h-6 w-6" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-slate-900">Employee Details</h2>
+                                                    <h2 className="text-xl font-bold text-slate-800">Employee Details</h2>
                                                     <p className="text-sm text-slate-500">Comprehensive profile overview</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={closeModal}
-                                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"
+                                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
                                             >
                                                 <FaTimes className="h-4 w-4" />
                                             </button>
@@ -2130,25 +2130,23 @@ const EmployeeManagement = () => {
                             {/* WEEKEND MANAGE MODAL */}
                             {modalType === MODAL_TYPES.WEEKEND_MANAGE && selectedEmployee && (
                                 <>
-                                    <div className="px-6 py-5 border-b border-gray-100">
-                                        <div className="flex items-center justify-between">
+                                    <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10 rounded-t-xl">
+                                        <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-200">
-                                                    <FaCalendarAlt className="w-6 h-6 text-white" />
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-500 border border-purple-100 shadow-sm">
+                                                    <FaCalendarAlt className="h-6 w-6" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-gray-900">Weekend Management</h2>
-                                                    <p className="text-sm text-gray-500 mt-0.5">Configure weekend for <span className="font-semibold text-gray-700">{selectedEmployee.name}</span></p>
+                                                    <h2 className="text-xl font-bold text-slate-800">Weekend Management</h2>
+                                                    <p className="text-sm text-slate-500">Configure weekend for <span className="font-semibold text-slate-700">{selectedEmployee.name}</span></p>
                                                 </div>
                                             </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 90 }}
-                                                whileTap={{ scale: 0.9 }}
+                                            <button
                                                 onClick={closeModal}
-                                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
                                             >
-                                                <FaTimes className="w-5 h-5 text-gray-400" />
-                                            </motion.button>
+                                                <FaTimes className="h-4 w-4" />
+                                            </button>
                                         </div>
                                     </div>
                                     <form onSubmit={handleWeekendSubmit} className="p-6">
@@ -2188,27 +2186,23 @@ const EmployeeManagement = () => {
                                             ))}
                                         </div>
 
-                                        <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3 mt-6 -mx-6 -mb-6">
-                                            <motion.button
+                                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+                                            <button
                                                 type="button"
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
                                                 onClick={closeModal}
                                                 disabled={loading}
-                                                className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white transition-all duration-200 text-sm"
+                                                className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
                                             >
                                                 Cancel
-                                            </motion.button>
-                                            <motion.button
+                                            </button>
+                                            <button
                                                 type="submit"
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
                                                 disabled={loading}
-                                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-purple-200 flex items-center gap-2"
+                                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-purple-100 hover:shadow-xl transition-all flex items-center gap-2"
                                             >
                                                 {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
                                                 Save Configuration
-                                            </motion.button>
+                                            </button>
                                         </div>
                                     </form>
                                 </>
@@ -2217,25 +2211,23 @@ const EmployeeManagement = () => {
                             {/* DELETE MODAL */}
                             {modalType === MODAL_TYPES.DELETE_CONFIRM && selectedEmployee && (
                                 <>
-                                    <div className="px-6 py-5 border-b border-gray-100">
-                                        <div className="flex items-center justify-between">
+                                    <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10 rounded-t-xl">
+                                        <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
-                                                    <FaTrash className="w-6 h-6 text-white" />
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-500 border border-red-100 shadow-sm">
+                                                    <FaTrash className="h-6 w-6" />
                                                 </div>
                                                 <div>
-                                                    <h2 className="text-xl font-bold text-gray-900">Confirm Delete</h2>
-                                                    <p className="text-sm text-gray-500 mt-0.5">This action cannot be undone</p>
+                                                    <h2 className="text-xl font-bold text-slate-800">Confirm Delete</h2>
+                                                    <p className="text-sm text-slate-500 mt-0.5">This action cannot be undone</p>
                                                 </div>
                                             </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 90 }}
-                                                whileTap={{ scale: 0.9 }}
+                                            <button
                                                 onClick={closeModal}
-                                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+                                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
                                             >
-                                                <FaTimes className="w-5 h-5 text-gray-400" />
-                                            </motion.button>
+                                                <FaTimes className="h-4 w-4" />
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="flex flex-1 flex-col justify-center p-6 text-center">
@@ -2248,11 +2240,10 @@ const EmployeeManagement = () => {
                                         <p className="text-gray-500 mb-6">
                                             You are about to delete <span className="font-semibold text-red-600">{selectedEmployee.name}</span>. This action cannot be undone.
                                         </p>
-                                        <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row sm:gap-4">
-                                            <button onClick={closeModal} className="px-6 py-2 border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-100 transition-all duration-300 font-medium">Cancel</button>
+                                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+                                            <button onClick={closeModal} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
                                             <button onClick={handleDelete} disabled={loading || deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''}
-                                                className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 flex items-center gap-2 transition-all duration-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-                                            >
+                                                className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
                                                 {loading ? <FaSpinner className="animate-spin" /> : <FaTrash size={14} />}
                                                 Delete Employee
                                             </button>
