@@ -6,7 +6,7 @@ import {
     FaCheckCircle, FaFileInvoiceDollar, FaClock, FaPlus,
     FaDownload, FaSave, FaCalculator, FaClipboardList,
     FaTh, FaListUl, FaBriefcase, FaEnvelope, FaIdCard,
-    FaUsers, FaUserFriends, FaUser, FaCog
+    FaUsers, FaUserFriends, FaUser, FaCog, FaAngleDoubleRight, FaAngleDoubleLeft
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import Select from '../components/SelectField';
@@ -92,6 +92,9 @@ const PayrollManagement = () => {
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [viewMode, setViewMode] = useState('table');
 
+    const [availableSearch, setAvailableSearch] = useState('');
+    const [selectedSearch, setSelectedSearch] = useState('');
+
     const currentDate = new Date();
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
@@ -132,8 +135,8 @@ const PayrollManagement = () => {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
 
-            // Fetch all employees without pagination
-            const response = await apiCall('/employees/list?limit=1000', 'GET', null, companyId);
+            // Fetch all employees
+            const response = await apiCall('/employees/all-list', 'GET', null, companyId);
             const result = await response.json();
 
             if (result.success) {
@@ -237,27 +240,11 @@ const PayrollManagement = () => {
         setLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            let payload;
-
-            if (mode === GENERATION_MODES.INDIVIDUAL) {
-                payload = {
-                    employee_id: data.employee_id,
-                    month: data.month,
-                    year: data.year
-                };
-            } else if (mode === GENERATION_MODES.MULTIPLE) {
-                payload = {
-                    employee_ids: data.employee_ids,
-                    month: data.month,
-                    year: data.year
-                };
-            } else if (mode === GENERATION_MODES.ALL) {
-                payload = {
-                    all_employees: true,
-                    month: data.month,
-                    year: data.year
-                };
-            }
+            const payload = {
+                employee_id: data.employee_ids,
+                month: data.month,
+                year: data.year
+            };
 
             const response = await apiCall('/payroll/generate-payroll', 'POST', payload, company?.id);
             const result = await response.json();
@@ -290,6 +277,8 @@ const PayrollManagement = () => {
             year: currentDate.getFullYear()
         });
         setModalType(MODAL_TYPES.GENERATE);
+        setAvailableSearch('');
+        setSelectedSearch('');
 
         // Fetch employees when modal opens
         await fetchEmployees();
@@ -305,34 +294,19 @@ const PayrollManagement = () => {
     const handleGenerate = async (e) => {
         e.preventDefault();
 
-        // Validation based on generation mode
-        if (generationMode === GENERATION_MODES.INDIVIDUAL) {
-            if (!generateFormData.employee_id) {
-                toast.warning('Please select an employee');
-                return;
-            }
-        } else if (generationMode === GENERATION_MODES.MULTIPLE) {
-            if (!generateFormData.employee_ids || generateFormData.employee_ids.length === 0) {
-                toast.warning('Please select at least one employee');
-                return;
-            }
+        if (!generateFormData.employee_ids || generateFormData.employee_ids.length === 0) {
+            toast.warning('Please select at least one employee');
+            return;
         }
 
-        const result = await generatePayroll(generationMode, {
-            employee_id: generateFormData.employee_id,
+        const result = await generatePayroll(GENERATION_MODES.MULTIPLE, {
             employee_ids: generateFormData.employee_ids,
             month: generateFormData.month,
             year: generateFormData.year
         });
 
         if (result.success) {
-            const successMessage = generationMode === GENERATION_MODES.ALL
-                ? 'Payroll generated for all employees successfully!'
-                : generationMode === GENERATION_MODES.MULTIPLE
-                    ? `Payroll generated for ${generateFormData.employee_ids.length} employees successfully!`
-                    : 'Payroll generated successfully!';
-
-            toast.success(successMessage);
+            toast.success(`Payroll generated for ${generateFormData.employee_ids.length} employees successfully!`);
             closeModal();
         } else {
             toast.error(result.error || 'Failed to generate payroll');
@@ -434,16 +408,32 @@ const PayrollManagement = () => {
         return { value: year, label: year.toString() };
     });
 
-    // Employee options for select
-    const employeeOptions = useMemo(() => {
-        return employeeList.map(emp => ({
-            value: emp.id,
-            label: emp.name,
-            email: emp.email,
-            code: emp.employee_code,
-            designation: emp.designation
-        }));
-    }, [employeeList]);
+    // Dual-List Computations for MULTIPLE mode
+    const availableEmployees = useMemo(() => {
+        return employeeList
+            .filter(emp => !generateFormData.employee_ids.includes(emp.id))
+            .filter(emp => emp.name.toLowerCase().includes(availableSearch.toLowerCase()) || 
+                           emp.employee_code.toLowerCase().includes(availableSearch.toLowerCase()));
+    }, [employeeList, generateFormData.employee_ids, availableSearch]);
+
+    const selectedEmployees = useMemo(() => {
+        return employeeList
+            .filter(emp => generateFormData.employee_ids.includes(emp.id))
+            .filter(emp => emp.name.toLowerCase().includes(selectedSearch.toLowerCase()) || 
+                           emp.employee_code.toLowerCase().includes(selectedSearch.toLowerCase()));
+    }, [employeeList, generateFormData.employee_ids, selectedSearch]);
+
+    // Avatar styling helper for dual list
+    const AVATAR_GRADIENTS = [
+        'from-blue-500 to-indigo-600',
+        'from-purple-500 to-pink-600',
+        'from-green-500 to-teal-600',
+        'from-orange-500 to-amber-500',
+        'from-rose-500 to-red-600',
+        'from-cyan-500 to-blue-500',
+    ];
+    const getInitials = (name = '') => name.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const avatarGradient = (id) => AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 
     // ─── Render ──────────────────────────────────────────────────────────────
 
@@ -1005,208 +995,9 @@ const PayrollManagement = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar">
-                                        <form onSubmit={handleGenerate} className="p-6">
+                                    <form onSubmit={handleGenerate} className="flex flex-col flex-1 overflow-hidden">
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                                             <div className="space-y-6 p-2 lg:p-0">
-                                                {/* Generation Mode Selection */}
-                                                <div>
-                                                    <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                                                        <FaUserFriends className="text-emerald-500" />
-                                                        Generation Mode
-                                                    </label>
-                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                        {/* Individual Mode */}
-                                                        <motion.button
-                                                            type="button"
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => {
-                                                                setGenerationMode(GENERATION_MODES.INDIVIDUAL);
-                                                                setGenerateFormData(prev => ({
-                                                                    ...prev,
-                                                                    employee_id: null,
-                                                                    employee_ids: []
-                                                                }));
-                                                            }}
-                                                            className={`p-4 rounded-xl border-2 transition-all duration-200 ${generationMode === GENERATION_MODES.INDIVIDUAL
-                                                                ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                                                                : 'border-gray-200 bg-white hover:border-emerald-200'
-                                                                }`}
-                                                        >
-                                                            <FaUser className={`mx-auto mb-2 text-2xl ${generationMode === GENERATION_MODES.INDIVIDUAL
-                                                                ? 'text-emerald-600'
-                                                                : 'text-gray-400'
-                                                                }`} />
-                                                            <div className="font-semibold text-sm text-gray-800">Individual</div>
-                                                            <div className="text-xs text-gray-500 mt-1">Single employee</div>
-                                                        </motion.button>
-
-                                                        {/* Multiple Mode */}
-                                                        <motion.button
-                                                            type="button"
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => {
-                                                                setGenerationMode(GENERATION_MODES.MULTIPLE);
-                                                                setGenerateFormData(prev => ({
-                                                                    ...prev,
-                                                                    employee_id: null,
-                                                                    employee_ids: []
-                                                                }));
-                                                            }}
-                                                            className={`p-4 rounded-xl border-2 transition-all duration-200 ${generationMode === GENERATION_MODES.MULTIPLE
-                                                                ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                                                                : 'border-gray-200 bg-white hover:border-emerald-200'
-                                                                }`}
-                                                        >
-                                                            <FaUserFriends className={`mx-auto mb-2 text-2xl ${generationMode === GENERATION_MODES.MULTIPLE
-                                                                ? 'text-emerald-600'
-                                                                : 'text-gray-400'
-                                                                }`} />
-                                                            <div className="font-semibold text-sm text-gray-800">Multiple</div>
-                                                            <div className="text-xs text-gray-500 mt-1">Select employees</div>
-                                                        </motion.button>
-
-                                                        {/* All Employees Mode */}
-                                                        <motion.button
-                                                            type="button"
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => {
-                                                                setGenerationMode(GENERATION_MODES.ALL);
-                                                                setGenerateFormData(prev => ({
-                                                                    ...prev,
-                                                                    employee_id: null,
-                                                                    employee_ids: []
-                                                                }));
-                                                            }}
-                                                            className={`p-4 rounded-xl border-2 transition-all duration-200 ${generationMode === GENERATION_MODES.ALL
-                                                                ? 'border-emerald-500 bg-emerald-50 shadow-lg'
-                                                                : 'border-gray-200 bg-white hover:border-emerald-200'
-                                                                }`}
-                                                        >
-                                                            <FaUsers className={`mx-auto mb-2 text-2xl ${generationMode === GENERATION_MODES.ALL
-                                                                ? 'text-emerald-600'
-                                                                : 'text-gray-400'
-                                                                }`} />
-                                                            <div className="font-semibold text-sm text-gray-800">All Employees</div>
-                                                            <div className="text-xs text-gray-500 mt-1">Everyone at once</div>
-                                                        </motion.button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Employee Selection - Individual */}
-                                                {generationMode === GENERATION_MODES.INDIVIDUAL && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 10 }}
-                                                    >
-                                                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                            <FaUserCircle className="text-emerald-500" />
-                                                            Select Employee
-                                                        </label>
-                                                        <EmployeeSelect
-                                                            value={generateFormData.employee_id}
-                                                            onChange={(val) => setGenerateFormData(prev => ({
-                                                                ...prev,
-                                                                employee_id: val
-                                                            }))}
-                                                            placeholder="Search and select employee..."
-                                                        />
-                                                    </motion.div>
-                                                )}
-
-                                                {/* Employee Selection - Multiple */}
-                                                {generationMode === GENERATION_MODES.MULTIPLE && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 10 }}
-                                                    >
-                                                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                            <FaUserFriends className="text-emerald-500" />
-                                                            Select Multiple Employees
-                                                        </label>
-                                                        {employeesLoading ? (
-                                                            <div className="flex items-center justify-center py-4">
-                                                                <FaSpinner className="animate-spin text-emerald-500 mr-2" />
-                                                                <span className="text-gray-500">Loading employees...</span>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <Select
-                                                                    options={employeeOptions}
-                                                                    value={employeeOptions.filter(opt =>
-                                                                        generateFormData.employee_ids.includes(opt.value)
-                                                                    )}
-                                                                    onChange={(selected) => setGenerateFormData(prev => ({
-                                                                        ...prev,
-                                                                        employee_ids: selected ? selected.map(s => s.value) : []
-                                                                    }))}
-                                                                    placeholder="Search and select employees..."
-                                                                    isMulti
-                                                                    isClearable
-                                                                    isSearchable
-                                                                    styles={customSelectStyles}
-                                                                    formatOptionLabel={({ label, email, code, designation }) => (
-                                                                        <div className="py-1">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <FaUserCircle className="text-emerald-500" />
-                                                                                <div className="flex-1">
-                                                                                    <div className="font-medium text-gray-900">{label}</div>
-                                                                                    <div className="text-xs text-gray-500">{email}</div>
-                                                                                </div>
-                                                                                <div className="text-right">
-                                                                                    <div className="text-xs font-mono text-gray-400">{code}</div>
-                                                                                    {designation && (
-                                                                                        <div className="text-xs text-gray-500 capitalize">
-                                                                                            {designation.replace('_', ' ')}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                />
-                                                                {generateFormData.employee_ids.length > 0 && (
-                                                                    <div className="mt-2 text-sm text-emerald-600 font-medium">
-                                                                        {generateFormData.employee_ids.length} employee(s) selected
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </motion.div>
-                                                )}
-
-                                                {/* All Employees Info */}
-                                                {generationMode === GENERATION_MODES.ALL && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: 10 }}
-                                                        className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl"
-                                                    >
-                                                        <div className="flex items-start gap-3">
-                                                            <FaUsers className="text-emerald-600 text-2xl mt-1" />
-                                                            <div>
-                                                                <h4 className="font-semibold text-gray-900 mb-1">
-                                                                    Generate for All Employees
-                                                                </h4>
-                                                                <p className="text-sm text-gray-600">
-                                                                    Payroll will be generated for all active employees in your company
-                                                                    for {getMonthName(generateFormData.month)} {generateFormData.year}.
-                                                                </p>
-                                                                {employeeList.length > 0 && (
-                                                                    <div className="mt-2 text-sm font-medium text-emerald-700">
-                                                                        Total Employees: {employeeList.length}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-
                                                 {/* Month and Year Selection */}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
@@ -1241,47 +1032,185 @@ const PayrollManagement = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="mt-6 flex justify-end gap-3">
-                                                <motion.button
-                                                    type="button"
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    onClick={closeModal}
-                                                    disabled={loading}
-                                                    className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                {/* Employee Selection */}
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: 10 }}
                                                 >
-                                                    Cancel
-                                                </motion.button>
-                                                <motion.button
-                                                    type="submit"
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    disabled={loading || employeesLoading || generatePayrollAccess.disabled}
-                                                    title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
-                                                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                                >
-                                                    {loading ? (
-                                                        <>
-                                                            <FaSpinner className="w-4 h-4 animate-spin" />
-                                                            Generating...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <FaCalculator className="w-4 h-4" />
-                                                            {generationMode === GENERATION_MODES.ALL
-                                                                ? 'Generate for All'
-                                                                : generationMode === GENERATION_MODES.MULTIPLE
-                                                                    ? `Generate for ${generateFormData.employee_ids.length || 0}`
-                                                                    : 'Generate Payroll'
-                                                            }
-                                                        </>
-                                                    )}
-                                                </motion.button>
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                                        <FaUserFriends className="text-emerald-500" />
+                                                        Select Employees
+                                                    </label>
+                                                        {employeesLoading ? (
+                                                            <div className="flex items-center justify-center py-4">
+                                                                <FaSpinner className="animate-spin text-emerald-500 mr-2" />
+                                                                <span className="text-gray-500">Loading employees...</span>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 mt-2">
+                                                                
+                                                                {/* Available Employees Pane */}
+                                                                <div className="flex flex-col border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                                                                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                                                                        <span className="font-semibold text-sm text-gray-700">Available</span>
+                                                                        <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full">{availableEmployees.length}</span>
+                                                                    </div>
+                                                                    <div className="p-2 border-b border-gray-100">
+                                                                        <div className="relative">
+                                                                            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+                                                                            <input
+                                                                                type="text"
+                                                                                placeholder="Search available..."
+                                                                                value={availableSearch}
+                                                                                onChange={(e) => setAvailableSearch(e.target.value)}
+                                                                                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="h-64 overflow-y-auto p-2 custom-scrollbar space-y-1">
+                                                                        {availableEmployees.length === 0 ? (
+                                                                            <div className="text-center py-8 text-sm text-gray-400">No employees found</div>
+                                                                        ) : (
+                                                                            availableEmployees.map(emp => (
+                                                                                <div 
+                                                                                    key={emp.id}
+                                                                                    onClick={() => setGenerateFormData(prev => ({
+                                                                                        ...prev,
+                                                                                        employee_ids: [...prev.employee_ids, emp.id]
+                                                                                    }))}
+                                                                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 border border-transparent hover:border-emerald-100 cursor-pointer transition-colors group"
+                                                                                >
+                                                                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                                                                                        {getInitials(emp.name)}
+                                                                                    </div>
+                                                                                    <div className="min-w-0 flex-1">
+                                                                                        <div className="text-sm font-semibold text-gray-800 truncate">{emp.name}</div>
+                                                                                        <div className="text-xs text-gray-500 truncate">{emp.employee_code}</div>
+                                                                                    </div>
+                                                                                    <div className="opacity-0 group-hover:opacity-100 text-emerald-500">
+                                                                                        <FaCheckCircle size={14} />
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Divider / Visual Arrows */}
+                                                                <div className="hidden md:flex flex-col items-center justify-center gap-3 px-2">
+                                                                    <button 
+                                                                        type="button"
+                                                                        title="Select All"
+                                                                        onClick={() => setGenerateFormData(prev => ({
+                                                                            ...prev,
+                                                                            employee_ids: [...new Set([...prev.employee_ids, ...availableEmployees.map(emp => emp.id)])]
+                                                                        }))}
+                                                                        className="p-2 rounded-lg bg-gray-50 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 border border-gray-200 hover:border-emerald-200 transition-colors"
+                                                                    >
+                                                                        <FaAngleDoubleRight size={16} />
+                                                                    </button>
+                                                                    <button 
+                                                                        type="button"
+                                                                        title="Deselect All"
+                                                                        onClick={() => setGenerateFormData(prev => ({
+                                                                            ...prev,
+                                                                            employee_ids: prev.employee_ids.filter(id => !selectedEmployees.find(emp => emp.id === id))
+                                                                        }))}
+                                                                        className="p-2 rounded-lg bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 transition-colors"
+                                                                    >
+                                                                        <FaAngleDoubleLeft size={16} />
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Selected Employees Pane */}
+                                                                <div className="flex flex-col border border-emerald-200 rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-emerald-50">
+                                                                    <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
+                                                                        <span className="font-semibold text-sm text-emerald-800">Selected</span>
+                                                                        <span className="bg-emerald-200 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full">{selectedEmployees.length}</span>
+                                                                    </div>
+                                                                    <div className="p-2 border-b border-emerald-50">
+                                                                        <div className="relative">
+                                                                            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-400" size={12} />
+                                                                            <input
+                                                                                type="text"
+                                                                                placeholder="Search selected..."
+                                                                                value={selectedSearch}
+                                                                                onChange={(e) => setSelectedSearch(e.target.value)}
+                                                                                className="w-full pl-8 pr-3 py-1.5 text-sm border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-emerald-50/30"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="h-64 overflow-y-auto p-2 custom-scrollbar space-y-1">
+                                                                        {selectedEmployees.length === 0 ? (
+                                                                            <div className="text-center py-8 text-sm text-emerald-400">No employees selected</div>
+                                                                        ) : (
+                                                                            selectedEmployees.map(emp => (
+                                                                                <div 
+                                                                                    key={emp.id}
+                                                                                    onClick={() => setGenerateFormData(prev => ({
+                                                                                        ...prev,
+                                                                                        employee_ids: prev.employee_ids.filter(id => id !== emp.id)
+                                                                                    }))}
+                                                                                    className="flex items-center gap-3 p-2 rounded-lg bg-emerald-50/50 hover:bg-red-50 border border-emerald-100 hover:border-red-100 cursor-pointer transition-colors group"
+                                                                                >
+                                                                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                                                                                        {getInitials(emp.name)}
+                                                                                    </div>
+                                                                                    <div className="min-w-0 flex-1">
+                                                                                        <div className="text-sm font-semibold text-emerald-900 truncate group-hover:text-red-900">{emp.name}</div>
+                                                                                        <div className="text-xs text-emerald-600 truncate group-hover:text-red-600">{emp.employee_code}</div>
+                                                                                    </div>
+                                                                                    <div className="opacity-0 group-hover:opacity-100 text-red-500">
+                                                                                        <FaTimes size={14} />
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            </>
+                                                        )}
+                                                    </motion.div>
                                             </div>
-                                        </form>
-                                    </div>
+                                        </div>
+
+                                        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
+                                            <motion.button
+                                                type="button"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={closeModal}
+                                                disabled={loading}
+                                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Cancel
+                                            </motion.button>
+                                            <motion.button
+                                                type="submit"
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                disabled={loading || employeesLoading || generatePayrollAccess.disabled}
+                                                title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
+                                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <FaSpinner className="w-4 h-4 animate-spin" />
+                                                        Generating...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <FaCalculator className="w-4 h-4" />
+                                                        Generate Payroll
+                                                    </>
+                                                )}
+                                            </motion.button>
+                                        </div>
+                                    </form>
                                 </>
                             )}
                         </motion.div>
