@@ -15,6 +15,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 import ModalScrollLock from "../components/ModalScrollLock";
+import Modal from '../components/Modal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -75,35 +76,25 @@ const PackageDetailModal = ({ pkg, onClose }) => {
     const contributionItems = pkg.items.filter(i => i.type?.includes('employer'));
 
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-3xl max-h-[90vh] rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
-                                <FaBriefcase className="h-7 w-7 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 leading-tight">{pkg.name}</h2>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">{pkg.code}</span>
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${pkg.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                        <div className={`w-1.5 h-1.5 rounded-full ${pkg.is_active ? 'bg-green-500' : 'bg-slate-400'}`} />
-                                        {pkg.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all border border-transparent hover:border-slate-100">
-                            <FaTimes className="h-5 w-5" />
-                        </button>
-                    </div>
-
-                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6 p-2 lg:p-0">
-                            {/* Summary Stats */}
+        <Modal
+            isOpen={!!pkg}
+            onClose={onClose}
+            title={pkg.name}
+            subtitle={pkg.code}
+            icon={
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
+                    <FaBriefcase className="h-6 w-6 text-white" />
+                </div>
+            }
+            size="3xl"
+            footer={
+                <button onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                    Close
+                </button>
+            }
+        >
+            <div className="space-y-6">
+            {/* Summary Stats */}
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Items</p>
@@ -125,7 +116,7 @@ const PackageDetailModal = ({ pkg, onClose }) => {
 
                             {/* Details Grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-6 p-2 lg:p-0">
+                                <div className="space-y-6">
                                     {/* Description */}
                                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
                                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Package Description</p>
@@ -184,18 +175,8 @@ const PackageDetailModal = ({ pkg, onClose }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4">
-                        <button onClick={onClose} className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Close Details
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+            </div>
+        </Modal>
     );
 };
 
@@ -258,192 +239,169 @@ const PackageFormModal = ({ pkg, availableComponents, onClose, onSave }) => {
     const sortedSelected = [...selectedComponents].sort((a, b) => a.display_order - b.display_order);
 
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
-                                {isEdit ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">{isEdit ? 'Edit Salary Package' : 'Create New Package'}</h2>
-                                <p className="text-sm text-slate-500 font-medium">Define compensation structure</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-4 w-4" />
-                        </button>
+        <Modal
+            isOpen={true}
+            onClose={onClose}
+            title={isEdit ? 'Edit Salary Package' : 'Create New Package'}
+            subtitle="Define compensation structure"
+            icon={
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
+                    {isEdit ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
+                </div>
+            }
+            size="4xl"
+            footer={
+                <>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                        Cancel
+                    </button>
+                    <button onClick={handleSubmit} disabled={saving} className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                        {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                        {saving ? 'Saving...' : isEdit ? 'Update Package' : 'Create Package'}
+                    </button>
+                </>
+            }
+        >
+            {/* Basic Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Package Name *</label>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Standard Corporate"
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all ${errors.name ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
+                    {errors.name && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.name}</p>}
+                </div>
+                {!isEdit && (
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Package Code *</label>
+                        <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="e.g. PKG_001"
+                            className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all ${errors.code ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
+                        {errors.code && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.code}</p>}
                     </div>
+                )}
+            </div>
 
-                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6 p-2 lg:p-0">
-                            {/* Basic Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Package Name *</label>
-                                    <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Standard Corporate"
-                                        className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all ${errors.name ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
-                                    {errors.name && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.name}</p>}
-                                </div>
-                                {!isEdit && (
+            <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What's this package for?" rows={2}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none" />
+            </div>
+
+            {/* Component Selection */}
+            <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Components</label>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedComponents.length > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
+                        {selectedComponents.length} Selected
+                    </span>
+                </div>
+                {errors.components && <p className="text-[10px] text-red-500 mb-2 font-bold uppercase ml-1">{errors.components}</p>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+                    {availableComponents.map(comp => {
+                        const isSelected = selectedComponents.some(c => c.component_id === comp.id);
+                        return (
+                            <div key={comp.id} onClick={() => toggleComponent(comp.id)}
+                                className={`group flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'bg-blue-50/50 border-blue-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-blue-600 border-blue-600' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
+                                        {isSelected && <FaCheck size={8} className="text-white" />}
+                                    </div>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Package Code *</label>
-                                        <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="e.g. PKG_001"
-                                            className={`w-full px-4 py-2.5 rounded-xl border text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all ${errors.code ? 'border-red-400 bg-red-50 text-red-900' : 'border-slate-200 bg-white text-slate-800'}`} />
-                                        {errors.code && <p className="text-[10px] text-red-500 mt-1 font-bold ml-1 uppercase">{errors.code}</p>}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Description</label>
-                                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What's this package for?" rows={2}
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none" />
-                            </div>
-
-                            {/* Component Selection */}
-                            <div>
-                                <div className="flex items-center justify-between mb-3 px-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Available Components</label>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${selectedComponents.length > 0 ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-400'}`}>
-                                        {selectedComponents.length} Selected
-                                    </span>
-                                </div>
-                                {errors.components && <p className="text-[10px] text-red-500 mb-2 font-bold uppercase ml-1">{errors.components}</p>}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
-                                    {availableComponents.map(comp => {
-                                        const isSelected = selectedComponents.some(c => c.component_id === comp.id);
-                                        return (
-                                            <div key={comp.id} onClick={() => toggleComponent(comp.id)}
-                                                className={`group flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'bg-blue-50/50 border-blue-500 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-blue-600 border-blue-600' : 'bg-slate-50 border-slate-200 group-hover:border-slate-300'}`}>
-                                                        {isSelected && <FaCheck size={8} className="text-white" />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-[11px] font-bold text-slate-800 leading-tight">{comp.name}</p>
-                                                        <p className="text-[9px] text-slate-400 font-mono mt-0.5">{comp.code}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-[10px] font-black text-slate-900">{comp.calc_value}{comp.calc_type === 'percentage' ? '%' : ''}</p>
-                                                    <p className={`text-[8px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-rose-600' : 'text-blue-600'}`}>
-                                                        {comp.type === 'earning' ? 'Earn' : comp.type === 'deduction' ? 'Ded' : 'Cont'}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Reordering */}
-                            {sortedSelected.length > 0 && (
-                                <div className="pt-2">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Display Order & Preview</label>
-                                    <div className="space-y-2">
-                                        {sortedSelected.map((sel, idx) => {
-                                            const comp = availableComponents.find(c => c.id === sel.component_id);
-                                            if (!comp) return null;
-                                            return (
-                                                <div key={sel.component_id} className="flex items-center gap-3 bg-white rounded-xl p-2.5 border border-slate-200 shadow-sm group">
-                                                    <div className="w-6 h-6 bg-slate-900 text-white text-[10px] rounded-lg flex items-center justify-center font-black flex-shrink-0">
-                                                        {idx + 1}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs font-bold text-slate-800 truncate">{comp.name}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                                                        <button type="button" onClick={() => moveComponent(sel.component_id, -1)} disabled={idx === 0}
-                                                            className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 disabled:opacity-30 transition-all">
-                                                            <FaArrowUp size={10} />
-                                                        </button>
-                                                        <button type="button" onClick={() => moveComponent(sel.component_id, 1)} disabled={idx === sortedSelected.length - 1}
-                                                            className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 disabled:opacity-30 transition-all">
-                                                            <FaArrowDown size={10} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                                        <p className="text-[11px] font-bold text-slate-800 leading-tight">{comp.name}</p>
+                                        <p className="text-[9px] text-slate-400 font-mono mt-0.5">{comp.code}</p>
                                     </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-black text-slate-900">{comp.calc_value}{comp.calc_type === 'percentage' ? '%' : ''}</p>
+                                    <p className={`text-[8px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-rose-600' : 'text-blue-600'}`}>
+                                        {comp.type === 'earning' ? 'Earn' : comp.type === 'deduction' ? 'Ded' : 'Cont'}
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
 
-                    {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Cancel
-                        </button>
-                        <button onClick={handleSubmit} disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
-                            {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                            {saving ? 'Saving...' : isEdit ? 'Update Package' : 'Create Package'}
-                        </button>
+            {/* Reordering */}
+            {sortedSelected.length > 0 && (
+                <div className="pt-2">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-1">Display Order &amp; Preview</label>
+                    <div className="space-y-2">
+                        {sortedSelected.map((sel, idx) => {
+                            const comp = availableComponents.find(c => c.id === sel.component_id);
+                            if (!comp) return null;
+                            return (
+                                <div key={sel.component_id} className="flex items-center gap-3 bg-white rounded-xl p-2.5 border border-slate-200 shadow-sm group">
+                                    <div className="w-6 h-6 bg-slate-900 text-white text-[10px] rounded-lg flex items-center justify-center font-black flex-shrink-0">
+                                        {idx + 1}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-800 truncate">{comp.name}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                                        <button type="button" onClick={() => moveComponent(sel.component_id, -1)} disabled={idx === 0}
+                                            className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 disabled:opacity-30 transition-all">
+                                            <FaArrowUp size={10} />
+                                        </button>
+                                        <button type="button" onClick={() => moveComponent(sel.component_id, 1)} disabled={idx === sortedSelected.length - 1}
+                                            className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 disabled:opacity-30 transition-all">
+                                            <FaArrowDown size={10} />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+                </div>
+            )}
+        </Modal>
     );
 };
 
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
 
+
 const DeleteModal = ({ pkg, onClose, onConfirm, deleting }) => {
     if (!pkg) return null;
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
-                                <FaTrash className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-bold text-slate-900">Delete Package</h2>
-                                <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Confirmation</p>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-3.5 w-3.5" />
-                        </button>
-                    </div>
-
-                    <div className="p-6 text-center space-y-4">
-                        <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-16 h-16 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-lg shadow-red-100/50">
-                            <FaExclamationTriangle className="text-2xl text-red-500" />
-                        </motion.div>
-
-                        <div className="space-y-1">
-                            <h3 className="text-base font-bold text-slate-900">Are you sure?</h3>
-                            <p className="text-xs text-slate-500 leading-relaxed px-4">
-                                Permanently delete the salary package <span className="font-bold text-slate-900">{pkg.name}</span>? This may affect assigned employees.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-5 py-3.5 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Keep
-                        </button>
-                        <button onClick={() => onConfirm(pkg.id)} disabled={deleting} className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
-                            {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-                            {deleting ? 'Deleting...' : 'Delete'}
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+        <Modal
+            isOpen={!!pkg}
+            onClose={onClose}
+            title="Delete Package"
+            subtitle="Confirmation required"
+            icon={
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
+                    <FaTrash className="h-4 w-4" />
+                </div>
+            }
+            size="md"
+            footer={
+                <>
+                    <button type="button" onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                        Keep
+                    </button>
+                    <button onClick={() => onConfirm(pkg.id)} disabled={deleting} className="px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
+                        {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                        {deleting ? 'Deleting...' : 'Delete'}
+                    </button>
+                </>
+            }
+        >
+            <div className="text-center space-y-4 py-2">
+                <div className="w-16 h-16 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-lg shadow-red-100/50">
+                    <FaExclamationTriangle className="text-2xl text-red-500" />
+                </div>
+                <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-900">Are you sure?</h3>
+                    <p className="text-xs text-slate-500 leading-relaxed px-4">
+                        Permanently delete the salary package <span className="font-bold text-slate-900">{pkg.name}</span>? This may affect assigned employees.
+                    </p>
+                </div>
+            </div>
+        </Modal>
     );
 };
+
 
 // ─── Package Card (Grid) ──────────────────────────────────────────────────────
 

@@ -200,16 +200,13 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                     </div>
 
                     {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex justify-end gap-3">
+                        <button onClick={onClose} className="flex px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
                             Close
                         </button>
-                        <div className="flex gap-2 flex-[2]">
-                            <button onClick={() => { onEdit(component); onClose(); }} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100">
+                        <div className="flex gap-2">
+                            <button onClick={() => { onEdit(component); onClose(); }} className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100">
                                 <FaEdit /> Edit
-                            </button>
-                            <button onClick={() => { onDelete(component); onClose(); }} className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-rose-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-100">
-                                <FaTrash /> Delete
                             </button>
                         </div>
                     </div>
@@ -282,7 +279,7 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                     </div>
 
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6 p-2 lg:p-0">
+                        <div className="p-6 space-y-6">
                             {/* Identifiers */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
@@ -378,11 +375,11 @@ const FormModal = ({ mode, initial, onClose, onSave, saving }) => {
                     </div>
 
                     {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 justify-end flex gap-3">
+                        <button type="button" onClick={onClose} className="flex px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
                             Cancel
                         </button>
-                        <button onClick={handleSubmit} disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-indigo-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
+                        <button onClick={handleSubmit} disabled={saving} className="flex px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-indigo-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-200">
                             {saving ? <FaSpinner className="animate-spin" /> : <FaSave />}
                             {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Component'}
                         </button>

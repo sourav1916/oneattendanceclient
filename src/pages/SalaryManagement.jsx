@@ -18,7 +18,8 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 import { toast } from 'react-toastify';
-import ModalScrollLock from "../components/ModalScrollLock";
+import Modal from "../components/Modal";
+import ModalScrollLock from '../components/ModalScrollLock';
 import { DatePickerField } from '../components/DatePicker';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
@@ -182,127 +183,111 @@ const SalaryDetailModal = ({ salary, onClose }) => {
     const StatusIcon = status.icon;
 
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
-                        <div className="flex items-center gap-4">
-                            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} shadow-lg shadow-slate-200`}>
-                                <span className="text-xl font-bold text-white">{getInitials(salary.employee?.name)}</span>
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900 leading-tight">{salary.employee?.name}</h2>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-bold">{salary.employee?.employee_code}</span>
-                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${status.className}`}>
-                                        <StatusIcon size={10} />{status.text}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all border border-transparent hover:border-slate-100">
-                            <FaTimes className="h-5 w-5" />
-                        </button>
+        <Modal
+            isOpen={!!salary}
+            onClose={onClose}
+            title={salary.employee?.name}
+            subtitle={`${salary.employee?.employee_code} · ${status.text}`}
+            icon={
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} shadow-lg shadow-slate-200`}>
+                    <span className="text-xl font-bold text-white">{getInitials(salary.employee?.name)}</span>
+                </div>
+            }
+            size="4xl"
+            footer={
+                <button
+                    onClick={onClose}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+                >
+                    Close
+                </button>
+            }
+        >
+            <div className="space-y-6">
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Amount</p>
+                        <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, salary.currency)}</p>
                     </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Salary</p>
+                        <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, salary.currency)}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gross Salary</p>
+                        <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, salary.currency)}</p>
+                    </div>
+                    <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
+                        <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Total CTC</p>
+                        <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, salary.currency)}</p>
+                    </div>
+                </div>
 
-                    <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-slate-50/30">
-                        <div className="p-6 space-y-6 p-2 lg:p-0">
-                            {/* Key Metrics Grid */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Amount</p>
-                                    <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, salary.currency)}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Salary</p>
-                                    <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, salary.currency)}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gross Salary</p>
-                                    <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, salary.currency)}</p>
-                                </div>
-                                <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
-                                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Total CTC</p>
-                                    <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, salary.currency)}</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {/* Details Table */}
-                                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Configuration Details</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Details Table */}
+                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Configuration Details</p>
+                        </div>
+                        <div className="divide-y divide-slate-50">
+                            {[
+                                { label: 'Salary Package', value: salary.package?.name || 'Custom', icon: <FaBriefcase className="text-indigo-500" /> },
+                                { label: 'Effective From', value: formatDateFull(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
+                                { label: 'Effective To', value: formatDateFull(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
+                                { label: 'Base Amount', value: formatCurrency(salary.base_amount, salary.currency), icon: <FaDollarSign className="text-emerald-500" /> },
+                                { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, salary.currency), icon: <FaMoneyBillWave className="text-blue-500" /> },
+                                { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, salary.currency), icon: <FaChartBar className="text-rose-500" /> },
+                                { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, salary.currency), icon: <FaHandPaper className="text-purple-500" /> },
+                                { label: 'Net Take Home', value: formatCurrency(salary.net_salary, salary.currency), icon: <FaCheckCircle className="text-green-500" /> },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between px-4 py-3.5">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs shadow-sm border border-slate-100">
+                                            {item.icon}
+                                        </div>
+                                        <span className="text-xs font-semibold text-slate-500">{item.label}</span>
                                     </div>
-                                    <div className="divide-y divide-slate-50">
-                                        {[
-                                            { label: 'Salary Package', value: salary.package?.name || 'Custom', icon: <FaBriefcase className="text-indigo-500" /> },
-                                            { label: 'Effective From', value: formatDateFull(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
-                                            { label: 'Effective To', value: formatDateFull(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
-                                            { label: 'Base Amount', value: formatCurrency(salary.base_amount, salary.currency), icon: <FaDollarSign className="text-emerald-500" /> },
-                                            { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, salary.currency), icon: <FaMoneyBillWave className="text-blue-500" /> },
-                                            { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, salary.currency), icon: <FaChartBar className="text-rose-500" /> },
-                                            { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, salary.currency), icon: <FaHandPaper className="text-purple-500" /> },
-                                            { label: 'Net Take Home', value: formatCurrency(salary.net_salary, salary.currency), icon: <FaCheckCircle className="text-green-500" /> },
-                                        ].map((item, idx) => (
-                                            <div key={idx} className="flex items-center justify-between px-4 py-3.5">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-xs shadow-sm border border-slate-100">
-                                                        {item.icon}
-                                                    </div>
-                                                    <span className="text-xs font-semibold text-slate-500">{item.label}</span>
-                                                </div>
-                                                <span className={`text-xs font-bold ${item.label.includes('Net') ? 'text-green-600' : item.label.includes('Gross') ? 'text-blue-600' : 'text-slate-800'}`}>{item.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <span className={`text-xs font-bold ${item.label.includes('Net') ? 'text-green-600' : item.label.includes('Gross') ? 'text-blue-600' : 'text-slate-800'}`}>{item.value}</span>
                                 </div>
-
-                                {/* Components List */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between px-1">
-                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Salary Components</p>
-                                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{salary.components?.length || 0} Total</span>
-                                    </div>
-                                    <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
-                                        {salary.components?.map((comp, idx) => (
-                                            <div key={idx} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:border-slate-300">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-1.5 h-8 rounded-full ${comp.type === 'earning' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]' : comp.type === 'deduction' ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.4)]'}`} />
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="text-sm font-bold text-slate-800 leading-none">{comp.name}</p>
-                                                            {comp.is_overridden === 1 && (
-                                                                <span className="text-[8px] font-black uppercase tracking-tighter bg-amber-100 text-amber-700 px-1 py-0.5 rounded border border-amber-200">Overridden</span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-[10px] text-slate-400 mt-1 font-mono">{comp.code} · {comp.calc_type}: {comp.calc_value}{comp.calc_type === 'percentage' ? '%' : ''}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, salary.currency)}</p>
-                                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-red-600' : 'text-purple-600'}`}>
-                                                        {comp.type.replace('_', ' ')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4">
-                        <button onClick={onClose} className="w-full py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Close Details
-                        </button>
+                    {/* Components List */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between px-1">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Salary Components</p>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{salary.components?.length || 0} Total</span>
+                        </div>
+                        <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1 custom-scrollbar">
+                            {salary.components?.map((comp, idx) => (
+                                <div key={idx} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:border-slate-300">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-1.5 h-8 rounded-full ${comp.type === 'earning' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.4)]' : comp.type === 'deduction' ? 'bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.4)]'}`} />
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-slate-800 leading-none">{comp.name}</p>
+                                                {comp.is_overridden === 1 && (
+                                                    <span className="text-[8px] font-black uppercase tracking-tighter bg-amber-100 text-amber-700 px-1 py-0.5 rounded border border-amber-200">Overridden</span>
+                                                )}
+                                            </div>
+                                            <p className="text-[10px] text-slate-400 mt-1 font-mono">{comp.code} · {comp.calc_type}: {comp.calc_value}{comp.calc_type === 'percentage' ? '%' : ''}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, salary.currency)}</p>
+                                        <p className={`text-[9px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-red-600' : 'text-purple-600'}`}>
+                                            {comp.type.replace('_', ' ')}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+                </div>
+            </div>
+        </Modal>
     );
 };
 
@@ -415,170 +400,170 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     if (!isOpen || !salary) return null;
 
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
-                                <FaEdit className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">Edit Salary</h2>
-                                <p className="text-sm text-slate-500">{salary.employee?.name} · {salary.employee?.employee_code}</p>
-                            </div>
+        <Modal
+            isOpen={isOpen && !!salary}
+            onClose={onClose}
+            title="Edit Salary"
+            subtitle={`${salary.employee?.name} · ${salary.employee?.employee_code}`}
+            icon={
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-200">
+                    <FaEdit className="h-6 w-6 text-white" />
+                </div>
+            }
+            size="4xl"
+            footer={
+                <>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+                    >
+                        {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                        {submitting ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </>
+            }
+        >
+            <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
+                        <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
+                        <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
+                        <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
+                            <option value="">Custom / Manual</option>
+                            {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
+                        <div className="flex gap-2">
+                            <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
+                                {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
+                            </select>
+                            <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
                         </div>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-4 w-4" />
+                    </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <FaCalculator className="text-blue-500" /> Salary Components
+                        </label>
+                        <button type="button"
+                            onClick={() => setShowOverrideForm(true)}
+                            className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                            <FaPlus size={8} /> Add Component
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-                        <div className="p-6 space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
-                                    <DatePickerField value={formData.effective_from} onChange={(value) => setFormData({ ...formData, effective_from: value })} placeholder="Select date" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
-                                    <DatePickerField value={formData.effective_to} onChange={(value) => setFormData({ ...formData, effective_to: value })} placeholder="Optional" mode="single" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" popoverClassName="mt-2" />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
-                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
-                                        <option value="">Custom / Manual</option>
-                                        {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
-                                    <div className="flex gap-2">
-                                        <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
-                                            {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
-                                        </select>
-                                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                            onChange={e => {
-                                                const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
-                                            }}
-                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border-t border-slate-100 pt-5">
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                        <FaCalculator className="text-blue-500" /> Salary Components
-                                    </label>
-                                    <button type="button"
-                                        onClick={() => setShowOverrideForm(true)}
-                                        className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
-                                        <FaPlus size={8} /> Add Component
-                                    </button>
-                                </div>
-
-                                {formData.components.length > 0 && (
-                                    <div className="space-y-4 mb-3">
-                                        {formData.components.map((comp, idx) => {
-                                            const componentData = availableComponents.find(c => c.id === comp.component_id);
-                                            return (
-                                                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
-                                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                                        <div className="md:col-span-4">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
-                                                            <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
-                                                                {componentData?.name || `Component ${comp.component_id}`}
-                                                                <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="md:col-span-3">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                            <select
-                                                                value={comp.calc_type}
-                                                                onChange={e => {
-                                                                    const updated = [...formData.components];
-                                                                    updated[idx].calc_type = e.target.value;
-                                                                    setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
-                                                            >
-                                                                <option value="percentage">Percentage (%)</option>
-                                                                <option value="fixed">Fixed Amount</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="md:col-span-3">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
-                                                            <input
-                                                                type="text" inputMode="decimal" value={comp.calc_value}
-                                                                onChange={e => {
-                                                                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                                                        const updated = [...formData.components];
-                                                                        updated[idx].calc_value = val;
-                                                                        setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                    }
-                                                                }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                                                            />
-                                                        </div>
-                                                        <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
-                                                            <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
-                                                        </div>
-                                                        <div className="md:col-span-12">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                            <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
-                                                        </div>
-                                                    </div>
+                    {formData.components.length > 0 && (
+                        <div className="space-y-4 mb-3">
+                            {formData.components.map((comp, idx) => {
+                                const componentData = availableComponents.find(c => c.id === comp.component_id);
+                                return (
+                                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                                            <div className="md:col-span-4">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
+                                                <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
+                                                    {componentData?.name || `Component ${comp.component_id}`}
+                                                    <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {showOverrideForm && (
-                                    <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
-                                            <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
+                                                <select
+                                                    value={comp.calc_type}
+                                                    onChange={e => {
+                                                        const updated = [...formData.components];
+                                                        updated[idx].calc_type = e.target.value;
+                                                        setFormData({ ...formData, components: updated, component_package_id: '' });
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
+                                                >
+                                                    <option value="percentage">Percentage (%)</option>
+                                                    <option value="fixed">Fixed Amount</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
+                                                <input
+                                                    type="text" inputMode="decimal" value={comp.calc_value}
+                                                    onChange={e => {
+                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            const updated = [...formData.components];
+                                                            updated[idx].calc_value = val;
+                                                            setFormData({ ...formData, components: updated, component_package_id: '' });
+                                                        }
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
+                                                <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
+                                            </div>
+                                            <div className="md:col-span-12">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
+                                                <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
+                                            </div>
                                         </div>
-                                        <select
-                                            value=""
-                                            onChange={e => {
-                                                const compId = e.target.value;
-                                                const comp = availableComponents.find(c => String(c.id) === String(compId));
-                                                if (comp) {
-                                                    setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
-                                                    setShowOverrideForm(false);
-                                                }
-                                            }}
-                                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
-                                        >
-                                            <option value="">Choose a component...</option>
-                                            {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
-                                                <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
-                                            ))}
-                                        </select>
                                     </div>
-                                )}
-                            </div>
+                                );
+                            })}
                         </div>
-                    </form>
+                    )}
 
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
-                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
-                            {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                            {submitting ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+                    {showOverrideForm && (
+                        <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
+                                <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
+                            </div>
+                            <select
+                                value=""
+                                onChange={e => {
+                                    const compId = e.target.value;
+                                    const comp = availableComponents.find(c => String(c.id) === String(compId));
+                                    if (comp) {
+                                        setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
+                                        setShowOverrideForm(false);
+                                    }
+                                }}
+                                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
+                            >
+                                <option value="">Choose a component...</option>
+                                {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
+                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            </form>
+        </Modal>
     );
 };
 
@@ -686,160 +671,160 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     if (!isOpen || !salary) return null;
 
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden m-auto" onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-200">
-                                <FaExchangeAlt className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-900">Revise Salary</h2>
-                                <p className="text-sm text-slate-500">{salary.employee?.name} · {salary.employee?.employee_code}</p>
-                            </div>
+        <Modal
+            isOpen={isOpen && !!salary}
+            onClose={onClose}
+            title="Revise Salary"
+            subtitle={`${salary.employee?.name} · ${salary.employee?.employee_code}`}
+            icon={
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg shadow-purple-200">
+                    <FaExchangeAlt className="h-6 w-6 text-white" />
+                </div>
+            }
+            size="4xl"
+            footer={
+                <>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-200"
+                    >
+                        {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                        {submitting ? 'Revising...' : 'Revise Salary'}
+                    </button>
+                </>
+            }
+        >
+            <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
+                        <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
+                            <option value="">Custom / Manual</option>
+                            {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Base Amount *</label>
+                        <div className="flex gap-2">
+                            <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
+                                {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
+                            </select>
+                            <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
                         </div>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-4 w-4" />
+                    </div>
+                </div>
+
+                <div className="border-t border-slate-100 pt-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                            <FaCalculator className="text-blue-500" /> Salary Components
+                        </label>
+                        <button type="button"
+                            onClick={() => setShowOverrideForm(true)}
+                            className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                            <FaPlus size={8} /> Add Component
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-                        <div className="p-6 space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
-                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
-                                        <option value="">Custom / Manual</option>
-                                        {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Base Amount *</label>
-                                    <div className="flex gap-2">
-                                        <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
-                                            {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
-                                        </select>
-                                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                            onChange={e => {
-                                                const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
-                                            }}
-                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="border-t border-slate-100 pt-5">
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                        <FaCalculator className="text-blue-500" /> Salary Components
-                                    </label>
-                                    <button type="button"
-                                        onClick={() => setShowOverrideForm(true)}
-                                        className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
-                                        <FaPlus size={8} /> Add Component
-                                    </button>
-                                </div>
-
-                                {formData.components.length > 0 && (
-                                    <div className="space-y-4 mb-3">
-                                        {formData.components.map((comp, idx) => {
-                                            const componentData = availableComponents.find(c => c.id === comp.component_id);
-                                            return (
-                                                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
-                                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                                        <div className="md:col-span-4">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
-                                                            <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
-                                                                {componentData?.name || `Component ${comp.component_id}`}
-                                                                <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="md:col-span-3">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                            <select
-                                                                value={comp.calc_type}
-                                                                onChange={e => {
-                                                                    const updated = [...formData.components];
-                                                                    updated[idx].calc_type = e.target.value;
-                                                                    setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
-                                                            >
-                                                                <option value="percentage">Percentage (%)</option>
-                                                                <option value="fixed">Fixed Amount</option>
-                                                            </select>
-                                                        </div>
-                                                        <div className="md:col-span-3">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
-                                                            <input
-                                                                type="text" inputMode="decimal" value={comp.calc_value}
-                                                                onChange={e => {
-                                                                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                                                        const updated = [...formData.components];
-                                                                        updated[idx].calc_value = val;
-                                                                        setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                    }
-                                                                }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                                                            />
-                                                        </div>
-                                                        <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
-                                                            <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
-                                                        </div>
-                                                        <div className="md:col-span-12">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                            <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
-                                                        </div>
-                                                    </div>
+                    {formData.components.length > 0 && (
+                        <div className="space-y-4 mb-3">
+                            {formData.components.map((comp, idx) => {
+                                const componentData = availableComponents.find(c => c.id === comp.component_id);
+                                return (
+                                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                                            <div className="md:col-span-4">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
+                                                <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
+                                                    {componentData?.name || `Component ${comp.component_id}`}
+                                                    <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {showOverrideForm && (
-                                    <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
-                                            <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
+                                                <select
+                                                    value={comp.calc_type}
+                                                    onChange={e => {
+                                                        const updated = [...formData.components];
+                                                        updated[idx].calc_type = e.target.value;
+                                                        setFormData({ ...formData, components: updated, component_package_id: '' });
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
+                                                >
+                                                    <option value="percentage">Percentage (%)</option>
+                                                    <option value="fixed">Fixed Amount</option>
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
+                                                <input
+                                                    type="text" inputMode="decimal" value={comp.calc_value}
+                                                    onChange={e => {
+                                                        const val = e.target.value.replace(/[^0-9.]/g, '');
+                                                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                                            const updated = [...formData.components];
+                                                            updated[idx].calc_value = val;
+                                                            setFormData({ ...formData, components: updated, component_package_id: '' });
+                                                        }
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
+                                                <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
+                                            </div>
+                                            <div className="md:col-span-12">
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
+                                                <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
+                                            </div>
                                         </div>
-                                        <select
-                                            value=""
-                                            onChange={e => {
-                                                const compId = e.target.value;
-                                                const comp = availableComponents.find(c => String(c.id) === String(compId));
-                                                if (comp) {
-                                                    setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
-                                                    setShowOverrideForm(false);
-                                                }
-                                            }}
-                                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
-                                        >
-                                            <option value="">Choose a component...</option>
-                                            {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
-                                                <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
-                                            ))}
-                                        </select>
                                     </div>
-                                )}
-                            </div>
+                                );
+                            })}
                         </div>
-                    </form>
+                    )}
 
-                    <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
-                        <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-200">
-                            {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                            {submitting ? 'Revising...' : 'Revise Salary'}
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+                    {showOverrideForm && (
+                        <div className="mt-4 p-4 bg-blue-50/50 rounded-xl border-2 border-dashed border-blue-200">
+                            <div className="flex items-center justify-between mb-3">
+                                <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
+                                <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
+                            </div>
+                            <select
+                                value=""
+                                onChange={e => {
+                                    const compId = e.target.value;
+                                    const comp = availableComponents.find(c => String(c.id) === String(compId));
+                                    if (comp) {
+                                        setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
+                                        setShowOverrideForm(false);
+                                    }
+                                }}
+                                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
+                            >
+                                <option value="">Choose a component...</option>
+                                {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
+                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            </form>
+        </Modal>
     );
 };
 

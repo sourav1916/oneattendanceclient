@@ -10,6 +10,7 @@ import {
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import Modal from '../components/Modal';
 import ModalScrollLock from '../components/ModalScrollLock';
 import { ManagementButton, ManagementHub, ManagementTable } from '../components/common';
 import usePermissionAccess from '../hooks/usePermissionAccess';
@@ -830,385 +831,346 @@ const EmployeeBankAccountManagement = () => {
       </div>
 
       {/* ── View Modal ─────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {viewModal.open && viewModal.account && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
-            onMouseDown={(e) => e.target === e.currentTarget && closeViewModal()}>
-            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
+      <Modal
+        isOpen={viewModal.open && !!viewModal.account}
+        onClose={closeViewModal}
+        title={viewModal.account?.account_holder_name}
+        subtitle={viewModal.account?.bank_name || 'Cash Account'}
+        icon={viewModal.account?.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : <FaUniversity size={22} />}
+        size="lg"
+        footer={
+          <>
+            <button
+              onClick={closeViewModal}
+              className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm"
+            >
+              Close
+            </button>
+            <button
+              onClick={() => { closeViewModal(); openModal('edit', viewModal.account); }}
+              disabled={updateAccess.disabled}
+              className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaEdit /> Edit Account
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-6">
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2">
+            <AccountTypeBadge type={viewModal.account?.account_type} />
+            <StatusBadge status={viewModal.account?.status} />
+            {viewModal.account?.is_primary && <PrimaryBadge />}
+          </div>
 
-              {/* Header */}
-              <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-700 text-white rounded-t-[10px] px-6 sm:px-8 py-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                      {viewModal.account.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : <FaUniversity size={22} />}
-                    </div>
-                    <div className="min-w-0">
-                      <h2 className="text-xl font-bold truncate leading-tight">{viewModal.account.account_holder_name}</h2>
-                      <p className="text-white/70 text-sm mt-1">{viewModal.account.bank_name || 'Cash Account'}</p>
-                    </div>
-                  </div>
-                  <button onClick={closeViewModal} className="p-2 hover:bg-white/20 rounded-xl transition-all shrink-0">
-                    <FaTimes size={20} />
-                  </button>
+          {/* Card visual for bank accounts */}
+          {viewModal.account?.account_type === 'bank' && (
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
+              <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
+              <div className="pointer-events-none absolute -bottom-4 right-12 h-20 w-20 rounded-full bg-white/5" />
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-3">Account Number</p>
+              <p className="font-mono text-base font-bold tracking-[0.2em]">{maskAccount(viewModal.account?.account_number)}</p>
+              <div className="mt-4 flex justify-between items-end">
+                <div>
+                  <p className="text-[9px] text-white/50 uppercase tracking-widest">Holder</p>
+                  <p className="text-sm font-bold">{viewModal.account?.account_holder_name}</p>
                 </div>
+                <FaUniversity size={28} className="text-white/20" />
               </div>
+            </div>
+          )}
 
-              {/* Body */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 space-y-6 p-2 lg:p-0">
-                {/* Badges */}
-                <div className="flex flex-wrap gap-2">
-                  <AccountTypeBadge type={viewModal.account.account_type} />
-                  <StatusBadge status={viewModal.account.status} />
-                  {viewModal.account.is_primary && <PrimaryBadge />}
-                </div>
-
-                {/* Card visual for bank accounts */}
-                {viewModal.account.account_type === 'bank' && (
-                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
-                    <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
-                    <div className="pointer-events-none absolute -bottom-4 right-12 h-20 w-20 rounded-full bg-white/5" />
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-3">Account Number</p>
-                    <p className="font-mono text-base font-bold tracking-[0.2em]">{maskAccount(viewModal.account.account_number)}</p>
-                    <div className="mt-4 flex justify-between items-end">
-                      <div>
-                        <p className="text-[9px] text-white/50 uppercase tracking-widest">Holder</p>
-                        <p className="text-sm font-bold">{viewModal.account.account_holder_name}</p>
-                      </div>
-                      <FaUniversity size={28} className="text-white/20" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Details grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'IFSC Code', value: viewModal.account.ifsc_code || '—' },
-                    { label: 'Branch', value: viewModal.account.branch_name || '—' },
-                    { label: 'Added On', value: viewModal.account.created_at ? new Date(viewModal.account.created_at).toLocaleDateString() : '—' },
-                    { label: 'Live Status', value: viewModal.account.is_active ? 'Active' : 'Inactive' },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
-                      <p className="text-sm font-bold text-slate-700">{value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Security note */}
-                <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-xl">
-                  <FaShieldAlt className="text-violet-400 shrink-0" size={16} />
-                  <p className="text-xs text-violet-600 font-medium">Your account details are encrypted and stored securely.</p>
-                </div>
+          {/* Details grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'IFSC Code', value: viewModal.account?.ifsc_code || '—' },
+              { label: 'Branch', value: viewModal.account?.branch_name || '—' },
+              { label: 'Added On', value: viewModal.account?.created_at ? new Date(viewModal.account.created_at).toLocaleDateString() : '—' },
+              { label: 'Live Status', value: viewModal.account?.is_active ? 'Active' : 'Inactive' },
+            ].map(({ label, value }) => (
+              <div key={label} className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                <p className="text-sm font-bold text-slate-700">{value}</p>
               </div>
+            ))}
+          </div>
 
-              {/* Footer */}
-              <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
-                  Close
-                </button>
-                <button
-                  onClick={() => { closeViewModal(); openModal('edit', viewModal.account); }}
-                  disabled={updateAccess.disabled}
-                  className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FaEdit /> Edit Account
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          {/* Security note */}
+          <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-xl">
+            <FaShieldAlt className="text-violet-400 shrink-0" size={16} />
+            <p className="text-xs text-violet-600 font-medium">Your account details are encrypted and stored securely.</p>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── Create / Edit / Delete Modal ───────────────────────────────────── */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
-            onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}
-          >
-            <ModalScrollLock />
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className={`bg-white w-full max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden ${modalMode === 'delete' ? 'max-w-md' : 'max-w-2xl'
-                }`}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
+      {modalMode === 'delete' ? (
+        <Modal
+          isOpen={showModal}
+          onClose={closeModal}
+          title="Remove Account"
+          subtitle="This action cannot be undone"
+          icon={<FaTrash className="text-sm" />}
+          size="lg"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAction}
+                disabled={saving || deleteAccess.disabled}
+                title={deleteAccess.disabled ? deleteMessage : ''}
+                className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Removing...' : 'Remove Account'}
+              </button>
+            </>
+          }
+        >
+          <div className="text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto">
+              <FaExclamationTriangle className="text-red-400" size={22} />
+            </div>
+            <p className="text-slate-600 text-sm leading-relaxed">
+              Are you sure you want to remove <span className="font-bold text-slate-800">"{selectedAccount?.account_holder_name}"</span>? This cannot be undone.
+            </p>
+          </div>
+        </Modal>
+      ) : (
+        <Modal
+          isOpen={showModal}
+          onClose={closeModal}
+          title={modalMode === 'create' ? 'Add Bank Account' : 'Edit Account'}
+          subtitle={modalMode === 'create' ? 'Link a new account to your profile' : `Editing: ${selectedAccount?.account_holder_name}`}
+          icon={modalMode === 'create' ? <FaPlus /> : <FaEdit />}
+          size="lg"
+          footer={
+            <>
+              <button
+                type="button"
+                onClick={closeModal}
+                disabled={saving}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                onClick={handleAction}
+                disabled={
+                  saving ||
+                  !formData.account_holder_name.trim() ||
+                  (isBankType && (!formData.bank_name.trim() || !formData.account_number.trim() || !formData.ifsc_code.trim())) ||
+                  (modalMode === 'create' ? createAccess.disabled : updateAccess.disabled)
+                }
+                title={modalMode === 'create' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <div className="flex items-center justify-center gap-2"><FaSpinner className="animate-spin" /><span>Saving...</span></div>
+                ) : modalMode === 'create' ? 'Add Account' : 'Save Changes'}
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-5">
+            {modalMode === 'create' && (
+              <div className="rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-3">
+                <div className="flex items-center gap-2 text-sm font-bold text-violet-700">
+                  <FaUniversity size={14} />
+                  Bank Account
+                </div>
+                <p className="mt-1 text-xs text-violet-600">
+                  Cash wallet entries are not supported on this page.
+                </p>
+              </div>
+            )}
 
-              {/* ── Delete ── */}
-              {modalMode === 'delete' ? (
-                <>
-                  <div className="sticky top-0 z-10 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px] px-6 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"><FaTrash className="text-white text-sm" /></div>
-                        <div>
-                          <h2 className="text-lg font-bold">Remove Account</h2>
-                          <p className="text-xs text-white/80">This action cannot be undone</p>
-                        </div>
+            {/* Holder name */}
+            <FormField label="Account Holder Name" required>
+              <input
+                type="text"
+                value={formData.account_holder_name}
+                onChange={(e) => setFormData(p => ({ ...p, account_holder_name: e.target.value }))}
+                placeholder="Your full name as on bank records"
+                className={inputCls}
+              />
+            </FormField>
+
+            {/* Bank-only fields */}
+            {isBankType && (
+              <div className="flex flex-col gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <FormField label="Account Number" required>
+                    <input type="text" value={formData.account_number} onChange={(e) => setFormData(p => ({ ...p, account_number: e.target.value }))} placeholder="98765432100" className={inputCls} />
+                  </FormField>
+                  <FormField label="IFSC Code" required>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={formData.ifsc_code}
+                          onChange={(e) => handleIfscChange(e.target.value)}
+                          placeholder="HDFC0005678"
+                          className={inputCls}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void applyIfscLookup(formData.ifsc_code)}
+                          disabled={ifscLookupState.loading || formData.ifsc_code.trim().length !== 11}
+                          className="shrink-0 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {ifscLookupState.loading ? 'Checking...' : 'Fetch'}
+                        </button>
                       </div>
-                      <button type="button" onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
+                      {ifscLookupState.error && (
+                        <p className="text-xs font-semibold text-rose-500">{ifscLookupState.error}</p>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex-1 overflow-y-auto px-6 py-8 text-center space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto">
-                      <FaExclamationTriangle className="text-red-400" size={22} />
-                    </div>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                      Are you sure you want to remove <span className="font-bold text-slate-800">"{selectedAccount?.account_holder_name}"</span>? This cannot be undone.
-                    </p>
-                  </div>
-                  <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-                    <button type="button" onClick={closeModal} disabled={saving} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60">Cancel</button>
-                    <button type="button" onClick={handleAction} disabled={saving || deleteAccess.disabled} title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-                      {saving ? 'Removing...' : 'Remove Account'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                /* ── Create / Edit ── */
-                <>
-                  <div className="sticky top-0 z-10 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-t-[10px] px-6 sm:px-8 py-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                          {modalMode === 'create' ? <FaPlus /> : <FaEdit />}
-                        </div>
-                        <div>
-                          <h2 className="text-xl font-bold">{modalMode === 'create' ? 'Add Bank Account' : 'Edit Account'}</h2>
-                          <p className="text-xs text-white/80">
-                            {modalMode === 'create' ? 'Link a new account to your profile' : `Editing: ${selectedAccount?.account_holder_name}`}
-                          </p>
-                        </div>
-                      </div>
-                      <button onClick={closeModal} className="p-2 hover:bg-white/20 rounded-xl transition-all"><FaTimes size={20} /></button>
-                    </div>
-                  </div>
+                  </FormField>
+                </div>
+                <FormField label="Bank Name" required>
+                  <input
+                    type="text"
+                    value={formData.bank_name}
+                    onChange={(e) => setFormData(p => ({ ...p, bank_name: e.target.value }))}
+                    readOnly={autoLockedFields.bank_name}
+                    placeholder="e.g. HDFC Bank"
+                    className={lockedInputClass(autoLockedFields.bank_name)}
+                  />
+                </FormField>
+                <FormField label="Branch Name">
+                  <input
+                    type="text"
+                    value={formData.branch_name}
+                    onChange={(e) => setFormData(p => ({ ...p, branch_name: e.target.value }))}
+                    readOnly={autoLockedFields.branch_name}
+                    placeholder="e.g. Salt Lake Branch"
+                    className={lockedInputClass(autoLockedFields.branch_name)}
+                  />
+                </FormField>
 
-                  <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <FormField label="City">
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
+                      readOnly={autoLockedFields.city}
+                      placeholder="City"
+                      className={lockedInputClass(autoLockedFields.city)}
+                    />
+                  </FormField>
+                  <FormField label="District">
+                    <input
+                      type="text"
+                      value={formData.district}
+                      onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))}
+                      readOnly={autoLockedFields.district}
+                      placeholder="District"
+                      className={lockedInputClass(autoLockedFields.district)}
+                    />
+                  </FormField>
+                </div>
 
-                    {modalMode === 'create' && (
-                      <div className="rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-3">
-                        <div className="flex items-center gap-2 text-sm font-bold text-violet-700">
-                          <FaUniversity size={14} />
-                          Bank Account
-                        </div>
-                        <p className="mt-1 text-xs text-violet-600">
-                          Cash wallet entries are not supported on this page.
-                        </p>
-                      </div>
-                    )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <FormField label="State">
+                    <input
+                      type="text"
+                      value={formData.state}
+                      onChange={(e) => setFormData(p => ({ ...p, state: e.target.value }))}
+                      readOnly={autoLockedFields.state}
+                      placeholder="State"
+                      className={lockedInputClass(autoLockedFields.state)}
+                    />
+                  </FormField>
+                  <FormField label="MICR">
+                    <input
+                      type="text"
+                      value={formData.micr}
+                      onChange={(e) => setFormData(p => ({ ...p, micr: e.target.value }))}
+                      readOnly={autoLockedFields.micr}
+                      placeholder="736002507"
+                      className={lockedInputClass(autoLockedFields.micr)}
+                    />
+                  </FormField>
+                </div>
 
-                    {/* Holder name */}
-                    <FormField label="Account Holder Name" required>
-                      <input
-                        type="text"
-                        value={formData.account_holder_name}
-                        onChange={(e) => setFormData(p => ({ ...p, account_holder_name: e.target.value }))}
-                        placeholder="Your full name as on bank records"
-                        className={inputCls}
-                      />
-                    </FormField>
-
-                    {/* Bank-only fields */}
-                    {isBankType && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex flex-col gap-5 overflow-hidden">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          <FormField label="Account Number" required>
-                            <input type="text" value={formData.account_number} onChange={(e) => setFormData(p => ({ ...p, account_number: e.target.value }))} placeholder="98765432100" className={inputCls} />
-                          </FormField>
-                          <FormField label="IFSC Code" required>
-                            <div className="space-y-2">
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={formData.ifsc_code}
-                                  onChange={(e) => handleIfscChange(e.target.value)}
-                                  placeholder="HDFC0005678"
-                                  className={inputCls}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => void applyIfscLookup(formData.ifsc_code)}
-                                  disabled={ifscLookupState.loading || formData.ifsc_code.trim().length !== 11}
-                                  className="shrink-0 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-bold text-violet-700 transition hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  {ifscLookupState.loading ? 'Checking...' : 'Fetch'}
-                                </button>
-                              </div>
-                              {ifscLookupState.error && (
-                                <p className="text-xs font-semibold text-rose-500">{ifscLookupState.error}</p>
-                              )}
-                            </div>
-                          </FormField>
-                        </div>
-                        <FormField label="Bank Name" required>
-                          <input
-                            type="text"
-                            value={formData.bank_name}
-                            onChange={(e) => setFormData(p => ({ ...p, bank_name: e.target.value }))}
-                            readOnly={autoLockedFields.bank_name}
-                            placeholder="e.g. HDFC Bank"
-                            className={lockedInputClass(autoLockedFields.bank_name)}
-                          />
-                        </FormField>
-                        <FormField label="Branch Name">
-                          <input
-                            type="text"
-                            value={formData.branch_name}
-                            onChange={(e) => setFormData(p => ({ ...p, branch_name: e.target.value }))}
-                            readOnly={autoLockedFields.branch_name}
-                            placeholder="e.g. Salt Lake Branch"
-                            className={lockedInputClass(autoLockedFields.branch_name)}
-                          />
-                        </FormField>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          <FormField label="City">
-                            <input
-                              type="text"
-                              value={formData.city}
-                              onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
-                              readOnly={autoLockedFields.city}
-                              placeholder="City"
-                              className={lockedInputClass(autoLockedFields.city)}
-                            />
-                          </FormField>
-                          <FormField label="District">
-                            <input
-                              type="text"
-                              value={formData.district}
-                              onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))}
-                              readOnly={autoLockedFields.district}
-                              placeholder="District"
-                              className={lockedInputClass(autoLockedFields.district)}
-                            />
-                          </FormField>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          <FormField label="State">
-                            <input
-                              type="text"
-                              value={formData.state}
-                              onChange={(e) => setFormData(p => ({ ...p, state: e.target.value }))}
-                              readOnly={autoLockedFields.state}
-                              placeholder="State"
-                              className={lockedInputClass(autoLockedFields.state)}
-                            />
-                          </FormField>
-                          <FormField label="MICR">
-                            <input
-                              type="text"
-                              value={formData.micr}
-                              onChange={(e) => setFormData(p => ({ ...p, micr: e.target.value }))}
-                              readOnly={autoLockedFields.micr}
-                              placeholder="736002507"
-                              className={lockedInputClass(autoLockedFields.micr)}
-                            />
-                          </FormField>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          <FormField label="Contact">
-                            <input
-                              type="text"
-                              value={formData.contact}
-                              onChange={(e) => setFormData(p => ({ ...p, contact: e.target.value }))}
-                              readOnly={autoLockedFields.contact}
-                              placeholder="Branch contact number"
-                              className={lockedInputClass(autoLockedFields.contact)}
-                            />
-                          </FormField>
-                          <FormField label="UPI Enabled">
-                            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                              <span className="text-sm font-semibold text-slate-600">{formData.upi ? 'Yes' : 'No'}</span>
-                              <button
-                                type="button"
-                                onClick={() => setFormData(p => ({ ...p, upi: !p.upi }))}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.upi ? 'bg-violet-500' : 'bg-slate-300'}`}
-                              >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.upi ? 'translate-x-6' : 'translate-x-1'}`} />
-                              </button>
-                            </div>
-                          </FormField>
-                        </div>
-
-                        <FormField label="Address">
-                          <textarea
-                            rows="3"
-                            value={formData.address}
-                            onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
-                            readOnly={autoLockedFields.address}
-                            placeholder="Bank branch address"
-                            className={lockedTextareaClass(autoLockedFields.address)}
-                          />
-                        </FormField>
-                      </motion.div>
-                    )}
-
-                    {/* Status — edit only */}
-                    {modalMode === 'edit' && (
-                      <FormField label="Status">
-                        <div className="relative">
-                          <select value={formData.status} onChange={(e) => setFormData(p => ({ ...p, status: e.target.value }))} className={selectCls}>
-                            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-                          </select>
-                          <FaChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={11} />
-                        </div>
-                      </FormField>
-                    )}
-
-                    {/* Primary toggle */}
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/60">
-                      <div>
-                        <p className="text-sm font-bold text-slate-700">Set as Primary Account</p>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Salary and reimbursements will be credited here</p>
-                      </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <FormField label="Contact">
+                    <input
+                      type="text"
+                      value={formData.contact}
+                      onChange={(e) => setFormData(p => ({ ...p, contact: e.target.value }))}
+                      readOnly={autoLockedFields.contact}
+                      placeholder="Branch contact number"
+                      className={lockedInputClass(autoLockedFields.contact)}
+                    />
+                  </FormField>
+                  <FormField label="UPI Enabled">
+                    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                      <span className="text-sm font-semibold text-slate-600">{formData.upi ? 'Yes' : 'No'}</span>
                       <button
                         type="button"
-                        onClick={() => setFormData(p => ({ ...p, is_primary: !p.is_primary }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_primary ? 'bg-violet-500' : 'bg-slate-300'}`}
+                        onClick={() => setFormData(p => ({ ...p, upi: !p.upi }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.upi ? 'bg-violet-500' : 'bg-slate-300'}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.is_primary ? 'translate-x-6' : 'translate-x-1'}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.upi ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
                     </div>
-                  </div>
+                  </FormField>
+                </div>
 
-                  <div className="flex gap-3 px-6 sm:px-8 pb-6 pt-4 border-t border-gray-100">
-                    <button type="button" onClick={closeModal} disabled={saving}
-                      className="w-full rounded-xl border border-slate-200 py-3.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">
-                      Discard
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleAction}
-                      disabled={
-                        saving ||
-                        !formData.account_holder_name.trim() ||
-                        (isBankType && (!formData.bank_name.trim() || !formData.account_number.trim() || !formData.ifsc_code.trim())) ||
-                        (modalMode === 'create' ? createAccess.disabled : updateAccess.disabled)
-                      }
-                      title={modalMode === 'create' ? (createAccess.disabled ? createMessage : '') : (updateAccess.disabled ? updateMessage : '')}
-                      className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {saving ? (
-                        <div className="flex items-center justify-center gap-2"><FaSpinner className="animate-spin" /><span>Saving...</span></div>
-                      ) : modalMode === 'create' ? 'Add Account' : 'Save Changes'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <FormField label="Address">
+                  <textarea
+                    rows="3"
+                    value={formData.address}
+                    onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
+                    readOnly={autoLockedFields.address}
+                    placeholder="Bank branch address"
+                    className={lockedTextareaClass(autoLockedFields.address)}
+                  />
+                </FormField>
+              </div>
+            )}
+
+            {/* Status — edit only */}
+            {modalMode === 'edit' && (
+              <FormField label="Status">
+                <div className="relative">
+                  <select value={formData.status} onChange={(e) => setFormData(p => ({ ...p, status: e.target.value }))} className={selectCls}>
+                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                  </select>
+                  <FaChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={11} />
+                </div>
+              </FormField>
+            )}
+
+            {/* Primary toggle */}
+            <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-slate-50/60">
+              <div>
+                <p className="text-sm font-bold text-slate-700">Set as Primary Account</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Salary and reimbursements will be credited here</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData(p => ({ ...p, is_primary: !p.is_primary }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_primary ? 'bg-violet-500' : 'bg-slate-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.is_primary ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </ManagementHub>
   );
 };

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import apiCall, { uploadFile } from '../utils/api';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
-import ModalScrollLock from '../components/ModalScrollLock';
+import Modal from '../components/Modal';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
@@ -470,138 +470,148 @@ const LeaveManagement = () => {
                 )}
 
                 {/* Modals */}
-                <AnimatePresence>
-                    {detailLeave && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setDetailLeave(null)}>
-                            <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 sm:px-8 py-5 sticky top-0 z-[10]">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
-                                            <FaEye className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Leave Details</h2>
-                                            <div className="flex items-center gap-2 mt-0.5"><span className="text-sm text-slate-500">{detailLeave.employee_name}</span> <StatusBadge status={detailLeave.status} /></div>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setDetailLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
-                                        <FaTimes className="h-4 w-4" />
-                                    </button>
+                {detailLeave && (
+                    <Modal
+                        isOpen={!!detailLeave}
+                        onClose={() => setDetailLeave(null)}
+                        title="Leave Details"
+                        subtitle={`${detailLeave.employee_name} · ${detailLeave.leave_name}`}
+                        icon={<FaEye className="h-6 w-6" />}
+                        size="3xl"
+                        footer={
+                            <button
+                                type="button"
+                                onClick={() => setDetailLeave(null)}
+                                className="w-full rounded-xl bg-gray-100 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
+                            >
+                                Close
+                            </button>
+                        }
+                    >
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-3">
+                                <h3 className="text-xl font-black tracking-tight text-slate-800">{detailLeave.employee_name}</h3>
+                                <p className="text-blue-600 mt-1 font-semibold text-sm">{detailLeave.leave_name} · {formatDays(detailLeave.total_days)} Days</p>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Start Date</label>
+                                    <div className="text-sm font-medium text-gray-800">{fmt(detailLeave.start_date)}</div>
                                 </div>
-                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 sm:px-8 py-6">
-                                    <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                                        <h3 className="text-2xl font-black text-slate-800">{detailLeave.employee_name}</h3>
-                                        <p className="text-blue-600 mt-1 font-semibold text-sm">{detailLeave.leave_name} · {formatDays(detailLeave.total_days)} Days</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Start Date</label>
-                                            <div className="text-gray-800 font-medium">{fmt(detailLeave.start_date)}</div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">End Date</label>
-                                            <div className="text-gray-800 font-medium">{fmt(detailLeave.end_date)}</div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Applied On</label>
-                                            <div className="text-gray-800 font-medium">{fmt(detailLeave.applied_at)}</div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Payment Type</label>
-                                            <div className="text-gray-800 font-medium">{detailLeave.is_paid ? 'Paid Leave' : 'Unpaid Leave'}</div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-                                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-2">Reason / Description</label>
-                                        <div className="text-gray-700 text-sm italic leading-relaxed">"{detailLeave.reason || 'No reason provided.'}"</div>
-                                    </div>
-                                    {detailLeave.approval_remarks && (
-                                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-                                            <label className="text-xs font-semibold text-emerald-600 uppercase tracking-wider block mb-2">Approval Remarks</label>
-                                            <div className="text-emerald-800 text-sm">{detailLeave.approval_remarks}</div>
-                                        </div>
-                                    )}
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">End Date</label>
+                                    <div className="text-sm font-medium text-gray-800">{fmt(detailLeave.end_date)}</div>
                                 </div>
-                                <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-                                    <button type="button" onClick={() => setDetailLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Applied On</label>
+                                    <div className="text-sm font-medium text-gray-800">{fmt(detailLeave.applied_at)}</div>
                                 </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Payment Type</label>
+                                    <div className="text-sm font-medium text-gray-800">{detailLeave.is_paid ? 'Paid Leave' : 'Unpaid Leave'}</div>
+                                </div>
+                            </div>
+                            <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Reason / Description</label>
+                                <div className="text-sm italic leading-relaxed text-gray-700">"{detailLeave.reason || 'No reason provided.'}"</div>
+                            </div>
+                            {detailLeave.approval_remarks && (
+                                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-emerald-600">Approval Remarks</label>
+                                    <div className="text-sm text-emerald-800">{detailLeave.approval_remarks}</div>
+                                </div>
+                            )}
+                        </div>
+                    </Modal>
+                )}
 
-                    {approveLeave && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setApproveLeave(null)}>
-                            <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white backdrop-blur-xl w-full max-w-md max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-green-200">
-                                            <FaCheck className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Approve Leave</h2>
-                                            <p className="text-sm text-slate-500">{approveLeave.employee_name}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setApproveLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
-                                        <FaTimes className="h-4 w-4" />
-                                    </button>
-                                </div>
-                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 py-6">
-                                    <p className="text-gray-600 text-sm leading-relaxed">Are you sure you want to approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>?</p>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Approval Remarks (Optional)</label>
-                                        <textarea placeholder="Optional approval remarks..." className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none h-24" value={approveRemarks} onChange={(e) => setApproveRemarks(e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-                                    <button type="button" onClick={() => setApproveLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                                    <button type="button" onClick={submitApprove} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                        {submitting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
-                                        {submitting ? 'Approving...' : 'Confirm Approve'}
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
+                {approveLeave && (
+                    <Modal
+                        isOpen={!!approveLeave}
+                        onClose={() => setApproveLeave(null)}
+                        title="Approve Leave"
+                        subtitle={approveLeave.employee_name}
+                        icon={<FaCheck className="h-6 w-6" />}
+                        size="md"
+                        footer={
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setApproveLeave(null)}
+                                    className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={submitApprove}
+                                    disabled={submitting}
+                                    className="flex px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {submitting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                    {submitting ? 'Approving...' : 'Confirm Approve'}
+                                </button>
+                            </div>
+                        }
+                    >
+                        <div className="space-y-4">
+                            <p className="text-gray-600 text-sm leading-relaxed">Are you sure you want to approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>?</p>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Approval Remarks (Optional)</label>
+                                <textarea
+                                    placeholder="Optional approval remarks..."
+                                    className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none h-24"
+                                    value={approveRemarks}
+                                    onChange={(e) => setApproveRemarks(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </Modal>
+                )}
 
-                    {rejectLeave && (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && setRejectLeave(null)}>
-                            <ModalScrollLock />
-                            <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white backdrop-blur-xl w-full max-w-md max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-200">
-                                            <FaTrash className="h-6 w-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Reject Leave</h2>
-                                            <p className="text-sm text-slate-500">{rejectLeave.employee_name}</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setRejectLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
-                                        <FaTimes className="h-4 w-4" />
-                                    </button>
-                                </div>
-                                <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-4 px-6 py-6">
-                                    <p className="text-gray-600 text-sm leading-relaxed">Please provide a reason for rejecting <span className="font-bold text-gray-800">{rejectLeave.employee_name}</span>'s request.</p>
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-2">Rejection Reason <span className="text-red-500">*</span></label>
-                                        <textarea placeholder="Rejection reason (Required)..." className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none h-24" value={rejectRemarks} onChange={(e) => setRejectRemarks(e.target.value)} />
-                                    </div>
-                                </div>
-                                <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
-                                    <button type="button" onClick={() => setRejectLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Cancel</button>
-                                    <button type="button" onClick={submitReject} disabled={submitting} className="flex-1 py-3 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-medium hover:from-rose-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                        {submitting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
-                                        {submitting ? 'Rejecting...' : 'Reject Request'}
-                                    </button>
-                                </div>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {rejectLeave && (
+                    <Modal
+                        isOpen={!!rejectLeave}
+                        onClose={() => setRejectLeave(null)}
+                        title="Reject Leave"
+                        subtitle={rejectLeave.employee_name}
+                        icon={<FaTrash className="h-6 w-6" />}
+                        size="md"
+                        footer={
+                            <div className="flex gap-3 justify-end w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setRejectLeave(null)}
+                                    className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={submitReject}
+                                    disabled={submitting}
+                                    className="flex px-5 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-medium hover:from-rose-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {submitting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                                    {submitting ? 'Rejecting...' : 'Reject Request'}
+                                </button>
+                            </div>
+                        }
+                    >
+                        <div className="space-y-4">
+                            <p className="text-gray-600 text-sm leading-relaxed">Please provide a reason for rejecting <span className="font-bold text-gray-800">{rejectLeave.employee_name}</span>'s request.</p>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Rejection Reason <span className="text-red-500">*</span></label>
+                                <textarea
+                                    placeholder="Rejection reason (Required)..."
+                                    className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none h-24"
+                                    value={rejectRemarks}
+                                    onChange={(e) => setRejectRemarks(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </Modal>
+                )}
             </div>
         </ManagementHub>
     );

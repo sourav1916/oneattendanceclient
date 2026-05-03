@@ -1165,12 +1165,12 @@ const LeaveBalanceManagement = () => {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-3 px-6 py-5 border-t border-gray-100">
+                  <div className="flex justify-end gap-3 px-6 py-5 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={closeModal}
                       disabled={saving}
-                      className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
+                      className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
                     >
                       Cancel
                     </button>
@@ -1179,7 +1179,7 @@ const LeaveBalanceManagement = () => {
                       onClick={handleAction}
                       disabled={saving || !formData.leave_config_id || deleteAccess.disabled}
                       title={deleteAccess.disabled ? deleteMessage : ''}
-                      className="flex-1 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="flex px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {saving ? 'Deleting...' : 'Delete'}
                     </button>

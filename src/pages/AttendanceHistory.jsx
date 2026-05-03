@@ -32,7 +32,7 @@ import { DateRangePickerField } from '../components/DatePicker';
 import { FaBriefcase } from 'react-icons/fa';
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
-import ModalScrollLock from '../components/ModalScrollLock';
+import Modal from '../components/Modal';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -610,11 +610,9 @@ const AttendanceHistory = () => {
         )}
       </div>
 
-      <AnimatePresence>
-        {modalOpen && selectedRecord && (
-          <DetailsModal record={selectedRecord} onClose={closeModal} />
-        )}
-      </AnimatePresence>
+      {modalOpen && selectedRecord && (
+        <DetailsModal record={selectedRecord} onClose={closeModal} />
+      )}
 
       <AnimatePresence>
         {logsModalRecord && (
@@ -638,129 +636,95 @@ const DetailsModal = ({ record, onClose }) => {
   const endData = record[typeConfig.endKey];
 
   return (
-    <motion.div
-      className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <Modal
+      isOpen={!!record}
+      onClose={onClose}
+      title={record.date || "Attendance Details"}
+      subtitle={`${typeConfig.label} punch log overview`}
+      icon={<FaClock className="h-6 w-6" />}
+      size="4xl"
+      footer={
+        <button
+          onClick={onClose}
+          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+        >
+          Close
+        </button>
+      }
     >
-      <ModalScrollLock />
-      <motion.div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 18 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 18 }}
-        transition={{ type: "spring", damping: 25, stiffness: 280 }}
-        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto flex flex-col"
-      >
-        <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-indigo-200">
-              <FaClock className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">{record.date || <Placeholder />}</h2>
-              <p className="text-sm text-slate-500">{typeConfig.label} Details</p>
-            </div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Date</span>
+            <p className="font-bold text-slate-800 text-sm">{record.date || <Placeholder />}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-          >
-            <FaTimes className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto px-6 py-6 space-y-6 p-2 lg:p-0">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Date</span>
-              <p className="font-bold text-slate-800 text-sm">{record.date || <Placeholder />}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Status</span>
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Status</span>
+            <div>
               <span className={`inline-flex items-center gap-1.5 rounded-full ${style.className} px-3 py-1 text-[10px] font-bold border`}>
                 <StatusIcon size={12} />
                 {style.text.toUpperCase()}
               </span>
             </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
-              <p className="font-bold text-slate-800 text-sm">{startData?.time || <Placeholder />}</p>
-              {startData?.method && startData.method !== 'manual' && (
-                <p className="text-[10px] text-slate-400 uppercase font-bold">{startData.method}</p>
-              )}
-            </div>
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
-              <p className="font-bold text-slate-800 text-sm">{endData?.time || <Placeholder />}</p>
-              {endData?.method && endData.method !== 'manual' && (
-                <p className="text-[10px] text-slate-400 uppercase font-bold">{endData.method}</p>
-              )}
-            </div>
           </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.startLabel}</span>
+            <p className="font-bold text-slate-800 text-sm">{startData?.time || <Placeholder />}</p>
+            {startData?.method && startData.method !== 'manual' && (
+              <p className="text-[10px] text-slate-400 uppercase font-bold">{startData.method}</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">{typeConfig.endLabel}</span>
+            <p className="font-bold text-slate-800 text-sm">{endData?.time || <Placeholder />}</p>
+            {endData?.method && endData.method !== 'manual' && (
+              <p className="text-[10px] text-slate-400 uppercase font-bold">{endData.method}</p>
+            )}
+          </div>
+        </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
-            {((startData && startData.method !== 'manual' && (startData.ip || startData.lat || startData.lng)) ||
-              (endData && endData.method !== 'manual' && (endData.ip || endData.lat || endData.lng))) && (
-                <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
-                  <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
-                    <FaMapMarkerAlt size={14} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Location & Device</span>
-                    <div className="space-y-1">
-                      {startData && startData.method !== 'manual' && (
-                        <>
-                          {startData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start IP: {startData.ip}</p>}
-                          {(startData.lat || startData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start GPS: {startData.lat || 'N/A'}, {startData.lng || 'N/A'}</p>}
-                        </>
-                      )}
-                      {endData && endData.method !== 'manual' && (
-                        <>
-                          {endData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End IP: {endData.ip}</p>}
-                          {(endData.lat || endData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End GPS: {endData.lat || 'N/A'}, {endData.lng || 'N/A'}</p>}
-                        </>
-                      )}
-                    </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
+          {((startData && startData.method !== 'manual' && (startData.ip || startData.lat || startData.lng)) ||
+            (endData && endData.method !== 'manual' && (endData.ip || endData.lat || endData.lng))) && (
+              <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
+                <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+                  <FaMapMarkerAlt size={14} />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Location & Device</span>
+                  <div className="space-y-1">
+                    {startData && startData.method !== 'manual' && (
+                      <>
+                        {startData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start IP: {startData.ip}</p>}
+                        {(startData.lat || startData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start GPS: {startData.lat || 'N/A'}, {startData.lng || 'N/A'}</p>}
+                      </>
+                    )}
+                    {endData && endData.method !== 'manual' && (
+                      <>
+                        {endData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End IP: {endData.ip}</p>}
+                        {(endData.lat || endData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End GPS: {endData.lat || 'N/A'}, {endData.lng || 'N/A'}</p>}
+                      </>
+                    )}
                   </div>
                 </div>
-              )}
-
-            <div className="flex items-start gap-4">
-              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
-                <FaCog size={14} />
               </div>
-              <div className="flex-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">System Metadata</span>
-                <div className="flex flex-wrap gap-2">
-                  <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">ID: {record.id || <Placeholder />}</span>
-                  <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200 uppercase">TYPE: {activeType}</span>
-                </div>
+            )}
+
+          <div className="flex items-start gap-4">
+            <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+              <FaCog size={14} />
+            </div>
+            <div className="flex-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">System Metadata</span>
+              <div className="flex flex-wrap gap-2">
+                <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">ID: {record.id || <Placeholder />}</span>
+                <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200 uppercase">TYPE: {activeType}</span>
               </div>
             </div>
           </div>
         </div>
-
-        <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex justify-end shrink-0">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
-          >
-            Close
-          </motion.button>
-        </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 };
 

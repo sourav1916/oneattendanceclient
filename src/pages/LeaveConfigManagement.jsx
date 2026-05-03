@@ -286,8 +286,8 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
             </div>
           </div>
 
-          <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
+          <div className="flex gap-3 px-6 sm:px-8 py-5 border-t justify-end border-gray-100">
+            <button type="button" onClick={onClose} className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
               Close
             </button>
             <button
@@ -295,7 +295,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
               onClick={() => { onClose(); onEdit(record); }}
               disabled={editDisabled}
               title={editDisabled ? editTitle : ''}
-              className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <FaEdit size={14} /> Edit
             </button>
@@ -457,7 +457,7 @@ const FormModal = ({
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 p-2 lg:p-0 px-6 sm:px-8 py-6">
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar space-y-6 px-6 sm:px-8 py-6">
 
           {!isEdit && leaveTypeOptions.length > 0 && (
             <div>
@@ -583,11 +583,11 @@ const FormModal = ({
 
         </div>
 
-        <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
-          <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
+        <div className="flex justify-end gap-3 px-6 sm:px-8 py-5 border-t border-gray-100">
+          <button type="button" onClick={onClose} className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
             Cancel
           </button>
-          <button type="button" onClick={handleSubmit} disabled={saving || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+          <button type="button" onClick={handleSubmit} disabled={saving || submitDisabled} title={submitDisabled ? submitTitle : ''} className="flex px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Leave Type'}
           </button>
         </div>

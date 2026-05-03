@@ -10,7 +10,7 @@ import {
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
-import ModalScrollLock from '../components/ModalScrollLock';
+import Modal from '../components/Modal';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
@@ -104,19 +104,24 @@ const formatFilterLabel = (value) => new Date(`${value}T00:00:00`).toLocaleDateS
     year: 'numeric'
 });
 
-const normalizePendingAttendanceRow = (row) => ({
+const normalizePendingAttendanceRow = (row) => {
+    const normalizedType = row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'work');
+    const startRecord = row?.punch_in || row?.break_start || row?.break_start_ || null;
+    const endRecord = row?.punch_out || row?.break_end || row?.break_end_ || null;
+
+    return {
     ...row,
-    attendance_type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
+    attendance_type: normalizedType,
     punch_uid: row?.id,
     attendance_date: row?.punch_date || null,
-    type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
-    attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || <Placeholder />,
-    start_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break In' : 'Punch In',
-    end_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break Out' : 'Punch Out',
-    start_time: row?.punch_in?.time || row?.break_start?.time || row?.start_time || null,
-    end_time: row?.punch_out?.time || row?.break_end?.time || row?.end_time || null,
-    start_record: row?.punch_in || row?.break_start || null,
-    end_record: row?.punch_out || row?.break_end || null,
+    type: normalizedType,
+    attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_start_?.method || row?.break_end?.method || row?.break_end_?.method || normalizedType || 'manual',
+    start_label: normalizedType === 'break' ? 'Break In' : 'Punch In',
+    end_label: normalizedType === 'break' ? 'Break Out' : 'Punch Out',
+    start_time: startRecord?.time || row?.start_time || null,
+    end_time: endRecord?.time || row?.end_time || null,
+    start_record: startRecord,
+    end_record: endRecord,
     status: row?.status || 'pending',
     employee_name: row?.name ?? '',
     employee_code: row?.employee_code ?? '',
@@ -131,7 +136,8 @@ const normalizePendingAttendanceRow = (row) => ({
         email: row?.email ?? '',
         phone: row?.phone ?? '',
     },
-});
+    };
+};
 
 const normalizePendingAttendanceResponse = (response) => {
     if (!Array.isArray(response?.data)) return [];
@@ -218,111 +224,96 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
     const attendanceTypeMeta = getAttendanceTypeConfig(attendance.type);
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-4 sm:px-6"
-            onClick={onClose}
+        <Modal
+            isOpen={!!attendance}
+            onClose={onClose}
+            title="Pending Attendance Details"
+            subtitle={`${attendance.employee_name || attendance.employee?.name} · ${attendance.employee_code || attendance.employee?.code}`}
+            icon={<FaInfoCircle className="h-6 w-6" />}
+            size="4xl"
+            footer={
+                <button
+                    onClick={onClose}
+                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+                >
+                    Close
+                </button>
+            }
         >
-            <ModalScrollLock />
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 18 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 18 }}
-                transition={{ type: "spring", damping: 25, stiffness: 280 }}
-                className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold flex items-center gap-3 text-slate-900">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-100">
-                                <FaInfoCircle className="text-white h-6 w-6" />
-                            </div>
-                            Pending Attendance Details
-                        </h2>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50">
-                            <FaTimesCircle size={20} />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 p-2 lg:p-0">
-                    <div className="border-b pb-4">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <FaUser className="text-amber-500" /> Employee Information
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Name</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee_name || attendance.employee?.name}</p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Email</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.email || attendance.email || <Placeholder />}</p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Employee Code</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee_code || attendance.employee?.code}</p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Designation</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.employee?.designation || <Placeholder />}</p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Phone</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base break-all">{attendance.employee?.phone || attendance.phone || <Placeholder />}</p>
-                            </div>
+            <div className="space-y-8">
+                <div>
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <FaUser className="text-amber-500" /> Employee Information
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Name</label>
+                            <p className="font-bold text-gray-800 text-sm">{attendance.employee_name || attendance.employee?.name}</p>
                         </div>
-                    </div>
-
-                    <div className="border-b pb-4">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                            <FaClock className="text-amber-500" /> Attendance Details
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Type</label>
-                                <div className="mt-1">
-                                    <PunchTypeBadge type={attendance.type} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Date</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base">
-                                    {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
-                                </p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">{attendanceTypeMeta.startLabel}</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base">
-                                    {renderRecordLabel(startRecord)}
-                                </p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">{attendanceTypeMeta.endLabel}</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base">
-                                    {renderRecordLabel(endRecord)}
-                                </p>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Status</label>
-                                <div className="mt-1">
-                                    <StatusBadge status={attendance.status || 'pending'} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 uppercase">Method</label>
-                                <p className="font-medium text-gray-800 text-sm sm:text-base">
-                                    {attendance.attendance_method || <Placeholder />}
-                                </p>
-                            </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Email</label>
+                            <p className="font-bold text-gray-800 text-sm break-all">{attendance.employee?.email || attendance.email || <Placeholder />}</p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Employee Code</label>
+                            <p className="font-bold text-gray-800 text-sm">{attendance.employee_code || attendance.employee?.code}</p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Designation</label>
+                            <p className="font-bold text-gray-800 text-sm">{attendance.employee?.designation || <Placeholder />}</p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Phone</label>
+                            <p className="font-bold text-gray-800 text-sm">{attendance.employee?.phone || attendance.phone || <Placeholder />}</p>
                         </div>
                     </div>
                 </div>
-            </motion.div>
-        </motion.div>
+
+                <div>
+                    <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <FaClock className="text-amber-500" /> Attendance Details
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Type</label>
+                            <div className="mt-0.5">
+                                <PunchTypeBadge type={attendance.type} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Date</label>
+                            <p className="font-bold text-gray-800 text-sm">
+                                {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
+                            </p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">{attendanceTypeMeta.startLabel}</label>
+                            <p className="font-bold text-gray-800 text-sm">
+                                {renderRecordLabel(startRecord)}
+                            </p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">{attendanceTypeMeta.endLabel}</label>
+                            <p className="font-bold text-gray-800 text-sm">
+                                {renderRecordLabel(endRecord)}
+                            </p>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Status</label>
+                            <div className="mt-0.5">
+                                <StatusBadge status={attendance.status || 'pending'} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Method</label>
+                            <p className="font-bold text-gray-800 text-sm">
+                                {attendance.attendance_method || <Placeholder />}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Modal>
     );
 };
 
@@ -947,14 +938,12 @@ const PendingAttendance = ({ companyId }) => {
                 )}
             </div>
 
-            <AnimatePresence>
-                {showModal && selectedAttendance && (
-                    <PendingDetailsModal
-                        attendance={selectedAttendance}
-                        onClose={() => setShowModal(false)}
-                    />
-                )}
-            </AnimatePresence>
+            {showModal && selectedAttendance && (
+                <PendingDetailsModal
+                    attendance={selectedAttendance}
+                    onClose={() => setShowModal(false)}
+                />
+            )}
 
             <AnimatePresence>
                 {showCreateModal && (

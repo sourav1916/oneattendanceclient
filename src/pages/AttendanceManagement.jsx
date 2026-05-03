@@ -9,7 +9,6 @@ import {
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
-import ModalScrollLock from '../components/ModalScrollLock';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
@@ -19,6 +18,7 @@ import { CreateAttendanceModal, EditAttendanceModal } from '../components/Attend
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
+import Modal from '../components/Modal';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -105,19 +105,24 @@ const formatFilterLabel = (value) =>
     year: 'numeric'
   });
 
-const normalizeAttendanceRow = (row) => ({
+const normalizeAttendanceRow = (row) => {
+  const normalizedType = row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'work');
+  const startRecord = row?.punch_in || row?.break_start || row?.break_start_ || null;
+  const endRecord = row?.punch_out || row?.break_end || row?.break_end_ || null;
+
+  return {
   ...row,
-  attendance_type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
+  attendance_type: normalizedType,
   punch_uid: row?.id,
   attendance_date: row?.punch_date || row?.attendance_date || null,
-  type: row?.type === 'break' || row?.break_start || row?.break_end ? 'break' : 'work',
-  attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_end?.method || row?.type || 'manual',
-  start_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break In' : 'Punch In',
-  end_label: row?.type === 'break' || row?.break_start || row?.break_end ? 'Break Out' : 'Punch Out',
-  start_time: row?.punch_in?.time || row?.break_start?.time || row?.start_time || null,
-  end_time: row?.punch_out?.time || row?.break_end?.time || row?.end_time || null,
-  start_record: row?.punch_in || row?.break_start || null,
-  end_record: row?.punch_out || row?.break_end || null,
+  type: normalizedType,
+  attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_start_?.method || row?.break_end?.method || row?.break_end_?.method || normalizedType || 'manual',
+  start_label: normalizedType === 'break' ? 'Break In' : 'Punch In',
+  end_label: normalizedType === 'break' ? 'Break Out' : 'Punch Out',
+  start_time: startRecord?.time || row?.start_time || null,
+  end_time: endRecord?.time || row?.end_time || null,
+  start_record: startRecord,
+  end_record: endRecord,
   status: row?.status || 'pending',
   notes: row?.notes || '',
   reviewed_by: row?.reviewed_by_name || row?.reviewed_by || null,
@@ -130,7 +135,8 @@ const normalizeAttendanceRow = (row) => ({
     email: row?.email ?? '',
     phone: row?.phone ?? '',
   },
-});
+  };
+};
 
 const normalizeAttendanceResponse = (response) => {
   if (!Array.isArray(response?.data)) return [];
@@ -213,210 +219,193 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
   const attendanceTypeMeta = getAttendanceTypeConfig(attendance.type);
 
   return (
-    <motion.div
-      className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+    <Modal
+      isOpen={!!attendance}
+      onClose={onClose}
+      title="Attendance Details"
+      subtitle={`Detailed log for ${attendance.employee?.name}`}
+      icon={<FaInfoCircle className="h-6 w-6" />}
+      size="4xl"
+      footer={
+        <button
+          onClick={onClose}
+          className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+        >
+          Close
+        </button>
+      }
     >
-      <ModalScrollLock />
-      <motion.div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-      />
-
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0, y: 18 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.95, opacity: 0, y: 18 }}
-        transition={{ type: "spring", damping: 25, stiffness: 280 }}
-        className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 flex flex-col z-10"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="shrink-0 border-b border-slate-100 bg-white p-5 sm:px-6 sm:py-5 z-10">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold flex items-center gap-3 text-slate-900">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                <FaInfoCircle className="text-white h-6 w-6" />
-              </div>
-              Attendance Details
-            </h2>
-            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50">
-              <FaTimesCircle size={20} />
-            </button>
+      <div className="space-y-6">
+        {/* Employee Information */}
+        <div className="border-b border-gray-100 pb-4">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <FaUser className="text-purple-500" /> Employee Information
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Name</label>
+              <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.name}</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Code</label>
+              <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.code}</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Designation</label>
+              <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.designation}</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 p-2 lg:p-0">
+        {/* Attendance Log */}
+        <div className="border-b border-gray-100 pb-4">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <FaClock className="text-purple-500" /> Attendance Log
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Type</label>
+              <div className="mt-0.5">
+                <PunchTypeBadge type={attendance.type} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label>
+              <p className="font-medium text-gray-800 text-sm">
+                {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
+              </p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Status</label>
+              <div className="mt-0.5">
+                <StatusBadge status={attendance.status} />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeMeta.startLabel}</label>
+              <p className="font-medium text-gray-800 text-sm">
+                {renderRecordLabel(startRecord)}
+              </p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeMeta.endLabel}</label>
+              <p className="font-medium text-gray-800 text-sm">
+                {renderRecordLabel(endRecord)}
+              </p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Method</label>
+              <p className="font-medium text-gray-800 text-sm capitalize">
+                {attendance.attendance_method || <Placeholder />}
+              </p>
+            </div>
+            {attendance.notes && (
+              <div className="col-span-2 sm:col-span-3">
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold flex items-center gap-1">
+                  <FaComment className="text-purple-500" /> Notes
+                </label>
+                <p className="font-medium text-gray-700 text-xs mt-1 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                  {attendance.notes}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Review Info */}
+        {attendance.reviewed_at && (
           <div className="border-b border-gray-100 pb-4">
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <FaUser className="text-purple-500" /> Employee Information
+              <FaCheckCircle className="text-green-500" /> Review Info
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Name</label>
-                <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.name}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">By</label>
+                <p className="font-medium text-gray-800 text-sm">
+                  {attendance.reviewed_by || 'System'}
+                </p>
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Code</label>
-                <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.code}</p>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Designation</label>
-                <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.designation}</p>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">At</label>
+                <p className="font-medium text-gray-800 text-sm">
+                  {attendance.reviewed_at}
+                </p>
               </div>
             </div>
           </div>
+        )}
 
+        {/* Location & Device */}
+        {(attendance.punch_in?.punch_in_latitude || attendance.punch_out?.punch_out_latitude || attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.latitude) && (
           <div className="border-b border-gray-100 pb-4">
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <FaClock className="text-purple-500" /> Attendance Log
+              <FaMapMarkerAlt className="text-purple-500" /> Location & Device
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Type</label>
-                <div className="mt-0.5">
-                  <PunchTypeBadge type={attendance.type} />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label>
-                <p className="font-medium text-gray-800 text-sm">
-                  {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
-                </p>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Status</label>
-                <div className="mt-0.5">
-                  <StatusBadge status={attendance.status} />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeMeta.startLabel}</label>
-                <p className="font-medium text-gray-800 text-sm">
-                  {renderRecordLabel(startRecord)}
-                </p>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeMeta.endLabel}</label>
-                <p className="font-medium text-gray-800 text-sm">
-                  {renderRecordLabel(endRecord)}
-                </p>
-              </div>
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Method</label>
-                <p className="font-medium text-gray-800 text-sm capitalize">
-                  {attendance.attendance_method || <Placeholder />}
-                </p>
-              </div>
-              {attendance.notes && (
-                <div className="col-span-2 sm:col-span-3">
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold flex items-center gap-1">
-                    <FaComment className="text-purple-500" /> Notes
-                  </label>
-                  <p className="font-medium text-gray-700 text-xs mt-1 p-2 bg-gray-50 rounded-lg border border-gray-100">
-                    {attendance.notes}
+              {(attendance.punch_in?.punch_in_latitude || attendance.location?.latitude) && (
+                <>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Lat</label>
+                    <p className="font-medium text-gray-800 text-[11px] truncate">
+                      {attendance.punch_in?.punch_in_latitude || attendance.location?.latitude}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Long</label>
+                    <p className="font-medium text-gray-800 text-[11px] truncate">
+                      {attendance.punch_in?.punch_in_longitude || attendance.location?.longitude}
+                    </p>
+                  </div>
+                </>
+              )}
+              {attendance.punch_out?.punch_out_latitude && (
+                <>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Lat</label>
+                    <p className="font-medium text-gray-800 text-[11px] truncate">
+                      {attendance.punch_out.punch_out_latitude}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Long</label>
+                    <p className="font-medium text-gray-800 text-[11px] truncate">
+                      {attendance.punch_out.punch_out_longitude}
+                    </p>
+                  </div>
+                </>
+              )}
+              {(attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.ip_address) && (
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">IP Address</label>
+                  <p className="font-medium text-gray-800 text-[11px] truncate">
+                    {[attendance.punch_in?.ip, attendance.punch_out?.ip, attendance.location?.ip_address].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' / ')}
                   </p>
                 </div>
               )}
             </div>
           </div>
+        )}
 
-          {attendance.reviewed_at && (
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <FaCheckCircle className="text-green-500" /> Review Info
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">By</label>
-                  <p className="font-medium text-gray-800 text-sm">
-                    {attendance.reviewed_by || 'System'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">At</label>
-                  <p className="font-medium text-gray-800 text-sm">
-                    {attendance.reviewed_at}
-                  </p>
-                </div>
-              </div>
+        {/* Company Information */}
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+            <FaBuilding className="text-purple-500" /> Company Information
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="text-xs text-gray-500 uppercase">Company Name</label>
+              <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.company?.name}</p>
             </div>
-          )}
-
-          {(attendance.punch_in?.punch_in_latitude || attendance.punch_out?.punch_out_latitude || attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.latitude) && (
-            <div className="border-b border-gray-100 pb-4">
-              <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <FaMapMarkerAlt className="text-purple-500" /> Location & Device
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {(attendance.punch_in?.punch_in_latitude || attendance.location?.latitude) && (
-                  <>
-                    <div>
-                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Lat</label>
-                      <p className="font-medium text-gray-800 text-[11px] truncate">
-                        {attendance.punch_in?.punch_in_latitude || attendance.location?.latitude}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Long</label>
-                      <p className="font-medium text-gray-800 text-[11px] truncate">
-                        {attendance.punch_in?.punch_in_longitude || attendance.location?.longitude}
-                      </p>
-                    </div>
-                  </>
-                )}
-                {attendance.punch_out?.punch_out_latitude && (
-                  <>
-                    <div>
-                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Lat</label>
-                      <p className="font-medium text-gray-800 text-[11px] truncate">
-                        {attendance.punch_out.punch_out_latitude}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Long</label>
-                      <p className="font-medium text-gray-800 text-[11px] truncate">
-                        {attendance.punch_out.punch_out_longitude}
-                      </p>
-                    </div>
-                  </>
-                )}
-                {(attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.ip_address) && (
-                  <div className="col-span-2 sm:col-span-1">
-                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">IP Address</label>
-                    <p className="font-medium text-gray-800 text-[11px] truncate">
-                      {[attendance.punch_in?.ip, attendance.punch_out?.ip, attendance.location?.ip_address].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' / ')}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FaBuilding className="text-purple-500" /> Company Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label className="text-xs text-gray-500 uppercase">Company Name</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{attendance.company?.name}</p>
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 uppercase">Location</label>
-                <p className="font-medium text-gray-800 text-sm sm:text-base break-words">
-                  {attendance.company?.city}, {attendance.company?.state}
-                </p>
-              </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase">Location</label>
+              <p className="font-medium text-gray-800 text-sm sm:text-base break-words">
+                {attendance.company?.city}, {attendance.company?.state}
+              </p>
             </div>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </Modal>
   );
 };
 
@@ -963,14 +952,12 @@ const AttendanceManagement = ({ companyId }) => {
         )}
       </div>
 
-      <AnimatePresence>
-        {showModal && selectedAttendance && (
-          <AttendanceDetailsModal
-            attendance={selectedAttendance}
-            onClose={() => setShowModal(false)}
-          />
-        )}
-      </AnimatePresence>
+      {showModal && selectedAttendance && (
+        <AttendanceDetailsModal
+          attendance={selectedAttendance}
+          onClose={() => setShowModal(false)}
+        />
+      )}
 
       <AnimatePresence>
         {showCreateModal && (

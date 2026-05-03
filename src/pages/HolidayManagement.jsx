@@ -5,6 +5,7 @@ import apiCall from '../utils/api';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import { FaUmbrellaBeach, FaCalendarAlt } from 'react-icons/fa';
 import { ManagementHub } from '../components/common';
+import Modal from '../components/Modal';
 
 // ==================== ICONS (inline SVG to avoid FA sizing issues) ====================
 const Icon = {
@@ -229,28 +230,6 @@ const getHolidayConfig = (holiday) => {
   return HOLIDAY_CONFIG.master_mandatory;
 };
 
-// ==================== MODAL WRAPPER ====================
-const Modal = ({ children, onClose, danger = false, panelClassName = 'sm:max-w-md' }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-    style={{ backgroundColor: 'rgba(15,15,25,0.65)', backdropFilter: 'blur(8px)' }}
-    onClick={onClose}
-  >
-    <motion.div
-      initial={{ opacity: 0, y: 60, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 40, scale: 0.97 }}
-      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className={`bg-white w-full rounded-t-[10px] sm:rounded-xl shadow-2xl overflow-hidden ${panelClassName}`}
-      onClick={e => e.stopPropagation()}
-    >
-      {children}
-    </motion.div>
-  </motion.div>
-);
 
 // ==================== CREATE HOLIDAY MODAL ====================
 const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialName, submitDisabled = false, submitTitle = '' }) => {
@@ -280,23 +259,26 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
   };
 
   return (
-    <Modal onClose={onClose}>
-      {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-500 mb-0.5">New Holiday</p>
-          <h2 className="text-xl font-bold text-gray-900 leading-tight">Add to Calendar</h2>
-          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
-            <Icon.Calendar />
-            {selectedDates.length === 1 ? formatDate(selectedDates[0]) : `${selectedDates.length} dates selected`}
-          </p>
-        </div>
-        <button onClick={onClose} className="mt-1 p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0">
-          <Icon.X />
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Add to Calendar"
+      subtitle={selectedDates.length === 1 ? formatDate(selectedDates[0]) : `${selectedDates.length} dates selected`}
+      icon={<Icon.Calendar className="h-6 w-6" />}
+      size="md"
+      footer={
+        <button
+          type="submit"
+          form="create-holiday-form"
+          disabled={loading || submitDisabled}
+          title={submitDisabled ? submitTitle : ''}
+          className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {loading ? <><Icon.Spinner /> Creating…</> : <><Icon.Plus /> Create Holiday{selectedDates.length > 1 ? 's' : ''}</>}
         </button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+      }
+    >
+      <form id="create-holiday-form" onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Holiday Name</label>
           <input
@@ -319,15 +301,6 @@ const CreateHolidayModal = ({ selectedDates, onClose, onCreateSuccess, initialNa
             <p className="text-xs text-gray-500 mt-0.5">Employees can choose to observe this day</p>
           </div>
         </label>
-
-        <button
-          type="submit"
-          disabled={loading || submitDisabled}
-          title={submitDisabled ? submitTitle : ''}
-          className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {loading ? <><Icon.Spinner /> Creating…</> : <><Icon.Plus /> Create Holiday{selectedDates.length > 1 ? 's' : ''}</>}
-        </button>
       </form>
     </Modal>
   );
@@ -356,17 +329,26 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess, submitDisabled 
   };
 
   return (
-    <Modal onClose={onClose}>
-      <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-500 mb-0.5">Edit Holiday</p>
-          <h2 className="text-xl font-bold text-gray-900">Update Details</h2>
-          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5"><Icon.Calendar />{holiday.date}</p>
-        </div>
-        <button onClick={onClose} className="mt-1 p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"><Icon.X /></button>
-      </div>
-
-      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Update Details"
+      subtitle={holiday.date}
+      icon={<Icon.Calendar className="h-6 w-6" />}
+      size="md"
+      footer={
+        <button
+          type="submit"
+          form="update-holiday-form"
+          disabled={loading || submitDisabled}
+          title={submitDisabled ? submitTitle : ''}
+          className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center justify-center gap-2"
+        >
+          {loading ? <><Icon.Spinner /> Updating…</> : <><Icon.Check /> Save Changes</>}
+        </button>
+      }
+    >
+      <form id="update-holiday-form" onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Holiday Name</label>
           <input
@@ -388,15 +370,6 @@ const UpdateHolidayModal = ({ holiday, onClose, onUpdateSuccess, submitDisabled 
             <p className="text-xs text-gray-500 mt-0.5">Employees can choose to observe this day</p>
           </div>
         </label>
-
-        <button
-          type="submit"
-          disabled={loading || submitDisabled}
-          title={submitDisabled ? submitTitle : ''}
-          className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center justify-center gap-2"
-        >
-          {loading ? <><Icon.Spinner /> Updating…</> : <><Icon.Check /> Save Changes</>}
-        </button>
       </form>
     </Modal>
   );
@@ -421,20 +394,18 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
   };
 
   return (
-    <Modal onClose={onClose} danger panelClassName="sm:max-w-lg sm:max-h-[90vh]">
-      <div className="flex flex-col justify-center p-6 text-center">
-        <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-5 text-red-500">
-          <Icon.Trash />
-        </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Holiday?</h2>
-        <p className="text-sm text-gray-500 mb-1">You're about to remove</p>
-        <p className="text-base font-bold text-gray-800 mb-1">"{holiday.name}"</p>
-        <p className="text-xs text-gray-400 mb-7">{holiday.date} · This cannot be undone</p>
-
-        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Delete Holiday?"
+      subtitle={`${holiday.name} · ${holiday.date}`}
+      icon={<Icon.Trash className="h-6 w-6 text-red-500" />}
+      size="md"
+      footer={
+        <>
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition-all"
+            className="px-6 py-2.5 rounded-xl font-semibold text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-[0.98] transition-all"
           >
             Cancel
           </button>
@@ -442,11 +413,17 @@ const DeleteModal = ({ holiday, onClose, onDeleteSuccess, submitDisabled = false
             onClick={handleDelete}
             disabled={loading || submitDisabled}
             title={submitDisabled ? submitTitle : ''}
-            className="flex-1 py-3 rounded-xl font-bold text-sm text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-100 disabled:opacity-60 flex items-center justify-center gap-2"
+            className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-red-500 hover:bg-red-600 active:scale-[0.98] transition-all shadow-lg shadow-red-100 disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <><Icon.Spinner /> Deleting…</> : 'Delete'}
           </button>
-        </div>
+        </>
+      }
+    >
+      <div className="text-center space-y-4">
+        <p className="text-sm text-gray-500 leading-relaxed">
+          You're about to remove <span className="font-bold text-gray-800">"{holiday.name}"</span> from the calendar. This action cannot be undone.
+        </p>
       </div>
     </Modal>
   );
@@ -901,36 +878,34 @@ const HolidayManagementCalendar = () => {
       </div>
 
       {/* Modals */}
-      <AnimatePresence>
-        {activeModal === 'create' && modalData && (
-          <CreateHolidayModal
-            selectedDates={modalData.dates}
-            initialName={modalData.initialName}
-            onClose={closeModal}
-            onCreateSuccess={handleRefresh}
-            submitDisabled={createAccess.disabled}
-            submitTitle={createAccess.disabled ? createMessage : ''}
-          />
-        )}
-        {activeModal === 'update' && modalData && (
-          <UpdateHolidayModal
-            holiday={modalData}
-            onClose={closeModal}
-            onUpdateSuccess={handleRefresh}
-            submitDisabled={updateAccess.disabled}
-            submitTitle={updateAccess.disabled ? updateMessage : ''}
-          />
-        )}
-        {activeModal === 'delete' && modalData && (
-          <DeleteModal
-            holiday={modalData}
-            onClose={closeModal}
-            onDeleteSuccess={handleRefresh}
-            submitDisabled={deleteAccess.disabled}
-            submitTitle={deleteAccess.disabled ? deleteMessage : ''}
-          />
-        )}
-      </AnimatePresence>
+      {activeModal === 'create' && modalData && (
+        <CreateHolidayModal
+          selectedDates={modalData.dates}
+          initialName={modalData.initialName}
+          onClose={closeModal}
+          onCreateSuccess={handleRefresh}
+          submitDisabled={createAccess.disabled}
+          submitTitle={createAccess.disabled ? createMessage : ''}
+        />
+      )}
+      {activeModal === 'update' && modalData && (
+        <UpdateHolidayModal
+          holiday={modalData}
+          onClose={closeModal}
+          onUpdateSuccess={handleRefresh}
+          submitDisabled={updateAccess.disabled}
+          submitTitle={updateAccess.disabled ? updateMessage : ''}
+        />
+      )}
+      {activeModal === 'delete' && modalData && (
+        <DeleteModal
+          holiday={modalData}
+          onClose={closeModal}
+          onDeleteSuccess={handleRefresh}
+          submitDisabled={deleteAccess.disabled}
+          submitTitle={deleteAccess.disabled ? deleteMessage : ''}
+        />
+      )}
     </ManagementHub>
   );
 };

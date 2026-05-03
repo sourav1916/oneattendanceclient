@@ -312,6 +312,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
 
 export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, onSuccess }) => {
     const [loading, setLoading] = useState(false);
+    const resolvedPunchType = attendance?.punch_type || attendance?.type || attendance?.record_type || 'work';
     const [formData, setFormData] = useState({
         attendance_date: new Date().toISOString().split('T')[0],
         punch_type: 'work',
@@ -322,15 +323,17 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
 
     useEffect(() => {
         if (isOpen && attendance) {
+            const startRecord = attendance.start_record || attendance.punch_in || attendance.break_start || attendance.break_start_ || null;
+            const endRecord = attendance.end_record || attendance.punch_out || attendance.break_end || attendance.break_end_ || null;
             setFormData({
                 attendance_date: attendance.attendance_date || attendance.punch_date || new Date().toISOString().split('T')[0],
-                punch_type: attendance.punch_type || 'work',
-                punch_in: attendance.start_time || null,
-                punch_out: attendance.end_time || null,
+                punch_type: resolvedPunchType,
+                punch_in: attendance.start_time || startRecord?.time || null,
+                punch_out: attendance.end_time || endRecord?.time || null,
                 notes: attendance.notes || ''
             });
         }
-    }, [isOpen, attendance]);
+    }, [isOpen, attendance, resolvedPunchType]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

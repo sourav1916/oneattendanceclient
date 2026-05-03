@@ -28,6 +28,7 @@ import {
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
 import TimeDurationPickerField from "../TimeDurationPicker";
+import Modal from "../Modal";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -365,48 +366,30 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     try {
       const company = JSON.parse(localStorage.getItem("company"));
       const encodedEmail = encodeURIComponent(email);
-      const endpoints = [
-        `/company/users/available?email=${encodedEmail}`,
-      ];
+      const endpoint = `/company/users/available?email=${encodedEmail}`;
 
-      let lastError = null;
-      let found = null;
+      const res = await apiCall(endpoint, "GET", null, company?.id);
+      const result = await res.json();
+      if (!res.ok) throw new Error(result?.message || "Failed to search user");
 
-      for (const endpoint of endpoints) {
-        try {
-          const res = await apiCall(endpoint, "GET", null, company?.id);
-          const result = await res.json();
-          if (!res.ok) {
-            lastError = result?.message || "Failed to search user";
-            continue;
-          }
-
-          if (result.success) {
-            found = resolveUserPayload(result);
-            if (found) break;
-            lastError = result.message || "User not found";
-          } else {
-            lastError = result.message || "User not found";
-          }
-        } catch (err) {
-          lastError = err.message || "Failed to search user";
+      if (result.success) {
+        const found = resolveUserPayload(result);
+        if (found) {
+          setSelectedUser({
+            id: getResolvedUserId(found),
+            full_name: getResolvedUserName(found),
+            email: found.email,
+            phone: found.phone || null,
+            is_active: found.is_active,
+            created_at: found.created_at || null,
+          });
+          toast.success("User retrieved successfully");
+        } else {
+          throw new Error(result.message || "User not found");
         }
+      } else {
+        throw new Error(result.message || "User not found");
       }
-
-      if (!found) {
-        throw new Error(lastError || "User not found");
-      }
-
-      setSelectedUser({
-        id: getResolvedUserId(found),
-        full_name: getResolvedUserName(found),
-        email: found.email,
-        phone: found.phone || null,
-        is_active: found.is_active,
-        created_at: found.created_at || null,
-      });
-
-      toast.success("User retrieved successfully");
     } catch (err) {
       setSelectedUser(null);
       console.error("Error searching user:", err);
@@ -505,18 +488,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     }))
     : [];
 
-  const showInviteFields = Boolean(selectedUser);
-  const canCreateInvite =
-    Boolean(selectedUser) &&
-    Boolean(designation) &&
-    Boolean(staffType) &&
-    Boolean(employmentType) &&
-    selectedAttendanceMethods.length > 0 &&
-    !isSubmitting &&
-    !isLoadingConstants &&
-    !isSearchingUser &&
-    !submitDisabled;
-
   const toggleAttendanceMethod = (method) => {
     setSelectedAttendanceMethods((prev) =>
       prev.includes(method) ? prev.filter((item) => item !== method) : [...prev, method]
@@ -538,431 +509,378 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setWeekends(prev => prev.map(w => w.day === day ? { ...w, type } : w));
   };
 
-  return (
-    <AnimatePresence mode="wait">
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 flex items-center justify-center z-50 px-4 sm:px-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <ModalScrollLock />
-          <motion.div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-          />
+  const canCreateInvite = Boolean(selectedUser && designation && staffType && employmentType && selectedAttendanceMethods.length > 0 && !isSubmitting && !isLoadingConstants && !isSearchingUser && !submitDisabled);
 
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 18 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 18 }}
-            transition={{ type: "spring", damping: 25, stiffness: 280 }}
-            className="relative w-full max-w-4xl max-h-[80vh] flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto"
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Add New Staff Member"
+      subtitle="Search user by email, then configure invite details"
+      icon={<FaUserPlus className="h-6 w-6" />}
+      size="4xl"
+      footer={
+        <>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
           >
-            <div className="shrink-0 flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-500 border border-indigo-100 shadow-sm">
-                  <FaUserPlus className="h-6 w-6" />
+            Cancel
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleSubmit}
+            disabled={!canCreateInvite}
+            title={
+              submitDisabled
+                ? submitTitle
+                : !selectedUser
+                  ? "Search and verify a user first"
+                  : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
+                    ? "Complete all required fields"
+                    : ""
+            }
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSubmitting ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+            Send Invite
+          </motion.button>
+        </>
+      }
+    >
+      <div className="space-y-6 p-2 lg:p-0">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <FaSearch className="h-4 w-4 text-indigo-500" />
+            Find User
+          </label>
+          <div className="flex items-center gap-3 flex-row">
+            <input
+              type="email"
+              value={emailQuery}
+              onChange={(e) => setEmailQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchUser();
+                }
+              }}
+              placeholder="Enter user's email address..."
+              className="flex-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+            />
+            <button
+              onClick={handleSearchUser}
+              disabled={isSearchingUser}
+              className="flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50 lg:w-auto"
+            >
+              {isSearchingUser ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSearch className="h-4 w-4" />}
+              <span className="hidden sm:inline">Verify User</span>
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {selectedUser ? (
+            <motion.div
+              key="invite-details"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="space-y-6"
+            >
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <FaRegCheckCircle className="h-4 w-4 text-emerald-600" />
+                    <h3 className="text-sm font-semibold text-emerald-900">User Found & Verified</h3>
+                  </div>
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+                  >
+                    Change User
+                  </button>
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-slate-800">Add New Staff Member</h2>
-                  <p className="text-sm text-slate-500">Search user by email, then configure invite details</p>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
+                    {selectedUser.full_name?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="font-semibold text-slate-900">{selectedUser.full_name}</p>
+                    <p className="flex items-center gap-2 text-sm text-slate-600">
+                      <FaEnvelope className="h-3.5 w-3.5 text-slate-400" />
+                      {selectedUser.email}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={handleClose}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
-              >
-                <FaTimes className="h-4 w-4" />
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <div className="space-y-6 p-2 lg:p-0">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                    <FaSearch className="h-4 w-4 text-indigo-500" />
-                    Find User
+              <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <FaListAlt className="h-4 w-4 text-indigo-500" />
+                  Quick Fill via Package (Optional)
+                </label>
+                <Select
+                  options={invitePackages}
+                  value={selectedPackage}
+                  onChange={handlePackageSelect}
+                  placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
+                  isClearable
+                  isLoading={isLoadingPackages}
+                  styles={customSelectStyles}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaBriefcase className="h-4 w-4 text-indigo-500" />
+                    Designation
                   </label>
-                  <div className="flex items-center flex-col gap-3 lg:flex-row">
-                    <input
-                      type="email"
-                      value={emailQuery}
-                      onChange={(e) => setEmailQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleSearchUser();
-                        }
-                      }}
-                      placeholder="Enter full email address"
-                      className="h-12 p-2.5 w-full flex-1 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSearchUser}
-                      disabled={isSearchingUser}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto"
-                    >
-                      {isSearchingUser ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSearch className="h-4 w-4" />}
-                      Find User
-                    </button>
-                  </div>
-                  <p className="mt-2 text-xs text-slate-500">
-                    Search by email first. Once verified, the invitation fields will appear below.
-                  </p>
+                  <Select
+                    options={designations}
+                    value={designation}
+                    onChange={setDesignation}
+                    placeholder="Select designation"
+                    isClearable
+                    styles={customSelectStyles}
+                  />
                 </div>
 
-                {selectedUser && (
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <FaRegCheckCircle className="h-4 w-4 text-emerald-600" />
-                        <h3 className="text-sm font-semibold text-emerald-900">Verified User</h3>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-emerald-700 border border-emerald-200">
-                        {selectedUser.is_active ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
-                        {selectedUser.full_name?.charAt(0)?.toUpperCase() || "U"}
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <p className="font-semibold text-slate-900">{selectedUser.full_name}</p>
-                        <p className="flex items-center gap-2 text-sm text-slate-600">
-                          <FaEnvelope className="h-3.5 w-3.5 text-slate-400" />
-                          {selectedUser.email}
-                        </p>
-                        {selectedUser.phone && (
-                          <p className="flex items-center gap-2 text-sm text-slate-600">
-                            <FaPhone className="h-3.5 w-3.5 text-slate-400" />
-                            {selectedUser.phone}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaShieldAlt className="h-4 w-4 text-indigo-500" />
+                    Permission Package
+                  </label>
+                  <Select
+                    options={permissionPackages}
+                    value={selectedPermissionPackage}
+                    onChange={setSelectedPermissionPackage}
+                    placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
+                    isClearable
+                    isLoading={isLoadingPermissions}
+                    styles={customSelectStyles}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaUserTie className="h-4 w-4 text-indigo-500" />
+                    Employment Type
+                  </label>
+                  <Select
+                    options={employmentTypes}
+                    value={employmentType}
+                    onChange={setEmploymentType}
+                    placeholder="Select employment type"
+                    isClearable
+                    styles={customSelectStyles}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaClock className="h-4 w-4 text-indigo-500" />
+                    Salary Type
+                  </label>
+                  <Select
+                    options={salaryTypes}
+                    value={staffType}
+                    onChange={setStaffType}
+                    placeholder="Select salary type"
+                    isClearable
+                    styles={customSelectStyles}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaFingerprint className="h-4 w-4 text-indigo-500" />
+                    Attendance Methods
+                  </label>
+                  <span className="text-xs text-slate-500">Choose from company methods</span>
+                </div>
+                {methodBadges.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {methodBadges.map((method) => {
+                      const active = selectedAttendanceMethods.includes(method.key);
+                      return (
+                        <button
+                          key={method.key}
+                          type="button"
+                          onClick={() => toggleAttendanceMethod(method.key)}
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
+                            ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                            }`}
+                        >
+                          {active && <FaCheck className="h-3 w-3" />}
+                          {method.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                    No attendance methods available for this company.
                   </div>
                 )}
+              </div>
 
-                {selectedUser && (
-                  <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaListAlt className="h-4 w-4 text-indigo-500" />
-                      Quick Fill via Package (Optional)
-                    </label>
-                    <Select
-                      options={invitePackages}
-                      value={selectedPackage}
-                      onChange={handlePackageSelect}
-                      placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
-                      isClearable
-                      isLoading={isLoadingPackages}
-                      styles={customSelectStyles}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <FaCheck className="h-4 w-4 text-indigo-500" />
+                  Attendance Settings
+                </label>
+                <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={autoApprove}
+                    onChange={(e) => setAutoApprove(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm text-slate-700">Auto approve Attendance</span>
+                </label>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaClock className="h-4 w-4 text-indigo-500" />
+                    Shift Timings
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <TimeDurationPickerField
+                      label="Start Time"
+                      value={shiftStart}
+                      onChange={setShiftStart}
+                      mode="time"
                     />
-                    <p className="text-[10px] text-slate-400 italic">Choosing a package will automatically populate all fields below.</p>
+                    <TimeDurationPickerField
+                      label="End Time"
+                      value={shiftEnd}
+                      onChange={setShiftEnd}
+                      mode="time"
+                    />
                   </div>
-                )}
-                <AnimatePresence mode="wait">
-                  {showInviteFields ? (
-                    <motion.div
-                      key="invite-fields"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="space-y-6 p-2 lg:p-0"
-                    >
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-3">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaBriefcase className="h-4 w-4 text-indigo-500" />
-                            Designation
-                          </label>
-                          <Select
-                            options={designations}
-                            value={designation}
-                            onChange={setDesignation}
-                            placeholder="Select designation"
-                            isClearable
-                            styles={customSelectStyles}
-                          />
-                        </div>
+                </div>
 
-                        <div className="space-y-3">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaShieldAlt className="h-4 w-4 text-indigo-500" />
-                            Permission Package
-                          </label>
-                          {isLoadingPermissions ? (
-                            <div className="flex h-12 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white">
-                              <FaSpinner className="h-5 w-5 animate-spin text-indigo-500" />
-                            </div>
-                          ) : (
-                            <Select
-                              options={permissionPackages}
-                              value={selectedPermissionPackage}
-                              onChange={setSelectedPermissionPackage}
-                              placeholder="Select permission package"
-                              isClearable
-                              styles={customSelectStyles}
-                            />
-                          )}
-                        </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaClock className="h-4 w-4 text-indigo-500" />
+                    Duration Settings
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <TimeDurationPickerField
+                      label="Break Minutes"
+                      value={breakMinutes}
+                      onChange={setBreakMinutes}
+                      mode="duration"
+                    />
+                    <TimeDurationPickerField
+                      label="Grace Minutes"
+                      value={graceMinutes}
+                      onChange={setGraceMinutes}
+                      mode="duration"
+                    />
+                  </div>
+                </div>
 
-                        <div className="space-y-3">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaUserTie className="h-4 w-4 text-indigo-500" />
-                            Employment Type
-                          </label>
-                          <Select
-                            options={employmentTypes}
-                            value={employmentType}
-                            onChange={setEmploymentType}
-                            placeholder="Select employment type"
-                            isClearable
-                            styles={customSelectStyles}
-                          />
-                        </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                      <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
+                      Weekends
+                      {weekends.length > 0 && (
+                        <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                          {weekends.length} Selected
+                        </span>
+                      )}
+                    </label>
+                    {isWeekendsOpen ? (
+                      <FaChevronUp className="h-3 w-3 text-slate-400" />
+                    ) : (
+                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
 
-                        <div className="space-y-3">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaClock className="h-4 w-4 text-indigo-500" />
-                            Salary Type
-                          </label>
-                          <Select
-                            options={salaryTypes}
-                            value={staffType}
-                            onChange={setStaffType}
-                            placeholder="Select salary type"
-                            isClearable
-                            styles={customSelectStyles}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-slate-200 bg-white p-4">
-                        <div className="mb-3 flex items-center justify-between">
-                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaFingerprint className="h-4 w-4 text-indigo-500" />
-                            Attendance Methods
-                          </label>
-                          <span className="text-xs text-slate-500">Choose from company methods</span>
-                        </div>
-                        {methodBadges.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {methodBadges.map((method) => {
-                              const active = selectedAttendanceMethods.includes(method.key);
-                              return (
+                  <AnimatePresence>
+                    {isWeekendsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex flex-col gap-2 pt-1">
+                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                            const config = weekends.find(w => w.day === day);
+                            return (
+                              <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
                                 <button
-                                  key={method.key}
                                   type="button"
-                                  onClick={() => toggleAttendanceMethod(method.key)}
-                                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
-                                    ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                  onClick={() => toggleWeekend(day)}
+                                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${config
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                                     }`}
                                 >
-                                  {active && <FaCheck className="h-3 w-3" />}
-                                  {method.label}
+                                  <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                    {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                  </div>
+                                  {day.charAt(0).toUpperCase() + day.slice(1)}
                                 </button>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                            No attendance methods available for this company.
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                          <FaCheck className="h-4 w-4 text-indigo-500" />
-                          Attendance Settings
-                        </label>
-                        <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                          <input
-                            type="checkbox"
-                            checked={autoApprove}
-                            onChange={(e) => setAutoApprove(e.target.checked)}
-                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="text-sm text-slate-700">Auto approve Attendance</span>
-                        </label>
-                      </div>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaClock className="h-4 w-4 text-indigo-500" />
-                            Shift Timings
-                          </label>
-                          <div className="grid grid-cols-2 gap-3">
-                            <TimeDurationPickerField
-                              label="Start Time"
-                              value={shiftStart}
-                              onChange={setShiftStart}
-                              mode="time"
-                            />
-                            <TimeDurationPickerField
-                              label="End Time"
-                              value={shiftEnd}
-                              onChange={setShiftEnd}
-                              mode="time"
-                            />
-                          </div>
+                                {config && (
+                                  <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
+                                    {['full', 'half'].map(type => (
+                                      <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => updateWeekendType(day, type)}
+                                        className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${config.type === type
+                                          ? 'bg-slate-900 text-white'
+                                          : 'text-slate-400 hover:text-slate-600'
+                                          }`}
+                                      >
+                                        {type}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                            <FaClock className="h-4 w-4 text-indigo-500" />
-                            Duration Settings
-                          </label>
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            <TimeDurationPickerField
-                              label="Break Minutes"
-                              value={breakMinutes}
-                              onChange={setBreakMinutes}
-                              mode="duration"
-                            />
-                            <TimeDurationPickerField
-                              label="Grace Minutes"
-                              value={graceMinutes}
-                              onChange={setGraceMinutes}
-                              mode="duration"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-white p-4">
-                          <button
-                            type="button"
-                            onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
-                            className="flex w-full items-center justify-between"
-                          >
-                            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                              <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
-                              Weekends
-                              {weekends.length > 0 && (
-                                <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
-                                  {weekends.length} Selected
-                                </span>
-                              )}
-                            </label>
-                            {isWeekendsOpen ? (
-                              <FaChevronUp className="h-3 w-3 text-slate-400" />
-                            ) : (
-                              <FaChevronDown className="h-3 w-3 text-slate-400" />
-                            )}
-                          </button>
-
-                          <AnimatePresence>
-                            {isWeekendsOpen && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                                animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                                exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="flex flex-col gap-2 pt-1">
-                                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
-                                    const config = weekends.find(w => w.day === day);
-                                    return (
-                                      <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => toggleWeekend(day)}
-                                          className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${config
-                                            ? 'bg-indigo-600 text-white shadow-md'
-                                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                          <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
-                                            {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
-                                          </div>
-                                          {day.charAt(0).toUpperCase() + day.slice(1)}
-                                        </button>
-                                        {config && (
-                                          <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
-                                            {['full', 'half'].map(type => (
-                                              <button
-                                                key={type}
-                                                type="button"
-                                                onClick={() => updateWeekendType(day, type)}
-                                                className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${config.type === type
-                                                  ? 'bg-slate-900 text-white'
-                                                  : 'text-slate-400 hover:text-slate-600'
-                                                  }`}
-                                              >
-                                                {type}
-                                              </button>
-                                            ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="search-empty"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500"
-                    >
-                      Search a user to unlock the invite fields.
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
-            </div>
-
-            <div className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
-              >
-                Cancel
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleSubmit}
-                disabled={!canCreateInvite}
-                title={
-                  submitDisabled
-                    ? submitTitle
-                    : !selectedUser
-                      ? "Search and verify a user first"
-                      : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
-                        ? "Complete all required fields"
-                        : ""
-                }
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
-                Send Invite
-              </motion.button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="search-empty"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500"
+            >
+              Search a user to unlock the invite fields.
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </Modal>
   );
 }
 

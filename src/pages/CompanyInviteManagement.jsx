@@ -17,22 +17,9 @@ import ActionMenu from "../components/ActionMenu";
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
+import Modal from "../components/Modal";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
-
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.9, y: 20 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
-  exit: { opacity: 0, scale: 0.9, y: 20, transition: { duration: 0.3 } }
-};
-
-const backdropVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 }
-};
-
-const CONFIRM_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto flex flex-col";
 
 const isExpired = (date) => new Date(date) < new Date();
 
@@ -140,7 +127,16 @@ export default function CompanyInvites() {
   const [editingInvite, setEditingInvite] = useState(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [openCreateInviteModal, setOpenCreateInviteModal] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
+  const [showWeekends, setShowWeekends] = useState(false);
   const fetchInProgress = useRef(false);
+
+  const MODAL_TYPES = {
+    NONE: null,
+    VIEW: 'VIEW',
+    CANCEL: 'CANCEL',
+  };
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const createInviteAccess = checkActionAccess("companyInvites", "create");
@@ -270,8 +266,21 @@ export default function CompanyInvites() {
     setEditingInvite(null);
   };
 
-  const openModal = (invite, type) => { setSelectedInvite(invite); setModalType(type); setActiveActionMenu(null); };
-  const closeModal = () => { setSelectedInvite(null); setModalType(null); };
+  const openModal = (invite, type) => { 
+    setSelectedInvite(invite); 
+    setModalType(type); 
+    setActiveActionMenu(null);
+    setShowPermissions(false);
+    setShowAttendance(false);
+    setShowWeekends(false);
+  };
+  const closeModal = () => { 
+    setSelectedInvite(null); 
+    setModalType(null); 
+    setShowPermissions(false);
+    setShowAttendance(false);
+    setShowWeekends(false);
+  };
 
   // ─── Responsive Columns ──────────────────────────────────────────────────
   const getEffectiveWidth = () => {
@@ -304,277 +313,6 @@ export default function CompanyInvites() {
   }, [getVisibleColumns]);
 
   // ── View Modal ─────────────────────────────────────────────────────────────
-  const ViewModal = ({ invite, onClose }) => {
-    const [showPermissions, setShowPermissions] = useState(false);
-    const [showAttendance, setShowAttendance] = useState(false);
-    const [showWeekends, setShowWeekends] = useState(false);
-
-    return (
-      <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={onClose}>
-        <ModalScrollLock />
-        <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-          className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden m-auto"
-          onClick={(e) => e.stopPropagation()}>
-          <div className="shrink-0 flex justify-between items-center p-5 border-b bg-white rounded-t-xl">
-            <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><FaEye className="text-indigo-500" /> Invitation Details</h2>
-            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50 border border-slate-100">
-              <FaTimes size={18} />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
-                <FaUserCircle className="text-white text-4xl" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">{invite.user?.name || "No name"}</h3>
-                <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                  <FaEnvelope className="text-blue-500" size={14} />{invite.user?.email}
-                </p>
-                {invite.user?.phone && (
-                  <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
-                    <FaPhone className="text-green-500" size={14} />{invite.user.phone}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
-              <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(invite.designation)} />
-              <InfoItem icon={<FaUserTie className="text-purple-500" />} label="Employment Type" value={formatDisplay(invite.employment_type)} />
-              <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(invite.salary_type)} />
-              <InfoItem
-                icon={<FaClock className="text-indigo-500" />}
-                label="Schedule"
-                value={
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
-                      {`${invite.shift_start || "N/A"} - ${invite.shift_end || "N/A"}`}
-                    </span>
-                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                      Break Minutes {formatDurationDisplay(invite.break_minutes)}
-                    </span>
-                    <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
-                      Grace Minutes {formatDurationDisplay(invite.grace_minutes)}
-                    </span>
-                  </div>
-                }
-              />
-              <InfoItem icon={<FaTag className="text-orange-500" />} label="Status"
-                value={
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(invite.status, invite.expires_at).className}`}>
-                    {getStatusBadge(invite.status, invite.expires_at).text}
-                  </span>
-                } />
-              <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Sent Date" value={formatDate(invite.created_at)} />
-              <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(invite.expires_at)} />
-            </div>
-
-            {invite.permissions?.length > 0 && (
-              <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <button
-                  onClick={() => setShowPermissions(!showPermissions)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  type="button"
-                >
-                  <div className="flex items-center gap-2">
-                    <FaShieldAlt className="text-blue-500" />
-                    <span className="text-sm font-semibold text-gray-700">Permissions</span>
-                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
-                      {invite.permissions.length}
-                    </span>
-                  </div>
-                  <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <FaChevronDown className="w-4 h-4 text-gray-400" />
-                  </motion.div>
-                </button>
-
-                <AnimatePresence>
-                  {showPermissions && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
-                        {invite.permissions.map((perm, idx) => (
-                          <motion.div key={perm.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-                            <span className="text-sm font-medium text-gray-700">{perm.name}</span>
-
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            {invite.attendance_methods?.length > 0 && (
-              <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <button
-                  onClick={() => setShowAttendance(!showAttendance)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  type="button"
-                >
-                  <div className="flex items-center gap-2">
-                    <FaUserCheck className="text-purple-500" />
-                    <span className="text-sm font-semibold text-gray-700">Attendance Methods</span>
-                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700 font-medium">
-                      {invite.attendance_methods.length}
-                    </span>
-                  </div>
-                  <motion.div animate={{ rotate: showAttendance ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <FaChevronDown className="w-4 h-4 text-gray-400" />
-                  </motion.div>
-                </button>
-
-                <AnimatePresence>
-                  {showAttendance && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-3 bg-white flex flex-wrap gap-2">
-                        {invite.attendance_methods.map((method, idx) => (
-                          <motion.div key={`method-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-full border border-purple-100">
-                            <span className="text-sm font-medium text-gray-700 capitalize">{method.method}</span>
-                            {method.is_auto && (
-                              <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>
-                            )}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-
-            {invite.weekends?.length > 0 && (
-              <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <button
-                  onClick={() => setShowWeekends(!showWeekends)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                  type="button"
-                >
-                  <div className="flex items-center gap-2">
-                    <FaCalendarAlt className="text-rose-500" />
-                    <span className="text-sm font-semibold text-gray-700">Weekends</span>
-                    <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-medium">
-                      {invite.weekends.length}
-                    </span>
-                  </div>
-                  <motion.div animate={{ rotate: showWeekends ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <FaChevronDown className="w-4 h-4 text-gray-400" />
-                  </motion.div>
-                </button>
-
-                <AnimatePresence>
-                  {showWeekends && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-3 bg-white flex flex-wrap gap-2">
-                        {invite.weekends.map((weekend, idx) => (
-                          <motion.div
-                            key={`${weekend.day}-${idx}`}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: idx * 0.05 }}
-                            className="inline-flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-rose-50 to-orange-50 rounded-full border border-rose-100"
-                          >
-                            <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${weekend.type === "half"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-rose-100 text-rose-700"
-                              }`}>
-                              {weekend.type || "full"}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
-            >
-              Close
-            </button>
-            {invite.status === "pending" && !isExpired(invite.expires_at) && (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleEditClick(invite)}
-                disabled={updateInviteAccess.disabled}
-                title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50"
-              >
-                <FaEdit className="h-4 w-4" />
-                Edit Invite
-              </motion.button>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  };
-
-  // ── Cancel Modal ───────────────────────────────────────────────────────────
-  const CancelModal = ({ invite, onClose, onConfirm }) => (
-    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}>
-      <ModalScrollLock />
-      <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-        className={CONFIRM_MODAL_CLASS}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="shrink-0 flex justify-between items-center p-5 border-b bg-white rounded-t-xl">
-          <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><FaBan className="text-red-500" /> Cancel Invitation</h2>
-          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 transition-all border border-slate-100">
-            <FaTimes size={18} />
-          </button>
-        </div>
-        <div className="flex flex-1 flex-col justify-center p-6 text-center">
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
-            className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FaBan className="text-4xl text-red-600" />
-          </motion.div>
-          <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
-          <p className="text-gray-500 mb-6">
-            You are about to cancel the invitation for{" "}
-            <span className="font-semibold text-red-600">{invite.user?.email}</span>.
-            This action cannot be undone.
-          </p>
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Keep</button>
-          <button onClick={() => onConfirm(invite.token)} disabled={processingId === invite.token || cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
-            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
-            {processingId === invite.token && <FaSpinner className="animate-spin" />} Cancel Invite
-          </button>
-        </div>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
 
   // ── Early returns ──────────────────────────────────────────────────────────
   if (isInitialLoad && loading) return <Skeleton />;
@@ -723,7 +461,7 @@ export default function CompanyInvites() {
                         return (
                           <motion.tr key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.05 }}
-                            onClick={() => openModal(invite, "view")}
+                            onClick={() => openModal(invite, MODAL_TYPES.VIEW)}
                             className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300">
                             {visibleColumns.showUser && (
                               <td className="px-6 py-4">
@@ -798,7 +536,7 @@ export default function CompanyInvites() {
                                   {
                                     label: 'View Details',
                                     icon: <FaEye size={14} />,
-                                    onClick: () => openModal(invite, "view"),
+                                    onClick: () => openModal(invite, MODAL_TYPES.VIEW),
                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                   },
                                   ...(invite.status === "pending" && !isExpired(invite.expires_at) ? [
@@ -813,7 +551,7 @@ export default function CompanyInvites() {
                                     {
                                       label: 'Cancel Invite',
                                       icon: <FaBan size={14} />,
-                                      onClick: () => !cancelInviteAccess.disabled && openModal(invite, "cancel"),
+                                      onClick: () => !cancelInviteAccess.disabled && openModal(invite, MODAL_TYPES.CANCEL),
                                       disabled: cancelInviteAccess.disabled,
                                       title: cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : "",
                                       className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
@@ -839,7 +577,7 @@ export default function CompanyInvites() {
                   return (
                     <motion.div key={invite.token} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      onClick={() => openModal(invite, "view")}
+                      onClick={() => openModal(invite, MODAL_TYPES.VIEW)}
                       className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                       <div className="flex items-start gap-4">
                         <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
@@ -887,7 +625,7 @@ export default function CompanyInvites() {
                         </div>
                       </div>
                       <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" onClick={() => openModal(invite, "view")}
+                        <button type="button" onClick={() => openModal(invite, MODAL_TYPES.VIEW)}
                           className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110">
                           <FaEye size={16} />
                         </button>
@@ -897,7 +635,7 @@ export default function CompanyInvites() {
                               className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                               <FaEdit size={16} />
                             </button>
-                            <button type="button" onClick={() => !cancelInviteAccess.disabled && openModal(invite, "cancel")} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
+                            <button type="button" onClick={() => !cancelInviteAccess.disabled && openModal(invite, MODAL_TYPES.CANCEL)} disabled={cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
                               className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed">
                               <FaBan size={16} />
                             </button>
@@ -925,8 +663,260 @@ export default function CompanyInvites() {
 
         {/* Modals */}
         <AnimatePresence>
-          {modalType === "view" && selectedInvite && <ViewModal invite={selectedInvite} onClose={closeModal} />}
-          {modalType === "cancel" && selectedInvite && <CancelModal invite={selectedInvite} onClose={closeModal} onConfirm={handleCancelInvite} />}
+          {/* VIEW MODAL */}
+          <Modal
+            isOpen={modalType === MODAL_TYPES.VIEW && !!selectedInvite}
+            onClose={closeModal}
+            title="Invitation Details"
+            subtitle="Review sent invitation parameters"
+            icon={<FaEye className="h-6 w-6" />}
+            size="4xl"
+            footer={
+              <>
+                <button
+                  onClick={closeModal}
+                  className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+                >
+                  Close
+                </button>
+                {selectedInvite?.status === "pending" && !isExpired(selectedInvite?.expires_at) && (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleEditClick(selectedInvite)}
+                    disabled={updateInviteAccess.disabled}
+                    title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50"
+                  >
+                    <FaEdit className="h-4 w-4" />
+                    Edit Invite
+                  </motion.button>
+                )}
+              </>
+            }
+          >
+            {selectedInvite && (
+              <div className="space-y-4">
+                {/* Profile Section */}
+                <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-lg">
+                    <FaUserCircle className="text-white text-md" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">{selectedInvite.user?.name || "No name"}</h3>
+                    <div className="flex flex-wrap gap-3 mt-1.5">
+                      <p className="text-sm text-slate-500 flex items-center gap-2">
+                        <FaEnvelope className="text-blue-500" size={14} />{selectedInvite.user?.email}
+                      </p>
+                      {selectedInvite.user?.phone && (
+                        <p className="text-sm text-slate-500 flex items-center gap-2">
+                          <FaPhone className="text-green-500" size={14} />{selectedInvite.user.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(selectedInvite.designation)} />
+                  <InfoItem icon={<FaUserTie className="text-purple-500" />} label="Employment Type" value={formatDisplay(selectedInvite.employment_type)} />
+                  <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(selectedInvite.salary_type)} />
+                  <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Sent Date" value={formatDate(selectedInvite.created_at)} />
+                  <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(selectedInvite.expires_at)} />
+                  <InfoItem icon={<FaTag className="text-orange-500" />} label="Status"
+                    value={
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${getStatusBadge(selectedInvite.status, selectedInvite.expires_at).className}`}>
+                        {getStatusBadge(selectedInvite.status, selectedInvite.expires_at).text}
+                      </span>
+                    } />
+                </div>
+
+                {/* Work Schedule */}
+                <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <FaClock className="text-indigo-500" /> Work Schedule
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Shift Hours</span>
+                      <span className="text-xs font-bold text-slate-700">{selectedInvite.shift_start || 'N/A'} - {selectedInvite.shift_end || 'N/A'}</span>
+                    </div>
+                    <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Break Time</span>
+                      <span className="text-xs font-bold text-slate-700">{formatDurationDisplay(selectedInvite.break_minutes)}</span>
+                    </div>
+                    <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase">Grace Period</span>
+                      <span className="text-xs font-bold text-slate-700">{formatDurationDisplay(selectedInvite.grace_minutes)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Collapsible Sections */}
+                <div className="space-y-3">
+                  {/* Permissions */}
+                  {selectedInvite.permissions?.length > 0 && (
+                    <div className="rounded-xl border border-blue-100 bg-blue-50/30 overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => setShowPermissions(!showPermissions)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-blue-50/50 transition-colors"
+                      >
+                        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                          <FaShieldAlt className="text-blue-500" /> Assigned Permissions
+                        </h4>
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-700 font-bold">
+                            {selectedInvite.permissions.length}
+                          </span>
+                          <motion.div animate={{ rotate: showPermissions ? 180 : 0 }}>
+                            <FaChevronDown className="w-3 h-3 text-slate-400" />
+                          </motion.div>
+                        </div>
+                      </button>
+                      <AnimatePresence>
+                        {showPermissions && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden bg-white border-t border-blue-50"
+                          >
+                            <div className="p-3 flex flex-wrap gap-2">
+                              {selectedInvite.permissions.map((perm) => (
+                                <span key={perm.id} className="px-3 py-1.5 bg-slate-50 text-slate-600 text-[11px] font-semibold rounded-lg border border-slate-100 shadow-sm">
+                                  {perm.name}
+                                </span>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Attendance Methods */}
+                  {selectedInvite.attendance_methods?.length > 0 && (
+                    <div className="rounded-xl border border-purple-100 bg-purple-50/30 overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => setShowAttendance(!showAttendance)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-purple-50/50 transition-colors"
+                      >
+                        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                          <FaUserCheck className="text-purple-500" /> Attendance Methods
+                        </h4>
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-0.5 text-[10px] rounded-full bg-purple-100 text-purple-700 font-bold">
+                            {selectedInvite.attendance_methods.length}
+                          </span>
+                          <motion.div animate={{ rotate: showAttendance ? 180 : 0 }}>
+                            <FaChevronDown className="w-3 h-3 text-slate-400" />
+                          </motion.div>
+                        </div>
+                      </button>
+                      <AnimatePresence>
+                        {showAttendance && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden bg-white border-t border-purple-50"
+                          >
+                            <div className="p-3 flex flex-wrap gap-2">
+                              {selectedInvite.attendance_methods.map((method, idx) => (
+                                <span key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-700 text-[11px] font-semibold rounded-full border border-slate-100 shadow-sm capitalize">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                                  {method.method}
+                                  {method.is_auto && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-black ml-1">AUTO</span>}
+                                </span>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+
+                  {/* Weekends */}
+                  {selectedInvite.weekends?.length > 0 && (
+                    <div className="rounded-xl border border-rose-100 bg-rose-50/30 overflow-hidden shadow-sm">
+                      <button
+                        onClick={() => setShowWeekends(!showWeekends)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-rose-50/50 transition-colors"
+                      >
+                        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                          <FaCalendarAlt className="text-rose-500" /> Weekend Policy
+                        </h4>
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-0.5 text-[10px] rounded-full bg-rose-100 text-rose-700 font-bold">
+                            {selectedInvite.weekends.length}
+                          </span>
+                          <motion.div animate={{ rotate: showWeekends ? 180 : 0 }}>
+                            <FaChevronDown className="w-3 h-3 text-slate-400" />
+                          </motion.div>
+                        </div>
+                      </button>
+                      <AnimatePresence>
+                        {showWeekends && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden bg-white border-t border-rose-50"
+                          >
+                            <div className="p-3 flex flex-wrap gap-2">
+                              {selectedInvite.weekends.map((weekend, idx) => (
+                                <div key={idx} className="flex items-center justify-between gap-4 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm min-w-[120px]">
+                                  <span className="text-[11px] font-bold text-slate-700 capitalize">{weekend.day}</span>
+                                  <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black uppercase ${weekend.type === "half" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
+                                    {weekend.type || "full"}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </Modal>
+
+          {/* CANCEL MODAL */}
+          <Modal
+            isOpen={modalType === MODAL_TYPES.CANCEL && !!selectedInvite}
+            onClose={closeModal}
+            title="Cancel Invitation"
+            subtitle="This action cannot be undone"
+            icon={<FaBan className="h-6 w-6 text-red-500" />}
+            size="md"
+            footer={
+              <>
+                <button onClick={closeModal} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Keep</button>
+                <button onClick={() => selectedInvite?.token && handleCancelInvite(selectedInvite.token)} disabled={!selectedInvite || processingId === selectedInvite?.token || cancelInviteAccess.disabled} title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
+                  className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
+                  {processingId === selectedInvite?.token && <FaSpinner className="animate-spin" />}
+                  Confirm Cancellation
+                </button>
+              </>
+            }
+          >
+            {selectedInvite && (
+              <div className="text-center py-4">
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
+                  className="w-24 h-24 bg-gradient-to-br from-red-100 to-rose-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                >
+                  <FaBan className="text-4xl text-red-600" />
+                </motion.div>
+                <p className="text-xl text-gray-700 mb-2 font-semibold">Are you sure?</p>
+                <p className="text-gray-500">
+                  You are about to cancel the invitation for <span className="font-semibold text-red-600">{selectedInvite.user?.email}</span>.
+                </p>
+              </div>
+            )}
+          </Modal>
         </AnimatePresence>
 
         <EditStaffModal

@@ -646,7 +646,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
 
                 <div>
                   <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Reason
+                    Reason (Optional)
                   </label>
                   <textarea
                     rows={3}
@@ -659,7 +659,6 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
                         reason: e.target.value,
                       }))
                     }
-                    required
                   />
                 </div>
 
@@ -816,9 +815,9 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
                 </div>
 
               </div>
-              <div className="flex gap-3 px-6 py-5 border-t border-gray-100 bg-white">
-                <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all" disabled={saving}>Cancel</button>
-                <button type="submit" disabled={saving || isUploading} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-fuchsia-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <div className="flex gap-3 justify-end px-6 py-5 border-t border-gray-100 bg-white">
+                <button type="button" onClick={onClose} className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all" disabled={saving}>Cancel</button>
+                <button type="submit" disabled={saving || isUploading} className="flex px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-fuchsia-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                   {saving ? <FaSpinner className="animate-spin" /> : (isEditing ? <FaEdit /> : <FaPlus />)}
                   {saving ? 'Saving...' : 'Save Application'}
                 </button>
@@ -1352,8 +1351,8 @@ const MyLeave = () => {
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 px-6 sm:px-8 py-5 border-t border-gray-100 bg-white">
-                <button type="button" onClick={() => setViewLeave(null)} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
+              <div className="flex gap-3 justify-end px-6 sm:px-8 py-5 border-t border-gray-100 bg-white">
+                <button type="button" onClick={() => setViewLeave(null)} className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
               </div>
             </motion.div>
           </motion.div>
