@@ -1106,21 +1106,14 @@ const PayrollManagement = () => {
                                                             <FaUserCircle className="text-emerald-500" />
                                                             Select Employee
                                                         </label>
-                                                        {employeesLoading ? (
-                                                            <div className="flex items-center justify-center py-4">
-                                                                <FaSpinner className="animate-spin text-emerald-500 mr-2" />
-                                                                <span className="text-gray-500">Loading employees...</span>
-                                                            </div>
-                                                        ) : (
-                                                            <EmployeeSelect
-                                                                value={generateFormData.employee_id}
-                                                                onChange={(val) => setGenerateFormData(prev => ({
-                                                                    ...prev,
-                                                                    employee_id: val
-                                                                }))}
-                                                                placeholder="Search and select employee..."
-                                                            />
-                                                        )}
+                                                        <EmployeeSelect
+                                                            value={generateFormData.employee_id}
+                                                            onChange={(val) => setGenerateFormData(prev => ({
+                                                                ...prev,
+                                                                employee_id: val
+                                                            }))}
+                                                            placeholder="Search and select employee..."
+                                                        />
                                                     </motion.div>
                                                 )}
 
@@ -1142,14 +1135,39 @@ const PayrollManagement = () => {
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <EmployeeSelect
-                                                                    isMulti
-                                                                    value={generateFormData.employee_ids}
-                                                                    onChange={(selectedIds) => setGenerateFormData(prev => ({
+                                                                <Select
+                                                                    options={employeeOptions}
+                                                                    value={employeeOptions.filter(opt =>
+                                                                        generateFormData.employee_ids.includes(opt.value)
+                                                                    )}
+                                                                    onChange={(selected) => setGenerateFormData(prev => ({
                                                                         ...prev,
-                                                                        employee_ids: selectedIds || []
+                                                                        employee_ids: selected ? selected.map(s => s.value) : []
                                                                     }))}
                                                                     placeholder="Search and select employees..."
+                                                                    isMulti
+                                                                    isClearable
+                                                                    isSearchable
+                                                                    styles={customSelectStyles}
+                                                                    formatOptionLabel={({ label, email, code, designation }) => (
+                                                                        <div className="py-1">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <FaUserCircle className="text-emerald-500" />
+                                                                                <div className="flex-1">
+                                                                                    <div className="font-medium text-gray-900">{label}</div>
+                                                                                    <div className="text-xs text-gray-500">{email}</div>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <div className="text-xs font-mono text-gray-400">{code}</div>
+                                                                                    {designation && (
+                                                                                        <div className="text-xs text-gray-500 capitalize">
+                                                                                            {designation.replace('_', ' ')}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 />
                                                                 {generateFormData.employee_ids.length > 0 && (
                                                                     <div className="mt-2 text-sm text-emerald-600 font-medium">
