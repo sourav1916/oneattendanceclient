@@ -239,9 +239,9 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             </p>
                         </div>
                     </div>
-                    <div className="px-4 sm:px-6 pb-4">
+                    <div className="px-4 sm:px-6 pb-4 flex justify-end">
                         <button onClick={onClose}
-                            className="w-full py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-300 font-medium">
+                            className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
                             Close
                         </button>
                     </div>

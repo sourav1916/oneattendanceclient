@@ -332,13 +332,13 @@ export default function MyInvites() {
         onClick={onClose}>
         <ModalScrollLock />
         <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-          className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden m-auto"
           onClick={e => e.stopPropagation()}>
-          <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-[10px]">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
-            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={18} /></button>
+          <div className="shrink-0 flex justify-between items-center p-4 border-b rounded-t-[10px]">
+            <h2 className="text-lg font-semibold flex text-gray-800 items-center gap-2"><FaEye /> Invitation Details</h2>
+            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 text-gray-800"><FaTimes size={18} /></button>
           </div>
-          <div className="p-4">
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             <div className="flex items-center gap-4 pb-4 border-b">
               {invite.company?.logo_url ? (
                 <img src={invite.company.logo_url.startsWith('http') ? invite.company.logo_url : `https://api-attendance.onesaas.in${invite.company.logo_url}`} alt="Company Logo" className="w-14 h-14 rounded-xl object-cover border border-purple-200 shadow-md bg-white shrink-0" onError={(e) => { e.target.onerror = null; e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
@@ -541,6 +541,35 @@ export default function MyInvites() {
               </div>
             )}
           </div>
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+            >
+              Close
+            </button>
+            {invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at) && (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => openModal(invite, 'reject')}
+                  className="px-5 py-2.5 rounded-xl border border-red-200 bg-white text-sm font-semibold text-red-600 hover:bg-red-50 transition-all"
+                >
+                  Reject
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => openModal(invite, 'accept')}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-200 transition"
+                >
+                  <FaCheckCircle className="h-4 w-4" />
+                  Accept Invite
+                </motion.button>
+              </>
+            )}
+          </div>
         </motion.div>
       </motion.div>
     );
@@ -556,7 +585,7 @@ export default function MyInvites() {
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaCheckCircle /> Accept Invitation</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 text-gray-800"><FaTimes size={20} /></button>
         </div>
         <div className="flex flex-1 flex-col justify-center p-6 text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}
@@ -590,7 +619,7 @@ export default function MyInvites() {
         onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-xl">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaBan /> Reject Invitation</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 text-gray-800"><FaTimes size={20} /></button>
         </div>
         <div className="flex flex-1 flex-col justify-center p-6 text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}

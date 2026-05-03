@@ -561,7 +561,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 18 }}
             transition={{ type: "spring", damping: 25, stiffness: 280 }}
-            className="relative w-full max-w-4xl max-h-[80vh] overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto"
+            className="relative w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200 m-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5">
               <div className="flex items-center gap-3">
@@ -581,7 +581,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
               </button>
             </div>
 
-            <div className="max-h-[calc(90vh-170px)] overflow-y-auto px-6 py-6">
+            <div className="flex-1 overflow-y-auto px-6 py-6">
               <div className="space-y-6 p-2 lg:p-0">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">

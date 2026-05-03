@@ -315,13 +315,13 @@ export default function CompanyInvites() {
         onClick={onClose}>
         <ModalScrollLock />
         <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-          className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden m-auto"
           onClick={(e) => e.stopPropagation()}>
-          <div className="sticky top-0 flex justify-between items-center p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-[10px]">
-            <h2 className="text-lg font-semibold flex items-center gap-2"><FaEye /> Invitation Details</h2>
-            <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+          <div className="shrink-0 flex justify-between items-center p-4 border-b text-white rounded-t-[10px]">
+            <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-800"><FaEye /> Invitation Details</h2>
+            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-white hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50"><FaTimes size={20} /></button>
           </div>
-          <div className="p-4">
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
             <div className="flex items-center gap-4 pb-4 border-b">
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
                 <FaUserCircle className="text-white text-4xl" />
@@ -510,6 +510,27 @@ export default function CompanyInvites() {
               </div>
             )}
           </div>
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+            >
+              Close
+            </button>
+            {invite.status === "pending" && !isExpired(invite.expires_at) && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => handleEditClick(invite)}
+                disabled={updateInviteAccess.disabled}
+                title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50"
+              >
+                <FaEdit className="h-4 w-4" />
+                Edit Invite
+              </motion.button>
+            )}
+          </div>
         </motion.div>
       </motion.div>
     );
@@ -526,7 +547,7 @@ export default function CompanyInvites() {
         onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-t-[10px]">
           <h2 className="text-xl font-semibold flex items-center gap-2"><FaBan /> Cancel Invitation</h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300"><FaTimes size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all duration-300 text-gray-800"><FaTimes size={20} /></button>
         </div>
         <div className="flex flex-1 flex-col justify-center p-6 text-center">
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", duration: 0.5 }}

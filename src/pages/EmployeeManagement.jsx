@@ -1680,10 +1680,21 @@ const EmployeeManagement = () => {
                                     <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
                                         <button
                                             onClick={closeModal}
-                                            className="px-6 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
+                                            className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
                                         >
                                             Close
                                         </button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => openEditModal(selectedEmployee)}
+                                            disabled={updateEmployeeAccess.disabled}
+                                            title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ""}
+                                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50"
+                                        >
+                                            <FaEdit className="h-4 w-4" />
+                                            Edit Details
+                                        </motion.button>
                                     </div>
                                 </div>
                             )}
