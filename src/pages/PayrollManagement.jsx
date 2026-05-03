@@ -19,6 +19,7 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import { EmployeeSelect } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1111,36 +1112,13 @@ const PayrollManagement = () => {
                                                                 <span className="text-gray-500">Loading employees...</span>
                                                             </div>
                                                         ) : (
-                                                            <Select
-                                                                options={employeeOptions}
-                                                                value={employeeOptions.find(opt => opt.value === generateFormData.employee_id)}
-                                                                onChange={(option) => setGenerateFormData(prev => ({
+                                                            <EmployeeSelect
+                                                                value={generateFormData.employee_id}
+                                                                onChange={(val) => setGenerateFormData(prev => ({
                                                                     ...prev,
-                                                                    employee_id: option?.value || null
+                                                                    employee_id: val
                                                                 }))}
                                                                 placeholder="Search and select employee..."
-                                                                isClearable
-                                                                isSearchable
-                                                                styles={customSelectStyles}
-                                                                formatOptionLabel={({ label, email, code, designation }) => (
-                                                                    <div className="py-1">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <FaUserCircle className="text-emerald-500" />
-                                                                            <div className="flex-1">
-                                                                                <div className="font-medium text-gray-900">{label}</div>
-                                                                                <div className="text-xs text-gray-500">{email}</div>
-                                                                            </div>
-                                                                            <div className="text-right">
-                                                                                <div className="text-xs font-mono text-gray-400">{code}</div>
-                                                                                {designation && (
-                                                                                    <div className="text-xs text-gray-500 capitalize">
-                                                                                        {designation.replace('_', ' ')}
-                                                                                    </div>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
                                                             />
                                                         )}
                                                     </motion.div>
@@ -1164,39 +1142,14 @@ const PayrollManagement = () => {
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <Select
-                                                                    options={employeeOptions}
-                                                                    value={employeeOptions.filter(opt =>
-                                                                        generateFormData.employee_ids.includes(opt.value)
-                                                                    )}
-                                                                    onChange={(selected) => setGenerateFormData(prev => ({
+                                                                <EmployeeSelect
+                                                                    isMulti
+                                                                    value={generateFormData.employee_ids}
+                                                                    onChange={(selectedIds) => setGenerateFormData(prev => ({
                                                                         ...prev,
-                                                                        employee_ids: selected ? selected.map(s => s.value) : []
+                                                                        employee_ids: selectedIds || []
                                                                     }))}
                                                                     placeholder="Search and select employees..."
-                                                                    isMulti
-                                                                    isClearable
-                                                                    isSearchable
-                                                                    styles={customSelectStyles}
-                                                                    formatOptionLabel={({ label, email, code, designation }) => (
-                                                                        <div className="py-1">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <FaUserCircle className="text-emerald-500" />
-                                                                                <div className="flex-1">
-                                                                                    <div className="font-medium text-gray-900">{label}</div>
-                                                                                    <div className="text-xs text-gray-500">{email}</div>
-                                                                                </div>
-                                                                                <div className="text-right">
-                                                                                    <div className="text-xs font-mono text-gray-400">{code}</div>
-                                                                                    {designation && (
-                                                                                        <div className="text-xs text-gray-500 capitalize">
-                                                                                            {designation.replace('_', ' ')}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
                                                                 />
                                                                 {generateFormData.employee_ids.length > 0 && (
                                                                     <div className="mt-2 text-sm text-emerald-600 font-medium">
