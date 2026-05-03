@@ -661,8 +661,8 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 text-white">
-                <FaInfoCircle />
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                <FaInfoCircle className="text-indigo-500" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Manage More</h2>

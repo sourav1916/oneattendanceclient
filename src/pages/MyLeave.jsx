@@ -153,6 +153,7 @@ const getRequestedDays = (startDate, endDate, isHalfDay) => {
 const LeaveBalanceCard = ({ type, balance }) => {
   const percentage = balance.total > 0 ? (balance.used / balance.total) * 100 : 0;
   const displayName = formatLeaveTypeName(type);
+  const usedPct = Math.min(100, Math.round(percentage));
 
   return (
     <motion.div
@@ -160,34 +161,56 @@ const LeaveBalanceCard = ({ type, balance }) => {
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02 }}
       transition={{ duration: 0.2 }}
-      className="rounded-xl bg-white p-4 shadow-md border border-gray-100 hover:shadow-lg transition-all"
+      className="rounded-2xl bg-white p-4 shadow-md border border-gray-100 hover:shadow-lg transition-all space-y-3"
     >
+      {/* Header */}
       <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-800 text-sm capitalize">
-            {displayName}
-          </h3>
-          <p className="text-xs text-gray-400">{type.replace(/_/g, ' ')}</p>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-800 text-sm truncate">{displayName}</h3>
+          <div className="flex flex-wrap gap-1 mt-1">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 font-mono">{balance.code}</span>
+            {balance.is_paid
+              ? <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-green-100 text-green-700">Paid</span>
+              : <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">Unpaid</span>
+            }
+            {balance.allow_half_day && <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700">Half‑day</span>}
+            {balance.is_comp_off && <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700">Comp Off</span>}
+            {balance.exclude_weekends && <span className="inline-flex px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-yellow-100 text-yellow-700">Excl. Wknd</span>}
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-purple-600">{balance.remaining}</p>
-          <p className="text-xs text-gray-500">remaining</p>
+        <div className="text-right flex-shrink-0">
+          <p className={`text-2xl font-black ${balance.remaining <= 0 ? 'text-rose-600' : 'text-purple-600'}`}>{balance.remaining}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wide">remaining</p>
         </div>
       </div>
-      <div className="mt-3">
-        <div className="mb-1 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+
+      {/* Progress bar */}
+      <div>
+        <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${percentage}%` }}
+            animate={{ width: `${usedPct}%` }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500"
           />
         </div>
-        <div className="flex justify-between text-xs text-gray-600">
-          <span>Used: {balance.used}</span>
-          <span>Total: {balance.total}</span>
+        <div className="flex justify-between text-[10px] text-gray-500">
+          <span>Used: <strong>{balance.used}</strong></span>
+          <span>Total: <strong>{balance.total}</strong></span>
         </div>
       </div>
+
+      {/* Extra info row */}
+      {(balance.carry_forward_limit > 0 || balance.allow_negative_balance) && (
+        <div className="flex gap-2 pt-1 border-t border-gray-50">
+          {balance.carry_forward_limit > 0 && (
+            <span className="text-[10px] text-gray-400">Carry fwd: <strong className="text-gray-600">{balance.carry_forward_limit}d</strong></span>
+          )}
+          {balance.allow_negative_balance && (
+            <span className="text-[10px] text-gray-400 ml-auto">Neg. balance allowed</span>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 };
@@ -347,10 +370,11 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
     () => leaveTypes.find((type) => String(type.id) === String(form.leave_config_id)) || null,
     [leaveTypes, form.leave_config_id]
   );
-  const selectedLeaveBalance = useMemo(
-    () => findBalanceForLeaveType(selectedLeaveType, balances),
-    [balances, selectedLeaveType]
-  );
+  // Direct balance lookup by leave_config_id since leaveTypes are derived from balances
+  const selectedLeaveBalance = useMemo(() => {
+    if (!selectedLeaveType) return null;
+    return { balance: selectedLeaveType._balance };
+  }, [selectedLeaveType]);
   const remainingDays = toNumber(selectedLeaveBalance?.balance?.remaining);
   const selectedDays = getRequestedDays(form.start_date, form.end_date, form.is_half_day);
   const overBalance = Boolean(selectedLeaveType && selectedLeaveBalance && selectedDays > remainingDays);
@@ -488,7 +512,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
       {open && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
           <ModalScrollLock />
-          <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0, transition: { type: 'spring', duration: 0.5 } }} exit={{ scale: 0.9, opacity: 0, y: 20, transition: { duration: 0.3 } }} className="relative bg-white backdrop-blur-xl w-full max-w-4xl max-h-[80vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-5 sticky top-0 z-[10]">
               <div className="flex items-center gap-3">
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${isEditing ? 'from-purple-500 to-fuchsia-600 shadow-purple-200' : 'from-violet-500 to-purple-600 shadow-violet-200'} shadow-lg`}>
@@ -895,25 +919,21 @@ const MyLeave = () => {
     }
   }, [pagination.page, pagination.limit, updatePagination]);
 
-  const loadLeaveTypes = useCallback(async () => {
-    try {
-      const result = await request('/leave/company?page=1&limit=100');
-      setLeaveTypes((result.data || []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        code: row.code || row.leave_code || row.type || '',
-        is_paid: row.is_paid,
-      })));
-    } catch (error) {
-      console.error('Failed to load leave types:', error);
-    }
-  }, []);
-
   const loadBalances = useCallback(async () => {
     try {
       const result = await request('/leave/my-balance');
-      // The API returns data as an object with leave types as keys
-      setBalances(result.data || {});
+      const data = result.data || {};
+      setBalances(data);
+      // Derive leaveTypes from balance response — each key has leave_config_id, code, is_paid, allow_half_day
+      const types = Object.entries(data).map(([key, bal]) => ({
+        id: String(bal.leave_config_id),
+        name: formatLeaveTypeName(key),
+        code: bal.code || '',
+        is_paid: bal.is_paid,
+        allow_half_day: bal.allow_half_day,
+        _balance: bal, // keep full balance obj for the form
+      }));
+      setLeaveTypes(types);
     } catch (error) {
       console.error('Failed to load balances:', error);
     }
@@ -928,13 +948,12 @@ const MyLeave = () => {
 
     const loadInitialData = async () => {
       await Promise.all([
-        loadLeaveTypes(),
-        loadBalances(),
+        loadBalances(),  // leaveTypes are derived inside loadBalances
         loadLeaves(1)
       ]);
     };
     loadInitialData();
-  }, [loadLeaveTypes, loadBalances, loadLeaves]);
+  }, [loadBalances, loadLeaves]);
 
   // Handle page changes
   useEffect(() => {

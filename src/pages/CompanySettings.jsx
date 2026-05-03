@@ -149,30 +149,35 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
     return (
         <AnimatePresence>
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6"
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6"
                 onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+                    className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
                     onClick={e => e.stopPropagation()}>
 
-                    {/* Header */}
-                    <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-t-xl z-10 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-                                <FaBuilding className="text-base" />
-                            </div>
-                            <h2 className="text-lg font-bold">Company Details</h2>
+                    {/* Fixed Header */}
+                    <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
+                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                            <FaBuilding className="w-5 h-5 text-blue-500" />
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl transition-all">
-                            <FaTimes size={17} />
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">Company Details</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">View company information</p>
+                        </div>
+                        <button onClick={onClose}
+                            className="ml-auto w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600"
+                            aria-label="Close">
+                            <FaTimes className="w-4 h-4" />
                         </button>
                     </div>
 
-                    <div className="p-6 space-y-6 p-2 lg:p-0">
+                    {/* Scrollable Body */}
+                    <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
+
                         {/* Identity */}
-                        <div className="flex flex-col sm:flex-row items-center gap-5 pb-6 border-b border-gray-100">
-                            <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow-lg ring-4 ring-white flex-shrink-0"
+                        <div className="flex flex-col sm:flex-row items-center gap-5 pb-5 border-b border-gray-100">
+                            <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow ring-4 ring-gray-100 flex-shrink-0"
                                 style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
                                 {company.logo_url
                                     ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
@@ -180,7 +185,7 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                             </div>
                             <div className="text-center sm:text-left">
                                 <h3 className="text-2xl font-black text-gray-900">{company.name}</h3>
-                                <p className="text-sm text-gray-500 mt-0.5">{company.legal_name}</p>
+                                <p className="text-sm text-gray-400 mt-0.5">{company.legal_name}</p>
                                 <div className="mt-2 flex items-center justify-center sm:justify-start gap-2">
                                     <StatusBadge isActive={company.is_active} />
                                     <span className="text-xs text-gray-300 font-mono">#{company.id}</span>
@@ -188,11 +193,11 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                             </div>
                         </div>
 
-                        {/* Address */}
+                        {/* Address Details */}
                         <div>
-                            <h4 className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <span className="w-1 h-3 bg-blue-500 rounded-full" /> Address Details
-                            </h4>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <FaRoad className="w-3 h-3" /> Address Details
+                            </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <InfoItem icon={<FaRoad className="text-blue-400" />} label="Address Line 1" value={company.address_line1} />
                                 <InfoItem icon={<FaRoad className="text-blue-400" />} label="Address Line 2" value={company.address_line2} />
@@ -203,11 +208,11 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                             </div>
                         </div>
 
-                        {/* Network */}
+                        {/* Location & Network */}
                         <div>
-                            <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <span className="w-1 h-3 bg-indigo-500 rounded-full" /> Location & Network
-                            </h4>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <FaNetworkWired className="w-3 h-3" /> Location &amp; Network
+                            </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude" value={company.latitude} />
                                 <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Longitude" value={company.longitude} />
@@ -230,9 +235,9 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
 
                         {/* System Info */}
                         <div>
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <span className="w-1 h-3 bg-gray-300 rounded-full" /> System Info
-                            </h4>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <FaHistory className="w-3 h-3" /> System Info
+                            </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <InfoItem icon={<FaHistory className="text-gray-400" />} label="Created" value={formatDateTime(company.created_at)} />
                                 <InfoItem icon={<FaHistory className="text-gray-400" />} label="Updated" value={formatDateTime(company.updated_at)} />
@@ -242,13 +247,14 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
                         </div>
                     </div>
 
-                    <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+                    {/* Fixed Footer */}
+                    <div className="flex flex-col justify-end sm:flex-row gap-3 px-6 py-4 border-t border-gray-100 bg-white flex-shrink-0">
                         <button onClick={() => { onEdit(company); onClose(); }}
-                            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
+                            className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-sm">
                             <FaEdit size={14} /> Edit Company
                         </button>
                         <button onClick={() => { onDelete(company); onClose(); }}
-                            className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-xl hover:from-red-500 hover:to-rose-600 transition-all font-semibold flex items-center justify-center gap-2 shadow-md">
+                            className="flex px-5 py-2.5 border-2 border-red-100 text-red-500 rounded-xl hover:bg-red-50 transition-all font-semibold flex items-center justify-center gap-2">
                             <FaTrash size={14} /> Delete
                         </button>
                     </div>
@@ -258,7 +264,9 @@ const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
     );
 };
 
+
 // ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+
 
 const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
     if (!company) return null;
@@ -271,9 +279,14 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
                     className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
                     onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 flex justify-between items-center p-5 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-t-xl">
-                        <h2 className="text-lg font-bold flex items-center gap-2"><FaTrash /> Delete Company</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl"><FaTimes size={17} /></button>
+                    <div className="sticky top-0 flex justify-between items-center px-6 py-4 bg-white text-gray-800 rounded-t-xl border-b border-gray-100">
+                        <h2 className="text-lg font-bold flex items-center gap-2">
+                            <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
+                                <FaTrash className="text-red-500" size={13} />
+                            </div>
+                            Delete Company
+                        </h2>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl"><FaTimes size={17} className="text-gray-500" /></button>
                     </div>
                     <div className="p-6 sm:p-8 text-center">
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', duration: 0.5 }}
