@@ -14,6 +14,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import Modal from '../components/Modal';
 import usePermissionAccess from '../hooks/usePermissionAccess';
+import { EmployeeSelect } from '../components/common';
 
 const modalVariants = {
     hidden: { opacity: 0, scale: 0.95, y: 20 },
@@ -35,7 +36,6 @@ export default function PayrollAdjustment() {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState('table');
-    const [employees, setEmployees] = useState([]);
     
     // Filters
     const currentDate = new Date();
@@ -65,20 +65,8 @@ export default function PayrollAdjustment() {
 
     useEffect(() => {
         isMounted.current = true;
-        fetchEmployees();
         return () => { isMounted.current = false; };
     }, []);
-
-    const fetchEmployees = async () => {
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/employees/list?limit=1000', 'GET', null, company?.id);
-            const result = await response.json();
-            if (result.success) setEmployees(result.data || []);
-        } catch (e) {
-            console.error('Failed to load employees', e);
-        }
-    };
 
     const fetchAdjustments = useCallback(async (page = pagination.page) => {
         if (fetchInProgress.current) return;
@@ -424,16 +412,10 @@ export default function PayrollAdjustment() {
                             <div className="overflow-y-auto flex-1 p-6 space-y-5 bg-gray-50/50">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Employee *</label>
-                                    <select
-                                        value={formData.employee_id}
-                                        onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                    >
-                                        <option value="">Select an employee</option>
-                                        {employees.map(emp => (
-                                            <option key={emp.id} value={emp.id}>{emp.name} ({emp.employee_code})</option>
-                                        ))}
-                                    </select>
+                                    <EmployeeSelect 
+                                        value={formData.employee_id} 
+                                        onChange={(id) => setFormData({ ...formData, employee_id: id })}
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
