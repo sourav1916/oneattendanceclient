@@ -321,6 +321,8 @@ const STATUS_COLORS = {
   out: "bg-rose-100 text-rose-800",
   break_start: "bg-amber-100 text-amber-800",
   break_end: "bg-teal-100 text-teal-800",
+  earning: "bg-emerald-100 text-emerald-800",
+  deduction: "bg-rose-100 text-rose-800",
 };
 
 function Pill({ value, className = "" }) {
@@ -365,26 +367,102 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
     }
     if (tabKey === "attendance") {
       return (
-        <>
-          <Field label="ID" value={item.id} />
-          <Field label="Punch Type" value={<Pill value={item.punch_type} />} />
-          <Field label="Punch Time" value={fmtDateTime(item.punch_time)} />
-          <Field label="Status" value={<Pill value={item.status} />} />
-          <Field label="Method" value={<Pill value={item.attendance_method} />} />
-          <Field label="IP Address" mono value={item.ip_address} />
-        </>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2">
+            <Field label="Date" value={fmtDate(item.punch_date)} highlight />
+            <Field label="Status" value={<Pill value={item.status} />} />
+          </div>
+
+          <div className="border-t border-gray-100 pt-3 mt-3">
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Punch In</h4>
+            <Field label="Time" value={item.start_time || "—"} />
+            <Field label="Method" value={<Pill value={item.punch_in_method} />} />
+            {(item.punch_in_latitude || item.punch_in_longitude) && (
+              <Field label="Location" value={`${item.punch_in_latitude}, ${item.punch_in_longitude}`} mono />
+            )}
+          </div>
+
+          <div className="border-t border-gray-100 pt-3">
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Punch Out</h4>
+            <Field label="Time" value={item.end_time || "—"} />
+            <Field label="Method" value={<Pill value={item.punch_out_method} />} />
+            {(item.punch_out_latitude || item.punch_out_longitude) && (
+              <Field label="Location" value={`${item.punch_out_latitude}, ${item.punch_out_longitude}`} mono />
+            )}
+          </div>
+
+          {item.breaks && item.breaks.length > 0 && (
+            <div className="border-t border-gray-100 pt-3">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Breaks ({item.breaks.length})</h4>
+              <div className="space-y-3">
+                {item.breaks.map((b, idx) => (
+                  <div key={b.id || idx} className="bg-gray-50 rounded-lg p-2 text-xs">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-semibold text-gray-700">Break {idx + 1}</span>
+                      <Pill value={b.status} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-gray-400">Start:</span> {b.start_time}
+                      </div>
+                      <div>
+                        <span className="text-gray-400">End:</span> {b.end_time || "—"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {item.review_notes && (
+            <div className="border-t border-gray-100 pt-3">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Review Notes</h4>
+              <p className="text-sm text-gray-600 bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
+                "{item.review_notes}"
+              </p>
+              <div className="mt-1 text-[10px] text-gray-400">
+                Reviewed at: {fmtDateTime(item.reviewed_at)}
+              </div>
+            </div>
+          )}
+        </div>
       );
     }
     if (tabKey === "salary") {
       return (
-        <>
-          <Field label="ID" value={item.id} />
-          <Field label="Package" value={item.package_name} highlight />
-          <Field label="Base Amount" value={`${item.currency?.toUpperCase()} ${Number(item.base_amount).toLocaleString()}`} />
-          <Field label="Currency" value={item.currency?.toUpperCase()} />
-          <Field label="Effective From" value={fmtDateTime(item.effective_from)} />
-          <Field label="Effective To" value={fmtDate(item.effective_to)} />
-        </>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2">
+            <Field label="ID" value={item.id ?? item.salary_id} />
+            <Field label="Base Amount" value={`${item.currency?.toUpperCase() || "INR"} ${Number(item.base_amount || 0).toLocaleString()}`} highlight />
+            <Field label="Effective From" value={fmtDate(item.effective_from)} />
+            <Field label="Effective To" value={fmtDate(item.effective_to)} />
+          </div>
+
+          {item.components && item.components.length > 0 && (
+            <div className="border-t border-gray-100 pt-3">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Components ({item.components.length})</h4>
+              <div className="space-y-2">
+                {item.components.map((c, idx) => (
+                  <div key={c.component_id || idx} className="bg-gray-50 rounded-lg p-2 text-xs">
+                    <div className="flex justify-between mb-1 items-center">
+                      <span className="font-semibold text-gray-700">{c.name}</span>
+                      <Pill value={c.type} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-gray-500 mt-1">
+                      <div>
+                        Type: <span className="capitalize text-gray-700">{c.calc_type}</span>
+                      </div>
+                      <div>
+                        Value: <span className="text-gray-700 font-medium">{Number(c.calc_value).toString()}{c.calc_type === 'percentage' ? '%' : ''}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       );
     }
     if (tabKey === "payroll") {
@@ -487,7 +565,7 @@ function ProfileCard({ data }) {
       transition={{ duration: 0.3 }}
       className="bg-white rounded-xl border border-gray-100 shadow-sm p-5"
     >
-      <div className="flex items-start gap-4 flex-wrap pb-5 border-b border-gray-100">
+      <div className="flex items-start gap-4 flex-wrap pb-2">
         <div className={`w-[64px] h-[64px] rounded-xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none`}>
           {getInitials(u.name)}
         </div>
@@ -512,13 +590,6 @@ function ProfileCard({ data }) {
             <Pill value={e.status} />
             <Pill value={e.employment_type} />
             <Pill value={e.salary_type} />
-          </div>
-          <div className="flex items-center gap-2 mt-3">
-            {c.logo_url && !imgErr && (
-              <img src={c.logo_url} alt={c.name} onError={() => setImgErr(true)}
-                className="w-5 h-5 rounded object-contain border border-slate-200 bg-slate-50" />
-            )}
-            <span className="text-sm text-gray-500">{c.name} · {c.city}, {c.state}</span>
           </div>
         </div>
       </div>
@@ -670,29 +741,38 @@ function useBasicConfig(onView, width) {
 function useAttendanceConfig(onView, width) {
   const columns = [
     {
-      key: "punch_type", label: "Type",
+      key: "punch_date", label: "Date",
+      render: (a) => <span className="text-sm font-medium text-gray-800">{fmtDate(a.punch_date)}</span>,
+    },
+    {
+      key: "start_time", label: "Punch In",
       render: (a) => (
-        <div className="flex items-center gap-2">
-          {a.punch_type === "in" ? <FaArrowDown size={11} className="text-emerald-500" /> : <FaArrowUp size={11} className="text-rose-500" />}
-          <Pill value={a.punch_type} />
+        <div className="flex flex-col">
+          <span className="text-sm text-gray-700 font-medium">{a.start_time || "—"}</span>
+          <span className="text-[10px] text-gray-400 uppercase font-bold">{a.punch_in_method}</span>
         </div>
       ),
     },
     {
-      key: "punch_time", label: "Time",
-      render: (a) => <span className="text-sm text-gray-700">{fmtDateTime(a.punch_time)}</span>,
+      key: "end_time", label: "Punch Out",
+      render: (a) => (
+        <div className="flex flex-col">
+          <span className="text-sm text-gray-700 font-medium">{a.end_time || "—"}</span>
+          {a.punch_out_method && <span className="text-[10px] text-gray-400 uppercase font-bold">{a.punch_out_method}</span>}
+        </div>
+      ),
     },
     width > 600 && {
       key: "status", label: "Status",
       render: (a) => <Pill value={a.status} />,
     },
-    width > 800 && {
-      key: "attendance_method", label: "Method",
-      render: (a) => <Pill value={a.attendance_method} />,
-    },
-    width > 1000 && {
-      key: "ip_address", label: "IP",
-      render: (a) => <span className="font-mono text-xs text-gray-400">{a.ip_address || "—"}</span>,
+    width > 900 && {
+      key: "breaks", label: "Breaks",
+      render: (a) => (
+        <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
+          {a.breaks?.length || 0}
+        </span>
+      ),
     },
   ].filter(Boolean);
 
@@ -707,14 +787,18 @@ function useAttendanceConfig(onView, width) {
       menuId={`att-${a.id}`}
       actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(a), className: "text-blue-600 hover:bg-blue-50" }]}
       hoverable
-      title={fmtDateTime(a.punch_time)}
-      subtitle={`IP: ${a.ip_address || "—"}`}
+      title={fmtDate(a.punch_date)}
+      subtitle={`${a.start_time || "—"} → ${a.end_time || "—"}`}
       eyebrow="Attendance Record"
-      badge={<Pill value={a.punch_type} />}
+      badge={<Pill value={a.status} />}
     >
       <div className="flex gap-2 flex-wrap mt-1">
-        <Pill value={a.status} />
-        <Pill value={a.attendance_method} />
+        <Pill value={a.punch_in_method} />
+        {a.breaks?.length > 0 && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+            {a.breaks.length} Break(s)
+          </span>
+        )}
       </div>
     </ManagementCard>
   );
@@ -725,10 +809,10 @@ function useAttendanceConfig(onView, width) {
 function useSalaryConfig(onView, width) {
   const columns = [
     {
-      key: "package_name", label: "Package",
+      key: "salary_id", label: "Salary ID",
       render: (s) => (
-        <span className="inline-flex whitespace-nowrap rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700">
-          {s.package_name || "—"}
+        <span className="inline-flex whitespace-nowrap rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 font-mono">
+          #{s.salary_id || s.id || "—"}
         </span>
       ),
     },
@@ -736,7 +820,7 @@ function useSalaryConfig(onView, width) {
       key: "base_amount", label: "Base Amount",
       render: (s) => (
         <span className="font-semibold text-gray-800 text-sm">
-          {s.currency?.toUpperCase()} {Number(s.base_amount).toLocaleString()}
+          {s.currency?.toUpperCase() || "INR"} {Number(s.base_amount || 0).toLocaleString()}
         </span>
       ),
     },
@@ -761,18 +845,19 @@ function useSalaryConfig(onView, width) {
 
   const cardRenderer = (s, index, activeId, onToggle) => {
     const active = !s.effective_to || new Date(s.effective_to) > new Date();
+    const sid = s.salary_id || s.id;
     return (
       <ManagementCard
-        key={s.id}
+        key={sid || index}
         accent="green"
         delay={index * 0.04}
         onClick={() => onView(s)}
         activeId={activeId}
         onToggle={onToggle}
-        menuId={`sal-${s.id}`}
+        menuId={`sal-${sid || index}`}
         actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" }]}
         hoverable
-        title={s.package_name || "Salary Package"}
+        title={`Salary Record #${sid || ""}`}
         subtitle={`Effective: ${fmtDate(s.effective_from)} → ${fmtDate(s.effective_to)}`}
         eyebrow="Salary Record"
         badge={
@@ -782,20 +867,20 @@ function useSalaryConfig(onView, width) {
         }
         footer={
           <div className="flex w-full items-center justify-between text-xs text-gray-400">
-            <span>{s.currency?.toUpperCase()}</span>
+            <span>{s.currency?.toUpperCase() || "INR"}</span>
             <span>{fmtDate(s.effective_from)}</span>
           </div>
         }
       >
         <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-center">
-          <p className="text-sm font-bold text-blue-700">{s.currency?.toUpperCase()} {Number(s.base_amount).toLocaleString()}</p>
+          <p className="text-sm font-bold text-blue-700">{s.currency?.toUpperCase() || "INR"} {Number(s.base_amount || 0).toLocaleString()}</p>
           <p className="text-xs text-blue-500 mt-0.5">Base Amount</p>
         </div>
       </ManagementCard>
     );
   };
 
-  return { columns, cardRenderer, rowKey: "id" };
+  return { columns, cardRenderer, rowKey: (row, idx) => row.salary_id || row.id || `sal-${idx}` };
 }
 
 function usePayrollConfig(onView, width) {

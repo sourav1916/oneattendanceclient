@@ -106,7 +106,7 @@ const MyCalendar = () => {
         isCurrentMonth = true;
       }
       
-      const dateStr = dateObj.toISOString().split('T')[0];
+      const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
       const dayData = calendarData?.[dateStr] || null;
       
       grid.push({
