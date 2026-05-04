@@ -1026,7 +1026,7 @@ const LeaveBalanceManagement = () => {
               </div>
 
               {/* Body */}
-              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6 p-2 lg:p-0">
+              <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
@@ -1208,7 +1208,7 @@ const LeaveBalanceManagement = () => {
                     </button>
                   </div>
 
-                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6 p-2 lg:p-0">
+                  <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
                     <SearchableSelect
                       label="Select Employee"
                       placeholder="Choose an employee..."

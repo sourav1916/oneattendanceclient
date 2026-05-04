@@ -80,6 +80,20 @@ function StatusBadge({ status }) {
     );
 }
 
+const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
+    <div
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+    >
+        <motion.div
+            className="bg-white w-3 h-3 rounded-full shadow-md"
+            initial={false}
+            animate={{ x: isOn ? 20 : 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+    </div>
+);
+
 const LeaveManagement = () => {
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [leaves, setLeaves] = useState([]);
@@ -89,6 +103,11 @@ const LeaveManagement = () => {
     const [typeFilter, setTypeFilter] = useState('');
     const [viewMode, setViewMode] = useState('table');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+    const [bulkApproveRemarks, setBulkApproveRemarks] = useState('');
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
 
@@ -162,7 +181,7 @@ const LeaveManagement = () => {
         setSubmitting(true);
         try {
             const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-            const response = await apiCall('/leave/approve', 'PUT', { id: approveLeave.id, remarks: approveRemarks }, companyId);
+            const response = await apiCall('/leave/approve', 'PUT', { ids: [approveLeave.id], remarks: approveRemarks }, companyId);
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to approve');
             toast.success('Leave approved successfully');
@@ -194,6 +213,48 @@ const LeaveManagement = () => {
         }
     };
 
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(prev => {
+            if (prev) setSelectedIds([]);
+            return !prev;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const pendingLeaves = visibleLeaves.filter(l => l.status === 'pending');
+        if (selectedIds.length === pendingLeaves.length && pendingLeaves.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(pendingLeaves.map(l => l.id));
+        }
+    };
+
+    const toggleSelectRow = (e, id) => {
+        e.stopPropagation();
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedIds.length === 0) return;
+        setSubmitting(true);
+        try {
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+            const response = await apiCall('/leave/approve', 'PUT', { ids: selectedIds, remarks: bulkApproveRemarks }, companyId);
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'Failed to approve');
+            toast.success(`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} approved successfully`);
+            setSelectedIds([]);
+            setIsSelectionMode(false);
+            setShowBulkApproveModal(false);
+            setBulkApproveRemarks('');
+            fetchLeaves();
+        } catch (error) {
+            toast.error(error.message || 'Failed to approve requests');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const ActionMenuButtons = (leave) => {
         const isPending = leave.status === 'pending';
         return [
@@ -205,18 +266,87 @@ const LeaveManagement = () => {
         ];
     };
 
+    const stats = [
+        { label: 'Total Requests', val: pagination.total || 0, icon: FaClipboardList, color: 'blue' },
+        { label: 'Approved', val: leaves.filter(l => l.status === 'approved').length, icon: FaCheck, color: 'green' },
+        { label: 'Rejected', val: leaves.filter(l => l.status === 'rejected').length, icon: FaTrash, color: 'red' },
+        { label: 'Pending', val: leaves.filter(l => l.status === 'pending').length, icon: FaClock, color: 'yellow' },
+    ];
+
+    const leaveTypeOptions = useMemo(() => {
+        const seen = new Map();
+
+        leaves.forEach((leave) => {
+            const rawValue = String(leave.leave_code || leave.leave_name || leave.leave_type || '').trim();
+            if (!rawValue) return;
+
+            const normalized = rawValue.toLowerCase();
+            if (!seen.has(normalized)) {
+                seen.set(normalized, {
+                    value: normalized,
+                    label: leave.leave_name || leave.leave_code || rawValue,
+                });
+            }
+        });
+
+        return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
+    }, [leaves]);
+
+    const visibleLeaves = useMemo(() => {
+        if (!typeFilter) return leaves;
+
+        const normalized = typeFilter.toLowerCase();
+        return leaves.filter((leave) => {
+            const candidates = [leave.leave_name, leave.leave_code, leave.leave_type]
+                .filter(Boolean)
+                .map((value) => String(value).toLowerCase());
+
+            return candidates.some((value) => value === normalized || value.includes(normalized));
+        });
+    }, [leaves, typeFilter]);
+
     const columns = [
         {
             key: 'employee',
-            label: 'Employee',
+            label: (
+                <div className="flex items-center gap-4">
+                    {isSelectionMode && (
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.length > 0 && selectedIds.length === visibleLeaves.filter(l => l.status === 'pending').length}
+                            onChange={toggleSelectAll}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                    )}
+                    <ToggleSwitch
+                        isOn={isSelectionMode}
+                        onToggle={toggleSelectionMode}
+                        accent="blue"
+                    />
+                    <span>Employee</span>
+                </div>
+            ),
             render: (leave) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                        {leave.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                        <div className="font-semibold text-slate-800 truncate">{leave.employee_name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono tracking-tighter">{leave.employee_code}</div>
+                <div className="flex items-center gap-4">
+                    {isSelectionMode && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <input
+                                type="checkbox"
+                                checked={selectedIds.includes(leave.id)}
+                                onChange={(e) => toggleSelectRow(e, leave.id)}
+                                disabled={leave.status !== 'pending'}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
+                            />
+                        </div>
+                    )}
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                            {leave.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                            <div className="font-semibold text-slate-800 truncate">{leave.employee_name}</div>
+                            <div className="text-[10px] text-slate-400 font-mono tracking-tighter">{leave.employee_code}</div>
+                        </div>
                     </div>
                 </div>
             )
@@ -259,45 +389,6 @@ const LeaveManagement = () => {
             render: (leave) => <span className="text-[11px] text-slate-400 font-medium">{fmt(leave.applied_at)}</span>
         }
     ];
-
-    const stats = [
-        { label: 'Total Requests', val: pagination.total || 0, icon: FaClipboardList, color: 'blue' },
-        { label: 'Approved', val: leaves.filter(l => l.status === 'approved').length, icon: FaCheck, color: 'green' },
-        { label: 'Rejected', val: leaves.filter(l => l.status === 'rejected').length, icon: FaTrash, color: 'red' },
-        { label: 'Pending', val: leaves.filter(l => l.status === 'pending').length, icon: FaClock, color: 'yellow' },
-    ];
-
-    const leaveTypeOptions = useMemo(() => {
-        const seen = new Map();
-
-        leaves.forEach((leave) => {
-            const rawValue = String(leave.leave_code || leave.leave_name || leave.leave_type || '').trim();
-            if (!rawValue) return;
-
-            const normalized = rawValue.toLowerCase();
-            if (!seen.has(normalized)) {
-                seen.set(normalized, {
-                    value: normalized,
-                    label: leave.leave_name || leave.leave_code || rawValue,
-                });
-            }
-        });
-
-        return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
-    }, [leaves]);
-
-    const visibleLeaves = useMemo(() => {
-        if (!typeFilter) return leaves;
-
-        const normalized = typeFilter.toLowerCase();
-        return leaves.filter((leave) => {
-            const candidates = [leave.leave_name, leave.leave_code, leave.leave_type]
-                .filter(Boolean)
-                .map((value) => String(value).toLowerCase());
-
-            return candidates.some((value) => value === normalized || value.includes(normalized));
-        });
-    }, [leaves, typeFilter]);
 
     if (isInitialLoad && loading) return (
         <div className="min-h-screen bg-slate-50 p-8 flex items-center justify-center">
@@ -415,7 +506,23 @@ const LeaveManagement = () => {
                         {visibleLeaves.map((leave) => (
                             <ManagementCard
                                 key={leave.id}
-                                eyebrow={<div className="flex items-center gap-2"><StatusBadge status={leave.status} /> <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span></div>}
+                                eyebrow={
+                                    <div className="flex items-center gap-2">
+                                        {isSelectionMode && (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(leave.id)}
+                                                    onChange={(e) => toggleSelectRow(e, leave.id)}
+                                                    disabled={leave.status !== 'pending'}
+                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-50 mr-2"
+                                                />
+                                            </div>
+                                        )}
+                                        <StatusBadge status={leave.status} /> 
+                                        <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span>
+                                    </div>
+                                }
                                 title={leave.employee_name}
                                 description={<div className="font-mono text-[10px] text-slate-400">{leave.employee_code}</div>}
                                 actions={ActionMenuButtons(leave)}
@@ -613,6 +720,90 @@ const LeaveManagement = () => {
                     </Modal>
                 )}
             </div>
+
+            <AnimatePresence>
+                {selectedIds.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 100 }}
+                        className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
+                    >
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
+                            <span className="text-sm font-black text-slate-800">{selectedIds.length} Selected</span>
+                        </div>
+                        <div className="h-10 w-px bg-gray-200 mx-2"></div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
+                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                Close
+                            </button>
+                            <ManagementButton
+                                tone="green"
+                                variant="solid"
+                                leftIcon={<FaCheck />}
+                                onClick={() => { setBulkApproveRemarks(''); setShowBulkApproveModal(true); }}
+                                disabled={approveAccess.disabled}
+                                className={`shadow-lg shadow-green-200`}
+                                title={approveAccess.disabled ? reviewMessage : ""}
+                            >
+                                Approve All
+                            </ManagementButton>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {showBulkApproveModal && (
+                <Modal
+                    isOpen={showBulkApproveModal}
+                    onClose={() => { setShowBulkApproveModal(false); setBulkApproveRemarks(''); }}
+                    title="Bulk Approve Leaves"
+                    subtitle={`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} selected`}
+                    icon={<FaCheck className="h-6 w-6" />}
+                    size="md"
+                    footer={
+                        <div className="flex gap-3 w-full">
+                            <button
+                                type="button"
+                                onClick={() => { setShowBulkApproveModal(false); setBulkApproveRemarks(''); }}
+                                className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleBulkApprove}
+                                disabled={submitting}
+                                className="flex-1 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {submitting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                {submitting ? 'Approving...' : `Confirm Approve ${selectedIds.length}`}
+                            </button>
+                        </div>
+                    }
+                >
+                    <div className="space-y-4">
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            You are about to approve <span className="font-bold text-gray-800">{selectedIds.length} leave request{selectedIds.length > 1 ? 's' : ''}</span>. This action cannot be undone.
+                        </p>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Approval Remarks <span className="text-gray-400 font-normal">(Optional)</span>
+                            </label>
+                            <textarea
+                                placeholder="Add optional remarks for all selected leave requests..."
+                                className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none h-24"
+                                value={bulkApproveRemarks}
+                                onChange={(e) => setBulkApproveRemarks(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </ManagementHub>
     );
 };
