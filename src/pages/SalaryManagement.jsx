@@ -1688,6 +1688,7 @@ const SalaryManagement = () => {
                                 onChange={handleDateFilterApply}
                                 placeholder={dateFilterLabel}
                                 buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 min-w-[200px]"
+                                tabOptions={["date", "month", "range"]}
                             />
                             {dateFilterLabel !== 'Filter by date' && (
                                 <button

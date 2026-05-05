@@ -546,6 +546,7 @@ const AttendanceHistory = () => {
                     value={dateFilter}
                     onChange={(val) => setDateFilter(val)}
                     buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
+                    tabOptions={["date", "month", "range"]}
                   />
                 </div>
                 <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
