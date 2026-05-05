@@ -13,7 +13,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import { DatePickerField } from '../components/DatePicker';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { CreateAttendanceModal, EditAttendanceModal } from '../components/AttendanceModals';
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
@@ -104,6 +104,46 @@ const formatFilterLabel = (value) =>
     day: 'numeric',
     year: 'numeric'
   });
+
+const formatMonthYearLabel = (month, year) =>
+  new Date(Number(year), Number(month) - 1, 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+const normalizeDateFilterSelection = (result) => {
+  if (typeof result === 'string' && result) {
+    return {
+      nextParams: { date: result },
+      nextLabel: formatFilterLabel(result),
+    };
+  }
+
+  if (result?.date) {
+    return {
+      nextParams: { date: result.date },
+      nextLabel: formatFilterLabel(result.date),
+    };
+  }
+
+  if (result?.month && result?.year) {
+    return {
+      nextParams: { month: result.month, year: result.year },
+      nextLabel: formatMonthYearLabel(result.month, result.year),
+    };
+  }
+
+  if (result?.from_date && result?.to_date) {
+    return {
+      nextParams: { from_date: result.from_date, to_date: result.to_date },
+      nextLabel: result.from_date === result.to_date
+        ? formatFilterLabel(result.from_date)
+        : `${formatFilterLabel(result.from_date)} - ${formatFilterLabel(result.to_date)}`,
+    };
+  }
+
+  return { nextParams: {}, nextLabel: 'Filter by date' };
+};
 
 const normalizeAttendanceRow = (row) => {
   const normalizedType = row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'work');
@@ -505,6 +545,7 @@ const AttendanceManagement = ({ companyId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
+  const [dateFilterValue, setDateFilterValue] = useState({});
   const [selectedAttendance, setSelectedAttendance] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [processingId, setProcessingId] = useState(null);
@@ -674,20 +715,10 @@ const AttendanceManagement = ({ companyId }) => {
   };
 
   const handleDateFilterApply = useCallback((result) => {
-    let nextParams = {};
-    let nextLabel = 'Filter by date';
-
-    if (typeof result === 'string' && result) {
-      nextParams = { date: result };
-      nextLabel = formatFilterLabel(result);
-    } else if (result?.start && result?.end) {
-      nextParams = { from_date: result.start, to_date: result.end };
-      nextLabel = result.start === result.end
-        ? formatFilterLabel(result.start)
-        : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`;
-    }
+    const { nextParams, nextLabel } = normalizeDateFilterSelection(result);
 
     attendanceDateFilterRef.current = nextParams;
+    setDateFilterValue(nextParams);
     setDateFilterLabel(nextLabel);
 
     if (pagination.page !== 1) {
@@ -699,6 +730,7 @@ const AttendanceManagement = ({ companyId }) => {
 
   const clearDateFilter = useCallback(() => {
     attendanceDateFilterRef.current = {};
+    setDateFilterValue({});
     setDateFilterLabel('Filter by date');
 
     if (pagination.page !== 1) {
@@ -780,15 +812,11 @@ const AttendanceManagement = ({ companyId }) => {
           {/* Right Section: Controls */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <DatePickerField
-                value=""
+              <AdvancedDateFilter
+                value={dateFilterValue}
                 onChange={handleDateFilterApply}
                 placeholder={dateFilterLabel}
-                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
-                wrapperClassName="w-auto"
-                popoverClassName="w-[min(92vw,24rem)]"
-                initialTab="quick"
-                mode="both"
+                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 min-w-[200px]"
               />
               {dateFilterLabel !== 'Filter by date' && (
                 <button

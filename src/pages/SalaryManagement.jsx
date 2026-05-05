@@ -20,6 +20,7 @@ import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from
 import { toast } from 'react-toastify';
 import Modal from "../components/Modal";
 import ModalScrollLock from '../components/ModalScrollLock';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { DatePickerField } from '../components/DatePicker';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
@@ -99,6 +100,46 @@ const formatFilterLabel = (value) =>
         day: "numeric",
         year: "numeric",
     });
+
+const formatMonthYearLabel = (month, year) =>
+    new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+    });
+
+const normalizeDateFilterSelection = (result) => {
+    if (typeof result === 'string' && result) {
+        return {
+            nextParams: { date: result },
+            nextLabel: formatFilterLabel(result),
+        };
+    }
+
+    if (result?.date) {
+        return {
+            nextParams: { date: result.date },
+            nextLabel: formatFilterLabel(result.date),
+        };
+    }
+
+    if (result?.month && result?.year) {
+        return {
+            nextParams: { month: result.month, year: result.year },
+            nextLabel: formatMonthYearLabel(result.month, result.year),
+        };
+    }
+
+    if (result?.from_date && result?.to_date) {
+        return {
+            nextParams: { from_date: result.from_date, to_date: result.to_date },
+            nextLabel: result.from_date === result.to_date
+                ? formatFilterLabel(result.from_date)
+                : `${formatFilterLabel(result.from_date)} - ${formatFilterLabel(result.to_date)}`,
+        };
+    }
+
+    return { nextParams: {}, nextLabel: 'Filter by date' };
+};
 
 const salaryOverlapsDateFilter = (salary, filter) => {
     if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return true;
@@ -1352,6 +1393,7 @@ const SalaryManagement = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [viewMode, setViewMode] = useState('table');
     const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
+    const [dateFilterValue, setDateFilterValue] = useState({});
     const [selectedSalary, setSelectedSalary] = useState(null);
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -1415,11 +1457,9 @@ const SalaryManagement = () => {
     const handlePageChange = useCallback((newPage) => { if (newPage !== pagination.page) goToPage(newPage); }, [pagination.page, goToPage]);
 
     const handleDateFilterApply = useCallback((result) => {
-        let nextParams = {};
-        let nextLabel = 'Filter by date';
-        if (typeof result === 'string' && result) { nextParams = { date: result }; nextLabel = formatFilterLabel(result); }
-        else if (result?.start && result?.end) { nextParams = { from_date: result.start, to_date: result.end }; nextLabel = result.start === result.end ? formatFilterLabel(result.start) : `${formatFilterLabel(result.start)} - ${formatFilterLabel(result.end)}`; }
+        const { nextParams, nextLabel } = normalizeDateFilterSelection(result);
         salaryDateFilterRef.current = nextParams;
+        setDateFilterValue(nextParams);
         setDateFilterLabel(nextLabel);
         if (pagination.page !== 1) goToPage(1);
         else fetchSalaries(1, debouncedSearch, true, nextParams);
@@ -1427,6 +1467,7 @@ const SalaryManagement = () => {
 
     const clearDateFilter = useCallback(() => {
         salaryDateFilterRef.current = {};
+        setDateFilterValue({});
         setDateFilterLabel('Filter by date');
         if (pagination.page !== 1) goToPage(1);
         else fetchSalaries(1, debouncedSearch, true, {});
@@ -1642,15 +1683,11 @@ const SalaryManagement = () => {
 
                         {/* Date Filter */}
                         <div className="flex items-center gap-2">
-                            <DatePickerField
-                                value=""
+                            <AdvancedDateFilter
+                                value={dateFilterValue}
                                 onChange={handleDateFilterApply}
                                 placeholder={dateFilterLabel}
-                                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
-                                wrapperClassName="w-auto"
-                                popoverClassName="w-[min(92vw,24rem)]"
-                                initialTab="quick"
-                                mode="both"
+                                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 min-w-[200px]"
                             />
                             {dateFilterLabel !== 'Filter by date' && (
                                 <button

@@ -28,7 +28,7 @@ import apiCall from '../utils/api';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
-import { DateRangePickerField } from '../components/DatePicker';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { FaBriefcase } from 'react-icons/fa';
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
@@ -296,8 +296,7 @@ const AttendanceHistory = () => {
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
 
-  const [dateFilter, setDateFilter] = useState({ from_date: '', to_date: '' });
-  const [dateFilterLabel, setDateFilterLabel] = useState('Filter by date');
+  const [dateFilter, setDateFilter] = useState({ date: '', month: '', year: '', from_date: '', to_date: '' });
 
   const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
   const fetchLock = useRef(false);
@@ -337,6 +336,9 @@ const AttendanceHistory = () => {
       };
 
       if (activeSubTab === 'past') {
+        if (dateFilter.date) params.date = dateFilter.date;
+        if (dateFilter.month) params.month = dateFilter.month;
+        if (dateFilter.year) params.year = dateFilter.year;
         if (dateFilter.from_date) params.from_date = dateFilter.from_date;
         if (dateFilter.to_date) params.to_date = dateFilter.to_date;
         if (debouncedSearch) params.search = debouncedSearch;
@@ -540,21 +542,9 @@ const AttendanceHistory = () => {
 
               <div className="flex items-center justify-between gap-3 w-full md:w-auto">
                 <div className="relative">
-                  <DateRangePickerField
+                  <AdvancedDateFilter
                     value={dateFilter}
-                    onChange={(val) => {
-                      const updated = {
-                        from_date: val.start,
-                        to_date: val.end
-                      };
-                      setDateFilter(updated);
-                      if (val.start && val.end) {
-                        setDateFilterLabel(`${val.start} - ${val.end}`);
-                      } else {
-                        setDateFilterLabel('Filter by date');
-                      }
-                    }}
-                    placeholder={dateFilterLabel}
+                    onChange={(val) => setDateFilter(val)}
                     buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
                   />
                 </div>

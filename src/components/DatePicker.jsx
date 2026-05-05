@@ -257,7 +257,7 @@ export default function DatePicker({
       setRangeEnd(null);
     } else {
       if (!isRangeWithinLimit(rangeStart, date)) {
-        showFeedback(`Max ${maxDays} days allowed.`, "warning");
+        showFeedback(`Max ${maxDays === null ? "0" : maxDays} days allowed.`, "warning");
         return;
       }
       if (date < rangeStart) { setRangeEnd(rangeStart); setRangeStart(date); }
@@ -285,7 +285,7 @@ export default function DatePicker({
         result = { type: "single", date: p.single };
       } else if (p?.range) {
         if (!isRangeWithinLimit(p.range[0], p.range[1])) {
-          showFeedback(`Max ${maxDays} days allowed.`, "warning");
+          showFeedback(`Max ${maxDays === null ? "0" : maxDays} days allowed.`, "warning");
           return;
         }
         result = { type: "range", start: p.range[0], end: p.range[1] };
@@ -296,7 +296,7 @@ export default function DatePicker({
     } else {
       if (!rangeStart || !rangeEnd) { showFeedback("Please select a date range.", "danger"); return; }
       if (!isRangeWithinLimit(rangeStart, rangeEnd)) {
-        showFeedback(`Max ${maxDays} days allowed.`, "warning");
+        showFeedback(`Max ${maxDays === null ? "0" : maxDays} days allowed.`, "warning");
         return;
       }
       result = { type: "range", start: rangeStart, end: rangeEnd };

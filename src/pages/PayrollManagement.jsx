@@ -20,6 +20,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import { EmployeeSelect } from '../components/common';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -313,13 +314,37 @@ const PayrollManagement = () => {
         }
     };
 
-    const handleMonthYearChange = () => {
+    const handlePeriodFilterApply = useCallback((result) => {
+        const fallbackMonth = currentDate.getMonth() + 1;
+        const fallbackYear = currentDate.getFullYear();
+
+        let nextMonth = fallbackMonth;
+        let nextYear = fallbackYear;
+
+        if (result?.month && result?.year) {
+            nextMonth = Number(result.month);
+            nextYear = Number(result.year);
+        } else if (result?.date) {
+            const parsed = new Date(`${result.date}T00:00:00`);
+            if (!Number.isNaN(parsed.getTime())) {
+                nextMonth = parsed.getMonth() + 1;
+                nextYear = parsed.getFullYear();
+            }
+        } else if (result?.from_date) {
+            const parsed = new Date(`${result.from_date}T00:00:00`);
+            if (!Number.isNaN(parsed.getTime())) {
+                nextMonth = parsed.getMonth() + 1;
+                nextYear = parsed.getFullYear();
+            }
+        }
+
+        setSelectedMonth(nextMonth);
+        setSelectedYear(nextYear);
+
         if (pagination.page !== 1) {
             goToPage(1);
-        } else {
-            fetchPayrollList(1);
         }
-    };
+    }, [currentDate, goToPage, pagination.page]);
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -479,26 +504,13 @@ const PayrollManagement = () => {
             >
                 {/* Left Section: Time Period Filters */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 flex-1">
-                    <div className="w-full sm:w-48">
-                        <Select
-                            options={monthOptions}
-                            value={monthOptions.find(opt => opt.value === selectedMonth)}
-                            onChange={(option) => {
-                                setSelectedMonth(option.value);
-                                setTimeout(handleMonthYearChange, 100);
-                            }}
-                            styles={customSelectStyles}
-                        />
-                    </div>
-                    <div className="w-full sm:w-32">
-                        <Select
-                            options={yearOptions}
-                            value={yearOptions.find(opt => opt.value === selectedYear)}
-                            onChange={(option) => {
-                                setSelectedYear(option.value);
-                                setTimeout(handleMonthYearChange, 100);
-                            }}
-                            styles={customSelectStyles}
+                    <div className="w-full sm:w-auto">
+                        <AdvancedDateFilter
+                            value={{ month: selectedMonth, year: selectedYear }}
+                            onChange={handlePeriodFilterApply}
+                            placeholder={`${getMonthName(selectedMonth)} ${selectedYear}`}
+                            buttonClassName="inline-flex w-full min-w-[220px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-green-200 hover:bg-green-50"
+                            tabOptions={["month"]}
                         />
                     </div>
 
