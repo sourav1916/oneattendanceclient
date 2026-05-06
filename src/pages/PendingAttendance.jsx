@@ -17,7 +17,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { CreateAttendanceModal, EditAttendanceModal } from '../components/AttendanceModals';
-import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
+import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
@@ -52,8 +52,28 @@ const renderRecordLabel = (record) => {
     return [record.time, record.method].filter(Boolean).join(' • ') || <Placeholder />;
 };
 
+const toBooleanFlag = (value) => Number(value) === 1;
+
+const FlagBadge = ({ label, value }) => {
+    const isActive = toBooleanFlag(value);
+
+    return (
+        <span
+            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border ${
+                isActive
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-slate-200 bg-slate-50 text-slate-500'
+            }`}
+            title={`${label}: ${isActive ? 'Yes' : 'No'}`}
+        >
+            <span className={`h-1.5 w-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+            {label}: {isActive ? 'Yes' : 'No'}
+        </span>
+    );
+};
+
 const pendingAttendanceAPI = {
-    fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'work') => {
+    fetchPendingPunchIns: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'attendance') => {
         const queryParams = new URLSearchParams({
             page: page.toString(),
             limit: limit.toString(),
@@ -144,7 +164,7 @@ const normalizeDateFilterSelection = (result) => {
 };
 
 const normalizePendingAttendanceRow = (row) => {
-    const normalizedType = row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'work');
+    const normalizedType = normalizeAttendanceType(row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'attendance'));
     const startRecord = row?.punch_in || row?.break_start || row?.break_start_ || null;
     const endRecord = row?.punch_out || row?.break_end || row?.break_end_ || null;
 
@@ -162,6 +182,10 @@ const normalizePendingAttendanceRow = (row) => {
     start_record: startRecord,
     end_record: endRecord,
     status: row?.status || 'pending',
+    is_deductible: Number(row?.is_deductible || 0),
+    is_overtime: Number(row?.is_overtime || 0),
+    is_half_day: Number(row?.is_half_day || 0),
+    remark: row?.remark || '',
     employee_name: row?.name ?? '',
     employee_code: row?.employee_code ?? '',
     employee_designation: row?.designation ?? '',
@@ -181,6 +205,22 @@ const normalizePendingAttendanceRow = (row) => {
 const normalizePendingAttendanceResponse = (response) => {
     if (!Array.isArray(response?.data)) return [];
     return response.data.map(normalizePendingAttendanceRow);
+};
+
+const normalizePendingAttendanceMeta = (response, fallback = {}) => {
+    const meta = response?.meta || {};
+    const total = Number(meta.total ?? response?.total ?? fallback.total ?? 0);
+    const limit = Number(meta.limit ?? response?.limit ?? fallback.limit ?? 10);
+    const page = Number(meta.page ?? response?.page ?? fallback.page ?? 1);
+    const totalPages = Number(meta.total_pages ?? response?.total_pages ?? fallback.total_pages ?? (Math.ceil(total / limit) || 1));
+
+    return {
+        page,
+        limit,
+        total,
+        total_pages: totalPages,
+        is_last_page: meta.is_last_page ?? response?.is_last_page ?? (page >= totalPages)
+    };
 };
 
 const pendingAttendanceMatchesDateFilter = (attendance, filter) => {
@@ -229,8 +269,8 @@ const StatusBadge = ({ status }) => {
 const PunchTypeBadge = ({ type }) => {
     const getTypeConfig = () => {
         switch (type?.toLowerCase()) {
-            case 'work':
-                return { icon: FaHourglassStart, text: 'Work', className: 'bg-blue-100 text-blue-800' };
+            case 'attendance':
+                return { icon: FaHourglassStart, text: 'Attendance', className: 'bg-blue-100 text-blue-800' };
             case 'break':
                 return { icon: FaHourglassEnd, text: 'Break', className: 'bg-indigo-100 text-indigo-800' };
             case 'in':
@@ -349,6 +389,20 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                                 {attendance.attendance_method || <Placeholder />}
                             </p>
                         </div>
+                        <div className="sm:col-span-2 lg:col-span-3">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-2">Flags</label>
+                            <div className="flex flex-wrap gap-2">
+                                <FlagBadge label="Overtime" value={attendance.is_overtime} />
+                                <FlagBadge label="Half Day" value={attendance.is_half_day} />
+                                <FlagBadge label="Deductible" value={attendance.is_deductible} />
+                            </div>
+                        </div>
+                        <div className="sm:col-span-2 lg:col-span-3">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Remark</label>
+                            <p className="font-bold text-gray-800 text-sm">
+                                {attendance.remark || <Placeholder />}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -430,6 +484,11 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, p
                     <span className="text-gray-500 text-xs sm:text-sm">Status:</span>
                     <StatusBadge status={attendance.status || 'pending'} />
                 </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                    <FlagBadge label="OT" value={attendance.is_overtime} />
+                    <FlagBadge label="Half" value={attendance.is_half_day} />
+                    <FlagBadge label="Deduct" value={attendance.is_deductible} />
+                </div>
             </div>
         </motion.div>
     );
@@ -469,14 +528,14 @@ const PendingAttendance = ({ companyId }) => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [viewMode, setViewMode] = useState('table');
-    const [attendanceType, setAttendanceType] = useState('work');
+    const [attendanceType, setAttendanceType] = useState('attendance');
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
     const [selectedIds, setSelectedIds] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
     const previousSearchRef = useRef('');
-    const previousTypeRef = useRef('work');
+    const previousTypeRef = useRef('attendance');
     const lastRequestKeyRef = useRef('');
     const pendingDateFilterRef = useRef({});
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -540,19 +599,13 @@ const PendingAttendance = ({ companyId }) => {
             );
 
             if (response.success) {
-                const currentPage = response.current_page || response.page || pagination.page;
-                const perPage = response.per_page || response.limit || pagination.limit;
-                const total = response.meta?.total_pending_punches || response.total || 0;
-                const totalPages = response.total_pages || response.last_page || Math.ceil(total / perPage) || 1;
+                const meta = normalizePendingAttendanceMeta(response, {
+                    page: pagination.page,
+                    limit: pagination.limit
+                });
 
                 setAttendances(normalizePendingAttendanceResponse(response));
-                updatePagination({
-                    page: currentPage,
-                    limit: perPage,
-                    total,
-                    total_pages: totalPages,
-                    is_last_page: currentPage >= totalPages
-                });
+                updatePagination(meta);
                 setError(null);
             } else {
                 throw new Error(response.message || 'Failed to fetch pending attendances');

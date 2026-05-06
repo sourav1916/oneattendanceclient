@@ -15,7 +15,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { CreateAttendanceModal, EditAttendanceModal } from '../components/AttendanceModals';
-import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
+import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
 import Modal from '../components/Modal';
@@ -53,7 +53,7 @@ const renderRecordLabel = (record) => {
 };
 
 const attendanceAPI = {
-  fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'work') => {
+  fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'attendance') => {
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -146,7 +146,7 @@ const normalizeDateFilterSelection = (result) => {
 };
 
 const normalizeAttendanceRow = (row) => {
-  const normalizedType = row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'work');
+  const normalizedType = normalizeAttendanceType(row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'attendance'));
   const startRecord = row?.punch_in || row?.break_start || row?.break_start_ || null;
   const endRecord = row?.punch_out || row?.break_end || row?.break_end_ || null;
 
@@ -557,12 +557,12 @@ const AttendanceManagement = ({ companyId }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [logsModalRecord, setLogsModalRecord] = useState(null);
   const [viewMode, setViewMode] = useState('table');
-  const [attendanceType, setAttendanceType] = useState('work');
+  const [attendanceType, setAttendanceType] = useState('attendance');
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const resolvedCompanyId = companyId || JSON.parse(localStorage.getItem('company') || 'null')?.id;
   const previousSearchRef = useRef('');
-  const previousTypeRef = useRef('work');
+  const previousTypeRef = useRef('attendance');
   const lastRequestKeyRef = useRef('');
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);

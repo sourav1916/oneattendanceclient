@@ -30,7 +30,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { FaBriefcase } from 'react-icons/fa';
-import AttendanceTypeTabs, { getAttendanceTypeConfig } from '../components/AttendanceTypeTabs';
+import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
 import Modal from '../components/Modal';
 
@@ -278,7 +278,7 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
 const AttendanceHistory = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSubTab = searchParams.get('subtab') || 'today';
-  const activeType = searchParams.get('type') || 'work';
+  const activeType = normalizeAttendanceType(searchParams.get('type') || 'attendance');
 
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -621,7 +621,7 @@ const AttendanceHistory = () => {
 const DetailsModal = ({ record, onClose }) => {
   const style = getApprovalStyle(record.status);
   const StatusIcon = style.icon;
-  const activeType = record.activeType || 'work';
+  const activeType = normalizeAttendanceType(record.activeType || 'attendance');
   const typeConfig = getAttendanceTypeConfig(activeType);
   const startData = record[typeConfig.startKey];
   const endData = record[typeConfig.endKey];

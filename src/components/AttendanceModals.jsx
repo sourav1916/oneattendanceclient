@@ -7,13 +7,22 @@ import { DatePickerField } from './DatePicker';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import ModalScrollLock from './ModalScrollLock';
+import { normalizeAttendanceType } from './AttendanceTypeTabs';
+import EmployeeSelect from './common/EmployeeSelect';
 
 
 
 const TYPE_OPTIONS = [
-    { value: 'work', label: 'Work' },
+    { value: 'attendance', label: 'Attendance' },
     { value: 'break', label: 'Break' }
 ];
+
+const BINARY_FLAG_OPTIONS = [
+    { value: 0, label: 'No' },
+    { value: 1, label: 'Yes' }
+];
+
+const toBackendAttendanceType = (type) => normalizeAttendanceType(type) === 'attendance' ? 'attendance' : 'break';
 
 const customSelectStyles = {
     control: (base, state) => ({
@@ -35,67 +44,32 @@ const customSelectStyles = {
 
 export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, forcedType }) => {
     const [loading, setLoading] = useState(false);
-    const [employeesLoading, setEmployeesLoading] = useState(false);
-    const [employees, setEmployees] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
-        employee_id: null,
+        employee_id: '',
         punch_date: new Date().toISOString().split('T')[0],
-        type: forcedType || 'work',
+        type: normalizeAttendanceType(forcedType || 'attendance'),
         start_time: null,
         end_time: null,
         notes: '',
-        is_deductible: 0
+        is_deductible: 0,
+        is_overtime: 0,
+        is_half_day: 0
     });
 
     useEffect(() => {
         if (!isOpen) return;
         setFormData({
-            employee_id: null,
+            employee_id: '',
             punch_date: new Date().toISOString().split('T')[0],
-            type: forcedType || 'work',
+            type: normalizeAttendanceType(forcedType || 'attendance'),
             start_time: null,
             end_time: null,
             notes: '',
-            is_deductible: 0
+            is_deductible: 0,
+            is_overtime: 0,
+            is_half_day: 0
         });
-        setSearchTerm('');
-        setEmployees([]);
     }, [isOpen]);
-
-    useEffect(() => {
-        if (!searchTerm.trim()) {
-            setEmployees([]);
-            setEmployeesLoading(false);
-            return;
-        }
-
-        setEmployeesLoading(true);
-        const delayDebounceFn = setTimeout(() => {
-            fetchEmployees(searchTerm);
-        }, 400);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
-
-    const fetchEmployees = async (search = '') => {
-        try {
-            const response = await apiCall(`/employees/all-list?search=${encodeURIComponent(search)}`, 'GET', null, companyId);
-            const result = await response.json();
-            if (result.success) {
-                setEmployees((result.data || []).map(emp => ({
-                    value: emp.id,
-                    label: `${emp.name} (${emp.employee_code || 'N/A'})`,
-                    name: emp.name,
-                    employee_code: emp.employee_code
-                })));
-            }
-        } catch (error) {
-            console.error('Failed to fetch employees:', error);
-        } finally {
-            setEmployeesLoading(false);
-        }
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -106,18 +80,18 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
 
         setLoading(true);
         try {
+            const backendType = toBackendAttendanceType(formData.type);
             const payload = {
-                type: formData.type,
-                employee_id: formData.employee_id.value,
+                type: backendType,
+                employee_id: formData.employee_id,
                 punch_date: formData.punch_date,
                 start_time: formData.start_time,
                 end_time: formData.end_time,
-                notes: formData.notes
+                notes: formData.notes,
+                is_deductible: Number(formData.is_deductible || 0),
+                is_overtime: backendType === 'attendance' ? Number(formData.is_overtime || 0) : 0,
+                is_half_day: backendType === 'attendance' ? Number(formData.is_half_day || 0) : 0
             };
-
-            if (formData.type === 'break') {
-                payload.is_deductible = formData.is_deductible;
-            }
 
             const response = await apiCall('/attendance/create', 'POST', payload, companyId);
             const result = await response.json();
@@ -186,16 +160,10 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                         <FaUser className="h-4 w-4 text-indigo-500" /> Employee <span className="text-red-500">*</span>
                                     </label>
-                                    <SelectField
-                                        options={employees}
-                                        isLoading={employeesLoading}
+                                    <EmployeeSelect
                                         value={formData.employee_id}
                                         onChange={(val) => setFormData(prev => ({ ...prev, employee_id: val }))}
-                                        onInputChange={(val) => setSearchTerm(val)}
                                         placeholder="Type to search employee..."
-                                        noOptionsMessage={() => searchTerm ? "No employees found" : "Type to search..."}
-                                        filterOption={() => true}
-                                        styles={customSelectStyles}
                                     />
                                 </div>
 
@@ -252,20 +220,45 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                     </div>
                                 </div>
 
-                                {formData.type === 'break' && (
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                            <FaCheck className="h-4 w-4 text-indigo-500" /> Is Deductible
-                                        </label>
-                                        <SelectField
-                                            options={[
-                                                { value: 1, label: 'Yes, Deduct from work hours' },
-                                                { value: 0, label: 'No, Paid break' }
-                                            ]}
-                                            value={{ value: formData.is_deductible, label: formData.is_deductible === 1 ? 'Yes, Deduct from work hours' : 'No, Paid break' }}
-                                            onChange={(val) => setFormData(prev => ({ ...prev, is_deductible: val.value }))}
-                                            styles={customSelectStyles}
-                                        />
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaCheck className="h-4 w-4 text-indigo-500" /> Is Deductible
+                                    </label>
+                                    <SelectField
+                                        options={[
+                                            { value: 1, label: 'Yes, Deduct from work hours' },
+                                            { value: 0, label: 'No, Do not deduct' }
+                                        ]}
+                                        value={{ value: Number(formData.is_deductible || 0), label: Number(formData.is_deductible || 0) === 1 ? 'Yes, Deduct from work hours' : 'No, Do not deduct' }}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, is_deductible: Number(val.value) }))}
+                                        styles={customSelectStyles}
+                                    />
+                                </div>
+
+                                {formData.type === 'attendance' && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <div className="space-y-2">
+                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Overtime
+                                            </label>
+                                            <SelectField
+                                                options={BINARY_FLAG_OPTIONS}
+                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_overtime || 0))}
+                                                onChange={(val) => setFormData(prev => ({ ...prev, is_overtime: Number(val.value) }))}
+                                                styles={customSelectStyles}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Half Day
+                                            </label>
+                                            <SelectField
+                                                options={BINARY_FLAG_OPTIONS}
+                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_half_day || 0))}
+                                                onChange={(val) => setFormData(prev => ({ ...prev, is_half_day: Number(val.value) }))}
+                                                styles={customSelectStyles}
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
@@ -312,13 +305,16 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
 
 export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, onSuccess }) => {
     const [loading, setLoading] = useState(false);
-    const resolvedPunchType = attendance?.punch_type || attendance?.type || attendance?.record_type || 'work';
+    const resolvedPunchType = normalizeAttendanceType(attendance?.punch_type || attendance?.type || attendance?.record_type || 'attendance');
     const [formData, setFormData] = useState({
         attendance_date: new Date().toISOString().split('T')[0],
-        punch_type: 'work',
+        punch_type: 'attendance',
         punch_in: null,
         punch_out: null,
-        notes: ''
+        notes: '',
+        is_deductible: 0,
+        is_overtime: 0,
+        is_half_day: 0
     });
 
     useEffect(() => {
@@ -330,7 +326,10 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                 punch_type: resolvedPunchType,
                 punch_in: attendance.start_time || startRecord?.time || null,
                 punch_out: attendance.end_time || endRecord?.time || null,
-                notes: attendance.notes || ''
+                notes: attendance.notes || '',
+                is_deductible: Number(attendance?.is_deductible || 0),
+                is_overtime: Number(attendance?.is_overtime || 0),
+                is_half_day: Number(attendance?.is_half_day || 0)
             });
         }
     }, [isOpen, attendance, resolvedPunchType]);
@@ -339,15 +338,17 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
         e.preventDefault();
         setLoading(true);
         try {
+            const backendType = toBackendAttendanceType(formData.punch_type);
             const payload = {
-                type: formData.punch_type,
+                type: backendType,
                 punch_id: attendance?.punch_uid || attendance?.punch_id || attendance?.id,
                 start_time: formData.punch_in,
-                notes: formData.notes
+                end_time: formData.punch_out,
+                notes: formData.notes,
+                is_deductible: Number(formData.is_deductible || 0),
+                is_overtime: backendType === 'attendance' ? Number(formData.is_overtime || 0) : 0,
+                is_half_day: backendType === 'attendance' ? Number(formData.is_half_day || 0) : 0
             };
-            if (formData.punch_out) {
-                payload.end_time = formData.punch_out;
-            }
 
             const response = await apiCall('/attendance/edit-approve', 'PUT', payload, companyId);
             const result = await response.json();
@@ -476,6 +477,45 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                         />
                                     </div>
                                 </div>
+
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaCheck className="h-4 w-4 text-indigo-500" /> Is Deductible
+                                    </label>
+                                    <SelectField
+                                        options={BINARY_FLAG_OPTIONS}
+                                        value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_deductible || 0))}
+                                        onChange={(val) => setFormData(prev => ({ ...prev, is_deductible: Number(val.value) }))}
+                                        styles={customSelectStyles}
+                                    />
+                                </div>
+
+                                {formData.punch_type === 'attendance' && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                        <div className="space-y-2">
+                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Overtime
+                                            </label>
+                                            <SelectField
+                                                options={BINARY_FLAG_OPTIONS}
+                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_overtime || 0))}
+                                                onChange={(val) => setFormData(prev => ({ ...prev, is_overtime: Number(val.value) }))}
+                                                styles={customSelectStyles}
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Half Day
+                                            </label>
+                                            <SelectField
+                                                options={BINARY_FLAG_OPTIONS}
+                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_half_day || 0))}
+                                                onChange={(val) => setFormData(prev => ({ ...prev, is_half_day: Number(val.value) }))}
+                                                styles={customSelectStyles}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">

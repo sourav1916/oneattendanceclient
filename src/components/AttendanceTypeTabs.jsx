@@ -2,8 +2,8 @@ import React from 'react';
 import { FaCoffee, FaBriefcase } from 'react-icons/fa';
 
 export const ATTENDANCE_TYPE_CONFIG = {
-    work: {
-        value: 'work',
+    attendance: {
+        value: 'attendance',
         label: 'Attendance',
         shortLabel: 'Attendance',
         description: 'Punch in and punch out records',
@@ -32,7 +32,13 @@ export const ATTENDANCE_TYPE_CONFIG = {
     }
 };
 
-export const getAttendanceTypeConfig = (type = 'work') => ATTENDANCE_TYPE_CONFIG[type] || ATTENDANCE_TYPE_CONFIG.work;
+const ATTENDANCE_TYPE_ALIASES = {
+    work: 'attendance'
+};
+
+export const normalizeAttendanceType = (type = 'attendance') => ATTENDANCE_TYPE_ALIASES[type] || type;
+
+export const getAttendanceTypeConfig = (type = 'attendance') => ATTENDANCE_TYPE_CONFIG[normalizeAttendanceType(type)] || ATTENDANCE_TYPE_CONFIG.attendance;
 
 const AttendanceTypeTabs = ({ value, onChange }) => (
     <div className="flex flex-wrap gap-2 rounded-[14px] border border-gray-200 bg-white shadow-sm mb-2">
