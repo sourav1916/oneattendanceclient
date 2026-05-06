@@ -52,6 +52,8 @@ const renderRecordLabel = (record) => {
   return [record.time, record.method].filter(Boolean).join(' • ') || <Placeholder />;
 };
 
+const renderCoordinate = (record, key, legacyKey) => record?.[key] || record?.[legacyKey] || null;
+
 const attendanceAPI = {
   fetchCompanyAttendances: async (companyId, page = 1, limit = 10, search = '', dateParams = {}, attendanceType = 'attendance') => {
     const queryParams = new URLSearchParams({
@@ -149,38 +151,62 @@ const normalizeAttendanceRow = (row) => {
   const normalizedType = normalizeAttendanceType(row?.record_type || row?.type || ((row?.break_start || row?.break_start_ || row?.break_end || row?.break_end_) ? 'break' : 'attendance'));
   const startRecord = row?.punch_in || row?.break_start || row?.break_start_ || null;
   const endRecord = row?.punch_out || row?.break_end || row?.break_end_ || null;
+  const employee = row?.employee || {};
 
   return {
-  ...row,
-  attendance_type: normalizedType,
-  punch_uid: row?.id,
-  attendance_date: row?.punch_date || row?.attendance_date || null,
-  type: normalizedType,
-  attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_start_?.method || row?.break_end?.method || row?.break_end_?.method || normalizedType || 'manual',
-  start_label: normalizedType === 'break' ? 'Break In' : 'Punch In',
-  end_label: normalizedType === 'break' ? 'Break Out' : 'Punch Out',
-  start_time: startRecord?.time || row?.start_time || null,
-  end_time: endRecord?.time || row?.end_time || null,
-  start_record: startRecord,
-  end_record: endRecord,
-  status: row?.status || 'pending',
-  notes: row?.notes || '',
-  reviewed_by: row?.reviewed_by_name || row?.reviewed_by || null,
-  reviewed_at: row?.reviewed_at || null,
-  employee: {
-    id: row?.employee_id ?? null,
-    code: row?.employee_code ?? '',
-    name: row?.name ?? '',
-    designation: row?.designation ?? '',
-    email: row?.email ?? '',
-    phone: row?.phone ?? '',
-  },
+    ...row,
+    attendance_type: normalizedType,
+    punch_uid: row?.id,
+    attendance_date: row?.punch_date || row?.attendance_date || null,
+    type: normalizedType,
+    attendance_method: row?.punch_in?.method || row?.punch_out?.method || row?.break_start?.method || row?.break_start_?.method || row?.break_end?.method || row?.break_end_?.method || normalizedType || 'manual',
+    start_label: normalizedType === 'break' ? 'Break In' : 'Punch In',
+    end_label: normalizedType === 'break' ? 'Break Out' : 'Punch Out',
+    start_time: startRecord?.time || row?.start_time || null,
+    end_time: endRecord?.time || row?.end_time || null,
+    start_record: startRecord,
+    end_record: endRecord,
+    status: row?.status || 'pending',
+    notes: row?.notes || '',
+    reviewed_by: row?.reviewed_by_name || row?.reviewed_by || null,
+    reviewed_at: row?.reviewed_at || null,
+    employee: {
+      id: row?.employee_id ?? employee?.id ?? null,
+      code: row?.employee_code ?? employee?.code ?? '',
+      name: row?.name ?? employee?.name ?? '',
+      designation: row?.designation ?? employee?.designation ?? '',
+      email: row?.email ?? employee?.email ?? '',
+      phone: row?.phone ?? employee?.phone ?? '',
+    },
   };
 };
 
 const normalizeAttendanceResponse = (response) => {
-  if (!Array.isArray(response?.data)) return [];
-  return response.data.map(normalizeAttendanceRow);
+  const rows = Array.isArray(response)
+    ? response
+    : Array.isArray(response?.data)
+      ? response.data
+      : Array.isArray(response?.records)
+        ? response.records
+        : [];
+
+  return rows.map(normalizeAttendanceRow);
+};
+
+const normalizeAttendanceMeta = (response, fallback = {}) => {
+  const meta = response?.meta || {};
+  const currentPage = meta.page ?? response?.current_page ?? response?.page ?? fallback.page ?? 1;
+  const perPage = meta.limit ?? response?.per_page ?? response?.limit ?? fallback.limit ?? 10;
+  const total = meta.total ?? response?.total ?? 0;
+  const totalPages = (meta.total_pages ?? response?.total_pages ?? response?.last_page ?? (perPage ? Math.ceil(total / perPage) : 1)) || 1;
+
+  return {
+    page: currentPage,
+    limit: perPage,
+    total,
+    total_pages: totalPages,
+    is_last_page: meta.is_last_page ?? response?.is_last_page ?? currentPage >= totalPages,
+  };
 };
 
 const attendanceMatchesDateFilter = (attendance, filter) => {
@@ -229,6 +255,10 @@ const StatusBadge = ({ status }) => {
 const PunchTypeBadge = ({ type }) => {
   const getTypeConfig = () => {
     switch (type?.toLowerCase()) {
+      case 'attendance':
+        return { icon: FaHourglassStart, text: 'Attendance', className: 'bg-blue-100 text-blue-800' };
+      case 'break':
+        return { icon: FaHourglassEnd, text: 'Break', className: 'bg-indigo-100 text-indigo-800' };
       case 'in':
         return { icon: FaHourglassStart, text: 'In', className: 'bg-blue-100 text-blue-800' };
       case 'out':
@@ -257,13 +287,18 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
   const startRecord = attendance.start_record || attendance.punch_in || attendance.break_start;
   const endRecord = attendance.end_record || attendance.punch_out || attendance.break_end;
   const attendanceTypeMeta = getAttendanceTypeConfig(attendance.type);
+  const punchInLat = renderCoordinate(attendance.punch_in, 'lat', 'punch_in_latitude');
+  const punchInLng = renderCoordinate(attendance.punch_in, 'lng', 'punch_in_longitude');
+  const punchOutLat = renderCoordinate(attendance.punch_out, 'lat', 'punch_out_latitude');
+  const punchOutLng = renderCoordinate(attendance.punch_out, 'lng', 'punch_out_longitude');
+  const reviewerLabel = attendance.reviewed_by_name || attendance.reviewed_by || 'System';
 
   return (
     <Modal
       isOpen={!!attendance}
       onClose={onClose}
       title="Attendance Details"
-      subtitle={`Detailed log for ${attendance.employee?.name}`}
+      subtitle={`Detailed log for ${attendance.employee?.name || 'Employee'}`}
       icon={<FaInfoCircle className="h-6 w-6" />}
       size="4xl"
       footer={
@@ -293,6 +328,14 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
             <div>
               <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Designation</label>
               <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.designation}</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Email</label>
+              <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.email || <Placeholder />}</p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Phone</label>
+              <p className="font-medium text-gray-800 text-sm truncate">{attendance.employee?.phone || <Placeholder />}</p>
             </div>
           </div>
         </div>
@@ -339,6 +382,32 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
                 {attendance.attendance_method || <Placeholder />}
               </p>
             </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Reviewed By</label>
+              <p className="font-medium text-gray-800 text-sm">
+                {reviewerLabel}
+              </p>
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Reviewed At</label>
+              <p className="font-medium text-gray-800 text-sm">
+                {attendance.reviewed_at || <Placeholder />}
+              </p>
+            </div>
+            <div className="col-span-2 sm:col-span-3">
+              <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Flags</label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border ${Number(attendance.is_overtime) === 1 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                  Overtime: {Number(attendance.is_overtime) === 1 ? 'Yes' : 'No'}
+                </span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border ${Number(attendance.is_half_day) === 1 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                  Half Day: {Number(attendance.is_half_day) === 1 ? 'Yes' : 'No'}
+                </span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold border ${Number(attendance.is_deductible) === 1 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                  Deductible: {Number(attendance.is_deductible) === 1 ? 'Yes' : 'No'}
+                </span>
+              </div>
+            </div>
             {attendance.notes && (
               <div className="col-span-2 sm:col-span-3">
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold flex items-center gap-1">
@@ -362,7 +431,7 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">By</label>
                 <p className="font-medium text-gray-800 text-sm">
-                  {attendance.reviewed_by || 'System'}
+                  {reviewerLabel}
                 </p>
               </div>
               <div>
@@ -376,40 +445,40 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
         )}
 
         {/* Location & Device */}
-        {(attendance.punch_in?.punch_in_latitude || attendance.punch_out?.punch_out_latitude || attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.latitude) && (
+        {(punchInLat || punchOutLat || attendance.punch_in?.ip || attendance.punch_out?.ip || attendance.location?.latitude) && (
           <div className="border-b border-gray-100 pb-4">
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <FaMapMarkerAlt className="text-purple-500" /> Location & Device
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {(attendance.punch_in?.punch_in_latitude || attendance.location?.latitude) && (
+              {(punchInLat || attendance.location?.latitude) && (
                 <>
                   <div>
                     <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Lat</label>
                     <p className="font-medium text-gray-800 text-[11px] truncate">
-                      {attendance.punch_in?.punch_in_latitude || attendance.location?.latitude}
+                      {punchInLat || attendance.location?.latitude}
                     </p>
                   </div>
                   <div>
                     <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">In Long</label>
                     <p className="font-medium text-gray-800 text-[11px] truncate">
-                      {attendance.punch_in?.punch_in_longitude || attendance.location?.longitude}
+                      {punchInLng || attendance.location?.longitude}
                     </p>
                   </div>
                 </>
               )}
-              {attendance.punch_out?.punch_out_latitude && (
+              {punchOutLat && (
                 <>
                   <div>
                     <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Lat</label>
                     <p className="font-medium text-gray-800 text-[11px] truncate">
-                      {attendance.punch_out.punch_out_latitude}
+                      {punchOutLat}
                     </p>
                   </div>
                   <div>
                     <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Out Long</label>
                     <p className="font-medium text-gray-800 text-[11px] truncate">
-                      {attendance.punch_out.punch_out_longitude}
+                      {punchOutLng}
                     </p>
                   </div>
                 </>
@@ -626,19 +695,13 @@ const AttendanceManagement = ({ companyId }) => {
       );
 
       if (response.success) {
-        const currentPage = response.current_page || response.page || pagination.page;
-        const perPage = response.per_page || response.limit || pagination.limit;
-        const total = response.total || 0;
-        const totalPages = response.total_pages || response.last_page || Math.ceil(total / perPage) || 1;
+        const meta = normalizeAttendanceMeta(response, {
+          page: pagination.page,
+          limit: pagination.limit
+        });
 
         setAttendances(normalizeAttendanceResponse(response));
-        updatePagination({
-          page: currentPage,
-          limit: perPage,
-          total,
-          total_pages: totalPages,
-          is_last_page: currentPage >= totalPages
-        });
+        updatePagination(meta);
         setError(null);
       } else {
         throw new Error(response.message || 'Failed to fetch attendances');

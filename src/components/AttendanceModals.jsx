@@ -306,6 +306,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
 export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, onSuccess }) => {
     const [loading, setLoading] = useState(false);
     const resolvedPunchType = normalizeAttendanceType(attendance?.punch_type || attendance?.type || attendance?.record_type || 'attendance');
+    const isAttendanceRecord = resolvedPunchType === 'attendance';
     const [formData, setFormData] = useState({
         attendance_date: new Date().toISOString().split('T')[0],
         punch_type: 'attendance',
@@ -328,11 +329,11 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                 punch_out: attendance.end_time || endRecord?.time || null,
                 notes: attendance.notes || '',
                 is_deductible: Number(attendance?.is_deductible || 0),
-                is_overtime: Number(attendance?.is_overtime || 0),
-                is_half_day: Number(attendance?.is_half_day || 0)
+                is_overtime: isAttendanceRecord ? Number(attendance?.is_overtime || 0) : 0,
+                is_half_day: isAttendanceRecord ? Number(attendance?.is_half_day || 0) : 0
             });
         }
-    }, [isOpen, attendance, resolvedPunchType]);
+    }, [isOpen, attendance, resolvedPunchType, isAttendanceRecord]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -480,7 +481,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
 
                                 <div className="space-y-2">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                        <FaCheck className="h-4 w-4 text-indigo-500" /> Is Deductible
+                                        <FaCheck className="h-4 w-4 text-indigo-500" /> Deductible
                                     </label>
                                     <SelectField
                                         options={BINARY_FLAG_OPTIONS}
@@ -490,7 +491,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                     />
                                 </div>
 
-                                {formData.punch_type === 'attendance' && (
+                                {isAttendanceRecord && (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                         <div className="space-y-2">
                                             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -514,6 +515,12 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                                 styles={customSelectStyles}
                                             />
                                         </div>
+                                    </div>
+                                )}
+
+                                {!isAttendanceRecord && (
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                                        Break records only use the deductible flag. Overtime and half day are not applicable.
                                     </div>
                                 )}
 
