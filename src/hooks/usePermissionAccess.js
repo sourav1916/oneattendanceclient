@@ -14,6 +14,7 @@ const PERMISSION_ACCESS_CONFIG = {
     attendance: {
       permissions: ["att_punch", "att_view_own"],
       disableForCompanyOwner: true,
+      requireAttendanceMethods: true,
     },
     attendanceHistory: {
       permissions: ["att_punch", "att_view_own"],
@@ -38,6 +39,8 @@ const PERMISSION_ACCESS_CONFIG = {
     holidays: {
       permissions: null,
       requireCompany: true,
+      disableForCompanyOwner: true,
+      requireAttendanceMethods: true,
     },
     companyInvites: {
       permissions: ["emp_invite", "emp_invite_cancel_admin"],
@@ -372,11 +375,15 @@ const getAccessMessage = (access) => {
     return "Permission config missing";
   }
 
+  if (access.reason === "no_attendance_methods") {
+    return "No attendance methods assigned to your profile. Contact admin.";
+  }
+
   return "You don't have permission for this action";
 };
 
 export const usePermissionAccess = () => {
-  const { permissions = [], userDetails, activeRole, company } = useAuth();
+  const { permissions = [], userDetails, activeRole, company, attendanceMethods = [] } = useAuth();
 
   const isSystemAdmin = userDetails?.meta?.is_system_admin === 1;
   const isCompanyOwnerForCurrentCompany =
@@ -416,6 +423,7 @@ export const usePermissionAccess = () => {
     allowCompanyOwner = false,
     disableForCompanyOwner = false,
     requireCompany = false,
+    requireAttendanceMethods = false,
   }) => {
     const normalizedPermissions = normalizePermissions(requiredPermissions);
 
@@ -433,6 +441,10 @@ export const usePermissionAccess = () => {
 
     if (requireCompany && !company?.id && !isCompanyOwnerForCurrentCompany) {
       return buildAccessResult(false, ACCESS_REASONS.NO_COMPANY, normalizedPermissions);
+    }
+
+    if (requireAttendanceMethods && (!attendanceMethods || attendanceMethods.length === 0)) {
+      return buildAccessResult(false, "no_attendance_methods", normalizedPermissions);
     }
 
     const hasRequiredPermission = matchPermissions(normalizedPermissions, match);

@@ -154,25 +154,6 @@ const PunchAttendance = () => {
 
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  // ─── Empty state ───────────────────────────────────────────────────────────
-  if (!attendanceMethods || attendanceMethods.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-8 rounded-xl shadow-xl border border-slate-100 text-center max-w-sm w-full"
-        >
-          <div className="w-16 h-16 bg-rose-50 rounded-xl flex items-center justify-center mx-auto mb-5">
-            <FaTimesCircle className="w-8 h-8 text-rose-500" />
-          </div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Access Restricted</h2>
-          <p className="text-slate-500 text-sm">No attendance methods are assigned to your profile. Contact your company administrator.</p>
-        </motion.div>
-      </div>
-    );
-  }
-
   const statusConfig = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.OFF_DUTY;
   const StatusIcon = statusConfig.icon;
   const currentMethod = attendanceMethods.find(m => m.method === activeTab);

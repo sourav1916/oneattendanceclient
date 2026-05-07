@@ -14,8 +14,10 @@ import {
 import apiCall from '../utils/api';
 import { ManagementHub } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
+import { useAuth } from '../context/AuthContext';
 
 const MyCalendar = () => {
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarData, setCalendarData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,6 @@ const MyCalendar = () => {
 
   const month = currentDate.getMonth() + 1;
   const year = currentDate.getFullYear();
-  const user = JSON.parse(localStorage.getItem('user')) || {};
   const lastFetchedKeyRef = useRef(null);
 
   const calendarSummary = useMemo(() => {
