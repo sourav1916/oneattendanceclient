@@ -3,11 +3,18 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FaCheck, FaClock, FaHourglassHalf, FaTimes } from "react-icons/fa";
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => i + 1);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const PERIODS = ["AM", "PM"];
 const DURATION_PRESETS = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
 
 const pad = (value) => String(value).padStart(2, "0");
+
+const format12h = (h, m) => {
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${pad(h12)}:${pad(m)} ${ampm}`;
+};
 
 const parseTimeValue = (value) => {
   if (!value || typeof value !== "string") return { hours: 9, minutes: 0 };
@@ -87,12 +94,15 @@ const SelectColumn = ({ label, value, options, onChange, className = "" }) => (
     <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{label}</span>
     <select
       value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
+      onChange={(e) => {
+        const val = e.target.value;
+        onChange(isNaN(val) || val === "" ? val : Number(val));
+      }}
       className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
     >
       {options.map((option) => (
         <option key={option} value={option}>
-          {String(option).padStart(2, "0")}
+          {typeof option === 'number' ? String(option).padStart(2, "0") : option}
         </option>
       ))}
     </select>
@@ -134,6 +144,23 @@ export const TimeDurationPicker = ({ value, onApply, onClose, mode = "time" }) =
   };
 
   const isTimeMode = mode === "time";
+  const displayHour = hours % 12 || 12;
+  const displayPeriod = hours >= 12 ? "PM" : "AM";
+
+  const handleHour12Change = (h12) => {
+    const newHours = displayPeriod === "PM" 
+      ? (h12 === 12 ? 12 : h12 + 12) 
+      : (h12 === 12 ? 0 : h12);
+    setHours(newHours);
+  };
+
+  const handlePeriodChange = (p) => {
+    const h12 = hours % 12 || 12;
+    const newHours = p === "PM" 
+      ? (h12 === 12 ? 12 : h12 + 12) 
+      : (h12 === 12 ? 0 : h12);
+    setHours(newHours);
+  };
 
   return (
     <div
@@ -152,15 +179,16 @@ export const TimeDurationPicker = ({ value, onApply, onClose, mode = "time" }) =
           </span>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-sm font-mono font-bold text-indigo-600">
-          {isTimeMode ? `${pad(hours)}:${pad(minutes)}` : formatDurationDisplay(durationMinutes)}
+          {isTimeMode ? format12h(hours, minutes) : formatDurationDisplay(durationMinutes)}
         </div>
       </div>
 
       <div className="space-y-4 p-4">
         {isTimeMode ? (
-          <div className="grid grid-cols-2 gap-3">
-            <SelectColumn label="Hour" value={hours} options={HOURS} onChange={setHours} />
-            <SelectColumn label="Minute" value={minutes} options={MINUTES} onChange={setMinutes} />
+          <div className="grid grid-cols-3 gap-2">
+            <SelectColumn label="Hour" value={displayHour} options={HOURS_12} onChange={handleHour12Change} />
+            <SelectColumn label="Min" value={minutes} options={MINUTES} onChange={setMinutes} />
+            <SelectColumn label="AM/PM" value={displayPeriod} options={PERIODS} onChange={handlePeriodChange} />
           </div>
         ) : (
           <div className="space-y-3">
@@ -285,7 +313,9 @@ export const TimeDurationPickerField = ({
 
   const displayValue = useMemo(() => {
     if (mode === "time") {
-      return typeof value === "string" ? value.substring(0, 5) : "";
+      if (!value || typeof value !== "string") return "";
+      const [h, m] = value.split(":").map(Number);
+      return format12h(h || 0, m || 0);
     }
     return formatDurationDisplay(value);
   }, [mode, value]);

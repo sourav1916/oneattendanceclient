@@ -1,6 +1,7 @@
 const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
   hour: '2-digit',
   minute: '2-digit',
+  hour12: true,
 });
 
 export const formatMinutes = (minutes) => {
@@ -108,8 +109,8 @@ export const calculateAttendanceTimeDetails = (employee = {}, startTime, endTime
     : Math.max(0, schedule.expectedWorkMinutes);
   const graceMinutes = Math.max(0, schedule.graceMinutes);
   const deltaMinutes = actualMinutes - expectedMinutes;
-  const overtimeMinutes = deltaMinutes > graceMinutes ? deltaMinutes - graceMinutes : 0;
-  const deductibleMinutes = deltaMinutes < -graceMinutes ? Math.abs(deltaMinutes) - graceMinutes : 0;
+  const overtimeMinutes = deltaMinutes > graceMinutes ? deltaMinutes : 0;
+  const deductibleMinutes = deltaMinutes < -graceMinutes ? Math.abs(deltaMinutes) : 0;
   const isOvertime = overtimeMinutes > 0;
   const isDeductible = deductibleMinutes > 0;
   const isHalfDay = type === 'attendance' && expectedMinutes > 0 && actualMinutes <= Math.floor(expectedMinutes / 2);

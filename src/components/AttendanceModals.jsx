@@ -23,18 +23,18 @@ const BINARY_FLAG_OPTIONS = [
     { value: 1, label: 'Yes' }
 ];
 
-const DerivedFlagSwitch = ({ label, checked, locked, hint }) => (
+const AttendanceFlagSwitch = ({ label, checked, onChange, disabled, hint }) => (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
         <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-800">{label}</p>
             {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
         </div>
-        <label className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-300'} ${locked ? 'opacity-80' : 'cursor-pointer'}`}>
+        <label className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-300'} ${disabled ? 'opacity-80' : 'cursor-pointer'}`}>
             <input
                 type="checkbox"
-                checked={checked}
-                disabled={locked}
-                readOnly
+                checked={!!checked}
+                onChange={(e) => onChange && onChange(e.target.checked)}
+                disabled={disabled}
                 className="sr-only"
             />
             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -72,23 +72,72 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
         start_time: null,
         end_time: null,
         notes: '',
-        is_deductible: 0,
-        is_overtime: 0,
-        is_half_day: 0
+        is_deductible: Number(localStorage.getItem('attendance_pref_is_deductible') || 0),
+        is_overtime: Number(localStorage.getItem('attendance_pref_is_overtime') || 0),
+        is_half_day: Number(localStorage.getItem('attendance_pref_is_half_day') || 0)
     });
     const [formData, setFormData] = useState({
         ...buildCreateFormState()
+    });
+    const [manuallySet, setManuallySet] = useState({
+        is_deductible: false,
+        is_overtime: false,
+        is_half_day: false
     });
 
     useEffect(() => {
         if (!isOpen) return;
         setSelectedEmployee(null);
         setFormData(buildCreateFormState());
+        setManuallySet({
+            is_deductible: false,
+            is_overtime: false,
+            is_half_day: false
+        });
     }, [isOpen]);
 
     const timeDetails = React.useMemo(() => (
         calculateAttendanceTimeDetails(selectedEmployee || {}, formData.start_time, formData.end_time, formData.type)
     ), [selectedEmployee, formData.start_time, formData.end_time, formData.type]);
+
+    useEffect(() => {
+        if (formData.type !== 'attendance') return;
+        setFormData(prev => ({
+            ...prev,
+            is_overtime: manuallySet.is_overtime ? prev.is_overtime : (timeDetails.isOvertime ? 1 : 0),
+            is_deductible: manuallySet.is_deductible ? prev.is_deductible : (timeDetails.isDeductible ? 1 : 0),
+            is_half_day: manuallySet.is_half_day ? prev.is_half_day : (timeDetails.isHalfDay ? 1 : 0)
+        }));
+    }, [timeDetails.isOvertime, timeDetails.isDeductible, timeDetails.isHalfDay, manuallySet, formData.type]);
+
+    const handleFlagChange = (field, value) => {
+        const val = value ? 1 : 0;
+        setFormData(prev => {
+            const next = { ...prev, [field]: val };
+            if (val === 1) {
+                if (field === 'is_overtime') {
+                    next.is_deductible = 0;
+                    next.is_half_day = 0;
+                } else if (field === 'is_deductible' || field === 'is_half_day') {
+                    next.is_overtime = 0;
+                }
+            }
+            return next;
+        });
+        setManuallySet(prev => {
+            const next = { ...prev, [field]: true };
+            if (val === 1) {
+                if (field === 'is_overtime') {
+                    next.is_deductible = true;
+                    next.is_half_day = true;
+                } else if (field === 'is_deductible' || field === 'is_half_day') {
+                    next.is_overtime = true;
+                }
+            }
+            return next;
+        });
+        localStorage.setItem(`attendance_pref_${field}`, val);
+    };
     const isSubmitDisabled = loading || !formData.start_time || !formData.end_time;
     const areFieldsLocked = !formData.employee_id;
 
@@ -110,9 +159,9 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                 start_time: formData.start_time,
                 end_time: formData.end_time,
                 notes: formData.notes,
-                is_deductible: computed.isDeductible ? 1 : 0,
-                is_overtime: backendType === 'attendance' && computed.isOvertime ? 1 : 0,
-                is_half_day: backendType === 'attendance' && computed.isHalfDay ? 1 : 0
+                is_deductible: formData.is_deductible,
+                is_overtime: backendType === 'attendance' ? formData.is_overtime : 0,
+                is_half_day: backendType === 'attendance' ? formData.is_half_day : 0
             };
 
             const response = await apiCall('/attendance/create', 'POST', payload, companyId);
@@ -205,6 +254,8 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                             onChange={(val) => setFormData(prev => ({ ...prev, punch_date: val }))}
                                             disabled={areFieldsLocked}
                                             mode="single"
+                                            showQuickSelect={false}
+                                            initialTab="single"
                                             buttonClassName="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all text-sm"
                                         />
                                     </div>
@@ -276,32 +327,29 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                     </div>
                                 )}
 
-                                {timeDetails.showFlags && (
-                                    <div className="space-y-3">
-                                        {timeDetails.isOvertime && (
-                                            <DerivedFlagSwitch
-                                                label="Overtime"
-                                                checked
-                                                locked
-                                                hint={`Auto-set from ${formatMinutes(timeDetails.overtimeMinutes)} extra time`}
-                                            />
-                                        )}
-                                        {timeDetails.isHalfDay && (
-                                            <DerivedFlagSwitch
-                                                label="Half Day"
-                                                checked
-                                                locked
-                                                hint="Auto-set from reduced work duration"
-                                            />
-                                        )}
-                                        {timeDetails.isDeductible && (
-                                            <DerivedFlagSwitch
-                                                label="Deductible"
-                                                checked
-                                                locked
-                                                hint={`Auto-set from ${formatMinutes(timeDetails.deductibleMinutes)} shortfall`}
-                                            />
-                                        )}
+                                {formData.type === 'attendance' && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <AttendanceFlagSwitch
+                                            label="Overtime"
+                                            checked={formData.is_overtime}
+                                            onChange={(val) => handleFlagChange('is_overtime', val)}
+                                            disabled={!formData.start_time || !formData.end_time}
+                                            hint={manuallySet.is_overtime ? "Manual" : (timeDetails.isOvertime ? `Auto: ${formatMinutes(timeDetails.overtimeMinutes)}` : "Auto")}
+                                        />
+                                        <AttendanceFlagSwitch
+                                            label="Half Day"
+                                            checked={formData.is_half_day}
+                                            onChange={(val) => handleFlagChange('is_half_day', val)}
+                                            disabled={!formData.start_time || !formData.end_time}
+                                            hint={manuallySet.is_half_day ? "Manual" : (timeDetails.isHalfDay ? "Auto: Detected" : "Auto")}
+                                        />
+                                        <AttendanceFlagSwitch
+                                            label="Deductible"
+                                            checked={formData.is_deductible}
+                                            onChange={(val) => handleFlagChange('is_deductible', val)}
+                                            disabled={!formData.start_time || !formData.end_time}
+                                            hint={manuallySet.is_deductible ? "Manual" : (timeDetails.isDeductible ? `Auto: ${formatMinutes(timeDetails.deductibleMinutes)}` : "Auto")}
+                                        />
                                     </div>
                                 )}
 
@@ -361,6 +409,40 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
         is_overtime: 0,
         is_half_day: 0
     });
+    const [manuallySet, setManuallySet] = useState({
+        is_deductible: false,
+        is_overtime: false,
+        is_half_day: false
+    });
+
+    const handleFlagChange = (field, value) => {
+        const val = value ? 1 : 0;
+        setFormData(prev => {
+            const next = { ...prev, [field]: val };
+            if (val === 1) {
+                if (field === 'is_overtime') {
+                    next.is_deductible = 0;
+                    next.is_half_day = 0;
+                } else if (field === 'is_deductible' || field === 'is_half_day') {
+                    next.is_overtime = 0;
+                }
+            }
+            return next;
+        });
+        setManuallySet(prev => {
+            const next = { ...prev, [field]: true };
+            if (val === 1) {
+                if (field === 'is_overtime') {
+                    next.is_deductible = true;
+                    next.is_half_day = true;
+                } else if (field === 'is_deductible' || field === 'is_half_day') {
+                    next.is_overtime = true;
+                }
+            }
+            return next;
+        });
+        localStorage.setItem(`attendance_pref_${field}`, val);
+    };
 
     const timeDetails = React.useMemo(() => (
         calculateAttendanceTimeDetails(attendance || {}, formData.punch_in, formData.punch_out, formData.punch_type)
@@ -381,8 +463,23 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                 is_overtime: isAttendanceRecord ? Number(attendance?.is_overtime || 0) : 0,
                 is_half_day: isAttendanceRecord ? Number(attendance?.is_half_day || 0) : 0
             });
+            setManuallySet({
+                is_deductible: false,
+                is_overtime: false,
+                is_half_day: false
+            });
         }
     }, [isOpen, attendance, resolvedPunchType, isAttendanceRecord]);
+
+    useEffect(() => {
+        if (!isOpen || formData.punch_type !== 'attendance') return;
+        setFormData(prev => ({
+            ...prev,
+            is_overtime: manuallySet.is_overtime ? prev.is_overtime : (timeDetails.isOvertime ? 1 : 0),
+            is_deductible: manuallySet.is_deductible ? prev.is_deductible : (timeDetails.isDeductible ? 1 : 0),
+            is_half_day: manuallySet.is_half_day ? prev.is_half_day : (timeDetails.isHalfDay ? 1 : 0)
+        }));
+    }, [timeDetails.isOvertime, timeDetails.isDeductible, timeDetails.isHalfDay, manuallySet, formData.punch_type, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -396,9 +493,9 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                 start_time: formData.punch_in,
                 end_time: formData.punch_out,
                 notes: formData.notes,
-                is_deductible: computed.isDeductible ? 1 : 0,
-                is_overtime: backendType === 'attendance' && computed.isOvertime ? 1 : 0,
-                is_half_day: backendType === 'attendance' && computed.isHalfDay ? 1 : 0
+                is_deductible: formData.is_deductible,
+                is_overtime: backendType === 'attendance' ? formData.is_overtime : 0,
+                is_half_day: backendType === 'attendance' ? formData.is_half_day : 0
             };
 
             const response = await apiCall('/attendance/edit-approve', 'PUT', payload, companyId);
@@ -485,6 +582,8 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             value={formData.attendance_date}
                                             onChange={(val) => setFormData(prev => ({ ...prev, attendance_date: val }))}
                                             mode="single"
+                                            showQuickSelect={false}
+                                            initialTab="single"
                                             buttonClassName="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all text-sm"
                                         />
                                     </div>
@@ -554,32 +653,29 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                     </div>
                                 )}
 
-                                {timeDetails.showFlags && (
-                                    <div className="space-y-3">
-                                        {timeDetails.isOvertime && (
-                                            <DerivedFlagSwitch
-                                                label="Overtime"
-                                                checked
-                                                locked
-                                                hint={`Auto-set from ${formatMinutes(timeDetails.overtimeMinutes)} extra time`}
-                                            />
-                                        )}
-                                        {timeDetails.isHalfDay && (
-                                            <DerivedFlagSwitch
-                                                label="Half Day"
-                                                checked
-                                                locked
-                                                hint="Auto-set from reduced work duration"
-                                            />
-                                        )}
-                                        {timeDetails.isDeductible && (
-                                            <DerivedFlagSwitch
-                                                label="Deductible"
-                                                checked
-                                                locked
-                                                hint={`Auto-set from ${formatMinutes(timeDetails.deductibleMinutes)} shortfall`}
-                                            />
-                                        )}
+                                {formData.punch_type === 'attendance' && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <AttendanceFlagSwitch
+                                            label="Overtime"
+                                            checked={formData.is_overtime}
+                                            onChange={(val) => handleFlagChange('is_overtime', val)}
+                                            disabled={!formData.punch_in || !formData.punch_out}
+                                            hint={manuallySet.is_overtime ? "Manual" : (timeDetails.isOvertime ? `Auto: ${formatMinutes(timeDetails.overtimeMinutes)}` : "Auto")}
+                                        />
+                                        <AttendanceFlagSwitch
+                                            label="Half Day"
+                                            checked={formData.is_half_day}
+                                            onChange={(val) => handleFlagChange('is_half_day', val)}
+                                            disabled={!formData.punch_in || !formData.punch_out}
+                                            hint={manuallySet.is_half_day ? "Manual" : (timeDetails.isHalfDay ? "Auto: Detected" : "Auto")}
+                                        />
+                                        <AttendanceFlagSwitch
+                                            label="Deductible"
+                                            checked={formData.is_deductible}
+                                            onChange={(val) => handleFlagChange('is_deductible', val)}
+                                            disabled={!formData.punch_in || !formData.punch_out}
+                                            hint={manuallySet.is_deductible ? "Manual" : (timeDetails.isDeductible ? `Auto: ${formatMinutes(timeDetails.deductibleMinutes)}` : "Auto")}
+                                        />
                                     </div>
                                 )}
 
