@@ -183,10 +183,11 @@ const Navbar = ({
     companies = [],   // array of all companies user has access to
     onCompanySwitch,  // callback(company) when user selects a different company
 }) => {
-    const { user, logout, activeRole } = useAuth();
+    const { user, logout, activeRole, isEmployee, isCompanyOwner, isSystemAdmin } = useAuth();
     const [openDropdown, setOpenDropdown] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
     const navigate = useNavigate();
+    const canSwitchCompany = isEmployee || isCompanyOwner || isSystemAdmin;
 
     const handleLogout = async () => {
         await logout();
@@ -236,22 +237,24 @@ const Navbar = ({
                         <div className="flex items-center space-x-2 sm:space-x-3">
 
                             {/* ── Desktop company switcher ── */}
-                            <button
-                                onClick={() => setShowCompanySwitcher(true)}
-                                className="hidden md:flex items-center gap-2.5 px-3 py-1.5
-                                    transition-all duration-200 group"
-                            >
-                                <CompanyLogo company={company} size={6} />
-                                <div className="text-left max-w-[110px]">
-                                    <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-none mb-0.5">
-                                        Company
-                                    </p>
-                                    <p className="text-xs font-semibold text-white truncate leading-tight">
-                                        {company?.name || 'Select Company'}
-                                    </p>
-                                </div>
-                                <FaExchangeAlt className="w-3 h-3 text-white/40 group-hover:text-white/80 transition-colors ml-0.5" />
-                            </button>
+                            {canSwitchCompany && (
+                                <button
+                                    onClick={() => setShowCompanySwitcher(true)}
+                                    className="hidden md:flex items-center gap-2.5 px-3 py-1.5
+                                        transition-all duration-200 group"
+                                >
+                                    <CompanyLogo company={company} size={6} />
+                                    <div className="text-left max-w-[110px]">
+                                        <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-none mb-0.5">
+                                            Company
+                                        </p>
+                                        <p className="text-xs font-semibold text-white truncate leading-tight">
+                                            {company?.name || 'Select Company'}
+                                        </p>
+                                    </div>
+                                    <FaExchangeAlt className="w-3 h-3 text-white/40 group-hover:text-white/80 transition-colors ml-0.5" />
+                                </button>
+                            )}
 
                             {/* User menu */}
                             <div className="relative inline-block">
@@ -296,16 +299,18 @@ const Navbar = ({
                                             </div>
 
                                             {/* Mobile: company switcher row inside dropdown */}
-                                            <button
-                                                onClick={() => { setOpenDropdown(false); setShowCompanySwitcher(true); }}
-                                                className="md:hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2 border-b border-gray-100"
-                                            >
-                                                <FaExchangeAlt className="w-4 h-4 text-indigo-500" />
-                                                <span>Switch Company</span>
-                                                {company?.name && (
-                                                    <span className="ml-auto text-xs text-gray-400 truncate max-w-[70px]">{company.name}</span>
-                                                )}
-                                            </button>
+                                            {canSwitchCompany && (
+                                                <button
+                                                    onClick={() => { setOpenDropdown(false); setShowCompanySwitcher(true); }}
+                                                    className="md:hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2 border-b border-gray-100"
+                                                >
+                                                    <FaExchangeAlt className="w-4 h-4 text-indigo-500" />
+                                                    <span>Switch Company</span>
+                                                    {company?.name && (
+                                                        <span className="ml-auto text-xs text-gray-400 truncate max-w-[70px]">{company.name}</span>
+                                                    )}
+                                                </button>
+                                            )}
 
                                             <button
                                                 onClick={() => { setOpenDropdown(false); navigate("/profile"); }}
@@ -343,7 +348,7 @@ const Navbar = ({
             </nav>
 
             {/* Company switcher modal — rendered outside nav to avoid stacking context issues */}
-            {showCompanySwitcher && (
+            {showCompanySwitcher && canSwitchCompany && (
                 <CompanySwitcherModal
                     companies={companies}
                     currentCompany={company}
