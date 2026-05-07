@@ -18,6 +18,8 @@ import ManagementGrid from "../components/ManagementGrid";
 import ManagementViewSwitcher from "../components/ManagementViewSwitcher";
 import { ManagementCard, ManagementTable } from "../components/common";
 import Modal from "../components/Modal";
+import AttendanceLogsModal from "../components/AttendanceLogsModal";
+import AttendanceTypeTabs, { getAttendanceTypeConfig } from "../components/AttendanceTypeTabs";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -338,7 +340,8 @@ function Pill({ value, className = "" }) {
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────────────────
-function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
+function DetailModal({ isOpen, onClose, item, tabKey, tabLabel, subType = 'attendance' }) {
+  const attendanceTypeConfig = getAttendanceTypeConfig(subType);
   if (!isOpen || !item) return null;
 
   const renderFields = () => {
@@ -384,12 +387,12 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
 
       return (
         <div className="space-y-6">
-          {/* Attendance Log */}
+          {/* Summary & Status */}
           <div className="border-b border-gray-100 pb-4">
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <FaClock className="text-blue-500" /> Attendance Log
+              <FaInfoCircle className="text-blue-500" /> Summary & Status
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label>
                 <p className="font-medium text-gray-800 text-sm">{fmtDate(item.attendance_date)}</p>
@@ -401,12 +404,25 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Punch In</label>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Verification</label>
+                <p className="font-medium text-gray-800 text-sm">{item.is_verified ? "Verified Record" : "Unverified"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Punch Information */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <FaClock className="text-indigo-500" /> {attendanceTypeConfig.label} Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeConfig.startLabel}</label>
                 <p className="font-medium text-gray-800 text-sm">{item.start_time || "—"}</p>
                 {item.punch_in_method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(item.punch_in_method)}</p>}
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Punch Out</label>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">{attendanceTypeConfig.endLabel}</label>
                 <p className="font-medium text-gray-800 text-sm">{item.end_time || "—"}</p>
                 {item.punch_out_method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(item.punch_out_method)}</p>}
               </div>
@@ -936,14 +952,15 @@ function useBasicConfig(onView, width) {
   return { columns, cardRenderer, rowKey: (row, index) => row.id ?? row.employee_id ?? row.code ?? row.employee_code ?? `basic-${index}` };
 }
 
-function useAttendanceConfig(onView, width) {
+function useAttendanceConfig(onView, onViewLogs, width, subType = 'attendance') {
+  const typeMeta = getAttendanceTypeConfig(subType);
   const columns = [
     {
       key: "attendance_date", label: "Date",
       render: (a) => <span className="text-sm font-medium text-gray-800">{fmtDate(a.attendance_date)}</span>,
     },
     {
-      key: "start_time", label: "Punch In",
+      key: "start_time", label: typeMeta.startLabel,
       render: (a) => (
         <div className="flex flex-col">
           <span className="text-sm text-gray-700 font-medium">{a.start_time || "—"}</span>
@@ -952,7 +969,7 @@ function useAttendanceConfig(onView, width) {
       ),
     },
     {
-      key: "end_time", label: "Punch Out",
+      key: "end_time", label: typeMeta.endLabel,
       render: (a) => (
         <div className="flex flex-col">
           <span className="text-sm text-gray-700 font-medium">{a.end_time || "—"}</span>
@@ -1005,7 +1022,10 @@ function useAttendanceConfig(onView, width) {
       activeId={activeId}
       onToggle={onToggle}
       menuId={`att-${a.id}`}
-      actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(a), className: "text-blue-600 hover:bg-blue-50" }]}
+      actions={[
+        { label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(a), className: "text-blue-600 hover:bg-blue-50" },
+        { label: "View History", icon: <FaHistory size={12} />, onClick: () => onViewLogs(a), className: "text-emerald-600 hover:bg-emerald-50" }
+      ]}
       hoverable
       title={fmtDate(a.attendance_date)}
       subtitle={`${a.start_time || "—"} → ${a.end_time || "—"}`}
@@ -1325,10 +1345,13 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   const [viewMode, setViewMode] = useState("table");
   const [activeMenu, setActiveMenu] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedLogItem, setSelectedLogItem] = useState(null);
+  const [subType, setSubType] = useState("attendance");
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const fetchRef = useRef(false);
   const mountedRef = useRef(false);
   const normalizedTabKey = tabKey === "leave" ? "leaves" : tabKey === "shift" ? "shifts" : tabKey;
+  const isAttendance = normalizedTabKey === "attendance";
 
   useEffect(() => {
     mountedRef.current = true;
@@ -1354,13 +1377,13 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       }
 
       const { res, json } = await runDedupedRequest(
-        `employee:${employeeId}:tab:${normalizedTabKey}:page:${page}:limit:${limit}`,
+        `employee:${employeeId}:tab:${normalizedTabKey}:sub:${isAttendance ? subType : 'none'}:page:${page}:limit:${limit}`,
         async () => {
           const companyStr = localStorage.getItem('company');
           const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
 
           const response = await apiCall(
-            `/employees/${employeeId}?include=${normalizedTabKey}&page=${page}&limit=${limit}`,
+            `/employees/${employeeId}?include=${normalizedTabKey}${isAttendance ? `&sub-tab=${subType}` : ''}&page=${page}&limit=${limit}`,
             'GET',
             null,
             companyId
@@ -1401,11 +1424,11 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       }
       fetchRef.current = false;
     }
-  }, [employeeId, normalizedTabKey, tabKey, updatePagination]);
+  }, [employeeId, isAttendance, subType, normalizedTabKey, tabKey, updatePagination]);
 
   useEffect(() => {
     fetchData(pagination.page, pagination.limit);
-  }, [normalizedTabKey, pagination.page, pagination.limit]);
+  }, [normalizedTabKey, subType, pagination.page, pagination.limit]);
 
   // ── responsive width tracking ──
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -1423,8 +1446,9 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
 
   // ── config per tab ──
   const onView = (item) => setSelectedItem(item);
+  const onViewLogs = (item) => setSelectedLogItem(item);
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
-  const attConfig = useAttendanceConfig(onView, effectiveWidth);
+  const attConfig = useAttendanceConfig(onView, onViewLogs, effectiveWidth, subType);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
   const payConfig = usePayrollConfig(onView, effectiveWidth);
   const leaveConfig = useLeaveConfig(onView, effectiveWidth);
@@ -1440,14 +1464,29 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
   };
   const { columns, cardRenderer, rowKey } = CONFIG_MAP[normalizedTabKey] || permConfig;
 
-  const getActions = (row) => [
-    { label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" },
-  ];
+  const getActions = (row) => {
+    const base = [
+      { label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" },
+    ];
+    if (normalizedTabKey === "attendance") {
+      base.push({ label: "View History", icon: <FaHistory size={13} />, onClick: () => setSelectedLogItem(row), className: "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" });
+    }
+    return base;
+  };
 
   return (
     <div className="space-y-4">
       {warn && (
         <p className="text-xs text-amber-500">⚠ Could not load data from API — list may be empty.</p>
+      )}
+
+      {normalizedTabKey === "attendance" && (
+        <div className="mb-2">
+          <AttendanceTypeTabs value={subType} onChange={(val) => {
+            setSubType(val);
+            goToPage(1);
+          }} />
+        </div>
       )}
 
       {/* View switcher + count */}
@@ -1538,6 +1577,18 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
             item={selectedItem}
             tabKey={tabKey}
             tabLabel={tabLabel}
+            subType={subType}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Logs modal */}
+      <AnimatePresence>
+        {selectedLogItem && (
+          <AttendanceLogsModal
+            id={selectedLogItem.id}
+            type={subType}
+            onClose={() => setSelectedLogItem(null)}
           />
         )}
       </AnimatePresence>
