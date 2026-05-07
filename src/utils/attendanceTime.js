@@ -35,7 +35,23 @@ export const formatClockTime = (value) => {
 const parseTimeToMinutes = (value) => {
   if (!value) return null;
 
-  const normalized = String(value).trim();
+  const normalized = String(value).trim().toUpperCase();
+  
+  // Handle AM/PM format: HH:mm AM/PM or HH:mmAM/PM
+  const ampmMatch = normalized.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/);
+  if (ampmMatch) {
+    let hours = Number(ampmMatch[1]);
+    const minutes = Number(ampmMatch[2]);
+    const seconds = Number(ampmMatch[3] || 0);
+    const period = ampmMatch[4];
+
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+
+    return hours * 60 + minutes + (seconds >= 30 ? 1 : 0);
+  }
+
+  // Handle 24h format: HH:mm:ss
   const match = normalized.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) return null;
 

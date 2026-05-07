@@ -18,6 +18,22 @@ const format12h = (h, m) => {
 
 const parseTimeValue = (value) => {
   if (!value || typeof value !== "string") return { hours: 9, minutes: 0 };
+  
+  const normalized = value.trim().toUpperCase();
+  // Handle "HH:mm AM/PM" or "HH:mmAM/PM"
+  const ampmMatch = normalized.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/);
+  
+  if (ampmMatch) {
+    let hours = Number(ampmMatch[1]);
+    const minutes = Number(ampmMatch[2]);
+    const period = ampmMatch[3];
+    
+    if (period === 'PM' && hours < 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    return { hours, minutes };
+  }
+
   const [hours = "09", minutes = "00"] = value.split(":");
   return {
     hours: Number.parseInt(hours, 10) || 0,
@@ -314,6 +330,10 @@ export const TimeDurationPickerField = ({
   const displayValue = useMemo(() => {
     if (mode === "time") {
       if (!value || typeof value !== "string") return "";
+      const normalized = value.trim().toUpperCase();
+      if (normalized.includes("AM") || normalized.includes("PM")) {
+        return value;
+      }
       const [h, m] = value.split(":").map(Number);
       return format12h(h || 0, m || 0);
     }
