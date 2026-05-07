@@ -700,24 +700,36 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                             </form>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-5 py-3 shrink-0">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50"
-                                disabled={loading}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleSubmit}
-                                disabled={isSubmitDisabled}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-sm font-semibold text-white shadow-lg shadow-emerald-200 hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50"
-                            >
-                                {loading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
-                                Save & Verify
-                            </button>
+                        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3 shrink-0">
+                            <div className="flex-1 min-w-0 pr-4">
+                                {(!formData.punch_in || !formData.punch_out) && (
+                                    <div className="flex items-center gap-2 text-rose-500">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                                        <p className="text-[11px] font-bold uppercase tracking-wider truncate">
+                                            Missing {!formData.punch_in && !formData.punch_out ? 'Punch Timings' : !formData.punch_in ? 'Punch In Time' : 'Punch Out Time'}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all disabled:opacity-50"
+                                    disabled={loading}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSubmit}
+                                    disabled={isSubmitDisabled}
+                                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-sm font-semibold text-white shadow-lg shadow-emerald-200 hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50"
+                                >
+                                    {loading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                    Save & Verify
+                                </button>
+                            </div>
                         </div>
                     </motion.div>
                 </motion.div>

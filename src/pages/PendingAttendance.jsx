@@ -713,15 +713,18 @@ const PendingAttendance = ({ companyId }) => {
     };
 
     const toggleSelectAll = () => {
-        if (selectedIds.length === visibleAttendances.filter(a => a.status === 'pending').length) {
+        const selectableAttendances = visibleAttendances.filter(a => a.status === 'pending' && a.start_time && a.end_time);
+        if (selectedIds.length === selectableAttendances.length) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(visibleAttendances.filter(a => a.status === 'pending').map(a => a.punch_uid || a.punch_id || a.id));
+            setSelectedIds(selectableAttendances.map(a => a.punch_uid || a.punch_id || a.id));
         }
     };
 
-    const toggleSelectRow = (e, id) => {
+    const toggleSelectRow = (e, attendance) => {
         e.stopPropagation();
+        if (!attendance.start_time || !attendance.end_time) return;
+        const id = attendance.punch_uid || attendance.punch_id || attendance.id;
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
@@ -877,7 +880,7 @@ const PendingAttendance = ({ companyId }) => {
                                                         {isSelectionMode && (
                                                             <input
                                                                 type="checkbox"
-                                                                checked={selectedIds.length > 0 && selectedIds.length === visibleAttendances.filter(a => a.status === 'pending').length}
+                                                                checked={selectedIds.length > 0 && selectedIds.length === visibleAttendances.filter(a => a.status === 'pending' && a.start_time && a.end_time).length}
                                                                 onChange={toggleSelectAll}
                                                                 className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
                                                             />
@@ -910,16 +913,21 @@ const PendingAttendance = ({ companyId }) => {
                                                             ? 'bg-gradient-to-r from-red-50/60 via-rose-50/40 to-pink-50/60 backdrop-blur-sm hover:from-red-100/60 hover:via-rose-100/40 hover:to-pink-100/60'
                                                             : 'hover:bg-gray-50'
                                                         }`}
+                                                    title={(!attendance.start_time || !attendance.end_time) ? "Incomplete record: Missing punch in or punch out time. Edit to fix before selecting." : ""}
                                                 >
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
                                                             {isSelectionMode && (
-                                                                <div onClick={(e) => e.stopPropagation()}>
+                                                                <div 
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    title={(!attendance.start_time || !attendance.end_time) ? "Cannot select incomplete records" : ""}
+                                                                >
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id)}
-                                                                        onChange={(e) => toggleSelectRow(e, attendance.punch_uid || attendance.punch_id || attendance.id)}
-                                                                        className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                                                        onChange={(e) => toggleSelectRow(e, attendance)}
+                                                                        disabled={!attendance.start_time || !attendance.end_time}
+                                                                        className={`rounded border-gray-300 text-amber-600 focus:ring-amber-500 ${(!attendance.start_time || !attendance.end_time) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                                                                     />
                                                                 </div>
                                                             )}
