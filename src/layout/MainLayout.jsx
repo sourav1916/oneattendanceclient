@@ -7,7 +7,14 @@ const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(true);
+  const [desktopSidebarCollapsed, setDesktopSidebarCollapsed] = useState(() => {
+    try {
+      const stored = localStorage.getItem('sidebarCollapsed');
+      return stored === null ? true : stored === 'true';
+    } catch {
+      return true;
+    }
+  });
   const sidebarRef = useRef(null);
 
   // ── Pull company data from your auth context ──
@@ -32,8 +39,10 @@ const MainLayout = ({ children }) => {
     if (isMobile) {
       setSidebarOpen(!sidebarOpen);
     } else {
-      setDesktopSidebarCollapsed(!desktopSidebarCollapsed);
+      const nextCollapsed = !desktopSidebarCollapsed;
+      setDesktopSidebarCollapsed(nextCollapsed);
       setSidebarHovered(false);
+      try { localStorage.setItem('sidebarCollapsed', String(nextCollapsed)); } catch {}
     }
   };
 
