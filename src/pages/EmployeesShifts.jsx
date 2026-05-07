@@ -39,6 +39,9 @@ const backdropVariants = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const fmt = (str) =>
+    str ? str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
+
 const formatHours = (h) => {
     if (!h && h !== 0) return '0h';
     return `${parseFloat(h).toFixed(1)}h`;

@@ -9,6 +9,8 @@ import {
   FaChartBar, FaHandPaper, FaCalendarPlus, FaCalendarCheck,
   FaTag, FaBriefcase, FaMapMarkerAlt, FaNetworkWired,
   FaArrowDown, FaArrowUp, FaUmbrellaBeach, FaChevronRight,
+  FaUser, FaUserCheck, FaHourglassEnd, FaExclamationCircle,
+  FaComment, FaCog, FaMapPin, FaServer, FaInfoCircle
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import Pagination, { usePagination } from "../components/PaginationComponent";
@@ -367,114 +369,186 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
       );
     }
     if (tabKey === "attendance") {
+      const shift = item.shift || {};
+      const flags = shift.flags || {};
+      const isOvertime = flags.overtime?.enabled || item.is_overtime || false;
+      const isHalfDay = flags.half_day?.enabled || item.is_half_day || false;
+      const isDeductible = flags.deductible?.enabled || item.is_deductible || false;
+
+      const formatMins = (m) => {
+        if (m === null || m === undefined) return "0m";
+        const hours = Math.floor(m / 60);
+        const mins = m % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      };
+
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-2">
-            <Field label="Date" value={fmtDate(item.attendance_date)} highlight />
-            <div className="flex flex-wrap gap-2 py-1">
-              {item.is_verified ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                  <FaCheckCircle size={10} /> Verified
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
-                  Pending Verification
-                </span>
-              )}
-              {item.is_overtime && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-100">
-                  Overtime
-                </span>
-              )}
-              {item.is_half_day && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
-                  Half Day
-                </span>
-              )}
-              {item.is_deductible && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
-                  Deductible
-                </span>
-              )}
+        <div className="space-y-6">
+          {/* Attendance Log */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <FaClock className="text-blue-500" /> Attendance Log
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label>
+                <p className="font-medium text-gray-800 text-sm">{fmtDate(item.attendance_date)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Status</label>
+                <div className="mt-0.5">
+                  <Pill value={item.status || (item.is_verified ? "Verified" : "Pending")} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Punch In</label>
+                <p className="font-medium text-gray-800 text-sm">{item.start_time || "—"}</p>
+                {item.punch_in_method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(item.punch_in_method)}</p>}
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Punch Out</label>
+                <p className="font-medium text-gray-800 text-sm">{item.end_time || "—"}</p>
+                {item.punch_out_method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(item.punch_out_method)}</p>}
+              </div>
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-3 mt-3">
-            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Punch In</h4>
-            <Field label="Time" value={item.start_time || "—"} />
-            <Field label="Method" value={<Pill value={item.punch_in_method} />} />
-            {(item.punch_in_latitude || item.punch_in_longitude) && (
-              <Field label="Location" value={`${item.punch_in_latitude}, ${item.punch_in_longitude}`} mono />
-            )}
+          {/* Shift & Productivity */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaUserCheck className="text-emerald-500" /> Shift & Productivity
+            </h3>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Worked Time</label>
+                <p className="mt-0.5 text-sm font-bold text-emerald-600">{formatMins(shift.worked_minutes || item.worked_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Time</label>
+                <p className="mt-0.5 text-sm font-semibold text-slate-800">{formatMins(shift.break_minutes || item.break_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift Start</label>
+                <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_start_time ? new Date(shift.shift_start_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift End</label>
+                <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_end_time ? new Date(shift.shift_end_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-3">
-            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Punch Out</h4>
-            <Field label="Time" value={item.end_time || "—"} />
-            <Field label="Method" value={<Pill value={item.punch_out_method} />} />
-            {(item.punch_out_latitude || item.punch_out_longitude) && (
-              <Field label="Location" value={`${item.punch_out_latitude}, ${item.punch_out_longitude}`} mono />
+          {/* Productivity Flags */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaBriefcase className="text-indigo-500" /> Productivity Flags
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${isOvertime ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOvertime ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  <FaClock size={14} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
+                  <p className={`text-xs font-bold ${isOvertime ? 'text-emerald-700' : 'text-slate-500'}`}>
+                    {isOvertime ? `${flags.overtime?.minutes || item.overtime_minutes || 0} mins` : "Disabled"}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${isHalfDay ? 'border-orange-200 bg-orange-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isHalfDay ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  <FaHourglassEnd size={14} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
+                  <p className={`text-xs font-bold ${isHalfDay ? 'text-orange-700' : 'text-slate-500'}`}>
+                    {isHalfDay ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${isDeductible ? 'border-rose-200 bg-rose-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDeductible ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  <FaExclamationCircle size={14} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
+                  <p className={`text-xs font-bold ${isDeductible ? 'text-rose-700' : 'text-slate-500'}`}>
+                    {isDeductible ? `${flags.deductible?.minutes || item.deductible_minutes || 0} mins` : "None"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {isDeductible && flags.deductible?.breakdown && (
+              <div className="mt-4 p-4 rounded-xl bg-rose-50/50 border border-rose-100">
+                <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-3">Deductible Breakdown</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-slate-400 block">Late</label>
+                    <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.late_minutes}m</p>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-slate-400 block">Early Leave</label>
+                    <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.early_leave_minutes}m</p>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-bold uppercase text-slate-400 block">Extra Break</label>
+                    <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.extra_break_minutes}m</p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
           {item.remark && (
-            <div className="border-t border-gray-100 pt-3">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Remark</h4>
-              <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">
+            <div className="border-b border-gray-100 pb-4">
+              <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <FaComment className="text-amber-500" /> Remarks
+              </h3>
+              <p className="font-medium text-gray-700 text-xs italic p-3 bg-gray-50 rounded-lg border border-gray-100">
                 "{item.remark}"
               </p>
             </div>
           )}
 
-          {item.breaks && item.breaks.length > 0 && (
-            <div className="border-t border-gray-100 pt-3">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Breaks ({item.breaks.length})</h4>
-              <div className="space-y-3">
-                {item.breaks.map((b, idx) => (
-                  <div key={b.id || idx} className="bg-gray-50 rounded-lg p-2.5 text-xs border border-gray-100">
-                    <div className="flex justify-between mb-2 items-center">
-                      <span className="font-bold text-gray-700">Break {idx + 1}</span>
-                      <div className="flex gap-1">
-                        {b.is_deductible && (
-                          <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[9px] font-bold">Deductible</span>
-                        )}
-                        <Pill value={b.status || (b.end_time ? "Completed" : "Active")} />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mb-2">
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Start</p>
-                        <p className="text-gray-700 font-medium">{b.start_time}</p>
-                        <p className="text-[9px] text-gray-400">{fmt(b.break_start_method)}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">End</p>
-                        <p className="text-gray-700 font-medium">{b.end_time || "—"}</p>
-                        <p className="text-[9px] text-gray-400">{fmt(b.break_end_method)}</p>
-                      </div>
-                    </div>
-                    {b.remark && (
-                      <p className="text-[11px] text-gray-500 italic border-t border-gray-200/50 pt-1.5 mt-1.5">
-                        "{b.remark}"
-                      </p>
-                    )}
+          {/* Audit & Device */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
+            <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
+              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-amber-500 shadow-sm border border-slate-100 flex-shrink-0">
+                <FaMapMarkerAlt size={14} />
+              </div>
+              <div className="flex-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Device & Location Punches</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Punch In</p>
+                    <p className="text-xs font-semibold text-slate-700">IP: {item.punch_in_ip || "—"}</p>
+                    <p className="text-xs font-semibold text-slate-700">GPS: {item.punch_in_latitude && item.punch_in_longitude ? `${item.punch_in_latitude}, ${item.punch_in_longitude}` : "—"}</p>
                   </div>
-                ))}
+                  <div>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Punch Out</p>
+                    <p className="text-xs font-semibold text-slate-700">IP: {item.punch_out_ip || "—"}</p>
+                    <p className="text-xs font-semibold text-slate-700">GPS: {item.punch_out_latitude && item.punch_out_longitude ? `${item.punch_out_latitude}, ${item.punch_out_longitude}` : "—"}</p>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
 
-          {item.review_notes && (
-            <div className="border-t border-gray-100 pt-3">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Review Notes</h4>
-              <p className="text-sm text-gray-600 bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
-                "{item.review_notes}"
-              </p>
-              <div className="mt-1 text-[10px] text-gray-400">
-                Reviewed at: {fmtDateTime(item.reviewed_at)}
+            <div className="flex items-start gap-4">
+              <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-amber-500 shadow-sm border border-slate-100 flex-shrink-0">
+                <FaCog size={14} />
+              </div>
+              <div className="flex-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">System Audit</span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">ID: {item.id || item.punch_id}</span>
+                  {item.reviewed_at && <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">Reviewed At: {fmtDateTime(item.reviewed_at)}</span>}
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       );
     }
@@ -541,42 +615,99 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
       );
     }
     if (tabKey === "shifts") {
+      const formatMins = (m) => {
+        if (m === null || m === undefined) return "0m";
+        const hours = Math.floor(m / 60);
+        const mins = m % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      };
+
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-2">
-            <Field label="Date" value={fmtDate(item.shift_date)} highlight />
-            <div className="flex flex-wrap gap-2 py-1">
-              {item.is_half_day && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
-                  Half Day
-                </span>
-              )}
-              {item.is_deductible && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
-                  Deductible
-                </span>
-              )}
+        <div className="space-y-6">
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <FaExchangeAlt className="text-violet-500" /> Shift Details
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label>
+                <p className="font-bold text-gray-800 text-sm">{fmtDate(item.shift_date)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Start Time</label>
+                <p className="font-medium text-gray-800 text-sm">{item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">End Time</label>
+                <p className="font-medium text-gray-800 text-sm">{item.end_time ? new Date(item.end_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
+              </div>
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-3">
-            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Shift Timing</h4>
-            <Field label="Start Time" value={item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleString('en-IN') : "—"} />
-            <Field label="End Time" value={item.end_time ? new Date(item.end_time.replace(' ', 'T')).toLocaleString('en-IN') : "—"} />
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaUserCheck className="text-emerald-500" /> Productivity Breakdown
+            </h3>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Worked Time</label>
+                <p className="mt-0.5 text-sm font-bold text-emerald-600">{formatMins(item.worked_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Time</label>
+                <p className="mt-0.5 text-sm font-semibold text-slate-800">{formatMins(item.break_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Late</label>
+                <p className="mt-0.5 text-sm font-semibold text-rose-600">{formatMins(item.late_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Early Leave</label>
+                <p className="mt-0.5 text-sm font-semibold text-amber-600">{formatMins(item.early_leave_minutes)}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Duration</h4>
-              <Field label="Worked" value={`${item.worked_minutes} mins`} highlight />
-              <Field label="Breaks" value={`${item.break_minutes} mins`} />
-              {item.extra_break_minutes !== null && <Field label="Extra Breaks" value={`${item.extra_break_minutes} mins`} />}
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Adjustments</h4>
-              <Field label="Late" value={`${item.late_minutes} mins`} />
-              <Field label="Early Leave" value={`${item.early_leave_minutes} mins`} />
-              <Field label="Overtime" value={`${item.overtime_minutes} mins`} highlight />
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaBriefcase className="text-indigo-500" /> Productivity Flags
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.overtime_minutes > 0 ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.overtime_minutes > 0 ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  <FaClock size={14} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
+                  <p className={`text-xs font-bold ${item.overtime_minutes > 0 ? 'text-emerald-700' : 'text-slate-500'}`}>
+                    {item.overtime_minutes > 0 ? `${item.overtime_minutes} mins` : "None"}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.is_half_day ? 'border-orange-200 bg-orange-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.is_half_day ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  <FaHourglassEnd size={14} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
+                  <p className={`text-xs font-bold ${item.is_half_day ? 'text-orange-700' : 'text-slate-500'}`}>
+                    {item.is_half_day ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.is_deductible ? 'border-rose-200 bg-rose-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.is_deductible ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                  <FaExclamationCircle size={14} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
+                  <p className={`text-xs font-bold ${item.is_deductible ? 'text-rose-700' : 'text-slate-500'}`}>
+                    {item.is_deductible ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -594,7 +725,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
       onClose={onClose}
       title={`${tabLabel} Details`}
       subtitle="Record information and detailed logs"
-      size="md"
+      size={(tabKey === "attendance" || tabKey === "shifts") ? "4xl" : "md"}
       footer={
         <button
           onClick={onClose}
