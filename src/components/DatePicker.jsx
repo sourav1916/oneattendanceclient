@@ -496,6 +496,7 @@ export function DatePickerField({
   minDate = null,
   maxDays = null,
   showQuickSelect = true,
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
@@ -530,10 +531,13 @@ export function DatePickerField({
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={`${buttonClassName} flex items-center justify-between gap-2`.trim()}
+        onClick={() => {
+          if (!disabled) setOpen((prev) => !prev);
+        }}
+        className={`${buttonClassName} flex items-center justify-between gap-2 ${disabled ? 'cursor-not-allowed opacity-60' : ''}`.trim()}
         aria-haspopup="dialog"
         aria-expanded={open}
+        disabled={disabled}
       >
         <span className={`min-w-0 flex-1 truncate text-left text-xs sm:text-sm ${value ? "" : "text-gray-400"}`}>
           {value ? fmt(selectedDate) : placeholder}

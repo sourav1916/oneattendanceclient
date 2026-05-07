@@ -234,6 +234,7 @@ export const TimeDurationPickerField = ({
   required = false,
   className = "",
   mode = "time",
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
@@ -302,12 +303,14 @@ export const TimeDurationPickerField = ({
       <div className="relative">
         <div
           ref={triggerRef}
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            if (!disabled) setIsOpen(true);
+          }}
           className={`flex h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 transition-all duration-200 ${
             isOpen
               ? "border-indigo-500 ring-2 ring-indigo-50"
               : "border-slate-200 bg-white shadow-sm hover:border-indigo-300"
-          }`}
+          } ${disabled ? "cursor-not-allowed bg-slate-50 opacity-60 hover:border-slate-200" : ""}`}
         >
           <div className={`rounded-md transition-all ${value ? "text-indigo-600" : "text-slate-400"}`}>
             {mode === "time" ? <FaClock size={12} /> : <FaHourglassHalf size={12} />}
@@ -322,6 +325,7 @@ export const TimeDurationPickerField = ({
                 e.stopPropagation();
                 onChange(null);
               }}
+              disabled={disabled}
               className="group/clear rounded-md p-1 text-slate-300 transition-all hover:bg-red-50 hover:text-red-500"
               title="Clear time"
             >

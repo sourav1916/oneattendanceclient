@@ -9,6 +9,7 @@ import apiCall from '../utils/api';
 import ModalScrollLock from './ModalScrollLock';
 import { normalizeAttendanceType } from './AttendanceTypeTabs';
 import EmployeeSelect from './common/EmployeeSelect';
+import { calculateAttendanceTimeDetails, formatMinutes } from '../utils/attendanceTime';
 
 
 
@@ -21,6 +22,25 @@ const BINARY_FLAG_OPTIONS = [
     { value: 0, label: 'No' },
     { value: 1, label: 'Yes' }
 ];
+
+const DerivedFlagSwitch = ({ label, checked, locked, hint }) => (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800">{label}</p>
+            {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+        </div>
+        <label className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${checked ? 'bg-indigo-600' : 'bg-slate-300'} ${locked ? 'opacity-80' : 'cursor-pointer'}`}>
+            <input
+                type="checkbox"
+                checked={checked}
+                disabled={locked}
+                readOnly
+                className="sr-only"
+            />
+            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${checked ? 'translate-x-6' : 'translate-x-1'}`} />
+        </label>
+    </div>
+);
 
 const toBackendAttendanceType = (type) => normalizeAttendanceType(type) === 'attendance' ? 'attendance' : 'break';
 
@@ -44,7 +64,8 @@ const customSelectStyles = {
 
 export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, forcedType }) => {
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const buildCreateFormState = () => ({
         employee_id: '',
         punch_date: new Date().toISOString().split('T')[0],
         type: normalizeAttendanceType(forcedType || 'attendance'),
@@ -55,21 +76,21 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
         is_overtime: 0,
         is_half_day: 0
     });
+    const [formData, setFormData] = useState({
+        ...buildCreateFormState()
+    });
 
     useEffect(() => {
         if (!isOpen) return;
-        setFormData({
-            employee_id: '',
-            punch_date: new Date().toISOString().split('T')[0],
-            type: normalizeAttendanceType(forcedType || 'attendance'),
-            start_time: null,
-            end_time: null,
-            notes: '',
-            is_deductible: 0,
-            is_overtime: 0,
-            is_half_day: 0
-        });
+        setSelectedEmployee(null);
+        setFormData(buildCreateFormState());
     }, [isOpen]);
+
+    const timeDetails = React.useMemo(() => (
+        calculateAttendanceTimeDetails(selectedEmployee || {}, formData.start_time, formData.end_time, formData.type)
+    ), [selectedEmployee, formData.start_time, formData.end_time, formData.type]);
+    const isSubmitDisabled = loading || !formData.start_time || !formData.end_time;
+    const areFieldsLocked = !formData.employee_id;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -81,6 +102,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
         setLoading(true);
         try {
             const backendType = toBackendAttendanceType(formData.type);
+            const computed = calculateAttendanceTimeDetails(selectedEmployee || {}, formData.start_time, formData.end_time, formData.type);
             const payload = {
                 type: backendType,
                 employee_id: formData.employee_id,
@@ -88,9 +110,9 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                 start_time: formData.start_time,
                 end_time: formData.end_time,
                 notes: formData.notes,
-                is_deductible: Number(formData.is_deductible || 0),
-                is_overtime: backendType === 'attendance' ? Number(formData.is_overtime || 0) : 0,
-                is_half_day: backendType === 'attendance' ? Number(formData.is_half_day || 0) : 0
+                is_deductible: computed.isDeductible ? 1 : 0,
+                is_overtime: backendType === 'attendance' && computed.isOvertime ? 1 : 0,
+                is_half_day: backendType === 'attendance' && computed.isHalfDay ? 1 : 0
             };
 
             const response = await apiCall('/attendance/create', 'POST', payload, companyId);
@@ -162,7 +184,13 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                     </label>
                                     <EmployeeSelect
                                         value={formData.employee_id}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, employee_id: val }))}
+                                        onChange={(val, employee) => {
+                                            setFormData({
+                                                ...buildCreateFormState(),
+                                                employee_id: val
+                                            });
+                                            setSelectedEmployee(employee || null);
+                                        }}
                                         placeholder="Type to search employee..."
                                     />
                                 </div>
@@ -175,6 +203,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                         <DatePickerField
                                             value={formData.punch_date}
                                             onChange={(val) => setFormData(prev => ({ ...prev, punch_date: val }))}
+                                            disabled={areFieldsLocked}
                                             mode="single"
                                             buttonClassName="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all text-sm"
                                         />
@@ -187,7 +216,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                             options={TYPE_OPTIONS}
                                             value={TYPE_OPTIONS.find(o => o.value === formData.type)}
                                             onChange={(val) => setFormData(prev => ({ ...prev, type: val.value }))}
-                                            isDisabled={!!forcedType}
+                                            isDisabled={!!forcedType || areFieldsLocked}
                                             styles={customSelectStyles}
                                         />
                                     </div>
@@ -202,6 +231,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                         <TimeDurationPickerField
                                             value={formData.start_time}
                                             onChange={(val) => setFormData(prev => ({ ...prev, start_time: val }))}
+                                            disabled={areFieldsLocked}
                                             mode="time"
                                             className="w-full h-10"
                                         />
@@ -214,51 +244,64 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                         <TimeDurationPickerField
                                             value={formData.end_time}
                                             onChange={(val) => setFormData(prev => ({ ...prev, end_time: val }))}
+                                            disabled={areFieldsLocked}
                                             mode="time"
                                             className="w-full h-10"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                        <FaCheck className="h-4 w-4 text-indigo-500" /> Is Deductible
-                                    </label>
-                                    <SelectField
-                                        options={[
-                                            { value: 1, label: 'Yes, Deduct from work hours' },
-                                            { value: 0, label: 'No, Do not deduct' }
-                                        ]}
-                                        value={{ value: Number(formData.is_deductible || 0), label: Number(formData.is_deductible || 0) === 1 ? 'Yes, Deduct from work hours' : 'No, Do not deduct' }}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, is_deductible: Number(val.value) }))}
-                                        styles={customSelectStyles}
-                                    />
-                                </div>
+                                {timeDetails.summary && (
+                                    <div className={`rounded-xl border px-4 py-3 text-sm ${
+                                        timeDetails.summaryTone === 'success'
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                            : timeDetails.summaryTone === 'warning'
+                                                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                                                : 'border-slate-200 bg-slate-50 text-slate-700'
+                                    }`}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="font-semibold">{timeDetails.summary}</p>
+                                            <p className="text-xs font-medium uppercase tracking-wider">
+                                                {timeDetails.actualMinutes !== null ? formatMinutes(timeDetails.actualMinutes) : '---'}
+                                            </p>
+                                        </div>
+                                        <div className="mt-2 grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
+                                            {timeDetails.details.map((item) => (
+                                                <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2">
+                                                    <span className="text-slate-500">{item.label}</span>
+                                                    <span className="font-semibold text-slate-800">{item.value}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
-                                {formData.type === 'attendance' && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                        <div className="space-y-2">
-                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Overtime
-                                            </label>
-                                            <SelectField
-                                                options={BINARY_FLAG_OPTIONS}
-                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_overtime || 0))}
-                                                onChange={(val) => setFormData(prev => ({ ...prev, is_overtime: Number(val.value) }))}
-                                                styles={customSelectStyles}
+                                {timeDetails.showFlags && (
+                                    <div className="space-y-3">
+                                        {timeDetails.isOvertime && (
+                                            <DerivedFlagSwitch
+                                                label="Overtime"
+                                                checked
+                                                locked
+                                                hint={`Auto-set from ${formatMinutes(timeDetails.overtimeMinutes)} extra time`}
                                             />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Half Day
-                                            </label>
-                                            <SelectField
-                                                options={BINARY_FLAG_OPTIONS}
-                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_half_day || 0))}
-                                                onChange={(val) => setFormData(prev => ({ ...prev, is_half_day: Number(val.value) }))}
-                                                styles={customSelectStyles}
+                                        )}
+                                        {timeDetails.isHalfDay && (
+                                            <DerivedFlagSwitch
+                                                label="Half Day"
+                                                checked
+                                                locked
+                                                hint="Auto-set from reduced work duration"
                                             />
-                                        </div>
+                                        )}
+                                        {timeDetails.isDeductible && (
+                                            <DerivedFlagSwitch
+                                                label="Deductible"
+                                                checked
+                                                locked
+                                                hint={`Auto-set from ${formatMinutes(timeDetails.deductibleMinutes)} shortfall`}
+                                            />
+                                        )}
                                     </div>
                                 )}
 
@@ -270,6 +313,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                                         value={formData.notes}
                                         onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                                         placeholder="Add manual entry notes..."
+                                        disabled={areFieldsLocked}
                                         className="w-full border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm resize-none"
                                         rows={3}
                                     />
@@ -289,7 +333,7 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                disabled={loading}
+                                disabled={isSubmitDisabled}
                                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:from-indigo-700 hover:to-blue-700 transition-all disabled:opacity-50"
                             >
                                 {loading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
@@ -318,6 +362,11 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
         is_half_day: 0
     });
 
+    const timeDetails = React.useMemo(() => (
+        calculateAttendanceTimeDetails(attendance || {}, formData.punch_in, formData.punch_out, formData.punch_type)
+    ), [attendance, formData.punch_in, formData.punch_out, formData.punch_type]);
+    const isSubmitDisabled = loading || !formData.punch_in || !formData.punch_out;
+
     useEffect(() => {
         if (isOpen && attendance) {
             const startRecord = attendance.start_record || attendance.punch_in || attendance.break_start || attendance.break_start_ || null;
@@ -340,15 +389,16 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
         setLoading(true);
         try {
             const backendType = toBackendAttendanceType(formData.punch_type);
+            const computed = calculateAttendanceTimeDetails(attendance || {}, formData.punch_in, formData.punch_out, formData.punch_type);
             const payload = {
                 type: backendType,
                 punch_id: attendance?.punch_uid || attendance?.punch_id || attendance?.id,
                 start_time: formData.punch_in,
                 end_time: formData.punch_out,
                 notes: formData.notes,
-                is_deductible: Number(formData.is_deductible || 0),
-                is_overtime: backendType === 'attendance' ? Number(formData.is_overtime || 0) : 0,
-                is_half_day: backendType === 'attendance' ? Number(formData.is_half_day || 0) : 0
+                is_deductible: computed.isDeductible ? 1 : 0,
+                is_overtime: backendType === 'attendance' && computed.isOvertime ? 1 : 0,
+                is_half_day: backendType === 'attendance' && computed.isHalfDay ? 1 : 0
             };
 
             const response = await apiCall('/attendance/edit-approve', 'PUT', payload, companyId);
@@ -479,48 +529,63 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                        <FaCheck className="h-4 w-4 text-indigo-500" /> Deductible
-                                    </label>
-                                    <SelectField
-                                        options={BINARY_FLAG_OPTIONS}
-                                        value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_deductible || 0))}
-                                        onChange={(val) => setFormData(prev => ({ ...prev, is_deductible: Number(val.value) }))}
-                                        styles={customSelectStyles}
-                                    />
-                                </div>
-
-                                {isAttendanceRecord && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                        <div className="space-y-2">
-                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Overtime
-                                            </label>
-                                            <SelectField
-                                                options={BINARY_FLAG_OPTIONS}
-                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_overtime || 0))}
-                                                onChange={(val) => setFormData(prev => ({ ...prev, is_overtime: Number(val.value) }))}
-                                                styles={customSelectStyles}
-                                            />
+                                {timeDetails.summary && (
+                                    <div className={`rounded-xl border px-4 py-3 text-sm ${
+                                        timeDetails.summaryTone === 'success'
+                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                                            : timeDetails.summaryTone === 'warning'
+                                                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                                                : 'border-slate-200 bg-slate-50 text-slate-700'
+                                    }`}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="font-semibold">{timeDetails.summary}</p>
+                                            <p className="text-xs font-medium uppercase tracking-wider">
+                                                {timeDetails.actualMinutes !== null ? formatMinutes(timeDetails.actualMinutes) : '---'}
+                                            </p>
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                                <FaCheck className="h-4 w-4 text-indigo-500" /> Is Half Day
-                                            </label>
-                                            <SelectField
-                                                options={BINARY_FLAG_OPTIONS}
-                                                value={BINARY_FLAG_OPTIONS.find(o => o.value === Number(formData.is_half_day || 0))}
-                                                onChange={(val) => setFormData(prev => ({ ...prev, is_half_day: Number(val.value) }))}
-                                                styles={customSelectStyles}
-                                            />
+                                        <div className="mt-2 grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
+                                            {timeDetails.details.map((item) => (
+                                                <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2">
+                                                    <span className="text-slate-500">{item.label}</span>
+                                                    <span className="font-semibold text-slate-800">{item.value}</span>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
                                 )}
 
-                                {!isAttendanceRecord && (
+                                {timeDetails.showFlags && (
+                                    <div className="space-y-3">
+                                        {timeDetails.isOvertime && (
+                                            <DerivedFlagSwitch
+                                                label="Overtime"
+                                                checked
+                                                locked
+                                                hint={`Auto-set from ${formatMinutes(timeDetails.overtimeMinutes)} extra time`}
+                                            />
+                                        )}
+                                        {timeDetails.isHalfDay && (
+                                            <DerivedFlagSwitch
+                                                label="Half Day"
+                                                checked
+                                                locked
+                                                hint="Auto-set from reduced work duration"
+                                            />
+                                        )}
+                                        {timeDetails.isDeductible && (
+                                            <DerivedFlagSwitch
+                                                label="Deductible"
+                                                checked
+                                                locked
+                                                hint={`Auto-set from ${formatMinutes(timeDetails.deductibleMinutes)} shortfall`}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                                {!timeDetails.showFlags && !isAttendanceRecord && (
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                                        Break records only use the deductible flag. Overtime and half day are not applicable.
+                                        Break records stay within the configured break duration.
                                     </div>
                                 )}
 
@@ -551,7 +616,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                             <button
                                 type="button"
                                 onClick={handleSubmit}
-                                disabled={loading}
+                                disabled={isSubmitDisabled}
                                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50"
                             >
                                 {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}

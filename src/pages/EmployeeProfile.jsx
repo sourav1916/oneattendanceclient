@@ -15,6 +15,7 @@ import Pagination, { usePagination } from "../components/PaginationComponent";
 import ManagementGrid from "../components/ManagementGrid";
 import ManagementViewSwitcher from "../components/ManagementViewSwitcher";
 import { ManagementCard, ManagementTable } from "../components/common";
+import Modal from "../components/Modal";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -341,7 +342,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
   const renderFields = () => {
     if (tabKey === "basic") {
       return (
-        <>
+        <div className="space-y-2">
           <Field label="ID" value={item.id ?? item.employee_id} />
           <Field label="Name" value={item.name || item.user_name || item.employee_name} highlight />
           <Field label="Code" mono value={item.code || item.employee_code} />
@@ -353,24 +354,49 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
           <Field label="Status" value={<Pill value={item.status} />} />
           <Field label="Joining Date" value={fmtDate(item.joining_date)} />
           <Field label="Created At" value={fmtDateTime(item.created_at)} />
-        </>
+        </div>
       );
     }
     if (tabKey === "permissions") {
       return (
-        <>
+        <div className="space-y-2">
           <Field label="ID" value={item.id} />
           <Field label="Permission Name" value={item.name} highlight />
           <Field label="Code" mono value={item.code} />
-        </>
+        </div>
       );
     }
     if (tabKey === "attendance") {
       return (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-2">
-            <Field label="Date" value={fmtDate(item.punch_date)} highlight />
-            <Field label="Status" value={<Pill value={item.status} />} />
+            <Field label="Date" value={fmtDate(item.attendance_date)} highlight />
+            <div className="flex flex-wrap gap-2 py-1">
+              {item.is_verified ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                  <FaCheckCircle size={10} /> Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                  Pending Verification
+                </span>
+              )}
+              {item.is_overtime && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-100">
+                  Overtime
+                </span>
+              )}
+              {item.is_half_day && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                  Half Day
+                </span>
+              )}
+              {item.is_deductible && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                  Deductible
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="border-t border-gray-100 pt-3 mt-3">
@@ -391,24 +417,47 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
             )}
           </div>
 
+          {item.remark && (
+            <div className="border-t border-gray-100 pt-3">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Remark</h4>
+              <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">
+                "{item.remark}"
+              </p>
+            </div>
+          )}
+
           {item.breaks && item.breaks.length > 0 && (
             <div className="border-t border-gray-100 pt-3">
               <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Breaks ({item.breaks.length})</h4>
               <div className="space-y-3">
                 {item.breaks.map((b, idx) => (
-                  <div key={b.id || idx} className="bg-gray-50 rounded-lg p-2 text-xs">
-                    <div className="flex justify-between mb-1">
-                      <span className="font-semibold text-gray-700">Break {idx + 1}</span>
-                      <Pill value={b.status} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-gray-400">Start:</span> {b.start_time}
-                      </div>
-                      <div>
-                        <span className="text-gray-400">End:</span> {b.end_time || "—"}
+                  <div key={b.id || idx} className="bg-gray-50 rounded-lg p-2.5 text-xs border border-gray-100">
+                    <div className="flex justify-between mb-2 items-center">
+                      <span className="font-bold text-gray-700">Break {idx + 1}</span>
+                      <div className="flex gap-1">
+                        {b.is_deductible && (
+                          <span className="px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 text-[9px] font-bold">Deductible</span>
+                        )}
+                        <Pill value={b.status || (b.end_time ? "Completed" : "Active")} />
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-3 mb-2">
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">Start</p>
+                        <p className="text-gray-700 font-medium">{b.start_time}</p>
+                        <p className="text-[9px] text-gray-400">{fmt(b.break_start_method)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-0.5">End</p>
+                        <p className="text-gray-700 font-medium">{b.end_time || "—"}</p>
+                        <p className="text-[9px] text-gray-400">{fmt(b.break_end_method)}</p>
+                      </div>
+                    </div>
+                    {b.remark && (
+                      <p className="text-[11px] text-gray-500 italic border-t border-gray-200/50 pt-1.5 mt-1.5">
+                        "{b.remark}"
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -467,19 +516,19 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
     }
     if (tabKey === "payroll") {
       return (
-        <>
+        <div className="space-y-2">
           <Field label="ID" value={item.id} />
           <Field label="Payroll Period" value={fmtDate(item.payroll_period || item.period || item.month)} highlight />
           <Field label="Total Earnings" value={item.total_earnings || item.gross_amount || item.gross} />
           <Field label="Total Deductions" value={item.total_deductions || item.deductions} />
           <Field label="Net Salary" value={item.net_salary || item.net_pay || item.net} />
           <Field label="Status" value={<Pill value={item.status} />} />
-        </>
+        </div>
       );
     }
     if (tabKey === "leaves") {
       return (
-        <>
+        <div className="space-y-2">
           <Field label="ID" value={item.id} />
           <Field label="Leave Type" value={item.leave_type || item.type} highlight />
           <Field label="Start Date" value={fmtDate(item.start_date || item.from_date || item.from)} />
@@ -488,19 +537,49 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
           <Field label="Status" value={<Pill value={item.status} />} />
           <Field label="Reason" value={item.reason} />
           <Field label="Attachments" value={Array.isArray(item.attachments) ? `${item.attachments.length} file(s)` : "—"} />
-        </>
+        </div>
       );
     }
     if (tabKey === "shifts") {
       return (
-        <>
-          <Field label="ID" value={item.id} />
-          <Field label="Shift Name" value={item.name || item.shift_name} highlight />
-          <Field label="Start Time" value={item.start_time} />
-          <Field label="End Time" value={item.end_time} />
-          <Field label="Location" value={item.location} />
-          <Field label="Status" value={<Pill value={item.status} />} />
-        </>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2">
+            <Field label="Date" value={fmtDate(item.shift_date)} highlight />
+            <div className="flex flex-wrap gap-2 py-1">
+              {item.is_half_day && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100">
+                  Half Day
+                </span>
+              )}
+              {item.is_deductible && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                  Deductible
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-3">
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Shift Timing</h4>
+            <Field label="Start Time" value={item.start_time ? new Date(item.start_time.replace(' ', 'T')).toLocaleString('en-IN') : "—"} />
+            <Field label="End Time" value={item.end_time ? new Date(item.end_time.replace(' ', 'T')).toLocaleString('en-IN') : "—"} />
+          </div>
+
+          <div className="border-t border-gray-100 pt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Duration</h4>
+              <Field label="Worked" value={`${item.worked_minutes} mins`} highlight />
+              <Field label="Breaks" value={`${item.break_minutes} mins`} />
+              {item.extra_break_minutes !== null && <Field label="Extra Breaks" value={`${item.extra_break_minutes} mins`} />}
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Adjustments</h4>
+              <Field label="Late" value={`${item.late_minutes} mins`} />
+              <Field label="Early Leave" value={`${item.early_leave_minutes} mins`} />
+              <Field label="Overtime" value={`${item.overtime_minutes} mins`} highlight />
+            </div>
+          </div>
+        </div>
       );
     }
     // Generic fallback
@@ -510,36 +589,23 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`${tabLabel} Details`}
+      subtitle="Record information and detailed logs"
+      size="md"
+      footer={
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
+        >
+          Close
+        </button>
+      }
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
-          <div>
-            <h3 className="text-base font-bold">{tabLabel} Details</h3>
-            <p className="text-xs text-white/70 mt-0.5">Record information</p>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
-            <FaTimes size={13} />
-          </button>
-        </div>
-        <div className="p-4 space-y-2 max-h-[65vh] overflow-y-auto">
-          {renderFields()}
-        </div>
-        <div className="px-5 py-3 bg-gray-50 flex justify-end border-t border-gray-100">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-100 transition">
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </div>
+      {renderFields()}
+    </Modal>
   );
 }
 
@@ -741,15 +807,15 @@ function useBasicConfig(onView, width) {
 function useAttendanceConfig(onView, width) {
   const columns = [
     {
-      key: "punch_date", label: "Date",
-      render: (a) => <span className="text-sm font-medium text-gray-800">{fmtDate(a.punch_date)}</span>,
+      key: "attendance_date", label: "Date",
+      render: (a) => <span className="text-sm font-medium text-gray-800">{fmtDate(a.attendance_date)}</span>,
     },
     {
       key: "start_time", label: "Punch In",
       render: (a) => (
         <div className="flex flex-col">
           <span className="text-sm text-gray-700 font-medium">{a.start_time || "—"}</span>
-          <span className="text-[10px] text-gray-400 uppercase font-bold">{a.punch_in_method}</span>
+          <span className="text-[10px] text-gray-400 uppercase font-bold">{fmt(a.punch_in_method)}</span>
         </div>
       ),
     },
@@ -758,13 +824,35 @@ function useAttendanceConfig(onView, width) {
       render: (a) => (
         <div className="flex flex-col">
           <span className="text-sm text-gray-700 font-medium">{a.end_time || "—"}</span>
-          {a.punch_out_method && <span className="text-[10px] text-gray-400 uppercase font-bold">{a.punch_out_method}</span>}
+          {a.punch_out_method && <span className="text-[10px] text-gray-400 uppercase font-bold">{fmt(a.punch_out_method)}</span>}
         </div>
       ),
     },
     width > 600 && {
-      key: "status", label: "Status",
-      render: (a) => <Pill value={a.status} />,
+      key: "flags", label: "Status",
+      render: (a) => (
+        <div className="flex flex-wrap gap-1">
+          {a.is_verified ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+              <FaCheckCircle size={8} /> Verified
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+              Pending
+            </span>
+          )}
+          {a.is_overtime && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+              Overtime
+            </span>
+          )}
+          {a.is_half_day && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">
+              Half Day
+            </span>
+          )}
+        </div>
+      ),
     },
     width > 900 && {
       key: "breaks", label: "Breaks",
@@ -787,10 +875,16 @@ function useAttendanceConfig(onView, width) {
       menuId={`att-${a.id}`}
       actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(a), className: "text-blue-600 hover:bg-blue-50" }]}
       hoverable
-      title={fmtDate(a.punch_date)}
+      title={fmtDate(a.attendance_date)}
       subtitle={`${a.start_time || "—"} → ${a.end_time || "—"}`}
       eyebrow="Attendance Record"
-      badge={<Pill value={a.status} />}
+      badge={
+        <div className="flex gap-1">
+          {a.is_verified && <FaCheckCircle className="text-emerald-500" size={12} />}
+          {a.is_overtime && <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 rounded-full font-bold">OT</span>}
+          {a.is_half_day && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full font-bold">HD</span>}
+        </div>
+      }
     >
       <div className="flex gap-2 flex-wrap mt-1">
         <Pill value={a.punch_in_method} />
@@ -805,6 +899,7 @@ function useAttendanceConfig(onView, width) {
 
   return { columns, cardRenderer, rowKey: "id" };
 }
+
 
 function useSalaryConfig(onView, width) {
   const columns = [
@@ -1001,28 +1096,49 @@ function useLeaveConfig(onView, width) {
 function useShiftConfig(onView, width) {
   const columns = [
     {
-      key: "name", label: "Shift",
-      render: (s) => <span className="font-medium text-gray-800 text-sm">{s.name || s.shift_name || "—"}</span>,
+      key: "shift_date", label: "Date",
+      render: (s) => <span className="font-medium text-gray-800 text-sm">{fmtDate(s.shift_date)}</span>,
     },
     {
-      key: "start_time", label: "Start",
-      render: (s) => <span className="text-sm text-gray-600">{s.start_time || "—"}</span>,
+      key: "start_time", label: "Timing",
+      render: (s) => (
+        <div className="flex flex-col">
+          <span className="text-sm text-gray-700 font-medium">
+            {s.start_time ? new Date(s.start_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"} 
+            {" → "}
+            {s.end_time ? new Date(s.end_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"}
+          </span>
+        </div>
+      ),
     },
     {
-      key: "end_time", label: "End",
-      render: (s) => <span className="text-sm text-gray-600">{s.end_time || "—"}</span>,
+      key: "worked_minutes", label: "Worked",
+      render: (s) => (
+        <span className="text-sm text-emerald-600 font-semibold">
+          {s.worked_minutes} <span className="text-[10px] text-gray-400 uppercase">mins</span>
+        </span>
+      ),
     },
-    {
-      key: "location", label: "Location",
-      render: (s) => s.location
-        ? <span className="inline-flex items-center gap-1 text-xs text-gray-500"><FaMapMarkerAlt size={10} />{s.location}</span>
-        : <span className="text-gray-300">—</span>,
+    width > 700 && {
+      key: "late_early", label: "Late/Early",
+      render: (s) => (
+        <div className="flex gap-2">
+          {s.late_minutes > 0 && <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">Late: {s.late_minutes}m</span>}
+          {s.early_leave_minutes > 0 && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-bold">Early: {s.early_leave_minutes}m</span>}
+        </div>
+      ),
     },
     {
       key: "status", label: "Status",
-      render: (s) => <Pill value={s.status} />,
+      render: (s) => (
+        <div className="flex gap-1">
+          {s.is_half_day && <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold">Half Day</span>}
+          {s.is_deductible && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">Deductible</span>}
+          {!s.is_half_day && !s.is_deductible && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Full Day</span>}
+        </div>
+      ),
     },
-  ];
+  ].filter(Boolean);
 
   const cardRenderer = (s, index, activeId, onToggle) => (
     <ManagementCard
@@ -1035,22 +1151,38 @@ function useShiftConfig(onView, width) {
       menuId={`sh-${s.id || index}`}
       actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" }]}
       hoverable
-      title={s.name || s.shift_name || "Shift"}
-      subtitle={`${s.start_time || "—"} → ${s.end_time || "—"}`}
+      title={fmtDate(s.shift_date)}
+      subtitle={`${s.worked_minutes} mins worked`}
       eyebrow="Shift Record"
-      badge={<Pill value={s.status} />}
-    >
-      {s.location && (
-        <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
-          <FaMapMarkerAlt size={10} className="text-violet-400" />
-          {s.location}
+      badge={
+        <div className="flex gap-1">
+          {s.is_half_day && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full font-bold">HD</span>}
+          {s.is_deductible && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 rounded-full font-bold">D</span>}
         </div>
-      )}
+      }
+    >
+      <div className="mt-2 space-y-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-400">Start:</span>
+          <span className="text-gray-700 font-medium">{s.start_time ? new Date(s.start_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"}</span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-400">End:</span>
+          <span className="text-gray-700 font-medium">{s.end_time ? new Date(s.end_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"}</span>
+        </div>
+        {(s.late_minutes > 0 || s.early_leave_minutes > 0) && (
+          <div className="flex gap-2 mt-2">
+            {s.late_minutes > 0 && <span className="text-[9px] text-rose-500 font-bold">Late: {s.late_minutes}m</span>}
+            {s.early_leave_minutes > 0 && <span className="text-[9px] text-amber-500 font-bold">Early: {s.early_leave_minutes}m</span>}
+          </div>
+        )}
+      </div>
     </ManagementCard>
   );
 
   return { columns, cardRenderer, rowKey: "id" };
 }
+
 
 // ─── GENERIC TAB CONTENT ──────────────────────────────────────────────────────
 function TabContent({ tabKey, tabLabel, employeeId }) {

@@ -116,7 +116,7 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
 
     const handleSelect = (emp) => {
         setSelectedEmployee(emp);
-        onChange(emp.id);
+        onChange(emp.id, emp);
         setIsOpen(false);
         setSearchQuery('');
     };
@@ -124,7 +124,7 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
     const handleClear = (e) => {
         e.stopPropagation();
         setSelectedEmployee(null);
-        onChange('');
+        onChange('', null);
         setSearchQuery('');
     };
 
