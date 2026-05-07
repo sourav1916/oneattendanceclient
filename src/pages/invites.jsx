@@ -654,6 +654,7 @@ export default function MyInvites() {
       title="Incoming Invitations"
       description="Review and manage company invitations from a single workspace."
       accent="violet"
+      onRefresh={() => fetchInvites(1, true)}
       summary={
         <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
           Total: <span className="font-semibold text-slate-900">{pagination.total}</span> invitations

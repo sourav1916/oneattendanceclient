@@ -22,6 +22,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import TimeDurationPickerField from '../components/TimeDurationPicker';
 import Modal from '../components/Modal';
+import { RefreshButton } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1227,6 +1228,9 @@ const EmployeeManagement = () => {
                             <span className="font-medium text-gray-700">{pagination.total}</span>
                             <span className="text-gray-500">Employees</span>
                         </div>
+                        <RefreshButton loading={loading} onClick={() => fetchEmployees(pagination.page, true)}>
+                            Refresh
+                        </RefreshButton>
                     </div>
                 </div>
             </motion.div>

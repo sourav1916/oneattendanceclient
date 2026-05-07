@@ -756,6 +756,7 @@ const SalaryComponents = () => {
             title="Salary Components"
             description="Manage earnings, deductions, and employer contribution components for payroll structure."
             accent="blue"
+            onRefresh={() => fetchComponents(1, debouncedSearch, true)}
             actions={
                 <div className="flex items-center gap-3">
                     <ManagementButton

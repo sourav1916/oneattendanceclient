@@ -18,6 +18,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
 import Modal from "../components/Modal";
+import { RefreshButton } from "../components/common";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -350,6 +351,10 @@ export default function CompanyInvites() {
                 <span className="font-medium text-gray-700">{invites.length}</span>
                 <span className="text-gray-500">invites</span>
               </div>
+
+              <RefreshButton loading={loading} onClick={() => fetchInvites(pagination.page, debouncedSearchTerm, true)}>
+                Refresh
+              </RefreshButton>
 
               <motion.button
                 whileHover={{ scale: 1.02, y: -2 }}

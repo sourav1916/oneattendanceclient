@@ -753,6 +753,7 @@ const HolidayManagementCalendar = () => {
       title="Holiday Management Calendar"
       description="Manage corporate and national holidays for your organization."
       accent="indigo"
+      onRefresh={handleRefresh}
     >
       <div className="space-y-4 p-2 lg:p-0">
         {/* Stats Row */}

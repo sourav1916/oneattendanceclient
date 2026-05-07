@@ -682,6 +682,7 @@ const EmployeeBankAccountManagement = () => {
       title="My Bank Accounts"
       description="Manage your personal bank accounts and payment details linked to your profile."
       accent="violet"
+      onRefresh={fetchData}
       actions={
         <ManagementButton
           tone="violet"

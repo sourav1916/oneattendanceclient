@@ -14,7 +14,7 @@ import ActionMenu from '../components/ActionMenu';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import { ManagementButton } from '../components/common';
+import { ManagementButton, RefreshButton } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -571,6 +571,12 @@ const PermissionManagement = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
+            <RefreshButton loading={loading} onClick={() => {
+              fetchAllPermissions();
+              fetchPackages(1, true);
+            }}>
+              Refresh
+            </RefreshButton>
             <ManagementButton
               tone="green"
               variant="solid"

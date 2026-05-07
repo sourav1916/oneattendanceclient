@@ -1616,6 +1616,7 @@ const SalaryManagement = () => {
             title="Salary Management"
             description="Assign and manage employee salaries with responsive table and card layouts."
             accent="green"
+            onRefresh={() => fetchSalaries(1, "", true)}
             actions={
                 <div className="flex items-center gap-3">
 

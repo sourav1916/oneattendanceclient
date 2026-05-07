@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import RefreshButton from './RefreshButton';
 
 function joinClasses(...classes) {
   return classes.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
@@ -36,6 +37,10 @@ export default function ManagementHub({
   tabs,
   activeTab,
   onTabChange,
+  onRefresh,
+  refreshing = false,
+  refreshLabel = 'Refresh',
+  refreshTitle,
   actions,
   children,
   className = '',
@@ -67,9 +72,19 @@ export default function ManagementHub({
               {description && <p className="mt-2 text-sm text-slate-500 md:text-base">{description}</p>}
             </div>
 
-            {(summary || actions) && (
+            {(summary || actions || onRefresh) && (
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {summary}
+                {onRefresh && (
+                  <RefreshButton
+                    type="button"
+                    loading={refreshing}
+                    onClick={onRefresh}
+                    title={refreshTitle || refreshLabel}
+                  >
+                    {refreshLabel}
+                  </RefreshButton>
+                )}
                 {actions}
               </div>
             )}

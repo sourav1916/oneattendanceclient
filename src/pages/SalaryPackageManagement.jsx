@@ -772,6 +772,10 @@ const SalaryPackages = () => {
             title="Salary Packages"
             description="Create and manage structured salary packages by combining multiple earning and deduction components."
             accent="blue"
+            onRefresh={() => {
+                fetchPackages(1, debouncedSearch, true);
+                fetchComponents();
+            }}
             actions={
                 <div className="flex items-center gap-3">
                     <ManagementButton

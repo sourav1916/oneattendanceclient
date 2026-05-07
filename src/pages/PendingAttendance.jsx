@@ -774,6 +774,7 @@ const PendingAttendance = ({ companyId }) => {
             title="Pending Requests"
             description="Review and approve employee attendance requests."
             accent="amber"
+            onRefresh={() => fetchPendingAttendances(true)}
             actions={
                 <div className="flex items-center justify-end gap-2">
                     <button

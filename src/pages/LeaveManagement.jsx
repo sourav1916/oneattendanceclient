@@ -405,6 +405,7 @@ const LeaveManagement = () => {
             title="Leave Management"
             description="Manage and review employee leave requests, approvals and history."
             accent="blue"
+            onRefresh={() => fetchLeaves(1, debouncedSearch, typeFilter, true)}
         >
             <div className="space-y-6 p-2 lg:p-0">
                 {/* Stats */}

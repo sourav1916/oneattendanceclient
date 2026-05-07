@@ -799,6 +799,10 @@ const LeaveConfigManagement = () => {
       title="Leave Configuration"
       description="Configure and manage available leave types, accrual rules, and policies for your organization."
       accent="violet"
+      onRefresh={() => {
+        fetchConstants();
+        loadRecords(1, debouncedSearch, true);
+      }}
       actions={
         <div className="flex items-center justify-end gap-2">
           <ManagementButton

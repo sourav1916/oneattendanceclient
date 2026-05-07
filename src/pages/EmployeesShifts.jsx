@@ -17,6 +17,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ModalScrollLock from "../components/ModalScrollLock";
 import ActionMenu from '../components/ActionMenu';
+import { RefreshButton } from '../components/common';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -493,6 +494,9 @@ const EmployeesShifts = () => {
                                 <p className="text-lg font-black text-slate-800 leading-tight">{pagination.total}</p>
                             </div>
                         </div>
+                        <RefreshButton loading={loading} onClick={() => fetchEmployees(pagination.page, debouncedSearch, true)}>
+                            Refresh
+                        </RefreshButton>
                     </div>
 
                     {/* ─── Consolidated Filter & View Bar ─── */}

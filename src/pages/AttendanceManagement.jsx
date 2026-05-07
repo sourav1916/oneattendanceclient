@@ -834,6 +834,7 @@ const AttendanceManagement = ({ companyId }) => {
       title="Attendance Records"
       description="Monitor and manage all employee attendance records and punch logs."
       accent="blue"
+      onRefresh={() => fetchAttendances(true)}
       actions={
         <div className="flex items-center justify-end gap-2">
           <button

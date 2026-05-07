@@ -872,6 +872,7 @@ const LeaveBalanceManagement = () => {
       title="Leave Balance Management"
       description="Monitor and adjust employee leave quotas and remaining balances."
       accent="violet"
+      onRefresh={fetchData}
       actions={
         <div className="flex items-center gap-3">
           <ManagementButton

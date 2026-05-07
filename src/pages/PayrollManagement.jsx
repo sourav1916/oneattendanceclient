@@ -19,7 +19,7 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
-import { EmployeeSelect } from '../components/common';
+import { EmployeeSelect, RefreshButton } from '../components/common';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -483,6 +483,12 @@ const PayrollManagement = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3 justify-end">
+                    <RefreshButton loading={loading || employeesLoading} onClick={() => {
+                        fetchPayrollList(1, true);
+                        fetchEmployees();
+                    }}>
+                        Refresh
+                    </RefreshButton>
                     <button
                         onClick={openGenerateModal}
                         disabled={generatePayrollAccess.disabled}

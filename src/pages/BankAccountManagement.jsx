@@ -736,6 +736,7 @@ const BankAccountManagement = () => {
       title="Bank Account Management"
       description="Manage company bank accounts, cash wallets, and payment methods."
       accent="violet"
+      onRefresh={() => fetchData({ force: true })}
       actions={
         <ManagementButton
           tone="violet"

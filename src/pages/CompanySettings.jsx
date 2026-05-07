@@ -17,6 +17,7 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { RefreshButton } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
 import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
@@ -499,6 +500,9 @@ const CompanyManagement = () => {
                             <span className="font-semibold text-gray-700">{stats.total}</span>
                             <span className="text-gray-400">companies</span>
                         </div>
+                        <RefreshButton loading={loading} onClick={() => fetchCompanies(pagination.page, debouncedSearch, true)}>
+                            Refresh
+                        </RefreshButton>
                         <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
                             onClick={() => setCreateModalOpen(true)}
                             className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
