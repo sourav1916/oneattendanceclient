@@ -25,20 +25,8 @@ const MainLayout = ({ children }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!isMobile && !desktopSidebarCollapsed) {
-        if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
-          const isToggleButton = event.target.closest('button[data-sidebar-toggle="true"]');
-          if (!isToggleButton) {
-            setDesktopSidebarCollapsed(true);
-          }
-        }
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMobile, desktopSidebarCollapsed]);
+  // Desktop sidebar is pinned open/closed only via the navbar toggle button.
+  // Clicking outside does NOT auto-collapse it so users can navigate freely.
 
   const toggleSidebar = () => {
     if (isMobile) {
