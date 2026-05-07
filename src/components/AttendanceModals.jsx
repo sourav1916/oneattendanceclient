@@ -445,12 +445,12 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                         <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-100">
-                                        <FaClock className="h-5 w-5 text-white" />
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-lg shadow-emerald-100">
+                                        <FaCheck className="h-5 w-5 text-white" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">Edit Attendance</h2>
-                                        <p className="text-sm text-slate-500">Update punch timings and details</p>
+                                        <h2 className="text-xl font-bold text-slate-900">Verify Attendance</h2>
+                                        <p className="text-sm text-slate-500">Review and verify punch timings</p>
                                     </div>
                                 </div>
                                 <button
@@ -617,10 +617,10 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                 type="button"
                                 onClick={handleSubmit}
                                 disabled={isSubmitDisabled}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-sm font-semibold text-white shadow-lg shadow-indigo-200 hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50"
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-sm font-semibold text-white shadow-lg shadow-emerald-200 hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50"
                             >
-                                {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                                Save Changes
+                                {loading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                                Save & Verify
                             </button>
                         </div>
                     </motion.div>

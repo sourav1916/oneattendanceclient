@@ -656,6 +656,45 @@ const SettingsPage = () => {
                 </div>
               </div>
 
+              {/* Active Company Info - Moved to Top */}
+              {activeCompany && companies.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center gap-4 shadow-sm"
+                >
+                  <div className="shrink-0">
+                    {activeCompany.logo_url ? (
+                      <img
+                        src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`}
+                        alt="Company Logo"
+                        className="w-16 h-16 rounded-xl object-cover border border-white shadow-md bg-white"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-16 h-16 rounded-xl bg-indigo-600 items-center justify-center shadow-lg ${activeCompany.logo_url ? 'hidden' : 'flex'}`}>
+                      <FaBuilding className="text-white text-2xl" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider">Active Workspace</span>
+                      {activeCompany.role && (
+                        <span className="px-2 py-0.5 rounded-full bg-white border border-indigo-100 text-indigo-600 text-[10px] font-bold uppercase tracking-wider">
+                          {activeCompany.role.replace(/_/g, ' ')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-bold text-gray-900 text-lg truncate leading-tight">{activeCompany.name}</p>
+                    <p className="text-sm text-indigo-600/70 font-medium truncate">{activeCompany.legal_name || "Primary Organization"}</p>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Companies List - Responsive */}
               <div className="space-y-3">
                 {companies.length === 0 ? (
@@ -671,47 +710,21 @@ const SettingsPage = () => {
                     </button>
                   </div>
                 ) : (
-                  companies.map((company) => (
-                    <CompanyCard
-                      key={company.id}
-                      company={company}
-                      isActive={activeCompany?.id === company.id}
-                      canManageCompany={company.role !== "employee"}
-                      onSwitch={selectCompany}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))
+                  [...companies]
+                    .sort((a, b) => (a.id === activeCompany?.id ? -1 : b.id === activeCompany?.id ? 1 : 0))
+                    .map((company) => (
+                      <CompanyCard
+                        key={company.id}
+                        company={company}
+                        isActive={activeCompany?.id === company.id}
+                        canManageCompany={company.role !== "employee"}
+                        onSwitch={selectCompany}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))
                 )}
               </div>
-
-              {/* Active Company Info - Responsive */}
-              {activeCompany && companies.length > 0 && (
-                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100 flex items-center gap-4">
-                  {activeCompany.logo_url ? (
-                    <img
-                      src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`}
-                      alt="Company Logo"
-                      className="w-14 h-14 rounded-xl object-cover border border-indigo-200 shadow-sm bg-white shrink-0 hidden sm:block"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-14 h-14 rounded-xl bg-indigo-100 items-center justify-center border border-indigo-200 shadow-sm shrink-0 hidden sm:flex ${activeCompany.logo_url ? '!hidden' : ''}`}>
-                    <FaBuilding className="text-indigo-500 text-2xl" />
-                  </div>
-                  <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 flex-1">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm text-indigo-700 font-medium mb-1">Currently Active Company</p>
-                      <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{activeCompany.name}</p>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">{activeCompany.legal_name}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

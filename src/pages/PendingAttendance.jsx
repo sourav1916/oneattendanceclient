@@ -419,7 +419,7 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, p
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            onClick={() => onViewDetails(attendance)}
+            onClick={() => onEdit(attendance)}
             className="bg-white rounded-xl shadow-lg p-4 border border-gray-100 h-full flex flex-col"
         >
             <div className="flex justify-between items-start mb-3">
@@ -444,17 +444,9 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, p
                         actions={[
                             {
                                 label: 'Verify',
-                                icon: processingId === recordKey ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
-                                onClick: () => onApprove(attendance),
-                                disabled: processingId === recordKey || approveDisabled,
-                                title: approveDisabled ? reviewMessage : '',
-                                className: 'text-green-600 hover:bg-green-50'
-                            },
-                            {
-                                label: 'Edit',
-                                icon: <FaEdit size={12} />,
+                                icon: <FaCheck size={12} />,
                                 onClick: () => onEdit(attendance),
-                                className: 'text-indigo-600 hover:bg-indigo-50'
+                                className: 'text-green-600 hover:bg-green-50'
                             },
                             {
                                 label: 'View Details',
@@ -911,7 +903,7 @@ const PendingAttendance = ({ companyId }) => {
                                             {visibleAttendances.map((attendance) => (
                                                 <motion.tr
                                                     key={attendance.punch_uid || attendance.punch_id || attendance.id}
-                                                    onClick={() => handleViewDetails(attendance)}
+                                                    onClick={() => handleEditAttendance(attendance)}
                                                     className={`cursor-pointer transition-all duration-300 ${selectedIds.includes(attendance.punch_uid || attendance.punch_id || attendance.id)
                                                         ? 'bg-amber-50/50'
                                                         : (!attendance.start_time || !attendance.end_time)
@@ -955,21 +947,12 @@ const PendingAttendance = ({ companyId }) => {
                                                             onToggle={(e, id) => toggleActionMenu(id)}
                                                             actions={[{
                                                                 label: 'Verify',
-                                                                icon: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) ? <FaSpinner className="animate-spin" size={12} /> : <FaCheck size={12} />,
-                                                                onClick: () => handleStatusUpdate(attendance, 'verify'),
-                                                                disabled: processingId === (attendance.punch_uid || attendance.punch_id || attendance.id) || approveAccess.disabled || !attendance.start_time || !attendance.end_time,
-                                                                title: approveAccess.disabled ? pendingReviewMessage : (!attendance.start_time || !attendance.end_time) ? "Cannot verify record with missing punch times" : "",
+                                                                icon: <FaCheck size={12} />,
+                                                                onClick: () => handleEditAttendance(attendance),
                                                                 className: 'text-green-600 hover:bg-green-50'
                                                             },
                                                             {
-                                                                label: 'Edit',
-                                                                icon: <FaEdit size={12} />,
-                                                                onClick: () => handleEditAttendance(attendance),
-                                                                className: 'text-indigo-600 hover:bg-indigo-50'
-                                                            },
-                                                            {
                                                                 label: 'View Details',
-
                                                                 icon: <FaEye size={12} />,
                                                                 onClick: () => handleViewDetails(attendance),
                                                                 className: 'text-blue-600 hover:bg-blue-50'
