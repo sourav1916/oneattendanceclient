@@ -61,6 +61,10 @@ const fetchMyAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAG
 
 const Placeholder = () => <span className="text-red-500 font-bold">---</span>;
 
+const fmt = (str) =>
+  str ? str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
+
+
 const formatHours = (h) => {
   if (!h) return '0h 0m';
   const hr = Math.floor(h);
@@ -117,14 +121,15 @@ const normalizePunchRecord = (record) => {
     return {
       time: value.time || null,
       method: value.method || null,
-      lat: value.lat ?? null,
-      lng: value.lng ?? null,
+      lat: value.latitude ?? value.lat ?? null,
+      lng: value.longitude ?? value.lng ?? null,
       ip: value.ip ?? null,
     };
   };
 
   return {
     ...record,
+    date: record.attendance_date || record.date,
     break_start: normalizeNestedPunch(record.break_start),
     break_end: normalizeNestedPunch(record.break_end),
     punch_in: normalizeNestedPunch(record.punch_in),
@@ -189,7 +194,7 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                   className="group hover:bg-indigo-50/30 transition-colors cursor-pointer"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm font-bold text-gray-800">{record.date || <Placeholder />}</span>
+                    <span className="text-sm font-bold text-gray-800">{record.attendance_date || record.date || <Placeholder />}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
@@ -265,7 +270,7 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
           >
             <div className="mb-4 flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="truncate font-bold text-gray-800 text-base">{record.date || <Placeholder />}</h3>
+                <h3 className="truncate font-bold text-gray-800 text-base">{record.attendance_date || record.date || <Placeholder />}</h3>
                 <p className="text-xs text-gray-400 mt-0.5">{typeConfig.label} Log</p>
               </div>
               <div className="flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
@@ -673,16 +678,27 @@ const DetailsModal = ({ record, onClose }) => {
   const typeConfig = getAttendanceTypeConfig(activeType);
   const startData = record[typeConfig.startKey];
   const endData = record[typeConfig.endKey];
-  const isOvertime = Number(record.is_overtime) === 1;
-  const isHalfDay = Number(record.is_half_day) === 1;
-  const isDeductible = Number(record.is_deductible) === 1;
+
+  const shift = record.shift || {};
+  const flags = shift.flags || {};
+  const isOvertime = flags.overtime?.enabled || false;
+  const isHalfDay = flags.half_day?.enabled || false;
+  const isDeductible = flags.deductible?.enabled || false;
+
   const reviewerLabel = record.reviewed_by_name || record.reviewed_by || 'System';
+
+  const formatMins = (m) => {
+    if (m === null || m === undefined) return "0m";
+    const hours = Math.floor(m / 60);
+    const mins = m % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
 
   return (
     <Modal
       isOpen={!!record}
       onClose={onClose}
-      title={record.date || "Attendance Details"}
+      title={record.attendance_date || record.date || "Attendance Details"}
       subtitle={`Detailed ${typeConfig.label.toLowerCase()} log overview`}
       icon={<FaInfoCircle className="h-6 w-6" />}
       size="4xl"
@@ -696,18 +712,15 @@ const DetailsModal = ({ record, onClose }) => {
       }
     >
       <div className="space-y-6">
+        {/* Basic Info */}
         <div className="border-b border-slate-100 pb-4">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
             <FaClock className="text-indigo-500" /> Attendance Log
           </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Type</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800 capitalize">{typeConfig.label}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{record.date || <Placeholder />}</p>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800">{record.attendance_date || record.date || <Placeholder />}</p>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</label>
@@ -721,92 +734,149 @@ const DetailsModal = ({ record, onClose }) => {
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{typeConfig.startLabel}</label>
               <p className="mt-0.5 text-sm font-semibold text-slate-800">{startData?.time || <Placeholder />}</p>
-              {startData?.method && startData.method !== 'manual' && (
-                <p className="text-[10px] font-bold uppercase text-slate-400">{startData.method}</p>
-              )}
+              {startData?.method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(startData.method)}</p>}
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{typeConfig.endLabel}</label>
               <p className="mt-0.5 text-sm font-semibold text-slate-800">{endData?.time || <Placeholder />}</p>
-              {endData?.method && endData.method !== 'manual' && (
-                <p className="text-[10px] font-bold uppercase text-slate-400">{endData.method}</p>
-              )}
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Method</label>
-              <p className="mt-0.5 text-sm font-semibold capitalize text-slate-800">
-                {record.attendance_method || startData?.method || endData?.method || <Placeholder />}
-              </p>
+              {endData?.method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(endData.method)}</p>}
             </div>
           </div>
         </div>
 
+        {/* Shift & Productivity */}
         <div className="border-b border-slate-100 pb-4">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-            <FaBriefcase className="text-indigo-500" /> Flags
+            <FaHistory className="text-emerald-500" /> Shift & Productivity
           </h3>
-          <div className="flex flex-wrap gap-2">
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${isOvertime ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-              Overtime: {isOvertime ? 'Yes' : 'No'}
-            </span>
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${isHalfDay ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-              Half Day: {isHalfDay ? 'Yes' : 'No'}
-            </span>
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${isDeductible ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-              Deductible: {isDeductible ? 'Yes' : 'No'}
-            </span>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Worked Time</label>
+              <p className="mt-0.5 text-sm font-bold text-emerald-600">{formatMins(shift.worked_minutes)}</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Time</label>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800">{formatMins(shift.break_minutes)}</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift Start</label>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_start_time ? new Date(shift.shift_start_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift End</label>
+              <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_end_time ? new Date(shift.shift_end_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
+            </div>
           </div>
         </div>
 
-        {record.notes && (
+        {/* Productivity Flags */}
+        <div className="border-b border-slate-100 pb-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+            <FaBriefcase className="text-indigo-500" /> Productivity Flags
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isOvertime ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOvertime ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <FaClock size={14} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
+                <p className={`text-xs font-bold ${isOvertime ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  {isOvertime ? `${flags.overtime?.minutes} mins` : "Disabled"}
+                </p>
+              </div>
+            </div>
+
+            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isHalfDay ? 'border-orange-200 bg-orange-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isHalfDay ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <FaHourglassHalf size={14} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
+                <p className={`text-xs font-bold ${isHalfDay ? 'text-orange-700' : 'text-slate-500'}`}>
+                  {isHalfDay ? "Yes" : "No"}
+                </p>
+              </div>
+            </div>
+
+            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isDeductible ? 'border-rose-200 bg-rose-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDeductible ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <FaExclamationCircle size={14} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
+                <p className={`text-xs font-bold ${isDeductible ? 'text-rose-700' : 'text-slate-500'}`}>
+                  {isDeductible ? `${flags.deductible?.minutes} mins` : "None"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {isDeductible && flags.deductible?.breakdown && (
+            <div className="mt-4 p-4 rounded-xl bg-rose-50/50 border border-rose-100">
+              <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-3">Deductible Breakdown</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-slate-400 block">Late</label>
+                  <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.late_minutes}m</p>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-slate-400 block">Early Leave</label>
+                  <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.early_leave_minutes}m</p>
+                </div>
+                <div>
+                  <label className="text-[9px] font-bold uppercase text-slate-400 block">Extra Break</label>
+                  <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.extra_break_minutes}m</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {record.remark && (
           <div className="border-b border-slate-100 pb-4">
             <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-              <FaComment className="text-indigo-500" /> Notes
+              <FaComment className="text-indigo-500" /> Remarks
             </h3>
-            <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-700">
-              {record.notes}
+            <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs font-medium text-slate-700 italic">
+              "{record.remark}"
             </p>
           </div>
         )}
 
+        {/* System Metadata */}
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col gap-4">
-          {((startData && startData.method !== 'manual' && (startData.ip || startData.lat || startData.lng)) ||
-            (endData && endData.method !== 'manual' && (endData.ip || endData.lat || endData.lng))) && (
-              <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
-                <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
-                  <FaMapMarkerAlt size={14} />
+          <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
+            <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
+              <FaMapMarkerAlt size={14} />
+            </div>
+            <div className="flex-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Device & Location Punches</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Punch In</p>
+                  <p className="text-xs font-semibold text-slate-700">IP: {startData?.ip || "—"}</p>
+                  <p className="text-xs font-semibold text-slate-700">GPS: {startData?.lat && startData?.lng ? `${startData.lat}, ${startData.lng}` : "—"}</p>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">Location & Device</span>
-                  <div className="space-y-1">
-                    {startData && startData.method !== 'manual' && (
-                      <>
-                        {startData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start IP: {startData.ip}</p>}
-                        {(startData.lat || startData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">Start GPS: {startData.lat || 'N/A'}, {startData.lng || 'N/A'}</p>}
-                      </>
-                    )}
-                    {endData && endData.method !== 'manual' && (
-                      <>
-                        {endData.ip && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End IP: {endData.ip}</p>}
-                        {(endData.lat || endData.lng) && <p className="text-sm font-semibold text-slate-700 leading-tight break-all">End GPS: {endData.lat || 'N/A'}, {endData.lng || 'N/A'}</p>}
-                      </>
-                    )}
-                  </div>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Punch Out</p>
+                  <p className="text-xs font-semibold text-slate-700">IP: {endData?.ip || "—"}</p>
+                  <p className="text-xs font-semibold text-slate-700">GPS: {endData?.lat && endData?.lng ? `${endData.lat}, ${endData.lng}` : "—"}</p>
                 </div>
               </div>
-            )}
+            </div>
+          </div>
 
           <div className="flex items-start gap-4">
             <div className="mt-1 h-8 w-8 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-sm border border-slate-100 flex-shrink-0">
               <FaCog size={14} />
             </div>
             <div className="flex-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">System Metadata</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-1">System Audit</span>
               <div className="flex flex-wrap gap-2">
                 <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">ID: {record.id || <Placeholder />}</span>
-                <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200 uppercase">TYPE: {activeType}</span>
                 <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">Reviewed By: {reviewerLabel}</span>
-                {record.reviewed_at && <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">Reviewed At: {record.reviewed_at}</span>}
+                {record.verified_at && <span className="bg-white px-2 py-1 rounded-md text-[10px] font-bold text-slate-500 border border-slate-200">Verified At: {record.verified_at}</span>}
               </div>
             </div>
           </div>
@@ -815,5 +885,6 @@ const DetailsModal = ({ record, onClose }) => {
     </Modal>
   );
 };
+
 
 export default AttendanceHistory;

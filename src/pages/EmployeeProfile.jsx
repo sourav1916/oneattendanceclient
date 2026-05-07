@@ -676,7 +676,7 @@ function usePermissionsConfig(onView, width) {
             <FaShieldAlt size={11} className="text-indigo-500" />
           </div>
           <span className="font-medium text-gray-800 text-sm truncate min-w-0">
-            {p.name}
+            {p.name || "—"}
           </span>
         </div>
       ),
@@ -684,20 +684,20 @@ function usePermissionsConfig(onView, width) {
     width > 600 && {
       key: "code", label: "Code",
       render: (p) => (
-        <span className="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded">{p.code}</span>
+        <span className="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded">{p.code || "—"}</span>
       ),
     },
     width > 800 && {
       key: "category", label: "Category",
       render: (p) => {
-        const cat = p.code.split("_")[0];
+        const cat = p.code?.split("_")?.[0] || "unknown";
         return <Pill value={cat} />;
       },
     },
   ].filter(Boolean);
 
   const cardRenderer = (p, index, activeId, onToggle) => {
-    const cat = p.code.split("_")[0];
+    const cat = p.code?.split("_")?.[0] || "unknown";
     return (
       <ManagementCard
         key={p.id}
@@ -709,14 +709,14 @@ function usePermissionsConfig(onView, width) {
         menuId={`perm-${p.id}`}
         actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" }]}
         hoverable
-        title={p.name}
-        subtitle={p.code}
+        title={p.name || "Permission"}
+        subtitle={p.code || "No code"}
         eyebrow={fmt(cat)}
         badge={<Pill value={cat} />}
       >
         <div className="flex items-center gap-2 mt-1">
           <FaShieldAlt size={11} className="text-indigo-400" />
-          <span className="text-xs text-gray-500 font-mono">{p.code}</span>
+          <span className="text-xs text-gray-500 font-mono">{p.code || "—"}</span>
         </div>
       </ManagementCard>
     );
@@ -724,6 +724,7 @@ function usePermissionsConfig(onView, width) {
 
   return { columns, cardRenderer, rowKey: "id" };
 }
+
 
 function useBasicConfig(onView, width) {
   const columns = [
