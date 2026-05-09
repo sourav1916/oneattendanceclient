@@ -121,6 +121,7 @@ const STATUS_CONFIG = {
   half_day: { label: 'Half Day', color: 'bg-sky-500 text-white' },
   absent: { label: 'Absent', color: 'bg-rose-500 text-white' },
   paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white' },
+  unmarked: { label: 'Unmarked', color: 'bg-slate-500 text-white' },
 };
 
 // ─── UNIFIED BREAK MODAL ──────────────────────────────────────────────────────
@@ -424,15 +425,16 @@ const BreakManagement = () => {
       if (result.success) {
         const mapped = result.data.map(emp => {
           const att = emp.attendances && emp.attendances[0];
+          const displayDate = att?.attendance_date || dateFilter.date || dateFilter.from_date || '';
           return {
             id: emp.id,
             employee_id: emp.employee_id,
             name: emp.name,
             employee_code: emp.employee_code,
-            department: emp.designation ? emp.designation.replace(/_/g, ' ').toUpperCase() : 'N/A',
-            date: date,
-            day_label: new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }),
-            status: att?.day_status || null,
+            department: emp.designation ? emp.designation.replace(/_/g, ' ').toUpperCase() : '',
+            date: displayDate,
+            day_label: displayDate ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
+            status: att?.day_status || 'unmarked',
             breaks: att?.breaks || [],
             total_break_mins: att?.calculations?.break_minutes || 0,
             on_break: att?.punch_in && !att?.punch_out && att?.day_status === 'on_break',

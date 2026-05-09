@@ -17,11 +17,12 @@ import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
-  { value: '', label: 'All' },
+  { value: 'unmarked', label: 'Unmarked' },
   { value: 'present', label: 'Present' },
   { value: 'absent', label: 'Absent' },
   { value: 'paid_leave', label: 'Paid Leave' },
   { value: 'half_day', label: 'Half Day' },
+  { value: '', label: 'All' },
 ];
 
 const StatusSelect = ({ value, onChange, options }) => {
@@ -104,6 +105,7 @@ const STATUS_CONFIG = {
   half_day: { label: 'Half Day', color: 'bg-sky-500 text-white shadow-sky-200', dot: 'bg-sky-500' },
   absent: { label: 'Absent', color: 'bg-rose-500 text-white shadow-rose-200', dot: 'bg-rose-500' },
   paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white shadow-violet-200', dot: 'bg-violet-500' },
+  unmarked: { label: 'Unmarked', color: 'bg-slate-500 text-white shadow-slate-200', dot: 'bg-slate-500' },
 };
 
 // ─── UNIFIED ATTENDANCE MODAL ──────────────────────────────────────────────────
@@ -437,7 +439,7 @@ const EmployeeAttendanceCard = ({ emp, onAction }) => {
           <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold">
             <FaCalendarAlt size={9} />
             <span>{formatDate(emp.date)} | {emp.day_label}</span>
-            {emp.shift && (
+            {emp.shift && emp.shift !== 'No Shift' && (
               <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.shift}</span></>
             )}
           </div>
@@ -494,7 +496,7 @@ const UnmarkedAttendance = () => {
   const [loading, setLoading] = useState(true);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
   const [search, setSearch] = useState('');
-  const [dayStatus, setDayStatus] = useState('all');
+  const [dayStatus, setDayStatus] = useState('unmarked');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -531,6 +533,7 @@ const UnmarkedAttendance = () => {
       if (result.success) {
         const mapped = result.data.map(emp => {
           const att = emp.attendances && emp.attendances[0];
+          const displayDate = att?.attendance_date || dateFilter.date || dateFilter.from_date || '';
           return {
             id: emp.id,
             employee_id: emp.employee_id,
@@ -539,13 +542,13 @@ const UnmarkedAttendance = () => {
             employee_code: emp.employee_code,
             designation: emp.designation,
             shift: emp.shift ? `${formatTime(emp.shift.start_time)} - ${formatTime(emp.shift.end_time)}` : 'No Shift',
-            department: emp.designation ? emp.designation.replace(/_/g, ' ').toUpperCase() : 'N/A',
-            date: att?.date || dateFilter.date || dateFilter.from_date || '',
-            day_label: att?.date ? new Date(`${att.date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
+            department: emp.designation ? emp.designation.replace(/_/g, ' ').toUpperCase() : '',
+            date: displayDate,
+            day_label: displayDate ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
             duty_hours: emp.shift ? formatMinutes(emp.shift.expected_work_minutes) : '00 Hours 00 Minutes',
             punch_in: att?.punch_in?.time || null,
             punch_out: att?.punch_out?.time || null,
-            status: att?.day_status || null,
+            status: att?.day_status || 'unmarked',
             fine: att?.calculations?.late_minutes > 0 ? 100 : null,
             is_ot: att?.is_overtime || false,
             attendance_record: att

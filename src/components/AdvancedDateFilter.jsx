@@ -237,16 +237,18 @@ function MonthYearPicker({ month, year, onMonthChange, onYearChange }) {
 
 // ─── Main AdvancedDateFilter Component ──────────────────────────────────────
 
+const DEFAULT_TAB_OPTIONS = ["date", "month", "range"];
+
 export default function AdvancedDateFilter({
   value,
   onChange,
   placeholder = "Filter by date",
   buttonClassName = "",
-  tabOptions = ["date", "month", "range"],
+  tabOptions = DEFAULT_TAB_OPTIONS,
 }) {
   const allowedTabs = Array.isArray(tabOptions) && tabOptions.length > 0
     ? tabOptions
-    : ["date", "month", "range"];
+    : DEFAULT_TAB_OPTIONS;
   const hasMultipleTabs = allowedTabs.length > 1;
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(allowedTabs[0]); // "date" | "month" | "range"
@@ -268,10 +270,16 @@ export default function AdvancedDateFilter({
   const [rangeEnd, setRangeEnd] = useState(null);
   const [rangeViewDate, setRangeViewDate] = useState(new Date());
 
-  // Sync internal state when opening
+  const prevIsOpen = useRef(false);
+  const prevValue = useRef(value);
+
+  // Sync internal state when opening or when value changes
   useEffect(() => {
-    if (isOpen && value) {
-      if (value.date) {
+    const valueChanged = prevValue.current !== value;
+    const justOpened = !prevIsOpen.current && isOpen;
+
+    if (justOpened || (isOpen && valueChanged)) {
+      if (value && value.date) {
         const d = parseDateValue(value.date);
         if (allowedTabs.includes("date")) {
           setSelectedSingle(d);
@@ -280,7 +288,7 @@ export default function AdvancedDateFilter({
         } else if (allowedTabs[0]) {
           setActiveTab(allowedTabs[0]);
         }
-      } else if (value.month && value.year) {
+      } else if (value && value.month && value.year) {
         if (allowedTabs.includes("month")) {
           setTempMonth(Number(value.month));
           setTempYear(Number(value.year));
@@ -288,7 +296,7 @@ export default function AdvancedDateFilter({
         } else if (allowedTabs[0]) {
           setActiveTab(allowedTabs[0]);
         }
-      } else if (value.from_date && value.to_date) {
+      } else if (value && value.from_date && value.to_date) {
         if (allowedTabs.includes("range")) {
           setRangeStart(parseDateValue(value.from_date));
           setRangeEnd(parseDateValue(value.to_date));
@@ -300,6 +308,10 @@ export default function AdvancedDateFilter({
         setActiveTab(allowedTabs[0]);
       }
     }
+
+    prevIsOpen.current = isOpen;
+    prevValue.current = value;
+  // eslint-disable-next-line
   }, [isOpen, value, allowedTabs, activeTab]);
 
   useEffect(() => {
@@ -486,7 +498,11 @@ export default function AdvancedDateFilter({
                     onSelectSingle={setSelectedSingle}
                     onSinglePick={(date) => {
                       // Auto-apply on single pick like DatePicker does
-                      if (date) setSelectedSingle(date);
+                      if (date) {
+                        setSelectedSingle(date);
+                        onChange?.({ date: toIsoDate(date), month: "", year: "", from_date: "", to_date: "" });
+                        setIsOpen(false);
+                      }
                     }}
                   />
                 )}
