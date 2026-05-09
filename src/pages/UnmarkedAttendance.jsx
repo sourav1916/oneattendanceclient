@@ -4,7 +4,7 @@ import {
   FaChevronLeft, FaChevronRight, FaClock, FaUser, FaSearch,
   FaCheckCircle, FaCalendarAlt, FaBuilding,
   FaUmbrellaBeach, FaMoneyBillWave, FaHourglassHalf,
-  FaHistory, FaTimesCircle, FaChevronDown
+  FaHistory, FaTimesCircle, FaChevronDown, FaTimes
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
@@ -679,41 +679,31 @@ const UnmarkedAttendance = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
         >
-          <div className="flex items-center gap-4 flex-1">
-            {/* 1. Search Field */}
-            <div className="relative flex-1 w-full min-w-[200px]">
-              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-              <input
-                type="text"
-                placeholder="Search by name, code or email..."
-                value={search}
-                onChange={e => handleSearch(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => handleSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
-                >
-                  <FaTimes size={12} />
-                </button>
-              )}
-            </div>
-
-            {/* 2. Day Status Select */}
-            <div className="hidden lg:block w-32">
-              <StatusSelect
-                value={dayStatus}
-                onChange={handleStatusChange}
-                options={STATUS_OPTIONS}
-              />
-            </div>
+          {/* 1. Search Field */}
+          <div className="w-full lg:w-1/3 xl:w-2/5 relative">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+            <input
+              type="text"
+              placeholder="Search by name, code or email..."
+              value={search}
+              onChange={e => handleSearch(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => handleSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
+              >
+                <FaTimes size={12} />
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 lg:gap-4">
-            {/* Mobile Day Status (shows under search on small screens) */}
-            <div className="w-full lg:hidden z-40">
+          {/* 2. Filters Wrapper */}
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 lg:gap-4 w-full lg:w-auto lg:flex-1 lg:justify-end z-40">
+            {/* Day Status Select */}
+            <div className="w-full sm:w-auto sm:min-w-[140px]">
               <StatusSelect
                 value={dayStatus}
                 onChange={handleStatusChange}
@@ -721,8 +711,8 @@ const UnmarkedAttendance = () => {
               />
             </div>
 
-            {/* 3. Employee Select */}
-            <div className="flex-1 min-w-[200px] lg:w-64 lg:flex-none">
+            {/* Employee Select */}
+            <div className="w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-56">
               <EmployeeSelect
                 value={selectedEmployee}
                 onChange={handleEmployeeChange}
@@ -730,16 +720,18 @@ const UnmarkedAttendance = () => {
               />
             </div>
 
-            {/* 4. Advanced Date Filter */}
-            <div className="flex-1 lg:flex-none">
+            {/* Advanced Date Filter */}
+            <div className="w-full sm:w-auto sm:min-w-[180px]">
               <AdvancedDateFilter
                 value={dateFilter}
                 onChange={handleDateChange}
-                buttonClassName="w-full lg:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 min-w-[180px]"
+                buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
                 placeholder="Pick Date"
               />
             </div>
           </div>
+
+
         </motion.div>
 
         <div className="space-y-3">

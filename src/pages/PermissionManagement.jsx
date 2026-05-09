@@ -15,6 +15,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementButton, RefreshButton } from '../components/common';
+import SelectField from '../components/SelectField';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,8 @@ const MODAL_TYPES = {
   EDIT: 'EDIT',
   VIEW: 'VIEW',
   DELETE_CONFIRM: 'DELETE_CONFIRM',
-  PERM_LIST: 'PERM_LIST'
+  PERM_LIST: 'PERM_LIST',
+  EMPLOYEE_LIST: 'EMPLOYEE_LIST'
 };
 
 const modalVariants = {
@@ -53,14 +55,31 @@ const GROUP_COLORS = [
 const PACKAGE_REQUEST_CACHE_TTL = 5000;
 let permissionListRequestCache = { companyId: null, promise: null, data: null };
 const permissionPackagesRequestCache = new Map();
+let permissionPackageOptionsRequestCache = { companyId: null, promise: null, data: null };
 
 const getPermissionPackagesCacheKey = ({ companyId, page, limit, search }) =>
   `${companyId ?? 'none'}|${page}|${limit}|${search ?? ''}`;
 
+const getPermissionPackageOptionsCacheKey = ({ companyId, search }) =>
+  `${companyId ?? 'none'}|${search ?? ''}`;
+
+const readApiResponse = async (res, fallbackMessage) => {
+  try {
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await res.json();
+    }
+    const text = await res.text();
+    return text ? { message: text } : { message: fallbackMessage };
+  } catch {
+    return { message: fallbackMessage };
+  }
+};
+
 // ─── Package Form ─────────────────────────────────────────────────────────────
 const PackageFormBody = ({
   formData, onInputChange, onTogglePermission, onSelectAll, onClearAll,
-  allPermissions, permsLoading
+  allPermissions, permsLoading, packageUsage, onOpenEmployeeList
 }) => {
   const [isPermissionsExpanded, setIsPermissionsExpanded] = useState(false);
 
@@ -75,6 +94,27 @@ const PackageFormBody = ({
         </div>
       ) : (
         <>
+          {packageUsage && (
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-700">Package usage</p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-950">
+                    Assigned to {packageUsage.totalUsed} employee{packageUsage.totalUsed === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onOpenEmployeeList}
+                  disabled={packageUsage.totalUsed === 0}
+                  className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm transition-all hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  View employees
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="md:col-span-2">
@@ -232,12 +272,18 @@ const PermissionManagement = () => {
   const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const [packages, setPackages] = useState([]);
   const [allPermissions, setAllPermissions] = useState([]);
+  const [allPermissionPackages, setAllPermissionPackages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [permsLoading, setPermsLoading] = useState(false);
+  const [packageOptionsLoading, setPackageOptionsLoading] = useState(false);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
   // ✅ No error state — all errors go to toast only
   const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
+  const [bulkTargetPackage, setBulkTargetPackage] = useState(null);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
+  const [employeePackageSelections, setEmployeePackageSelections] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [viewMode, setViewMode] = useState('table');
@@ -281,6 +327,7 @@ const PermissionManagement = () => {
   const showGroupCode = windowWidth >= 540;
   const showDescription = windowWidth >= 1024;
   const showPermissionCount = windowWidth >= 768;
+  const showUsageCount = windowWidth >= 768;
 
   // ─── API Calls ────────────────────────────────────────────────────────────
   const fetchAllPermissions = useCallback(async () => {
@@ -357,8 +404,7 @@ const PermissionManagement = () => {
       } else {
         const requestPromise = (async () => {
           const res = await apiCall(`/permissions/permission-packages?${params}`, 'GET', null, companyId);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const json = await res.json();
+          const json = await readApiResponse(res, `HTTP ${res.status}`);
           if (!json.success) throw new Error(json.message || 'Failed to fetch packages');
 
           permissionPackagesRequestCache.set(requestKey, {
@@ -385,6 +431,7 @@ const PermissionManagement = () => {
         const cur_limit = d?.limit ?? pagination.limit;
         setPackages(list);
         updatePagination({ page: cur_page, limit: cur_limit, total, total_pages, is_last_page: cur_page >= total_pages });
+        return list;
       } else throw new Error(result.message || 'Failed to fetch packages');
     } catch (e) {
       console.error('fetchPackages:', e);
@@ -394,15 +441,73 @@ const PermissionManagement = () => {
       fetchInProgress.current = false;
       isInitialLoad.current = false;
     }
+    return [];
   }, [pagination.page, pagination.limit, debouncedSearch, updatePagination]);
+
+  const fetchAllPermissionPackageOptions = useCallback(async () => {
+    setPackageOptionsLoading(true);
+    try {
+      const company = JSON.parse(localStorage.getItem('company'));
+      const companyId = company?.id ?? null;
+
+      if (permissionPackageOptionsRequestCache.companyId === companyId && permissionPackageOptionsRequestCache.data) {
+        setAllPermissionPackages(permissionPackageOptionsRequestCache.data);
+        return permissionPackageOptionsRequestCache.data;
+      }
+
+      if (permissionPackageOptionsRequestCache.companyId !== companyId) {
+        permissionPackageOptionsRequestCache = { companyId, promise: null, data: null };
+      }
+
+      if (!permissionPackageOptionsRequestCache.promise) {
+        permissionPackageOptionsRequestCache.promise = (async () => {
+          const params = new URLSearchParams({ page: '1', limit: '1000' });
+          const res = await apiCall(`/permissions/permission-packages?${params}`, 'GET', null, companyId);
+          const result = await readApiResponse(res, `HTTP ${res.status}`);
+          if (!result.success) throw new Error(result.message || 'Failed to fetch permission packages');
+
+          const packages = (result.data?.packages || []).map((pkg) => ({
+            value: pkg.id,
+            label: pkg.package_name,
+            description: pkg.description,
+            groupCode: pkg.group_code,
+            permissions: pkg.permissions?.filter((p) => p.is_active === 1) || [],
+            isActive: pkg.is_active === 1
+          }));
+
+          permissionPackageOptionsRequestCache = {
+            companyId,
+            promise: null,
+            data: packages
+          };
+
+          return packages;
+        })().catch((error) => {
+          permissionPackageOptionsRequestCache = { companyId, promise: null, data: null };
+          throw error;
+        });
+      }
+
+      const packages = await permissionPackageOptionsRequestCache.promise;
+      setAllPermissionPackages(packages);
+      return packages;
+    } catch (e) {
+      console.error('fetchAllPermissionPackageOptions:', e);
+      toast.error(e.message || 'Failed to fetch permission packages');
+      return [];
+    } finally {
+      setPackageOptionsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!initialFetchDone.current) {
       initialFetchDone.current = true;
       fetchAllPermissions();
+      fetchAllPermissionPackageOptions();
       fetchPackages(1, true);
     }
-  }, [fetchPackages, fetchAllPermissions]);
+  }, [fetchPackages, fetchAllPermissions, fetchAllPermissionPackageOptions]);
 
   useEffect(() => {
     if (!isInitialLoad.current && !fetchInProgress.current && initialFetchDone.current) {
@@ -422,8 +527,8 @@ const PermissionManagement = () => {
         permissions: data.permissions
       }, company?.id);
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message || `HTTP ${res.status}`);
+      const result = await readApiResponse(res, `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
       if (result.success) return { success: true };
       throw new Error(result.message || 'Create failed');
     } catch (e) { return { success: false, error: e.message }; }
@@ -442,12 +547,27 @@ const PermissionManagement = () => {
         permissions: data.permissions
       }, company?.id);
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
+      const result = await readApiResponse(res, `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
       if (result.success) return { success: true };
       throw new Error(result.message || 'Update failed');
     } catch (e) { return { success: false, error: e.message }; }
     finally { setLoading(false); }
+  };
+
+  const assignPermissionPackages = async (assignments) => {
+    try {
+      const company = JSON.parse(localStorage.getItem('company'));
+      const payload = { assignments };
+
+      const res = await apiCall('/permissions/transfer-packages', 'PUT', payload, company?.id);
+      const result = await readApiResponse(res, `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
+      if (result.success) return { success: true };
+      throw new Error(result.message || 'Failed to assign packages');
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
   };
 
   const deletePackage = async (packageId) => {
@@ -458,8 +578,8 @@ const PermissionManagement = () => {
         "packageId": packageId
       }, company?.id);
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
+      const result = await readApiResponse(res, `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
       if (result.success) return { success: true };
       throw new Error(result.message || 'Delete failed');
     } catch (e) { return { success: false, error: e.message }; }
@@ -489,7 +609,22 @@ const PermissionManagement = () => {
     setActiveActionMenu(null);
   };
   const openPermListModal = (pkg) => { setSelectedPackage(pkg); setModalType(MODAL_TYPES.PERM_LIST); setActiveActionMenu(null); };
-  const closeModal = () => { setModalType(MODAL_TYPES.NONE); setSelectedPackage(null); setFormData(emptyForm); };
+  const openEmployeeListModal = (pkg) => {
+    setSelectedPackage(pkg);
+    setModalType(MODAL_TYPES.EMPLOYEE_LIST);
+    setBulkTargetPackage(null);
+    setSelectedEmployeeIds([]);
+    setEmployeePackageSelections({});
+    setActiveActionMenu(null);
+  };
+  const closeModal = () => {
+    setModalType(MODAL_TYPES.NONE);
+    setSelectedPackage(null);
+    setFormData(emptyForm);
+    setBulkTargetPackage(null);
+    setSelectedEmployeeIds([]);
+    setEmployeePackageSelections({});
+  };
 
   // ─── Form handlers ────────────────────────────────────────────────────────
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -519,6 +654,111 @@ const PermissionManagement = () => {
     else toast.error(result.error || 'Failed to delete package');
   };
 
+  const normalizePackageOption = useCallback((pkg) => ({
+    value: pkg.value ?? pkg.id,
+    label: pkg.label ?? pkg.package_name ?? 'Unnamed package',
+    description: pkg.description ?? null,
+    groupCode: pkg.groupCode ?? pkg.group_code ?? '',
+    isActive: pkg.isActive ?? (pkg.is_active === 1),
+  }), []);
+
+  const getAssignablePackageOptions = useCallback((currentPackageId) => {
+    return allPermissionPackages
+      .map(normalizePackageOption)
+      .filter((pkg) => String(pkg.value) !== String(currentPackageId));
+  }, [allPermissionPackages, normalizePackageOption]);
+
+  const handleBulkApplyPackage = async () => {
+    if (!selectedPackage) return;
+    if (!bulkTargetPackage?.value) {
+      toast.warning('Select a target permission package');
+      return;
+    }
+    if (selectedEmployeeIds.length === 0) {
+      toast.warning('Select at least one employee');
+      return;
+    }
+
+    const assignments = selectedEmployeeIds.map((employeeId) => ({
+      employee_id: employeeId,
+      package_id: bulkTargetPackage.value
+    }));
+    setAssignmentLoading(true);
+    try {
+      const result = await assignPermissionPackages(assignments);
+      if (result.success) {
+        permissionPackagesRequestCache.clear();
+        permissionPackageOptionsRequestCache = { companyId: null, promise: null, data: null };
+        const refreshedPackages = await fetchPackages(pagination.page, false);
+        const refreshedSelected = refreshedPackages.find((pkg) => String(pkg.id) === String(selectedPackage.id));
+        if (refreshedSelected) setSelectedPackage(refreshedSelected);
+        await fetchAllPermissionPackageOptions();
+        setSelectedEmployeeIds([]);
+        setBulkTargetPackage(null);
+        toast.success(`Updated ${assignments.length} employee${assignments.length === 1 ? '' : 's'} successfully`);
+      } else {
+        toast.error(result.error || 'Failed to assign packages');
+      }
+    } finally {
+      setAssignmentLoading(false);
+    }
+  };
+
+  const handleSingleEmployeeApply = async (employeeId, targetPackage) => {
+    if (!targetPackage?.value) {
+      toast.warning('Select a target permission package');
+      return;
+    }
+
+    setAssignmentLoading(true);
+    try {
+      const result = await assignPermissionPackages([{
+        employee_id: employeeId,
+        package_id: targetPackage.value
+      }]);
+      if (result.success) {
+        permissionPackagesRequestCache.clear();
+        permissionPackageOptionsRequestCache = { companyId: null, promise: null, data: null };
+        const refreshedPackages = await fetchPackages(pagination.page, false);
+        const refreshedSelected = refreshedPackages.find((pkg) => String(pkg.id) === String(selectedPackage.id));
+        if (refreshedSelected) setSelectedPackage(refreshedSelected);
+        await fetchAllPermissionPackageOptions();
+        setEmployeePackageSelections((prev) => {
+          const next = { ...prev };
+          delete next[employeeId];
+          return next;
+        });
+        toast.success('Employee package updated successfully');
+      } else {
+        toast.error(result.error || 'Failed to update employee package');
+      }
+    } finally {
+      setAssignmentLoading(false);
+    }
+  };
+
+  const toggleEmployeeSelection = (employeeId) => {
+    setSelectedEmployeeIds((prev) => (
+      prev.includes(employeeId)
+        ? prev.filter((id) => id !== employeeId)
+        : [...prev, employeeId]
+    ));
+  };
+
+  const toggleSelectAllEmployees = () => {
+    const employeeIds = getUsedByEmployees(selectedPackage).map((employee) => employee.employee_id ?? employee.id).filter(Boolean);
+    setSelectedEmployeeIds((prev) => (
+      prev.length === employeeIds.length ? [] : employeeIds
+    ));
+  };
+
+  const handleClearEmployeeSelection = () => {
+    setSelectedEmployeeIds([]);
+    setBulkTargetPackage(null);
+  };
+
+  const employeeOptionsForModal = getAssignablePackageOptions(selectedPackage?.id);
+
   // ─── Helpers ─────────────────────────────────────────────────────────────
   const normalisePermission = useCallback((permEntry) => {
     if (permEntry === null || permEntry === undefined) return null;
@@ -534,6 +774,19 @@ const PermissionManagement = () => {
     return found ? { id: found.id, code: found.code, name: found.name, action: found.action } : null;
   }, [allPermissions]);
 
+  const getUsedByEmployees = useCallback((pkg) => {
+    if (!pkg) return [];
+    return Array.isArray(pkg.used_by) ? pkg.used_by : [];
+  }, []);
+
+  const getPackageUsageCount = useCallback((pkg) => {
+    if (!pkg) return 0;
+    if (typeof pkg.total_used === 'number') return pkg.total_used;
+    return getUsedByEmployees(pkg).length;
+  }, [getUsedByEmployees]);
+
+  const hasAssignedEmployees = useCallback((pkg) => getUsedByEmployees(pkg).length > 0, [getUsedByEmployees]);
+
   const getGroupColor = (idx) => GROUP_COLORS[idx % GROUP_COLORS.length];
 
   useEffect(() => {
@@ -545,6 +798,13 @@ const PermissionManagement = () => {
   const handlePageChange = useCallback((newPage) => {
     if (newPage !== pagination.page) goToPage(newPage);
   }, [pagination.page, goToPage]);
+
+  const selectedPackageUsage = selectedPackage
+    ? {
+        totalUsed: getPackageUsageCount(selectedPackage),
+        employees: getUsedByEmployees(selectedPackage)
+      }
+    : null;
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -573,6 +833,7 @@ const PermissionManagement = () => {
           <div className="flex flex-wrap items-center justify-end gap-2">
             <RefreshButton loading={loading} onClick={() => {
               fetchAllPermissions();
+              fetchAllPermissionPackageOptions();
               fetchPackages(1, true);
             }}>
               Refresh
@@ -707,6 +968,7 @@ const PermissionManagement = () => {
                       {showGroupCode && <th className="px-6 py-4">Group Code</th>}
                       {showDescription && <th className="px-6 py-4">Description</th>}
                       {showPermissionCount && <th className="px-6 py-4 text-center">Permissions</th>}
+                      {showUsageCount && <th className="px-6 py-4 text-center">Used By</th>}
                       <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                     </tr>
                   </thead>
@@ -751,6 +1013,17 @@ const PermissionManagement = () => {
                             ) : <span className="text-xs text-gray-400 italic">None</span>}
                           </td>
                         )}
+                        {showUsageCount && (
+                          <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            {getPackageUsageCount(pkg) > 0 ? (
+                              <button type="button" onClick={() => openEmployeeListModal(pkg)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-400 hover:shadow-md transition-all duration-200 group">
+                                <FaLayerGroup size={10} className="text-emerald-500 group-hover:scale-110 transition-transform" />
+                                {getPackageUsageCount(pkg)} employee{getPackageUsageCount(pkg) !== 1 ? 's' : ''}
+                              </button>
+                            ) : <span className="text-xs text-gray-400 italic">0</span>}
+                          </td>
+                        )}
                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <ActionMenu
                             menuId={pkg.id}
@@ -777,8 +1050,12 @@ const PermissionManagement = () => {
                                 label: 'Delete',
                                 icon: <FaTrash size={12} />,
                                 onClick: () => openDeleteModal(pkg),
-                                disabled: deleteAccess.disabled,
-                                title: deleteAccess.disabled ? getAccessMessage(deleteAccess) : '',
+                                disabled: deleteAccess.disabled || hasAssignedEmployees(pkg),
+                                title: deleteAccess.disabled
+                                  ? getAccessMessage(deleteAccess)
+                                  : hasAssignedEmployees(pkg)
+                                    ? `Cannot delete package. It is assigned to ${getUsedByEmployees(pkg).length} employee(s)`
+                                    : '',
                                 className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
                               }
                             ]}
@@ -820,12 +1097,34 @@ const PermissionManagement = () => {
                           </button>
                         ) : <span className="text-xs text-gray-400 italic">No permissions</span>}
                       </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-xs font-medium text-gray-400 flex items-center gap-1"><FaLayerGroup size={9} /> Used by</p>
+                        {getPackageUsageCount(pkg) > 0 ? (
+                          <button type="button" onClick={() => openEmployeeListModal(pkg)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-400 hover:shadow-md transition-all duration-200">
+                            <FaLayerGroup size={10} className="text-emerald-500" />
+                            {getPackageUsageCount(pkg)} employee{getPackageUsageCount(pkg) !== 1 ? 's' : ''}
+                          </button>
+                        ) : <span className="text-xs text-gray-400 italic">No employees</span>}
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                     <button type="button" onClick={() => openViewModal(pkg)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={14} /></button>
                     <button type="button" onClick={() => openEditModal(pkg)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={14} /></button>
-                    <button type="button" onClick={() => openDeleteModal(pkg)} disabled={deleteAccess.disabled} title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : ''} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={14} /></button>
+                    <button
+                      type="button"
+                      onClick={() => openDeleteModal(pkg)}
+                      disabled={deleteAccess.disabled || hasAssignedEmployees(pkg)}
+                      title={deleteAccess.disabled
+                        ? getAccessMessage(deleteAccess)
+                        : hasAssignedEmployees(pkg)
+                          ? `Cannot delete package. It is assigned to ${getUsedByEmployees(pkg).length} employee(s)`
+                          : ''}
+                      className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FaTrash size={14} />
+                    </button>
                   </div>
                 </motion.div>
               ))}
@@ -898,6 +1197,8 @@ const PermissionManagement = () => {
                       onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
                       allPermissions={allPermissions}
                       permsLoading={permsLoading}
+                      packageUsage={modalType === MODAL_TYPES.EDIT && selectedPackageUsage ? selectedPackageUsage : null}
+                      onOpenEmployeeList={selectedPackage ? () => openEmployeeListModal(selectedPackage) : undefined}
                     />
                   </div>
 
@@ -922,8 +1223,8 @@ const PermissionManagement = () => {
                 </form>
               )}
 
-              {/* VIEW & PERM_LIST Modals */}
-              {(modalType === MODAL_TYPES.VIEW || modalType === MODAL_TYPES.PERM_LIST) && selectedPackage && (
+              {/* VIEW, PERM_LIST & EMPLOYEE_LIST Modals */}
+              {(modalType === MODAL_TYPES.VIEW || modalType === MODAL_TYPES.PERM_LIST || modalType === MODAL_TYPES.EMPLOYEE_LIST) && selectedPackage && (
                 <>
                   {/* Header */}
                   <div className="shrink-0 border-b border-slate-100 bg-white p-4 sm:px-6 sm:py-4 z-10">
@@ -934,7 +1235,9 @@ const PermissionManagement = () => {
                         </div>
                         <div>
                           <h2 className="text-lg font-bold text-slate-900">{selectedPackage.package_name}</h2>
-                          <p className="text-[11px] text-slate-500">Package Details & Permissions</p>
+                          <p className="text-[11px] text-slate-500">
+                            {modalType === MODAL_TYPES.EMPLOYEE_LIST ? 'Assigned employees' : 'Package Details & Permissions'}
+                          </p>
                         </div>
                       </div>
                       <button
@@ -976,11 +1279,19 @@ const PermissionManagement = () => {
                     </div>
 
                     {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                       <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 text-center">
                         <p className="text-xl font-black text-indigo-600">{selectedPackage.permissions?.length || 0}</p>
                         <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">Permissions</p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => openEmployeeListModal(selectedPackage)}
+                        className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-center transition-all hover:bg-emerald-50 hover:border-emerald-200"
+                      >
+                        <p className="text-xl font-black text-emerald-600">{selectedPackageUsage?.totalUsed || 0}</p>
+                        <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mt-0.5">Used By</p>
+                      </button>
                       <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-3 text-center">
                         <p className="text-base font-black text-purple-600 truncate">{selectedPackage.group_code}</p>
                         <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wider mt-0.5">Group Code</p>
@@ -991,19 +1302,168 @@ const PermissionManagement = () => {
                       </div>
                     </div>
 
-                    {/* Permissions List */}
+                    {/* Assigned List */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="text-[12px] font-bold text-slate-700 flex items-center gap-2">
-                          <FaShieldAlt className="text-indigo-500" size={12} />
-                          Assigned Permissions
+                          {modalType === MODAL_TYPES.EMPLOYEE_LIST ? (
+                            <>
+                              <FaLayerGroup className="text-emerald-500" size={12} />
+                              Assigned Employees
+                            </>
+                          ) : (
+                            <>
+                              <FaShieldAlt className="text-indigo-500" size={12} />
+                              Assigned Permissions
+                            </>
+                          )}
                         </h4>
-                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-bold uppercase tracking-wider">
-                          {selectedPackage.permissions?.length || 0} Total
+                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider ${modalType === MODAL_TYPES.EMPLOYEE_LIST ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                          {modalType === MODAL_TYPES.EMPLOYEE_LIST
+                            ? `${selectedPackageUsage?.totalUsed || 0} Total`
+                            : `${selectedPackage.permissions?.length || 0} Total`}
                         </span>
                       </div>
 
-                      {selectedPackage.permissions?.length > 0 ? (
+                      {modalType === MODAL_TYPES.EMPLOYEE_LIST ? (
+                        <div className="space-y-4">
+                          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                              <div className="space-y-1">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">Bulk reassignment</p>
+                                <p className="text-sm text-slate-600">
+                                  Select employees and move them to another permission package.
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={toggleSelectAllEmployees}
+                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                                >
+                                  {selectedEmployeeIds.length === getUsedByEmployees(selectedPackage).length ? 'Clear selection' : 'Select all'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleClearEmployeeSelection}
+                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                                >
+                                  Reset
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                              <div>
+                                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                                  Target package
+                                </label>
+                                <SelectField
+                                  isClearable
+                                  isSearchable
+                                  isDisabled={assignmentLoading || packageOptionsLoading}
+                                  options={employeeOptionsForModal}
+                                  value={bulkTargetPackage}
+                                  onChange={setBulkTargetPackage}
+                                  placeholder={packageOptionsLoading ? 'Loading packages...' : 'Select new permission package'}
+                                  classNamePrefix="react-select"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={handleBulkApplyPackage}
+                                disabled={assignmentLoading || selectedEmployeeIds.length === 0 || !bulkTargetPackage}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-100 transition hover:from-emerald-700 hover:to-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {assignmentLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+                                Update selected ({selectedEmployeeIds.length})
+                              </button>
+                            </div>
+                          </div>
+
+                          {selectedPackageUsage?.employees?.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-3">
+                              {selectedPackageUsage.employees.map((employee, idx) => {
+                                const employeeId = employee.employee_id ?? employee.id;
+                                const selectedOption = employeePackageSelections[employeeId] || null;
+                                const isSelected = selectedEmployeeIds.includes(employeeId);
+
+                                return (
+                                  <div
+                                    key={employeeId ?? idx}
+                                    className={`rounded-2xl border bg-white p-4 shadow-sm transition-all ${isSelected ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-100 hover:border-slate-200'}`}
+                                  >
+                                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-center">
+                                      <label className="flex items-start gap-3">
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={() => toggleEmployeeSelection(employeeId)}
+                                          className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                        />
+                                        <div className="flex items-center gap-3">
+                                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[11px] font-black text-emerald-700">
+                                            {idx + 1}
+                                          </span>
+                                          <div className="min-w-0">
+                                            <p className="truncate text-sm font-bold text-slate-900">{employee.name || 'Unknown Employee'}</p>
+                                            <p className="mt-0.5 truncate text-[11px] text-slate-500">
+                                              {employee.employee_code || employee.email || 'No employee code'}
+                                            </p>
+                                            <p className="mt-1 text-[11px] font-medium text-slate-400">
+                                              {employee.designation || 'No designation'}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </label>
+
+                                      <div className="space-y-1">
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">New package</p>
+                                        <SelectField
+                                          isClearable
+                                          isSearchable
+                                          isDisabled={assignmentLoading || packageOptionsLoading}
+                                          options={employeeOptionsForModal}
+                                          value={selectedOption}
+                                          onChange={(option) => setEmployeePackageSelections((prev) => ({ ...prev, [employeeId]: option }))}
+                                          placeholder="Select package"
+                                          classNamePrefix="react-select"
+                                        />
+                                      </div>
+
+                                      <div className="flex items-center justify-start gap-2 lg:justify-end">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleSingleEmployeeApply(employeeId, selectedOption)}
+                                          disabled={assignmentLoading || !selectedOption}
+                                          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                          {assignmentLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+                                          Update
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600">
+                                        Current package
+                                      </span>
+                                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
+                                        {selectedPackage.package_name}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                              <FaBan className="text-2xl text-slate-300 mx-auto mb-1.5" />
+                              <p className="text-[12px] font-bold text-slate-400">No employees assigned</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : selectedPackage.permissions?.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {(selectedPackage.permissions || []).map((permEntry, idx) => {
                             const perm = normalisePermission(permEntry);
@@ -1042,13 +1502,15 @@ const PermissionManagement = () => {
                     >
                       Close
                     </button>
-                    <button
-                      onClick={() => openEditModal(selectedPackage)}
-                      disabled={updateAccess.disabled}
-                      className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-[13px] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaEdit size={12} /> Edit Package
-                    </button>
+                    {modalType !== MODAL_TYPES.EMPLOYEE_LIST && (
+                      <button
+                        onClick={() => openEditModal(selectedPackage)}
+                        disabled={updateAccess.disabled}
+                        className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-[13px] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <FaEdit size={12} /> Edit Package
+                      </button>
+                    )}
                   </div>
                 </>
               )}
