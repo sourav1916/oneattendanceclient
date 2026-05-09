@@ -117,11 +117,30 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [punchIn, setPunchIn] = useState(employee?.punch_in?.slice(0, 5) || '09:00');
   const [punchOut, setPunchOut] = useState(employee?.punch_out?.slice(0, 5) || '18:00');
   const [isOt, setIsOt] = useState(employee?.is_ot || false);
-  const [otHours, setOtHours] = useState('');
-  const [fine, setFine] = useState(employee?.fine || '');
+  
+  const defaultOtHours = employee?.ot_hours || (employee?.calculations?.overtime_minutes > 0 ? (employee.calculations.overtime_minutes / 60).toFixed(1) : '');
+  const [otHours, setOtHours] = useState(defaultOtHours);
+  
+  const defaultFine = employee?.fine || (employee?.calculations?.late_minutes > 0 ? '100' : '');
+  const [fine, setFine] = useState(defaultFine);
+  
   const [fineReason, setFineReason] = useState('');
   const [halfSession, setHalfSession] = useState('first');
   const [leaveType, setLeaveType] = useState('CL');
+
+  // Ensure state stays synced when employee or tab changes
+  useEffect(() => {
+    setActiveTab(initialTab || 'present');
+    setPunchIn(employee?.punch_in?.slice(0, 5) || '09:00');
+    setPunchOut(employee?.punch_out?.slice(0, 5) || '18:00');
+    setIsOt(employee?.is_ot || false);
+    
+    const defOt = employee?.ot_hours || (employee?.calculations?.overtime_minutes > 0 ? (employee.calculations.overtime_minutes / 60).toFixed(1) : '');
+    setOtHours(defOt);
+    
+    const defFine = employee?.fine || (employee?.calculations?.late_minutes > 0 ? '100' : '');
+    setFine(defFine);
+  }, [employee, initialTab]);
 
   // Calculation Logic
   const metrics = useMemo(() => {
@@ -301,6 +320,17 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       case 'fine':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {employee.calculations?.late_minutes > 0 && !employee.fine && (
+              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex gap-4">
+                <div className="h-10 w-10 shrink-0 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
+                  <FaMoneyBillWave size={18} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-rose-900">Late Arrival Detected</h4>
+                  <p className="text-xs text-rose-700/70 font-medium">Employee was late by {employee.calculations.late_minutes} minutes. Suggested fine: ₹100.</p>
+                </div>
+              </div>
+            )}
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Fine Amount (₹)</label>
               <input type="number" min="0" value={fine} onChange={e => setFine(e.target.value)} placeholder="Enter amount"
@@ -322,7 +352,11 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
               <div>
                 <h4 className="text-sm font-black text-orange-900">Overtime Calculation</h4>
-                <p className="text-xs text-orange-700/70 font-medium">Extra hours will be added to the employee's total productive time.</p>
+                <p className="text-xs text-orange-700/70 font-medium">
+                  {employee.calculations?.overtime_minutes > 0 
+                    ? `Calculated OT: ${employee.calculations.overtime_minutes} minutes (${(employee.calculations.overtime_minutes / 60).toFixed(1)} hrs).` 
+                    : "Extra hours will be added to the employee's total productive time."}
+                </p>
               </div>
             </div>
             <div>
@@ -462,20 +496,25 @@ const EmployeeAttendanceCard = ({ emp, onAction }) => {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            {emp.fine && (
+            {emp.fine ? (
               <p className="text-[10px] text-rose-500 font-bold">Fine: ₹{emp.fine}</p>
-            )}
-            {emp.is_ot && (
+            ) : emp.calculations?.late_minutes > 0 ? (
+              <p className="text-[10px] text-rose-500 font-bold">Late: {emp.calculations.late_minutes} min</p>
+            ) : null}
+            
+            {emp.is_ot ? (
               <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">OT</span>
-            )}
+            ) : emp.calculations?.overtime_minutes > 0 ? (
+              <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">Pending OT: {(emp.calculations.overtime_minutes / 60).toFixed(1)}h</span>
+            ) : null}
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 shrink-0 md:w-80">
           <ManagementButton size="sm" tone="emerald" variant={emp.status === 'present' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
           <ManagementButton size="sm" tone="blue" variant={emp.status === 'half_day' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
           <ManagementButton size="sm" tone="rose" variant={emp.status === 'absent' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-          <ManagementButton size="sm" tone="slate" variant={!!emp.fine ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Fine</ManagementButton>
-          <ManagementButton size="sm" tone="amber" variant={emp.is_ot ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+          <ManagementButton size="sm" tone="slate" variant={emp.fine || emp.calculations?.late_minutes > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Fine</ManagementButton>
+          <ManagementButton size="sm" tone="amber" variant={emp.is_ot || emp.calculations?.overtime_minutes > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
           <ManagementButton size="sm" tone="violet" variant={emp.status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
         </div>
       </div>
@@ -496,7 +535,7 @@ const UnmarkedAttendance = () => {
   const [loading, setLoading] = useState(true);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
   const [search, setSearch] = useState('');
-  const [dayStatus, setDayStatus] = useState('unmarked');
+  const [dayStatus, setDayStatus] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -549,8 +588,10 @@ const UnmarkedAttendance = () => {
             punch_in: att?.punch_in?.time || null,
             punch_out: att?.punch_out?.time || null,
             status: att?.day_status || 'unmarked',
-            fine: att?.calculations?.late_minutes > 0 ? 100 : null,
+            fine: att?.fine || null,
             is_ot: att?.is_overtime || false,
+            ot_hours: att?.ot_hours || null,
+            calculations: att?.calculations || null,
             attendance_record: att
           };
         });
@@ -735,6 +776,7 @@ const UnmarkedAttendance = () => {
       <AnimatePresence>
         {modal && modal.type !== 'logs' && (
           <ManageAttendanceModal
+            key={modal.emp.id}
             employee={modal.emp}
             initialTab={modal.type}
             onClose={() => setModal(null)}
