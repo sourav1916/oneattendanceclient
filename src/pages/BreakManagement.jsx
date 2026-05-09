@@ -137,6 +137,8 @@ const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [liveAction, setLiveAction] = useState(employee.on_break ? 'end' : 'start');
   const [liveType, setLiveType] = useState('Short');
   const [liveTime, setLiveTime] = useState(nowTime());
+  
+  const [notes, setNotes] = useState('');
 
   const TABS = [
     { id: 'live', label: 'Live Track', icon: FaPlay, color: 'text-emerald-500', bg: 'bg-emerald-50' },
@@ -150,10 +152,13 @@ const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
     await onSubmit({
       employee_id: employee.employee_id,
       date: employee.date,
-      break_type: breakType,
-      break_start: breakStart,
-      break_end: breakEnd || null,
-      duration: duration ? Number(duration) : calcDur(breakStart, breakEnd),
+      type: 'break',
+      status: 'manual',
+      value1: breakType,
+      punch_in: breakStart,
+      punch_out: breakEnd || null,
+      value2: String(duration ? Number(duration) : (calcDur(breakStart, breakEnd) || '')),
+      notes: notes,
     });
     setLoading(false);
   };
@@ -164,9 +169,12 @@ const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
     await onSubmit({
       employee_id: employee.employee_id,
       date: employee.date,
-      action: liveAction,
-      break_type: liveType,
-      time: liveTime,
+      type: 'break',
+      status: 'live',
+      value1: liveType,
+      value2: liveAction,
+      punch_in: liveTime,
+      notes: notes,
     });
     setLoading(false);
   };
@@ -296,8 +304,18 @@ const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
           })}
         </div>
         <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-8">
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
             {renderContent()}
+            {activeTab !== 'history' && (
+              <>
+                <hr className="border-slate-100" />
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
+                  <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Add any details..."
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -505,12 +523,18 @@ const BreakManagement = () => {
   const handleUpdate = async (payload) => {
     setSaving(true);
     try {
-      await new Promise(r => setTimeout(r, 500));
-      toast.success('Updated successfully!');
-      setModal(null);
-      fetchBreaks();
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+      const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Updated successfully!');
+        setModal(null);
+        fetchBreaks();
+      } else {
+        throw new Error(result.message || 'Update failed');
+      }
     } catch (err) {
-      toast.error('Update failed');
+      toast.error(err.message || 'Update failed');
     } finally {
       setSaving(false);
     }

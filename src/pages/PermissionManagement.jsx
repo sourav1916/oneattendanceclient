@@ -679,10 +679,23 @@ const PermissionManagement = () => {
       return;
     }
 
-    const assignments = selectedEmployeeIds.map((employeeId) => ({
-      employee_id: employeeId,
-      package_id: bulkTargetPackage.value
-    }));
+    const assignments = selectedEmployeeIds
+      .map((employeeId) => {
+        const chosenPackage = employeePackageSelections[employeeId] || bulkTargetPackage;
+        const packageId = chosenPackage?.value;
+        if (!packageId) return null;
+        return {
+          employee_id: employeeId,
+          package_id: packageId
+        };
+      })
+      .filter(Boolean);
+
+    if (assignments.length === 0) {
+      toast.warning('Select a target package for at least one employee');
+      return;
+    }
+
     setAssignmentLoading(true);
     try {
       const result = await assignPermissionPackages(assignments);
@@ -723,11 +736,6 @@ const PermissionManagement = () => {
         const refreshedSelected = refreshedPackages.find((pkg) => String(pkg.id) === String(selectedPackage.id));
         if (refreshedSelected) setSelectedPackage(refreshedSelected);
         await fetchAllPermissionPackageOptions();
-        setEmployeePackageSelections((prev) => {
-          const next = { ...prev };
-          delete next[employeeId];
-          return next;
-        });
         toast.success('Employee package updated successfully');
       } else {
         toast.error(result.error || 'Failed to update employee package');
@@ -747,9 +755,23 @@ const PermissionManagement = () => {
 
   const toggleSelectAllEmployees = () => {
     const employeeIds = getUsedByEmployees(selectedPackage).map((employee) => employee.employee_id ?? employee.id).filter(Boolean);
-    setSelectedEmployeeIds((prev) => (
-      prev.length === employeeIds.length ? [] : employeeIds
-    ));
+    const allSelected = selectedEmployeeIds.length === employeeIds.length && employeeIds.length > 0;
+    if (allSelected) {
+      setSelectedEmployeeIds([]);
+      setBulkTargetPackage(null);
+      setEmployeePackageSelections({});
+      return;
+    }
+
+    const nextSelections = {};
+    const bulkOption = bulkTargetPackage || null;
+    getUsedByEmployees(selectedPackage).forEach((employee) => {
+      const employeeId = employee.employee_id ?? employee.id;
+      if (employeeId) nextSelections[employeeId] = bulkOption;
+    });
+
+    setSelectedEmployeeIds(employeeIds);
+    setEmployeePackageSelections(nextSelections);
   };
 
   const handleClearEmployeeSelection = () => {
@@ -1156,7 +1178,7 @@ const PermissionManagement = () => {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 18 }}
               transition={{ type: "spring", damping: 25, stiffness: 280 }}
-              className={`relative w-full ${modalType === MODAL_TYPES.DELETE_CONFIRM ? 'max-w-md' : 'max-w-4xl'} max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200`}
+              className={`relative w-full ${modalType === MODAL_TYPES.DELETE_CONFIRM ? 'max-w-md' : modalType === MODAL_TYPES.EMPLOYEE_LIST ? 'max-w-6xl' : 'max-w-4xl'} max-h-[92vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-200`}
               onClick={e => e.stopPropagation()}
             >
               {/* CREATE & EDIT Modals */}
@@ -1250,245 +1272,229 @@ const PermissionManagement = () => {
                   </div>
 
                   {/* Body */}
-                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar">
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar bg-slate-50/40">
                     {/* Profile Card */}
-                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 shadow-sm">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm border border-indigo-100">
-                            <FaShieldAlt size={20} />
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-bold text-slate-900 truncate">{selectedPackage.package_name}</h3>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-bold border border-indigo-100 uppercase tracking-wider">
-                                {selectedPackage.group_code}
-                              </span>
-                              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-bold border border-emerald-100 uppercase tracking-wider">
-                                Active
-                              </span>
+                    <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden ${modalType === MODAL_TYPES.EMPLOYEE_LIST ? 'lg:grid lg:grid-cols-[360px_minmax(0,1fr)]' : ''}`}>
+                      <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white p-4 sm:p-5">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-100">
+                              <FaShieldAlt size={20} />
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="truncate text-lg font-black text-slate-900">{selectedPackage.package_name}</h3>
+                              <div className="mt-1 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-700">
+                                  {selectedPackage.group_code}
+                                </span>
+                                <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                                  {selectedPackageUsage?.totalUsed || 0} employees
+                                </span>
+                                <span className="rounded-full border border-slate-100 bg-slate-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                                  {selectedPackage.permissions?.length || 0} permissions
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      {selectedPackage.description && (
-                        <p className="mt-3 text-[11px] text-slate-500 leading-relaxed bg-white/50 p-2.5 rounded-lg border border-slate-100">
-                          {selectedPackage.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                      <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 text-center">
-                        <p className="text-xl font-black text-indigo-600">{selectedPackage.permissions?.length || 0}</p>
-                        <p className="text-[9px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">Permissions</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => openEmployeeListModal(selectedPackage)}
-                        className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-center transition-all hover:bg-emerald-50 hover:border-emerald-200"
-                      >
-                        <p className="text-xl font-black text-emerald-600">{selectedPackageUsage?.totalUsed || 0}</p>
-                        <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mt-0.5">Used By</p>
-                      </button>
-                      <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-3 text-center">
-                        <p className="text-base font-black text-purple-600 truncate">{selectedPackage.group_code}</p>
-                        <p className="text-[9px] text-purple-500 font-bold uppercase tracking-wider mt-0.5">Group Code</p>
-                      </div>
-                      <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 text-center col-span-2 md:col-span-1">
-                        <p className="text-base font-black text-emerald-600">Standard</p>
-                        <p className="text-[9px] text-emerald-500 font-bold uppercase tracking-wider mt-0.5">Package Level</p>
-                      </div>
-                    </div>
-
-                    {/* Assigned List */}
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-[12px] font-bold text-slate-700 flex items-center gap-2">
-                          {modalType === MODAL_TYPES.EMPLOYEE_LIST ? (
-                            <>
-                              <FaLayerGroup className="text-emerald-500" size={12} />
-                              Assigned Employees
-                            </>
-                          ) : (
-                            <>
-                              <FaShieldAlt className="text-indigo-500" size={12} />
-                              Assigned Permissions
-                            </>
-                          )}
-                        </h4>
-                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider ${modalType === MODAL_TYPES.EMPLOYEE_LIST ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                          {modalType === MODAL_TYPES.EMPLOYEE_LIST
-                            ? `${selectedPackageUsage?.totalUsed || 0} Total`
-                            : `${selectedPackage.permissions?.length || 0} Total`}
-                        </span>
+                        {selectedPackage.description && (
+                          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-500">
+                            {selectedPackage.description}
+                          </p>
+                        )}
                       </div>
 
-                      {modalType === MODAL_TYPES.EMPLOYEE_LIST ? (
-                        <div className="space-y-4">
-                          <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                              <div className="space-y-1">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">Bulk reassignment</p>
-                                <p className="text-sm text-slate-600">
-                                  Select employees and move them to another permission package.
-                                </p>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={toggleSelectAllEmployees}
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                                >
-                                  {selectedEmployeeIds.length === getUsedByEmployees(selectedPackage).length ? 'Clear selection' : 'Select all'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={handleClearEmployeeSelection}
-                                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
-                                >
-                                  Reset
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                              <div>
-                                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                                  Target package
-                                </label>
-                                <SelectField
-                                  isClearable
-                                  isSearchable
-                                  isDisabled={assignmentLoading || packageOptionsLoading}
-                                  options={employeeOptionsForModal}
-                                  value={bulkTargetPackage}
-                                  onChange={setBulkTargetPackage}
-                                  placeholder={packageOptionsLoading ? 'Loading packages...' : 'Select new permission package'}
-                                  classNamePrefix="react-select"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={handleBulkApplyPackage}
-                                disabled={assignmentLoading || selectedEmployeeIds.length === 0 || !bulkTargetPackage}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-100 transition hover:from-emerald-700 hover:to-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                {assignmentLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
-                                Update selected ({selectedEmployeeIds.length})
-                              </button>
-                            </div>
-                          </div>
-
-                          {selectedPackageUsage?.employees?.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-3">
-                              {selectedPackageUsage.employees.map((employee, idx) => {
-                                const employeeId = employee.employee_id ?? employee.id;
-                                const selectedOption = employeePackageSelections[employeeId] || null;
-                                const isSelected = selectedEmployeeIds.includes(employeeId);
-
-                                return (
-                                  <div
-                                    key={employeeId ?? idx}
-                                    className={`rounded-2xl border bg-white p-4 shadow-sm transition-all ${isSelected ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-100 hover:border-slate-200'}`}
+                      <div className={modalType === MODAL_TYPES.EMPLOYEE_LIST ? 'lg:border-r lg:border-slate-100' : ''}>
+                        {modalType === MODAL_TYPES.EMPLOYEE_LIST ? (
+                          <div className="p-4 sm:p-5 space-y-4">
+                            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">Bulk transfer</p>
+                                  <p className="mt-1 text-sm text-slate-600">
+                                    Move selected employees to another permission package.
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={toggleSelectAllEmployees}
+                                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
                                   >
-                                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-center">
-                                      <label className="flex items-start gap-3">
+                                    {selectedEmployeeIds.length === getUsedByEmployees(selectedPackage).length ? 'Clear' : 'Select all'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleClearEmployeeSelection}
+                                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm transition hover:bg-slate-50"
+                                  >
+                                    Reset
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+                                <div>
+                                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                                    Target package
+                                  </label>
+                              <SelectField
+                                isClearable
+                                isSearchable
+                                isDisabled={assignmentLoading || packageOptionsLoading}
+                                options={employeeOptionsForModal}
+                                value={bulkTargetPackage}
+                                onChange={(option) => {
+                                  setBulkTargetPackage(option);
+                                  if (selectedEmployeeIds.length > 0) {
+                                    setEmployeePackageSelections((prev) => {
+                                      const next = { ...prev };
+                                      selectedEmployeeIds.forEach((employeeId) => {
+                                        next[employeeId] = option;
+                                      });
+                                      return next;
+                                    });
+                                  }
+                                }}
+                                placeholder={packageOptionsLoading ? 'Loading packages...' : 'Select new package'}
+                                classNamePrefix="react-select"
+                              />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleBulkApplyPackage}
+                                  disabled={assignmentLoading || selectedEmployeeIds.length === 0 || !bulkTargetPackage}
+                                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition hover:from-indigo-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {assignmentLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+                                  Apply
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              {selectedPackageUsage?.employees?.length > 0 ? (
+                                selectedPackageUsage.employees.map((employee, idx) => {
+                                  const employeeId = employee.employee_id ?? employee.id;
+                                  const selectedOption = employeePackageSelections[employeeId] || null;
+                                  const isSelected = selectedEmployeeIds.includes(employeeId);
+
+                                  return (
+                                    <div
+                                      key={employeeId ?? idx}
+                                      className={`rounded-2xl border bg-white p-4 shadow-sm transition-all ${isSelected ? 'border-indigo-300 ring-2 ring-indigo-100' : 'border-slate-100 hover:border-slate-200'}`}
+                                    >
+                                      <div className="flex items-start gap-3">
                                         <input
                                           type="checkbox"
                                           checked={isSelected}
                                           onChange={() => toggleEmployeeSelection(employeeId)}
-                                          className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                          className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         />
-                                        <div className="flex items-center gap-3">
-                                          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-[11px] font-black text-emerald-700">
-                                            {idx + 1}
-                                          </span>
-                                          <div className="min-w-0">
-                                            <p className="truncate text-sm font-bold text-slate-900">{employee.name || 'Unknown Employee'}</p>
-                                            <p className="mt-0.5 truncate text-[11px] text-slate-500">
-                                              {employee.employee_code || employee.email || 'No employee code'}
-                                            </p>
-                                            <p className="mt-1 text-[11px] font-medium text-slate-400">
-                                              {employee.designation || 'No designation'}
-                                            </p>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                            <div className="min-w-0">
+                                              <div className="flex items-center gap-3">
+                                                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-xs font-black text-indigo-700">
+                                                  {idx + 1}
+                                                </span>
+                                                <div className="min-w-0">
+                                                  <p className="truncate text-sm font-bold text-slate-900">{employee.name || 'Unknown Employee'}</p>
+                                                  <p className="truncate text-[11px] text-slate-500">{employee.employee_code || employee.email || 'No employee code'}</p>
+                                                  <p className="mt-1 text-[11px] text-slate-400">{employee.designation || 'No designation'}</p>
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            <div className="grid gap-3 lg:min-w-[330px]">
+                                              <SelectField
+                                                isClearable
+                                                isSearchable
+                                                isDisabled={assignmentLoading || packageOptionsLoading}
+                                                options={employeeOptionsForModal}
+                                                value={selectedOption}
+                                                onChange={(option) => {
+                                                  setEmployeePackageSelections((prev) => ({ ...prev, [employeeId]: option }));
+                                                  if (option && selectedEmployeeIds.includes(employeeId) && selectedEmployeeIds.length > 0) {
+                                                    setBulkTargetPackage(option);
+                                                  }
+                                                }}
+                                                placeholder="Select new package"
+                                                classNamePrefix="react-select"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => handleSingleEmployeeApply(employeeId, selectedOption)}
+                                                disabled={assignmentLoading || !selectedOption}
+                                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                                              >
+                                                {assignmentLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+                                                Update employee
+                                              </button>
+                                            </div>
+                                          </div>
+
+                                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600">
+                                              Current
+                                            </span>
+                                            <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-indigo-700">
+                                              {selectedPackage.package_name}
+                                            </span>
                                           </div>
                                         </div>
-                                      </label>
-
-                                      <div className="space-y-1">
-                                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">New package</p>
-                                        <SelectField
-                                          isClearable
-                                          isSearchable
-                                          isDisabled={assignmentLoading || packageOptionsLoading}
-                                          options={employeeOptionsForModal}
-                                          value={selectedOption}
-                                          onChange={(option) => setEmployeePackageSelections((prev) => ({ ...prev, [employeeId]: option }))}
-                                          placeholder="Select package"
-                                          classNamePrefix="react-select"
-                                        />
-                                      </div>
-
-                                      <div className="flex items-center justify-start gap-2 lg:justify-end">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleSingleEmployeeApply(employeeId, selectedOption)}
-                                          disabled={assignmentLoading || !selectedOption}
-                                          className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                        >
-                                          {assignmentLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
-                                          Update
-                                        </button>
                                       </div>
                                     </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center">
+                                  <FaBan className="mx-auto mb-2 text-2xl text-slate-300" />
+                                  <p className="text-sm font-semibold text-slate-500">No employees assigned</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
 
-                                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                                        Current package
-                                      </span>
-                                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
-                                        {selectedPackage.package_name}
-                                      </span>
+                      {modalType !== MODAL_TYPES.EMPLOYEE_LIST && (
+                        <div className="p-4 sm:p-5">
+                          <div className="mb-3 flex items-center justify-between">
+                            <h4 className="flex items-center gap-2 text-[12px] font-bold text-slate-700">
+                              <FaShieldAlt className="text-indigo-500" size={12} />
+                              Package permissions
+                            </h4>
+                            <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-700">
+                              {selectedPackage.permissions?.length || 0} Total
+                            </span>
+                          </div>
+
+                          {selectedPackage.permissions?.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {(selectedPackage.permissions || []).map((permEntry, idx) => {
+                                const perm = normalisePermission(permEntry);
+                                const displayCode = perm?.code ?? (typeof permEntry === 'object' ? permEntry?.code : `#${permEntry}`);
+                                const displayName = perm?.name ?? (typeof permEntry === 'object' ? permEntry?.name : 'Unknown Permission');
+                                return (
+                                  <div key={idx} className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
+                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 text-[10px] font-black text-indigo-700">
+                                      {idx + 1}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className="truncate text-xs font-bold text-slate-800">{displayName}</p>
+                                      <p className="truncate text-[9px] font-mono uppercase tracking-tight text-slate-400">{displayCode}</p>
                                     </div>
                                   </div>
                                 );
                               })}
                             </div>
                           ) : (
-                            <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                              <FaBan className="text-2xl text-slate-300 mx-auto mb-1.5" />
-                              <p className="text-[12px] font-bold text-slate-400">No employees assigned</p>
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                              <FaBan className="mx-auto mb-2 text-2xl text-slate-300" />
+                              <p className="text-sm font-semibold text-slate-500">No permissions assigned</p>
                             </div>
                           )}
-                        </div>
-                      ) : selectedPackage.permissions?.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {(selectedPackage.permissions || []).map((permEntry, idx) => {
-                            const perm = normalisePermission(permEntry);
-                            const displayCode = perm?.code ?? (typeof permEntry === 'object' ? permEntry?.code : `#${permEntry}`);
-                            const displayName = perm?.name ?? (typeof permEntry === 'object' ? permEntry?.name : 'Unknown Permission');
-                            return (
-                              <div key={idx} className="flex items-center gap-2.5 px-2.5 py-1.5 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 transition-all group">
-                                <span className="w-5 h-5 rounded-lg bg-slate-50 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 text-[9px] font-bold flex items-center justify-center flex-shrink-0 transition-colors">
-                                  {idx + 1}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-[11px] font-bold text-slate-800 truncate">{displayName}</p>
-                                  <p className="text-[8px] text-slate-400 font-mono mt-0.5 uppercase tracking-tight">{displayCode}</p>
-                                </div>
-                                <div className="w-4 h-4 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                                  <FaCheck size={7} className="text-emerald-500" />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                          <FaBan className="text-2xl text-slate-300 mx-auto mb-1.5" />
-                          <p className="text-[12px] font-bold text-slate-400">No permissions assigned</p>
                         </div>
                       )}
                     </div>

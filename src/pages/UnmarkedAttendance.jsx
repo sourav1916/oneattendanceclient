@@ -124,7 +124,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const defaultFine = employee?.fine || (employee?.calculations?.late_minutes > 0 ? '100' : '');
   const [fine, setFine] = useState(defaultFine);
   
-  const [fineReason, setFineReason] = useState('');
+  const [notes, setNotes] = useState('');
   const [halfSession, setHalfSession] = useState('first');
   const [leaveType, setLeaveType] = useState('CL');
 
@@ -189,7 +189,13 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
   const handleApply = async () => {
     setLoading(true);
-    let payload = { employee_id: employee.employee_id, date: employee.date, status: activeTab };
+    let payload = { 
+      employee_id: employee.employee_id, 
+      date: employee.date, 
+      type: 'attendance',
+      status: activeTab,
+      notes: notes
+    };
 
     if (activeTab === 'present') {
       if (!punchIn || !punchOut) {
@@ -201,9 +207,9 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         ...payload,
         punch_in: punchIn,
         punch_out: punchOut,
-        is_ot: metrics.isOvertime,
-        is_half_day: metrics.isHalfDay,
-        fine: fine ? Number(fine) : (metrics.isDeductible ? 100 : null) 
+        is_overtime: metrics.isOvertime,
+        is_deductible: metrics.isDeductible,
+        value1: fine ? String(fine) : (metrics.isDeductible ? "100" : null) 
       };
     } else if (activeTab === 'half_day') {
       if (!punchIn) {
@@ -211,18 +217,34 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         setLoading(false);
         return;
       }
-      payload = { ...payload, punch_in: punchIn, punch_out: punchOut || null, half_day_session: halfSession };
+      payload = { 
+        ...payload, 
+        punch_in: punchIn, 
+        punch_out: punchOut || null, 
+        half_day_session: halfSession 
+      };
     } else if (activeTab === 'fine') {
       if (!fine) {
         toast.error('Fine amount is required');
         setLoading(false);
         return;
       }
-      payload = { employee_id: employee.employee_id, date: employee.date, fine: Number(fine), fine_reason: fineReason };
+      payload = { 
+        ...payload, 
+        value1: String(fine) 
+      };
     } else if (activeTab === 'ot') {
-      payload = { employee_id: employee.employee_id, date: employee.date, is_ot: true, ot_hours: otHours ? Number(otHours) : null };
+      payload = { 
+        ...payload, 
+        is_overtime: true, 
+        value1: otHours ? String(otHours) : null 
+      };
     } else if (activeTab === 'paid_leave') {
-      payload = { ...payload, leave_type: leaveType };
+      payload = { 
+        ...payload, 
+        value1: "paid",
+        value2: leaveType 
+      };
     }
 
     await onSubmit(payload);
@@ -336,11 +358,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <input type="number" min="0" value={fine} onChange={e => setFine(e.target.value)} placeholder="Enter amount"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all" />
             </div>
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Reason (optional)</label>
-              <textarea value={fineReason} onChange={e => setFineReason(e.target.value)} rows={3} placeholder="Reason for deduction..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all" />
-            </div>
           </div>
         );
       case 'ot':
@@ -433,8 +450,14 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
           })}
         </div>
         <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-8">
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
             {renderContent()}
+            <hr className="border-slate-100" />
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Add any details or reasoning..."
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+            </div>
           </div>
         </div>
       </div>
@@ -660,10 +683,16 @@ const UnmarkedAttendance = () => {
   const handleSubmit = async (payload, empId) => {
     setSaving(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
-      toast.success('Attendance updated successfully!');
-      setModal(null);
-      fetchAttendance();
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+      const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
+      const result = await response.json();
+      if (result.success) {
+        toast.success('Attendance updated successfully!');
+        setModal(null);
+        fetchAttendance();
+      } else {
+        throw new Error(result.message || 'Failed to update attendance');
+      }
     } catch (err) {
       toast.error(err.message || 'Failed to update attendance');
     } finally {
