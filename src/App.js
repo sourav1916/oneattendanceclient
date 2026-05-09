@@ -40,6 +40,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import ProfilePage from "./pages/Profile";
 import EmployeeProfile from "./pages/EmployeeProfile";
 import EmployeeSalaryHistory from "./pages/EmployeeSalaryHistory";
+import UnmarkedAttendance from "./pages/UnmarkedAttendance";
+import BreakManagement from "./pages/BreakManagement";
 import {
   TabbedManagementHub,
 } from "./components/common";
@@ -58,6 +60,7 @@ import {
   FaFingerprint,
   FaHistory,
   FaListUl,
+  FaCoffee,
 } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -219,24 +222,24 @@ const ATTENDANCE_HUB_TABS = [
 
 const ATTENDANCE_MANAGEMENT_HUB_TABS = [
   {
-    id: "pending",
-    label: "Pending Requests",
-    shortLabel: "Pending",
-    description: "Review and approve employee attendance requests.",
-    icon: FaClock,
-    pageKey: "pendingAttendance",
-    component: PendingAttendance,
-    accent: "bg-amber-50 text-amber-700 border-amber-200",
+    id: "unmarked",
+    label: "Unmarked Attendance",
+    shortLabel: "Unmarked",
+    description: "Mark daily attendance for employees who haven't clocked in.",
+    icon: FaFingerprint,
+    pageKey: "attendanceManagement",
+    component: UnmarkedAttendance,
+    accent: "bg-emerald-50 text-emerald-700 border-emerald-200",
   },
   {
-    id: "all",
-    label: "Past Attendance",
-    shortLabel: "All",
-    description: "Monitor all employee attendance records and punch logs.",
-    icon: FaListUl,
+    id: "breaks",
+    label: "Break Management",
+    shortLabel: "Breaks",
+    description: "Track and manage employee break sessions.",
+    icon: FaCoffee,
     pageKey: "attendanceManagement",
-    component: AttendanceManagement,
-    accent: "bg-blue-50 text-blue-700 border-blue-200",
+    component: BreakManagement,
+    accent: "bg-orange-50 text-orange-700 border-orange-200",
   },
 ];
 
