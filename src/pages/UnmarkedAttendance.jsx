@@ -100,6 +100,13 @@ const addDays = (dateStr, days) => {
   return d.toISOString().slice(0, 10);
 };
 
+const getExactPunchTime = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value.slice(0, 5);
+  if (typeof value === 'object') return value?.time ? String(value.time).slice(0, 5) : '';
+  return '';
+};
+
 const STATUS_CONFIG = {
   present: { label: 'Present', color: 'bg-emerald-500 text-white shadow-emerald-200', dot: 'bg-emerald-500' },
   half_day: { label: 'Half Day', color: 'bg-sky-500 text-white shadow-sky-200', dot: 'bg-sky-500' },
@@ -114,15 +121,10 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
 
   // Form States
-  const [punchIn, setPunchIn] = useState(employee?.punch_in?.slice(0, 5) || '09:00');
-  const [punchOut, setPunchOut] = useState(employee?.punch_out?.slice(0, 5) || '18:00');
+  const [punchIn, setPunchIn] = useState(getExactPunchTime(employee?.punch_in));
+  const [punchOut, setPunchOut] = useState(getExactPunchTime(employee?.punch_out));
   const [isOt, setIsOt] = useState(employee?.is_ot || false);
-  
-  const defaultOtHours = employee?.ot_hours || (employee?.calculations?.overtime_minutes > 0 ? (employee.calculations.overtime_minutes / 60).toFixed(1) : '');
-  const [otHours, setOtHours] = useState(defaultOtHours);
-  
-  const defaultFine = employee?.fine || (employee?.calculations?.late_minutes > 0 ? '100' : '');
-  const [fine, setFine] = useState(defaultFine);
+  const [isDeductible, setIsDeductible] = useState(employee?.is_deductible || false);
   
   const [notes, setNotes] = useState('');
   const [halfSession, setHalfSession] = useState('first');
@@ -131,15 +133,10 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   // Ensure state stays synced when employee or tab changes
   useEffect(() => {
     setActiveTab(initialTab || 'present');
-    setPunchIn(employee?.punch_in?.slice(0, 5) || '09:00');
-    setPunchOut(employee?.punch_out?.slice(0, 5) || '18:00');
+    setPunchIn(getExactPunchTime(employee?.punch_in));
+    setPunchOut(getExactPunchTime(employee?.punch_out));
     setIsOt(employee?.is_ot || false);
-    
-    const defOt = employee?.ot_hours || (employee?.calculations?.overtime_minutes > 0 ? (employee.calculations.overtime_minutes / 60).toFixed(1) : '');
-    setOtHours(defOt);
-    
-    const defFine = employee?.fine || (employee?.calculations?.late_minutes > 0 ? '100' : '');
-    setFine(defFine);
+    setIsDeductible(employee?.is_deductible || false);
   }, [employee, initialTab]);
 
   // Calculation Logic
@@ -182,7 +179,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'half_day', label: 'Half Day', icon: FaHourglassHalf, color: 'text-sky-500', bg: 'bg-sky-50' },
     { id: 'absent', label: 'Absent', icon: FaTimesCircle, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { id: 'fine', label: 'Fine/Ded', icon: FaMoneyBillWave, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'fine', label: 'Deduction', icon: FaMoneyBillWave, color: 'text-amber-500', bg: 'bg-amber-50' },
     { id: 'ot', label: 'Overtime', icon: FaClock, color: 'text-orange-500', bg: 'bg-orange-50' },
     { id: 'paid_leave', label: 'Leave', icon: FaUmbrellaBeach, color: 'text-violet-500', bg: 'bg-violet-50' },
   ];
@@ -208,8 +205,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         punch_in: punchIn,
         punch_out: punchOut,
         is_overtime: metrics.isOvertime,
-        is_deductible: metrics.isDeductible,
-        value1: fine ? String(fine) : (metrics.isDeductible ? "100" : null) 
+        is_deductible: metrics.isDeductible
       };
     } else if (activeTab === 'half_day') {
       if (!punchIn) {
@@ -224,20 +220,14 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         half_day_session: halfSession 
       };
     } else if (activeTab === 'fine') {
-      if (!fine) {
-        toast.error('Fine amount is required');
-        setLoading(false);
-        return;
-      }
       payload = { 
         ...payload, 
-        value1: String(fine) 
+        is_deductible: isDeductible 
       };
     } else if (activeTab === 'ot') {
       payload = { 
         ...payload, 
-        is_overtime: true, 
-        value1: otHours ? String(otHours) : null 
+        is_overtime: isOt 
       };
     } else if (activeTab === 'paid_leave') {
       payload = { 
@@ -342,44 +332,46 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       case 'fine':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {employee.calculations?.late_minutes > 0 && !employee.fine && (
+            {employee.calculations?.late_minutes > 0 && (
               <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex gap-4">
                 <div className="h-10 w-10 shrink-0 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
                   <FaMoneyBillWave size={18} />
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-rose-900">Late Arrival Detected</h4>
-                  <p className="text-xs text-rose-700/70 font-medium">Employee was late by {employee.calculations.late_minutes} minutes. Suggested fine: ₹100.</p>
+                  <p className="text-xs text-rose-700/70 font-medium">Employee was late by {employee.calculations.late_minutes} minutes.</p>
                 </div>
               </div>
             )}
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Fine Amount (₹)</label>
-              <input type="number" min="0" value={fine} onChange={e => setFine(e.target.value)} placeholder="Enter amount"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all" />
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-white cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsDeductible(!isDeductible)}>
+              <span className="text-sm font-bold text-gray-800">Apply Deduction</span>
+              <div className={`h-6 w-11 rounded-full p-1 transition-colors duration-300 ${isDeductible ? 'bg-rose-500' : 'bg-slate-200'}`}>
+                <div className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${isDeductible ? 'translate-x-5' : 'translate-x-0'}`} />
+              </div>
             </div>
           </div>
         );
       case 'ot':
         return (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4 flex gap-4">
-              <div className="h-10 w-10 shrink-0 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
-                <FaClock size={18} />
+            {employee.calculations?.overtime_minutes > 0 && (
+              <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4 flex gap-4">
+                <div className="h-10 w-10 shrink-0 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
+                  <FaClock size={18} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-orange-900">Overtime Calculation</h4>
+                  <p className="text-xs text-orange-700/70 font-medium">
+                    Calculated OT: {employee.calculations.overtime_minutes} minutes (${(employee.calculations.overtime_minutes / 60).toFixed(1)} hrs).
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-black text-orange-900">Overtime Calculation</h4>
-                <p className="text-xs text-orange-700/70 font-medium">
-                  {employee.calculations?.overtime_minutes > 0 
-                    ? `Calculated OT: ${employee.calculations.overtime_minutes} minutes (${(employee.calculations.overtime_minutes / 60).toFixed(1)} hrs).` 
-                    : "Extra hours will be added to the employee's total productive time."}
-                </p>
+            )}
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-white cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsOt(!isOt)}>
+              <span className="text-sm font-bold text-gray-800">Approve Overtime</span>
+              <div className={`h-6 w-11 rounded-full p-1 transition-colors duration-300 ${isOt ? 'bg-orange-500' : 'bg-slate-200'}`}>
+                <div className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${isOt ? 'translate-x-5' : 'translate-x-0'}`} />
               </div>
-            </div>
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">OT Hours (optional)</label>
-              <input type="number" min="0" step="0.5" value={otHours} onChange={e => setOtHours(e.target.value)} placeholder="e.g. 2.5"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" />
             </div>
           </div>
         );
@@ -519,13 +511,13 @@ const EmployeeAttendanceCard = ({ emp, onAction }) => {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            {emp.fine ? (
-              <p className="text-[10px] text-rose-500 font-bold">Fine: ₹{emp.fine}</p>
+            {emp.is_deductible ? (
+              <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
             ) : emp.calculations?.late_minutes > 0 ? (
               <p className="text-[10px] text-rose-500 font-bold">Late: {emp.calculations.late_minutes} min</p>
             ) : null}
             
-            {emp.is_ot ? (
+            {emp.calculations?.overtime_minutes > 0 ? (
               <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">OT</span>
             ) : emp.calculations?.overtime_minutes > 0 ? (
               <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">Pending OT: {(emp.calculations.overtime_minutes / 60).toFixed(1)}h</span>
@@ -536,8 +528,8 @@ const EmployeeAttendanceCard = ({ emp, onAction }) => {
           <ManagementButton size="sm" tone="emerald" variant={emp.status === 'present' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
           <ManagementButton size="sm" tone="blue" variant={emp.status === 'half_day' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
           <ManagementButton size="sm" tone="rose" variant={emp.status === 'absent' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-          <ManagementButton size="sm" tone="slate" variant={emp.fine || emp.calculations?.late_minutes > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Fine</ManagementButton>
-          <ManagementButton size="sm" tone="amber" variant={emp.is_ot || emp.calculations?.overtime_minutes > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+          <ManagementButton size="sm" tone="slate" variant={emp.is_deductible || emp.calculations?.late_minutes > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
+          <ManagementButton size="sm" tone="amber" variant={(emp.calculations?.overtime_minutes || 0) > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
           <ManagementButton size="sm" tone="violet" variant={emp.status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
         </div>
       </div>
@@ -611,9 +603,9 @@ const UnmarkedAttendance = () => {
             punch_in: att?.punch_in?.time || null,
             punch_out: att?.punch_out?.time || null,
             status: att?.day_status || 'unmarked',
-            fine: att?.fine || null,
-            is_ot: att?.is_overtime || false,
-            ot_hours: att?.ot_hours || null,
+            is_deductible: att?.is_deductible || false,
+            is_ot: Number(att?.calculations?.overtime_minutes || 0) > 0,
+            ot_flag: att?.is_overtime || false,
             calculations: att?.calculations || null,
             attendance_record: att
           };
