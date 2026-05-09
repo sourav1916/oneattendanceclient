@@ -18,6 +18,7 @@ import { CreateAttendanceModal, EditAttendanceModal } from '../components/Attend
 import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
+import { calculateAttendanceTimeDetails, formatMinutes } from '../utils/attendanceTime';
 import Modal from '../components/Modal';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
@@ -167,6 +168,8 @@ const normalizeAttendanceRow = (row) => {
     end_time: endRecord?.time || row?.end_time || null,
     start_record: startRecord,
     end_record: endRecord,
+    shift: row?.shift || null,
+    calculations: row?.calculations || null,
     status: row?.status || 'pending',
     notes: row?.notes || '',
     reviewed_by: row?.reviewed_by_name || row?.reviewed_by || null,
@@ -291,18 +294,13 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
   
   const shift = attendance.shift || {};
   const flags = shift.flags || {};
-  const isOvertime = flags.overtime?.enabled || false;
-  const isHalfDay = flags.half_day?.enabled || false;
-  const isDeductible = flags.deductible?.enabled || false;
+  const isOvertime = Number(attendance.is_overtime) === 1;
+  const isHalfDay = Number(attendance.is_half_day) === 1;
+  const isDeductible = Number(attendance.is_deductible) === 1;
 
   const reviewerLabel = attendance.reviewed_by_name || attendance.reviewed_by || 'System';
 
-  const formatMins = (m) => {
-    if (m === null || m === undefined) return "0m";
-    const hours = Math.floor(m / 60);
-    const mins = m % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
+  const formatMins = (m) => formatMinutes(m || 0);
 
   return (
     <Modal
@@ -382,29 +380,58 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
           </div>
         </div>
 
-        {/* Shift & Productivity */}
-        <div className="border-b border-gray-100 pb-4">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-            <FaHistory className="text-emerald-500" /> Shift & Productivity
+        {/* Calculations & Metrics */}
+        <div className="border-t border-gray-100 pt-6">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <FaHistory className="text-emerald-500" /> Calculations & Metrics
           </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Worked Time</label>
-              <p className="mt-0.5 text-sm font-bold text-emerald-600">{formatMins(shift.worked_minutes)}</p>
+          {attendance.calculations ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+              <div>
+                <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight block mb-1">Worked</label>
+                <p className="font-bold text-emerald-700 text-sm">{formatMinutes(attendance.calculations.worked_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-rose-600 uppercase tracking-tight block mb-1">Late</label>
+                <p className="font-bold text-rose-700 text-sm">{formatMinutes(attendance.calculations.late_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-indigo-600 uppercase tracking-tight block mb-1">Break</label>
+                <p className="font-bold text-indigo-700 text-sm">{formatMinutes(attendance.calculations.break_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-orange-600 uppercase tracking-tight block mb-1">Extra Break</label>
+                <p className="font-bold text-orange-700 text-sm">{formatMinutes(attendance.calculations.extra_break_minutes)}</p>
+              </div>
             </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Time</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{formatMins(shift.break_minutes)}</p>
+          ) : <p className="text-sm text-gray-500 italic">No calculations available</p>}
+        </div>
+
+        {/* Shift Information */}
+        <div className="pt-4">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+            <FaClock className="text-blue-500" /> Shift Information
+          </h3>
+          {attendance.shift ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Shift Start</label>
+                <p className="font-bold text-gray-800 text-sm">{formatTimeLabel(attendance.shift.start_time)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Shift End</label>
+                <p className="font-bold text-gray-800 text-sm">{formatTimeLabel(attendance.shift.end_time)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Expected</label>
+                <p className="font-bold text-gray-800 text-sm">{formatMinutes(attendance.shift.expected_work_minutes)}</p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Grace</label>
+                <p className="font-bold text-gray-800 text-sm">{attendance.shift.grace_minutes}m</p>
+              </div>
             </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift Start</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_start_time ? new Date(shift.shift_start_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift End</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_end_time ? new Date(shift.shift_end_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
-            </div>
-          </div>
+          ) : <p className="text-sm text-gray-500 italic">No shift information available</p>}
         </div>
 
         {/* Productivity Flags */}
@@ -412,39 +439,39 @@ const AttendanceDetailsModal = ({ attendance, onClose }) => {
           <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
             <FaBriefcase className="text-indigo-500" /> Productivity Flags
           </h3>
-          <div className="flex flex-wrap gap-3">
-            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isOvertime ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOvertime ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                <FaClock size={14} />
+          <div className="flex flex-wrap gap-2">
+            <div className={`flex items-center gap-2 rounded-xl border p-2 px-3 ${isOvertime ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isOvertime ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <FaClock size={12} />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
-                <p className={`text-xs font-bold ${isOvertime ? 'text-emerald-700' : 'text-slate-500'}`}>
-                  {isOvertime ? `${flags.overtime?.minutes} mins` : "Disabled"}
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
+                <p className={`text-[11px] font-bold ${isOvertime ? 'text-emerald-700' : 'text-slate-500'}`}>
+                  {isOvertime ? (attendance.calculations?.overtime_minutes > 0 ? `${attendance.calculations.overtime_minutes}m` : "Yes") : "No"}
                 </p>
               </div>
             </div>
 
-            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isHalfDay ? 'border-orange-200 bg-orange-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isHalfDay ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                <FaHourglassEnd size={14} />
+            <div className={`flex items-center gap-2 rounded-xl border p-2 px-3 ${isHalfDay ? 'border-orange-200 bg-orange-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isHalfDay ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <FaHourglassEnd size={12} />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
-                <p className={`text-xs font-bold ${isHalfDay ? 'text-orange-700' : 'text-slate-500'}`}>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
+                <p className={`text-[11px] font-bold ${isHalfDay ? 'text-orange-700' : 'text-slate-500'}`}>
                   {isHalfDay ? "Yes" : "No"}
                 </p>
               </div>
             </div>
 
-            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isDeductible ? 'border-rose-200 bg-rose-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDeductible ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                <FaExclamationCircle size={14} />
+            <div className={`flex items-center gap-2 rounded-xl border p-2 px-3 ${isDeductible ? 'border-rose-200 bg-rose-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
+              <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${isDeductible ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                <FaExclamationCircle size={12} />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
-                <p className={`text-xs font-bold ${isDeductible ? 'text-rose-700' : 'text-slate-500'}`}>
-                  {isDeductible ? `${flags.deductible?.minutes} mins` : "None"}
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
+                <p className={`text-[11px] font-bold ${isDeductible ? 'text-rose-700' : 'text-slate-500'}`}>
+                  {isDeductible ? (attendance.calculations?.late_minutes > 0 ? `${attendance.calculations.late_minutes}m late` : "Yes") : "No"}
                 </p>
               </div>
             </div>
@@ -592,19 +619,39 @@ const AttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, onLogs, 
         </div>
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.startLabel}:</span>
-          <span className="font-medium text-xs sm:text-sm">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+          <div className="text-right">
+            <span className="font-medium text-xs sm:text-sm block">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+            {attendance.start_record?.method && (
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter block leading-none">{attendance.start_record.method}</span>
+            )}
+          </div>
         </div>
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.endLabel}:</span>
-          <span className="font-medium text-xs sm:text-sm">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+          <div className="text-right">
+            <span className="font-medium text-xs sm:text-sm block">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+            {attendance.end_record?.method && (
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter block leading-none">{attendance.end_record.method}</span>
+            )}
+          </div>
         </div>
+        <div className="flex justify-between items-center flex-wrap gap-1">
+          <span className="text-gray-500 text-xs sm:text-sm">Worked:</span>
+          <span className="font-bold text-emerald-600 text-xs sm:text-sm">
+            {attendance.calculations ? formatMinutes(attendance.calculations.worked_minutes) : '---'}
+          </span>
+        </div>
+        {attendance.calculations?.late_minutes > 0 && (
+          <div className="flex justify-between items-center flex-wrap gap-1">
+            <span className="text-gray-500 text-xs sm:text-sm">Late:</span>
+            <span className="font-bold text-rose-600 text-xs sm:text-sm">
+              {formatMinutes(attendance.calculations.late_minutes)}
+            </span>
+          </div>
+        )}
         <div className="flex justify-between items-center flex-wrap gap-1">
           <span className="text-gray-500 text-xs sm:text-sm">Status:</span>
           <StatusBadge status={attendance.status} />
-        </div>
-        <div className="flex justify-between items-center flex-wrap gap-1">
-          <span className="text-gray-500 text-xs sm:text-sm">Method:</span>
-          <span className="text-gray-700 text-xs sm:text-sm capitalize">{fmt(attendance.attendance_method)}</span>
         </div>
       </div>
     </motion.div>
@@ -940,8 +987,9 @@ const AttendanceManagement = ({ companyId }) => {
                         {showDate && <th className="px-6 py-4 font-bold tracking-wider">Date</th>}
                         {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
                         {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
+                        <th className="px-6 py-4 font-bold tracking-wider hidden xl:table-cell text-emerald-600">Worked</th>
+                        <th className="px-6 py-4 font-bold tracking-wider hidden xl:table-cell text-rose-600">Late</th>
                         <th className="px-6 py-4 font-bold tracking-wider">Status</th>
-                        {showMethod && <th className="px-6 py-4 font-bold tracking-wider">Method</th>}
                         <th className="px-6 py-4 text-center font-bold tracking-wider"><FaCog className="w-4 h-4 mx-auto" /></th>
                       </tr>
                     </thead>
@@ -967,10 +1015,33 @@ const AttendanceManagement = ({ companyId }) => {
                             </div>
                           </td>
                           {showDate && <td className="px-6 py-4 whitespace-nowrap">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</td>}
-                          {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</td>}
-                          {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</td>}
+                          {showTimes && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <span className="font-medium">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+                                {attendance.start_record?.method && (
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{attendance.start_record.method}</span>
+                                )}
+                              </div>
+                            </td>
+                          )}
+                          {showTimes && (
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex flex-col">
+                                <span className="font-medium">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+                                {attendance.end_record?.method && (
+                                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{attendance.end_record.method}</span>
+                                )}
+                              </div>
+                            </td>
+                          )}
+                          <td className="px-6 py-4 whitespace-nowrap font-bold text-emerald-600 hidden xl:table-cell">
+                            {attendance.calculations ? formatMinutes(attendance.calculations.worked_minutes) : '---'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-bold text-rose-600 hidden xl:table-cell">
+                            {attendance.calculations?.late_minutes > 0 ? formatMinutes(attendance.calculations.late_minutes) : '0m'}
+                          </td>
                           <td className="px-6 py-4"><StatusBadge status={attendance.status} /></td>
-                          {showMethod && <td className="px-6 py-4">{attendance.attendance_method || <Placeholder />}</td>}
                           <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <ActionMenu
                               menuId={attendance.id}

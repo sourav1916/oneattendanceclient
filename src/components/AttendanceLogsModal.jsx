@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaTimes, FaHistory, FaSpinner, FaClock, FaUser, FaCheckCircle, FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
+import { FaTimes, FaHistory, FaSpinner, FaClock, FaUser, FaCheckCircle, FaTimesCircle, FaInfoCircle, FaComment } from 'react-icons/fa';
 import apiCall from '../utils/api';
 import ModalScrollLock from './ModalScrollLock';
 import { toast } from 'react-toastify';
+import { formatMinutes } from '../utils/attendanceTime';
 
 const getStatusBadge = (status) => {
   switch (status?.toLowerCase()) {
@@ -148,71 +149,117 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
               <p className="text-slate-500 font-medium">No history logs available for this record.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-sm bg-white">
-              <table className="w-full text-sm text-left text-slate-600 min-w-[650px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                  <tr>
-                    <th className="px-4 py-3">Timestamp</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Start Punch</th>
-                    <th className="px-4 py-3">End Punch</th>
-                    <th className="px-4 py-3">Updated By</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {logs.map((log, index) => {
-                    const style = getStatusBadge(log.status);
-                    const StatusIcon = style.icon;
+            <div className="space-y-4 pb-4">
+              {logs.map((log, index) => {
+                const style = getStatusBadge(log.status);
+                const StatusIcon = style.icon;
+                const punchIn = log.attendance?.punch_in;
+                const punchOut = log.attendance?.punch_out;
+                const metrics = log.shift?.metrics;
+                const flags = log.shift?.flags;
 
-                    return (
-                      <tr key={log.id || index} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                            <FaClock size={11} className="text-slate-400" />
-                            {formatDateTime(log.updated_at)}
+                return (
+                  <motion.div
+                    key={log.id || index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+                  >
+                    {/* Log Header */}
+                    <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold border ${style.className}`}>
+                          <StatusIcon size={12} />
+                          {style.text.toUpperCase()}
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
+                          <FaClock size={11} className="text-slate-400" />
+                          {formatDateTime(log.verified_at || log.created?.at || log.updated_at)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">By:</span>
+                        <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm">
+                          <div className="h-4 w-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                            <FaUser size={7} />
                           </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold border ${style.className}`}>
-                            <StatusIcon size={10} />
-                            {style.text.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 max-w-[180px]">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-slate-700">{formatTime(log.start?.time)}</span>
-                            {log.start?.method && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 uppercase font-bold">{log.start.method}</span>
-                            )}
-                          </div>
-                          {log.start?.data && <div className="text-[10px] text-slate-500 truncate" title={formatLogData(log.start.data)}>{formatLogData(log.start.data)}</div>}
-                        </td>
-                        <td className="px-4 py-3 max-w-[180px]">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-slate-700">{formatTime(log.end?.time)}</span>
-                            {log.end?.method && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 uppercase font-bold">{log.end.method}</span>
-                            )}
-                          </div>
-                          {log.end?.data && <div className="text-[10px] text-slate-500 truncate" title={formatLogData(log.end.data)}>{formatLogData(log.end.data)}</div>}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {(log.updated_by?.name || log.updated_by?.id) ? (
+                          <span className="text-[11px] font-bold text-slate-700">{log.verified_by?.name || log.created?.by?.name || "System"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Log Content */}
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Left Side: Punches */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance Punches</h4>
+                          <div className="h-px flex-1 bg-slate-100"></div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Punch In</label>
                             <div className="flex items-center gap-2">
-                              <div className="h-5 w-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
-                                <FaUser size={8} />
-                              </div>
-                              <span className="text-xs font-semibold text-slate-700">{log.updated_by?.name || `ID: ${log.updated_by?.id}`}</span>
+                              <span className="text-sm font-black text-slate-800">{formatTime(punchIn?.time)}</span>
+                              {punchIn?.method && (
+                                <span className="text-[8px] font-black bg-white border border-slate-200 px-1.5 py-0.5 rounded text-indigo-500 uppercase">{punchIn.method}</span>
+                              )}
                             </div>
-                          ) : (
-                            <span className="text-xs text-slate-400">---</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </div>
+                          
+                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Punch Out</label>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-slate-800">{formatTime(punchOut?.time)}</span>
+                              {punchOut?.method && (
+                                <span className="text-[8px] font-black bg-white border border-slate-200 px-1.5 py-0.5 rounded text-indigo-500 uppercase">{punchOut.method}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Side: Metrics & Flags */}
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Calculated Metrics</h4>
+                          <div className="h-px flex-1 bg-slate-100"></div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-2 gap-3">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Worked</span>
+                            <span className="text-xs font-bold text-emerald-600">{formatMinutes(metrics?.worked_minutes || 0)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Late</span>
+                            <span className="text-xs font-bold text-rose-600">{formatMinutes(flags?.deductible?.minutes || 0)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Overtime</span>
+                            <span className="text-xs font-bold text-indigo-600">{formatMinutes(flags?.overtime?.minutes || 0)}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Half Day</span>
+                            <span className="text-xs font-bold text-amber-600">{flags?.half_day?.enabled ? "Yes" : "No"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Remark Footer */}
+                    {log.remark && (
+                      <div className="px-4 py-2 bg-amber-50/50 border-t border-slate-100 flex items-start gap-2">
+                        <FaComment className="mt-1 text-amber-400 shrink-0" size={10} />
+                        <p className="text-[11px] font-medium text-slate-600 italic">"{log.remark}"</p>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>

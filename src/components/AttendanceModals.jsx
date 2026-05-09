@@ -397,8 +397,14 @@ export const CreateAttendanceModal = ({ isOpen, onClose, companyId, onSuccess, f
 
 export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, onSuccess }) => {
     const [loading, setLoading] = useState(false);
-    const resolvedPunchType = normalizeAttendanceType(attendance?.punch_type || attendance?.type || attendance?.record_type || 'attendance');
+    const resolveInitialType = (data) => {
+        return normalizeAttendanceType(data?.punch_type || data?.type || data?.record_type || 'attendance');
+    };
+
+    const [resolvedPunchType, setResolvedPunchType] = useState(resolveInitialType(attendance));
     const isAttendanceRecord = resolvedPunchType === 'attendance';
+    const hasCalculations = !!attendance?.calculations;
+
     const [formData, setFormData] = useState({
         attendance_date: new Date().toISOString().split('T')[0],
         punch_type: 'attendance',
@@ -409,84 +415,58 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
         is_overtime: 0,
         is_half_day: 0
     });
-    const [manuallySet, setManuallySet] = useState({
-        is_deductible: false,
-        is_overtime: false,
-        is_half_day: false
-    });
 
     const handleFlagChange = (field, value) => {
         const val = value ? 1 : 0;
         setFormData(prev => {
-            const next = { ...prev, [field]: val };
+            let next = { ...prev, [field]: val };
             if (val === 1) {
                 if (field === 'is_overtime') {
-                    next.is_deductible = 0;
-                    next.is_half_day = 0;
+                    next = { ...next, is_deductible: 0, is_half_day: 0 };
                 } else if (field === 'is_deductible' || field === 'is_half_day') {
-                    next.is_overtime = 0;
+                    next = { ...next, is_overtime: 0 };
                 }
             }
             return next;
         });
-        setManuallySet(prev => {
-            const next = { ...prev, [field]: true };
-            if (val === 1) {
-                if (field === 'is_overtime') {
-                    next.is_deductible = true;
-                    next.is_half_day = true;
-                } else if (field === 'is_deductible' || field === 'is_half_day') {
-                    next.is_overtime = true;
-                }
-            }
-            return next;
-        });
-        localStorage.setItem(`attendance_pref_${field}`, val);
     };
 
-    const timeDetails = React.useMemo(() => (
-        calculateAttendanceTimeDetails(attendance || {}, formData.punch_in, formData.punch_out, formData.punch_type)
-    ), [attendance, formData.punch_in, formData.punch_out, formData.punch_type]);
+    const editableField = React.useMemo(() => {
+        if (!attendance) return null;
+        // Use calculations or existing flags to determine which field is editable
+        if (attendance.calculations?.overtime_minutes > 0 || Number(attendance.is_overtime) === 1) return 'is_overtime';
+        if (Number(attendance.is_half_day) === 1) return 'is_half_day';
+        if (attendance.calculations?.late_minutes > 0 || Number(attendance.is_deductible) === 1) return 'is_deductible';
+        return null;
+    }, [attendance]);
+
     const isSubmitDisabled = loading || !formData.punch_in || !formData.punch_out;
 
     useEffect(() => {
         if (isOpen && attendance) {
+            const initialType = resolveInitialType(attendance);
+            setResolvedPunchType(initialType);
             const startRecord = attendance.start_record || attendance.punch_in || attendance.break_start || attendance.break_start_ || null;
             const endRecord = attendance.end_record || attendance.punch_out || attendance.break_end || attendance.break_end_ || null;
             setFormData({
                 attendance_date: attendance.attendance_date || attendance.punch_date || new Date().toISOString().split('T')[0],
-                punch_type: resolvedPunchType,
+                punch_type: initialType,
                 punch_in: attendance.start_time || startRecord?.time || null,
                 punch_out: attendance.end_time || endRecord?.time || null,
                 notes: attendance.notes || '',
                 is_deductible: Number(attendance?.is_deductible || 0),
-                is_overtime: isAttendanceRecord ? Number(attendance?.is_overtime || 0) : 0,
-                is_half_day: isAttendanceRecord ? Number(attendance?.is_half_day || 0) : 0
-            });
-            setManuallySet({
-                is_deductible: false,
-                is_overtime: false,
-                is_half_day: false
+                is_overtime: initialType === 'attendance' ? Number(attendance?.is_overtime || 0) : 0,
+                is_half_day: initialType === 'attendance' ? Number(attendance?.is_half_day || 0) : 0
             });
         }
-    }, [isOpen, attendance, resolvedPunchType, isAttendanceRecord]);
+    }, [isOpen, attendance]);
 
-    useEffect(() => {
-        if (!isOpen || formData.punch_type !== 'attendance') return;
-        setFormData(prev => ({
-            ...prev,
-            is_overtime: manuallySet.is_overtime ? prev.is_overtime : (timeDetails.isOvertime ? 1 : 0),
-            is_deductible: manuallySet.is_deductible ? prev.is_deductible : (timeDetails.isDeductible ? 1 : 0),
-            is_half_day: manuallySet.is_half_day ? prev.is_half_day : (timeDetails.isHalfDay ? 1 : 0)
-        }));
-    }, [timeDetails.isOvertime, timeDetails.isDeductible, timeDetails.isHalfDay, manuallySet, formData.punch_type, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
             const backendType = toBackendAttendanceType(formData.punch_type);
-            const computed = calculateAttendanceTimeDetails(attendance || {}, formData.punch_in, formData.punch_out, formData.punch_type);
             const payload = {
                 type: backendType,
                 punch_id: attendance?.punch_uid || attendance?.punch_id || attendance?.id,
@@ -613,6 +593,11 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             mode="time"
                                             className="w-full h-10"
                                         />
+                                        {attendance.start_record?.method && (
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1 flex items-center gap-1">
+                                                <FaFingerprint className="h-2.5 w-2.5" /> Method: {attendance.start_record.method}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -625,30 +610,37 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             mode="time"
                                             className="w-full h-10"
                                         />
+                                        {attendance.end_record?.method && (
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1 flex items-center gap-1">
+                                                <FaFingerprint className="h-2.5 w-2.5" /> Method: {attendance.end_record.method}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
 
-                                {timeDetails.summary && (
-                                    <div className={`rounded-xl border px-4 py-3 text-sm ${
-                                        timeDetails.summaryTone === 'success'
-                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                                            : timeDetails.summaryTone === 'warning'
-                                                ? 'border-amber-200 bg-amber-50 text-amber-800'
-                                                : 'border-slate-200 bg-slate-50 text-slate-700'
-                                    }`}>
-                                        <div className="flex items-center justify-between gap-3">
-                                            <p className="font-semibold">{timeDetails.summary}</p>
-                                            <p className="text-xs font-medium uppercase tracking-wider">
-                                                {timeDetails.actualMinutes !== null ? formatMinutes(timeDetails.actualMinutes) : '---'}
-                                            </p>
+                                {hasCalculations && (
+                                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm">
+                                        <div className="flex items-center justify-between gap-3 mb-2">
+                                            <p className="font-bold text-blue-800">System Calculations</p>
+                                            <p className="text-xs font-medium uppercase tracking-wider text-blue-600">Based on current records</p>
                                         </div>
-                                        <div className="mt-2 grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
-                                            {timeDetails.details.map((item) => (
-                                                <div key={item.label} className="flex items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2">
-                                                    <span className="text-slate-500">{item.label}</span>
-                                                    <span className="font-semibold text-slate-800">{item.value}</span>
-                                                </div>
-                                            ))}
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Worked</p>
+                                                <p className="font-bold text-gray-800">{formatMinutes(attendance.calculations.worked_minutes)}</p>
+                                            </div>
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Late</p>
+                                                <p className="font-bold text-rose-600">{formatMinutes(attendance.calculations.late_minutes)}</p>
+                                            </div>
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Break</p>
+                                                <p className="font-bold text-indigo-600">{formatMinutes(attendance.calculations.break_minutes)}</p>
+                                            </div>
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Extra Break</p>
+                                                <p className="font-bold text-orange-600">{formatMinutes(attendance.calculations.extra_break_minutes)}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -659,27 +651,27 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, companyId, on
                                             label="Overtime"
                                             checked={formData.is_overtime}
                                             onChange={(val) => handleFlagChange('is_overtime', val)}
-                                            disabled={!formData.punch_in || !formData.punch_out}
-                                            hint={manuallySet.is_overtime ? "Manual" : (timeDetails.isOvertime ? `Auto: ${formatMinutes(timeDetails.overtimeMinutes)}` : "Auto")}
+                                            disabled={editableField !== 'is_overtime'}
+                                            hint={attendance.calculations?.overtime_minutes > 0 ? `Detected: ${formatMinutes(attendance.calculations.overtime_minutes)}` : (editableField === 'is_overtime' ? "Manual" : "Not applicable")}
                                         />
                                         <AttendanceFlagSwitch
                                             label="Half Day"
                                             checked={formData.is_half_day}
                                             onChange={(val) => handleFlagChange('is_half_day', val)}
-                                            disabled={!formData.punch_in || !formData.punch_out}
-                                            hint={manuallySet.is_half_day ? "Manual" : (timeDetails.isHalfDay ? "Auto: Detected" : "Auto")}
+                                            disabled={editableField !== 'is_half_day'}
+                                            hint={Number(attendance.is_half_day) === 1 ? "Detected" : (editableField === 'is_half_day' ? "Manual" : "Not applicable")}
                                         />
                                         <AttendanceFlagSwitch
                                             label="Deductible"
                                             checked={formData.is_deductible}
                                             onChange={(val) => handleFlagChange('is_deductible', val)}
-                                            disabled={!formData.punch_in || !formData.punch_out}
-                                            hint={manuallySet.is_deductible ? "Manual" : (timeDetails.isDeductible ? `Auto: ${formatMinutes(timeDetails.deductibleMinutes)}` : "Auto")}
+                                            disabled={editableField !== 'is_deductible'}
+                                            hint={attendance.calculations?.late_minutes > 0 ? "Detected" : (editableField === 'is_deductible' ? "Manual" : "Not applicable")}
                                         />
                                     </div>
                                 )}
 
-                                {!timeDetails.showFlags && !isAttendanceRecord && (
+                                {!hasCalculations && !isAttendanceRecord && (
                                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                                         Break records stay within the configured break duration.
                                     </div>

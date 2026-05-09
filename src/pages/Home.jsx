@@ -312,68 +312,8 @@ function HomePage() {
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Remade Organized Header (min-h 400px) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative mb-12 overflow-hidden flex flex-col md:flex-row group"
-        >
-          {/* Subtle Background Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:20px_20px]"></div>
-
-          <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 lg:p-6 relative z-10">
-            <div className="mb-8 max-w-2xl">
-              <p
-                className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent"
-                style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif' }}
-              >
-                Welcome to OneAttendance
-              </p>
-              <h1 className="mt-3 max-w-4xl text-sm sm:text-base font-medium leading-relaxed text-slate-600">
-                Secure attendance, shift, leave, and payroll management in one platform.
-              </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-xl">
-                Centralize daily operations, improve record accuracy, and manage your team with confidence.
-              </p>
-            </div>
-
-            {/* Bottom: Action Chips */}
-            <div className="flex flex-wrap gap-3 mt-8">
-              <button
-                onClick={() => canPunch && navigate('/attendance')}
-                className={`group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-xl shadow-sm transition-all duration-300 ${!canPunch ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:shadow-md hover:border-indigo-300'}`}
-              >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${!canPunch ? 'bg-slate-100' : 'bg-indigo-50 group-hover/chip:bg-indigo-600'}`}>
-                  <FaFingerprint className={`w-4 h-4 ${!canPunch ? 'text-slate-400' : 'text-indigo-600 group-hover/chip:text-white'}`} />
-                </div>
-                <span className={`text-sm font-bold ${!canPunch ? 'text-slate-400' : 'text-slate-700'}`}>Punch Now</span>
-              </button>
-              <button
-                onClick={() => navigate('/my-invites')}
-                className="group/chip flex items-center gap-3 px-6 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:border-pink-300 transition-all duration-300"
-              >
-                <div className="w-8 h-8 bg-pink-50 rounded-xl flex items-center justify-center group-hover/chip:bg-pink-600 transition-colors">
-                  <FaEnvelope className="w-4 h-4 text-pink-600 group-hover/chip:text-white" />
-                </div>
-                <span className="text-sm font-bold text-slate-700">Check Invites</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Right Column: Compact Context (Prev Styled) */}
-          <div className="md:w-[32%] p-8 flex flex-col justify-start items-center lg:items-end gap-3 relative z-10 border-t md:border-t-0 md:border-l border-slate-100 bg-slate-50/20">
-
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/60 backdrop-blur-sm rounded-full border border-slate-200">
-              <FaRegCalendarAlt className="w-3 h-3 text-indigo-500" />
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{currentDate}</span>
-            </div>
-          </div>
-        </motion.div>
-
         {/* Quick Actions Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mt-12 mb-6">
           <div className="h-px flex-1 bg-slate-200"></div>
           <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap">Your Workspace</h2>
           <div className="h-px flex-1 bg-slate-200"></div>

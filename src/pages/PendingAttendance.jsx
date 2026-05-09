@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     FaSearch, FaCheckCircle, FaTimesCircle, FaClock,
-    FaUser, FaMapMarkerAlt,
+    FaUser, FaHistory,
     FaInfoCircle, FaEye, FaSpinner, FaHourglassStart, FaHourglassEnd, FaCheck,
     FaBan, FaComment, FaUserCheck,
     FaTimes, FaCog, FaCoffee, FaBriefcase, FaPlus, FaEdit
@@ -19,6 +19,8 @@ import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { CreateAttendanceModal, EditAttendanceModal } from '../components/AttendanceModals';
 import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
 import { ManagementHub, ManagementButton } from '../components/common';
+import AttendanceLogsModal from '../components/AttendanceLogsModal';
+import { formatMinutes } from '../utils/attendanceTime';
 
 const NOTES_MODAL_CLASS = "bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col";
 
@@ -198,7 +200,15 @@ const normalizePendingAttendanceRow = (row) => {
         designation: row?.designation ?? '',
         email: row?.email ?? '',
         phone: row?.phone ?? '',
+        // Map shift info here for compatibility
+        shift_start: row?.shift?.start_time,
+        shift_end: row?.shift?.end_time,
+        expected_work_minutes: row?.shift?.expected_work_minutes,
+        break_minutes: row?.shift?.allowed_break_minutes,
+        grace_minutes: row?.shift?.grace_minutes,
     },
+    shift: row?.shift || null,
+    calculations: row?.calculations || null,
     };
 };
 
@@ -324,26 +334,26 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <FaUser className="text-amber-500" /> Employee Information
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Name</label>
-                            <p className="font-bold text-gray-800 text-sm">{attendance.employee_name || attendance.employee?.name}</p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Name</label>
+                            <p className="font-bold text-gray-800 text-xs truncate">{attendance.employee_name || attendance.employee?.name}</p>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Email</label>
-                            <p className="font-bold text-gray-800 text-sm break-all">{attendance.employee?.email || attendance.email || <Placeholder />}</p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Email</label>
+                            <p className="font-bold text-gray-800 text-xs truncate">{attendance.employee?.email || attendance.email || <Placeholder />}</p>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Employee Code</label>
-                            <p className="font-bold text-gray-800 text-sm">{attendance.employee_code || attendance.employee?.code}</p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Code</label>
+                            <p className="font-bold text-gray-800 text-xs">{attendance.employee_code || attendance.employee?.code}</p>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Designation</label>
-                            <p className="font-bold text-gray-800 text-sm">{attendance.employee?.designation || <Placeholder />}</p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Designation</label>
+                            <p className="font-bold text-gray-800 text-xs truncate">{attendance.employee?.designation || <Placeholder />}</p>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Phone</label>
-                            <p className="font-bold text-gray-800 text-sm">{attendance.employee?.phone || attendance.phone || <Placeholder />}</p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Phone</label>
+                            <p className="font-bold text-gray-800 text-xs">{attendance.employee?.phone || attendance.phone || <Placeholder />}</p>
                         </div>
                     </div>
                 </div>
@@ -352,57 +362,99 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <FaClock className="text-amber-500" /> Attendance Details
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Type</label>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Type</label>
                             <div className="mt-0.5">
                                 <PunchTypeBadge type={attendance.type} />
                             </div>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Date</label>
-                            <p className="font-bold text-gray-800 text-sm">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Date</label>
+                            <p className="font-bold text-gray-800 text-xs">
                                 {formatDateLabel(attendance.attendance_date || attendance.punch_date)}
                             </p>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">{attendanceTypeMeta.startLabel}</label>
-                            <p className="font-bold text-gray-800 text-sm">
-                                {renderRecordLabel(startRecord)}
-                            </p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">{attendanceTypeMeta.startLabel}</label>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-gray-800 text-xs">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+                                {attendance.start_record?.method && <span className="text-[8px] font-black uppercase text-slate-400 leading-none">{attendance.start_record.method}</span>}
+                            </div>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">{attendanceTypeMeta.endLabel}</label>
-                            <p className="font-bold text-gray-800 text-sm">
-                                {renderRecordLabel(endRecord)}
-                            </p>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">{attendanceTypeMeta.endLabel}</label>
+                            <div className="flex flex-col">
+                                <span className="font-bold text-gray-800 text-xs">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+                                {attendance.end_record?.method && <span className="text-[8px] font-black uppercase text-slate-400 leading-none">{attendance.end_record.method}</span>}
+                            </div>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Status</label>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Status</label>
                             <div className="mt-0.5">
                                 <StatusBadge status={attendance.status || 'pending'} />
                             </div>
                         </div>
-                        <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Method</label>
-                            <p className="font-bold text-gray-800 text-sm">
-                                {attendance.attendance_method || <Placeholder />}
-                            </p>
-                        </div>
-                        <div className="sm:col-span-2 lg:col-span-3">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-2">Flags</label>
-                            <div className="flex flex-wrap gap-2">
-                                <FlagBadge label="Overtime" value={attendance.is_overtime} />
-                                <FlagBadge label="Half Day" value={attendance.is_half_day} />
-                                <FlagBadge label="Deductible" value={attendance.is_deductible} />
+                        <div className="lg:col-span-2">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Productivity Flags</label>
+                            <div className="flex flex-wrap gap-1.5">
+                                <FlagBadge label="OT" value={attendance.is_overtime} />
+                                <FlagBadge label="Half" value={attendance.is_half_day} />
+                                <FlagBadge label="Deduct" value={attendance.is_deductible} />
                             </div>
                         </div>
-                        <div className="sm:col-span-2 lg:col-span-3">
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tight block mb-1">Remark</label>
-                            <p className="font-bold text-gray-800 text-sm">
-                                {attendance.remark || <Placeholder />}
+                        <div className="sm:col-span-2 lg:col-span-4">
+                            <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Remark</label>
+                            <p className="font-bold text-gray-800 text-xs italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                {attendance.remark || "No remarks provided"}
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <FaClock className="text-blue-500" /> Shift Info
+                        </h3>
+                        {attendance.shift ? (
+                            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Start / End</label>
+                                    <p className="font-bold text-gray-800 text-[11px]">{formatTimeLabel(attendance.shift.start_time)} - {formatTimeLabel(attendance.shift.end_time)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Expected</label>
+                                    <p className="font-bold text-gray-800 text-[11px]">{formatMinutes(attendance.shift.expected_work_minutes)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tight block mb-0.5">Grace</label>
+                                    <p className="font-bold text-gray-800 text-[11px]">{attendance.shift.grace_minutes}m</p>
+                                </div>
+                            </div>
+                        ) : <p className="text-[11px] text-gray-500 italic">No shift data</p>}
+                    </div>
+
+                    <div>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <FaCheckCircle className="text-emerald-500" /> Calculations
+                        </h3>
+                        {attendance.calculations ? (
+                            <div className="grid grid-cols-2 gap-3 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                                <div>
+                                    <label className="text-[9px] font-bold text-emerald-600 uppercase tracking-tight block mb-0.5">Worked / Break</label>
+                                    <p className="font-bold text-emerald-700 text-[11px]">{formatMinutes(attendance.calculations.worked_minutes)} / {formatMinutes(attendance.calculations.break_minutes)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-rose-600 uppercase tracking-tight block mb-0.5">Late</label>
+                                    <p className="font-bold text-rose-700 text-[11px]">{formatMinutes(attendance.calculations.late_minutes)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-orange-600 uppercase tracking-tight block mb-0.5">Extra Break</label>
+                                    <p className="font-bold text-orange-700 text-[11px]">{formatMinutes(attendance.calculations.extra_break_minutes)}</p>
+                                </div>
+                            </div>
+                        ) : <p className="text-[11px] text-gray-500 italic">No calculations</p>}
                     </div>
                 </div>
             </div>
@@ -453,6 +505,12 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, p
                                 icon: <FaEye size={12} />,
                                 onClick: () => onViewDetails(attendance),
                                 className: 'text-blue-600 hover:bg-blue-50'
+                            },
+                            {
+                                label: 'Logs',
+                                icon: <FaHistory size={12} />,
+                                onClick: () => onLogs(attendance),
+                                className: 'text-slate-600 hover:bg-slate-50'
                             }
                         ]}
                     />
@@ -466,12 +524,36 @@ const PendingAttendanceCard = ({ attendance, onViewDetails, onApprove, onEdit, p
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.startLabel}:</span>
-                    <span className="font-medium text-xs sm:text-sm">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+                    <div className="text-right">
+                        <span className="font-medium text-xs sm:text-sm block">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+                        {attendance.start_record?.method && (
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter block leading-none">{attendance.start_record.method}</span>
+                        )}
+                    </div>
                 </div>
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">{typeMeta.endLabel}:</span>
-                    <span className="font-medium text-xs sm:text-sm">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+                    <div className="text-right">
+                        <span className="font-medium text-xs sm:text-sm block">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+                        {attendance.end_record?.method && (
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter block leading-none">{attendance.end_record.method}</span>
+                        )}
+                    </div>
                 </div>
+                <div className="flex justify-between items-center flex-wrap gap-1">
+                    <span className="text-gray-500 text-xs sm:text-sm">Worked:</span>
+                    <span className="font-bold text-emerald-600 text-xs sm:text-sm">
+                        {attendance.calculations ? formatMinutes(attendance.calculations.worked_minutes) : '---'}
+                    </span>
+                </div>
+                {attendance.calculations?.late_minutes > 0 && (
+                    <div className="flex justify-between items-center flex-wrap gap-1">
+                        <span className="text-gray-500 text-xs sm:text-sm">Late:</span>
+                        <span className="font-bold text-rose-600 text-xs sm:text-sm">
+                            {formatMinutes(attendance.calculations.late_minutes)}
+                        </span>
+                    </div>
+                )}
                 <div className="flex justify-between items-center flex-wrap gap-1">
                     <span className="text-gray-500 text-xs sm:text-sm">Status:</span>
                     <StatusBadge status={attendance.status || 'pending'} />
@@ -519,6 +601,7 @@ const PendingAttendance = ({ companyId }) => {
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [logsModalRecord, setLogsModalRecord] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [attendanceType, setAttendanceType] = useState('attendance');
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -897,6 +980,8 @@ const PendingAttendance = ({ companyId }) => {
                                                 {showDate && <th className="px-6 py-4 font-bold tracking-wider">Date</th>}
                                                 {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.startLabel}</th>}
                                                 {showTimes && <th className="px-6 py-4 font-bold tracking-wider">{activeAttendanceTypeMeta.endLabel}</th>}
+                                                <th className="px-6 py-4 font-bold tracking-wider hidden xl:table-cell">Worked</th>
+                                                <th className="px-6 py-4 font-bold tracking-wider hidden xl:table-cell">Late</th>
                                                 {showEmail && <th className="px-6 py-4 font-bold tracking-wider">Email</th>}
                                                 <th className="px-6 py-4 text-center font-bold tracking-wider">Status</th>
                                                 {showMethod && <th className="px-6 py-4 font-bold tracking-wider">Method</th>}
@@ -944,8 +1029,32 @@ const PendingAttendance = ({ companyId }) => {
                                                         </div>
                                                     </td>
                                                     {showDate && <td className="px-6 py-4 whitespace-nowrap">{formatDateLabel(attendance.attendance_date || attendance.punch_date)}</td>}
-                                                    {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</td>}
-                                                    {showTimes && <td className="px-6 py-4 whitespace-nowrap">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</td>}
+                                                    {showTimes && (
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">{attendance.start_time ? formatTimeLabel(attendance.start_time) : <Placeholder />}</span>
+                                                                {attendance.start_record?.method && (
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{attendance.start_record.method}</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                    {showTimes && (
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-medium">{attendance.end_time ? formatTimeLabel(attendance.end_time) : <Placeholder />}</span>
+                                                                {attendance.end_record?.method && (
+                                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-none mt-0.5">{attendance.end_record.method}</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    )}
+                                                    <td className="px-6 py-4 whitespace-nowrap font-bold text-emerald-600 hidden xl:table-cell">
+                                                        {attendance.calculations ? formatMinutes(attendance.calculations.worked_minutes) : '---'}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap font-bold text-rose-600 hidden xl:table-cell">
+                                                        {attendance.calculations?.late_minutes > 0 ? formatMinutes(attendance.calculations.late_minutes) : '0m'}
+                                                    </td>
                                                     {showEmail && <td className="px-6 py-4">{attendance.email || attendance.employee?.email || <Placeholder />}</td>}
                                                     <td className="px-6 py-4"><StatusBadge status={attendance.status || 'pending'} /></td>
                                                     {showMethod && <td className="px-6 py-4">{attendance.attendance_method || <Placeholder />}</td>}
@@ -965,6 +1074,12 @@ const PendingAttendance = ({ companyId }) => {
                                                                 icon: <FaEye size={12} />,
                                                                 onClick: () => handleViewDetails(attendance),
                                                                 className: 'text-blue-600 hover:bg-blue-50'
+                                                            },
+                                                            {
+                                                                label: 'Logs',
+                                                                icon: <FaHistory size={12} />,
+                                                                onClick: () => setLogsModalRecord(attendance),
+                                                                className: 'text-slate-600 hover:bg-slate-50'
                                                             }
                                                             ]}
                                                         />
@@ -986,6 +1101,7 @@ const PendingAttendance = ({ companyId }) => {
                                         onViewDetails={handleViewDetails}
                                         onApprove={(attendanceItem) => handleStatusUpdate(attendanceItem, 'verify')}
                                         onEdit={handleEditAttendance}
+                                        onLogs={(att) => setLogsModalRecord(att)}
                                         processingId={processingId}
                                         onToggleMenu={(e, id) => toggleActionMenu(id)}
                                         activeMenuId={activeActionMenu}
@@ -1074,6 +1190,15 @@ const PendingAttendance = ({ companyId }) => {
                             </ManagementButton>
                         </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+            <AnimatePresence>
+                {logsModalRecord && (
+                    <AttendanceLogsModal
+                        id={logsModalRecord.punch_uid || logsModalRecord.punch_id || logsModalRecord.id}
+                        type={logsModalRecord.type || attendanceType}
+                        onClose={() => setLogsModalRecord(null)}
+                    />
                 )}
             </AnimatePresence>
         </ManagementHub>
