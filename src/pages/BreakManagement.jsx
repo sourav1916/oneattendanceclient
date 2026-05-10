@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaChevronLeft, FaChevronRight, FaClock, FaUser, FaSearch,
   FaCalendarAlt, FaBuilding, FaTrash, FaHistory,
-  FaPlus, FaPlay, FaStop, FaChevronDown, FaCoffee, FaTimes
+  FaPlus, FaPlay, FaStop, FaChevronDown, FaCoffee, FaTimes,FaCheck
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
@@ -79,7 +79,6 @@ const StatusSelect = ({ value, onChange, options }) => {
   );
 };
 
-const BREAK_TYPES = ['Lunch', 'Short', 'Tea', 'Personal'];
 const BREAK_LIMIT_MINS = 60;
 
 const addDays = (dateStr, days) => {
@@ -99,16 +98,6 @@ const formatMins = (m) => {
   if (!m) return '0 min';
   if (m < 60) return `${m} min`;
   return `${Math.floor(m / 60)}h ${m % 60}m`;
-};
-
-const calcDur = (start, end) => {
-  if (!start || !end) return null;
-  const toMins = (t) => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
-  };
-  const d = toMins(end) - toMins(start);
-  return d > 0 ? d : null;
 };
 
 const nowTime = () => new Date().toTimeString().slice(0, 5);
@@ -199,140 +188,63 @@ const getExactPunchTime = (value) => {
   return '';
 };
 
-// ─── UNIFIED BREAK MODAL ──────────────────────────────────────────────────────
-const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
-  const [activeTab, setActiveTab] = useState(initialTab || 'live');
-  const [loading, setLoading] = useState(false);
+const normalizeBreakRow = (row, fallbackDate = '') => {
+  if (!row || typeof row !== 'object') return null;
 
-  const [breakType, setBreakType] = useState('Lunch');
+  const normalizedType = row?.type || 'break';
+  const startRecord = row?.break_start || row?.break_start_ || row?.punch_in || null;
+  const endRecord = row?.break_end || row?.break_end_ || row?.punch_out || null;
+  const startTime = startRecord?.time || row?.start_time || null;
+  const endTime = endRecord?.time || row?.end_time || null;
+  const calculations = row?.calculations || {};
+  const date = row?.attendance_date || row?.punch_date || fallbackDate || '';
+
+  return {
+    id: row?.id ?? row?.attendance_id ?? row?.punch_id ?? row?.punch_uid ?? null,
+    attendance_id: row?.attendance_id ?? row?.id ?? null,
+    employee_id: row?.employee_id ?? null,
+    name: row?.name ?? '',
+    employee_code: row?.employee_code ?? '',
+    department: row?.designation ? row.designation.replace(/_/g, ' ').toUpperCase() : '',
+    date,
+    day_label: date ? new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
+    type: normalizedType,
+    status: row?.status || row?.day_status || 'pending',
+    start_time: startTime,
+    end_time: endTime,
+    start_record: startRecord,
+    end_record: endRecord,
+    breaks: row?.breaks || [],
+    calculations,
+    on_break: Boolean(startTime && !endTime && row?.day_status === 'on_break'),
+    attendance_record: row,
+  };
+};
+
+// ─── UNIFIED BREAK MODAL ──────────────────────────────────────────────────────
+const ManageBreaksModal = ({ employee, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
   const [breakStart, setBreakStart] = useState(nowTime());
   const [breakEnd, setBreakEnd] = useState('');
-  const [duration, setDuration] = useState('');
-
-  const [liveAction, setLiveAction] = useState(employee.on_break ? 'end' : 'start');
-  const [liveType, setLiveType] = useState('Short');
-  const [liveTime, setLiveTime] = useState(nowTime());
-  
   const [notes, setNotes] = useState('');
 
-  const TABS = [
-    { id: 'live', label: 'Live Track', icon: FaPlay, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'manual', label: 'Manual Add', icon: FaPlus, color: 'text-orange-500', bg: 'bg-orange-50' },
-    { id: 'history', label: 'History', icon: FaHistory, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-  ];
-
-  const handleManualSubmit = async () => {
+  const handleSubmit = async () => {
     if (!breakStart) return toast.error('Start time required');
     setLoading(true);
-    await onSubmit({
-      employee_id: employee.employee_id,
-      date: employee.date,
-      type: 'break',
-      status: 'manual',
-      value1: breakType,
-      punch_in: breakStart,
-      punch_out: breakEnd || null,
-      value2: String(duration ? Number(duration) : (calcDur(breakStart, breakEnd) || '')),
-      notes: notes,
-    });
-    setLoading(false);
-  };
-
-  const handleLiveBreakSubmit = async () => {
-    if (!liveTime) return toast.error('Time required');
-    setLoading(true);
-    await onSubmit({
-      employee_id: employee.employee_id,
-      date: employee.date,
-      type: 'break',
-      status: 'live',
-      value1: liveType,
-      value2: liveAction,
-      punch_in: liveTime,
-      notes: notes,
-    });
-    setLoading(false);
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'live':
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Quick Action</label>
-              <div className="grid grid-cols-2 gap-3">
-                {['start', 'end'].map((a) => (
-                  <ManagementButton key={a} tone={a === 'start' ? 'emerald' : 'rose'} variant={liveAction === a ? 'solid' : 'soft'} fullWidth onClick={() => setLiveAction(a)}>
-                    {a === 'start' ? '▶ Start Break' : '⏹ End Break'}
-                  </ManagementButton>
-                ))}
-              </div>
-            </div>
-            {liveAction === 'start' && (
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Break Type</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {BREAK_TYPES.map((t) => (
-                    <ManagementButton key={t} size="sm" tone="blue" variant={liveType === t ? 'solid' : 'soft'} fullWidth onClick={() => setLiveType(t)}>
-                      {t}
-                    </ManagementButton>
-                  ))}
-                </div>
-              </div>
-            )}
-            <TimePickerField label={liveAction === 'start' ? 'Start Time' : 'End Time'} value={liveTime} onChange={setLiveTime} />
-          </div>
-        );
-      case 'manual':
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Break Type</label>
-              <div className="grid grid-cols-4 gap-2">
-                {BREAK_TYPES.map((t) => (
-                  <ManagementButton key={t} size="sm" tone="amber" variant={breakType === t ? 'solid' : 'soft'} fullWidth onClick={() => setBreakType(t)}>
-                    {t}
-                  </ManagementButton>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
-              <TimePickerField label="End (Opt)" value={breakEnd} onChange={setBreakEnd} />
-            </div>
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Duration (mins)</label>
-              <input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="Auto-calculated if end set"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" />
-            </div>
-          </div>
-        );
-      case 'history':
-        return (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {employee.breaks.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-10">No break records found</p>
-            ) : (
-              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
-                {employee.breaks.map((b, i) => (
-                  <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">☕ {b.type} Break</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{b.start} – {b.end || 'ongoing'}</p>
-                    </div>
-                    <span className="text-sm font-black text-orange-500">{b.dur ? formatMins(b.dur) : '…'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      default: return null;
+    try {
+      await onSubmit({
+        employee_id: employee.employee_id,
+        date: employee.date,
+        type: 'break',
+        status: 'manual',
+        punch_in: breakStart,
+        punch_out: breakEnd || null,
+        notes,
+      });
+    } finally {
+      setLoading(false);
     }
   };
-
-  const activeTabMeta = TABS.find(t => t.id === activeTab);
 
   return (
     <Modal
@@ -344,60 +256,29 @@ const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
       footer={
         <>
           <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
-          {activeTab !== 'history' && (
-            <ManagementButton
-              tone={activeTab === 'live' ? 'emerald' : 'amber'}
-              loading={loading}
-              onClick={activeTab === 'live' ? handleLiveBreakSubmit : handleManualSubmit}
-            >
-              Confirm {activeTabMeta.label}
-            </ManagementButton>
-          )}
+          <ManagementButton tone="amber" loading={loading} onClick={handleSubmit}>Save Break</ManagementButton>
         </>
       }
     >
-      <div className="flex max-h-[500px] -m-6 flex-col overflow-hidden">
-        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center p-2 gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide">
-          {TABS.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 group ${isActive
-                  ? `bg-white shadow-sm border border-slate-200 ${tab.color}`
-                  : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
-                  }`}
-              >
-                <div className={`shrink-0 h-6 w-6 rounded-md flex items-center justify-center transition-colors ${isActive ? tab.bg : 'bg-slate-100 group-hover:bg-slate-200'}`}>
-                  <Icon size={12} />
-                </div>
-                <span className="text-[11px] font-bold">{tab.label}</span>
-              </button>
-            );
-          })}
+      <div className="space-y-6 p-8">
+        <div className="grid grid-cols-2 gap-4">
+          <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
+          <TimePickerField label="End (Opt)" value={breakEnd} onChange={setBreakEnd} />
         </div>
-        <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-8 space-y-6">
-            {renderContent()}
-            {activeTab !== 'history' && (
-              <>
-                <hr className="border-slate-100" />
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
-                  <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Add any details..."
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-                </div>
-              </>
-            )}
-          </div>
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={3}
+            placeholder="Add any details..."
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+          />
         </div>
       </div>
     </Modal>
   );
 };
-
 const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState('');
@@ -498,49 +379,50 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
   const barPct = Math.min(100, Math.round((total / BREAK_LIMIT_MINS) * 100));
   const statusCfg = STATUS_CONFIG[emp.status];
   return (
-    <ManagementCard
-      title={emp.name}
-      subtitle={`[${emp.employee_code}]`}
-      accent={emp.on_break ? 'orange' : 'slate'}
-      icon={<FaUser className="text-slate-500" />}
-      badge={
-        <div className="flex items-center gap-1.5">
-          {isSelectionMode && (
-            <label className="flex items-center justify-center">
-              <input
-                type="checkbox"
-                checked={selected}
-                onChange={() => onToggleSelect?.(emp)}
-                onClick={(e) => e.stopPropagation()}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-            </label>
-          )}
-          {statusCfg && (
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
-              {statusCfg.label}
-            </span>
-          )}
-          {emp.on_break && (
-            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500 text-white animate-pulse">
-              On Break
-            </span>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction(emp, 'attendance_logs'); }}
+    <div className="relative">
+      {isSelectionMode && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggleSelect?.(emp); }}
+          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${
+            selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
+          }`}
+        >
+          {selected && <FaCheck size={9} />}
+        </button>
+      )}
+      <ManagementCard
+        title={emp.name}
+        subtitle={`[${emp.employee_code}]`}
+        accent={emp.on_break ? 'orange' : 'slate'}
+        icon={<FaUser className="text-slate-500" />}
+        badge={
+          <div className="flex items-center gap-1.5">
+            {statusCfg && (
+              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
+                {statusCfg.label}
+              </span>
+            )}
+            {emp.on_break && (
+              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500 text-white animate-pulse">
+                On Break
+              </span>
+            )}
+            <button
+            onClick={(e) => { e.stopPropagation(); onAction(emp, 'break_logs'); }}
             className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm ml-0.5"
-            title="View Attendance Logs"
+            title="View Break Logs"
           >
             <FaHistory size={11} />
           </button>
-        </div>
-      }
-    >
-      <div className="flex flex-col md:flex-row gap-6 md:items-center">
-        <div className="flex-1 space-y-4">
-          <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
-            <FaCalendarAlt size={9} />
-            <span>{emp.date} | {emp.day_label}</span>
+          </div>
+        }
+      >
+        <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
+              <FaCalendarAlt size={9} />
+              <span>{emp.date} | {emp.day_label}</span>
             {emp.department && (
               <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.department}</span></>
             )}
@@ -557,17 +439,20 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
             <span className={`text-[10px] font-black whitespace-nowrap ${over ? 'text-rose-500' : 'text-gray-600'}`}>{formatMins(total)} / {BREAK_LIMIT_MINS} min</span>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-2 gap-2 shrink-0 md:w-80">
-          <ManagementButton size="sm" tone="amber" variant="soft" fullWidth onClick={() => onAction(emp, 'add_break')}><FaPlus size={9} className="mr-1" /> Add Break</ManagementButton>
-          <ManagementButton size="sm" tone={emp.on_break ? 'rose' : 'emerald'} variant={emp.on_break ? 'solid' : 'soft'} fullWidth onClick={() => onAction(emp, 'live_break')}>
-            {emp.on_break ? <FaStop size={9} className="mr-1" /> : <FaPlay size={9} className="mr-1" />}
-            {emp.on_break ? 'End Break' : 'Start Break'}
+        <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
+          <ManagementButton size="sm" tone="amber" variant="soft" fullWidth onClick={() => onAction(emp, 'add_break')}>
+            <FaPlus size={9} className="mr-1" /> Add Break
           </ManagementButton>
-          <ManagementButton size="sm" tone="blue" variant="soft" fullWidth onClick={() => onAction(emp, 'break_history')}><FaHistory size={9} className="mr-1" /> History</ManagementButton>
-          <ManagementButton size="sm" tone="rose" variant="outline" fullWidth onClick={() => onAction(emp, 'clear_all')}><FaTrash size={9} className="mr-1" /> Clear</ManagementButton>
+          <ManagementButton size="sm" tone="emerald" variant="soft" fullWidth onClick={() => onAction(emp, 'live_break_start')}>
+            <FaPlay size={9} className="mr-1" /> Start Break
+          </ManagementButton>
+          <ManagementButton size="sm" tone="rose" variant="soft" fullWidth onClick={() => onAction(emp, 'live_break_end')}>
+            <FaStop size={9} className="mr-1" /> End Break
+          </ManagementButton>
         </div>
       </div>
-    </ManagementCard>
+      </ManagementCard>
+    </div>
   );
 };
 
@@ -588,10 +473,9 @@ const BreakManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [bulkAction, setBulkAction] = useState(null);
-  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const lastRequestKeyRef = useRef('');
 
   const fetchBreaks = useCallback(async (force = false) => {
@@ -617,31 +501,14 @@ const BreakManagement = () => {
       const statusParam = dayStatus === 'all' ? '' : `&day_status=${dayStatus}`;
       const empParam = selectedEmployee ? `&employee_id=${selectedEmployee}` : '';
       const response = await apiCall(
-        `/attendance/list?from_date=${fromDate}&to_date=${toDate}&page=${pagination.page}&limit=${pagination.limit}&search=${search}${statusParam}${empParam}`,
+        `/attendance/list?from_date=${fromDate}&to_date=${toDate}&page=${pagination.page}&limit=${pagination.limit}&search=${search}&type=break${statusParam}${empParam}`,
         'GET',
         null,
         companyId
       );
       const result = await response.json();
       if (result.success) {
-        const mapped = result.data.map(emp => {
-          const att = emp.attendances && emp.attendances[0];
-          const displayDate = att?.attendance_date || dateFilter.date || dateFilter.from_date || '';
-          return {
-            id: emp.id,
-            employee_id: emp.employee_id,
-            name: emp.name,
-            employee_code: emp.employee_code,
-            department: emp.designation ? emp.designation.replace(/_/g, ' ').toUpperCase() : '',
-            date: displayDate,
-            day_label: displayDate ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
-            status: att?.day_status || 'unmarked',
-            breaks: att?.breaks || [],
-            total_break_mins: att?.calculations?.break_minutes || 0,
-            on_break: att?.punch_in && !att?.punch_out && att?.day_status === 'on_break',
-            attendance_record: att
-          };
-        });
+        const mapped = (result.data || []).map(emp => normalizeBreakRow(emp, dateFilter.date || dateFilter.from_date || ''));
         setEmployees(mapped);
         updatePagination({
           total: result.meta.total,
@@ -694,12 +561,7 @@ const BreakManagement = () => {
     return 'Select Date';
   }, [dateFilter]);
 
-  const handleAction = (emp, action, extra = null) => {
-    if (action === 'clear_all') {
-      if (!window.confirm(`Clear all breaks for ${emp.name}?`)) return;
-      toast.info('Feature pending API update');
-      return;
-    }
+  const handleAction = (emp, action) => {
     setModal({ type: action, emp });
   };
 
@@ -749,25 +611,33 @@ const BreakManagement = () => {
     [employees, selectedIds]
   );
 
-  const handleBulkSubmit = async ({ action, employees: bulkEmployees, notes, halfSession }) => {
-    if (!bulkEmployees.length) return;
+  const handleBulkReview = async (action) => {
+    if (!selectedEmployees.length) return;
+    setBulkSaving(true);
     try {
       const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      for (const emp of bulkEmployees) {
-        const payload = buildBulkAttendancePayload(emp, action, notes, halfSession);
-        const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.message || `Failed for ${emp.name}`);
-        }
+      const punchIds = selectedEmployees
+        .map(emp => emp.attendance_id || emp.attendance_record?.attendance_id || emp.attendance_record?.id || emp.id)
+        .filter(Boolean);
+      if (punchIds.length === 0) {
+        toast.error('No attendance records selected');
+        return;
       }
-      toast.success(`${bulkEmployees.length} record${bulkEmployees.length > 1 ? 's' : ''} updated successfully`);
-      setBulkModalOpen(false);
-      setBulkAction(null);
+
+      const endpoint = action === 'approve' ? '/attendance/approve' : '/attendance/reject';
+      const response = await apiCall(endpoint, 'PUT', { punch_ids: punchIds, notes: '' }, companyId);
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || `Failed to ${action}`);
+      }
+
+      toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       setSelectedIds([]);
       fetchBreaks();
     } catch (err) {
-      toast.error(err.message || 'Bulk update failed');
+      toast.error(err.message || `Bulk ${action} failed`);
+    } finally {
+      setBulkSaving(false);
     }
   };
 
@@ -946,7 +816,7 @@ const BreakManagement = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"
+              className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"
             >
               <div className="flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-1.5 mr-1">
                 <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
@@ -955,21 +825,22 @@ const BreakManagement = () => {
 
               <div className="w-px h-6 bg-slate-200 mx-1" />
 
-              {BULK_BREAK_ACTIONS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setBulkAction(item.id);
-                    setBulkModalOpen(true);
-                  }}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${BULK_BREAK_TONE_CLASSES[item.id]}`}
-                >
-                  {item.label}
-                </button>
-              ))}
-
-              <div className="w-px h-6 bg-slate-200 mx-1" />
+              <button
+                type="button"
+                onClick={() => handleBulkReview('approve')}
+                disabled={bulkSaving}
+                className="rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm bg-emerald-600 text-white disabled:opacity-60"
+              >
+                Approve
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBulkReview('reject')}
+                disabled={bulkSaving}
+                className="rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm bg-rose-600 text-white disabled:opacity-60"
+              >
+                Reject
+              </button>
 
               <button
                 type="button"
@@ -988,24 +859,12 @@ const BreakManagement = () => {
         {modal && !['attendance_logs', 'clear_all'].includes(modal.type) && (
           <ManageBreaksModal
             employee={modal.emp}
-            initialTab={modal.type === 'break_history' ? 'history' : modal.type === 'add_break' ? 'manual' : 'live'}
             onClose={() => setModal(null)}
             onSubmit={handleUpdate}
           />
         )}
-        {modal?.type === 'attendance_logs' && (
-          <AttendanceLogsModal id={modal.emp.id} type="attendance" onClose={() => setModal(null)} />
-        )}
-        {bulkModalOpen && bulkAction && (
-          <BulkAttendanceModal
-            employees={selectedEmployees}
-            action={bulkAction}
-            onClose={() => {
-              setBulkModalOpen(false);
-              setBulkAction(null);
-            }}
-            onSubmit={handleBulkSubmit}
-          />
+        {modal?.type === 'break_logs' && (
+          <AttendanceLogsModal id={modal.emp.id} type="break" onClose={() => setModal(null)} />
         )}
       </AnimatePresence>
     </div>
