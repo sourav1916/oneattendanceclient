@@ -4,7 +4,7 @@ import {
   FaChevronLeft, FaChevronRight, FaClock, FaUser, FaSearch,
   FaCheckCircle, FaCalendarAlt, FaBuilding,
   FaUmbrellaBeach, FaMoneyBillWave, FaHourglassHalf,
-  FaHistory, FaTimesCircle, FaChevronDown, FaTimes
+  FaHistory, FaTimesCircle, FaChevronDown, FaTimes, FaCheck
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
@@ -144,7 +144,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
   // Leave tab states
   const [leaveSubTab, setLeaveSubTab] = useState('paid');  // 'paid' | 'unpaid'
-  const [companyLeaves, setCompanyLeaves] = useState([]);
+  const [leaveConfigs, setLeaveConfigs] = useState([]);
   const [leavesLoading, setLeavesLoading] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [includeWeekend, setIncludeWeekend] = useState(false);
@@ -173,14 +173,14 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   // Fetch company leave types when leave tab is active
   useEffect(() => {
     if (activeTab !== 'paid_leave') return;
-    if (companyLeaves.length > 0) return; // already loaded
+    if (leaveConfigs.length > 0) return; // already loaded
     const fetchLeaves = async () => {
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
         const res = await apiCall('/leave/company', 'GET', null, companyId);
         const data = await res.json();
-        if (data.success) setCompanyLeaves(data.data.filter(l => l.is_active));
+        if (data.success) setLeaveConfigs(data.data.filter(l => l.is_active));
       } catch (e) {
         console.error('Failed to load leave types', e);
       } finally {
@@ -216,20 +216,21 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     const pOut = toMins(punchOut);
 
     const expectedMins = 540; // 9 hours
+    const graceMins = 15;
     const actualMins = punchIn && punchOut ? (pOut >= pIn ? pOut - pIn : (1440 - pIn) + pOut) : 0;
     const diff = actualMins - expectedMins;
 
     return {
       expected: formatMins(expectedMins),
       actual: formatMins(actualMins),
-      grace: '15m',
+      grace: `${graceMins}m`,
       window: '09:00 AM - 06:00 PM',
-      isOvertime: diff > 0,
-      isDeductible: diff < 0,
+      isOvertime: diff > graceMins,
+      isDeductible: diff < -graceMins,
       isHalfDay: actualMins > 0 && actualMins < (expectedMins / 2 + 30),
       diffLabel: diff >= 0 ? formatMins(diff) : formatMins(Math.abs(diff)),
-      status: diff >= 0 ? 'Within scheduled time' : 'Below scheduled time',
-      statusColor: diff >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+      status: diff >= -graceMins ? 'Within scheduled time' : 'Below scheduled time',
+      statusColor: diff >= -graceMins ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
     };
   }, [punchIn, punchOut]);
 
@@ -248,7 +249,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       employee_id: employee.employee_id, 
       date: employee.date, 
       type: 'attendance',
-      status: activeTab,
+      status: activeTab === 'paid_leave' ? 'leave' : activeTab,
       notes: notes
     };
 
@@ -263,53 +264,50 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         punch_in: punchIn,
         punch_out: punchOut,
         is_overtime: otOverride !== null ? otOverride : metrics.isOvertime,
-        is_half_day: halfDayOverride !== null ? halfDayOverride : metrics.isHalfDay,
         is_deductible: deductOverride !== null ? deductOverride : metrics.isDeductible
       };
     } else if (activeTab === 'half_day') {
-      if (!punchIn) {
-        toast.error('Punch In is required');
+      if (!punchIn || !punchOut) {
+        toast.error('Punch In/Out are required for Half Day');
         setLoading(false);
         return;
       }
       payload = { 
         ...payload, 
         punch_in: punchIn, 
-        punch_out: punchOut || null, 
-        half_day_session: halfSession 
+        punch_out: punchOut, 
+        value1: halfSession === 'first' ? 'first_half' : 'second_half'
       };
-    } else if (activeTab === 'fine') {
+    } else if (activeTab === 'fine' || activeTab === 'ot') {
+      if (!punchIn || !punchOut) {
+        toast.error('Punch In/Out are required');
+        setLoading(false);
+        return;
+      }
       payload = { 
         ...payload, 
-        is_deductible: isDeductible 
-      };
-    } else if (activeTab === 'ot') {
-      payload = { 
-        ...payload, 
-        is_overtime: isOt 
+        status: 'present',
+        punch_in: punchIn,
+        punch_out: punchOut,
+        is_deductible: activeTab === 'fine',
+        is_overtime: activeTab === 'ot'
       };
     } else if (activeTab === 'paid_leave') {
       if (leaveSubTab === 'paid') {
         if (!selectedLeave) {
-          toast.error('Please select a leave type');
+          toast.error('Please select an option');
           setLoading(false);
           return;
         }
         payload = {
           ...payload,
-          status: 'paid_leave',
-          leave_id: selectedLeave.id,
-          leave_code: selectedLeave.code,
           value1: 'paid',
-          value2: selectedLeave.code
+          value2: selectedLeave.type === 'leave' ? selectedLeave.data.code : (selectedLeave.type === 'weekend' ? 'Weekend' : 'Holiday')
         };
       } else {
         payload = {
           ...payload,
-          status: 'unpaid_leave',
           value1: 'unpaid',
-          include_weekend: includeWeekend,
-          include_holiday: includeHoliday
         };
       }
     }
@@ -395,11 +393,29 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                     }
                   }
                 };
+                const isDisabled = !card.autoVal;
                 return (
                   <div
                     key={card.label}
-                    onClick={handleToggle}
-                    className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between cursor-pointer select-none
+                    onClick={() => {
+                      if (isDisabled) return;
+                      // Mutual exclusivity logic...
+                      if (card.label === 'Overtime') {
+                        setHalfDayOverride(false);
+                        setDeductOverride(false);
+                        setOtOverride(isOverridden ? null : !card.autoVal);
+                      } else if (card.label === 'Half Day') {
+                        setOtOverride(false);
+                        setDeductOverride(false);
+                        setHalfDayOverride(isOverridden ? null : !card.autoVal);
+                      } else if (card.label === 'Deductible') {
+                        setOtOverride(false);
+                        setHalfDayOverride(false);
+                        setDeductOverride(isOverridden ? null : !card.autoVal);
+                      }
+                    }}
+                    className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between select-none
+                      ${isDisabled ? 'opacity-40 cursor-not-allowed grayscale-[0.5]' : 'cursor-pointer'}
                       ${active ? `bg-${card.color}-50 border-${card.color}-200 ring-1 ring-${card.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'}
                       ${isOverridden ? 'ring-2 ring-offset-1 ring-indigo-300' : ''}
                     `}
@@ -468,11 +484,9 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 </div>
               </div>
             )}
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-white cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsDeductible(!isDeductible)}>
-              <span className="text-sm font-bold text-gray-800">Apply Deduction</span>
-              <div className={`h-6 w-11 rounded-full p-1 transition-colors duration-300 ${isDeductible ? 'bg-rose-500' : 'bg-slate-200'}`}>
-                <div className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${isDeductible ? 'translate-x-5' : 'translate-x-0'}`} />
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+              <TimePickerField label="Punch In" value={punchIn} onChange={setPunchIn} />
+              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
@@ -492,17 +506,15 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 </div>
               </div>
             )}
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-white cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setIsOt(!isOt)}>
-              <span className="text-sm font-bold text-gray-800">Approve Overtime</span>
-              <div className={`h-6 w-11 rounded-full p-1 transition-colors duration-300 ${isOt ? 'bg-orange-500' : 'bg-slate-200'}`}>
-                <div className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${isOt ? 'translate-x-5' : 'translate-x-0'}`} />
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+              <TimePickerField label="Punch In" value={punchIn} onChange={setPunchIn} />
+              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
       case 'paid_leave': {
-        const paidLeaves = companyLeaves.filter(l => l.is_paid);
-        const unpaidLeaves = companyLeaves.filter(l => !l.is_paid);
+        const paidLeaves = leaveConfigs.filter(l => l.is_paid);
+        const unpaidLeaves = leaveConfigs.filter(l => !l.is_paid);
         return (
           <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {/* Sub-tab switcher */}
@@ -529,115 +541,87 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
             {/* PAID LEAVE */}
             {leaveSubTab === 'paid' && (
-              <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Select Leave Type</label>
-                {leavesLoading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="h-7 w-7 border-2 border-violet-400/30 border-t-violet-500 rounded-full animate-spin" />
-                  </div>
-                ) : paidLeaves.length === 0 ? (
-                  <div className="text-center py-6 text-slate-400">
-                    <FaUmbrellaBeach size={28} className="mx-auto mb-2 opacity-30" />
-                    <p className="text-xs font-semibold">No paid leave types configured for this company</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {paidLeaves.map(leave => (
+              <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Select Status / Leave Type</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Standard Paid Leave Configs */}
+                    {leaveConfigs.map(leave => (
                       <div
                         key={leave.id}
-                        onClick={() => setSelectedLeave(selectedLeave?.id === leave.id ? null : leave)}
+                        onClick={() => setSelectedLeave({ type: 'leave', data: leave })}
                         className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedLeave?.id === leave.id
+                          selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id
                             ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100'
                             : 'bg-white border-slate-100 hover:border-violet-200 hover:bg-violet-50/30'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`h-9 w-9 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 ${
-                            selectedLeave?.id === leave.id ? 'bg-violet-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'
+                            selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id ? 'bg-violet-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'
                           }`}>
                             {leave.code}
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-800">{leave.name}</p>
                             <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                              Max {leave.max_balance} days
-                              {leave.allow_half_day ? ' · Half-day allowed' : ''}
-                              {leave.exclude_weekends ? ' · Weekends excluded' : ''}
+                              Max {leave.max_balance}d {leave.allow_half_day ? '· ½ day' : ''}
                             </p>
                           </div>
                         </div>
-                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                          selectedLeave?.id === leave.id ? 'bg-violet-600 border-violet-600' : 'border-slate-200'
-                        }`}>
-                          {selectedLeave?.id === leave.id && (
-                            <FaCheckCircle size={10} className="text-white" />
-                          )}
+                        {selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id && (
+                          <div className="h-5 w-5 rounded-full bg-violet-600 flex items-center justify-center">
+                            <FaCheck size={10} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Weekend & Holiday as integrated options */}
+                    {[
+                      { id: 'weekend', label: 'Weekend', icon: FaCalendarAlt, color: 'sky' },
+                      { id: 'holiday', label: 'Public Holiday', icon: FaUmbrellaBeach, color: 'amber' }
+                    ].map(opt => (
+                      <div
+                        key={opt.id}
+                        onClick={() => setSelectedLeave({ type: opt.id })}
+                        className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                          selectedLeave?.type === opt.id
+                            ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100`
+                            : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/30'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            selectedLeave?.type === opt.id ? `bg-${opt.color}-500 text-white shadow-md` : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            <opt.icon size={16} />
+                          </div>
+                          <p className="text-sm font-bold text-slate-800">{opt.label}</p>
                         </div>
+                        {selectedLeave?.type === opt.id && (
+                          <div className={`h-5 w-5 rounded-full bg-${opt.color}-500 flex items-center justify-center`}>
+                            <FaCheck size={10} className="text-white" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
-            {/* UNPAID LEAVE */}
+            {/* UNPAID LEAVE TAB */}
             {leaveSubTab === 'unpaid' && (
-              <div className="space-y-4">
-                {/* Warning banner */}
-                <div className="bg-rose-50 border border-rose-100 rounded-xl p-3.5 flex gap-3 items-start">
-                  <FaTimesCircle className="text-rose-400 mt-0.5 shrink-0" size={15} />
-                  <div>
-                    <p className="text-xs font-black text-rose-800 mb-0.5">Unpaid Leave</p>
-                    <p className="text-[11px] text-rose-700/80 font-medium leading-relaxed">
-                      This will result in a salary deduction for the day. Mark any applicable exclusions below.
-                    </p>
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="p-8 bg-rose-50/30 rounded-[2rem] border-2 border-dashed border-rose-200 flex flex-col items-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
+                    <FaHistory size={24} className="text-rose-600" />
                   </div>
-                </div>
-
-                {/* Weekend & Holiday toggles */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Day Classification</label>
-                  {[
-                    {
-                      key: 'weekend',
-                      label: 'Weekend',
-                      sub: 'Employee is off on weekends — mark day accordingly',
-                      state: includeWeekend,
-                      setState: setIncludeWeekend,
-                      color: 'sky'
-                    },
-                    {
-                      key: 'holiday',
-                      label: 'Public Holiday',
-                      sub: 'This is a declared company or national holiday',
-                      state: includeHoliday,
-                      setState: setIncludeHoliday,
-                      color: 'amber'
-                    }
-                  ].map(opt => (
-                    <div
-                      key={opt.key}
-                      onClick={() => opt.setState(!opt.state)}
-                      className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all select-none ${
-                        opt.state
-                          ? `bg-${opt.color}-50 border-${opt.color}-200 ring-1 ring-${opt.color}-100`
-                          : 'bg-white border-slate-100 hover:border-slate-200'
-                      }`}
-                    >
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">{opt.label}</p>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{opt.sub}</p>
-                      </div>
-                      <div className={`h-6 w-11 rounded-full p-1 transition-colors duration-300 ${
-                        opt.state ? `bg-${opt.color}-500` : 'bg-slate-200'
-                      }`}>
-                        <div className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                          opt.state ? 'translate-x-5' : 'translate-x-0'
-                        }`} />
-                      </div>
-                    </div>
-                  ))}
+                  <h4 className="text-sm font-black text-rose-900 uppercase tracking-tight mb-2">Confirm Unpaid Leave</h4>
+                  <p className="text-[11px] text-rose-600/70 font-medium leading-relaxed max-w-[240px]">
+                    Applying unpaid leave will mark the employee as absent for this record and deduct from payroll. No additional options are required.
+                  </p>
                 </div>
               </div>
             )}
