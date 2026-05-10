@@ -123,6 +123,81 @@ const STATUS_CONFIG = {
   unmarked: { label: 'Unmarked', color: 'bg-slate-500 text-white shadow-slate-200', dot: 'bg-slate-500' },
 };
 
+const BULK_ATTENDANCE_ACTIONS = [
+  { id: 'actual_data', label: 'Actual Data', tone: 'slate' },
+  { id: 'paid_leave', label: 'Paid Leave', tone: 'violet' },
+  { id: 'absent', label: 'Absent', tone: 'rose' },
+  { id: 'present', label: 'Present', tone: 'emerald' },
+  { id: 'half_day', label: 'Half Day', tone: 'sky' },
+];
+
+const BULK_ATTENDANCE_TONE_CLASSES = {
+  actual_data: 'bg-slate-500 text-white shadow-slate-200',
+  paid_leave: 'bg-violet-500 text-white shadow-violet-200',
+  absent: 'bg-rose-500 text-white shadow-rose-200',
+  present: 'bg-emerald-500 text-white shadow-emerald-200',
+  half_day: 'bg-sky-500 text-white shadow-sky-200',
+};
+
+const ToggleSwitch = ({ isOn, onToggle, accent = 'blue' }) => (
+  <div
+    onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+  >
+    <motion.div
+      className="bg-white w-3 h-3 rounded-full shadow-md"
+      initial={false}
+      animate={{ x: isOn ? 20 : 0 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+    />
+  </div>
+);
+
+const buildBulkAttendancePayload = (employee, action, notes, halfSession = 'first') => {
+  const punchIn = getExactPunchTime(employee?.punch_in) || getExactPunchTime(employee?.shift_start) || '09:00';
+  const punchOut = getExactPunchTime(employee?.punch_out) || getExactPunchTime(employee?.shift_end) || '18:00';
+  const basePayload = {
+    employee_id: employee.employee_id,
+    date: employee.date,
+    type: 'attendance',
+    notes: notes || '',
+  };
+
+  if (action === 'absent') {
+    return {
+      ...basePayload,
+      status: 'absent',
+    };
+  }
+
+  if (action === 'paid_leave') {
+    return {
+      ...basePayload,
+      status: 'leave',
+      value1: 'paid',
+    };
+  }
+
+  if (action === 'half_day') {
+    return {
+      ...basePayload,
+      status: 'half_day',
+      punch_in: punchIn,
+      punch_out: punchOut,
+      value1: halfSession === 'second' ? 'second_half' : 'first_half',
+    };
+  }
+
+  return {
+    ...basePayload,
+    status: 'present',
+    punch_in: punchIn,
+    punch_out: punchOut,
+    is_overtime: Boolean(employee?.attendance_record?.is_overtime || employee?.is_ot),
+    is_deductible: Boolean(employee?.attendance_record?.is_deductible || employee?.is_deductible),
+  };
+};
+
 // ─── UNIFIED ATTENDANCE MODAL ──────────────────────────────────────────────────
 const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [activeTab, setActiveTab] = useState(initialTab || 'present');
@@ -696,82 +771,208 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 };
 
 // ─── EMPLOYEE ATTENDANCE CARD ──────────────────────────────────────────────────
-const EmployeeAttendanceCard = ({ emp, onAction }) => {
-  const statusCfg = STATUS_CONFIG[emp.status];
+const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [halfSession, setHalfSession] = useState('first');
+
+  const actionMeta = BULK_ATTENDANCE_ACTIONS.find(item => item.id === action);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await onSubmit({
+        action,
+        employees,
+        notes,
+        halfSession,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!actionMeta) return null;
+
   return (
-    <ManagementCard
-      title={emp.name}
-      subtitle={`[${emp.employee_code}]`}
-      accent={statusCfg ? statusCfg.dot.replace('bg-', '') : 'slate'}
-      icon={<FaUser className="text-slate-500" />}
-      badge={
-        <div className="flex items-center gap-2">
-          {statusCfg && (
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
-              {statusCfg.label}
-            </span>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onAction(emp, 'logs'); }}
-            className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm"
-            title="View Logs"
-          >
-            <FaHistory size={11} />
-          </button>
-        </div>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Bulk Attendance Update"
+      subtitle={`${employees.length} employee${employees.length > 1 ? 's' : ''} selected`}
+      size="4xl"
+      footer={
+        <>
+          <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
+          <ManagementButton tone={actionMeta.tone} loading={loading} onClick={handleConfirm}>
+            Apply to All
+          </ManagementButton>
+        </>
       }
     >
-      <div className="flex flex-col md:flex-row gap-6 md:items-center">
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold">
-            <FaCalendarAlt size={9} />
-            <span>{formatDate(emp.date)} | {emp.day_label}</span>
-            {emp.shift && emp.shift !== 'No Shift' && (
-              <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.shift}</span></>
-            )}
-          </div>
-          <p className="text-xs text-gray-700 font-semibold">
-            Duty Time : <span className="font-black">{emp.duty_hours}</span>
-          </p>
-          <div className="flex gap-3 text-xs">
-            <span>
-              Punch In:{' '}
-              <span className={emp.punch_in ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                {emp.punch_in ? formatTime(emp.punch_in) : 'Not Marked'}
-              </span>
+      <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
+        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${BULK_ATTENDANCE_TONE_CLASSES[action]}`}>
+              {actionMeta.label}
             </span>
-            <span className="text-gray-300">|</span>
-            <span>
-              Punch Out:{' '}
-              <span className={emp.punch_out ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                {emp.punch_out ? formatTime(emp.punch_out) : 'Not Marked'}
-              </span>
+            <span className="text-xs font-semibold text-slate-500">
+              This will apply to all selected records.
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            {emp.is_deductible ? (
-              <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
-            ) : emp.calculations?.late_minutes > 0 ? (
-              <p className="text-[10px] text-rose-500 font-bold tracking-tight">Late: {formatMins(emp.calculations.late_minutes)}</p>
-            ) : null}
-            
-            {emp.calculations?.overtime_minutes > 0 ? (
-              <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">OT</span>
-            ) : emp.calculations?.overtime_minutes > 0 ? (
-              <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-200">Pending OT: {(emp.calculations.overtime_minutes / 60).toFixed(1)}h</span>
-            ) : null}
-          </div>
+          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
+            {employees.length} selected
+          </span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 shrink-0 md:w-80">
-          <ManagementButton size="sm" tone="emerald" variant={emp.status === 'present' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
-          <ManagementButton size="sm" tone="blue" variant={emp.status === 'half_day' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
-          <ManagementButton size="sm" tone="rose" variant={emp.status === 'absent' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-          <ManagementButton size="sm" tone="slate" variant={emp.is_deductible ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
-          <ManagementButton size="sm" tone="amber" variant={emp.is_ot ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
-          <ManagementButton size="sm" tone="violet" variant={emp.status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
+
+        <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Selected Records</p>
+              <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+                {employees.map((emp) => (
+                  <div key={emp.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">{emp.name}</p>
+                      <p className="text-xs text-slate-500">{emp.employee_code} · {formatDate(emp.date)}</p>
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_CONFIG[emp.status]?.color || 'bg-slate-100 text-slate-700'}`}>
+                      {STATUS_CONFIG[emp.status]?.label || 'Unmarked'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {action === 'half_day' && (
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Half Day Session</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <ManagementButton
+                    tone="sky"
+                    variant={halfSession === 'first' ? 'solid' : 'soft'}
+                    onClick={() => setHalfSession('first')}
+                  >
+                    First Half
+                  </ManagementButton>
+                  <ManagementButton
+                    tone="sky"
+                    variant={halfSession === 'second' ? 'solid' : 'soft'}
+                    onClick={() => setHalfSession('second')}
+                  >
+                    Second Half
+                  </ManagementButton>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={3}
+                placeholder="Add one note for all selected employees..."
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+              />
+            </div>
+          </div>
         </div>
       </div>
-    </ManagementCard>
+    </Modal>
+  );
+};
+
+const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
+  const statusCfg = STATUS_CONFIG[emp.status];
+  return (
+    <div className="relative">
+      {/* ── Top-left checkbox overlay (selection mode only) ── */}
+      {isSelectionMode && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onToggleSelect?.(emp); }}
+          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all duration-200 shadow-sm ${
+            selected
+              ? 'bg-indigo-600 border-indigo-600 text-white scale-110'
+              : 'bg-white border-slate-300 hover:border-indigo-400'
+          }`}
+          title={selected ? 'Deselect' : 'Select'}
+        >
+          {selected && <FaCheck size={10} />}
+        </button>
+      )}
+      <ManagementCard
+        title={emp.name}
+        subtitle={`[${emp.employee_code}]`}
+        accent={statusCfg ? statusCfg.dot.replace('bg-', '') : 'slate'}
+        icon={<FaUser className="text-slate-500" />}
+        badge={
+          <div className="flex items-center gap-2">
+            {statusCfg && (
+              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
+                {statusCfg.label}
+              </span>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onAction(emp, 'logs'); }}
+              className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm"
+              title="View Logs"
+            >
+              <FaHistory size={11} />
+            </button>
+          </div>
+        }
+      >
+        <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold">
+              <FaCalendarAlt size={9} />
+              <span>{formatDate(emp.date)} | {emp.day_label}</span>
+              {emp.shift && emp.shift !== 'No Shift' && (
+                <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.shift}</span></>
+              )}
+            </div>
+            <p className="text-xs text-gray-700 font-semibold">
+              Duty Time : <span className="font-black">{emp.duty_hours}</span>
+            </p>
+            <div className="flex gap-3 text-xs">
+              <span>
+                Punch In:{' '}
+                <span className={emp.punch_in ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
+                  {emp.punch_in ? formatTime(emp.punch_in) : 'Not Marked'}
+                </span>
+              </span>
+              <span className="text-gray-300">|</span>
+              <span>
+                Punch Out:{' '}
+                <span className={emp.punch_out ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
+                  {emp.punch_out ? formatTime(emp.punch_out) : 'Not Marked'}
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              {emp.is_deductible ? (
+                <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
+              ) : emp.calculations?.late_minutes > 0 ? (
+                <p className="text-[10px] text-rose-500 font-bold tracking-tight">Late: {formatMins(emp.calculations.late_minutes)}</p>
+              ) : null}
+              {emp.calculations?.overtime_minutes > 0 ? (
+                <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">OT</span>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 shrink-0 md:w-80">
+            <ManagementButton size="sm" tone="emerald" variant={emp.status === 'present' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
+            <ManagementButton size="sm" tone="blue" variant={emp.status === 'half_day' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
+            <ManagementButton size="sm" tone="rose" variant={emp.status === 'absent' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
+            <ManagementButton size="sm" tone="slate" variant={emp.is_deductible ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
+            <ManagementButton size="sm" tone="amber" variant={emp.is_ot ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+            <ManagementButton size="sm" tone="violet" variant={emp.status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
+          </div>
+        </div>
+      </ManagementCard>
+    </div>
   );
 };
 
@@ -792,6 +993,10 @@ const UnmarkedAttendance = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [bulkAction, setBulkAction] = useState(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const lastRequestKeyRef = useRef('');
 
   const fetchAttendance = useCallback(async () => {
@@ -932,6 +1137,54 @@ const UnmarkedAttendance = () => {
     }
   };
 
+  const toggleSelectEmployee = (emp) => {
+    setSelectedIds((prev) => (
+      prev.includes(emp.id)
+        ? prev.filter((id) => id !== emp.id)
+        : [...prev, emp.id]
+    ));
+  };
+
+  const toggleSelectAll = () => {
+    const visibleIds = employees.map((emp) => emp.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds(allSelected ? [] : visibleIds);
+  };
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode((prev) => {
+      if (prev) setSelectedIds([]);
+      return !prev;
+    });
+  };
+
+  const selectedEmployees = useMemo(
+    () => employees.filter((emp) => selectedIds.includes(emp.id)),
+    [employees, selectedIds]
+  );
+
+  const handleBulkSubmit = async ({ action, employees: bulkEmployees, notes, halfSession }) => {
+    if (!bulkEmployees.length) return;
+    try {
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+      for (const emp of bulkEmployees) {
+        const payload = buildBulkAttendancePayload(emp, action, notes, halfSession);
+        const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || `Failed for ${emp.name}`);
+        }
+      }
+      toast.success(`${bulkEmployees.length} record${bulkEmployees.length > 1 ? 's' : ''} updated successfully`);
+      setBulkModalOpen(false);
+      setBulkAction(null);
+      setSelectedIds([]);
+      fetchAttendance();
+    } catch (err) {
+      toast.error(err.message || 'Bulk update failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -991,8 +1244,67 @@ const UnmarkedAttendance = () => {
               />
             </div>
           </div>
+        </motion.div>
 
+        {/* ── Bulk Selection Control Bar (below filter, above cards) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectionMode}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                isSelectionMode ? 'bg-indigo-600' : 'bg-slate-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                  isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-black uppercase tracking-widest ${
+              isSelectionMode ? 'text-indigo-600' : 'text-slate-400'
+            }`}>
+              {isSelectionMode ? 'Bulk Mode ON' : 'Bulk Mode'}
+            </span>
+          </div>
 
+          {isSelectionMode && employees.length > 0 && (
+            <label className="flex cursor-pointer items-center gap-2.5 select-none">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                  selectedIds.length === employees.length && employees.length > 0
+                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                    : selectedIds.length > 0
+                    ? 'bg-indigo-100 border-indigo-400'
+                    : 'bg-white border-slate-300 hover:border-indigo-400'
+                }`}
+              >
+                {selectedIds.length === employees.length && employees.length > 0 && <FaCheck size={9} className="text-white" />}
+                {selectedIds.length > 0 && selectedIds.length < employees.length && (
+                  <span className="block w-2 h-0.5 bg-indigo-500 rounded" />
+                )}
+              </button>
+              <span className="text-xs font-semibold text-slate-600">
+                {selectedIds.length > 0 ? `${selectedIds.length} of ${employees.length} selected` : `Select all ${employees.length} records`}
+              </span>
+              {selectedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  className="ml-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </label>
+          )}
         </motion.div>
 
         <div className="space-y-3">
@@ -1012,7 +1324,14 @@ const UnmarkedAttendance = () => {
           ) : (
             <>
               {employees.map(emp => (
-                <EmployeeAttendanceCard key={emp.id} emp={emp} onAction={handleAction} />
+                <EmployeeAttendanceCard
+                  key={emp.id}
+                  emp={emp}
+                  onAction={handleAction}
+                  selected={selectedIds.includes(emp.id)}
+                  onToggleSelect={toggleSelectEmployee}
+                  isSelectionMode={isSelectionMode}
+                />
               ))}
               <Pagination
                 currentPage={pagination.page}
@@ -1024,6 +1343,54 @@ const UnmarkedAttendance = () => {
             </>
           )}
         </div>
+
+        <AnimatePresence>
+          {isSelectionMode && selectedIds.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"
+            >
+              {/* Count badge */}
+              <div className="flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-1.5 mr-1">
+                <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                <span className="text-xs font-black text-indigo-700">{selectedIds.length} selected</span>
+              </div>
+
+              <div className="w-px h-6 bg-slate-200 mx-1" />
+
+              {/* Action buttons */}
+              {BULK_ATTENDANCE_ACTIONS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setBulkAction(item.id);
+                    setBulkModalOpen(true);
+                  }}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${BULK_ATTENDANCE_TONE_CLASSES[item.id]}`}
+                >
+                  {item.label}
+                </button>
+              ))}
+
+              <div className="w-px h-6 bg-slate-200 mx-1" />
+
+              {/* Close / deselect all */}
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                title="Clear selection"
+              >
+                <FaTimes size={12} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
       </div>
 
       <AnimatePresence>
@@ -1034,6 +1401,17 @@ const UnmarkedAttendance = () => {
             initialTab={modal.type}
             onClose={() => setModal(null)}
             onSubmit={(payload) => handleSubmit(payload, modal.emp.id)}
+          />
+        )}
+        {bulkModalOpen && bulkAction && (
+          <BulkAttendanceModal
+            employees={selectedEmployees}
+            action={bulkAction}
+            onClose={() => {
+              setBulkModalOpen(false);
+              setBulkAction(null);
+            }}
+            onSubmit={handleBulkSubmit}
           />
         )}
         {modal?.type === 'logs' && (

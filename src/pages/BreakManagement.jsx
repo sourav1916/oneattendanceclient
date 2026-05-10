@@ -124,6 +124,81 @@ const STATUS_CONFIG = {
   unmarked: { label: 'Unmarked', color: 'bg-slate-500 text-white' },
 };
 
+const BULK_BREAK_ACTIONS = [
+  { id: 'actual_data', label: 'Actual Data', tone: 'slate' },
+  { id: 'paid_leave', label: 'Paid Leave', tone: 'violet' },
+  { id: 'absent', label: 'Absent', tone: 'rose' },
+  { id: 'present', label: 'Present', tone: 'emerald' },
+  { id: 'half_day', label: 'Half Day', tone: 'sky' },
+];
+
+const BULK_BREAK_TONE_CLASSES = {
+  actual_data: 'bg-slate-500 text-white shadow-slate-200',
+  paid_leave: 'bg-violet-500 text-white shadow-violet-200',
+  absent: 'bg-rose-500 text-white shadow-rose-200',
+  present: 'bg-emerald-500 text-white shadow-emerald-200',
+  half_day: 'bg-sky-500 text-white shadow-sky-200',
+};
+
+const ToggleSwitch = ({ isOn, onToggle, accent = 'blue' }) => (
+  <div
+    onClick={(e) => { e.stopPropagation(); onToggle(); }}
+    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+  >
+    <motion.div
+      className="bg-white w-3 h-3 rounded-full shadow-md"
+      initial={false}
+      animate={{ x: isOn ? 20 : 0 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+    />
+  </div>
+);
+
+const buildBulkAttendancePayload = (employee, action, notes, halfSession = 'first') => {
+  const punchIn = getExactPunchTime(employee?.attendance_record?.punch_in) || '09:00';
+  const punchOut = getExactPunchTime(employee?.attendance_record?.punch_out) || '18:00';
+  const basePayload = {
+    employee_id: employee.employee_id,
+    date: employee.date,
+    type: 'attendance',
+    notes: notes || '',
+  };
+
+  if (action === 'absent') {
+    return { ...basePayload, status: 'absent' };
+  }
+
+  if (action === 'paid_leave') {
+    return { ...basePayload, status: 'leave', value1: 'paid' };
+  }
+
+  if (action === 'half_day') {
+    return {
+      ...basePayload,
+      status: 'half_day',
+      punch_in: punchIn,
+      punch_out: punchOut,
+      value1: halfSession === 'second' ? 'second_half' : 'first_half',
+    };
+  }
+
+  return {
+    ...basePayload,
+    status: 'present',
+    punch_in: punchIn,
+    punch_out: punchOut,
+    is_overtime: Boolean(employee?.attendance_record?.is_overtime),
+    is_deductible: Boolean(employee?.attendance_record?.is_deductible),
+  };
+};
+
+const getExactPunchTime = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value.slice(0, 5);
+  if (typeof value === 'object') return value?.time ? String(value.time).slice(0, 5) : '';
+  return '';
+};
+
 // ─── UNIFIED BREAK MODAL ──────────────────────────────────────────────────────
 const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [activeTab, setActiveTab] = useState(initialTab || 'live');
@@ -323,13 +398,105 @@ const ManageBreaksModal = ({ employee, initialTab, onClose, onSubmit }) => {
   );
 };
 
+const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [halfSession, setHalfSession] = useState('first');
+
+  const actionMeta = BULK_BREAK_ACTIONS.find(item => item.id === action);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      await onSubmit({
+        action,
+        employees,
+        notes,
+        halfSession,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!actionMeta) return null;
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Bulk Attendance Update"
+      subtitle={`${employees.length} employee${employees.length > 1 ? 's' : ''} selected`}
+      size="4xl"
+      footer={
+        <>
+          <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
+          <ManagementButton tone={actionMeta.tone} loading={loading} onClick={handleConfirm}>
+            Apply to All
+          </ManagementButton>
+        </>
+      }
+    >
+      <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
+        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${BULK_BREAK_TONE_CLASSES[action]}`}>
+              {actionMeta.label}
+            </span>
+            <span className="text-xs font-semibold text-slate-500">
+              This will apply to all selected records.
+            </span>
+          </div>
+          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
+            {employees.length} selected
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Selected Records</p>
+            <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+              {employees.map((emp) => (
+                <div key={emp.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{emp.name}</p>
+                    <p className="text-xs text-slate-500">{emp.employee_code} · {formatDate(emp.date)}</p>
+                  </div>
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_CONFIG[emp.status]?.color || 'bg-slate-100 text-slate-700'}`}>
+                    {STATUS_CONFIG[emp.status]?.label || 'Unmarked'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {action === 'half_day' && (
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Half Day Session</label>
+              <div className="grid grid-cols-2 gap-3">
+                <ManagementButton tone="sky" variant={halfSession === 'first' ? 'solid' : 'soft'} onClick={() => setHalfSession('first')}>First Half</ManagementButton>
+                <ManagementButton tone="sky" variant={halfSession === 'second' ? 'solid' : 'soft'} onClick={() => setHalfSession('second')}>Second Half</ManagementButton>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Add one note for all selected employees..."
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 // ─── EMPLOYEE BREAK CARD ──────────────────────────────────────────────────────
-const EmployeeBreakCard = ({ emp, onAction }) => {
+const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
   const total = emp.total_break_mins;
   const over = total > BREAK_LIMIT_MINS;
   const barPct = Math.min(100, Math.round((total / BREAK_LIMIT_MINS) * 100));
   const statusCfg = STATUS_CONFIG[emp.status];
-
   return (
     <ManagementCard
       title={emp.name}
@@ -338,6 +505,17 @@ const EmployeeBreakCard = ({ emp, onAction }) => {
       icon={<FaUser className="text-slate-500" />}
       badge={
         <div className="flex items-center gap-1.5">
+          {isSelectionMode && (
+            <label className="flex items-center justify-center">
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={() => onToggleSelect?.(emp)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+            </label>
+          )}
           {statusCfg && (
             <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
               {statusCfg.label}
@@ -396,7 +574,7 @@ const EmployeeBreakCard = ({ emp, onAction }) => {
 // ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 const BreakManagement = () => {
   const [dateFilter, setDateFilter] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: '',
     month: '',
     year: '',
     from_date: '',
@@ -410,6 +588,10 @@ const BreakManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [bulkAction, setBulkAction] = useState(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const lastRequestKeyRef = useRef('');
 
   const fetchBreaks = useCallback(async () => {
@@ -540,6 +722,54 @@ const BreakManagement = () => {
     }
   };
 
+  const toggleSelectEmployee = (emp) => {
+    setSelectedIds((prev) => (
+      prev.includes(emp.id)
+        ? prev.filter((id) => id !== emp.id)
+        : [...prev, emp.id]
+    ));
+  };
+
+  const toggleSelectAll = () => {
+    const visibleIds = employees.map((emp) => emp.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds(allSelected ? [] : visibleIds);
+  };
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode((prev) => {
+      if (prev) setSelectedIds([]);
+      return !prev;
+    });
+  };
+
+  const selectedEmployees = useMemo(
+    () => employees.filter((emp) => selectedIds.includes(emp.id)),
+    [employees, selectedIds]
+  );
+
+  const handleBulkSubmit = async ({ action, employees: bulkEmployees, notes, halfSession }) => {
+    if (!bulkEmployees.length) return;
+    try {
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+      for (const emp of bulkEmployees) {
+        const payload = buildBulkAttendancePayload(emp, action, notes, halfSession);
+        const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || `Failed for ${emp.name}`);
+        }
+      }
+      toast.success(`${bulkEmployees.length} record${bulkEmployees.length > 1 ? 's' : ''} updated successfully`);
+      setBulkModalOpen(false);
+      setBulkAction(null);
+      setSelectedIds([]);
+      fetchBreaks();
+    } catch (err) {
+      toast.error(err.message || 'Bulk update failed');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -571,6 +801,7 @@ const BreakManagement = () => {
 
           {/* 2. Filters Wrapper */}
           <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 lg:gap-4 w-full lg:w-auto lg:flex-1 lg:justify-end">
+
             {/* Day Status Select */}
             <div className="w-full sm:w-auto sm:min-w-[140px]">
               <StatusSelect
@@ -603,6 +834,67 @@ const BreakManagement = () => {
 
         </motion.div>
 
+        {/* ── Bulk Selection Control Bar (below filter, above cards) ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectionMode}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none ${
+                isSelectionMode ? 'bg-amber-500' : 'bg-slate-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                  isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+            <span className={`text-xs font-black uppercase tracking-widest ${
+              isSelectionMode ? 'text-amber-600' : 'text-slate-400'
+            }`}>
+              {isSelectionMode ? 'Bulk Mode ON' : 'Bulk Mode'}
+            </span>
+          </div>
+
+          {isSelectionMode && employees.length > 0 && (
+            <label className="flex cursor-pointer items-center gap-2.5 select-none">
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                  selectedIds.length === employees.length && employees.length > 0
+                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                    : selectedIds.length > 0
+                    ? 'bg-indigo-100 border-indigo-400'
+                    : 'bg-white border-slate-300 hover:border-indigo-400'
+                }`}
+              >
+                {selectedIds.length === employees.length && employees.length > 0 && <FaCheck size={9} className="text-white" />}
+                {selectedIds.length > 0 && selectedIds.length < employees.length && (
+                  <span className="block w-2 h-0.5 bg-indigo-500 rounded" />
+                )}
+              </button>
+              <span className="text-xs font-semibold text-slate-600">
+                {selectedIds.length > 0 ? `${selectedIds.length} of ${employees.length} selected` : `Select all ${employees.length} records`}
+              </span>
+              {selectedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds([])}
+                  className="ml-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </label>
+          )}
+        </motion.div>
+
         <div className="space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
@@ -618,7 +910,14 @@ const BreakManagement = () => {
           ) : (
             <>
               {employees.map(emp => (
-                <EmployeeBreakCard key={emp.id} emp={emp} onAction={handleAction} />
+                <EmployeeBreakCard
+                  key={emp.id}
+                  emp={emp}
+                  onAction={handleAction}
+                  selected={selectedIds.includes(emp.id)}
+                  onToggleSelect={toggleSelectEmployee}
+                  isSelectionMode={isSelectionMode}
+                />
               ))}
               <Pagination
                 currentPage={pagination.page}
@@ -630,6 +929,50 @@ const BreakManagement = () => {
             </>
           )}
         </div>
+
+        <AnimatePresence>
+          {isSelectionMode && selectedIds.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"
+            >
+              <div className="flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-1.5 mr-1">
+                <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                <span className="text-xs font-black text-indigo-700">{selectedIds.length} selected</span>
+              </div>
+
+              <div className="w-px h-6 bg-slate-200 mx-1" />
+
+              {BULK_BREAK_ACTIONS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    setBulkAction(item.id);
+                    setBulkModalOpen(true);
+                  }}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${BULK_BREAK_TONE_CLASSES[item.id]}`}
+                >
+                  {item.label}
+                </button>
+              ))}
+
+              <div className="w-px h-6 bg-slate-200 mx-1" />
+
+              <button
+                type="button"
+                onClick={() => setSelectedIds([])}
+                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+                title="Clear selection"
+              >
+                <FaTimes size={12} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence>
@@ -643,6 +986,17 @@ const BreakManagement = () => {
         )}
         {modal?.type === 'attendance_logs' && (
           <AttendanceLogsModal id={modal.emp.id} type="attendance" onClose={() => setModal(null)} />
+        )}
+        {bulkModalOpen && bulkAction && (
+          <BulkAttendanceModal
+            employees={selectedEmployees}
+            action={bulkAction}
+            onClose={() => {
+              setBulkModalOpen(false);
+              setBulkAction(null);
+            }}
+            onSubmit={handleBulkSubmit}
+          />
         )}
       </AnimatePresence>
     </div>
