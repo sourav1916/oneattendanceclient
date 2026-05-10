@@ -21,7 +21,8 @@ import {
   FaHourglassHalf,
   FaPlay,
   FaPause,
-  FaCog
+  FaCog,
+  FaUsers
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
@@ -123,17 +124,47 @@ const normalizePunchRecord = (record) => {
       method: value.method || null,
       lat: value.latitude ?? value.lat ?? null,
       lng: value.longitude ?? value.lng ?? null,
-      ip: value.ip ?? null,
+      ip: value.ip_address ?? value.ip ?? null,
     };
   };
 
+  const calcs = record.calculations || {};
+  const shiftData = record.shift || {};
+
   return {
     ...record,
-    date: record.attendance_date || record.date,
+    date: record.punch_date || record.attendance_date || record.date,
+    attendance_date: record.punch_date || record.attendance_date || record.date,
     break_start: normalizeNestedPunch(record.break_start),
     break_end: normalizeNestedPunch(record.break_end),
     punch_in: normalizeNestedPunch(record.punch_in),
     punch_out: normalizeNestedPunch(record.punch_out),
+    // Map new structure to old format for UI compatibility
+    shift: {
+      ...shiftData,
+      worked_minutes: calcs.worked_minutes ?? shiftData.worked_minutes ?? 0,
+      break_minutes: calcs.break_minutes ?? shiftData.break_minutes ?? 0,
+      shift_start_time: shiftData.start_time || shiftData.shift_start_time,
+      shift_end_time: shiftData.end_time || shiftData.shift_end_time,
+    },
+    flags: record.flags || {
+      overtime: {
+        enabled: record.is_overtime === 1 || record.is_overtime === true,
+        minutes: calcs.overtime_minutes || 0
+      },
+      deductible: {
+        enabled: record.is_deductible === 1 || record.is_deductible === true,
+        minutes: (calcs.late_minutes || 0) + (calcs.early_leave_minutes || 0) + (calcs.extra_break_minutes || 0),
+        breakdown: {
+          late_minutes: calcs.late_minutes || 0,
+          early_leave_minutes: calcs.early_leave_minutes || 0,
+          extra_break_minutes: calcs.extra_break_minutes || 0
+        }
+      },
+      half_day: {
+        enabled: record.day_status === 'half_day'
+      }
+    }
   };
 };
 
@@ -199,16 +230,16 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-700">{startData?.time || <Placeholder />}</span>
-                      {startData?.method && startData.method !== 'manual' && (
-                        <span className="text-[10px] text-gray-400 uppercase font-bold">{startData.method}</span>
+                      {startData?.method && (
+                        <span className="text-[10px] text-indigo-400 uppercase font-bold tracking-tight">{startData.method}</span>
                       )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-gray-700">{endData?.time || <Placeholder />}</span>
-                      {endData?.method && endData.method !== 'manual' && (
-                        <span className="text-[10px] text-gray-400 uppercase font-bold">{endData.method}</span>
+                      {endData?.method && (
+                        <span className="text-[10px] text-indigo-400 uppercase font-bold tracking-tight">{endData.method}</span>
                       )}
                     </div>
                   </td>
@@ -304,15 +335,15 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
               <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">{typeConfig.startLabel}</span>
                 <span className="text-xs font-bold text-gray-700 truncate block">{startData?.time || <Placeholder />}</span>
-                {startData?.method && startData.method !== 'manual' && (
-                  <span className="text-[9px] text-gray-400 uppercase font-bold">{startData.method}</span>
+                {startData?.method && (
+                  <span className="text-[9px] text-indigo-400 uppercase font-bold tracking-tight">{startData.method}</span>
                 )}
               </div>
               <div className="bg-gray-50 rounded-xl p-2.5">
                 <span className="text-[9px] font-bold text-gray-400 uppercase block mb-0.5">{typeConfig.endLabel}</span>
                 <span className="text-xs font-bold text-gray-700 truncate block">{endData?.time || <Placeholder />}</span>
-                {endData?.method && endData.method !== 'manual' && (
-                  <span className="text-[9px] text-gray-400 uppercase font-bold">{endData.method}</span>
+                {endData?.method && (
+                  <span className="text-[9px] text-indigo-400 uppercase font-bold tracking-tight">{endData.method}</span>
                 )}
               </div>
             </div>
@@ -674,16 +705,18 @@ const AttendanceHistory = () => {
 const DetailsModal = ({ record, onClose }) => {
   const style = getApprovalStyle(record.status);
   const StatusIcon = style.icon;
-  const activeType = normalizeAttendanceType(record.activeType || 'attendance');
+  const activeType = normalizeAttendanceType(record.record_type || record.activeType || 'attendance');
+  const isAttendance = activeType === 'attendance';
+  const isBreak = activeType === 'break';
   const typeConfig = getAttendanceTypeConfig(activeType);
   const startData = record[typeConfig.startKey];
   const endData = record[typeConfig.endKey];
 
   const shift = record.shift || {};
-  const flags = shift.flags || {};
-  const isOvertime = flags.overtime?.enabled || false;
-  const isHalfDay = flags.half_day?.enabled || false;
-  const isDeductible = flags.deductible?.enabled || false;
+  const flags = record.flags || {};
+  const isOvertime = flags.overtime?.enabled || record.is_overtime === 1 || false;
+  const isHalfDay = flags.half_day?.enabled || record.day_status === 'half_day' || false;
+  const isDeductible = flags.deductible?.enabled || record.is_deductible === 1 || false;
 
   const reviewerLabel = record.reviewed_by_name || record.reviewed_by || 'System';
 
@@ -712,10 +745,35 @@ const DetailsModal = ({ record, onClose }) => {
       }
     >
       <div className="space-y-6">
-        {/* Basic Info */}
+        {/* Employee Info (New Section) */}
         <div className="border-b border-slate-100 pb-4">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-            <FaClock className="text-indigo-500" /> Attendance Log
+            <FaUsers className="text-blue-500" /> Employee Information
+          </h3>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Name</label>
+              <p className="mt-0.5 text-sm font-bold text-slate-800">{record.name || user?.full_name || "—"}</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Code</label>
+              <p className="mt-0.5 text-sm font-semibold text-slate-600">{record.employee_code || "—"}</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Designation</label>
+              <p className="mt-0.5 text-sm font-semibold text-slate-600 truncate">{fmt(record.designation)}</p>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Day Status</label>
+              <p className="mt-0.5 text-sm font-bold text-emerald-600 uppercase tracking-tighter">{record.day_status || "—"}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Basic Info (Attendance/Break Log) */}
+        <div className="border-b border-slate-100 pb-4">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+            <typeConfig.icon className="text-indigo-500" /> {typeConfig.label} Log
           </h3>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div>
@@ -734,103 +792,14 @@ const DetailsModal = ({ record, onClose }) => {
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{typeConfig.startLabel}</label>
               <p className="mt-0.5 text-sm font-semibold text-slate-800">{startData?.time || <Placeholder />}</p>
-              {startData?.method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(startData.method)}</p>}
+              {startData?.method && <p className="text-[9px] font-bold uppercase text-indigo-400">{fmt(startData.method)}</p>}
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{typeConfig.endLabel}</label>
               <p className="mt-0.5 text-sm font-semibold text-slate-800">{endData?.time || <Placeholder />}</p>
-              {endData?.method && <p className="text-[9px] font-bold uppercase text-slate-400">{fmt(endData.method)}</p>}
+              {endData?.method && <p className="text-[9px] font-bold uppercase text-indigo-400">{fmt(endData.method)}</p>}
             </div>
           </div>
-        </div>
-
-        {/* Shift & Productivity */}
-        <div className="border-b border-slate-100 pb-4">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-            <FaHistory className="text-emerald-500" /> Shift & Productivity
-          </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Worked Time</label>
-              <p className="mt-0.5 text-sm font-bold text-emerald-600">{formatMins(shift.worked_minutes)}</p>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Time</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{formatMins(shift.break_minutes)}</p>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift Start</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_start_time ? new Date(shift.shift_start_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Shift End</label>
-              <p className="mt-0.5 text-sm font-semibold text-slate-800">{shift.shift_end_time ? new Date(shift.shift_end_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Productivity Flags */}
-        <div className="border-b border-slate-100 pb-4">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
-            <FaBriefcase className="text-indigo-500" /> Productivity Flags
-          </h3>
-          <div className="flex flex-wrap gap-3">
-            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isOvertime ? 'border-emerald-200 bg-emerald-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isOvertime ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                <FaClock size={14} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
-                <p className={`text-xs font-bold ${isOvertime ? 'text-emerald-700' : 'text-slate-500'}`}>
-                  {isOvertime ? `${flags.overtime?.minutes} mins` : "Disabled"}
-                </p>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isHalfDay ? 'border-orange-200 bg-orange-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isHalfDay ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                <FaHourglassHalf size={14} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
-                <p className={`text-xs font-bold ${isHalfDay ? 'text-orange-700' : 'text-slate-500'}`}>
-                  {isHalfDay ? "Yes" : "No"}
-                </p>
-              </div>
-            </div>
-
-            <div className={`flex items-center gap-2 rounded-xl border p-3 ${isDeductible ? 'border-rose-200 bg-rose-50' : 'border-slate-100 bg-slate-50 opacity-60'}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDeductible ? 'bg-rose-500 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                <FaExclamationCircle size={14} />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
-                <p className={`text-xs font-bold ${isDeductible ? 'text-rose-700' : 'text-slate-500'}`}>
-                  {isDeductible ? `${flags.deductible?.minutes} mins` : "None"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {isDeductible && flags.deductible?.breakdown && (
-            <div className="mt-4 p-4 rounded-xl bg-rose-50/50 border border-rose-100">
-              <h4 className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-3">Deductible Breakdown</h4>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="text-[9px] font-bold uppercase text-slate-400 block">Late</label>
-                  <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.late_minutes}m</p>
-                </div>
-                <div>
-                  <label className="text-[9px] font-bold uppercase text-slate-400 block">Early Leave</label>
-                  <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.early_leave_minutes}m</p>
-                </div>
-                <div>
-                  <label className="text-[9px] font-bold uppercase text-slate-400 block">Extra Break</label>
-                  <p className="text-sm font-bold text-rose-700">{flags.deductible.breakdown.extra_break_minutes}m</p>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {record.remark && (

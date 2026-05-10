@@ -107,6 +107,14 @@ const getExactPunchTime = (value) => {
   return '';
 };
 
+const formatMins = (m) => {
+  if (!m) return "0m";
+  const hours = Math.floor(m / 60);
+  const mins = m % 60;
+  if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  return `${mins}m`;
+};
+
 const STATUS_CONFIG = {
   present: { label: 'Present', color: 'bg-emerald-500 text-white shadow-emerald-200', dot: 'bg-emerald-500' },
   half_day: { label: 'Half Day', color: 'bg-sky-500 text-white shadow-sky-200', dot: 'bg-sky-500' },
@@ -454,7 +462,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-rose-900">Late Arrival Detected</h4>
-                  <p className="text-xs text-rose-700/70 font-medium">Employee was late by {employee.calculations.late_minutes} minutes.</p>
+                  <p className="text-xs text-rose-700/70 font-medium">Employee was late by {formatMins(employee.calculations.late_minutes)}.</p>
                 </div>
               </div>
             )}
@@ -477,7 +485,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 <div>
                   <h4 className="text-sm font-black text-orange-900">Overtime Calculation</h4>
                   <p className="text-xs text-orange-700/70 font-medium">
-                    Calculated OT: {employee.calculations.overtime_minutes} minutes (${(employee.calculations.overtime_minutes / 60).toFixed(1)} hrs).
+                    Calculated OT: {formatMins(employee.calculations.overtime_minutes)}.
                   </p>
                 </div>
               </div>
@@ -758,7 +766,7 @@ const EmployeeAttendanceCard = ({ emp, onAction }) => {
             {emp.is_deductible ? (
               <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
             ) : emp.calculations?.late_minutes > 0 ? (
-              <p className="text-[10px] text-rose-500 font-bold">Late: {emp.calculations.late_minutes} min</p>
+              <p className="text-[10px] text-rose-500 font-bold tracking-tight">Late: {formatMins(emp.calculations.late_minutes)}</p>
             ) : null}
             
             {emp.calculations?.overtime_minutes > 0 ? (
@@ -772,8 +780,8 @@ const EmployeeAttendanceCard = ({ emp, onAction }) => {
           <ManagementButton size="sm" tone="emerald" variant={emp.status === 'present' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
           <ManagementButton size="sm" tone="blue" variant={emp.status === 'half_day' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
           <ManagementButton size="sm" tone="rose" variant={emp.status === 'absent' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-          <ManagementButton size="sm" tone="slate" variant={emp.is_deductible || emp.calculations?.late_minutes > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
-          <ManagementButton size="sm" tone="amber" variant={(emp.calculations?.overtime_minutes || 0) > 0 ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+          <ManagementButton size="sm" tone="slate" variant={emp.is_deductible ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
+          <ManagementButton size="sm" tone="amber" variant={emp.is_ot ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
           <ManagementButton size="sm" tone="violet" variant={emp.status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
         </div>
       </div>
@@ -848,7 +856,7 @@ const UnmarkedAttendance = () => {
             punch_out: att?.punch_out?.time || null,
             status: att?.day_status || 'unmarked',
             is_deductible: att?.is_deductible || false,
-            is_ot: Number(att?.calculations?.overtime_minutes || 0) > 0,
+            is_ot: att?.is_overtime || false,
             ot_flag: att?.is_overtime || false,
             calculations: att?.calculations || null,
             attendance_record: att
