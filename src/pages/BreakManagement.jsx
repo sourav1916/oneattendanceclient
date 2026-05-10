@@ -9,7 +9,6 @@ import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import TimePickerField from '../components/TimePicker';
 import { ManagementCard, ManagementButton, EmployeeSelect, RefreshButton } from '../components/common';
-import AttendanceLogsModal from '../components/AttendanceLogsModal';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
@@ -79,8 +78,6 @@ const StatusSelect = ({ value, onChange, options }) => {
   );
 };
 
-const BREAK_LIMIT_MINS = 60;
-
 const addDays = (dateStr, days) => {
   const d = new Date(`${dateStr}T00:00:00`);
   d.setDate(d.getDate() + days);
@@ -104,6 +101,140 @@ const nowTime = () => new Date().toTimeString().slice(0, 5);
 
 const totalBreakMins = (breaks) =>
   breaks.reduce((acc, b) => acc + (b.dur || 0), 0);
+
+const getTimeValue = (record) => {
+  if (!record) return '';
+  if (typeof record === 'string') return record.slice(0, 8);
+  if (typeof record === 'object') return record.time ? String(record.time).slice(0, 8) : '';
+  return '';
+};
+
+const getBreakDurationMins = (startTime, endTime, fallback = 0) => {
+  if (!startTime || !endTime) return fallback;
+  const start = new Date(`1970-01-01T${startTime}`);
+  const end = new Date(`1970-01-01T${endTime}`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return fallback;
+  const diff = Math.max(0, Math.round((end - start) / 60000));
+  return Number.isFinite(diff) ? diff : fallback;
+};
+
+const buildBreakRow = (employee, attendanceRecord, fallbackDate = '') => {
+  const shift = employee?.shift || attendanceRecord?.shift || null;
+  const startRecord = attendanceRecord?.break_start || attendanceRecord?.break_start_ || attendanceRecord?.punch_in || null;
+  const endRecord = attendanceRecord?.break_end || attendanceRecord?.break_end_ || attendanceRecord?.punch_out || null;
+  const startTime = getTimeValue(startRecord) || '';
+  const endTime = getTimeValue(endRecord) || '';
+  const date = attendanceRecord?.attendance_date || attendanceRecord?.punch_date || employee?.date || fallbackDate || '';
+  const calculations = attendanceRecord?.calculations || {};
+  const usedBreakMinutes = getBreakDurationMins(startTime, endTime, 0);
+  const maxBreakMinutes = Number(calculations?.break_minutes ?? 0) || 0;
+
+  return {
+    id: attendanceRecord?.attendance_id ?? attendanceRecord?.id ?? employee?.id ?? null,
+    attendance_id: attendanceRecord?.attendance_id ?? attendanceRecord?.id ?? null,
+    employee_id: employee?.employee_id ?? attendanceRecord?.employee_id ?? null,
+    name: employee?.name ?? attendanceRecord?.name ?? '',
+    employee_code: employee?.employee_code ?? attendanceRecord?.employee_code ?? '',
+    department: employee?.designation ? employee.designation.replace(/_/g, ' ').toUpperCase() : '',
+    date,
+    day_label: date ? new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
+    type: attendanceRecord?.type || 'break',
+    status: attendanceRecord?.status || attendanceRecord?.day_status || 'present',
+    start_time: startTime,
+    end_time: endTime,
+    start_record: startRecord,
+    end_record: endRecord,
+    breaks: Array.isArray(attendanceRecord?.breaks) ? attendanceRecord.breaks : [],
+    total_break_mins: usedBreakMinutes,
+    break_used_mins: usedBreakMinutes,
+    break_max_mins: maxBreakMinutes,
+    calculations: {
+      ...(attendanceRecord?.calculations || {}),
+      break_minutes: maxBreakMinutes,
+    },
+    on_break: Boolean(startTime && !endTime),
+    attendance_record: attendanceRecord,
+    shift,
+  };
+};
+
+const normalizeBreakEmployee = (row, fallbackDate = '') => {
+  if (!row || typeof row !== 'object') return null;
+
+  const attendances = Array.isArray(row.attendances) ? row.attendances : [];
+  const breakAttendances = attendances.filter((item) => item?.type === 'break');
+  const sourceAttendances = breakAttendances.length > 0 ? breakAttendances : attendances;
+  const sortedAttendances = [...sourceAttendances].sort((a, b) => {
+    const aId = Number(a?.attendance_id ?? a?.id ?? 0);
+    const bId = Number(b?.attendance_id ?? b?.id ?? 0);
+    return bId - aId;
+  });
+  const primaryAttendance = sortedAttendances[0] || null;
+  const totalBreakUsedMins = sourceAttendances.reduce((acc, item) => {
+    const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+    const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+    const mins = getBreakDurationMins(startTime, endTime, 0);
+    return acc + (Number(mins) || 0);
+  }, 0);
+  const totalBreakMaxMins = sourceAttendances.reduce((acc, item) => acc + (Number(item?.calculations?.break_minutes ?? 0) || 0), 0);
+
+  if (!primaryAttendance && !row?.attendance_date && !fallbackDate) {
+    return {
+      id: row?.id ?? row?.employee_id ?? null,
+      attendance_id: row?.id ?? row?.employee_id ?? null,
+      employee_id: row?.employee_id ?? null,
+      name: row?.name ?? '',
+      employee_code: row?.employee_code ?? '',
+      department: row?.designation ? row.designation.replace(/_/g, ' ').toUpperCase() : '',
+      date: '',
+      day_label: '',
+      type: 'break',
+      status: 'present',
+      start_time: '',
+      end_time: '',
+      start_record: null,
+      end_record: null,
+      breaks: [],
+      total_break_mins: 0,
+      break_used_mins: 0,
+      break_max_mins: 0,
+      calculations: { break_minutes: 0 },
+      on_break: false,
+      attendance_record: null,
+      shift: row?.shift || null,
+    };
+  }
+
+  const mapped = buildBreakRow(row, primaryAttendance || {}, fallbackDate);
+  return {
+    ...mapped,
+    breaks: sourceAttendances,
+    total_break_mins: totalBreakUsedMins,
+    break_used_mins: totalBreakUsedMins,
+    break_max_mins: totalBreakMaxMins,
+    calculations: {
+      ...(mapped.calculations || {}),
+      break_minutes: totalBreakMaxMins,
+    },
+  };
+};
+
+const buildBreakDefaults = (employee, action) => {
+  const record = employee?.attendance_record || employee || {};
+  const startFromRecord =
+    getTimeValue(record?.break_start) ||
+    getTimeValue(record?.punch_in) ||
+    getTimeValue(record?.start_time);
+  const endFromRecord =
+    getTimeValue(record?.break_end) ||
+    getTimeValue(record?.punch_out) ||
+    getTimeValue(record?.end_time);
+
+  return {
+    breakStart: startFromRecord || '',
+    breakEnd: endFromRecord || '',
+  };
+};
 
 const STATUS_CONFIG = {
   present: { label: 'Present', color: 'bg-emerald-500 text-white' },
@@ -190,51 +321,37 @@ const getExactPunchTime = (value) => {
 
 const normalizeBreakRow = (row, fallbackDate = '') => {
   if (!row || typeof row !== 'object') return null;
-
-  const normalizedType = row?.type || 'break';
-  const startRecord = row?.break_start || row?.break_start_ || row?.punch_in || null;
-  const endRecord = row?.break_end || row?.break_end_ || row?.punch_out || null;
-  const startTime = startRecord?.time || row?.start_time || null;
-  const endTime = endRecord?.time || row?.end_time || null;
-  const calculations = row?.calculations || {};
-  const date = row?.attendance_date || row?.punch_date || fallbackDate || '';
-
-  return {
-    id: row?.id ?? row?.attendance_id ?? row?.punch_id ?? row?.punch_uid ?? null,
-    attendance_id: row?.attendance_id ?? row?.id ?? null,
-    employee_id: row?.employee_id ?? null,
-    name: row?.name ?? '',
-    employee_code: row?.employee_code ?? '',
-    department: row?.designation ? row.designation.replace(/_/g, ' ').toUpperCase() : '',
-    date,
-    day_label: date ? new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
-    type: normalizedType,
-    status: row?.status || row?.day_status || 'pending',
-    start_time: startTime,
-    end_time: endTime,
-    start_record: startRecord,
-    end_record: endRecord,
-    breaks: row?.breaks || [],
-    calculations,
-    on_break: Boolean(startTime && !endTime && row?.day_status === 'on_break'),
-    attendance_record: row,
-  };
+  if (Array.isArray(row.attendances)) {
+    return normalizeBreakEmployee(row, fallbackDate);
+  }
+  return buildBreakRow(row, row, fallbackDate);
 };
 
 // ─── UNIFIED BREAK MODAL ──────────────────────────────────────────────────────
-const ManageBreaksModal = ({ employee, onClose, onSubmit }) => {
+const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
-  const [breakStart, setBreakStart] = useState(nowTime());
+  const defaults = useMemo(() => buildBreakDefaults(employee, action), [employee, action]);
+  const [breakStart, setBreakStart] = useState(defaults.breakStart);
   const [breakEnd, setBreakEnd] = useState('');
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    setBreakStart(defaults.breakStart);
+    setBreakEnd(defaults.breakEnd);
+    setNotes('');
+  }, [defaults.breakStart, defaults.breakEnd, employee?.id, action]);
 
   const handleSubmit = async () => {
     if (!breakStart) return toast.error('Start time required');
     setLoading(true);
     try {
+      const resolvedDate = employee.date
+        || employee.attendance_record?.attendance_date
+        || employee.attendance_record?.punch_date
+        || new Date().toISOString().slice(0, 10);
       await onSubmit({
         employee_id: employee.employee_id,
-        date: employee.date,
+        date: resolvedDate,
         type: 'break',
         status: 'manual',
         punch_in: breakStart,
@@ -275,6 +392,105 @@ const ManageBreaksModal = ({ employee, onClose, onSubmit }) => {
             className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
           />
         </div>
+      </div>
+    </Modal>
+  );
+};
+
+const TodayBreaksModal = ({ employee, onClose }) => {
+  const breaks = Array.isArray(employee?.breaks) ? employee.breaks : [];
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title="Today's Breaks"
+      subtitle={employee?.name || 'Employee'}
+      size="4xl"
+      footer={
+        <ManagementButton tone="slate" variant="soft" onClick={onClose}>
+          Close
+        </ManagementButton>
+      }
+    >
+      <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Employee</p>
+            <p className="text-sm font-bold text-slate-800">{employee?.name || '--'}</p>
+            <p className="text-[11px] text-slate-500">{employee?.employee_code || '--'} {employee?.date ? `· ${employee.date}` : ''}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Breaks</p>
+            <p className="text-lg font-black text-indigo-600">{breaks.length}</p>
+          </div>
+        </div>
+
+        {breaks.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-500">No breaks taken today.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {breaks.map((item, index) => {
+              const start = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+              const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+              const startMethod = item?.break_start?.method || item?.punch_in?.method || '--';
+              const endMethod = item?.break_end?.method || item?.punch_out?.method || '--';
+              const creator = item?.created_by?.name
+                || item?.verified_by?.name
+                || item?.created?.by?.name
+                || item?.created_by
+                || item?.verified_by
+                || 'System';
+              const usedMinutes = getBreakDurationMins(start, end, Number(item?.calculations?.break_minutes || 0));
+
+              return (
+                <div key={item?.attendance_id || item?.id || index} className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50/80 border-b border-slate-100">
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">Break #{index + 1}</p>
+                      <p className="text-[11px] text-slate-500">
+                        {item?.attendance_date || employee?.date || '--'} {item?.day_status ? `· ${item.day_status}` : ''}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      {item?.type || 'break'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Break In</p>
+                      <p className="text-sm font-black text-slate-800">{start || '--'}</p>
+                      <p className="text-[11px] text-slate-500 mt-1">Method: {startMethod || '--'}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Break Out</p>
+                      <p className="text-sm font-black text-slate-800">{end || '--'}</p>
+                      <p className="text-[11px] text-slate-500 mt-1">Method: {endMethod || '--'}</p>
+                    </div>
+                  </div>
+
+                  <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
+                      <p className="font-black uppercase tracking-widest text-amber-500 text-[9px]">Used</p>
+                      <p className="font-bold text-slate-800 mt-1">{formatMins(usedMinutes)}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <p className="font-black uppercase tracking-widest text-slate-400 text-[9px]">Created By</p>
+                      <p className="font-bold text-slate-800 mt-1">{creator}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <p className="font-black uppercase tracking-widest text-slate-400 text-[9px]">Verified</p>
+                      <p className="font-bold text-slate-800 mt-1">{item?.is_verified ? 'Yes' : 'No'}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </Modal>
   );
@@ -374,10 +590,14 @@ const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
 
 // ─── EMPLOYEE BREAK CARD ──────────────────────────────────────────────────────
 const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
-  const total = emp.total_break_mins;
-  const over = total > BREAK_LIMIT_MINS;
-  const barPct = Math.min(100, Math.round((total / BREAK_LIMIT_MINS) * 100));
+  const used = Number(emp.break_used_mins ?? emp.total_break_mins ?? 0);
+  const max = Number(emp.break_max_mins ?? emp.calculations?.break_minutes ?? 0);
+  const fallbackMax = max;
+  const barPct = fallbackMax > 0 ? Math.min(100, Math.round((used / fallbackMax) * 100)) : 0;
+  const over = fallbackMax > 0 ? used > fallbackMax : false;
   const statusCfg = STATUS_CONFIG[emp.status];
+  const startTime = emp.start_time || emp.attendance_record?.break_start?.time || emp.attendance_record?.punch_in?.time || '';
+  const endTime = emp.end_time || emp.attendance_record?.break_end?.time || emp.attendance_record?.punch_out?.time || '';
   return (
     <div className="relative">
       {isSelectionMode && (
@@ -409,9 +629,9 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
               </span>
             )}
             <button
-            onClick={(e) => { e.stopPropagation(); onAction(emp, 'break_logs'); }}
+            onClick={(e) => { e.stopPropagation(); onAction(emp, 'today_breaks'); }}
             className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm ml-0.5"
-            title="View Break Logs"
+            title="View Today's Breaks"
           >
             <FaHistory size={11} />
           </button>
@@ -419,24 +639,29 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
         }
       >
         <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
-              <FaCalendarAlt size={9} />
-              <span>{emp.date} | {emp.day_label}</span>
+        <div className="flex-1 space-y-4">
+          <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
+            <FaCalendarAlt size={9} />
+            <span>{emp.date} | {emp.day_label}</span>
             {emp.department && (
               <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.department}</span></>
             )}
           </div>
           <div className="flex gap-5 flex-wrap text-xs">
             <span className="text-gray-700 font-semibold">Total Breaks: <span className="font-black text-gray-900">{emp.breaks.length}</span></span>
-            <span className="text-gray-700 font-semibold">Break Time: <span className={`font-black ${over ? 'text-rose-500' : 'text-orange-500'}`}>{formatMins(total)}</span></span>
+            <span className="text-gray-700 font-semibold">Break Used: <span className={`font-black ${over ? 'text-rose-500' : 'text-orange-500'}`}>{formatMins(used)}</span></span>
+            <span className="text-gray-700 font-semibold">Break Max: <span className="font-black text-gray-900">{formatMins(fallbackMax)}</span></span>
+          </div>
+          <div className="flex gap-5 flex-wrap text-xs">
+            <span className="text-gray-700 font-semibold">Break Start: <span className="font-black text-gray-900">{startTime ? startTime.slice(0, 8) : '--'}</span></span>
+            <span className="text-gray-700 font-semibold">Break End: <span className="font-black text-gray-900">{endTime ? endTime.slice(0, 8) : '--'}</span></span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Break usage</span>
             <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
               <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-rose-500' : 'bg-orange-400'}`} style={{ width: `${barPct}%` }} />
             </div>
-            <span className={`text-[10px] font-black whitespace-nowrap ${over ? 'text-rose-500' : 'text-gray-600'}`}>{formatMins(total)} / {BREAK_LIMIT_MINS} min</span>
+            <span className={`text-[10px] font-black whitespace-nowrap ${over ? 'text-rose-500' : 'text-gray-600'}`}>{formatMins(used)} / {formatMins(fallbackMax)}</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
@@ -574,7 +799,8 @@ const BreakManagement = () => {
       if (result.success) {
         toast.success('Updated successfully!');
         setModal(null);
-        fetchBreaks();
+        lastRequestKeyRef.current = '';
+        await fetchBreaks(true);
       } else {
         throw new Error(result.message || 'Update failed');
       }
@@ -633,7 +859,8 @@ const BreakManagement = () => {
 
       toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       setSelectedIds([]);
-      fetchBreaks();
+      lastRequestKeyRef.current = '';
+      await fetchBreaks(true);
     } catch (err) {
       toast.error(err.message || `Bulk ${action} failed`);
     } finally {
@@ -833,14 +1060,6 @@ const BreakManagement = () => {
               >
                 Approve
               </button>
-              <button
-                type="button"
-                onClick={() => handleBulkReview('reject')}
-                disabled={bulkSaving}
-                className="rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm bg-rose-600 text-white disabled:opacity-60"
-              >
-                Reject
-              </button>
 
               <button
                 type="button"
@@ -856,15 +1075,16 @@ const BreakManagement = () => {
       </div>
 
       <AnimatePresence>
-        {modal && !['attendance_logs', 'clear_all'].includes(modal.type) && (
+        {modal && !['attendance_logs', 'clear_all', 'today_breaks'].includes(modal.type) && (
           <ManageBreaksModal
             employee={modal.emp}
+            action={modal.type}
             onClose={() => setModal(null)}
             onSubmit={handleUpdate}
           />
         )}
-        {modal?.type === 'break_logs' && (
-          <AttendanceLogsModal id={modal.emp.id} type="break" onClose={() => setModal(null)} />
+        {modal?.type === 'today_breaks' && (
+          <TodayBreaksModal employee={modal.emp} onClose={() => setModal(null)} />
         )}
       </AnimatePresence>
     </div>
