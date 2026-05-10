@@ -153,8 +153,10 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   // Ensure state stays synced when employee or tab changes
   useEffect(() => {
     setActiveTab(initialTab || 'present');
-    setPunchIn(getExactPunchTime(employee?.punch_in));
-    setPunchOut(getExactPunchTime(employee?.punch_out));
+    const defaultIn = getExactPunchTime(employee?.punch_in) || getExactPunchTime(employee?.shift_start) || '09:00';
+    const defaultOut = getExactPunchTime(employee?.punch_out) || getExactPunchTime(employee?.shift_end) || '18:00';
+    setPunchIn(defaultIn);
+    setPunchOut(defaultOut);
     setIsOt(employee?.is_ot || false);
     setIsDeductible(employee?.is_deductible || false);
     // Reset overrides when employee changes
@@ -852,6 +854,8 @@ const UnmarkedAttendance = () => {
             date: displayDate,
             day_label: displayDate ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
             duty_hours: emp.shift ? formatMinutes(emp.shift.expected_work_minutes) : '00 Hours 00 Minutes',
+            shift_start: emp.shift?.start_time || null,
+            shift_end: emp.shift?.end_time || null,
             punch_in: att?.punch_in?.time || null,
             punch_out: att?.punch_out?.time || null,
             status: att?.day_status || 'unmarked',

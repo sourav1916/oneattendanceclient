@@ -23,8 +23,9 @@ const parseTime = (timeStr) => {
   };
 };
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOURS = Array.from({ length: 12 }, (_, i) => i + 1);
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const AMPM = ["AM", "PM"];
 
 const PRESETS = [
   { label: "09:00 AM", value: "09:00:00" },
@@ -33,34 +34,7 @@ const PRESETS = [
   { label: "06:00 PM", value: "18:00:00" },
 ];
 
-function getAnchoredPopoverPosition(triggerEl, popoverEl, offset = 8) {
-  if (!triggerEl || !popoverEl) return null;
 
-  const triggerRect = triggerEl.getBoundingClientRect();
-  const popoverRect = popoverEl.getBoundingClientRect();
-  const margin = 8;
-
-  let top = triggerRect.bottom + offset;
-  let left = triggerRect.left;
-
-  if (left + popoverRect.width > window.innerWidth - margin) {
-    left = Math.max(margin, window.innerWidth - popoverRect.width - margin);
-  }
-
-  if (left < margin) {
-    left = margin;
-  }
-
-  if (top + popoverRect.height > window.innerHeight - margin) {
-    top = Math.max(margin, triggerRect.top - popoverRect.height - offset);
-  }
-
-  if (top < margin) {
-    top = margin;
-  }
-
-  return { top, left };
-}
 
 const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
   return (
@@ -68,18 +42,18 @@ const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
       <span className="text-[8px] font-black text-slate-400 border-b border-slate-100 w-full text-center pb-1 mb-1.5 uppercase tracking-tighter">{label}</span>
       <div
         ref={columnRef}
-        className="h-28 overflow-y-auto no-scrollbar snap-y snap-mandatory scroll-smooth w-10 bg-slate-50/50 rounded-lg border border-slate-100"
+        className="h-32 overflow-y-auto no-scrollbar snap-y snap-mandatory scroll-smooth w-16 bg-slate-50/30 rounded-xl border border-slate-100/50"
       >
-        <div className="py-10">
+        <div className="py-12">
           {items.map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => onSelect(item)}
-              className={`w-full py-1 text-xs font-bold transition-all duration-150 flex items-center justify-center snap-center
+              className={`w-full py-2 text-[11px] font-bold transition-all duration-200 flex items-center justify-center snap-center
                 ${selected === item
-                  ? "bg-indigo-600 text-white shadow-sm scale-105 rounded-md mx-0.5 w-[calc(100%-4px)]"
-                  : "text-slate-400 hover:text-indigo-600"}
+                  ? "bg-indigo-600 text-white shadow-md scale-110 rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                  : "text-slate-400 hover:text-indigo-600 hover:bg-slate-100/50"}
               `}
             >
               {String(item).padStart(2, "0")}
@@ -92,94 +66,117 @@ const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
 };
 
 export const TimePicker = ({ value, onApply, onClose }) => {
-  const { h: initialH, m: initialM, s: initialS } = parseTime(value);
-  const [h, setH] = useState(initialH);
+  const { h: initialH24, m: initialM, s: initialS } = parseTime(value);
+
+  // Convert 24h to 12h + AM/PM
+  const initialAMPM = initialH24 >= 12 ? "PM" : "AM";
+  const initialH12 = initialH24 % 12 || 12;
+
+  const [h, setH] = useState(initialH12);
   const [m, setM] = useState(initialM);
+  const [ampm, setAmpm] = useState(initialAMPM);
 
   const hRef = useRef(null);
   const mRef = useRef(null);
+  const ampmRef = useRef(null);
 
   useEffect(() => {
     const scrollToSelected = () => {
       if (hRef.current) {
-        const btn = hRef.current.children[0].children[h];
+        const idx = HOURS.indexOf(h);
+        const btn = hRef.current.children[0].children[idx];
         if (btn) hRef.current.scrollTop = btn.offsetTop - hRef.current.offsetTop - 45;
       }
       if (mRef.current) {
         const btn = mRef.current.children[0].children[m];
         if (btn) mRef.current.scrollTop = btn.offsetTop - mRef.current.offsetTop - 45;
       }
+      if (ampmRef.current) {
+        const idx = AMPM.indexOf(ampm);
+        const btn = ampmRef.current.children[0].children[idx];
+        if (btn) ampmRef.current.scrollTop = btn.offsetTop - ampmRef.current.offsetTop - 45;
+      }
     };
 
     const timer = setTimeout(scrollToSelected, 100);
     return () => clearTimeout(timer);
-  }, [h, m]);
+  }, [h, m, ampm]);
 
   const handleApply = () => {
-    const finalTime = formatTime(h, m, initialS);
+    let finalH = h;
+    if (ampm === "PM" && h < 12) finalH += 12;
+    if (ampm === "AM" && h === 12) finalH = 0;
+    const finalTime = formatTime(finalH, m, initialS);
     onApply(finalTime);
   };
 
   return (
     <div
-      className="bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.15)] border border-slate-200 overflow-hidden w-full max-w-[200px] flex flex-col font-sans"
+      className="bg-white rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-slate-200 overflow-hidden w-full max-w-[300px] max-h-[400px] flex flex-col font-sans"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-1.5 overflow-hidden">
-          <FaClock size={11} className="text-indigo-500 shrink-0" />
-          <span className="font-bold text-[9px] uppercase tracking-wider text-slate-500 truncate">Time</span>
+      <div className="px-6 py-5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+            <FaClock size={14} className="text-indigo-600" />
+          </div>
+          <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-slate-400">Set Time</span>
         </div>
-        <div className="text-sm font-mono font-bold tracking-tighter text-indigo-600 bg-white px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">
-          {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}
+        <div className="text-[11px] font-mono font-black tracking-tight text-indigo-600 bg-white px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm uppercase">
+          {h % 12 || 12}:{String(m).padStart(2, "0")} {h >= 12 ? 'PM' : 'AM'}
         </div>
       </div>
 
-      <div className="p-3 bg-white">
+      <div className="p-4 bg-white">
         <div className="mb-3 flex flex-wrap gap-1">
           {[
-            { l: "09:00", v: "09:00:00" },
-            { l: "10:00", v: "10:00:00" },
-            { l: "18:00", v: "18:00:00" },
-            { l: "19:00", v: "19:00:00" }
+            { h: 9, m: "00", v: "09:00:00" },
+            { h: 10, m: "00", v: "10:00:00" },
+            { h: 13, m: "00", v: "13:00:00" },
+            { h: 18, m: "00", v: "18:00:00" },
+            { h: 19, m: "00", v: "19:00:00" }
           ].map(p => (
             <button
               key={p.v + p.l}
               type="button"
               onClick={() => {
-                const { h, m } = parseTime(p.v);
-                setH(h); setM(m);
+                const { h: h24, m: mm } = parseTime(p.v);
+                setH(h24 % 12 || 12);
+                setM(mm);
+                setAmpm(h24 >= 12 ? "PM" : "AM");
               }}
-              className="px-2 py-0.5 bg-slate-100 hover:bg-indigo-600 hover:text-white rounded text-[9px] font-bold text-slate-500 transition-colors"
+              className="px-2 py-0.5 bg-slate-100 hover:bg-indigo-600 hover:text-white rounded text-[9px] font-bold text-slate-500 transition-colors uppercase"
             >
-              {p.l}
+              {p.h % 12 || 12}:{p.m} {p.h >= 12 ? 'PM' : 'AM'}
             </button>
           ))}
         </div>
 
-        <div className="flex justify-center gap-4 mb-3 py-2 bg-slate-50/50 rounded-xl border border-slate-100">
-          <TimeColumn label="H" items={HOURS} selected={h} onSelect={setH} columnRef={hRef} />
-          <div className="pt-5 text-lg font-black text-slate-200 self-start">:</div>
-          <TimeColumn label="M" items={MINUTES} selected={m} onSelect={setM} columnRef={mRef} />
+        <div className="flex justify-center items-center gap-2 mb-4 py-3 bg-slate-50/30 rounded-2xl border border-slate-100">
+          <TimeColumn label="Hour" items={HOURS} selected={h} onSelect={setH} columnRef={hRef} />
+          <div className="pt-8 text-2xl font-black text-slate-200">:</div>
+          <TimeColumn label="Min" items={MINUTES} selected={m} onSelect={setM} columnRef={mRef} />
+          <div className="w-px h-10 bg-slate-200/50 mx-1" />
+          <TimeColumn label="Period" items={AMPM} selected={ampm} onSelect={setAmpm} columnRef={ampmRef} />
         </div>
 
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="h-8 w-8 shrink-0 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-all flex items-center justify-center active:scale-90 border border-slate-200"
+            className="h-10 w-10 shrink-0 rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all flex items-center justify-center active:scale-90 border border-slate-100"
             title="Close"
           >
-            <FaTimes size={10} />
+            <FaTimes size={12} />
           </button>
           <button
             type="button"
             onClick={handleApply}
-            className="flex-1 h-8 rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center active:scale-95 gap-1.5"
+            className="flex-1 h-10 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center active:scale-95 gap-2 group"
             title="Save"
           >
-            <FaCheck size={10} />
-            <span className="text-[10px] font-bold uppercase tracking-tight">Save</span>
+            <FaCheck size={12} />
+            <span className="text-[11px] font-black uppercase tracking-wider">Save Time</span>
           </button>
         </div>
       </div>
@@ -203,17 +200,9 @@ export const TimePickerField = ({
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef(null);
   const popoverRef = useRef(null);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (isOpen) {
-      const updatePosition = () => {
-        const nextPosition = getAnchoredPopoverPosition(triggerRef.current, popoverRef.current);
-        if (nextPosition) {
-          setPosition(nextPosition);
-        }
-      };
-
       const handlePointerDown = (event) => {
         if (
           popoverRef.current?.contains(event.target) ||
@@ -230,27 +219,29 @@ export const TimePickerField = ({
         }
       };
 
-      updatePosition();
-      const rafId = window.requestAnimationFrame(updatePosition);
-
       document.addEventListener("mousedown", handlePointerDown);
       document.addEventListener("touchstart", handlePointerDown);
       document.addEventListener("keydown", handleKeyDown);
-      window.addEventListener("scroll", updatePosition, true);
-      window.addEventListener("resize", updatePosition);
 
       return () => {
-        window.cancelAnimationFrame(rafId);
         document.removeEventListener("mousedown", handlePointerDown);
         document.removeEventListener("touchstart", handlePointerDown);
         document.removeEventListener("keydown", handleKeyDown);
-        window.removeEventListener("scroll", updatePosition, true);
-        window.removeEventListener("resize", updatePosition);
       };
     }
   }, [isOpen]);
 
-  const displayValue = (value && typeof value === 'string') ? value.substring(0, 5) : "";
+  const toAMPM = (timeStr) => {
+    if (!timeStr) return "";
+    const parts = timeStr.split(":");
+    const h = parseInt(parts[0]) || 0;
+    const m = parseInt(parts[1]) || 0;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const displayH = h % 12 || 12;
+    return `${String(displayH).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
+  };
+
+  const displayValue = value ? toAMPM(value) : "";
 
   return (
     <div className={`flex flex-col min-w-0 ${className}`}>
@@ -280,26 +271,40 @@ export const TimePickerField = ({
 
         {isOpen &&
           createPortal(
-            <motion.div
-              ref={popoverRef}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed z-[9999] w-[min(calc(100vw-1rem),200px)]"
-              style={{
-                top: `${position.top}px`,
-                left: `${position.left}px`,
-              }}
-            >
-              <TimePicker
-                value={value}
-                onApply={(val) => {
-                  onChange(val);
-                  setIsOpen(false);
-                }}
-                onClose={() => setIsOpen(false)}
+            <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4 overflow-hidden">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/20 backdrop-blur-[2px] transition-opacity"
+                onClick={() => setIsOpen(false)}
+                style={{ animation: "fadeIn 0.2s ease-out" }}
               />
-            </motion.div>,
+
+              {/* Popover/Modal */}
+              <motion.div
+                ref={popoverRef}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="relative z-[10002]"
+              >
+                <TimePicker
+                  value={value}
+                  onApply={(val) => {
+                    onChange(val);
+                    setIsOpen(false);
+                  }}
+                  onClose={() => setIsOpen(false)}
+                />
+              </motion.div>
+
+              <style>{`
+                @keyframes fadeIn {
+                  from { opacity: 0; }
+                  to { opacity: 1; }
+                }
+              `}</style>
+            </div>,
             document.body
           )}
       </div>
