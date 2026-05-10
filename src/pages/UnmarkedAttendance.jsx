@@ -4,7 +4,8 @@ import {
   FaChevronLeft, FaChevronRight, FaClock, FaUser, FaSearch,
   FaCheckCircle, FaCalendarAlt, FaBuilding,
   FaUmbrellaBeach, FaMoneyBillWave, FaHourglassHalf,
-  FaHistory, FaTimesCircle, FaChevronDown, FaTimes, FaCheck
+  FaHistory, FaTimesCircle, FaChevronDown, FaTimes, FaCheck,
+  FaUsers, FaUserCheck, FaUserTimes, FaUserClock
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
@@ -15,58 +16,332 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+// ─── CONSTANTS ─────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = [
-  { value: 'unmarked', label: 'Unmarked' },
+  { value: '', label: 'All' },
   { value: 'present', label: 'Present' },
   { value: 'absent', label: 'Absent' },
-  { value: 'paid_leave', label: 'Paid Leave' },
   { value: 'half_day', label: 'Half Day' },
-  { value: '', label: 'All' },
+  { value: 'paid_leave', label: 'Paid Leave' },
+  { value: 'unmarked', label: 'Unmarked' },
 ];
 
-const StatusSelect = ({ value, onChange, options }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const dropdownRef = React.useRef(null);
+const STATUS_CONFIG = {
+  present:    { label: 'Present',    color: 'bg-emerald-500 text-white', dot: 'bg-emerald-500' },
+  half_day:   { label: 'Half Day',   color: 'bg-sky-500 text-white',     dot: 'bg-sky-500'     },
+  absent:     { label: 'Absent',     color: 'bg-rose-500 text-white',    dot: 'bg-rose-500'    },
+  paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white',  dot: 'bg-violet-500'  },
+  leave:      { label: 'Leave',      color: 'bg-violet-500 text-white',  dot: 'bg-violet-500'  },
+  unmarked:   { label: 'Unmarked',   color: 'bg-slate-400 text-white',   dot: 'bg-slate-400'   },
+};
 
-  React.useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+const BULK_ATTENDANCE_ACTIONS = [
+  { id: 'actual_data', label: 'Actual Data', tone: 'slate',   toneClass: 'bg-slate-500 text-white'   },
+  { id: 'paid_leave',  label: 'Paid Leave',  tone: 'violet',  toneClass: 'bg-violet-500 text-white'  },
+  { id: 'absent',      label: 'Absent',      tone: 'rose',    toneClass: 'bg-rose-500 text-white'    },
+  { id: 'present',     label: 'Present',     tone: 'emerald', toneClass: 'bg-emerald-500 text-white' },
+  { id: 'half_day',    label: 'Half Day',    tone: 'sky',     toneClass: 'bg-sky-500 text-white'     },
+];
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────────
+const formatTime = (t) => {
+  if (!t) return null;
+  try {
+    return new Date(`1970-01-01T${t}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  } catch { return t; }
+};
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  try {
+    return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch { return dateStr; }
+};
+
+const formatMins = (m) => {
+  if (!m || m === 0) return '0m';
+  const hours = Math.floor(m / 60);
+  const mins  = m % 60;
+  if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  return `${mins}m`;
+};
+
+const formatMinutes = (mins) => {
+  if (!mins && mins !== 0) return '—';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+};
+
+const getExactPunchTime = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value.slice(0, 5);
+  if (typeof value === 'object' && value?.time) return String(value.time).slice(0, 5);
+  return '';
+};
+
+const normalizeAttendanceRecord = (record) => {
+  if (!record || typeof record !== 'object') return null;
+
+  const punchInTime = getExactPunchTime(record.punch_in?.time || record.punch_in || record.start_time);
+  const punchOutTime = getExactPunchTime(record.punch_out?.time || record.punch_out || record.end_time);
+  const flags = record.flags || {};
+  const calculations = record.calculations || {};
+  const dayStatus = record.day_status || record.status || 'unmarked';
+  const overtimeMinutes = flags.overtime?.minutes ?? calculations.overtime_minutes ?? 0;
+  const deductibleMinutes = flags.deductible?.minutes ?? (
+    (calculations.late_minutes || 0) +
+    (calculations.early_leave_minutes || 0) +
+    (calculations.extra_break_minutes || 0)
+  );
+
+  const isOvertime = Boolean(
+    flags.overtime?.enabled ||
+    record.is_overtime ||
+    overtimeMinutes > 0
+  );
+  const isDeductible = Boolean(
+    flags.deductible?.enabled ||
+    record.is_deductible ||
+    deductibleMinutes > 0
+  );
+
+  return {
+    ...record,
+    attendance_id: record.attendance_id ?? record.id ?? null,
+    day_status: dayStatus,
+    punch_in: punchInTime || null,
+    punch_out: punchOutTime || null,
+    is_overtime: isOvertime,
+    is_deductible: isDeductible,
+    flags: {
+      overtime: {
+        enabled: isOvertime,
+        minutes: overtimeMinutes,
+      },
+      deductible: {
+        enabled: isDeductible,
+        minutes: deductibleMinutes,
+      },
+      half_day: {
+        enabled: flags.half_day?.enabled ?? dayStatus === 'half_day',
+      },
+    },
+  };
+};
+
+const pickPrimaryAttendance = (attendances = []) => {
+  const normalized = attendances.map(normalizeAttendanceRecord).filter(Boolean);
+  if (normalized.length === 0) return null;
+  return normalized[0];
+};
+
+const pickPunchAttendance = (attendances = []) => {
+  const normalized = attendances.map(normalizeAttendanceRecord).filter(Boolean);
+  return normalized.find(att => att.punch_in || att.punch_out) || null;
+};
+
+// â”€â”€â”€ MAP API EMPLOYEE â†’ UI EMPLOYEE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// The API returns attendances[] â€” we take the MOST RELEVANT entry for display.
+// We use employee_id as the stable unique key for selection.
+const mapApiEmployee = (emp, fallbackDate) => {
+  const attendances = emp.attendances || [];
+  const att = pickPrimaryAttendance(attendances);
+  const punchAtt = pickPunchAttendance(attendances);
+  const displayDate = att?.attendance_date || fallbackDate || '';
+  const flags = att?.flags || {};
+  const isOvertime = Boolean(att?.is_overtime || flags.overtime?.enabled);
+  const isDeductible = Boolean(att?.is_deductible || flags.deductible?.enabled);
+  const primaryPunchIn = att?.punch_in || null;
+  const primaryPunchOut = att?.punch_out || null;
+  const displayPunchIn = primaryPunchIn || punchAtt?.punch_in || null;
+  const displayPunchOut = primaryPunchOut || punchAtt?.punch_out || null;
+
+  return {
+    // Use employee_id as stable unique ID for selection logic
+    id:            emp.employee_id,
+    employee_id:   emp.employee_id,
+    user_id:       emp.user_id,
+    company_id:    emp.company_id,
+    name:          emp.name,
+    email:         emp.email,
+    phone:         emp.phone,
+    employee_code: emp.employee_code,
+    designation:   emp.designation || '',
+    department:    emp.designation ? emp.designation.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
+    status:        emp.status,    // employee active/inactive status
+    joining_date:  emp.joining_date,
+
+    // Shift info
+    shift_start:         emp.shift?.start_time   || null,
+    shift_end:           emp.shift?.end_time     || null,
+    shift_label:         emp.shift
+      ? `${formatTime(emp.shift.start_time) || '—'} – ${formatTime(emp.shift.end_time) || '—'}`
+      : 'No Shift',
+    expected_work_minutes: emp.shift?.expected_work_minutes || 0,
+    grace_minutes:         emp.shift?.grace_minutes         || 0,
+
+    // Display date
+    date:      displayDate,
+    day_label: displayDate
+      ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
+      : '',
+
+    // All raw attendance records (for logs / multi-entry awareness)
+    attendances: attendances,
+
+    // Primary attendance record values
+    attendance_id:  att?.attendance_id  || null,
+    day_status:     att?.day_status     || 'unmarked',
+    is_verified:    att?.is_verified    || false,
+    is_deductible:  isDeductible,
+    is_overtime:    isOvertime,
+    is_ot:          isOvertime,
+    flags,
+    remark:         att?.remark         || '',
+    has_punch_data: Boolean(primaryPunchIn || primaryPunchOut),
+    primary_punch_in: primaryPunchIn,
+    primary_punch_out: primaryPunchOut,
+    punch_in:       displayPunchIn,
+    punch_out:      displayPunchOut,
+    calculations:   att?.calculations  || {
+      worked_minutes:      0,
+      break_minutes:       0,
+      extra_break_minutes: 0,
+      late_minutes:        0,
+      early_leave_minutes: 0,
+      overtime_minutes:    0,
+    },
+    attendance_record: att,
+  };
+};
+const buildMarkPayload = (emp, action, options = {}) => {
+  const {
+    punchIn       = emp.punch_in  || emp.shift_start || '09:00',
+    punchOut      = emp.punch_out || emp.shift_end   || '18:00',
+    halfSession   = 'first',
+    notes         = '',
+    isOvertime    = false,
+    isDeductible  = false,
+    leaveValue1   = 'paid',
+    leaveValue2   = null,
+  } = options;
+
+  const base = {
+    employee_id: emp.employee_id,
+    date:        emp.date,
+    type:        'attendance',
+    notes,
+  };
+
+  switch (action) {
+    case 'present':
+      return {
+        ...base,
+        status:       'present',
+        punch_in:     getExactPunchTime(punchIn)  || '09:00',
+        punch_out:    getExactPunchTime(punchOut) || '18:00',
+        is_overtime:  isOvertime,
+        is_deductible: isDeductible,
+      };
+
+    case 'half_day':
+      return {
+        ...base,
+        status:          'half_day',
+        punch_in:        getExactPunchTime(punchIn)  || '09:00',
+        punch_out:       getExactPunchTime(punchOut) || '18:00',
+        half_day_session: halfSession === 'second' ? 'second' : 'first',
+      };
+
+    case 'absent':
+      return {
+        ...base,
+        status: 'absent',
+      };
+
+    case 'fine': // Deduction: mark present + is_deductible
+      return {
+        ...base,
+        status:        'present',
+        punch_in:      getExactPunchTime(punchIn)  || '09:00',
+        punch_out:     getExactPunchTime(punchOut) || '18:00',
+        is_deductible: true,
+        is_overtime:   false,
+      };
+
+    case 'ot': // Overtime: mark present + is_overtime
+      return {
+        ...base,
+        status:       'present',
+        punch_in:     getExactPunchTime(punchIn)  || '09:00',
+        punch_out:    getExactPunchTime(punchOut) || '18:00',
+        is_overtime:  true,
+        is_deductible: false,
+      };
+
+    case 'paid_leave':
+    case 'leave':
+      return {
+        ...base,
+        status: 'leave',
+        value1: leaveValue1,
+        ...(leaveValue2 ? { value2: leaveValue2 } : {}),
+      };
+
+    case 'actual_data': // Bulk: use shift times
+      return {
+        ...base,
+        status:    'present',
+        punch_in:  getExactPunchTime(emp.shift_start) || '09:00',
+        punch_out: getExactPunchTime(emp.shift_end)   || '18:00',
+        is_overtime:   Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
+        is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
+      };
+
+    default:
+      return { ...base, status: action };
+  }
+};
+
+// ─── STATUS SELECT ─────────────────────────────────────────────────────────────
+const StatusSelect = ({ value, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setIsOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const selectedOption = options.find(o => o.value === value);
+  const selected = options.find(o => o.value === value) || options[0];
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
+    <div className="relative w-full" ref={ref}>
+      <div
+        onClick={() => setIsOpen(o => !o)}
         className="w-full px-4 py-2.5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
       >
-        <span className={value === 'all' ? "text-gray-400" : "font-medium text-gray-800"}>
-          {selectedOption ? selectedOption.label : 'Day Status...'}
+        <span className={!value ? 'text-gray-400' : 'font-medium text-gray-800'}>
+          {selected?.label || 'Day Status...'}
         </span>
         <FaChevronDown className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} size={12} />
       </div>
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.12 }}
             className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
           >
             <div className="max-h-60 overflow-y-auto p-1">
-              {options.map((opt) => (
+              {options.map(opt => (
                 <div
                   key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
+                  onClick={() => { onChange(opt.value); setIsOpen(false); }}
                   className={`px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${value === opt.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
                   {opt.label}
@@ -80,182 +355,83 @@ const StatusSelect = ({ value, onChange, options }) => {
   );
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-const formatTime = (t) => {
-  if (!t) return 'Not Marked';
-  try {
-    return new Date(`1970-01-01T${t}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  } catch { return t; }
+// ─── SUMMARY COUNTS BAR ────────────────────────────────────────────────────────
+const SummaryBar = ({ counts }) => {
+  if (!counts) return null;
+  const items = [
+    { label: 'Total',    value: counts.total_employees, icon: FaUsers,     color: 'text-slate-600',   bg: 'bg-slate-50'   },
+    { label: 'Present',  value: counts.present,         icon: FaUserCheck,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Absent',   value: counts.absent,          icon: FaUserTimes,  color: 'text-rose-600',    bg: 'bg-rose-50'    },
+    { label: 'Half Day', value: counts.half_day,        icon: FaUserClock,  color: 'text-sky-600',     bg: 'bg-sky-50'     },
+    { label: 'Leave',    value: counts.leave,           icon: FaUmbrellaBeach, color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Unmarked', value: counts.unmarked,        icon: FaUser,       color: 'text-amber-600',   bg: 'bg-amber-50'   },
+  ];
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+      {items.map(item => {
+        const Icon = item.icon;
+        return (
+          <div key={item.label} className={`flex items-center gap-2 rounded-xl px-3 py-2.5 ${item.bg} border border-white`}>
+            <Icon className={item.color} size={13} />
+            <div>
+              <p className={`text-base font-black leading-none ${item.color}`}>{item.value ?? 0}</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-0.5">{item.label}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
-const formatDate = (dateStr) => {
-  try {
-    return new Date(`${dateStr}T00:00:00`).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return dateStr; }
-};
-
-const addDays = (dateStr, days) => {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-};
-
-const getExactPunchTime = (value) => {
-  if (!value) return '';
-  if (typeof value === 'string') return value.slice(0, 5);
-  if (typeof value === 'object') return value?.time ? String(value.time).slice(0, 5) : '';
-  return '';
-};
-
-const formatMins = (m) => {
-  if (!m) return "0m";
-  const hours = Math.floor(m / 60);
-  const mins = m % 60;
-  if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-  return `${mins}m`;
-};
-
-const STATUS_CONFIG = {
-  present: { label: 'Present', color: 'bg-emerald-500 text-white shadow-emerald-200', dot: 'bg-emerald-500' },
-  half_day: { label: 'Half Day', color: 'bg-sky-500 text-white shadow-sky-200', dot: 'bg-sky-500' },
-  absent: { label: 'Absent', color: 'bg-rose-500 text-white shadow-rose-200', dot: 'bg-rose-500' },
-  paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white shadow-violet-200', dot: 'bg-violet-500' },
-  unmarked: { label: 'Unmarked', color: 'bg-slate-500 text-white shadow-slate-200', dot: 'bg-slate-500' },
-};
-
-const BULK_ATTENDANCE_ACTIONS = [
-  { id: 'actual_data', label: 'Actual Data', tone: 'slate' },
-  { id: 'paid_leave', label: 'Paid Leave', tone: 'violet' },
-  { id: 'absent', label: 'Absent', tone: 'rose' },
-  { id: 'present', label: 'Present', tone: 'emerald' },
-  { id: 'half_day', label: 'Half Day', tone: 'sky' },
-];
-
-const BULK_ATTENDANCE_TONE_CLASSES = {
-  actual_data: 'bg-slate-500 text-white shadow-slate-200',
-  paid_leave: 'bg-violet-500 text-white shadow-violet-200',
-  absent: 'bg-rose-500 text-white shadow-rose-200',
-  present: 'bg-emerald-500 text-white shadow-emerald-200',
-  half_day: 'bg-sky-500 text-white shadow-sky-200',
-};
-
-const ToggleSwitch = ({ isOn, onToggle, accent = 'blue' }) => (
-  <div
-    onClick={(e) => { e.stopPropagation(); onToggle(); }}
-    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
-  >
-    <motion.div
-      className="bg-white w-3 h-3 rounded-full shadow-md"
-      initial={false}
-      animate={{ x: isOn ? 20 : 0 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-    />
-  </div>
-);
-
-const buildBulkAttendancePayload = (employee, action, notes, halfSession = 'first') => {
-  const punchIn = getExactPunchTime(employee?.punch_in) || getExactPunchTime(employee?.shift_start) || '09:00';
-  const punchOut = getExactPunchTime(employee?.punch_out) || getExactPunchTime(employee?.shift_end) || '18:00';
-  const basePayload = {
-    employee_id: employee.employee_id,
-    date: employee.date,
-    type: 'attendance',
-    notes: notes || '',
-  };
-
-  if (action === 'absent') {
-    return {
-      ...basePayload,
-      status: 'absent',
-    };
-  }
-
-  if (action === 'paid_leave') {
-    return {
-      ...basePayload,
-      status: 'leave',
-      value1: 'paid',
-    };
-  }
-
-  if (action === 'half_day') {
-    return {
-      ...basePayload,
-      status: 'half_day',
-      punch_in: punchIn,
-      punch_out: punchOut,
-      value1: halfSession === 'second' ? 'second_half' : 'first_half',
-    };
-  }
-
-  return {
-    ...basePayload,
-    status: 'present',
-    punch_in: punchIn,
-    punch_out: punchOut,
-    is_overtime: Boolean(employee?.attendance_record?.is_overtime || employee?.is_ot),
-    is_deductible: Boolean(employee?.attendance_record?.is_deductible || employee?.is_deductible),
-  };
-};
-
-// ─── UNIFIED ATTENDANCE MODAL ──────────────────────────────────────────────────
+// ─── MANAGE ATTENDANCE MODAL ───────────────────────────────────────────────────
 const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
-  const [activeTab, setActiveTab] = useState(initialTab || 'present');
-  const [loading, setLoading] = useState(false);
-
-  // Form States
-  const [punchIn, setPunchIn] = useState(getExactPunchTime(employee?.punch_in));
-  const [punchOut, setPunchOut] = useState(getExactPunchTime(employee?.punch_out));
-  const [isOt, setIsOt] = useState(employee?.is_ot || false);
-  const [isDeductible, setIsDeductible] = useState(employee?.is_deductible || false);
-
-  // Present-tab override states (null = auto from calculation)
-  const [otOverride, setOtOverride] = useState(null);       // null | true | false
-  const [halfDayOverride, setHalfDayOverride] = useState(null);
-  const [deductOverride, setDeductOverride] = useState(null);
-
-  const [notes, setNotes] = useState('');
+  const [activeTab, setActiveTab]     = useState(initialTab || 'present');
+  const [loading, setLoading]         = useState(false);
+  const [punchIn, setPunchIn]         = useState('');
+  const [punchOut, setPunchOut]       = useState('');
+  const [notes, setNotes]             = useState('');
   const [halfSession, setHalfSession] = useState('first');
+  const [isOt, setIsOt]               = useState(false);
+  const [isDeductible, setIsDeductible] = useState(false);
 
-  // Leave tab states
-  const [leaveSubTab, setLeaveSubTab] = useState('paid');  // 'paid' | 'unpaid'
-  const [leaveConfigs, setLeaveConfigs] = useState([]);
+  // Leave tab
+  const [leaveSubTab, setLeaveSubTab]     = useState('paid');
+  const [leaveConfigs, setLeaveConfigs]   = useState([]);
   const [leavesLoading, setLeavesLoading] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
-  const [includeWeekend, setIncludeWeekend] = useState(false);
-  const [includeHoliday, setIncludeHoliday] = useState(false);
 
-  // Ensure state stays synced when employee or tab changes
+  // Sync state when employee changes
   useEffect(() => {
     setActiveTab(initialTab || 'present');
-    const defaultIn = getExactPunchTime(employee?.punch_in) || getExactPunchTime(employee?.shift_start) || '09:00';
-    const defaultOut = getExactPunchTime(employee?.punch_out) || getExactPunchTime(employee?.shift_end) || '18:00';
+    const hasRowPunchData = Boolean(employee?.has_punch_data);
+    const rowPunchIn = getExactPunchTime(employee?.primary_punch_in || employee?.attendance_record?.punch_in || employee?.attendance_record?.start_time);
+    const rowPunchOut = getExactPunchTime(employee?.primary_punch_out || employee?.attendance_record?.punch_out || employee?.attendance_record?.end_time);
+    const shiftIn = getExactPunchTime(employee?.shift_start) || '09:00';
+    const shiftOut = getExactPunchTime(employee?.shift_end) || '18:00';
+    const defaultIn  = hasRowPunchData ? (rowPunchIn || shiftIn) : shiftIn;
+    const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : shiftOut;
     setPunchIn(defaultIn);
     setPunchOut(defaultOut);
-    setIsOt(employee?.is_ot || false);
-    setIsDeductible(employee?.is_deductible || false);
-    // Reset overrides when employee changes
-    setOtOverride(null);
-    setHalfDayOverride(null);
-    setDeductOverride(null);
-    // Reset leave state
+    setIsOt(Boolean(employee?.is_overtime || employee?.is_ot || employee?.flags?.overtime?.enabled || (employee?.calculations?.overtime_minutes || 0) > 0));
+    setIsDeductible(Boolean(employee?.is_deductible || employee?.flags?.deductible?.enabled || (employee?.calculations?.late_minutes || 0) > 0 || (employee?.calculations?.early_leave_minutes || 0) > 0 || (employee?.calculations?.extra_break_minutes || 0) > 0));
+    setNotes('');
+    setHalfSession('first');
     setLeaveSubTab('paid');
     setSelectedLeave(null);
-    setIncludeWeekend(false);
-    setIncludeHoliday(false);
-  }, [employee, initialTab]);
+  }, [employee?.employee_id, initialTab]);
 
-  // Fetch company leave types when leave tab is active
+  // Fetch leave types when leave tab opens
   useEffect(() => {
     if (activeTab !== 'paid_leave') return;
-    if (leaveConfigs.length > 0) return; // already loaded
+    if (leaveConfigs.length > 0) return;
     const fetchLeaves = async () => {
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-        const res = await apiCall('/leave/company', 'GET', null, companyId);
+        const res  = await apiCall('/leave/company', 'GET', null, companyId);
         const data = await res.json();
-        if (data.success) setLeaveConfigs(data.data.filter(l => l.is_active));
+        if (data.success) setLeaveConfigs((data.data || []).filter(l => l.is_active));
       } catch (e) {
         console.error('Failed to load leave types', e);
       } finally {
@@ -265,313 +441,207 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     fetchLeaves();
   }, [activeTab]);
 
-  // Reset overrides to auto whenever punch times change
-  useEffect(() => {
-    setOtOverride(null);
-    setHalfDayOverride(null);
-    setDeductOverride(null);
-  }, [punchIn, punchOut]);
-
-  // Calculation Logic
+  // Live calculation metrics
   const metrics = useMemo(() => {
     const toMins = (t) => {
       if (!t) return 0;
       const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
+      return h * 60 + (m || 0);
     };
-    const formatMins = (m) => {
-      const hrs = Math.floor(m / 60);
-      const mins = m % 60;
-      return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-    };
-
-    const sIn = toMins('09:00'); // Assume 9 AM shift start
-    const sOut = toMins('18:00'); // Assume 6 PM shift end
-    const pIn = toMins(punchIn);
+    const shiftStart     = employee?.shift_start || '09:00';
+    const shiftEnd       = employee?.shift_end   || '18:00';
+    const expectedMins   = employee?.expected_work_minutes || 540;
+    const graceMins      = employee?.grace_minutes || 15;
+    const pIn  = toMins(punchIn);
     const pOut = toMins(punchOut);
-
-    const expectedMins = 540; // 9 hours
-    const graceMins = 15;
-    const actualMins = punchIn && punchOut ? (pOut >= pIn ? pOut - pIn : (1440 - pIn) + pOut) : 0;
+    const actualMins = (punchIn && punchOut)
+      ? (pOut >= pIn ? pOut - pIn : (1440 - pIn) + pOut)
+      : 0;
     const diff = actualMins - expectedMins;
-
     return {
-      expected: formatMins(expectedMins),
-      actual: formatMins(actualMins),
-      grace: `${graceMins}m`,
-      window: '09:00 AM - 06:00 PM',
-      isOvertime: diff > graceMins,
+      expected:     formatMins(expectedMins),
+      actual:       formatMins(actualMins),
+      grace:        `${graceMins}m`,
+      window:       `${formatTime(shiftStart) || '09:00 AM'} – ${formatTime(shiftEnd) || '06:00 PM'}`,
+      isOvertime:   diff >  graceMins,
       isDeductible: diff < -graceMins,
-      isHalfDay: actualMins > 0 && actualMins < (expectedMins / 2 + 30),
-      diffLabel: diff >= 0 ? formatMins(diff) : formatMins(Math.abs(diff)),
-      status: diff >= -graceMins ? 'Within scheduled time' : 'Below scheduled time',
-      statusColor: diff >= -graceMins ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+      isHalfDay:    actualMins > 0 && actualMins < (expectedMins / 2 + 30),
+      diffMins:     Math.abs(diff),
+      diffLabel:    formatMins(Math.abs(diff)),
+      status:       diff >= -graceMins ? 'Within scheduled time' : 'Below scheduled time',
+      statusColor:  diff >= -graceMins
+        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+        : 'bg-rose-50 text-rose-700 border-rose-100',
     };
-  }, [punchIn, punchOut]);
+  }, [punchIn, punchOut, employee]);
 
   const TABS = [
-    { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'half_day', label: 'Half Day', icon: FaHourglassHalf, color: 'text-sky-500', bg: 'bg-sky-50' },
-    { id: 'absent', label: 'Absent', icon: FaTimesCircle, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { id: 'fine', label: 'Deduction', icon: FaMoneyBillWave, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'ot', label: 'Overtime', icon: FaClock, color: 'text-orange-500', bg: 'bg-orange-50' },
-    { id: 'paid_leave', label: 'Leave', icon: FaUmbrellaBeach, color: 'text-violet-500', bg: 'bg-violet-50' },
+    { id: 'present',   label: 'Present',   icon: FaCheckCircle,  color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'half_day',  label: 'Half Day',  icon: FaHourglassHalf,color: 'text-sky-500',     bg: 'bg-sky-50'     },
+    { id: 'absent',    label: 'Absent',    icon: FaTimesCircle,  color: 'text-rose-500',    bg: 'bg-rose-50'    },
+    { id: 'fine',      label: 'Deduction', icon: FaMoneyBillWave,color: 'text-amber-500',   bg: 'bg-amber-50'   },
+    { id: 'ot',        label: 'Overtime',  icon: FaClock,        color: 'text-orange-500',  bg: 'bg-orange-50'  },
+    { id: 'paid_leave',label: 'Leave',     icon: FaUmbrellaBeach,color: 'text-violet-500',  bg: 'bg-violet-50'  },
   ];
 
   const handleApply = async () => {
     setLoading(true);
-    let payload = { 
-      employee_id: employee.employee_id, 
-      date: employee.date, 
-      type: 'attendance',
-      status: activeTab === 'paid_leave' ? 'leave' : activeTab,
-      notes: notes
-    };
+    try {
+      let options = { notes, punchIn, punchOut, halfSession };
 
-    if (activeTab === 'present') {
-      if (!punchIn || !punchOut) {
-        toast.error('Punch In/Out are required');
-        setLoading(false);
+      if (activeTab === 'present') {
+        if (!punchIn || !punchOut) { toast.error('Punch In & Out are required'); return; }
+        options.isOvertime   = isOt   !== null ? isOt   : metrics.isOvertime;
+        options.isDeductible = isDeductible !== null ? isDeductible : metrics.isDeductible;
+      }
+
+      if ((activeTab === 'half_day' || activeTab === 'fine' || activeTab === 'ot') && (!punchIn || !punchOut)) {
+        toast.error('Punch In & Out are required');
         return;
       }
-      payload = {
-        ...payload,
-        punch_in: punchIn,
-        punch_out: punchOut,
-        is_overtime: otOverride !== null ? otOverride : metrics.isOvertime,
-        is_deductible: deductOverride !== null ? deductOverride : metrics.isDeductible
-      };
-    } else if (activeTab === 'half_day') {
-      if (!punchIn || !punchOut) {
-        toast.error('Punch In/Out are required for Half Day');
-        setLoading(false);
-        return;
-      }
-      payload = { 
-        ...payload, 
-        punch_in: punchIn, 
-        punch_out: punchOut, 
-        value1: halfSession === 'first' ? 'first_half' : 'second_half'
-      };
-    } else if (activeTab === 'fine' || activeTab === 'ot') {
-      if (!punchIn || !punchOut) {
-        toast.error('Punch In/Out are required');
-        setLoading(false);
-        return;
-      }
-      payload = { 
-        ...payload, 
-        status: 'present',
-        punch_in: punchIn,
-        punch_out: punchOut,
-        is_deductible: activeTab === 'fine',
-        is_overtime: activeTab === 'ot'
-      };
-    } else if (activeTab === 'paid_leave') {
-      if (leaveSubTab === 'paid') {
-        if (!selectedLeave) {
-          toast.error('Please select an option');
-          setLoading(false);
-          return;
+
+      if (activeTab === 'paid_leave') {
+        if (leaveSubTab === 'paid') {
+          if (!selectedLeave) { toast.error('Please select a leave type'); return; }
+          options.leaveValue1 = 'paid';
+          options.leaveValue2 = selectedLeave.type === 'leave'
+            ? selectedLeave.data?.code
+            : selectedLeave.type === 'weekend' ? 'Weekend' : 'Holiday';
+        } else {
+          options.leaveValue1 = 'unpaid';
+          options.leaveValue2 = null;
         }
-        payload = {
-          ...payload,
-          value1: 'paid',
-          value2: selectedLeave.type === 'leave' ? selectedLeave.data.code : (selectedLeave.type === 'weekend' ? 'Weekend' : 'Holiday')
-        };
-      } else {
-        payload = {
-          ...payload,
-          value1: 'unpaid',
-        };
       }
-    }
 
-    await onSubmit(payload);
-    setLoading(false);
+      const payload = buildMarkPayload(employee, activeTab, options);
+      await onSubmit(payload);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const activeTabMeta = TABS.find(t => t.id === activeTab);
+  const toneColor     = activeTabMeta?.color.split('-')[1] || 'indigo';
 
   const renderContent = () => {
     switch (activeTab) {
       case 'present':
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In" value={punchIn} onChange={setPunchIn} />
+              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
               <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
             </div>
-
-            <div className={`rounded-2xl border p-4 ${metrics.statusColor} transition-colors duration-500`}>
+            {/* Live metrics */}
+            <div className={`rounded-2xl border p-4 transition-colors ${metrics.statusColor}`}>
               <div className="flex justify-between items-center mb-3">
                 <span className="text-[11px] font-black uppercase tracking-wider">{metrics.status}</span>
                 <span className="text-[11px] font-black">{metrics.diffLabel}</span>
               </div>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-                <div className="flex justify-between border-b border-current/10 pb-1">
-                  <span className="text-[10px] opacity-70 font-bold uppercase">Expected work</span>
-                  <span className="text-[11px] font-black">{metrics.expected}</span>
-                </div>
-                <div className="flex justify-between border-b border-current/10 pb-1">
-                  <span className="text-[10px] opacity-70 font-bold uppercase">Actual time</span>
-                  <span className="text-[11px] font-black">{metrics.actual}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[10px] opacity-70 font-bold uppercase">Grace</span>
-                  <span className="text-[11px] font-black">{metrics.grace}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[10px] opacity-70 font-bold uppercase">Shift window</span>
-                  <span className="text-[11px] font-black">{metrics.window}</span>
-                </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[10px]">
+                {[
+                  ['Expected work', metrics.expected],
+                  ['Actual time',   metrics.actual],
+                  ['Grace period',  metrics.grace],
+                  ['Shift window',  metrics.window],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between border-b border-current/10 pb-1">
+                    <span className="opacity-70 font-bold uppercase">{k}</span>
+                    <span className="font-black">{v}</span>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div className="grid grid-cols-3 gap-3">
+            {/* OT / Deductible toggles */}
+            <div className="grid grid-cols-2 gap-3">
               {[
-                {
-                  label: 'Overtime',
-                  autoVal: metrics.isOvertime,
-                  override: otOverride,
-                  setOverride: setOtOverride,
-                  icon: FaClock,
-                  color: 'orange'
-                },
-                {
-                  label: 'Half Day',
-                  autoVal: metrics.isHalfDay,
-                  override: halfDayOverride,
-                  setOverride: setHalfDayOverride,
-                  icon: FaHourglassHalf,
-                  color: 'blue'
-                },
-                {
-                  label: 'Deductible',
-                  autoVal: metrics.isDeductible,
-                  override: deductOverride,
-                  setOverride: setDeductOverride,
-                  icon: FaMoneyBillWave,
-                  color: 'rose'
-                }
-              ].map(card => {
-                const isOverridden = card.override !== null;
-                const active = isOverridden ? card.override : card.autoVal;
-                const handleToggle = () => {
-                  if (!isOverridden) {
-                    // First click: override to opposite of auto
-                    card.setOverride(!card.autoVal);
-                  } else {
-                    // Second click on same value: revert to auto
-                    if (card.override === card.autoVal) {
-                      card.setOverride(null);
-                    } else {
-                      card.setOverride(null);
-                    }
-                  }
-                };
-                const isDisabled = !card.autoVal;
-                return (
-                  <div
-                    key={card.label}
-                    onClick={() => {
-                      if (isDisabled) return;
-                      // Mutual exclusivity logic...
-                      if (card.label === 'Overtime') {
-                        setHalfDayOverride(false);
-                        setDeductOverride(false);
-                        setOtOverride(isOverridden ? null : !card.autoVal);
-                      } else if (card.label === 'Half Day') {
-                        setOtOverride(false);
-                        setDeductOverride(false);
-                        setHalfDayOverride(isOverridden ? null : !card.autoVal);
-                      } else if (card.label === 'Deductible') {
-                        setOtOverride(false);
-                        setHalfDayOverride(false);
-                        setDeductOverride(isOverridden ? null : !card.autoVal);
-                      }
-                    }}
-                    className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between select-none
-                      ${isDisabled ? 'opacity-40 cursor-not-allowed grayscale-[0.5]' : 'cursor-pointer'}
-                      ${active ? `bg-${card.color}-50 border-${card.color}-200 ring-1 ring-${card.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'}
-                      ${isOverridden ? 'ring-2 ring-offset-1 ring-indigo-300' : ''}
-                    `}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-[11px] font-black text-slate-800">{card.label}</p>
-                        <p className={`text-[9px] font-bold uppercase tracking-tighter mt-0.5 ${
-                          isOverridden ? 'text-indigo-500' : 'text-slate-400'
-                        }`}>
-                          {isOverridden ? 'Override' : 'Auto'}
-                        </p>
-                      </div>
-                      <div className={`h-6 w-10 rounded-full p-1 transition-colors duration-300 ${active ? `bg-${card.color}-500` : 'bg-slate-200'}`}>
-                        <div className={`h-4 w-4 rounded-full bg-white transition-transform duration-300 ${active ? 'translate-x-4' : 'translate-x-0'}`} />
-                      </div>
+                { label: 'Overtime',    val: isOt,          set: setIsOt,          auto: metrics.isOvertime,   color: 'orange' },
+                { label: 'Deductible',  val: isDeductible,  set: setIsDeductible,  auto: metrics.isDeductible, color: 'rose'   },
+              ].map(c => (
+                <div
+                  key={c.label}
+                  onClick={() => c.set(v => !v)}
+                  className={`p-4 rounded-2xl border cursor-pointer transition-all select-none
+                    ${c.val ? `bg-${c.color}-50 border-${c.color}-200` : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                >
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] font-black text-slate-800">{c.label}</p>
+                    <div className={`h-5 w-9 rounded-full p-0.5 transition-colors ${c.val ? `bg-${c.color}-500` : 'bg-slate-200'}`}>
+                      <div className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${c.val ? 'translate-x-4' : ''}`} />
                     </div>
                   </div>
-                );
-              })}
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">
+                    Auto: {c.auto ? 'Yes' : 'No'}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         );
+
       case 'half_day':
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="space-y-5">
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Session</label>
               <div className="grid grid-cols-2 gap-3">
                 {['first', 'second'].map(s => (
-                  <ManagementButton key={s} tone="blue" variant={halfSession === s ? "solid" : "soft"} fullWidth onClick={() => setHalfSession(s)}>
+                  <ManagementButton key={s} tone="blue" variant={halfSession === s ? 'solid' : 'soft'} onClick={() => setHalfSession(s)}>
                     {s === 'first' ? '1st Half' : '2nd Half'}
                   </ManagementButton>
                 ))}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In" value={punchIn} onChange={setPunchIn} />
-              <TimePickerField label="Punch Out (Opt)" value={punchOut} onChange={setPunchOut} />
-            </div>
-          </div>
-        );
-      case 'absent':
-        return (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4 animate-in zoom-in duration-300">
-            <div className="h-20 w-20 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-100 shadow-sm">
-              <FaTimesCircle size={40} />
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-black text-gray-900">Mark as Absent</h3>
-              <p className="text-sm text-gray-500 max-w-xs mx-auto mt-1">This will record the employee as absent for the entire day.</p>
-            </div>
-          </div>
-        );
-      case 'fine':
-        return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {employee.calculations?.late_minutes > 0 && (
-              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex gap-4">
-                <div className="h-10 w-10 shrink-0 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
-                  <FaMoneyBillWave size={18} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-rose-900">Late Arrival Detected</h4>
-                  <p className="text-xs text-rose-700/70 font-medium">Employee was late by {formatMins(employee.calculations.late_minutes)}.</p>
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In" value={punchIn} onChange={setPunchIn} />
+              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
               <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
+
+      case 'absent':
+        return (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="h-20 w-20 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-100">
+              <FaTimesCircle size={40} />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-black text-gray-900">Mark as Absent</h3>
+              <p className="text-sm text-gray-500 max-w-xs mt-1">This will record the employee as absent for the selected date.</p>
+            </div>
+          </div>
+        );
+
+      case 'fine':
+        return (
+          <div className="space-y-5">
+            {(employee?.calculations?.late_minutes || 0) > 0 && (
+              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex gap-3">
+                <div className="h-10 w-10 shrink-0 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
+                  <FaMoneyBillWave size={16} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-rose-900">Late Arrival Detected</h4>
+                  <p className="text-xs text-rose-700/70 font-medium">
+                    Late by {formatMins(employee.calculations.late_minutes)}.
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
+            </div>
+          </div>
+        );
+
       case 'ot':
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {employee.calculations?.overtime_minutes > 0 && (
-              <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4 flex gap-4">
+          <div className="space-y-5">
+            {(employee?.calculations?.overtime_minutes || 0) > 0 && (
+              <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4 flex gap-3">
                 <div className="h-10 w-10 shrink-0 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
-                  <FaClock size={18} />
+                  <FaClock size={16} />
                 </div>
                 <div>
                   <h4 className="text-sm font-black text-orange-900">Overtime Calculation</h4>
@@ -582,31 +652,25 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In" value={punchIn} onChange={setPunchIn} />
+              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
               <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
-      case 'paid_leave': {
-        const paidLeaves = leaveConfigs.filter(l => l.is_paid);
-        const unpaidLeaves = leaveConfigs.filter(l => !l.is_paid);
+
+      case 'paid_leave':
         return (
-          <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {/* Sub-tab switcher */}
-            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
-              {[
-                { id: 'paid', label: '💳 Paid Leave' },
-                { id: 'unpaid', label: '🔴 Unpaid Leave' }
-              ].map(tab => (
+          <div className="space-y-4">
+            {/* Sub-tab */}
+            <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+              {[{ id: 'paid', label: '💳 Paid Leave' }, { id: 'unpaid', label: '🔴 Unpaid Leave' }].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => { setLeaveSubTab(tab.id); setSelectedLeave(null); }}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all duration-200 ${
+                  className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${
                     leaveSubTab === tab.id
-                      ? tab.id === 'paid'
-                        ? 'bg-violet-600 text-white shadow-sm'
-                        : 'bg-rose-500 text-white shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-white/60'
+                      ? tab.id === 'paid' ? 'bg-violet-600 text-white shadow-sm' : 'bg-rose-500 text-white shadow-sm'
+                      : 'text-slate-500 hover:bg-white/60'
                   }`}
                 >
                   {tab.label}
@@ -614,125 +678,109 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               ))}
             </div>
 
-            {/* PAID LEAVE */}
             {leaveSubTab === 'paid' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Select Status / Leave Type</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {/* Standard Paid Leave Configs */}
-                    {leaveConfigs.map(leave => (
-                      <div
-                        key={leave.id}
-                        onClick={() => setSelectedLeave({ type: 'leave', data: leave })}
-                        className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id
-                            ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100'
-                            : 'bg-white border-slate-100 hover:border-violet-200 hover:bg-violet-50/30'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`h-9 w-9 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0 ${
-                            selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id ? 'bg-violet-600 text-white shadow-md' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {leave.code}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{leave.name}</p>
-                            <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                              Max {leave.max_balance}d {leave.allow_half_day ? '· ½ day' : ''}
-                            </p>
-                          </div>
-                        </div>
-                        {selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id && (
-                          <div className="h-5 w-5 rounded-full bg-violet-600 flex items-center justify-center">
-                            <FaCheck size={10} className="text-white" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* Weekend & Holiday as integrated options */}
-                    {[
-                      { id: 'weekend', label: 'Weekend', icon: FaCalendarAlt, color: 'sky' },
-                      { id: 'holiday', label: 'Public Holiday', icon: FaUmbrellaBeach, color: 'amber' }
-                    ].map(opt => (
-                      <div
-                        key={opt.id}
-                        onClick={() => setSelectedLeave({ type: opt.id })}
-                        className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                          selectedLeave?.type === opt.id
-                            ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100`
-                            : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/30'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                            selectedLeave?.type === opt.id ? `bg-${opt.color}-500 text-white shadow-md` : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            <opt.icon size={16} />
-                          </div>
-                          <p className="text-sm font-bold text-slate-800">{opt.label}</p>
-                        </div>
-                        {selectedLeave?.type === opt.id && (
-                          <div className={`h-5 w-5 rounded-full bg-${opt.color}-500 flex items-center justify-center`}>
-                            <FaCheck size={10} className="text-white" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Leave Type</p>
+                {leavesLoading ? (
+                  <div className="flex justify-center py-6">
+                    <div className="h-6 w-6 border-2 border-violet-500/30 border-t-violet-600 rounded-full animate-spin" />
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {leaveConfigs.map(leave => {
+                      const isSelected = selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id;
+                      return (
+                        <div
+                          key={leave.id}
+                          onClick={() => setSelectedLeave({ type: 'leave', data: leave })}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                            isSelected ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100' : 'bg-white border-slate-100 hover:border-violet-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${isSelected ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              {leave.code}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{leave.name}</p>
+                              <p className="text-[10px] text-slate-400 font-medium">Max {leave.max_balance}d</p>
+                            </div>
+                          </div>
+                          {isSelected && <div className="h-5 w-5 rounded-full bg-violet-600 flex items-center justify-center"><FaCheck size={9} className="text-white" /></div>}
+                        </div>
+                      );
+                    })}
+                    {/* Weekend & Holiday */}
+                    {[
+                      { id: 'weekend', label: 'Weekend',       icon: FaCalendarAlt,  color: 'sky'   },
+                      { id: 'holiday', label: 'Public Holiday', icon: FaUmbrellaBeach, color: 'amber' },
+                    ].map(opt => {
+                      const isSelected = selectedLeave?.type === opt.id;
+                      const Icon = opt.icon;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => setSelectedLeave({ type: opt.id })}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                            isSelected ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? `bg-${opt.color}-500 text-white` : 'bg-slate-100 text-slate-500'}`}>
+                              <Icon size={14} />
+                            </div>
+                            <p className="text-sm font-bold text-slate-800">{opt.label}</p>
+                          </div>
+                          {isSelected && (
+                            <div className={`h-5 w-5 rounded-full bg-${opt.color}-500 flex items-center justify-center`}>
+                              <FaCheck size={9} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* UNPAID LEAVE TAB */}
             {leaveSubTab === 'unpaid' && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="p-8 bg-rose-50/30 rounded-[2rem] border-2 border-dashed border-rose-200 flex flex-col items-center text-center">
-                  <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                    <FaHistory size={24} className="text-rose-600" />
-                  </div>
-                  <h4 className="text-sm font-black text-rose-900 uppercase tracking-tight mb-2">Confirm Unpaid Leave</h4>
-                  <p className="text-[11px] text-rose-600/70 font-medium leading-relaxed max-w-[240px]">
-                    Applying unpaid leave will mark the employee as absent for this record and deduct from payroll. No additional options are required.
-                  </p>
+              <div className="p-6 bg-rose-50/30 rounded-2xl border-2 border-dashed border-rose-200 flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-full bg-rose-100 flex items-center justify-center mb-3">
+                  <FaHistory size={20} className="text-rose-600" />
                 </div>
+                <h4 className="text-sm font-black text-rose-900 uppercase tracking-tight mb-1">Confirm Unpaid Leave</h4>
+                <p className="text-[11px] text-rose-600/70 font-medium leading-relaxed max-w-[240px]">
+                  This will mark the employee as absent and deduct from payroll. No additional options needed.
+                </p>
               </div>
             )}
           </div>
         );
-      }
+
       default: return null;
     }
   };
-
-  const activeTabMeta = TABS.find(t => t.id === activeTab);
-
 
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
       title="Manage Attendance"
-      subtitle={employee.name}
+      subtitle={employee?.name}
       size="4xl"
       footer={
         <>
           <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
-          <ManagementButton
-            tone={activeTabMeta.color.split('-')[1]}
-            loading={loading}
-            onClick={handleApply}
-          >
-            Confirm {activeTabMeta.label}
+          <ManagementButton tone={toneColor} loading={loading} onClick={handleApply}>
+            Confirm {activeTabMeta?.label}
           </ManagementButton>
         </>
       }
     >
-      <div className="flex max-h-[500px] -m-6 flex-col overflow-hidden">
-        {/* Top Nav */}
-        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center p-2 gap-1 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
+        {/* Tab nav */}
+        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center p-2 gap-1 overflow-x-auto scrollbar-hide">
           {TABS.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -740,13 +788,11 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 group ${isActive
-                  ? `bg-white shadow-sm border border-slate-200 ${tab.color}`
-                  : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
-                  }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap group ${
+                  isActive ? `bg-white shadow-sm border border-slate-200 ${tab.color}` : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
+                }`}
               >
-                <div className={`shrink-0 h-6 w-6 rounded-md flex items-center justify-center transition-colors ${isActive ? tab.bg : 'bg-slate-100 group-hover:bg-slate-200'
-                  }`}>
+                <div className={`shrink-0 h-6 w-6 rounded-md flex items-center justify-center transition-colors ${isActive ? tab.bg : 'bg-slate-100 group-hover:bg-slate-200'}`}>
                   <Icon size={12} />
                 </div>
                 <span className="text-[11px] font-bold">{tab.label}</span>
@@ -754,15 +800,19 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
             );
           })}
         </div>
-        <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-8 space-y-6">
-            {renderContent()}
-            <hr className="border-slate-100" />
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Add any details or reasoning..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-            </div>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
+          {renderContent()}
+          <hr className="border-slate-100" />
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={2}
+              placeholder="Add any details or reasoning..."
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+            />
           </div>
         </div>
       </div>
@@ -770,36 +820,30 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   );
 };
 
-// ─── EMPLOYEE ATTENDANCE CARD ──────────────────────────────────────────────────
-const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
-  const [loading, setLoading] = useState(false);
-  const [notes, setNotes] = useState('');
+// ─── BULK ATTENDANCE MODAL ─────────────────────────────────────────────────────
+const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit }) => {
+  const [loading, setLoading]         = useState(false);
+  const [notes, setNotes]             = useState('');
   const [halfSession, setHalfSession] = useState('first');
 
-  const actionMeta = BULK_ATTENDANCE_ACTIONS.find(item => item.id === action);
+  const actionMeta = BULK_ATTENDANCE_ACTIONS.find(a => a.id === action);
+  if (!actionMeta) return null;
 
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await onSubmit({
-        action,
-        employees,
-        notes,
-        halfSession,
-      });
+      await onSubmit({ action, employees: bulkEmps, notes, halfSession });
     } finally {
       setLoading(false);
     }
   };
-
-  if (!actionMeta) return null;
 
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
       title="Bulk Attendance Update"
-      subtitle={`${employees.length} employee${employees.length > 1 ? 's' : ''} selected`}
+      subtitle={`${bulkEmps.length} employee${bulkEmps.length > 1 ? 's' : ''} selected`}
       size="4xl"
       footer={
         <>
@@ -810,72 +854,52 @@ const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
         </>
       }
     >
-      <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
-        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
+      <div className="flex max-h-[500px] -m-6 flex-col overflow-hidden">
+        <div className="shrink-0 bg-slate-50/50 border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${BULK_ATTENDANCE_TONE_CLASSES[action]}`}>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${actionMeta.toneClass}`}>
               {actionMeta.label}
             </span>
-            <span className="text-xs font-semibold text-slate-500">
-              This will apply to all selected records.
-            </span>
+            <span className="text-xs font-semibold text-slate-500">Applied to all selected records.</span>
           </div>
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            {employees.length} selected
-          </span>
+          <span className="text-xs font-black text-slate-400">{bulkEmps.length} selected</span>
         </div>
-
-        <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-8 space-y-6">
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Selected Records</p>
-              <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
-                {employees.map((emp) => (
-                  <div key={emp.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{emp.name}</p>
-                      <p className="text-xs text-slate-500">{emp.employee_code} · {formatDate(emp.date)}</p>
-                    </div>
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_CONFIG[emp.status]?.color || 'bg-slate-100 text-slate-700'}`}>
-                      {STATUS_CONFIG[emp.status]?.label || 'Unmarked'}
-                    </span>
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
+          {/* Employee list */}
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Selected Records</p>
+            <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
+              {bulkEmps.map(emp => (
+                <div key={emp.employee_id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">{emp.name}</p>
+                    <p className="text-xs text-slate-500">{emp.employee_code} · {formatDate(emp.date)}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {action === 'half_day' && (
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Half Day Session</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <ManagementButton
-                    tone="sky"
-                    variant={halfSession === 'first' ? 'solid' : 'soft'}
-                    onClick={() => setHalfSession('first')}
-                  >
-                    First Half
-                  </ManagementButton>
-                  <ManagementButton
-                    tone="sky"
-                    variant={halfSession === 'second' ? 'solid' : 'soft'}
-                    onClick={() => setHalfSession('second')}
-                  >
-                    Second Half
-                  </ManagementButton>
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_CONFIG[emp.day_status]?.color || 'bg-slate-100 text-slate-700'}`}>
+                    {STATUS_CONFIG[emp.day_status]?.label || 'Unmarked'}
+                  </span>
                 </div>
-              </div>
-            )}
-
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
-              <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={3}
-                placeholder="Add one note for all selected employees..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-              />
+              ))}
             </div>
+          </div>
+          {action === 'half_day' && (
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Half Day Session</label>
+              <div className="grid grid-cols-2 gap-3">
+                <ManagementButton tone="sky" variant={halfSession === 'first'  ? 'solid' : 'soft'} onClick={() => setHalfSession('first')}>First Half</ManagementButton>
+                <ManagementButton tone="sky" variant={halfSession === 'second' ? 'solid' : 'soft'} onClick={() => setHalfSession('second')}>Second Half</ManagementButton>
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              rows={3}
+              placeholder="One note for all selected employees..."
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+            />
           </div>
         </div>
       </div>
@@ -883,39 +907,34 @@ const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
   );
 };
 
+// ─── EMPLOYEE CARD ─────────────────────────────────────────────────────────────
 const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
-  const statusCfg = STATUS_CONFIG[emp.status];
+  const statusCfg = STATUS_CONFIG[emp.day_status] || STATUS_CONFIG.unmarked;
   return (
     <div className="relative">
-      {/* ── Top-left checkbox overlay (selection mode only) ── */}
       {isSelectionMode && (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onToggleSelect?.(emp); }}
-          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all duration-200 shadow-sm ${
-            selected
-              ? 'bg-indigo-600 border-indigo-600 text-white scale-110'
-              : 'bg-white border-slate-300 hover:border-indigo-400'
+          onClick={e => { e.stopPropagation(); onToggleSelect?.(emp); }}
+          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${
+            selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
           }`}
-          title={selected ? 'Deselect' : 'Select'}
         >
-          {selected && <FaCheck size={10} />}
+          {selected && <FaCheck size={9} />}
         </button>
       )}
       <ManagementCard
         title={emp.name}
         subtitle={`[${emp.employee_code}]`}
-        accent={statusCfg ? statusCfg.dot.replace('bg-', '') : 'slate'}
+        accent={statusCfg.dot.replace('bg-', '')}
         icon={<FaUser className="text-slate-500" />}
         badge={
           <div className="flex items-center gap-2">
-            {statusCfg && (
-              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
-                {statusCfg.label}
-              </span>
-            )}
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
+              {statusCfg.label}
+            </span>
             <button
-              onClick={(e) => { e.stopPropagation(); onAction(emp, 'logs'); }}
+              onClick={e => { e.stopPropagation(); onAction(emp, 'logs'); }}
               className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm"
               title="View Logs"
             >
@@ -925,50 +944,66 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
         }
       >
         <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
+          {/* Info */}
           <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold">
+            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
               <FaCalendarAlt size={9} />
-              <span>{formatDate(emp.date)} | {emp.day_label}</span>
-              {emp.shift && emp.shift !== 'No Shift' && (
-                <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.shift}</span></>
+              <span>{formatDate(emp.date)}</span>
+              {emp.day_label && <><span className="text-gray-300 mx-0.5">·</span><span>{emp.day_label}</span></>}
+              {emp.shift_label && emp.shift_label !== 'No Shift' && (
+                <><span className="text-gray-300 mx-0.5">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.shift_label}</span></>
               )}
             </div>
             <p className="text-xs text-gray-700 font-semibold">
-              Duty Time : <span className="font-black">{emp.duty_hours}</span>
+              Expected: <span className="font-black">{formatMinutes(emp.expected_work_minutes)}</span>
             </p>
-            <div className="flex gap-3 text-xs">
+            <div className="flex flex-wrap gap-3 text-xs">
               <span>
-                Punch In:{' '}
-                <span className={emp.punch_in ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {emp.punch_in ? formatTime(emp.punch_in) : 'Not Marked'}
+                In:{' '}
+                <span className={emp.punch_in ? 'text-emerald-600 font-bold' : 'text-slate-400 font-semibold'}>
+                  {emp.punch_in ? formatTime(emp.punch_in) : '—'}
                 </span>
               </span>
               <span className="text-gray-300">|</span>
               <span>
-                Punch Out:{' '}
-                <span className={emp.punch_out ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {emp.punch_out ? formatTime(emp.punch_out) : 'Not Marked'}
+                Out:{' '}
+                <span className={emp.punch_out ? 'text-emerald-600 font-bold' : 'text-slate-400 font-semibold'}>
+                  {emp.punch_out ? formatTime(emp.punch_out) : '—'}
                 </span>
               </span>
+              {emp.calculations?.worked_minutes > 0 && (
+                <><span className="text-gray-300">|</span><span className="text-gray-600 font-semibold">Worked: <strong>{formatMins(emp.calculations.worked_minutes)}</strong></span></>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              {emp.is_deductible ? (
-                <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
-              ) : emp.calculations?.late_minutes > 0 ? (
-                <p className="text-[10px] text-rose-500 font-bold tracking-tight">Late: {formatMins(emp.calculations.late_minutes)}</p>
-              ) : null}
-              {emp.calculations?.overtime_minutes > 0 ? (
-                <span className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">OT</span>
-              ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              {Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) && (
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
+              )}
+              {Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) && (
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Overtime</span>
+              )}
+              {(emp.calculations?.late_minutes || 0) > 0 && (
+                <span className="text-[10px] text-rose-500 font-bold">Late: {formatMins(emp.calculations.late_minutes)}</span>
+              )}
+              {(emp.calculations?.overtime_minutes || 0) > 0 && (
+                <span className="text-[10px] text-orange-500 font-bold">OT: {formatMins(emp.calculations.overtime_minutes)}</span>
+              )}
+              {/* Multi-entry indicator */}
+              {(emp.attendances?.length || 0) > 1 && (
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                  {emp.attendances.length} entries
+                </span>
+              )}
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-2 shrink-0 md:w-80">
-            <ManagementButton size="sm" tone="emerald" variant={emp.status === 'present' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
-            <ManagementButton size="sm" tone="blue" variant={emp.status === 'half_day' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
-            <ManagementButton size="sm" tone="rose" variant={emp.status === 'absent' ? 'solid' : 'soft'} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-            <ManagementButton size="sm" tone="slate" variant={emp.is_deductible ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
-            <ManagementButton size="sm" tone="amber" variant={emp.is_ot ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
-            <ManagementButton size="sm" tone="violet" variant={emp.status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
+          {/* Action buttons */}
+          <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
+            <ManagementButton size="sm" tone="emerald" variant={emp.day_status === 'present'    ? 'solid' : 'soft'}    onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
+            <ManagementButton size="sm" tone="blue"    variant={emp.day_status === 'half_day'   ? 'solid' : 'soft'}    onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
+            <ManagementButton size="sm" tone="rose"    variant={emp.day_status === 'absent'     ? 'solid' : 'soft'}    onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
+            <ManagementButton size="sm" tone="slate"   variant={Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
+            <ManagementButton size="sm" tone="amber"   variant={Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+            <ManagementButton size="sm" tone="violet"  variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
           </div>
         </div>
       </ManagementCard>
@@ -976,34 +1011,56 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
   );
 };
 
-// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
+// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
 const UnmarkedAttendance = () => {
-  const [dateFilter, setDateFilter] = useState({
-    date: new Date().toISOString().slice(0, 10),
-    month: '',
-    year: '',
-    from_date: '',
-    to_date: '',
-  });
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
-  const [search, setSearch] = useState('');
-  const [dayStatus, setDayStatus] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [dateFilter, setDateFilter] = useState({ date: today, month: '', year: '', from_date: '', to_date: '' });
+  const [employees, setEmployees]   = useState([]);
+  const [counts, setCounts]         = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [search, setSearch]         = useState('');
+  const [dayStatus, setDayStatus]   = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [modal, setModal] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [modal, setModal]           = useState(null);   // { type, emp }
+  const [saving, setSaving]         = useState(false);
+  const [selectedIds, setSelectedIds]         = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [bulkAction, setBulkAction] = useState(null);
-  const [bulkModalOpen, setBulkModalOpen] = useState(false);
-  const lastRequestKeyRef = useRef('');
+  const [bulkAction, setBulkAction]           = useState(null);
+  const [bulkModalOpen, setBulkModalOpen]     = useState(false);
+
+  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
+
+  // ── useRef dedup: prevent duplicate inflight calls ──────────────────────────
+  const abortControllerRef = useRef(null);
+  const lastFetchKeyRef    = useRef('');
+
+  const buildFetchKey = useCallback(() => {
+    let fromDate = '', toDate = '';
+    if (dateFilter.date) {
+      fromDate = toDate = dateFilter.date;
+    } else if (dateFilter.from_date && dateFilter.to_date) {
+      fromDate = dateFilter.from_date;
+      toDate   = dateFilter.to_date;
+    } else if (dateFilter.month && dateFilter.year) {
+      fromDate = `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01`;
+      toDate   = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
+    }
+    return `${fromDate}|${toDate}|${pagination.page}|${pagination.limit}|${search}|${dayStatus}|${selectedEmployee ?? ''}`;
+  }, [dateFilter, pagination.page, pagination.limit, search, dayStatus, selectedEmployee]);
 
   const fetchAttendance = useCallback(async (force = false) => {
-    const requestKey = `${pagination.page}-${pagination.limit}-${search}-${dayStatus}-${selectedEmployee}-${JSON.stringify(dateFilter)}`;
-    if (!force && requestKey === lastRequestKeyRef.current && !loading) return;
-    if (force) lastRequestKeyRef.current = '';
-    lastRequestKeyRef.current = requestKey;
+    const key = buildFetchKey();
+
+    // Dedup: skip if same key already in-flight or completed (unless forced)
+    if (!force && key === lastFetchKeyRef.current) return;
+    lastFetchKeyRef.current = key;
+
+    // Abort any previous in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     setLoading(true);
     try {
@@ -1012,122 +1069,69 @@ const UnmarkedAttendance = () => {
         fromDate = toDate = dateFilter.date;
       } else if (dateFilter.from_date && dateFilter.to_date) {
         fromDate = dateFilter.from_date;
-        toDate = dateFilter.to_date;
+        toDate   = dateFilter.to_date;
       } else if (dateFilter.month && dateFilter.year) {
         fromDate = `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01`;
-        toDate = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
+        toDate   = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
       }
 
-      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      const statusParam = dayStatus === 'all' ? '' : `&day_status=${dayStatus}`;
-      const empParam = selectedEmployee ? `&employee_id=${selectedEmployee}` : '';
-      const response = await apiCall(
-        `/attendance/list?from_date=${fromDate}&to_date=${toDate}&page=${pagination.page}&limit=${pagination.limit}&search=${search}${statusParam}${empParam}`,
-        'GET',
-        null,
-        companyId
-      );
-      const result = await response.json();
+      const companyId   = JSON.parse(localStorage.getItem('company'))?.id;
+      const statusParam = dayStatus ? `&day_status=${dayStatus}` : '';
+      const empParam    = selectedEmployee ? `&employee_id=${selectedEmployee}` : '';
+      const url = `/attendance/list?from_date=${fromDate}&to_date=${toDate}&page=${pagination.page}&limit=${pagination.limit}&search=${encodeURIComponent(search)}${statusParam}${empParam}&type=attendance`;
+
+      const response = await apiCall(url, 'GET', null, companyId);
+      const result   = await response.json();
+
       if (result.success) {
-        const mapped = result.data.map(emp => {
-          const att = emp.attendances && emp.attendances[0];
-          const displayDate = att?.attendance_date || dateFilter.date || dateFilter.from_date || '';
-          return {
-            id: emp.id,
-            employee_id: emp.employee_id,
-            user_id: emp.user_id,
-            name: emp.name,
-            employee_code: emp.employee_code,
-            designation: emp.designation,
-            shift: emp.shift ? `${formatTime(emp.shift.start_time)} - ${formatTime(emp.shift.end_time)}` : 'No Shift',
-            department: emp.designation ? emp.designation.replace(/_/g, ' ').toUpperCase() : '',
-            date: displayDate,
-            day_label: displayDate ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
-            duty_hours: emp.shift ? formatMinutes(emp.shift.expected_work_minutes) : '00 Hours 00 Minutes',
-            shift_start: emp.shift?.start_time || null,
-            shift_end: emp.shift?.end_time || null,
-            punch_in: att?.punch_in?.time || null,
-            punch_out: att?.punch_out?.time || null,
-            status: att?.day_status || 'unmarked',
-            is_deductible: att?.is_deductible || false,
-            is_ot: att?.is_overtime || false,
-            ot_flag: att?.is_overtime || false,
-            calculations: att?.calculations || null,
-            attendance_record: att
-          };
-        });
+        const fallbackDate = fromDate || today;
+        const mapped = (result.data || []).map(emp => mapApiEmployee(emp, fallbackDate));
         setEmployees(mapped);
+        setCounts(result.meta?.counts || null);
         updatePagination({
-          total: result.meta.total,
-          total_pages: result.meta.total_pages,
-          page: result.meta.page,
-          limit: result.meta.limit
+          total:       result.meta?.total       || 0,
+          total_pages: result.meta?.total_pages || 1,
+          page:        result.meta?.page        || 1,
+          limit:       result.meta?.limit       || 20,
         });
       } else {
-        throw new Error(result.message || 'Failed to fetch attendance data');
+        throw new Error(result.message || 'Failed to fetch attendance');
       }
     } catch (err) {
+      if (err.name === 'AbortError') return; // Intentional abort — ignore
       console.error('Fetch error:', err);
       toast.error(err.message || 'Failed to load attendance data');
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, pagination.page, pagination.limit, search, dayStatus, selectedEmployee, updatePagination]);
+  }, [buildFetchKey, dateFilter, pagination.page, pagination.limit, search, dayStatus, selectedEmployee, updatePagination, today]);
 
+  // Debounced auto-fetch
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchAttendance();
-    }, 300);
+    const timer = setTimeout(() => fetchAttendance(), 300);
     return () => clearTimeout(timer);
   }, [fetchAttendance]);
 
-  const handleDateChange = (val) => {
-    setDateFilter(val);
-    goToPage(1);
-  };
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handleDateChange     = (val) => { setDateFilter(val); goToPage(1); };
+  const handleSearch         = (val) => { setSearch(val);     goToPage(1); };
+  const handleStatusChange   = (val) => { setDayStatus(val);  goToPage(1); };
+  const handleEmployeeChange = (id)  => { setSelectedEmployee(id); goToPage(1); };
 
-  const handleSearch = (val) => {
-    setSearch(val);
-    goToPage(1);
-  };
+  const handleAction = (emp, action) => setModal({ type: action, emp });
 
-  const handleStatusChange = (status) => {
-    setDayStatus(status);
-    goToPage(1);
-  };
-
-  const handleEmployeeChange = (id) => {
-    setSelectedEmployee(id);
-    goToPage(1);
-  };
-
-  function formatMinutes(mins) {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${String(h).padStart(2, '0')} Hours ${String(m).padStart(2, '0')} Minutes`;
-  }
-
-  const displayDate = useMemo(() => {
-    if (dateFilter.date) return formatDate(dateFilter.date);
-    if (dateFilter.month && dateFilter.year) return `${dateFilter.month}/${dateFilter.year}`;
-    if (dateFilter.from_date && dateFilter.to_date) return `${formatDate(dateFilter.from_date)} - ${formatDate(dateFilter.to_date)}`;
-    return 'Select Date';
-  }, [dateFilter]);
-
-  const handleAction = (emp, action) => {
-    setModal({ type: action, emp });
-  };
-
-  const handleSubmit = async (payload, empId) => {
+  // POST /attendance/mark for single employee
+  const handleSubmit = async (payload) => {
     setSaving(true);
     try {
       const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
-      const result = await response.json();
+      const response  = await apiCall('/attendance/mark', 'POST', payload, companyId);
+      const result    = await response.json();
       if (result.success) {
         toast.success('Attendance updated successfully!');
         setModal(null);
-        fetchAttendance();
+        lastFetchKeyRef.current = ''; // Force re-fetch
+        fetchAttendance(true);
       } else {
         throw new Error(result.message || 'Failed to update attendance');
       }
@@ -1138,146 +1142,142 @@ const UnmarkedAttendance = () => {
     }
   };
 
+  // POST /attendance/mark for each selected employee
+  const handleBulkSubmit = async ({ action, employees: bulkEmps, notes, halfSession }) => {
+    if (!bulkEmps.length) return;
+    let successCount = 0;
+    let failCount    = 0;
+    try {
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+      for (const emp of bulkEmps) {
+        try {
+          const options = {
+            notes,
+            halfSession,
+            punchIn:  emp.shift_start || '09:00',
+            punchOut: emp.shift_end   || '18:00',
+          };
+          const payload  = buildMarkPayload(emp, action, options);
+          const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
+          const result   = await response.json();
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+            console.warn(`Failed for ${emp.name}: ${result.message}`);
+          }
+        } catch (e) {
+          failCount++;
+          console.error(`Error for ${emp.name}:`, e);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`${successCount} record${successCount > 1 ? 's' : ''} updated successfully`);
+      }
+      if (failCount > 0) {
+        toast.warning(`${failCount} record${failCount > 1 ? 's' : ''} failed to update`);
+      }
+      setBulkModalOpen(false);
+      setBulkAction(null);
+      setSelectedIds([]);
+      lastFetchKeyRef.current = '';
+      fetchAttendance(true);
+    } catch (err) {
+      toast.error(err.message || 'Bulk update failed');
+    }
+  };
+
+  // ── Selection helpers ────────────────────────────────────────────────────────
   const toggleSelectEmployee = (emp) => {
-    setSelectedIds((prev) => (
-      prev.includes(emp.id)
-        ? prev.filter((id) => id !== emp.id)
-        : [...prev, emp.id]
-    ));
+    setSelectedIds(prev =>
+      prev.includes(emp.employee_id)
+        ? prev.filter(id => id !== emp.employee_id)
+        : [...prev, emp.employee_id]
+    );
   };
 
   const toggleSelectAll = () => {
-    const visibleIds = employees.map((emp) => emp.id);
-    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    const visibleIds = employees.map(e => e.employee_id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
     setSelectedIds(allSelected ? [] : visibleIds);
   };
 
   const toggleSelectionMode = () => {
-    setIsSelectionMode((prev) => {
+    setIsSelectionMode(prev => {
       if (prev) setSelectedIds([]);
       return !prev;
     });
   };
 
   const selectedEmployees = useMemo(
-    () => employees.filter((emp) => selectedIds.includes(emp.id)),
+    () => employees.filter(emp => selectedIds.includes(emp.employee_id)),
     [employees, selectedIds]
   );
 
-  const handleBulkSubmit = async ({ action, employees: bulkEmployees, notes, halfSession }) => {
-    if (!bulkEmployees.length) return;
-    try {
-      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      for (const emp of bulkEmployees) {
-        const payload = buildBulkAttendancePayload(emp, action, notes, halfSession);
-        const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.message || `Failed for ${emp.name}`);
-        }
-      }
-      toast.success(`${bulkEmployees.length} record${bulkEmployees.length > 1 ? 's' : ''} updated successfully`);
-      setBulkModalOpen(false);
-      setBulkAction(null);
-      setSelectedIds([]);
-      fetchAttendance();
-    } catch (err) {
-      toast.error(err.message || 'Bulk update failed');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+
+        {/* ── Filter Bar ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
         >
-          {/* 1. Search Field */}
+          {/* Search */}
           <div className="w-full lg:w-1/3 xl:w-2/5 relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name, code or email..."
               value={search}
               onChange={e => handleSearch(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-10 text-sm font-medium text-gray-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition"
             />
             {search && (
-              <button
-                type="button"
-                onClick={() => handleSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
-              >
+              <button type="button" onClick={() => handleSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                 <FaTimes size={12} />
               </button>
             )}
           </div>
 
-          {/* 2. Filters Wrapper */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 lg:gap-4 w-full lg:w-auto lg:flex-1 lg:justify-end">
-            {/* Day Status Select */}
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full lg:w-auto lg:flex-1 lg:justify-end">
             <div className="w-full sm:w-auto sm:min-w-[140px]">
-              <StatusSelect
-                value={dayStatus}
-                onChange={handleStatusChange}
-                options={STATUS_OPTIONS}
-              />
+              <StatusSelect value={dayStatus} onChange={handleStatusChange} options={STATUS_OPTIONS} />
             </div>
-
-            {/* Employee Select */}
             <div className="w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-56">
-              <EmployeeSelect
-                value={selectedEmployee}
-                onChange={handleEmployeeChange}
-                placeholder="Specific Employee..."
+              <EmployeeSelect value={selectedEmployee} onChange={handleEmployeeChange} placeholder="Specific Employee..." />
+            </div>
+            <div className="w-full sm:w-auto sm:min-w-[180px]">
+              <AdvancedDateFilter
+                value={dateFilter}
+                onChange={handleDateChange}
+                buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                placeholder="Pick Date"
               />
             </div>
-
-            {/* Advanced Date Filter */}
-          <div className="w-full sm:w-auto sm:min-w-[180px]">
-            <AdvancedDateFilter
-              value={dateFilter}
-              onChange={handleDateChange}
-              buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-              placeholder="Pick Date"
-            />
+            <RefreshButton loading={loading} onClick={() => { lastFetchKeyRef.current = ''; fetchAttendance(true); }} className="w-full sm:w-auto">
+              Refresh
+            </RefreshButton>
           </div>
-
-          <RefreshButton
-            loading={loading}
-            onClick={() => fetchAttendance(true)}
-            className="w-full sm:w-auto"
-          >
-            Refresh
-          </RefreshButton>
-        </div>
         </motion.div>
 
-        {/* ── Bulk Selection Control Bar (below filter, above cards) ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm"
-        >
+        {/* ── Summary Counts ── */}
+        <SummaryBar counts={counts} />
+
+        {/* ── Bulk Mode Bar ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={toggleSelectionMode}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-                isSelectionMode ? 'bg-indigo-600' : 'bg-slate-200'
-              }`}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 ${isSelectionMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
             >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                  isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'
-                }`}
-              />
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
-            <span className={`text-xs font-black uppercase tracking-widest ${
-              isSelectionMode ? 'text-indigo-600' : 'text-slate-400'
-            }`}>
+            <span className={`text-xs font-black uppercase tracking-widest ${isSelectionMode ? 'text-indigo-600' : 'text-slate-400'}`}>
               {isSelectionMode ? 'Bulk Mode ON' : 'Bulk Mode'}
             </span>
           </div>
@@ -1287,7 +1287,7 @@ const UnmarkedAttendance = () => {
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all ${
                   selectedIds.length === employees.length && employees.length > 0
                     ? 'bg-indigo-600 border-indigo-600 text-white'
                     : selectedIds.length > 0
@@ -1301,43 +1301,40 @@ const UnmarkedAttendance = () => {
                 )}
               </button>
               <span className="text-xs font-semibold text-slate-600">
-                {selectedIds.length > 0 ? `${selectedIds.length} of ${employees.length} selected` : `Select all ${employees.length} records`}
+                {selectedIds.length > 0 ? `${selectedIds.length} of ${employees.length} selected` : `Select all ${employees.length}`}
               </span>
               {selectedIds.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds([])}
-                  className="ml-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors"
-                >
+                <button type="button" onClick={() => setSelectedIds([])} className="ml-1 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors">
                   Clear
                 </button>
               )}
             </label>
           )}
-        </motion.div>
+        </div>
 
+        {/* ── Employee Cards ── */}
         <div className="space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
               <div className="h-12 w-12 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin mb-4" />
-              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Fetching employees...</p>
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Fetching attendance...</p>
             </div>
           ) : employees.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
               <div className="h-16 w-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
-                <FaUser size={30} />
+                <FaUser size={28} />
               </div>
               <p className="text-slate-600 font-black">No employees found</p>
-              <p className="text-slate-400 text-sm mt-1">Try changing the date or search query</p>
+              <p className="text-slate-400 text-sm mt-1">Try adjusting the date or filters</p>
             </div>
           ) : (
             <>
               {employees.map(emp => (
                 <EmployeeAttendanceCard
-                  key={emp.id}
+                  key={emp.employee_id}
                   emp={emp}
                   onAction={handleAction}
-                  selected={selectedIds.includes(emp.id)}
+                  selected={selectedIds.includes(emp.employee_id)}
                   onToggleSelect={toggleSelectEmployee}
                   isSelectionMode={isSelectionMode}
                 />
@@ -1353,79 +1350,62 @@ const UnmarkedAttendance = () => {
           )}
         </div>
 
+        {/* ── Floating Bulk Action Bar ── */}
         <AnimatePresence>
           {isSelectionMode && selectedIds.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ opacity: 1, y: 0,  scale: 1   }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"
             >
-              {/* Count badge */}
               <div className="flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-1.5 mr-1">
                 <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
                 <span className="text-xs font-black text-indigo-700">{selectedIds.length} selected</span>
               </div>
-
               <div className="w-px h-6 bg-slate-200 mx-1" />
-
-              {/* Action buttons */}
-              {BULK_ATTENDANCE_ACTIONS.map((item) => (
+              {BULK_ATTENDANCE_ACTIONS.map(item => (
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => {
-                    setBulkAction(item.id);
-                    setBulkModalOpen(true);
-                  }}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${BULK_ATTENDANCE_TONE_CLASSES[item.id]}`}
+                  onClick={() => { setBulkAction(item.id); setBulkModalOpen(true); }}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all hover:scale-105 active:scale-95 shadow-sm ${item.toneClass}`}
                 >
                   {item.label}
                 </button>
               ))}
-
               <div className="w-px h-6 bg-slate-200 mx-1" />
-
-              {/* Close / deselect all */}
-              <button
-                type="button"
-                onClick={() => setSelectedIds([])}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                title="Clear selection"
-              >
+              <button type="button" onClick={() => setSelectedIds([])} className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                 <FaTimes size={12} />
               </button>
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
 
+      {/* ── Modals ── */}
       <AnimatePresence>
         {modal && modal.type !== 'logs' && (
           <ManageAttendanceModal
-            key={modal.emp.id}
+            key={`modal-${modal.emp.employee_id}`}
             employee={modal.emp}
             initialTab={modal.type}
             onClose={() => setModal(null)}
-            onSubmit={(payload) => handleSubmit(payload, modal.emp.id)}
+            onSubmit={handleSubmit}
           />
         )}
         {bulkModalOpen && bulkAction && (
           <BulkAttendanceModal
             employees={selectedEmployees}
             action={bulkAction}
-            onClose={() => {
-              setBulkModalOpen(false);
-              setBulkAction(null);
-            }}
+            onClose={() => { setBulkModalOpen(false); setBulkAction(null); }}
             onSubmit={handleBulkSubmit}
           />
         )}
         {modal?.type === 'logs' && (
           <AttendanceLogsModal
-            id={modal.emp.id}
+            id={modal.emp.employee_id}
             type="attendance"
             onClose={() => setModal(null)}
           />
