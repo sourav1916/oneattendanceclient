@@ -54,7 +54,7 @@ const CompanyLogo = ({ company, size = 8 }) => {
 
     return (
         <div className={`w-${size} h-${size} bg-gradient-to-br ${avatarGradient(company?.id || 0)} rounded-xl flex items-center justify-center text-white font-bold shadow-md select-none`}
-             style={{ fontSize: `${sizePx / 2.5}px` }}>
+            style={{ fontSize: `${sizePx / 2.5}px` }}>
             {getInitials(company?.name || 'C')}
         </div>
     );
@@ -201,14 +201,14 @@ const Navbar = ({
     return (
         <>
             <nav className="sticky top-0 z-40 h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
-                <div className="px-4 sm:px-6 lg:px-8 h-full">
+                <div className="pl-2 pr-4 h-full">
                     <div className="flex items-center justify-between h-full">
 
                         {/* Left section */}
                         <div className="flex items-center space-x-4">
                             <button
                                 onClick={toggleSidebar}
-                                className={`p-2 rounded-lg transition-all duration-200 focus:outline-none
+                                className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none flex-shrink-0
                                     ${isSidebarOpen ? 'text-white' : 'text-white/80 hover:text-white hover:bg-white/20'}`}
                                 data-sidebar-toggle="true"
                                 aria-label="Toggle menu"

@@ -32,6 +32,12 @@ const MainLayout = ({ children }) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    const sidebarOffset = isMobile ? '0px' : (desktopSidebarCollapsed ? '64px' : '256px');
+    document.documentElement.style.setProperty('--sidebar-offset', sidebarOffset);
+    window.dispatchEvent(new Event('sidebar-offset-change'));
+  }, [isMobile, desktopSidebarCollapsed]);
+
   // Desktop sidebar is pinned open/closed only via the navbar toggle button.
   // Clicking outside does NOT auto-collapse it so users can navigate freely.
 
@@ -62,7 +68,7 @@ const MainLayout = ({ children }) => {
 
   const getContentMargin = () => {
     if (isMobile) return 'ml-0';
-    return 'ml-20';
+    return desktopSidebarCollapsed ? 'ml-16' : 'ml-64';
   };
 
   return (
@@ -71,7 +77,7 @@ const MainLayout = ({ children }) => {
         toggleSidebar={toggleSidebar}
         isMobile={isMobile}
         sidebarOpen={sidebarOpen}
-        isDesktopSidebarExpanded={!desktopSidebarCollapsed || sidebarHovered}
+        isDesktopSidebarExpanded={!desktopSidebarCollapsed}
         company={company}
         companies={companies}
         onCompanySwitch={selectCompany}

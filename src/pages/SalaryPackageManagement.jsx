@@ -493,14 +493,19 @@ const SalaryPackages = () => {
     const [windowWidth, setWindowWidth] = useState(() =>
         typeof window !== 'undefined' ? window.innerWidth : 1440
     );
+    const [sidebarOffset, setSidebarOffset] = useState(() => {
+        if (typeof window === 'undefined' || window.innerWidth < 768) return 0;
+        try {
+            const stored = localStorage.getItem('sidebarCollapsed');
+            const isCollapsed = stored === null ? true : stored === 'true';
+            return isCollapsed ? 64 : 256;
+        } catch {
+            return 64;
+        }
+    });
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
-
-    // Mini-sidebar is always 80px wide on desktop (ml-20).
-    // Subtract it so breakpoints fire at the real *content* width.
-    const SIDEBAR_OFFSET = typeof window !== 'undefined' && window.innerWidth >= 768 ? 80 : 0;
-    const contentWidth = windowWidth - SIDEBAR_OFFSET;
 
     // Debounce search
     useEffect(() => {
@@ -515,6 +520,33 @@ const SalaryPackages = () => {
         handleResize();
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        const syncSidebarOffset = () => {
+            if (window.innerWidth < 768) {
+                setSidebarOffset(0);
+                return;
+            }
+
+            try {
+                const stored = localStorage.getItem('sidebarCollapsed');
+                const isCollapsed = stored === null ? true : stored === 'true';
+                setSidebarOffset(isCollapsed ? 64 : 256);
+            } catch {
+                setSidebarOffset(64);
+            }
+        };
+
+        syncSidebarOffset();
+        window.addEventListener('sidebar-offset-change', syncSidebarOffset);
+        window.addEventListener('resize', syncSidebarOffset);
+        return () => {
+            window.removeEventListener('sidebar-offset-change', syncSidebarOffset);
+            window.removeEventListener('resize', syncSidebarOffset);
+        };
+    }, []);
+
+    const contentWidth = windowWidth - sidebarOffset;
 
     const fetchPackages = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
         if (fetchInProgress.current) return;

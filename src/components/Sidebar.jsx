@@ -457,7 +457,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
       className={`
         fixed left-0 top-16 z-20 bg-white
         transition-all duration-300 ease-out
-        ${isSidebarExpanded ? 'w-64' : 'w-20'}
+        ${isSidebarExpanded ? 'w-64' : 'w-16'}
         h-[calc(100vh-4rem)]
         shadow-lg border-r border-gray-200
         overflow-y-auto overflow-x-hidden
