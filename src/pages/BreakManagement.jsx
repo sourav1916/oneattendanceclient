@@ -570,7 +570,7 @@ const BreakManagement = () => {
           </div>
 
           {/* 2. Filters Wrapper */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 lg:gap-4 w-full lg:w-auto lg:flex-1 lg:justify-end z-40">
+          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 lg:gap-4 w-full lg:w-auto lg:flex-1 lg:justify-end">
             {/* Day Status Select */}
             <div className="w-full sm:w-auto sm:min-w-[140px]">
               <StatusSelect

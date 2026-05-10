@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import apiCall from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import usePermissionAccess from "../hooks/usePermissionAccess";
@@ -20,7 +20,9 @@ import {
   FaUmbrellaBeach,
   FaFileInvoiceDollar,
   FaUserShield,
-  FaHistory
+  FaHistory,
+  FaSync,
+  FaChartBar
 } from "react-icons/fa";
 import Skeleton from "../components/SkeletonComponent";
 import AddStaffModal from "../components/StaffModals/AddStaffModal";
@@ -34,6 +36,31 @@ function HomePage() {
   const navigate = useNavigate();
   const [openAddStaffModal, setOpenAddStaffModal] = useState(false);
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(true);
+
+  const fetchDashboardSummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const res = await apiCall('/attendance/dashboard-summary', 'GET', null, company?.id);
+      const response = await res.json();
+      if (response.success) {
+        setDashboardData(response.data);
+      }
+    } catch (error) {
+      console.error("Dashboard summary fetch failed:", error);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user && company) {
+      fetchDashboardSummary();
+    } else {
+      setLoadingSummary(false);
+    }
+  }, [user, company]);
 
   // Show loading state
   if (loading) {
@@ -311,42 +338,143 @@ function HomePage() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/10 to-purple-100/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Quick Actions Header */}
-        <div className="flex items-center gap-4 mt-12 mb-6">
-          <div className="h-px flex-1 bg-slate-200"></div>
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] whitespace-nowrap">Your Workspace</h2>
-          <div className="h-px flex-1 bg-slate-200"></div>
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Compact Header */}
+        <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl   text-slate-800 tracking-tight">
+              {getGreeting()}, <span className="text-indigo-600">{user?.full_name?.split(' ')[0] || 'User'}</span>
+            </h1>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+              <FaRegCalendarAlt className="text-indigo-300" />
+              {currentDate}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-emerald-50 border-emerald-100 shadow-sm">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">Live System</span>
+          </div>
+        </header>
+        {/* Unified Summary Card */}
+        <section className="mb-8">
+          {loadingSummary && !dashboardData ? (
+            <div className="h-32 w-full bg-white/50 animate-pulse rounded-2xl border border-slate-100"></div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col lg:flex-row"
+            >
+              {/* Left Grid: Summary Data */}
+              <div className="flex-1 p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 bg-gradient-to-br from-white to-slate-50/50">
+                {[
+                  {
+                    label: "Present Today",
+                    value: dashboardData?.attendance_today?.present || 0,
+                    color: "text-indigo-600",
+                    icon: FaUserCheck,
+                    bg: "bg-indigo-50",
+                    iconColor: "text-indigo-500"
+                  },
+                  {
+                    label: "Total Staff",
+                    value: dashboardData?.employees?.total || 0,
+                    color: "text-slate-800",
+                    icon: FaUsers,
+                    bg: "bg-slate-100",
+                    iconColor: "text-slate-500"
+                  },
+                  {
+                    label: "Overtime",
+                    value: dashboardData?.attendance_today?.overtime_employees || 0,
+                    color: "text-amber-600",
+                    icon: FaClock,
+                    bg: "bg-amber-50",
+                    iconColor: "text-amber-500"
+                  },
+                  {
+                    label: "Attendance Rate",
+                    value: dashboardData?.employees?.total > 0
+                      ? `${Math.round(((dashboardData?.attendance_today?.present || 0) / dashboardData.employees.total) * 100)}%`
+                      : "0%",
+                    color: "text-emerald-600",
+                    icon: FaChartBar,
+                    bg: "bg-emerald-50",
+                    iconColor: "text-emerald-500"
+                  }
+                ].map((stat) => (
+                  <div key={stat.label} className="flex items-center gap-4 group">
+                    <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                      <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</span>
+                      <span className={`text-2xl   tracking-tight ${stat.color}`}>{stat.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Right Grid: Refresh & Date */}
+              <div className="bg-slate-900 text-white p-8 flex items-center justify-between lg:justify-end gap-8 lg:min-w-[320px] relative overflow-hidden">
+                {/* Decorative background circle */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+
+                <div className="flex flex-col lg:items-end text-left lg:text-right relative z-10">
+                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Last Sync</span>
+                  <div className="text-sm   text-white uppercase tracking-tight">{currentDate.split(',')[0]}</div>
+                  <div className="text-[11px] font-bold text-white/60">{currentDate.split(',')[1]}</div>
+                </div>
+
+                <div className="flex items-center gap-5 relative z-10">
+                  <div className="h-10 w-px bg-white/10 hidden lg:block"></div>
+                  <button
+                    onClick={fetchDashboardSummary}
+                    disabled={loadingSummary}
+                    className={`group p-4 rounded-2xl bg-white/10 border border-white/10 text-white/80 hover:text-white hover:bg-white/20 hover:border-white/20 hover:shadow-xl transition-all active:scale-95 ${loadingSummary ? 'opacity-50' : ''}`}
+                    title="Refresh Summary"
+                  >
+                    <FaSync className={`w-5 h-5 transition-transform duration-700 ${loadingSummary ? 'animate-spin text-white' : 'group-hover:rotate-180'}`} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </section>
+        {/* Single High-Density Section Header */}
+        <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Workspace Shortcuts</h2>
+          <div className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+            {quickActions.length} Actions Available
+          </div>
         </div>
 
-        {/* Quick Actions Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-        >
+        {/* High-Density Action Grid - All Actions */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-4">
           {quickActions.map((action, index) => (
             <motion.button
               key={action.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.05 }}
-              whileHover={{ scale: 1.02 }}
+              transition={{ delay: index * 0.02 }}
+              whileHover={{ y: -4, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={action.onClick}
-              className={`group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-xl p-5 border border-slate-200 hover:shadow-lg transition-all duration-300 text-left ${action.disabled ? 'opacity-60 cursor-not-allowed grayscale' : ''}`}
+              className="group relative bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 hover:border-indigo-100 transition-all text-left flex flex-col gap-3 overflow-hidden"
             >
-              <div className={`absolute inset-0 ${action.gradient} opacity-0 ${!action.disabled && 'group-hover:opacity-10'} transition-opacity duration-300`}></div>
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-r ${action.color} shadow-lg`}>
-                <action.icon className="w-6 h-6 text-white" />
+              {/* Subtle background glow */}
+              <div className={`absolute -right-4 -bottom-4 w-16 h-16 rounded-full bg-gradient-to-br ${action.color} opacity-0 group-hover:opacity-10 blur-xl transition-opacity duration-500`}></div>
+
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${action.color} shadow-lg shadow-indigo-500/10 group-hover:rotate-6 transition-transform duration-300`}>
+                <action.icon className="w-5 h-5 text-white" />
               </div>
-              <h3 className="font-semibold text-slate-800 mb-1">{action.title}</h3>
-              <p className="text-xs text-slate-500">{action.description}</p>
-              {!action.disabled && <FaArrowRight className="absolute bottom-4 right-4 w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-indigo-600 transition-all" />}
+              <div className="min-w-0">
+                <h3 className="text-xs   text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight mb-1">{action.title}</h3>
+                <p className="text-[10px] font-medium text-slate-400 line-clamp-2 leading-relaxed">{action.description}</p>
+              </div>
             </motion.button>
           ))}
-        </motion.div>
+        </div>
       </div>
 
 

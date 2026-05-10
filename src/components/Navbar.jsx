@@ -200,7 +200,7 @@ const Navbar = ({
 
     return (
         <>
-            <nav className="sticky top-0 z-30 h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
+            <nav className="sticky top-0 z-40 h-16 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-lg">
                 <div className="px-4 sm:px-6 lg:px-8 h-full">
                     <div className="flex items-center justify-between h-full">
 

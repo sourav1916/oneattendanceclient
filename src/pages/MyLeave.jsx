@@ -320,7 +320,7 @@ const CancelLeaveModal = ({ leave, onClose, onSuccess }) => {
   return (
     <AnimatePresence>
       {leave && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <ModalScrollLock />
           <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="relative bg-white w-full max-w-md rounded-xl shadow-2xl overflow-hidden">
             <div className="border-b border-gray-100 bg-white px-6 py-4 flex items-center justify-between">

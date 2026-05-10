@@ -116,7 +116,7 @@ const ActionMenu = ({
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden"
+            className="absolute right-0 top-full z-[100] mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden"
           >
             {[
               { label: 'View Details', icon: <FaEye size={13} />, onClick: () => { onView(account); setOpen(false); }, disabled: false, className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
@@ -855,7 +855,7 @@ const BankAccountManagement = () => {
       <AnimatePresence>
         {viewModal.open && viewModal.account && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4 overflow-y-auto"
             onMouseDown={(e) => e.target === e.currentTarget && closeViewModal()}>
             <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-lg flex flex-col overflow-hidden max-h-[90vh]">
@@ -932,7 +932,7 @@ const BankAccountManagement = () => {
         {showModal && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
             onMouseDown={(e) => { if (e.target === e.currentTarget) closeModal(); }}
           >
             <ModalScrollLock />

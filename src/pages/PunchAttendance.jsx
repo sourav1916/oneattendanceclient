@@ -278,7 +278,7 @@ const PunchAttendance = () => {
                     <FaClock className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-slate-800 leading-tight">Shift Actions</h3>
+                    <h3 className="text-sm sm:text-base   text-slate-800 leading-tight">Shift Actions</h3>
                     <p className="text-xs text-slate-500 hidden sm:block">Start or end your work session</p>
                   </div>
                 </div>
@@ -306,7 +306,7 @@ const PunchAttendance = () => {
                     <FaCoffee className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-slate-800 leading-tight">Break Time</h3>
+                    <h3 className="text-sm sm:text-base   text-slate-800 leading-tight">Break Time</h3>
                     <p className="text-xs text-slate-500 hidden sm:block">Manage your rest periods</p>
                   </div>
                 </div>

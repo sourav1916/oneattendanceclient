@@ -551,7 +551,7 @@ const SettingsPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6 sm:mb-8"
         >
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 mb-1 sm:mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl   text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 mb-1 sm:mb-2">
             Settings
           </h1>
           <p className="text-sm sm:text-base lg:text-lg text-gray-600">
