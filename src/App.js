@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/Landing";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 import MainLayout from "./layout/MainLayout";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -273,6 +274,7 @@ function AppContent() {
             user ? <Navigate to={mustSelectCompany ? "/login" : "/home"} replace /> : <Signup />
           }
         />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Protected Routes - Only accessible after company selection */}
         <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>} />

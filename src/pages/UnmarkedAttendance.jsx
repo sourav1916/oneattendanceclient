@@ -9,7 +9,7 @@ import {
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
 import TimePickerField from '../components/TimePicker';
-import { ManagementCard, ManagementButton, EmployeeSelect } from '../components/common';
+import { ManagementCard, ManagementButton, EmployeeSelect, RefreshButton } from '../components/common';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
@@ -999,9 +999,10 @@ const UnmarkedAttendance = () => {
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const lastRequestKeyRef = useRef('');
 
-  const fetchAttendance = useCallback(async () => {
+  const fetchAttendance = useCallback(async (force = false) => {
     const requestKey = `${pagination.page}-${pagination.limit}-${search}-${dayStatus}-${selectedEmployee}-${JSON.stringify(dateFilter)}`;
-    if (requestKey === lastRequestKeyRef.current && !loading) return;
+    if (!force && requestKey === lastRequestKeyRef.current && !loading) return;
+    if (force) lastRequestKeyRef.current = '';
     lastRequestKeyRef.current = requestKey;
 
     setLoading(true);
@@ -1235,15 +1236,23 @@ const UnmarkedAttendance = () => {
             </div>
 
             {/* Advanced Date Filter */}
-            <div className="w-full sm:w-auto sm:min-w-[180px]">
-              <AdvancedDateFilter
-                value={dateFilter}
-                onChange={handleDateChange}
-                buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-                placeholder="Pick Date"
-              />
-            </div>
+          <div className="w-full sm:w-auto sm:min-w-[180px]">
+            <AdvancedDateFilter
+              value={dateFilter}
+              onChange={handleDateChange}
+              buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+              placeholder="Pick Date"
+            />
           </div>
+
+          <RefreshButton
+            loading={loading}
+            onClick={() => fetchAttendance(true)}
+            className="w-full sm:w-auto"
+          >
+            Refresh
+          </RefreshButton>
+        </div>
         </motion.div>
 
         {/* ── Bulk Selection Control Bar (below filter, above cards) ── */}

@@ -306,6 +306,15 @@ const Login = () => {
                           <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setFocusedField('password')} onBlur={() => setFocusedField(null)} disabled={isLoading} className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />
                           <button type="button" onClick={() => setShowPassword(!showPassword)} disabled={isLoading} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 disabled:opacity-50">{showPassword ? "👁️" : "👁️‍🗨️"}</button>
                         </div>
+                        <div className="flex items-center justify-end -mt-2">
+                          <Link
+                            to="/forgot-password"
+                            state={{ email }}
+                            className="text-sm font-semibold text-blue-600 hover:underline"
+                          >
+                            Forgot password?
+                          </Link>
+                        </div>
                         <motion.button whileHover={{ scale: isLoading ? 1 : 1.02 }} whileTap={{ scale: isLoading ? 1 : 0.98 }} onClick={handleRequestOtp} disabled={isLoading} className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60">
                           {loadingAction === "request-otp" ? <FaSpinner className="mx-auto h-5 w-5 animate-spin" /> : "Request OTP"}
                         </motion.button>
