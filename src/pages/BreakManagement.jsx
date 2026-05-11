@@ -148,6 +148,8 @@ const buildBreakRow = (employee, attendanceRecord, fallbackDate = '') => {
     total_break_mins: usedBreakMinutes,
     break_used_mins: usedBreakMinutes,
     break_max_mins: maxBreakMinutes,
+    has_break_history: true,
+    has_open_break: Boolean(startTime && !endTime),
     calculations: {
       ...(attendanceRecord?.calculations || {}),
       break_minutes: maxBreakMinutes,
@@ -177,6 +179,12 @@ const normalizeBreakEmployee = (row, fallbackDate = '') => {
     return acc + (Number(mins) || 0);
   }, 0);
   const totalBreakMaxMins = sourceAttendances.reduce((acc, item) => acc + (Number(item?.calculations?.break_minutes ?? 0) || 0), 0);
+  const hasOpenBreak = sourceAttendances.some((item) => {
+    const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+    const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+    return Boolean(startTime && !endTime);
+  });
+  const isVerified = sourceAttendances.length > 0 && sourceAttendances.every((item) => item?.is_verified !== false);
 
   if (!primaryAttendance && !row?.attendance_date && !fallbackDate) {
     return {
@@ -198,10 +206,13 @@ const normalizeBreakEmployee = (row, fallbackDate = '') => {
       total_break_mins: 0,
       break_used_mins: 0,
       break_max_mins: 0,
+      has_break_history: false,
+      has_open_break: false,
       calculations: { break_minutes: 0 },
       on_break: false,
       attendance_record: null,
       shift: row?.shift || null,
+      is_verified: false,
     };
   }
 
@@ -212,10 +223,13 @@ const normalizeBreakEmployee = (row, fallbackDate = '') => {
     total_break_mins: totalBreakUsedMins,
     break_used_mins: totalBreakUsedMins,
     break_max_mins: totalBreakMaxMins,
+    has_break_history: sourceAttendances.length > 0,
+    has_open_break: hasOpenBreak,
     calculations: {
       ...(mapped.calculations || {}),
       break_minutes: totalBreakMaxMins,
     },
+    is_verified: isVerified,
   };
 };
 
@@ -229,10 +243,18 @@ const buildBreakDefaults = (employee, action) => {
     getTimeValue(record?.break_end) ||
     getTimeValue(record?.punch_out) ||
     getTimeValue(record?.end_time);
+  const openBreak = Array.isArray(employee?.breaks)
+    ? employee.breaks.find((item) => {
+        const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+        const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+        return Boolean(startTime && !endTime);
+      })
+    : null;
+  const openBreakStart = getTimeValue(openBreak?.break_start) || getTimeValue(openBreak?.punch_in) || '';
 
   return {
-    breakStart: startFromRecord || '',
-    breakEnd: endFromRecord || '',
+    breakStart: action === 'live_break_end' ? (openBreakStart || startFromRecord || '') : (startFromRecord || ''),
+    breakEnd: action === 'live_break_start' ? '' : (endFromRecord || ''),
   };
 };
 
@@ -334,6 +356,18 @@ const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
   const [breakStart, setBreakStart] = useState(defaults.breakStart);
   const [breakEnd, setBreakEnd] = useState('');
   const [notes, setNotes] = useState('');
+  const openBreakStart = useMemo(() => {
+    const breaks = Array.isArray(employee?.breaks) ? employee.breaks : [];
+    const openBreak = breaks.find((item) => {
+      const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+      const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+      return Boolean(startTime && !endTime);
+    });
+    return getTimeValue(openBreak?.break_start) || getTimeValue(openBreak?.punch_in) || '';
+  }, [employee?.breaks]);
+  const requiresStart = action === 'add_break' || action === 'live_break_start';
+  const requiresEnd = action === 'add_break' || action === 'live_break_end';
+  const isSaveDisabled = loading || (requiresStart && !breakStart) || (requiresEnd && !breakEnd);
 
   useEffect(() => {
     setBreakStart(defaults.breakStart);
@@ -342,22 +376,32 @@ const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
   }, [defaults.breakStart, defaults.breakEnd, employee?.id, action]);
 
   const handleSubmit = async () => {
-    if (!breakStart) return toast.error('Start time required');
+    if (requiresStart && !breakStart) return toast.error('Start time required');
+    if (requiresEnd && !breakEnd) return toast.error('End time required');
     setLoading(true);
     try {
       const resolvedDate = employee.date
         || employee.attendance_record?.attendance_date
         || employee.attendance_record?.punch_date
         || new Date().toISOString().slice(0, 10);
-      await onSubmit({
+      const payload = {
         employee_id: employee.employee_id,
         date: resolvedDate,
         type: 'break',
         status: 'manual',
-        punch_in: breakStart,
-        punch_out: breakEnd || null,
         notes,
-      });
+      };
+
+      if (action === 'live_break_start') {
+        payload.break_start = breakStart;
+      } else if (action === 'live_break_end') {
+        payload.break_end = breakEnd;
+      } else {
+        payload.break_start = breakStart;
+        payload.break_end = breakEnd || null;
+      }
+
+      await onSubmit(payload);
     } finally {
       setLoading(false);
     }
@@ -373,15 +417,45 @@ const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
       footer={
         <>
           <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
-          <ManagementButton tone="amber" loading={loading} onClick={handleSubmit}>Save Break</ManagementButton>
+          <ManagementButton tone="amber" loading={loading} disabled={isSaveDisabled} onClick={handleSubmit}>
+            Save Break
+          </ManagementButton>
         </>
       }
     >
       <div className="space-y-6 p-8">
-        <div className="grid grid-cols-2 gap-4">
-          <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
-          <TimePickerField label="End (Opt)" value={breakEnd} onChange={setBreakEnd} />
-        </div>
+        {action === 'add_break' && (
+          <div className="grid grid-cols-2 gap-4">
+            <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
+            <TimePickerField label="End" value={breakEnd} onChange={setBreakEnd} />
+          </div>
+        )}
+        {action === 'live_break_start' && (
+          <div className="grid grid-cols-1 gap-4">
+            <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Start break only</p>
+              <p className="mt-1 text-xs font-semibold text-emerald-700">
+                This action stores only the break start time.
+              </p>
+            </div>
+          </div>
+        )}
+        {action === 'live_break_end' && (
+          <div className="grid grid-cols-1 gap-4">
+            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Open break start</p>
+              <p className="mt-1 text-sm font-black text-slate-800">{openBreakStart || breakStart || '--'}</p>
+            </div>
+            <TimePickerField label="End" value={breakEnd} onChange={setBreakEnd} />
+            <div className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-rose-600">End break only</p>
+              <p className="mt-1 text-xs font-semibold text-rose-700">
+                This action stores only the break end time.
+              </p>
+            </div>
+          </div>
+        )}
         <div>
           <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
           <textarea
@@ -596,6 +670,27 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
   const barPct = fallbackMax > 0 ? Math.min(100, Math.round((used / fallbackMax) * 100)) : 0;
   const over = fallbackMax > 0 ? used > fallbackMax : false;
   const statusCfg = STATUS_CONFIG[emp.status];
+  const breaks = Array.isArray(emp.breaks) ? emp.breaks : [];
+  const hasBreakHistory = breaks.length > 0;
+  const allBreaksComplete = breaks.every((item) => {
+    const start = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+    const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+    return Boolean(start && end);
+  });
+  const hasOpenBreak = Boolean(emp.has_open_break || breaks.some((item) => {
+    const start = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+    const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+    return Boolean(start && !end);
+  }));
+  const canAddBreak = allBreaksComplete && !hasOpenBreak;
+  const isVerified = hasBreakHistory && breaks.every((item) => item?.is_verified !== false);
+  const cardToneClass = !hasBreakHistory || !isVerified
+    ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
+    : 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70';
+  const verificationLabel = !hasBreakHistory ? 'No Break Yet' : (isVerified ? 'Verified' : 'Pending');
+  const verificationLabelClass = !hasBreakHistory || !isVerified
+    ? 'bg-amber-600 text-white'
+    : 'bg-emerald-600 text-white';
   const startTime = emp.start_time || emp.attendance_record?.break_start?.time || emp.attendance_record?.punch_in?.time || '';
   const endTime = emp.end_time || emp.attendance_record?.break_end?.time || emp.attendance_record?.punch_out?.time || '';
   return (
@@ -616,8 +711,12 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
         subtitle={`[${emp.employee_code}]`}
         accent={emp.on_break ? 'orange' : 'slate'}
         icon={<FaUser className="text-slate-500" />}
+        className={cardToneClass}
         badge={
           <div className="flex items-center gap-1.5">
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${verificationLabelClass}`}>
+              {verificationLabel}
+            </span>
             {statusCfg && (
               <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
                 {statusCfg.label}
@@ -665,13 +764,34 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
-          <ManagementButton size="sm" tone="amber" variant="soft" fullWidth onClick={() => onAction(emp, 'add_break')}>
+          <ManagementButton
+            size="sm"
+            tone="amber"
+            variant="soft"
+            fullWidth
+            disabled={!canAddBreak}
+            onClick={() => onAction(emp, 'add_break')}
+          >
             <FaPlus size={9} className="mr-1" /> Add Break
           </ManagementButton>
-          <ManagementButton size="sm" tone="emerald" variant="soft" fullWidth onClick={() => onAction(emp, 'live_break_start')}>
+          <ManagementButton
+            size="sm"
+            tone="emerald"
+            variant="soft"
+            fullWidth
+            disabled={hasOpenBreak}
+            onClick={() => onAction(emp, 'live_break_start')}
+          >
             <FaPlay size={9} className="mr-1" /> Start Break
           </ManagementButton>
-          <ManagementButton size="sm" tone="rose" variant="soft" fullWidth onClick={() => onAction(emp, 'live_break_end')}>
+          <ManagementButton
+            size="sm"
+            tone="rose"
+            variant="soft"
+            fullWidth
+            disabled={!hasOpenBreak}
+            onClick={() => onAction(emp, 'live_break_end')}
+          >
             <FaStop size={9} className="mr-1" /> End Break
           </ManagementButton>
         </div>

@@ -13,8 +13,17 @@ const formatTime = (h, m, s = "00") => {
 /**
  * Parse helper for time strings
  */
+const getCurrentTimeParts = () => {
+  const now = new Date();
+  return {
+    h: now.getHours(),
+    m: now.getMinutes(),
+    s: now.getSeconds(),
+  };
+};
+
 const parseTime = (timeStr) => {
-  if (!timeStr || typeof timeStr !== 'string') return { h: 9, m: 0, s: 0 };
+  if (!timeStr || typeof timeStr !== 'string') return getCurrentTimeParts();
   const parts = timeStr.split(":");
   return {
     h: parseInt(parts[0]) || 0,
