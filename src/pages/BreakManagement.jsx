@@ -388,7 +388,6 @@ const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
         employee_id: employee.employee_id,
         date: resolvedDate,
         type: 'break',
-        status: 'manual',
         notes,
       };
 
@@ -996,70 +995,68 @@ const BreakManagement = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
+          className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm mb-6"
         >
-          {/* 1. Search Field */}
-          <div className="w-full lg:w-1/3 xl:w-2/5 relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-            <input
-              type="text"
-              placeholder="Search by name, code or email..."
-              value={search}
-              onChange={e => handleSearch(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => handleSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)] gap-3">
+            {/* Search Field */}
+            <div className="min-w-0">
+              <div className="relative">
+                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                <input
+                  type="text"
+                  placeholder="Search by name, code or email..."
+                  value={search}
+                  onChange={e => handleSearch(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-9 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                />
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => handleSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
+                  >
+                    <FaTimes size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filters Wrapper */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(140px,170px)_minmax(0,1fr)_minmax(180px,220px)_auto] gap-2.5 items-center">
+              <div className="min-w-0">
+                <StatusSelect
+                  value={dayStatus}
+                  onChange={handleStatusChange}
+                  options={STATUS_OPTIONS}
+                />
+              </div>
+
+              <div className="min-w-0">
+                <EmployeeSelect
+                  value={selectedEmployee}
+                  onChange={handleEmployeeChange}
+                  placeholder="Specific Employee..."
+                />
+              </div>
+
+              <div className="min-w-0">
+                <AdvancedDateFilter
+                  value={dateFilter}
+                  onChange={handleDateChange}
+                  buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                  placeholder="Pick Date"
+                />
+              </div>
+
+              <RefreshButton
+                loading={loading}
+                onClick={() => fetchBreaks(true)}
+                className="w-full xl:w-auto"
               >
-                <FaTimes size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* 2. Filters Wrapper */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 lg:gap-4 w-full lg:w-auto lg:flex-1 lg:justify-end">
-
-            {/* Day Status Select */}
-            <div className="w-full sm:w-auto sm:min-w-[140px]">
-              <StatusSelect
-                value={dayStatus}
-                onChange={handleStatusChange}
-                options={STATUS_OPTIONS}
-              />
+                Refresh
+              </RefreshButton>
             </div>
-
-            {/* Employee Select */}
-            <div className="w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-56">
-              <EmployeeSelect
-                value={selectedEmployee}
-                onChange={handleEmployeeChange}
-                placeholder="Specific Employee..."
-              />
-            </div>
-
-            {/* Advanced Date Filter */}
-          <div className="w-full sm:w-auto sm:min-w-[180px]">
-            <AdvancedDateFilter
-              value={dateFilter}
-              onChange={handleDateChange}
-              buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-              placeholder="Pick Date"
-            />
           </div>
-
-          <RefreshButton
-            loading={loading}
-            onClick={() => fetchBreaks(true)}
-            className="w-full sm:w-auto"
-          >
-            Refresh
-          </RefreshButton>
-        </div>
-
-
         </motion.div>
 
         {/* ── Bulk Selection Control Bar (below filter, above cards) ── */}

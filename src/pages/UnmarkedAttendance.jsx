@@ -258,8 +258,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
     notes         = '',
     isOvertime    = false,
     isDeductible  = false,
-    leaveStatus   = 'paid',
-    leaveType     = null,
+    leaveType     = 'paid',
+    leaveTypeValue = null,
   } = options;
 
   const base = {
@@ -320,8 +320,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status: 'leave',
-        leave_status: leaveStatus,
-        ...(leaveType ? { leave_type: leaveType } : {}),
+        leave_type: leaveType,
+        ...(leaveType === 'paid' && leaveTypeValue ? { leave_type_value: leaveTypeValue } : {}),
       };
 
     case 'actual_data': // Bulk: use shift times
@@ -444,8 +444,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     const rowPunchOut = getExactPunchTime(employee?.primary_punch_out || employee?.attendance_record?.punch_out || employee?.attendance_record?.end_time);
     const shiftIn = getExactPunchTime(employee?.shift_start) || '09:00';
     const shiftOut = getExactPunchTime(employee?.shift_end) || '18:00';
-    const defaultIn  = hasRowPunchData ? (rowPunchIn || shiftIn) : '';
-    const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : '';
+    const defaultIn  = hasRowPunchData ? (rowPunchIn || shiftIn) : shiftIn;
+    const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : shiftOut;
     setPunchIn(defaultIn);
     setPunchOut(defaultOut);
     setIsOt(Boolean(employee?.is_overtime || employee?.is_ot || employee?.flags?.overtime?.enabled || (employee?.calculations?.overtime_minutes || 0) > 0));
@@ -458,7 +458,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
   useEffect(() => {
     if (activeTab !== 'half_day') return;
-    if (!employee?.has_punch_data) return;
     const { punchIn: autoPunchIn, punchOut: autoPunchOut } = getHalfDayWindow(
       employee?.shift_start,
       employee?.shift_end,
@@ -555,13 +554,13 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       if (activeTab === 'paid_leave') {
         if (leaveSubTab === 'paid') {
           if (!selectedLeave) { toast.error('Please select a leave type'); return; }
-          options.leaveStatus = 'paid';
-          options.leaveType = selectedLeave.type === 'leave'
+          options.leaveType = 'paid';
+          options.leaveTypeValue = selectedLeave.type === 'leave'
             ? selectedLeave.data?.code
             : selectedLeave.type === 'weekend' ? 'Weekend' : 'Holiday';
         } else {
-          options.leaveStatus = 'unpaid';
-          options.leaveType = null;
+          options.leaveType = 'unpaid';
+          options.leaveTypeValue = null;
         }
       }
 
@@ -1304,44 +1303,48 @@ const UnmarkedAttendance = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
+          className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm"
         >
-          {/* Search */}
-          <div className="w-full lg:w-1/3 xl:w-2/5 relative">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, code or email..."
-              value={search}
-              onChange={e => handleSearch(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-11 pr-10 text-sm font-medium text-gray-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition"
-            />
-            {search && (
-              <button type="button" onClick={() => handleSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <FaTimes size={12} />
-              </button>
-            )}
-          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)] gap-3">
+            {/* Search */}
+            <div className="min-w-0">
+              <div className="relative">
+                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                <input
+                  type="text"
+                  placeholder="Search by name, code or email..."
+                  value={search}
+                  onChange={e => handleSearch(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-9 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                />
+                {search && (
+                  <button type="button" onClick={() => handleSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <FaTimes size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full lg:w-auto lg:flex-1 lg:justify-end">
-            <div className="w-full sm:w-auto sm:min-w-[140px]">
-              <StatusSelect value={dayStatus} onChange={handleStatusChange} options={STATUS_OPTIONS} />
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(140px,170px)_minmax(0,1fr)_minmax(180px,220px)_auto] gap-2.5 items-center">
+              <div className="min-w-0">
+                <StatusSelect value={dayStatus} onChange={handleStatusChange} options={STATUS_OPTIONS} />
+              </div>
+              <div className="min-w-0">
+                <EmployeeSelect value={selectedEmployee} onChange={handleEmployeeChange} placeholder="Specific Employee..." />
+              </div>
+              <div className="min-w-0">
+                <AdvancedDateFilter
+                  value={dateFilter}
+                  onChange={handleDateChange}
+                  buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                  placeholder="Pick Date"
+                />
+              </div>
+              <RefreshButton loading={loading} onClick={() => { lastFetchKeyRef.current = ''; fetchAttendance(true); }} className="w-full xl:w-auto">
+                Refresh
+              </RefreshButton>
             </div>
-            <div className="w-full sm:w-auto sm:flex-1 lg:flex-none lg:w-56">
-              <EmployeeSelect value={selectedEmployee} onChange={handleEmployeeChange} placeholder="Specific Employee..." />
-            </div>
-            <div className="w-full sm:w-auto sm:min-w-[180px]">
-              <AdvancedDateFilter
-                value={dateFilter}
-                onChange={handleDateChange}
-                buttonClassName="w-full sm:w-auto inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-                placeholder="Pick Date"
-              />
-            </div>
-            <RefreshButton loading={loading} onClick={() => { lastFetchKeyRef.current = ''; fetchAttendance(true); }} className="w-full sm:w-auto">
-              Refresh
-            </RefreshButton>
           </div>
         </motion.div>
 
