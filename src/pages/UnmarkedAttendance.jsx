@@ -979,6 +979,7 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
 // ─── EMPLOYEE CARD ─────────────────────────────────────────────────────────────
 const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
   const statusCfg = STATUS_CONFIG[emp.day_status] || STATUS_CONFIG.unmarked;
+  const cardActionsDisabled = isSelectionMode && selected;
   const verificationCardClass = emp.is_verified
     ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
     : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70';
@@ -1014,6 +1015,7 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
             </span>
             <button
               onClick={e => { e.stopPropagation(); onAction(emp, 'logs'); }}
+              disabled={cardActionsDisabled}
               className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm"
               title="View Logs"
             >
@@ -1077,12 +1079,12 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
           </div>
           {/* Action buttons */}
           <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
-            <ManagementButton size="sm" tone="emerald" variant={emp.day_status === 'present'    ? 'solid' : 'soft'}    onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
-            <ManagementButton size="sm" tone="blue"    variant={emp.day_status === 'half_day'   ? 'solid' : 'soft'}    onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
-            <ManagementButton size="sm" tone="rose"    variant={emp.day_status === 'absent'     ? 'solid' : 'soft'}    onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-            <ManagementButton size="sm" tone="slate"   variant={Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) ? 'solid' : 'outline'} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
-            <ManagementButton size="sm" tone="amber"   variant={Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) ? 'solid' : 'outline'} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
-            <ManagementButton size="sm" tone="violet"  variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
+            <ManagementButton size="sm" tone="emerald" variant={emp.day_status === 'present'    ? 'solid' : 'soft'}    disabled={cardActionsDisabled} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
+            <ManagementButton size="sm" tone="blue"    variant={emp.day_status === 'half_day'   ? 'solid' : 'soft'}    disabled={cardActionsDisabled} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
+            <ManagementButton size="sm" tone="rose"    variant={emp.day_status === 'absent'     ? 'solid' : 'soft'}    disabled={cardActionsDisabled} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
+            <ManagementButton size="sm" tone="slate"   variant={Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
+            <ManagementButton size="sm" tone="amber"   variant={Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+            <ManagementButton size="sm" tone="violet"  variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
           </div>
         </div>
       </ManagementCard>

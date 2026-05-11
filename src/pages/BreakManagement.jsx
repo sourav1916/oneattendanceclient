@@ -691,6 +691,7 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
   const verificationLabelClass = !hasBreakHistory || !isVerified
     ? 'bg-amber-600 text-white'
     : 'bg-emerald-600 text-white';
+  const cardActionsDisabled = isSelectionMode && selected;
   const startTime = emp.start_time || emp.attendance_record?.break_start?.time || emp.attendance_record?.punch_in?.time || '';
   const endTime = emp.end_time || emp.attendance_record?.break_end?.time || emp.attendance_record?.punch_out?.time || '';
   return (
@@ -729,6 +730,7 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
             )}
             <button
             onClick={(e) => { e.stopPropagation(); onAction(emp, 'today_breaks'); }}
+            disabled={cardActionsDisabled}
             className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm ml-0.5"
             title="View Today's Breaks"
           >
@@ -769,7 +771,7 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
             tone="amber"
             variant="soft"
             fullWidth
-            disabled={!canAddBreak}
+            disabled={!canAddBreak || cardActionsDisabled}
             onClick={() => onAction(emp, 'add_break')}
           >
             <FaPlus size={9} className="mr-1" /> Add Break
@@ -779,7 +781,7 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
             tone="emerald"
             variant="soft"
             fullWidth
-            disabled={hasOpenBreak}
+            disabled={hasOpenBreak || cardActionsDisabled}
             onClick={() => onAction(emp, 'live_break_start')}
           >
             <FaPlay size={9} className="mr-1" /> Start Break
@@ -789,7 +791,7 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
             tone="rose"
             variant="soft"
             fullWidth
-            disabled={!hasOpenBreak}
+            disabled={!hasOpenBreak || cardActionsDisabled}
             onClick={() => onAction(emp, 'live_break_end')}
           >
             <FaStop size={9} className="mr-1" /> End Break
