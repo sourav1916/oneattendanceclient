@@ -372,6 +372,17 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
     () => leaveTypes.find((type) => String(type.id) === String(form.leave_config_id)) || null,
     [leaveTypes, form.leave_config_id]
   );
+  const leaveTypeSelectOptions = useMemo(
+    () => leaveTypes.map((type) => ({
+      value: type.id,
+      label: `${type.name}${type.code ? ` (${type.code})` : ''}${!type.is_paid ? ' (Unpaid)' : ''}`,
+    })),
+    [leaveTypes]
+  );
+  const selectedLeaveTypeOption = useMemo(
+    () => leaveTypeSelectOptions.find((opt) => String(opt.value) === String(form.leave_config_id)) || null,
+    [leaveTypeSelectOptions, form.leave_config_id]
+  );
   // Direct balance lookup by leave_config_id since leaveTypes are derived from balances
   const selectedLeaveBalance = useMemo(() => {
     if (!selectedLeaveType) return null;
@@ -573,26 +584,38 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Leave Type <span className="text-rose-500">*</span></label>
             <SelectField
-              options={leaveTypes.map((type) => ({
-                value: type.id,
-                label: `${type.name}${type.code ? ` (${type.code})` : ''} ${!type.is_paid ? '(Unpaid)' : ''}`,
-              }))}
-              value={leaveTypes
-                .map((type) => ({
-                  value: type.id,
-                  label: `${type.name}${type.code ? ` (${type.code})` : ''} ${!type.is_paid ? '(Unpaid)' : ''}`,
-                }))
-                .find((opt) => String(opt.value) === String(form.leave_config_id))}
+              options={leaveTypeSelectOptions}
+              value={selectedLeaveTypeOption}
               onChange={(option) => setForm((prev) => ({ ...prev, leave_config_id: option ? option.value : '' }))}
               placeholder="Choose leave type..."
               isClearable
               styles={{
                 control: (base) => ({
                   ...base,
+                  minHeight: '48px',
                   borderRadius: '12px',
                   borderColor: '#e2e8f0',
-                  padding: '2px',
-                  '&:hover': { borderColor: '#8b5cf6' }
+                  boxShadow: 'none',
+                  '&:hover': { borderColor: '#8b5cf6' },
+                }),
+                valueContainer: (base) => ({
+                  ...base,
+                  padding: '0 14px',
+                }),
+                input: (base) => ({
+                  ...base,
+                  margin: 0,
+                  padding: 0,
+                }),
+                placeholder: (base) => ({
+                  ...base,
+                  color: '#94a3b8',
+                  fontWeight: 500,
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  color: '#334155',
+                  fontWeight: 500,
                 })
               }}
             />
@@ -943,17 +966,18 @@ const MyLeave = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  return (
-    <ManagementHub
-      eyebrow={<><FaCalendarAlt size={11} /> Leave management</>}
-      title="My Leaves"
-      description="Manage your leave applications and track leave balance."
-      accent="violet"
-      actions={
-        <button
-          type="button"
-          onClick={() => setShowApply(true)}
-          className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
+    return (
+        <ManagementHub
+            eyebrow={<><FaCalendarAlt size={11} /> Leave management</>}
+            title="My Leaves"
+            description="Manage your leave applications and track leave balance."
+            accent="violet"
+            onRefresh={() => loadLeaves(pagination.page, true)}
+            actions={
+                <button
+                    type="button"
+                    onClick={() => setShowApply(true)}
+                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
         >
           <FaPlus />
           Apply Leave

@@ -687,13 +687,6 @@ export default function MyInvites() {
                 </button>
               )}
             </div>
-
-            {!loading && invites.length > 0 && (
-              <p className="text-sm text-gray-500 hidden xl:block shrink-0">
-                <span className="font-semibold text-gray-800">{invites.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> invitations
-                {debouncedSearchTerm && <span className="ml-1 text-violet-600">· "{debouncedSearchTerm}"</span>}
-              </p>
-            )}
           </div>
 
           <div className="flex w-full md:w-auto items-center justify-between md:justify-end gap-3">
@@ -701,7 +694,7 @@ export default function MyInvites() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="min-w-[150px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-violet-200 hover:bg-violet-50 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
+                className="min-w-[150px] rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>

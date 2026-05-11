@@ -133,7 +133,7 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
             {/* Trigger Button */}
             <div 
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full px-4 py-2.5 bg-white border ${error ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-200 hover:border-gray-300'} rounded-xl text-sm outline-none focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all flex items-center justify-between cursor-pointer`}
+                className={`w-full px-4 py-2.5 bg-gray-50 border ${error ? 'border-red-300 ring-1 ring-red-100' : 'border-gray-200 hover:border-gray-300'} rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer`}
             >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     {selectedEmployee ? (
@@ -178,7 +178,7 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
                                     placeholder="Search employees..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
                                     onClick={(e) => e.stopPropagation()}
                                     autoFocus
                                 />

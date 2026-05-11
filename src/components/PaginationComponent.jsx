@@ -159,7 +159,7 @@ const Pagination = ({
                             <select
                                 value={itemsPerPage}
                                 onChange={(e) => onLimitChange(Number(e.target.value))}
-                                className="appearance-none bg-white border border-slate-200 rounded-lg px-2 py-1 pr-6 text-xs font-semibold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer"
+                                className="appearance-none bg-white border border-slate-200 rounded-lg px-2 py-1 pr-6 text-sm font-semibold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer"
                             >
                                 {availableLimits.map(limit => (
                                     <option key={limit} value={limit}>{limit}</option>

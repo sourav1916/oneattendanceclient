@@ -18,6 +18,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
 import { useAuth } from "../context/AuthContext";
 import TimeDurationPickerField from "../components/TimeDurationPicker";
+import { RefreshButton } from '../components/common';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -453,7 +454,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     name="designation"
                     value={formData.designation}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition bg-white"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                   >
                     <option value="">Select designation</option>
                     {constants.designations.map(d => (
@@ -469,7 +470,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     name="employment_type"
                     value={formData.employment_type}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition bg-white"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                   >
                     <option value="">Select type</option>
                     {constants.employment_types.map(t => (
@@ -485,7 +486,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     name="salary_type"
                     value={formData.salary_type}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition bg-white"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                   >
                     <option value="">Select type</option>
                     {constants.salary_types.map(s => (
@@ -504,7 +505,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     name="permission_package_id"
                     value={formData.permission_package_id}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition bg-white"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                   >
                     <option value="">Select permission package</option>
                     {permissionPackages.map(pkg => (
@@ -1244,12 +1245,16 @@ export default function InvitePackageManagement() {
               </div>
             </div>
 
-            <div className="flex flex-row sm:items-center gap-3 justify-end">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaBox className="h-4 w-4 text-indigo-500" />
                 <span className="font-medium text-gray-700">{pagination.total}</span>
                 <span className="text-gray-500">packages</span>
               </div>
+
+              <RefreshButton loading={loading} onClick={() => fetchPackages(pagination.page, debouncedSearchTerm, true)}>
+                Refresh
+              </RefreshButton>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -1293,12 +1298,6 @@ export default function InvitePackageManagement() {
                 </button>
               )}
             </div>
-
-            {!loading && packages.length > 0 && (
-              <p className="text-sm text-gray-500 hidden xl:block border-l pl-4 border-gray-200">
-                <span className="font-semibold text-gray-800">{packages.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> packages
-              </p>
-            )}
           </div>
 
           {/* Right Section: Controls */}

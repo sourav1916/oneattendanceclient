@@ -114,7 +114,7 @@ const SelectColumn = ({ label, value, options, onChange, className = "" }) => (
         const val = e.target.value;
         onChange(isNaN(val) || val === "" ? val : Number(val));
       }}
-      className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      className="h-12 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
     >
       {options.map((option) => (
         <option key={option} value={option}>

@@ -17,7 +17,7 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import { RefreshButton } from '../components/common';
+import { ManagementHub, RefreshButton } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
 import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
@@ -480,39 +480,34 @@ const CompanyManagement = () => {
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
     return (
-        <div className="min-h-screen bg-slate-50 p-3 sm:p-6 md:p-8 font-sans">
-            <div className="max-w-7xl mx-auto">
-
-                {/* Header */}
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold">
-                            <span className="bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
-                                Company Management
-                            </span>
-                        </h1>
-                        <p className="text-gray-400 text-sm mt-1">Manage your registered companies and their details</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
-                            <FaBuilding className="text-blue-400" />
-                            <span className="font-semibold text-gray-700">{stats.total}</span>
-                            <span className="text-gray-400">companies</span>
-                        </div>
-                        <RefreshButton loading={loading} onClick={() => fetchCompanies(pagination.page, debouncedSearch, true)}>
-                            Refresh
-                        </RefreshButton>
-                        <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
-                            onClick={() => setCreateModalOpen(true)}
-                            className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
-                            <FaPlus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                            <span className="text-sm">Add Company</span>
-                            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-                        </motion.button>
-                    </div>
-                </motion.div>
-
+        <ManagementHub
+            eyebrow={<><FaBuilding size={11} /> Company settings</>}
+            title="Company Management"
+            description="Manage your registered companies and their details."
+            accent="blue"
+            summary={
+                <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                    <FaBuilding className="text-blue-400" />
+                    <span className="font-semibold text-gray-700">{stats.total}</span>
+                    <span className="text-gray-400">companies</span>
+                </div>
+            }
+            actions={
+                <>
+                    <RefreshButton loading={loading} onClick={() => fetchCompanies(pagination.page, debouncedSearch, true)}>
+                        Refresh
+                    </RefreshButton>
+                    <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => setCreateModalOpen(true)}
+                        className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
+                        <FaPlus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                        <span className="text-sm">Add Company</span>
+                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    </motion.button>
+                </>
+            }
+        >
+            <div className="space-y-8">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                     <SummaryCard icon={<FaBuilding />} label="Total Companies" value={stats.total} gradient="from-blue-400 to-indigo-500" delay={0.05} />
@@ -521,34 +516,38 @@ const CompanyManagement = () => {
                     <SummaryCard icon={<FaMapMarkerAlt />} label="With Logo" value={stats.withLogo} gradient="from-orange-400 to-amber-500" delay={0.20} />
                 </div>
 
-                {/* Search */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-6">
-                    <div className="relative">
+                {/* Search / View Toolbar */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+                >
+                    <div className="relative w-full flex-1">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                        <input type="text"
+                        <input
+                            type="text"
                             placeholder="Search by company name, city, or state..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-10 py-3.5 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/15 focus:border-blue-400 outline-none shadow-sm transition-all text-sm" />
+                            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+                        />
                         {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
                                 <FaTimes />
                             </button>
                         )}
                     </div>
-                </motion.div>
 
-                {/* View Toggle */}
-                {!loading && companies.length > 0 && (
-                    <div className="flex justify-between items-center mb-4">
-                        <p className="text-sm text-gray-500">
-                            Showing <span className="font-semibold text-gray-700">{companies.length}</span> of{' '}
-                            <span className="font-semibold text-gray-700">{stats.total}</span> companies
-                            {debouncedSearch && <span className="ml-1 text-blue-500">· "{debouncedSearch}"</span>}
-                        </p>
-                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                    <div className="flex w-full items-center justify-end lg:w-auto">
+                        {!loading && companies.length > 0 && (
+                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                        )}
                     </div>
-                )}
+                </motion.div>
 
                 {/* Loading skeleton */}
                 {loading && !companies.length && <SkeletonComponent />}
@@ -813,7 +812,7 @@ const CompanyManagement = () => {
                 onClose={() => setManageMoreTarget(null)}
                 onSuccess={handleManageMoreSuccess}
             />
-        </div>
+        </ManagementHub>
     );
 };
 

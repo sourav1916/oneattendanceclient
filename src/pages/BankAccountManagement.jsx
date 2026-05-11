@@ -206,7 +206,7 @@ const FormField = ({ label, children }) => (
 );
 
 const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 placeholder:font-normal placeholder:text-slate-400";
-const selectCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5 cursor-pointer appearance-none";
+const selectCls = "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 cursor-pointer appearance-none";
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 

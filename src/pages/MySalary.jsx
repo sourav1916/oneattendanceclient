@@ -16,6 +16,7 @@ import ModalScrollLock from '../components/ModalScrollLock';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
+import { RefreshButton } from '../components/common';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -385,20 +386,31 @@ const MyPayroll = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
             >
-                <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500 mb-2">
-                        Payroll Overview
-                    </p>
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
-                        My Payroll
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1">
-                        Review your payroll history, earnings, deductions, and attendance impact.
-                    </p>
-                </div>
-                <div className="inline-flex items-center gap-2 text-sm text-slate-600 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
-                    <FaFileInvoiceDollar className="text-blue-500" />
-                    Total: {pagination.total} records
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500 mb-2">
+                            Payroll Overview
+                        </p>
+                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                            My Payroll
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-1">
+                            Review your payroll history, earnings, deductions, and attendance impact.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3 justify-end">
+                        <div className="inline-flex items-center gap-2 text-sm text-slate-600 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
+                            <FaFileInvoiceDollar className="text-blue-500" />
+                            Total: {pagination.total} records
+                        </div>
+                        <RefreshButton
+                            loading={loading}
+                            onClick={() => fetchPayroll(pagination.page, true)}
+                            title="Refresh payroll data"
+                        >
+                            Refresh
+                        </RefreshButton>
+                    </div>
                 </div>
             </motion.div>
 

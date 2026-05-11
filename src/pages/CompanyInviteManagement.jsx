@@ -409,14 +409,6 @@ export default function CompanyInvites() {
                 </button>
               )}
             </div>
-
-            {!loading && invites.length > 0 && (
-              <p className="text-sm text-gray-500 hidden xl:block border-l pl-4 border-gray-200">
-                <span className="font-semibold text-gray-800">{invites.length}</span> of <span className="font-semibold text-gray-800">{pagination.total}</span> invitations
-              </p>
-            )}
-
-
             <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
 
             <ManagementViewSwitcher

@@ -9,6 +9,7 @@ import apiCall, { uploadFile } from '../utils/api';
 import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
+import SelectField from '../components/SelectField';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
@@ -292,6 +293,19 @@ const LeaveManagement = () => {
         return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
     }, [leaves]);
 
+    const leaveTypeFilterOptions = useMemo(
+        () => [
+            { value: '', label: 'All Leave Types' },
+            ...leaveTypeOptions,
+        ],
+        [leaveTypeOptions]
+    );
+
+    const selectedLeaveTypeFilter = useMemo(
+        () => leaveTypeFilterOptions.find((option) => option.value === typeFilter) || leaveTypeFilterOptions[0],
+        [leaveTypeFilterOptions, typeFilter]
+    );
+
     const visibleLeaves = useMemo(() => {
         if (!typeFilter) return leaves;
 
@@ -457,18 +471,13 @@ const LeaveManagement = () => {
                     {/* Right Section: View Mode */}
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 flex-col gap-1.5 sm:w-56">
-                            <select
-                                value={typeFilter}
-                                onChange={(e) => setTypeFilter(e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                            >
-                                <option value="">All Leave Types</option>
-                                {leaveTypeOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <SelectField
+                                options={leaveTypeFilterOptions}
+                                value={selectedLeaveTypeFilter}
+                                onChange={(option) => setTypeFilter(option?.value || '')}
+                                isClearable={false}
+                                placeholder="All Leave Types"
+                            />
                         </div>
                         {/* Vertical Separator */}
                         <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>

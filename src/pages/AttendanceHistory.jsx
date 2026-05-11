@@ -31,6 +31,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
+import { RefreshButton } from '../components/common';
 import { FaBriefcase } from 'react-icons/fa';
 import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
@@ -485,6 +486,40 @@ const AttendanceHistory = () => {
 
   return (
     <div>
+      {/* Header */}
+      <div className="mb-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+              <FaHistory size={11} />
+              Attendance history
+            </div>
+            <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
+              Attendance History
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Review attendance logs, breaks, and daily activity in one place.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 justify-end">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+              <FaBriefcase className="text-indigo-500" />
+              <span className="font-medium text-slate-700">{records.length}</span>
+              <span className="text-slate-500">records</span>
+            </div>
+            <RefreshButton
+              type="button"
+              loading={loading}
+              onClick={loadData}
+              title="Refresh attendance history"
+            >
+              Refresh
+            </RefreshButton>
+          </div>
+        </div>
+      </div>
+
       {/* Compact Sub Tab & Type Switcher */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
         <div className="inline-flex rounded-xl bg-slate-100 p-1">

@@ -1025,7 +1025,7 @@ const SettingsPage = () => {
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Language</p>
                     <p className="text-xs sm:text-sm text-gray-500">Select your preferred language</p>
                   </div>
-                  <select className="w-full xs:w-auto px-3 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                  <select className="w-full xs:w-auto px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
                     <option>English</option>
                     <option>Spanish</option>
                     <option>French</option>
@@ -1038,7 +1038,7 @@ const SettingsPage = () => {
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Time Zone</p>
                     <p className="text-xs sm:text-sm text-gray-500">Set your local time zone</p>
                   </div>
-                  <select className="w-full xs:w-auto px-3 py-2 text-sm sm:text-base border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                  <select className="w-full xs:w-auto px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
                     <option>UTC (GMT+0)</option>
                     <option>IST (GMT+5:30)</option>
                     <option>EST (GMT-5)</option>

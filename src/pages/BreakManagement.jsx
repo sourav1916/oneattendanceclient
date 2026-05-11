@@ -41,7 +41,7 @@ const StatusSelect = ({ value, onChange, options }) => {
     <div className="relative w-full" ref={dropdownRef}>
       <div 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-2.5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
+        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
       >
         <span className={value === 'all' ? "text-gray-400" : "font-medium text-gray-800"}>
           {selectedOption ? selectedOption.label : 'Day Status...'}
@@ -55,7 +55,7 @@ const StatusSelect = ({ value, onChange, options }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+            className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
           >
             <div className="max-h-60 overflow-y-auto p-1">
               {options.map((opt) => (
@@ -65,7 +65,7 @@ const StatusSelect = ({ value, onChange, options }) => {
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`px-3 py-2 text-sm rounded-lg cursor-pointer transition-colors ${value === opt.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  className={`px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-colors ${value === opt.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
                   {opt.label}
                 </div>
@@ -1029,7 +1029,38 @@ const BreakManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
+        <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                <FaClock size={11} />
+                Break management
+              </div>
+              <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
+                Break Management
+              </h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Monitor employee breaks, punches, and work sessions from one workspace.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 justify-end">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+                <FaHistory className="text-amber-500" />
+                <span className="font-medium text-slate-700">{pagination.total}</span>
+                <span className="text-slate-500">records</span>
+              </div>
+              <RefreshButton
+                loading={loading}
+                onClick={() => fetchBreaks(true)}
+              >
+                Refresh
+              </RefreshButton>
+            </div>
+          </div>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1086,13 +1117,6 @@ const BreakManagement = () => {
                 />
               </div>
 
-              <RefreshButton
-                loading={loading}
-                onClick={() => fetchBreaks(true)}
-                className="w-full xl:w-auto"
-              >
-                Refresh
-              </RefreshButton>
             </div>
           </div>
         </motion.div>

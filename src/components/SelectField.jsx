@@ -1,20 +1,31 @@
 import Select from "react-select";
 import { getReactSelectMenuProps, reactSelectStyles } from "./reactSelectConfig";
 
-const SelectField = ({ styles, ...props }) => {
-  const mergedStyles = {
-    ...(styles || {}),
-    menuPortal: (base, state) => {
-      const portalBase = reactSelectStyles.menuPortal(base, state);
-      return styles?.menuPortal ? styles.menuPortal(portalBase, state) : portalBase;
-    },
-  };
+const mergeSelectStyles = (styles = {}) => {
+  const customStyles = styles || {};
+  const keys = new Set([...Object.keys(reactSelectStyles), ...Object.keys(customStyles)]);
 
+  const merged = {};
+  keys.forEach((key) => {
+    const baseStyle = reactSelectStyles[key];
+    const overrideStyle = customStyles[key];
+
+    if (baseStyle && overrideStyle) {
+      merged[key] = (provided, state) => overrideStyle(baseStyle(provided, state), state);
+    } else {
+      merged[key] = overrideStyle || baseStyle;
+    }
+  });
+
+  return merged;
+};
+
+const SelectField = ({ styles, ...props }) => {
   return (
     <Select
       {...getReactSelectMenuProps()}
       {...props}
-      styles={mergedStyles}
+      styles={mergeSelectStyles(styles)}
     />
   );
 };
