@@ -642,7 +642,7 @@ const LeaveManagement = () => {
                         icon={<FaCheck className="h-6 w-6" />}
                         size="md"
                         footer={
-                            <div className="flex gap-3 w-full">
+                            <div className="flex gap-3 w-full justify-end">
                                 <button
                                     type="button"
                                     onClick={() => setApproveLeave(null)}
@@ -767,7 +767,7 @@ const LeaveManagement = () => {
                     icon={<FaCheck className="h-6 w-6" />}
                     size="md"
                     footer={
-                        <div className="flex gap-3 w-full">
+                        <div className="flex gap-3 w-full justify-end">
                             <button
                                 type="button"
                                 onClick={() => { setShowBulkApproveModal(false); setBulkApproveRemarks(''); }}

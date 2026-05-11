@@ -518,7 +518,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
       icon={isEditing ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
       size="3xl"
       footer={
-        <div className="flex gap-3 w-full sm:w-auto">
+        <div className="flex gap-3 w-full justify-end sm:w-auto">
           <button
             type="button"
             onClick={onClose}
