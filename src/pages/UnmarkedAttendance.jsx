@@ -340,6 +340,48 @@ const buildMarkPayload = (emp, action, options = {}) => {
 };
 
 // ─── STATUS SELECT ─────────────────────────────────────────────────────────────
+const buildBulkApprovePayload = (employees, action, notes, options = {}) => {
+  if (!Array.isArray(employees) || employees.length === 0) return null;
+
+  const firstDate = employees[0]?.date || employees[0]?.attendance_record?.attendance_date || '';
+  const sameDate = employees.every((emp) => {
+    const empDate = emp?.date || emp?.attendance_record?.attendance_date || '';
+    return empDate === firstDate;
+  });
+
+  if (!firstDate || !sameDate) {
+    throw new Error('Please select employees from the same attendance date');
+  }
+
+  const modeMap = {
+    actual_data: 'actual',
+    present: 'present',
+    half_day: 'half_day',
+    paid_leave: 'leave',
+    absent: 'absent',
+  };
+
+  const payload = {
+    attendance_date: firstDate,
+    employee_ids: employees.map((emp) => emp.employee_id),
+    attendance_type: 'attendance',
+    mode: modeMap[action] || action,
+    notes: notes || '',
+  };
+
+  if (action === 'half_day') {
+    payload.half_day_type = options.halfDayType === 'second_half' ? 'second_half' : 'first_half';
+  }
+
+  if (action === 'paid_leave') {
+    payload.leave_type = options.leaveType === 'unpaid' ? 'unpaid' : 'paid';
+    if (payload.leave_type === 'paid' && options.leaveTypeValue) {
+      payload.leave_type_value = options.leaveTypeValue;
+    }
+  }
+
+  return payload;
+};
 const StatusSelect = ({ value, onChange, options }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
@@ -890,17 +932,61 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
 // ─── BULK ATTENDANCE MODAL ─────────────────────────────────────────────────────
 const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit }) => {
-  const [loading, setLoading]         = useState(false);
-  const [notes, setNotes]             = useState('');
+  const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState('');
   const [halfSession, setHalfSession] = useState('first');
+  const [leaveSubTab, setLeaveSubTab] = useState('paid');
+  const [selectedLeave, setSelectedLeave] = useState(null);
+  const [leaveConfigs, setLeaveConfigs] = useState([]);
+  const [leavesLoading, setLeavesLoading] = useState(false);
 
   const actionMeta = BULK_ATTENDANCE_ACTIONS.find(a => a.id === action);
   if (!actionMeta) return null;
 
+  useEffect(() => {
+    setNotes('');
+    setHalfSession('first');
+    setLeaveSubTab('paid');
+    setSelectedLeave(null);
+  }, [action]);
+
+  useEffect(() => {
+    if (action !== 'paid_leave') return;
+    if (leaveConfigs.length > 0) return;
+
+    const fetchLeaves = async () => {
+      setLeavesLoading(true);
+      try {
+        const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+        const res = await apiCall('/leave/company', 'GET', null, companyId);
+        const data = await res.json();
+        if (data.success) setLeaveConfigs((data.data || []).filter((l) => l.is_active));
+      } catch (e) {
+        console.error('Failed to load leave types', e);
+      } finally {
+        setLeavesLoading(false);
+      }
+    };
+
+    fetchLeaves();
+  }, [action, leaveConfigs.length]);
+
   const handleConfirm = async () => {
+    if (action === 'paid_leave' && leaveSubTab === 'paid' && !selectedLeave) {
+      toast.error('Please select a paid leave value');
+      return;
+    }
+
     setLoading(true);
     try {
-      await onSubmit({ action, employees: bulkEmps, notes, halfSession });
+      await onSubmit({
+        action,
+        employees: bulkEmps,
+        notes,
+        halfSession,
+        leaveSubTab,
+        selectedLeave,
+      });
     } finally {
       setLoading(false);
     }
@@ -933,7 +1019,6 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
           <span className="text-xs font-black text-slate-400">{bulkEmps.length} selected</span>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
-          {/* Employee list */}
           <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Selected Records</p>
             <div className="max-h-44 overflow-y-auto space-y-2 pr-1">
@@ -950,15 +1035,78 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
               ))}
             </div>
           </div>
+
           {action === 'half_day' && (
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Half Day Session</label>
               <div className="grid grid-cols-2 gap-3">
-                <ManagementButton tone="sky" variant={halfSession === 'first'  ? 'solid' : 'soft'} onClick={() => setHalfSession('first')}>First Half</ManagementButton>
+                <ManagementButton tone="sky" variant={halfSession === 'first' ? 'solid' : 'soft'} onClick={() => setHalfSession('first')}>First Half</ManagementButton>
                 <ManagementButton tone="sky" variant={halfSession === 'second' ? 'solid' : 'soft'} onClick={() => setHalfSession('second')}>Second Half</ManagementButton>
               </div>
             </div>
           )}
+
+          {action === 'paid_leave' && (
+            <div className="space-y-4 rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-violet-500">Leave Type</p>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <ManagementButton tone="violet" variant={leaveSubTab === 'paid' ? 'solid' : 'soft'} onClick={() => setLeaveSubTab('paid')}>Paid</ManagementButton>
+                  <ManagementButton tone="rose" variant={leaveSubTab === 'unpaid' ? 'solid' : 'soft'} onClick={() => setLeaveSubTab('unpaid')}>Unpaid</ManagementButton>
+                </div>
+              </div>
+
+              {leaveSubTab === 'paid' && (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-violet-500">Paid Leave Value</p>
+                  {leavesLoading ? (
+                    <div className="rounded-xl border border-violet-100 bg-white px-4 py-3 text-sm font-semibold text-slate-500">Loading leave types...</div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid gap-2">
+                        {leaveConfigs.map((leave) => {
+                          const isSelected = selectedLeave?.type === 'leave' && selectedLeave?.data?.id === leave.id;
+                          return (
+                            <button
+                              key={leave.id}
+                              type="button"
+                              onClick={() => setSelectedLeave({ type: 'leave', data: leave })}
+                              className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isSelected ? 'border-violet-300 bg-violet-50 ring-2 ring-violet-100' : 'border-slate-200 bg-white hover:border-violet-200'}`}
+                            >
+                              <div>
+                                <p className="text-sm font-bold text-slate-800">{leave.name}</p>
+                                <p className="text-[10px] font-semibold text-slate-400">{leave.code}</p>
+                              </div>
+                              {isSelected && <FaCheck size={12} className="text-violet-600" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: 'weekend', label: 'Weekend' },
+                          { id: 'holiday', label: 'Holiday' },
+                        ].map((opt) => {
+                          const isSelected = selectedLeave?.type === opt.id;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => setSelectedLeave({ type: opt.id })}
+                              className={`rounded-xl border px-4 py-3 text-sm font-bold transition ${isSelected ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-600 hover:border-violet-200'}`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
             <textarea
@@ -974,8 +1122,6 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
     </Modal>
   );
 };
-
-// ─── EMPLOYEE CARD ─────────────────────────────────────────────────────────────
 const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
   const statusCfg = STATUS_CONFIG[emp.day_status] || STATUS_CONFIG.unmarked;
   const cardActionsDisabled = isSelectionMode && selected;
@@ -1222,42 +1368,31 @@ const UnmarkedAttendance = () => {
     }
   };
 
-  // POST /attendance/mark for each selected employee
-  const handleBulkSubmit = async ({ action, employees: bulkEmps, notes, halfSession }) => {
+  // PUT /attendance/approve for bulk selected employees
+  const handleBulkSubmit = async ({ action, employees: bulkEmps, notes, halfSession, leaveSubTab, selectedLeave }) => {
     if (!bulkEmps.length) return;
-    let successCount = 0;
-    let failCount    = 0;
     try {
       const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      for (const emp of bulkEmps) {
-        try {
-          const options = {
-            notes,
-            halfDayType: halfSession === 'second' ? 'second_half' : 'first_half',
-            punchIn:  emp.shift_start || '09:00',
-            punchOut: emp.shift_end   || '18:00',
-          };
-          const payload  = buildMarkPayload(emp, action, options);
-          const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
-          const result   = await response.json();
-          if (result.success) {
-            successCount++;
-          } else {
-            failCount++;
-            console.warn(`Failed for ${emp.name}: ${result.message}`);
-          }
-        } catch (e) {
-          failCount++;
-          console.error(`Error for ${emp.name}:`, e);
-        }
+      const payload = buildBulkApprovePayload(bulkEmps, action, notes, {
+        halfDayType: halfSession === 'second' ? 'second_half' : 'first_half',
+        leaveType: leaveSubTab,
+        leaveTypeValue:
+          selectedLeave?.type === 'leave'
+            ? selectedLeave?.data?.code
+            : selectedLeave?.type === 'weekend'
+              ? 'weekend'
+              : selectedLeave?.type === 'holiday'
+                ? 'holiday'
+                : null,
+      });
+
+      const response = await apiCall('/attendance/approve', 'PUT', payload, companyId);
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to approve attendance');
       }
 
-      if (successCount > 0) {
-        toast.success(`${successCount} record${successCount > 1 ? 's' : ''} updated successfully`);
-      }
-      if (failCount > 0) {
-        toast.warning(`${failCount} record${failCount > 1 ? 's' : ''} failed to update`);
-      }
+      toast.success(`${bulkEmps.length} record${bulkEmps.length > 1 ? 's' : ''} updated successfully`);
       setBulkModalOpen(false);
       setBulkAction(null);
       setSelectedIds([]);
@@ -1267,9 +1402,7 @@ const UnmarkedAttendance = () => {
       toast.error(err.message || 'Bulk update failed');
     }
   };
-
-  // ── Selection helpers ────────────────────────────────────────────────────────
-  const toggleSelectEmployee = (emp) => {
+const toggleSelectEmployee = (emp) => {
     setSelectedIds(prev =>
       prev.includes(emp.employee_id)
         ? prev.filter(id => id !== emp.employee_id)
