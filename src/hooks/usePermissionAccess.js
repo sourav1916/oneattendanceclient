@@ -34,6 +34,7 @@ const PERMISSION_ACCESS_CONFIG = {
     },
     employeeBankAccount: {
       permissions: ["bnk_create", "bnk_view", "bnk_update", "bnk_delete"],
+      disableForCompanyOwner: true,
     },
     myInvites: { permissions: null },
     holidays: {
