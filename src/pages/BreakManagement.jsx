@@ -958,27 +958,65 @@ const BreakManagement = () => {
     [employees, selectedIds]
   );
 
+  const getSelectedAttendanceDate = (emp) =>
+    emp?.date
+    || emp?.attendance_record?.attendance_date
+    || emp?.attendance_record?.punch_date
+    || '';
+
   const handleBulkReview = async (action) => {
     if (!selectedEmployees.length) return;
     setBulkSaving(true);
     try {
       const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      const punchIds = selectedEmployees
-        .map(emp => emp.attendance_id || emp.attendance_record?.attendance_id || emp.attendance_record?.id || emp.id)
-        .filter(Boolean);
-      if (punchIds.length === 0) {
-        toast.error('No attendance records selected');
-        return;
+      if (action === 'approve') {
+        const attendanceDates = selectedEmployees.map(getSelectedAttendanceDate).filter(Boolean);
+        const uniqueDates = [...new Set(attendanceDates)];
+
+        if (uniqueDates.length !== 1) {
+          toast.error('Select break records from the same date');
+          return;
+        }
+
+        const employeeIds = selectedEmployees
+          .map((emp) => emp.employee_id || emp.employeeId || emp.id)
+          .filter(Boolean);
+
+        if (employeeIds.length === 0) {
+          toast.error('No employee records selected');
+          return;
+        }
+
+        const response = await apiCall('/attendance/approve', 'PUT', {
+          attendance_date: uniqueDates[0],
+          employee_ids: employeeIds,
+          attendance_type: 'break',
+          notes: '',
+        }, companyId);
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to approve breaks');
+        }
+
+        toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} approved successfully`);
+      } else {
+        const punchIds = selectedEmployees
+          .map(emp => emp.attendance_id || emp.attendance_record?.attendance_id || emp.attendance_record?.id || emp.id)
+          .filter(Boolean);
+        if (punchIds.length === 0) {
+          toast.error('No attendance records selected');
+          return;
+        }
+
+        const response = await apiCall('/attendance/reject', 'PUT', { punch_ids: punchIds, notes: '' }, companyId);
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || `Failed to ${action}`);
+        }
+
+        toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} rejected successfully`);
       }
 
-      const endpoint = action === 'approve' ? '/attendance/approve' : '/attendance/reject';
-      const response = await apiCall(endpoint, 'PUT', { punch_ids: punchIds, notes: '' }, companyId);
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || `Failed to ${action}`);
-      }
-
-      toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       setSelectedIds([]);
       lastRequestKeyRef.current = '';
       await fetchBreaks(true);
