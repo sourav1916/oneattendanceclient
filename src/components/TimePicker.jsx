@@ -74,8 +74,8 @@ const TimeColumn = ({ items, selected, onSelect, label, columnRef }) => {
   );
 };
 
-export const TimePicker = ({ value, onApply, onClose }) => {
-  const { h: initialH24, m: initialM, s: initialS } = parseTime(value);
+export const TimePicker = ({ value, initialValue, onApply, onClose }) => {
+  const { h: initialH24, m: initialM, s: initialS } = parseTime(value || initialValue);
 
   // Convert 24h to 12h + AM/PM
   const initialAMPM = initialH24 >= 12 ? "PM" : "AM";
@@ -201,6 +201,7 @@ export const TimePicker = ({ value, onApply, onClose }) => {
 export const TimePickerField = ({
   value,
   onChange,
+  initialValue = "",
   placeholder = "Time",
   label,
   required = false,
@@ -299,6 +300,7 @@ export const TimePickerField = ({
               >
                 <TimePicker
                   value={value}
+                  initialValue={initialValue}
                   onApply={(val) => {
                     onChange(val);
                     setIsOpen(false);

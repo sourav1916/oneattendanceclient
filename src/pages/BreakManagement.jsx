@@ -318,8 +318,8 @@ const buildBulkAttendancePayload = (employee, action, notes, halfSession = 'firs
     return {
       ...basePayload,
       status: 'half_day',
-      punch_in: punchIn,
-      punch_out: punchOut,
+      start_time: punchIn,
+      end_time: punchOut,
       value1: halfSession === 'second' ? 'second_half' : 'first_half',
     };
   }
@@ -327,8 +327,8 @@ const buildBulkAttendancePayload = (employee, action, notes, halfSession = 'firs
   return {
     ...basePayload,
     status: 'present',
-    punch_in: punchIn,
-    punch_out: punchOut,
+    start_time: punchIn,
+    end_time: punchOut,
     is_overtime: Boolean(employee?.attendance_record?.is_overtime),
     is_deductible: Boolean(employee?.attendance_record?.is_deductible),
   };
@@ -393,12 +393,12 @@ const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
       };
 
       if (action === 'live_break_start') {
-        payload.break_start = breakStart;
+        payload.start_time = breakStart;
       } else if (action === 'live_break_end') {
-        payload.break_end = breakEnd;
+        payload.end_time = breakEnd;
       } else {
-        payload.break_start = breakStart;
-        payload.break_end = breakEnd || null;
+        payload.start_time = breakStart;
+        payload.end_time = breakEnd || null;
       }
 
       await onSubmit(payload);

@@ -274,8 +274,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status:       'present',
-        punch_in:     getExactPunchTime(punchIn)  || '09:00',
-        punch_out:    getExactPunchTime(punchOut) || '18:00',
+        start_time:   getExactPunchTime(punchIn)  || '09:00',
+        end_time:     getExactPunchTime(punchOut) || '18:00',
         is_overtime:  isOvertime,
         is_deductible: isDeductible,
       };
@@ -284,8 +284,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status:          'half_day',
-        punch_in:        getExactPunchTime(punchIn)  || '09:00',
-        punch_out:       getExactPunchTime(punchOut) || '18:00',
+        start_time:      getExactPunchTime(punchIn)  || '09:00',
+        end_time:        getExactPunchTime(punchOut) || '18:00',
         half_day_type:   halfDayType === 'second_half' ? 'second_half' : 'first_half',
       };
 
@@ -299,8 +299,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status:        'present',
-        punch_in:      getExactPunchTime(punchIn)  || '09:00',
-        punch_out:     getExactPunchTime(punchOut) || '18:00',
+        start_time:    getExactPunchTime(punchIn)  || '09:00',
+        end_time:      getExactPunchTime(punchOut) || '18:00',
         is_deductible: true,
         is_overtime:   false,
       };
@@ -309,8 +309,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status:       'present',
-        punch_in:     getExactPunchTime(punchIn)  || '09:00',
-        punch_out:    getExactPunchTime(punchOut) || '18:00',
+        start_time:   getExactPunchTime(punchIn)  || '09:00',
+        end_time:     getExactPunchTime(punchOut) || '18:00',
         is_overtime:  true,
         is_deductible: false,
       };
@@ -328,8 +328,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status:    'present',
-        punch_in:  getExactPunchTime(emp.shift_start) || '09:00',
-        punch_out: getExactPunchTime(emp.shift_end)   || '18:00',
+        start_time: getExactPunchTime(emp.shift_start) || '09:00',
+        end_time:   getExactPunchTime(emp.shift_end)   || '18:00',
         is_overtime:   Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
         is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
       };
@@ -444,8 +444,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     const rowPunchOut = getExactPunchTime(employee?.primary_punch_out || employee?.attendance_record?.punch_out || employee?.attendance_record?.end_time);
     const shiftIn = getExactPunchTime(employee?.shift_start) || '09:00';
     const shiftOut = getExactPunchTime(employee?.shift_end) || '18:00';
-    const defaultIn  = hasRowPunchData ? (rowPunchIn || shiftIn) : shiftIn;
-    const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : shiftOut;
+    const defaultIn  = hasRowPunchData ? (rowPunchIn || shiftIn) : '';
+    const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : '';
     setPunchIn(defaultIn);
     setPunchOut(defaultOut);
     setIsOt(Boolean(employee?.is_overtime || employee?.is_ot || employee?.flags?.overtime?.enabled || (employee?.calculations?.overtime_minutes || 0) > 0));
@@ -458,6 +458,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
   useEffect(() => {
     if (activeTab !== 'half_day') return;
+    if (!employee?.has_punch_data) return;
     const { punchIn: autoPunchIn, punchOut: autoPunchOut } = getHalfDayWindow(
       employee?.shift_start,
       employee?.shift_end,
@@ -573,6 +574,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
   const activeTabMeta = TABS.find(t => t.id === activeTab);
   const toneColor     = activeTabMeta?.color.split('-')[1] || 'indigo';
+  const shiftPunchIn  = getExactPunchTime(employee?.shift_start) || '09:00';
+  const shiftPunchOut = getExactPunchTime(employee?.shift_end) || '18:00';
 
   const renderContent = () => {
     switch (activeTab) {
@@ -580,8 +583,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         return (
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
-              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
+              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
             {/* Live metrics */}
             <div className={`rounded-2xl border p-4 transition-colors ${metrics.statusColor}`}>
@@ -659,8 +662,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
-              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
+              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
@@ -695,8 +698,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
-              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
+              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
@@ -718,8 +721,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
-              <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} />
+              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
           </div>
         );
