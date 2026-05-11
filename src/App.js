@@ -371,7 +371,7 @@ function AppContent() {
         /></MainLayout></ProtectedRoute>} />
         <Route path="/payroll-adjustments" element={<ProtectedRoute pageKey="payrollManagement"><Navigate to="/payroll-management?tab=adjustments" replace /></ProtectedRoute>} />
         <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><BankAccountManagement /></MainLayout></ProtectedRoute>} />
-        <Route path="/employee-profile/:employeeId/:tabKey?" element={<ProtectedRoute pageKey="employeeManagement"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
+        <Route path="/employee-profile/:employeeId/:tabKey?" element={<ProtectedRoute pageKey="employeeProfile"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-salary-history/:employeeId" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><EmployeeSalaryHistory /></MainLayout></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />

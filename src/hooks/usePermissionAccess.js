@@ -52,6 +52,9 @@ const PERMISSION_ACCESS_CONFIG = {
     employeeManagement: {
       permissions: ["emp_create", "emp_view", "emp_update", "emp_delete", "report_emp", "export_emp"],
     },
+    employeeProfile: {
+      permissions: ["emp_pr_view"],
+    },
     permissionManagement: {
       permissions: ["pkg_create", "pkg_view", "pkg_update", "pkg_delete", "pkg_assign"],
     },
@@ -380,7 +383,7 @@ const getAccessMessage = (access) => {
     return "No attendance methods assigned to your profile. Contact admin.";
   }
 
-  return "You don't have permission for this action";
+  return "You don't have permission";
 };
 
 export const usePermissionAccess = () => {
