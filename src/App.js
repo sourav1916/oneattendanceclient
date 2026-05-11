@@ -223,9 +223,9 @@ const ATTENDANCE_HUB_TABS = [
 
 const ATTENDANCE_MANAGEMENT_HUB_TABS = [
   {
-    id: "unmarked",
-    label: "Unmarked Attendance",
-    shortLabel: "Unmarked",
+    id: "attendance",
+    label: "Attendance Management",
+    shortLabel: "Attendance",
     description: "Mark daily attendance for employees who haven't clocked in.",
     icon: FaFingerprint,
     pageKey: "attendanceManagement",
