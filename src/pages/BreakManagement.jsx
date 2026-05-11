@@ -682,7 +682,7 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
     const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
     return Boolean(start && !end);
   }));
-  const canAddBreak = allBreaksComplete && !hasOpenBreak;
+  const canAddBreak = hasBreakHistory && allBreaksComplete && !hasOpenBreak;
   const isVerified = hasBreakHistory && breaks.every((item) => item?.is_verified !== false);
   const cardToneClass = !hasBreakHistory || !isVerified
     ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
