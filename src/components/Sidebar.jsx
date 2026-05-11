@@ -162,6 +162,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const getVisibleChildren = (children) =>
     children.filter((child) => getItemAccess(child).allowed);
 
+  const isSectionActive = (children) => getVisibleChildren(children).some((child) => isActiveRoute(child.path));
+
   useEffect(() => {
     if (onHover && !isMobile) {
       onHover(isHovered);
@@ -185,6 +187,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                 if (item.isSection) {
                   const isOpen = openSections[item.label];
                   const authorizedChildren = getVisibleChildren(item.children);
+                  const isActive = isSectionActive(item.children);
 
                   if (authorizedChildren.length === 0) {
                     return null;
@@ -195,18 +198,20 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                       {/* Section Header */}
                       <button
                         onClick={() => toggleSection(item.label)}
-                        className="w-full flex items-center justify-between px-3 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200"
+                        className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 ${
+                          isActive ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
+                        }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-gray-100 text-gray-600">
+                          <div className={`p-2 rounded-lg ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                             <item.icon className="w-4 h-4" />
                           </div>
-                          <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                          <span className={`text-sm font-medium ${isActive ? 'text-blue-700 font-semibold' : 'text-gray-700'}`}>{item.label}</span>
                         </div>
                         {isOpen ? (
-                          <FaChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                          <FaChevronDown className={`w-3.5 h-3.5 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
                         ) : (
-                          <FaChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                          <FaChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
                         )}
                       </button>
 
@@ -355,6 +360,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     const isOpen = openSections[item.label];
     const Icon = item.icon;
     const authorizedChildren = getVisibleChildren(item.children);
+    const isActive = isSectionActive(item.children);
 
     if (authorizedChildren.length === 0) {
       return null;
@@ -368,26 +374,26 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           className={`
             w-full flex items-center rounded-xl transition-all duration-200
             ${isExpandedState ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
-            text-gray-700 hover:bg-gray-50 hover:text-blue-600
+            ${isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}
           `}
           title={!isExpandedState ? item.label : ''}
         >
           <div className={`
             p-2 rounded-lg transition-all duration-200
             ${isExpandedState ? '' : 'mx-auto'}
-            bg-gray-100 text-gray-600
+            ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}
           `}>
             <Icon className="w-4 h-4" />
           </div>
           {isExpandedState && (
             <>
-              <span className="flex-1 text-sm font-medium text-left">
+              <span className={`flex-1 text-sm font-medium text-left ${isActive ? 'font-semibold text-blue-700' : 'text-gray-700'}`}>
                 {item.label}
               </span>
               {isOpen ? (
-                <FaChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                <FaChevronDown className={`w-3.5 h-3.5 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
               ) : (
-                <FaChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                <FaChevronRight className={`w-3.5 h-3.5 ${isActive ? 'text-blue-500' : 'text-gray-400'}`} />
               )}
             </>
           )}
