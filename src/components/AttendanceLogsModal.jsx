@@ -49,6 +49,9 @@ const formatLogData = (data) => {
 
 const AttendanceLogsModal = ({ id, type, onClose }) => {
   const [logs, setLogs] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [pagination, setPagination] = useState(null);
+  const [filters, setFilters] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const lastFetchedKeyRef = useRef('');
@@ -68,7 +71,10 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
         const data = await response.json();
 
         if (data.success) {
-          setLogs(data.data || []);
+          setLogs(data.logs || data.data || []);
+          setSummary(data.summary || null);
+          setPagination(data.pagination || null);
+          setFilters(data.filters || null);
         } else {
           setError(data.message || 'Failed to fetch logs');
           toast.error(data.message || 'Failed to fetch logs');
@@ -150,13 +156,67 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
             </div>
           ) : (
             <div className="space-y-4 pb-4">
+              {summary && (
+                <div className="rounded-2xl border border-indigo-100 bg-white shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-sky-50">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Summary</p>
+                    <p className="text-sm font-bold text-slate-800 mt-1">
+                      {summary.employee?.name || 'Employee'} {summary.employee?.employee_code ? `(${summary.employee.employee_code})` : ''}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {summary.type || type}
+                      {summary.attendance_date ? ` · ${summary.attendance_date}` : ''}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4">
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Record</p>
+                      <p className="text-sm font-black text-slate-800 mt-1">{summary.attendance_id || '--'}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Latest Activity</p>
+                      <p className="text-sm font-bold text-slate-800 mt-1">{summary.latest_activity?.activity || '--'}</p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {summary.latest_activity?.updated_by || 'System'}
+                        {summary.latest_activity?.time ? ` · ${formatTime(summary.latest_activity.time)}` : ''}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Logs</p>
+                      <p className="text-sm font-black text-slate-800 mt-1">{logs.length}</p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {pagination?.current_page ? `Page ${pagination.current_page}` : 'Page 1'}
+                        {pagination?.total_pages ? ` of ${pagination.total_pages}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {filters && (
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filters</span>
+                  <span className="text-xs font-semibold text-slate-600">Attendance ID: {filters.attendance_id ?? id}</span>
+                  <span className="text-slate-300">|</span>
+                  <span className="text-xs font-semibold text-slate-600">Log Type: {filters.log_type || 'All'}</span>
+                  <span className="text-slate-300">|</span>
+                  <span className="text-xs font-semibold text-slate-600">Search: {filters.search || 'None'}</span>
+                </div>
+              )}
+
               {logs.map((log, index) => {
-                const style = getStatusBadge(log.status);
+                const style = getStatusBadge(log.status || log.type || log.activity_type);
                 const StatusIcon = style.icon;
-                const punchIn = log.attendance?.punch_in;
-                const punchOut = log.attendance?.punch_out;
-                const metrics = log.shift?.metrics;
-                const flags = log.shift?.flags;
+                const activityLabel = log.activity || log.action || '--';
+                const actor = log.updated_by || log.verified_by?.name || log.created?.by?.name || 'System';
+                const logTime = log.time || log.updated_at || log.created_at;
+                const logType = (log.type || '').toLowerCase();
+                const typeTone = logType === 'start'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                  : logType === 'end'
+                    ? 'bg-rose-50 text-rose-700 border-rose-100'
+                    : 'bg-slate-50 text-slate-700 border-slate-100';
 
                 return (
                   <motion.div
@@ -173,9 +233,12 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
                           <StatusIcon size={12} />
                           {style.text.toUpperCase()}
                         </span>
+                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider border ${typeTone}`}>
+                          {log.type || 'log'}
+                        </span>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
                           <FaClock size={11} className="text-slate-400" />
-                          {formatDateTime(log.verified_at || log.created?.at || log.updated_at)}
+                          {formatDateTime(log.updated_at || log.verified_at || log.created?.at)}
                         </div>
                       </div>
                       
@@ -185,66 +248,44 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
                           <div className="h-4 w-4 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
                             <FaUser size={7} />
                           </div>
-                          <span className="text-[11px] font-bold text-slate-700">{log.verified_by?.name || log.created?.by?.name || "System"}</span>
+                          <span className="text-[11px] font-bold text-slate-700">{actor}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Log Content */}
                     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Left Side: Punches */}
+                      {/* Left Side: Activity */}
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance Punches</h4>
+                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Activity</h4>
                           <div className="h-px flex-1 bg-slate-100"></div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Punch In</label>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-black text-slate-800">{formatTime(punchIn?.time)}</span>
-                              {punchIn?.method && (
-                                <span className="text-[8px] font-black bg-white border border-slate-200 px-1.5 py-0.5 rounded text-indigo-500 uppercase">{punchIn.method}</span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <label className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Punch Out</label>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-black text-slate-800">{formatTime(punchOut?.time)}</span>
-                              {punchOut?.method && (
-                                <span className="text-[8px] font-black bg-white border border-slate-200 px-1.5 py-0.5 rounded text-indigo-500 uppercase">{punchOut.method}</span>
-                              )}
-                            </div>
-                          </div>
+                        <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase block mb-1">Activity</p>
+                          <p className="text-sm font-black text-slate-800">{activityLabel}</p>
+                          <p className="text-[11px] text-slate-500 mt-1">
+                            {logTime ? formatTime(logTime) : '---'}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Right Side: Metrics & Flags */}
+                      {/* Right Side: Details */}
                       <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Calculated Metrics</h4>
+                          <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Details</h4>
                           <div className="h-px flex-1 bg-slate-100"></div>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-2 gap-3">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Worked</span>
-                            <span className="text-xs font-bold text-emerald-600">{formatMinutes(metrics?.worked_minutes || 0)}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="flex flex-col rounded-xl bg-slate-50 p-3 border border-slate-100">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Type</span>
+                            <span className="text-xs font-bold text-slate-800">{log.type || '--'}</span>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Late</span>
-                            <span className="text-xs font-bold text-rose-600">{formatMinutes(flags?.deductible?.minutes || 0)}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Overtime</span>
-                            <span className="text-xs font-bold text-indigo-600">{formatMinutes(flags?.overtime?.minutes || 0)}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Half Day</span>
-                            <span className="text-xs font-bold text-amber-600">{flags?.half_day?.enabled ? "Yes" : "No"}</span>
+                          <div className="flex flex-col rounded-xl bg-slate-50 p-3 border border-slate-100">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Updated At</span>
+                            <span className="text-xs font-bold text-slate-800">{formatDateTime(log.updated_at || log.verified_at || log.created?.at)}</span>
                           </div>
                         </div>
                       </div>
