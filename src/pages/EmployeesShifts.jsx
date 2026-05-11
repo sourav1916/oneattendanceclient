@@ -180,7 +180,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             </div>
                             <button
                                 onClick={onClose}
-                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
+                                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all shadow-sm hover:shadow-md bg-white border border-slate-100"
                             >
                                 <FaTimes className="h-4 w-4" />
                             </button>

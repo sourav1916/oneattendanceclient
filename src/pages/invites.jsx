@@ -336,7 +336,7 @@ export default function MyInvites() {
           onClick={e => e.stopPropagation()}>
           <div className="shrink-0 flex justify-between items-center p-5 border-b bg-white rounded-t-xl">
             <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800"><FaEye className="text-indigo-500" /> Invitation Details</h2>
-            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-all shadow-sm hover:shadow-md bg-white/50 border border-slate-100">
+            <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all shadow-sm hover:shadow-md bg-white/50 border border-slate-100">
               <FaTimes size={18} />
             </button>
           </div>
@@ -601,13 +601,13 @@ export default function MyInvites() {
             You are about to accept the invitation from <span className="font-semibold text-green-600">{invite.company?.name}</span>.
             This will add you to their organization.
           </p>
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
-          <button onClick={() => onConfirm(invite.invite_token)} disabled={processingId === invite.invite_token}
-            className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
-            {processingId === invite.invite_token && <FaSpinner className="animate-spin" />} Accept Invitation
-          </button>
-        </div>
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+            <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
+            <button onClick={() => onConfirm(invite.invite_token)} disabled={processingId === invite.invite_token}
+              className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
+              {processingId === invite.invite_token && <FaSpinner className="animate-spin" />} Accept Invitation
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -634,13 +634,13 @@ export default function MyInvites() {
           </motion.div>
           <p className="text-xl text-gray-700 mb-2 font-semibold">Reject Invitation?</p>
           <p className="text-gray-500 mb-6">Are you sure you want to reject the invitation from <span className="font-semibold text-red-600">{invite.company?.name}</span>? This action cannot be undone.</p>
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
-          <button onClick={() => onConfirm(invite.invite_token)} disabled={processingId === invite.invite_token}
-            className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
-            {processingId === invite.invite_token && <FaSpinner className="animate-spin" />} Reject Invitation
-          </button>
-        </div>
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+            <button onClick={onClose} className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">Cancel</button>
+            <button onClick={() => onConfirm(invite.invite_token)} disabled={processingId === invite.invite_token}
+              className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-red-100 hover:shadow-xl transition-all disabled:opacity-50 flex items-center gap-2">
+              {processingId === invite.invite_token && <FaSpinner className="animate-spin" />} Reject Invitation
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>

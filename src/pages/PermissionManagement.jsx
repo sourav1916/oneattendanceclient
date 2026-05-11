@@ -823,9 +823,9 @@ const PermissionManagement = () => {
 
   const selectedPackageUsage = selectedPackage
     ? {
-        totalUsed: getPackageUsageCount(selectedPackage),
-        employees: getUsedByEmployees(selectedPackage)
-      }
+      totalUsed: getPackageUsageCount(selectedPackage),
+      employees: getUsedByEmployees(selectedPackage)
+    }
     : null;
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -1202,7 +1202,7 @@ const PermissionManagement = () => {
                       </div>
                       <button
                         onClick={closeModal}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all bg-white border border-slate-100"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500  transition-all "
                       >
                         <FaTimes className="h-4 w-4" />
                       </button>
@@ -1264,7 +1264,7 @@ const PermissionManagement = () => {
                       </div>
                       <button
                         onClick={closeModal}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all bg-white border border-slate-100"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500  transition-all "
                       >
                         <FaTimes className="h-4 w-4" />
                       </button>
@@ -1338,27 +1338,27 @@ const PermissionManagement = () => {
                                   <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                                     Target package
                                   </label>
-                              <SelectField
-                                isClearable
-                                isSearchable
-                                isDisabled={assignmentLoading || packageOptionsLoading}
-                                options={employeeOptionsForModal}
-                                value={bulkTargetPackage}
-                                onChange={(option) => {
-                                  setBulkTargetPackage(option);
-                                  if (selectedEmployeeIds.length > 0) {
-                                    setEmployeePackageSelections((prev) => {
-                                      const next = { ...prev };
-                                      selectedEmployeeIds.forEach((employeeId) => {
-                                        next[employeeId] = option;
-                                      });
-                                      return next;
-                                    });
-                                  }
-                                }}
-                                placeholder={packageOptionsLoading ? 'Loading packages...' : 'Select new package'}
-                                classNamePrefix="react-select"
-                              />
+                                  <SelectField
+                                    isClearable
+                                    isSearchable
+                                    isDisabled={assignmentLoading || packageOptionsLoading}
+                                    options={employeeOptionsForModal}
+                                    value={bulkTargetPackage}
+                                    onChange={(option) => {
+                                      setBulkTargetPackage(option);
+                                      if (selectedEmployeeIds.length > 0) {
+                                        setEmployeePackageSelections((prev) => {
+                                          const next = { ...prev };
+                                          selectedEmployeeIds.forEach((employeeId) => {
+                                            next[employeeId] = option;
+                                          });
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                    placeholder={packageOptionsLoading ? 'Loading packages...' : 'Select new package'}
+                                    classNamePrefix="react-select"
+                                  />
                                 </div>
                                 <button
                                   type="button"
@@ -1538,7 +1538,7 @@ const PermissionManagement = () => {
                       </div>
                       <button
                         onClick={closeModal}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all bg-white border border-slate-100"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500  transition-all "
                       >
                         <FaTimes className="h-4 w-4" />
                       </button>

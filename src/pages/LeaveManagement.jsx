@@ -529,7 +529,7 @@ const LeaveManagement = () => {
                                                 />
                                             </div>
                                         )}
-                                        <StatusBadge status={leave.status} /> 
+                                        <StatusBadge status={leave.status} />
                                         <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span>
                                     </div>
                                 }
@@ -599,7 +599,7 @@ const LeaveManagement = () => {
                             <button
                                 type="button"
                                 onClick={() => setDetailLeave(null)}
-                                className="w-full rounded-xl bg-gray-100 py-2.5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
+                                className="rounded-xl bg-gray-100 py-2.5  px-5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
                             >
                                 Close
                             </button>
