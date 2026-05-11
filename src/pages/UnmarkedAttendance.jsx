@@ -80,6 +80,41 @@ const getExactPunchTime = (value) => {
   return '';
 };
 
+const toMinutes = (timeStr) => {
+  const exactTime = getExactPunchTime(timeStr);
+  if (!exactTime) return null;
+  const [hours, minutes] = exactTime.split(':').map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  return (hours * 60) + minutes;
+};
+
+const toTimeString = (minutes) => {
+  const safeMinutes = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(safeMinutes / 60);
+  const mins = safeMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
+};
+
+const getHalfDayWindow = (shiftStart, shiftEnd, session = 'first') => {
+  const startMins = toMinutes(shiftStart) ?? 9 * 60;
+  const endMins = toMinutes(shiftEnd) ?? 18 * 60;
+  const duration = endMins >= startMins ? endMins - startMins : (24 * 60 - startMins) + endMins;
+  const halfDuration = Math.max(1, Math.round(duration / 2));
+  const midPoint = startMins + halfDuration;
+
+  if (session === 'second') {
+    return {
+      punchIn: toTimeString(midPoint),
+      punchOut: toTimeString(startMins + duration),
+    };
+  }
+
+  return {
+    punchIn: toTimeString(startMins),
+    punchOut: toTimeString(midPoint),
+  };
+};
+
 const normalizeAttendanceRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
 
@@ -219,12 +254,12 @@ const buildMarkPayload = (emp, action, options = {}) => {
   const {
     punchIn       = emp.punch_in  || emp.shift_start || '09:00',
     punchOut      = emp.punch_out || emp.shift_end   || '18:00',
-    halfSession   = 'first',
+    halfDayType   = 'first_half',
     notes         = '',
     isOvertime    = false,
     isDeductible  = false,
-    leaveValue1   = 'paid',
-    leaveValue2   = null,
+    leaveStatus   = 'paid',
+    leaveType     = null,
   } = options;
 
   const base = {
@@ -251,7 +286,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
         status:          'half_day',
         punch_in:        getExactPunchTime(punchIn)  || '09:00',
         punch_out:       getExactPunchTime(punchOut) || '18:00',
-        half_day_session: halfSession === 'second' ? 'second' : 'first',
+        half_day_type:   halfDayType === 'second_half' ? 'second_half' : 'first_half',
       };
 
     case 'absent':
@@ -285,8 +320,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
       return {
         ...base,
         status: 'leave',
-        value1: leaveValue1,
-        ...(leaveValue2 ? { value2: leaveValue2 } : {}),
+        leave_status: leaveStatus,
+        ...(leaveType ? { leave_type: leaveType } : {}),
       };
 
     case 'actual_data': // Bulk: use shift times
@@ -421,6 +456,17 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     setSelectedLeave(null);
   }, [employee?.employee_id, initialTab]);
 
+  useEffect(() => {
+    if (activeTab !== 'half_day') return;
+    const { punchIn: autoPunchIn, punchOut: autoPunchOut } = getHalfDayWindow(
+      employee?.shift_start,
+      employee?.shift_end,
+      halfSession === 'second' ? 'second' : 'first'
+    );
+    setPunchIn(autoPunchIn);
+    setPunchOut(autoPunchOut);
+  }, [activeTab, halfSession, employee?.shift_start, employee?.shift_end]);
+
   // Fetch leave types when leave tab opens
   useEffect(() => {
     if (activeTab !== 'paid_leave') return;
@@ -487,7 +533,12 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const handleApply = async () => {
     setLoading(true);
     try {
-      let options = { notes, punchIn, punchOut, halfSession };
+      let options = {
+        notes,
+        punchIn,
+        punchOut,
+        halfDayType: halfSession === 'second' ? 'second_half' : 'first_half',
+      };
 
       if (activeTab === 'present') {
         if (!punchIn || !punchOut) { toast.error('Punch In & Out are required'); return; }
@@ -503,13 +554,13 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       if (activeTab === 'paid_leave') {
         if (leaveSubTab === 'paid') {
           if (!selectedLeave) { toast.error('Please select a leave type'); return; }
-          options.leaveValue1 = 'paid';
-          options.leaveValue2 = selectedLeave.type === 'leave'
+          options.leaveStatus = 'paid';
+          options.leaveType = selectedLeave.type === 'leave'
             ? selectedLeave.data?.code
             : selectedLeave.type === 'weekend' ? 'Weekend' : 'Holiday';
         } else {
-          options.leaveValue1 = 'unpaid';
-          options.leaveValue2 = null;
+          options.leaveStatus = 'unpaid';
+          options.leaveType = null;
         }
       }
 
@@ -586,11 +637,26 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Session</label>
               <div className="grid grid-cols-2 gap-3">
                 {['first', 'second'].map(s => (
-                  <ManagementButton key={s} tone="blue" variant={halfSession === s ? 'solid' : 'soft'} onClick={() => setHalfSession(s)}>
+                  <ManagementButton
+                    key={s}
+                    tone="blue"
+                    variant={halfSession === s ? 'solid' : 'soft'}
+                    onClick={() => setHalfSession(s)}
+                  >
                     {s === 'first' ? '1st Half' : '2nd Half'}
                   </ManagementButton>
                 ))}
               </div>
+            </div>
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/50 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-500">
+                Auto calculated from shift
+              </p>
+              <p className="mt-1 text-xs font-semibold text-sky-700">
+                {halfSession === 'first'
+                  ? 'Punch In will use shift start and Punch Out will use the midpoint.'
+                  : 'Punch In will use the midpoint and Punch Out will use shift end.'}
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  />
@@ -910,6 +976,12 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
 // ─── EMPLOYEE CARD ─────────────────────────────────────────────────────────────
 const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
   const statusCfg = STATUS_CONFIG[emp.day_status] || STATUS_CONFIG.unmarked;
+  const verificationCardClass = emp.is_verified
+    ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
+    : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70';
+  const verificationBadgeClass = emp.is_verified
+    ? 'bg-emerald-600 text-white'
+    : 'bg-amber-600 text-white';
   return (
     <div className="relative">
       {isSelectionMode && (
@@ -928,8 +1000,12 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
         subtitle={`[${emp.employee_code}]`}
         accent={statusCfg.dot.replace('bg-', '')}
         icon={<FaUser className="text-slate-500" />}
+        className={verificationCardClass}
         badge={
           <div className="flex items-center gap-2">
+            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${verificationBadgeClass}`}>
+              {emp.is_verified ? 'Verified' : 'Pending'}
+            </span>
             <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
               {statusCfg.label}
             </span>
@@ -1153,7 +1229,7 @@ const UnmarkedAttendance = () => {
         try {
           const options = {
             notes,
-            halfSession,
+            halfDayType: halfSession === 'second' ? 'second_half' : 'first_half',
             punchIn:  emp.shift_start || '09:00',
             punchOut: emp.shift_end   || '18:00',
           };
