@@ -1,5 +1,5 @@
 import Select from "react-select";
-import { getReactSelectMenuProps, reactSelectStyles } from "./reactSelectConfig";
+import { getReactSelectMenuProps, reactSelectStyles } from "../hooks/reactSelectConfig";
 
 const mergeSelectStyles = (styles = {}) => {
   const customStyles = styles || {};

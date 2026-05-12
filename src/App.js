@@ -4,6 +4,7 @@ import LandingPage from "./pages/Landing";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import AcceptInvite from "./pages/AcceptInvite";
 import MainLayout from "./layout/MainLayout";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -275,6 +276,7 @@ function AppContent() {
           }
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
 
         {/* Protected Routes - Only accessible after company selection */}
         <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>} />

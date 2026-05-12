@@ -4,6 +4,11 @@ import apiCall from "../utils/api";
 
 const AuthContext = createContext();
 
+const AUTH_BOOTSTRAP_BYPASS_PATHS = ["/accept-invite"];
+
+const shouldBypassAuthBootstrap = () =>
+  AUTH_BOOTSTRAP_BYPASS_PATHS.some((path) => window.location.pathname === path);
+
 const ATTENDANCE_METHOD_LABELS = {
   manual: "Manual",
   gps: "GPS",
@@ -229,6 +234,11 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
+
+    if (shouldBypassAuthBootstrap()) {
+      setLoading(false);
+      return;
+    }
 
     const token = localStorage.getItem("token");
 
