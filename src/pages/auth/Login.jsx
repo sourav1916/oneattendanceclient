@@ -17,6 +17,7 @@ import { useAuth } from "../../context/AuthContext";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { getPreciseLocation } from "../../utils/geolocation";
+import GoogleAuthButton from "../../components/GoogleAuthButton";
 
 const Login = () => {
   const { user, login, selectCompany, companies, mustSelectCompany, showCompanySelection, setShowCompanySelection } = useAuth();
@@ -272,7 +273,7 @@ const Login = () => {
           <FaShieldAlt />
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full max-w-6xl relative z-10">
+        <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10">
 
           {/* Left Content */}
           <motion.div variants={itemVariants} className="mb-10 lg:mb-0 lg:w-1/2 text-white px-4 lg:px-8">
@@ -308,6 +309,18 @@ const Login = () => {
 
                     {!otpSent ? (
                       <div className="space-y-5">
+                        <GoogleAuthButton
+                          mode="login"
+                          disabled={isLoading}
+                          onAuthenticated={login}
+                        />
+
+                        <div className="flex items-center gap-3">
+                          <div className="h-px flex-1 bg-gray-200" />
+                          <span className="text-xs font-semibold uppercase text-gray-400">or</span>
+                          <div className="h-px flex-1 bg-gray-200" />
+                        </div>
+
                         <div className="relative">
                           <HiOutlineMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
                           <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} onFocus={() => setFocusedField('email')} onBlur={() => setFocusedField(null)} disabled={isLoading} className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />

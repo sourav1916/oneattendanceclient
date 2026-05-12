@@ -192,7 +192,7 @@ const ForgotPassword = () => {
           <FaShieldAlt />
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full max-w-6xl relative z-10">
+        <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10">
           <motion.div variants={itemVariants} className="mb-10 lg:mb-0 lg:w-1/2 text-white px-4 lg:px-8">
             <motion.h1
               initial={{ scale: 0.5, opacity: 0 }}

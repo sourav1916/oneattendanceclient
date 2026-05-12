@@ -21,6 +21,7 @@ import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
 import { getPreciseLocation } from "../../utils/geolocation";
+import GoogleAuthButton from "../../components/GoogleAuthButton";
 
 
 const Signup = () => {
@@ -380,7 +381,7 @@ const Signup = () => {
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="flex flex-col lg:flex-row items-center justify-between w-full max-w-6xl relative z-10 mt-16"
+          className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10 mt-16"
         >
           {/* Left Side - Welcome Text */}
           <motion.div
@@ -483,6 +484,18 @@ const Signup = () => {
                   {currentStep === 1 && (
                     /* Step 1: Basic Info */
                     <>
+                      <GoogleAuthButton
+                        mode="signup"
+                        disabled={isLoading}
+                        onAuthenticated={login}
+                      />
+
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gray-200" />
+                        <span className="text-xs font-semibold uppercase text-gray-400">or</span>
+                        <div className="h-px flex-1 bg-gray-200" />
+                      </div>
+
                       <div className="relative">
                         <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
