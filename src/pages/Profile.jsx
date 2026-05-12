@@ -91,13 +91,21 @@ export default function ProfilePage() {
                                 initial={{ scale: 0.6, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ type: "spring", stiffness: 200, damping: 18, delay: 0.15 }}
-                                className="relative w-20 h-20 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl border-4 border-white"
+                                className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl border-4 border-white overflow-hidden"
                             >
-                                <span className="text-2xl font-black text-white">
-                                    {getInitials(user.name)}
-                                </span>
+                                {user.profile_picture ? (
+                                    <img
+                                        src={user.profile_picture.startsWith('http') ? user.profile_picture : `https://api-attendance.onesaas.in${user.profile_picture}`}
+                                        alt={user.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <span className="text-3xl font-black text-white">
+                                        {getInitials(user.name)}
+                                    </span>
+                                )}
                                 {user.is_active === 1 && (
-                                    <span className="absolute -bottom-1.5 -right-1.5 w-5 h-5 bg-green-400 border-2 border-white rounded-full flex items-center justify-center">
+                                    <span className="absolute bottom-1 right-1 w-5 h-5 bg-green-400 border-2 border-white rounded-full flex items-center justify-center z-10">
                                         <FaCheckCircle className="text-white text-[8px]" />
                                     </span>
                                 )}

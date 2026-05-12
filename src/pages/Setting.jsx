@@ -124,7 +124,18 @@ const SettingsPage = () => {
   const [loggingOutId, setLoggingOutId] = useState(null);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState(user?.profile_picture || null);
+  const [imagePreview, setImagePreview] = useState(() => {
+    if (!user?.profile_picture) return null;
+    return user.profile_picture.startsWith('http') ? user.profile_picture : `https://api-attendance.onesaas.in${user.profile_picture}`;
+  });
+
+  useEffect(() => {
+    if (user?.profile_picture) {
+      const url = user.profile_picture.startsWith('http') ? user.profile_picture : `https://api-attendance.onesaas.in${user.profile_picture}`;
+      setImagePreview(url);
+    }
+  }, [user?.profile_picture]);
+
   const fileInputRef = useRef(null); // add useRef to imports
   // New state for delete account
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -453,7 +464,7 @@ const SettingsPage = () => {
         ...changedFields
       };
 
-      const response = await apiCall('/users/details/update-profile', 'PUT', payload);
+      const response = await apiCall('/users/update-profile', 'PUT', payload);
 
       const result = await response.json();
 
@@ -786,7 +797,7 @@ const SettingsPage = () => {
                     <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
                       {imagePreview ? (
                         <img
-                          src={imagePreview}
+                          src={imagePreview.startsWith('http') ? imagePreview : `https://api-attendance.onesaas.in${imagePreview}`}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={() => setImagePreview(null)}

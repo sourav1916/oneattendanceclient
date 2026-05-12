@@ -147,11 +147,13 @@ export const AuthProvider = ({ children }) => {
         const userData = {
           id: data.user?.id,
           name: data.user?.name || "User",
+          full_name: data.user?.name || "User",
           email: data.user?.email,
           phone: data.user?.phone,
-          is_active: data.user?.is_active === 1,
-          is_system_admin: data.meta?.is_system_admin === 1,
+          is_active: data.user?.is_active === 1 || data.user?.is_active === true,
+          is_system_admin: data.meta?.is_system_admin === 1 || data.meta?.is_system_admin === true,
           role: response.role || "employee",
+          profile_picture: data.user?.profile_picture,
         };
 
         setUser(userData);
