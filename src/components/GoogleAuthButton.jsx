@@ -38,7 +38,7 @@ export default function GoogleAuthButton({ mode = "login", onAuthenticated, disa
   const [sdkReady, setSdkReady] = useState(false);
   const [loading, setLoading] = useState(false);
   const label = mode === "signup" ? "Sign up with Google" : "Login with Google";
-  const endpoint = mode === "signup" ? "/auth/google/signup" : "/auth/google/login";
+  const endpoint = "/auth/google/login";
 
   const handleCredentialResponse = async (credentialResponse) => {
     if (loading || disabled) return;

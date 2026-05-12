@@ -150,6 +150,8 @@ const LeaveManagement = () => {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
     const [bulkApproveRemarks, setBulkApproveRemarks] = useState('');
+    const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
+    const [bulkRejectRemarks, setBulkRejectRemarks] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createForm, setCreateForm] = useState(getEmptyCreateForm);
     const [leaveConfigs, setLeaveConfigs] = useState([]);
@@ -430,7 +432,7 @@ const LeaveManagement = () => {
         setSubmitting(true);
         try {
             const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-            const response = await apiCall('/leave/approve', 'PUT', { ids: selectedIds, remarks: bulkApproveRemarks }, companyId);
+            const response = await apiCall('/leave/management/bulk-approve-reject', 'PUT', { ids: selectedIds, action: 'approve', remarks: bulkApproveRemarks }, companyId);
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to approve');
             toast.success(`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} approved successfully`);
@@ -441,6 +443,28 @@ const LeaveManagement = () => {
             fetchLeaves();
         } catch (error) {
             toast.error(error.message || 'Failed to approve requests');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleBulkReject = async () => {
+        if (selectedIds.length === 0) return;
+        if (!bulkRejectRemarks.trim()) return toast.warn('Rejection reason is required');
+        setSubmitting(true);
+        try {
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+            const response = await apiCall('/leave/management/bulk-approve-reject', 'PUT', { ids: selectedIds, action: 'reject', remarks: bulkRejectRemarks }, companyId);
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'Failed to reject');
+            toast.success(`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} rejected successfully`);
+            setSelectedIds([]);
+            setIsSelectionMode(false);
+            setShowBulkRejectModal(false);
+            setBulkRejectRemarks('');
+            fetchLeaves();
+        } catch (error) {
+            toast.error(error.message || 'Failed to reject requests');
         } finally {
             setSubmitting(false);
         }
@@ -1264,6 +1288,17 @@ const LeaveManagement = () => {
                             >
                                 Approve All
                             </ManagementButton>
+                            <ManagementButton
+                                tone="red"
+                                variant="solid"
+                                leftIcon={<FaTimes />}
+                                onClick={() => { setBulkRejectRemarks(''); setShowBulkRejectModal(true); }}
+                                disabled={rejectAccess.disabled}
+                                className={`shadow-lg shadow-red-200`}
+                                title={rejectAccess.disabled ? reviewMessage : ""}
+                            >
+                                Reject All
+                            </ManagementButton>
                         </div>
                     </motion.div>
                 )}
@@ -1311,6 +1346,54 @@ const LeaveManagement = () => {
                                 className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all resize-none h-24"
                                 value={bulkApproveRemarks}
                                 onChange={(e) => setBulkApproveRemarks(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {showBulkRejectModal && (
+                <Modal
+                    isOpen={showBulkRejectModal}
+                    onClose={() => { setShowBulkRejectModal(false); setBulkRejectRemarks(''); }}
+                    title="Bulk Reject Leaves"
+                    subtitle={`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} selected`}
+                    icon={<FaTimes className="h-6 w-6" />}
+                    size="md"
+                    footer={
+                        <div className="flex gap-3 w-full justify-end">
+                            <button
+                                type="button"
+                                onClick={() => { setShowBulkRejectModal(false); setBulkRejectRemarks(''); }}
+                                className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleBulkReject}
+                                disabled={submitting}
+                                className="flex-1 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-medium hover:from-rose-700 hover:to-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {submitting ? <FaSpinner className="animate-spin" /> : <FaTimes />}
+                                {submitting ? 'Rejecting...' : `Confirm Reject ${selectedIds.length}`}
+                            </button>
+                        </div>
+                    }
+                >
+                    <div className="space-y-4">
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            You are about to reject <span className="font-bold text-gray-800">{selectedIds.length} leave request{selectedIds.length > 1 ? 's' : ''}</span>. This action cannot be undone.
+                        </p>
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Rejection Reason <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                placeholder="Provide a reason for rejecting all selected leave requests..."
+                                className="w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 outline-none transition-all resize-none h-24"
+                                value={bulkRejectRemarks}
+                                onChange={(e) => setBulkRejectRemarks(e.target.value)}
                             />
                         </div>
                     </div>
