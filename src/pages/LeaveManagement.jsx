@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
     FaEye, FaEdit, FaCheck, FaTrash, FaSpinner, FaTimes, FaPlus,
     FaCloudUploadAlt, FaCog, FaSearch, FaFilter, FaCalendarAlt,
-    FaClock, FaUser, FaClipboardList, FaChartBar
+    FaClock, FaUser, FaClipboardList, FaChartBar, FaPaperclip
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall, { uploadFile } from '../utils/api';
@@ -10,10 +10,11 @@ import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
 import SelectField from '../components/SelectField';
+import { DateRangePickerField } from '../components/DatePicker';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
+import { EmployeeSelect, ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (d) => {
@@ -32,6 +33,46 @@ const formatDays = (value) => {
     if (!Number.isFinite(number)) return '0';
     return Number.isInteger(number) ? String(number) : number.toFixed(1);
 };
+
+const toDateInputValue = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+};
+
+const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const ALLOWED_ATTACHMENT_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+
+const getFileExtension = (fileName = '') => {
+    const normalizedName = String(fileName).toLowerCase();
+    const lastDotIndex = normalizedName.lastIndexOf('.');
+    return lastDotIndex >= 0 ? normalizedName.slice(lastDotIndex) : '';
+};
+
+const isAllowedAttachment = (file) => {
+    const fileType = String(file?.type || '').toLowerCase();
+    const fileExtension = getFileExtension(file?.name);
+    return ALLOWED_ATTACHMENT_TYPES.includes(fileType) || ALLOWED_ATTACHMENT_EXTENSIONS.includes(fileExtension);
+};
+
+const isImageAttachment = (file) => {
+    const url = file?.url || '';
+    const fileType = String(file?.type || '').toLowerCase();
+    const fileExtension = getFileExtension(file?.name || url);
+    return fileType.startsWith('image/') || ['.jpg', '.jpeg', '.png', '.webp'].includes(fileExtension) || /\.(jpg|jpeg|png|webp)$/i.test(url);
+};
+
+const getEmptyCreateForm = () => ({
+    employee_id: '',
+    leave_config_id: '',
+    start_date: '',
+    end_date: '',
+    is_half_day: false,
+    half_day_type: 'first_half',
+    remarks: '',
+    attachments: [],
+});
 
 const STATUS = {
     approved: {
@@ -109,6 +150,11 @@ const LeaveManagement = () => {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
     const [bulkApproveRemarks, setBulkApproveRemarks] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createForm, setCreateForm] = useState(getEmptyCreateForm);
+    const [leaveConfigs, setLeaveConfigs] = useState([]);
+    const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
+    const [createUploading, setCreateUploading] = useState(false);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
 
@@ -118,13 +164,21 @@ const LeaveManagement = () => {
     const [rejectLeave, setRejectLeave] = useState(null);
 
     const [approveRemarks, setApproveRemarks] = useState('');
+    const [approveForm, setApproveForm] = useState({
+        start_date: '',
+        end_date: '',
+        is_half_day: false,
+        half_day_type: 'first_half',
+    });
     const [rejectRemarks, setRejectRemarks] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     // Permission Access
+    const createAccess = checkActionAccess('leaveManagement', 'create');
     const approveAccess = checkActionAccess('leaveManagement', 'approve');
     const rejectAccess = checkActionAccess('leaveManagement', 'reject');
     const reviewMessage = getAccessMessage(approveAccess.disabled ? approveAccess : rejectAccess);
+    const createMessage = getAccessMessage(createAccess);
 
     const fetchInProgress = useRef(false);
 
@@ -177,16 +231,152 @@ const LeaveManagement = () => {
         fetchLeaves(1, '', '', true);
     }, []);
 
-    const submitApprove = async () => {
-        if (!approveLeave) return;
+    const fetchLeaveConfigs = useCallback(async () => {
+        setLeaveConfigsLoading(true);
+        try {
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+            const response = await apiCall('/leave/company', 'GET', null, companyId);
+            const result = await response.json();
+
+            if (!response.ok || !result.success) throw new Error(result.message || 'Failed to load leave types');
+            setLeaveConfigs(result.data || []);
+        } catch (error) {
+            toast.error(error.message || 'Failed to load leave types');
+            setLeaveConfigs([]);
+        } finally {
+            setLeaveConfigsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (showCreateModal) fetchLeaveConfigs();
+    }, [showCreateModal, fetchLeaveConfigs]);
+
+    const closeCreateModal = () => {
+        setShowCreateModal(false);
+        setCreateForm(getEmptyCreateForm());
+    };
+
+    const handleCreateAttachmentChange = async (event) => {
+        const selectedFiles = Array.from(event.target.files || []);
+        event.target.value = '';
+
+        const validFiles = selectedFiles.filter(isAllowedAttachment);
+        const invalidFiles = selectedFiles.filter((file) => !isAllowedAttachment(file));
+
+        if (invalidFiles.length > 0) {
+            toast.error('Only PDF, JPG, JPEG, PNG and WEBP files are allowed');
+        }
+
+        if (validFiles.length === 0) return;
+
+        setCreateUploading(true);
+        try {
+            const uploadedFiles = await Promise.all(validFiles.map((file) =>
+                uploadFile(file).then((url) => ({
+                    url,
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                }))
+            ));
+
+            setCreateForm((prev) => ({
+                ...prev,
+                attachments: [...prev.attachments, ...uploadedFiles],
+            }));
+            toast.success(`${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''} uploaded`);
+        } catch (error) {
+            toast.error(error.message || 'Failed to upload attachment');
+        } finally {
+            setCreateUploading(false);
+        }
+    };
+
+    const submitCreateLeave = async () => {
+        if (!createForm.employee_id) return toast.warn('Employee is required');
+        if (!createForm.leave_config_id) return toast.warn('Leave type is required');
+        if (!createForm.start_date || !createForm.end_date) return toast.warn('Leave date range is required');
+        if (createForm.end_date < createForm.start_date) return toast.warn('End date cannot be before start date');
+
         setSubmitting(true);
         try {
             const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-            const response = await apiCall('/leave/approve', 'PUT', { ids: [approveLeave.id], remarks: approveRemarks }, companyId);
+            const payload = {
+                employee_id: Number(createForm.employee_id),
+                leave_config_id: String(createForm.leave_config_id),
+                start_date: createForm.start_date,
+                end_date: createForm.is_half_day ? createForm.start_date : createForm.end_date,
+                is_half_day: createForm.is_half_day ? 1 : 0,
+                attachments: createForm.attachments.map((file) => file.url),
+                remarks: createForm.remarks,
+            };
+
+            if (createForm.is_half_day) {
+                payload.half_day_type = createForm.half_day_type;
+            }
+
+            const response = await apiCall('/leave/management/create/', 'POST', payload, companyId);
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'Failed to create leave');
+
+            toast.success('Leave created successfully');
+            closeCreateModal();
+            fetchLeaves(1, debouncedSearch, typeFilter, true);
+        } catch (error) {
+            toast.error(error.message || 'Failed to create leave');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const submitApprove = async () => {
+        if (!approveLeave) return;
+
+        const originalStartDate = toDateInputValue(approveLeave.start_date);
+        const originalEndDate = toDateInputValue(approveLeave.end_date);
+        const hasDateChange = approveForm.start_date !== originalStartDate || approveForm.end_date !== originalEndDate;
+
+        if ((hasDateChange || approveForm.is_half_day) && (!approveForm.start_date || !approveForm.end_date)) {
+            toast.warn('Start date and end date are required when editing leave dates');
+            return;
+        }
+
+        if (approveForm.start_date && approveForm.end_date && approveForm.end_date < approveForm.start_date) {
+            toast.warn('End date cannot be before start date');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+            const payload = {
+                id: approveLeave.id,
+                remarks: approveRemarks,
+            };
+
+            if (hasDateChange || approveForm.is_half_day) {
+                payload.start_date = approveForm.start_date;
+                payload.end_date = approveForm.is_half_day ? approveForm.start_date : approveForm.end_date;
+            }
+
+            if (approveForm.is_half_day) {
+                payload.is_half_day = true;
+                payload.half_day_type = approveForm.half_day_type;
+            }
+
+            const response = await apiCall('/leave/management/approve-edit', 'PUT', payload, companyId);
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to approve');
             toast.success('Leave approved successfully');
             setApproveLeave(null);
+            setApproveRemarks('');
+            setApproveForm({
+                start_date: '',
+                end_date: '',
+                is_half_day: false,
+                half_day_type: 'first_half',
+            });
             fetchLeaves();
         } catch (error) {
             toast.error(error.message || 'Failed to approve');
@@ -261,7 +451,23 @@ const LeaveManagement = () => {
         return [
             { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailLeave(leave), className: 'text-slate-700 hover:text-blue-600 hover:bg-blue-50' },
             ...(isPending ? [
-                { label: 'Approve', icon: <FaCheck size={13} />, onClick: () => { setApproveLeave(leave); setApproveRemarks(''); }, disabled: approveAccess.disabled, title: approveAccess.disabled ? reviewMessage : '', className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50' },
+                {
+                    label: 'Approve / Edit',
+                    icon: <FaCheck size={13} />,
+                    onClick: () => {
+                        setApproveLeave(leave);
+                        setApproveRemarks('');
+                        setApproveForm({
+                            start_date: toDateInputValue(leave.start_date),
+                            end_date: toDateInputValue(leave.end_date),
+                            is_half_day: Boolean(leave.is_half_day),
+                            half_day_type: leave.half_day_type || 'first_half',
+                        });
+                    },
+                    disabled: approveAccess.disabled,
+                    title: approveAccess.disabled ? reviewMessage : '',
+                    className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                },
                 { label: 'Reject', icon: <FaTrash size={13} />, onClick: () => { setRejectLeave(leave); setRejectRemarks(''); }, disabled: rejectAccess.disabled, title: rejectAccess.disabled ? reviewMessage : '', className: 'text-rose-600 hover:text-rose-700 hover:bg-rose-50' }
             ] : [])
         ];
@@ -318,6 +524,19 @@ const LeaveManagement = () => {
             return candidates.some((value) => value === normalized || value.includes(normalized));
         });
     }, [leaves, typeFilter]);
+
+    const leaveConfigOptions = useMemo(
+        () => leaveConfigs.map((config) => ({
+            value: String(config.id),
+            label: `${config.name || config.leave_name || 'Leave'}${config.code ? ` (${config.code})` : ''}${config.is_paid === false ? ' (Unpaid)' : ''}`,
+        })),
+        [leaveConfigs]
+    );
+
+    const selectedCreateLeaveConfig = useMemo(
+        () => leaveConfigOptions.find((option) => String(option.value) === String(createForm.leave_config_id)) || null,
+        [leaveConfigOptions, createForm.leave_config_id]
+    );
 
     const columns = [
         {
@@ -420,6 +639,18 @@ const LeaveManagement = () => {
             description="Manage and review employee leave requests, approvals and history."
             accent="blue"
             onRefresh={() => fetchLeaves(1, debouncedSearch, typeFilter, true)}
+            actions={
+                <ManagementButton
+                    tone="blue"
+                    variant="solid"
+                    leftIcon={<FaPlus />}
+                    onClick={() => setShowCreateModal(true)}
+                    // disabled={createAccess.disabled}
+                    title={createAccess.disabled ? createMessage : 'Create leave request'}
+                >
+                    Create Leave
+                </ManagementButton>
+            }
         >
             <div className="space-y-6 p-2 lg:p-0">
                 {/* Stats */}
@@ -587,6 +818,196 @@ const LeaveManagement = () => {
                 )}
 
                 {/* Modals */}
+                {showCreateModal && (
+                    <Modal
+                        isOpen={showCreateModal}
+                        onClose={closeCreateModal}
+                        title="Create Leave"
+                        subtitle="Create a leave request for an employee."
+                        icon={<FaPlus className="h-6 w-6" />}
+                        size="3xl"
+                        footer={
+                            <div className="flex gap-3 w-full justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeCreateModal}
+                                    disabled={submitting}
+                                    className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={submitCreateLeave}
+                                    disabled={submitting || createUploading}
+                                    className="flex px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {submitting ? <FaSpinner className="animate-spin" /> : <FaPlus />}
+                                    {submitting ? 'Creating...' : 'Create Leave'}
+                                </button>
+                            </div>
+                        }
+                    >
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Employee <span className="text-rose-500">*</span>
+                                    </label>
+                                    <EmployeeSelect
+                                        value={createForm.employee_id}
+                                        onChange={(employeeId) => setCreateForm((prev) => ({ ...prev, employee_id: employeeId }))}
+                                        placeholder="Select employee..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Leave Type <span className="text-rose-500">*</span>
+                                    </label>
+                                    <SelectField
+                                        options={leaveConfigOptions}
+                                        value={selectedCreateLeaveConfig}
+                                        onChange={(option) => setCreateForm((prev) => ({ ...prev, leave_config_id: option ? option.value : '' }))}
+                                        placeholder={leaveConfigsLoading ? 'Loading leave types...' : 'Choose leave type...'}
+                                        isLoading={leaveConfigsLoading}
+                                        isClearable
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                                        Date Range <span className="text-rose-500">*</span>
+                                    </label>
+                                    <DateRangePickerField
+                                        value={{ start: createForm.start_date, end: createForm.end_date }}
+                                        onChange={(range) => {
+                                            const nextStart = range?.start || '';
+                                            const nextEnd = createForm.is_half_day ? nextStart : (range?.end || nextStart);
+                                            setCreateForm((prev) => ({
+                                                ...prev,
+                                                start_date: nextStart,
+                                                end_date: nextEnd,
+                                            }));
+                                        }}
+                                        placeholder="Select leave date range"
+                                        buttonClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm shadow-sm transition hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 font-medium"
+                                        initialTab="range"
+                                        mode="range"
+                                        showQuickSelect={false}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Day Type</label>
+                                    <div className={`rounded-xl border p-3 transition-all ${createForm.is_half_day ? 'border-blue-200 bg-blue-50/60 ring-2 ring-blue-100' : 'border-slate-200 bg-slate-50'}`}>
+                                        <label className="flex items-center justify-between gap-3 text-sm font-bold text-slate-700">
+                                            Half Day
+                                            <input
+                                                type="checkbox"
+                                                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                checked={createForm.is_half_day}
+                                                onChange={(e) => {
+                                                    const checked = e.target.checked;
+                                                    setCreateForm((prev) => ({
+                                                        ...prev,
+                                                        is_half_day: checked,
+                                                        end_date: checked ? prev.start_date : prev.end_date,
+                                                        half_day_type: checked ? (prev.half_day_type || 'first_half') : 'first_half',
+                                                    }));
+                                                }}
+                                            />
+                                        </label>
+                                        {createForm.is_half_day && (
+                                            <div className="mt-3 grid grid-cols-2 gap-2">
+                                                {[
+                                                    { value: 'first_half', label: 'First Half' },
+                                                    { value: 'second_half', label: 'Second Half' },
+                                                ].map((option) => (
+                                                    <button
+                                                        key={option.value}
+                                                        type="button"
+                                                        onClick={() => setCreateForm((prev) => ({ ...prev, half_day_type: option.value }))}
+                                                        className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all ${createForm.half_day_type === option.value
+                                                            ? 'border-blue-500 bg-white text-blue-700 shadow-sm'
+                                                            : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700'
+                                                            }`}
+                                                    >
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Remarks</label>
+                                <textarea
+                                    rows={4}
+                                    placeholder="Internal remarks..."
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 resize-none"
+                                    value={createForm.remarks}
+                                    onChange={(e) => setCreateForm((prev) => ({ ...prev, remarks: e.target.value }))}
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Attachments</label>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase">PDF, JPG, PNG, WEBP</span>
+                                </div>
+                                <div className="relative group">
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                        onChange={handleCreateAttachmentChange}
+                                        disabled={createUploading}
+                                        className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                                    />
+                                    <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-5 text-center transition-all group-hover:border-blue-300 group-hover:bg-blue-50/40">
+                                        <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-100 bg-white text-slate-500 shadow-sm">
+                                            {createUploading ? <FaSpinner className="animate-spin" /> : <FaCloudUploadAlt />}
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-700">Drop files here or browse</p>
+                                        <p className="mt-1 text-[11px] font-medium text-slate-400">Uploaded files are attached to the leave request</p>
+                                    </div>
+                                </div>
+
+                                {createForm.attachments.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                                        {createForm.attachments.map((file, index) => (
+                                            <div key={`${file.url}-${index}`} className="group relative aspect-square overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+                                                {isImageAttachment(file) ? (
+                                                    <img src={file.url} alt={file.name} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-orange-50 text-orange-500">
+                                                        <FaPaperclip />
+                                                        <span className="max-w-full truncate px-2 text-[9px] font-bold uppercase">{file.name}</span>
+                                                    </div>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCreateForm((prev) => ({
+                                                        ...prev,
+                                                        attachments: prev.attachments.filter((_, fileIndex) => fileIndex !== index),
+                                                    }))}
+                                                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/80 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                                                >
+                                                    <FaTimes size={10} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+
                 {detailLeave && (
                     <Modal
                         isOpen={!!detailLeave}
@@ -645,16 +1066,34 @@ const LeaveManagement = () => {
                 {approveLeave && (
                     <Modal
                         isOpen={!!approveLeave}
-                        onClose={() => setApproveLeave(null)}
-                        title="Approve Leave"
+                        onClose={() => {
+                            setApproveLeave(null);
+                            setApproveRemarks('');
+                            setApproveForm({
+                                start_date: '',
+                                end_date: '',
+                                is_half_day: false,
+                                half_day_type: 'first_half',
+                            });
+                        }}
+                        title="Approve / Edit Leave"
                         subtitle={approveLeave.employee_name}
                         icon={<FaCheck className="h-6 w-6" />}
-                        size="md"
+                        size="lg"
                         footer={
                             <div className="flex gap-3 w-full justify-end">
                                 <button
                                     type="button"
-                                    onClick={() => setApproveLeave(null)}
+                                    onClick={() => {
+                                        setApproveLeave(null);
+                                        setApproveRemarks('');
+                                        setApproveForm({
+                                            start_date: '',
+                                            end_date: '',
+                                            is_half_day: false,
+                                            half_day_type: 'first_half',
+                                        });
+                                    }}
                                     className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all"
                                 >
                                     Cancel
@@ -672,7 +1111,70 @@ const LeaveManagement = () => {
                         }
                     >
                         <div className="space-y-4">
-                            <p className="text-gray-600 text-sm leading-relaxed">Are you sure you want to approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>?</p>
+                            <p className="text-gray-600 text-sm leading-relaxed">Approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>. You can adjust the date range or convert it to a half-day before approving.</p>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Leave Date Range</label>
+                                <DateRangePickerField
+                                    value={{
+                                        start: approveForm.start_date,
+                                        end: approveForm.is_half_day ? approveForm.start_date : approveForm.end_date,
+                                    }}
+                                    onChange={(range) => {
+                                        const nextStart = range?.start || '';
+                                        const nextEnd = approveForm.is_half_day ? nextStart : (range?.end || nextStart);
+
+                                        setApproveForm((prev) => ({
+                                            ...prev,
+                                            start_date: nextStart,
+                                            end_date: nextEnd,
+                                        }));
+                                    }}
+                                    placeholder="Select leave date range"
+                                    mode="both"
+                                    initialTab="single"
+                                    showQuickSelect={false}
+                                    buttonClassName="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                />
+                            </div>
+                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                                <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                        checked={approveForm.is_half_day}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setApproveForm((prev) => ({
+                                                ...prev,
+                                                is_half_day: checked,
+                                                end_date: checked ? prev.start_date : prev.end_date,
+                                                half_day_type: prev.half_day_type || 'first_half',
+                                            }));
+                                        }}
+                                    />
+                                    Convert to half-day
+                                </label>
+                                {approveForm.is_half_day && (
+                                    <div className="mt-3 grid grid-cols-2 gap-2">
+                                        {[
+                                            { value: 'first_half', label: 'First Half' },
+                                            { value: 'second_half', label: 'Second Half' },
+                                        ].map((option) => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => setApproveForm((prev) => ({ ...prev, half_day_type: option.value }))}
+                                                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-all ${approveForm.half_day_type === option.value
+                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:text-emerald-700'
+                                                    }`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Approval Remarks (Optional)</label>
                                 <textarea
