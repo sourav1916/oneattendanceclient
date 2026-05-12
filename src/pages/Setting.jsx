@@ -32,6 +32,58 @@ const containerVariants = {
 
 
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+// Collapsible card wrapper
+const SecurityCard = ({ title, icon, badge, danger, headerAction, children }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border mt-4 overflow-hidden transition-all
+    ${danger ? "border-red-100" : "border-gray-100"}`}
+    >
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left hover:bg-gray-50/70 transition-colors
+        ${danger ? "hover:bg-red-50/40" : ""}`}
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className={`text-base ${danger ? "text-red-500" : "text-indigo-500"}`}>{icon}</span>
+          <span className={`text-sm sm:text-base font-semibold ${danger ? "text-red-700" : "text-gray-800"}`}>{title}</span>
+          {badge && (
+            <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-0.5 rounded-full">{badge}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {open && headerAction}
+          <FiChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-4 sm:px-6 pb-5 border-t border-gray-100">
+          <div className="pt-4">{children}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const getDeviceIcon = (name) => {
+  const n = name.toLowerCase();
+  if (n.includes("ios") || n.includes("safari")) return "🍎";
+  if (n.includes("android") || n.includes("mobile")) return "📱";
+  return "💻";
+};
+
+const timeAgo = (dateStr) => {
+  const diff = Math.floor((Date.now() - new Date(dateStr + " UTC")) / 1000);
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+};
+
 const SettingsPage = () => {
   const { user, loading, refreshUser, companies, setCompanies, company } = useAuth();
 
@@ -78,40 +130,6 @@ const SettingsPage = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
 
-  // Collapsible card wrapper
-  const SecurityCard = ({ title, icon, badge, danger, headerAction, children }) => {
-    const [open, setOpen] = useState(false);
-
-    return (
-      <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border mt-4 overflow-hidden transition-all
-      ${danger ? "border-red-100" : "border-gray-100"}`}
-      >
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className={`w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left hover:bg-gray-50/70 transition-colors
-          ${danger ? "hover:bg-red-50/40" : ""}`}
-        >
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <span className={`text-base ${danger ? "text-red-500" : "text-indigo-500"}`}>{icon}</span>
-            <span className={`text-sm sm:text-base font-semibold ${danger ? "text-red-700" : "text-gray-800"}`}>{title}</span>
-            {badge && (
-              <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-0.5 rounded-full">{badge}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {open && headerAction}
-            <FiChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-          </div>
-        </button>
-
-        {open && (
-          <div className="px-4 sm:px-6 pb-5 border-t border-gray-100">
-            <div className="pt-4">{children}</div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const handleDeleteAccount = () => {
     setDeleteConfirmText("");
@@ -228,20 +246,6 @@ const SettingsPage = () => {
     } finally {
       setLoggingOutAll(false);
     }
-  };
-  const getDeviceIcon = (name) => {
-    const n = name.toLowerCase();
-    if (n.includes("ios") || n.includes("safari")) return "🍎";
-    if (n.includes("android") || n.includes("mobile")) return "📱";
-    return "💻";
-  };
-
-  const timeAgo = (dateStr) => {
-    const diff = Math.floor((Date.now() - new Date(dateStr + " UTC")) / 1000);
-    if (diff < 60) return "Just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
   };
 
   useEffect(() => {
