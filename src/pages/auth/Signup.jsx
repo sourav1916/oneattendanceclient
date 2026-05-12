@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -40,6 +40,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const { login } = useAuth();
+  const firstOtpInputRef = useRef(null);
   const isLoading = loadingAction !== null;
 
   // Countdown timer for resend OTP
@@ -52,6 +53,16 @@ const Signup = () => {
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
+
+  useEffect(() => {
+    if (!otpSent || currentStep !== 2 || isLoading) return;
+
+    const focusTimer = window.setTimeout(() => {
+      firstOtpInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [otpSent, currentStep, isLoading]);
 
   // Animation variants
   const containerVariants = {
@@ -528,6 +539,7 @@ const Signup = () => {
                         {otp.map((digit, index) => (
                           <motion.input
                             key={index}
+                            ref={index === 0 ? firstOtpInputRef : null}
                             id={`otp-${index}`}
                             type="text"
                             maxLength="1"

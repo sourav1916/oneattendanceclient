@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -31,6 +31,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [userCompanies, setUserCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const firstOtpInputRef = useRef(null);
   const isLoading = loadingAction !== null;
 
   // Check after login if company selection is needed
@@ -70,6 +71,16 @@ const Login = () => {
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
+
+  useEffect(() => {
+    if (!otpSent || isLoading) return;
+
+    const focusTimer = window.setTimeout(() => {
+      firstOtpInputRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [otpSent, isLoading]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -323,7 +334,7 @@ const Login = () => {
                       <div className="space-y-6 p-2 lg:p-0">
                         <div className="flex justify-center gap-2">
                           {otp.map((digit, index) => (
-                            <input key={index} id={`otp-${index}`} type="text" maxLength="1" value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} disabled={isLoading} className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />
+                            <input key={index} ref={index === 0 ? firstOtpInputRef : null} id={`otp-${index}`} type="text" maxLength="1" value={digit} onChange={(e) => handleOtpChange(index, e.target.value)} onKeyDown={(e) => handleOtpKeyDown(index, e)} disabled={isLoading} className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60" />
                           ))}
                         </div>
                         <div className="flex items-center justify-between text-sm">
