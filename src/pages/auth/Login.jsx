@@ -295,16 +295,16 @@ const Login = () => {
 
           {/* Right Card */}
           <motion.div variants={itemVariants} className="w-full lg:w-96">
-            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl">
+            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl" style={{ minHeight: "480px" }}>
               <AnimatePresence mode="wait">
                 {!showCompanySelection ? (
                   <motion.div key="login" initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 50, opacity: 0 }}>
-                    <div className="flex flex-col items-center mb-8">
-                      <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl text-white text-3xl shadow-lg">
+                    <div className="flex flex-col items-center mb-4">
+                      <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl text-white text-2xl shadow-lg">
                         <FaUserShield />
                       </motion.div>
-                      <h2 className="text-2xl font-bold text-gray-800 mt-4">{otpSent ? 'Verify OTP' : 'Secure Login'}</h2>
-                      <p className="text-sm text-gray-500 text-center">{otpSent ? 'Enter the 6-digit code sent to your email' : 'Access your account securely'}</p>
+                      <h2 className="text-xl font-bold text-gray-800 mt-2">{otpSent ? 'Verify OTP' : 'Secure Login'}</h2>
+                      <p className="text-xs text-gray-500 text-center">{otpSent ? 'Enter the 6-digit code sent to your email' : 'Access your account securely'}</p>
                     </div>
 
                     {!otpSent ? (
@@ -373,7 +373,7 @@ const Login = () => {
                         <button onClick={() => setOtpSent(false)} disabled={isLoading} className="w-full text-gray-600 text-sm disabled:opacity-50">← Back to login</button>
                       </div>
                     )}
-                    <div className="mt-6 text-center text-sm text-gray-600">
+                    <div className="mt-4 text-center text-sm text-gray-600">
                       Don't have an account? <Link to="/signup" className="text-blue-600 font-semibold hover:underline">Create Account</Link>
                     </div>
                   </motion.div>
@@ -406,7 +406,7 @@ const Login = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="mt-6 flex items-center justify-center space-x-2 text-xs text-gray-500">
+              <div className="mt-3 flex items-center justify-center space-x-2 text-xs text-gray-500">
                 <FaShieldAlt className="text-green-500" />
                 <span>256-bit encrypted connection</span>
               </div>

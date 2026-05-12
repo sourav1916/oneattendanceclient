@@ -441,28 +441,29 @@ const Signup = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, type: "spring" }}
               className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl"
+              style={{ minHeight: "480px" }}
             >
               {/* Header */}
               <motion.div
                 variants={itemVariants}
-                className="flex flex-col items-center mb-6"
+                className="flex flex-col items-center mb-4"
               >
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.1 }}
                   transition={{ duration: 0.5 }}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 p-4 rounded-xl text-white text-3xl shadow-lg"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl text-white text-2xl shadow-lg"
                 >
                   <FaUserShield />
                 </motion.div>
                 <motion.h2
                   variants={itemVariants}
-                  className="text-2xl font-bold text-gray-800 mt-4"
+                  className="text-xl font-bold text-gray-800 mt-2"
                 >
                   {getStepTitle()}
                 </motion.h2>
                 <motion.p
                   variants={itemVariants}
-                  className="text-sm text-gray-500 text-center"
+                  className="text-xs text-gray-500 text-center"
                 >
                   {currentStep === 1 && "Fill in your details to get started"}
                   {currentStep === 2 && "Enter the verification code sent to your email"}
@@ -479,7 +480,7 @@ const Signup = () => {
                   animate="center"
                   exit="exit"
                   transition={{ type: "tween", duration: 0.3 }}
-                  className="space-y-4"
+                  className="space-y-5"
                 >
                   {currentStep === 1 && (
                     /* Step 1: Basic Info */
@@ -688,7 +689,7 @@ const Signup = () => {
               {/* Login Link */}
               <motion.div
                 variants={itemVariants}
-                className="mt-6 text-center text-sm text-gray-600"
+                className="mt-4 text-center text-sm text-gray-600"
               >
                 Already have an account?{' '}
                 <Link to="/login">
@@ -706,7 +707,7 @@ const Signup = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1 }}
-                className="mt-4 flex items-center justify-center space-x-2 text-xs text-gray-500"
+                className="mt-3 flex items-center justify-center space-x-2 text-xs text-gray-500"
               >
                 <FaShieldAlt className="text-green-500" />
                 <span>Your data is protected with 256-bit encryption</span>
