@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog,
@@ -13,7 +13,7 @@ import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
 import ModalScrollLock from "../components/ModalScrollLock";
 import Skeleton from "../components/SkeletonComponent";
-import apiCall from "../utils/api";
+import apiCall, { uploadFile } from "../utils/api";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -107,10 +107,15 @@ const SettingsPage = () => {
 
   const [profileForm, setProfileForm] = useState({
     name: user?.name,
-    phone: user?.phone
+    phone: user?.phone,
+    profile_picture: user?.profile_picture || ""
+  });
+  const [originalProfile, setOriginalProfile] = useState({
+    name: user?.name,
+    phone: user?.phone,
+    profile_picture: user?.profile_picture || ""
   });
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  const [originalProfile, setOriginalProfile] = useState({});
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   {/* ---- Active Sessions Card ---- */ }
 
@@ -118,10 +123,11 @@ const SettingsPage = () => {
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [loggingOutId, setLoggingOutId] = useState(null);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
-
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState(user?.profile_picture || null);
+  const fileInputRef = useRef(null); // add useRef to imports
   // New state for delete account
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
   const [deleteStep, setDeleteStep] = useState("email");
   const [deleteEmail, setDeleteEmail] = useState("");
@@ -388,6 +394,35 @@ const SettingsPage = () => {
       ...profileForm,
       [e.target.name]: e.target.value
     });
+  };
+  const handleImageUpload = async (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image must be less than 5MB");
+        return;
+      }
+
+      setIsUploadingImage(true);
+      try {
+        const url = await uploadFile(file);
+        setProfileForm((prev) => ({ ...prev, profile_picture: url }));
+        setImagePreview(url);
+        toast.success("Image uploaded successfully!");
+      } catch (error) {
+        toast.error(error.message || "Failed to upload image");
+        setImagePreview(user?.profile_picture || null);
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
   };
 
   const handleProfileUpdate = async () => {
@@ -743,10 +778,75 @@ const SettingsPage = () => {
               </div>
 
               <div className="space-y-5">
+
+                {/* ── Profile Picture ── */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                  {/* Avatar preview */}
+                  <div className="relative group flex-shrink-0">
+                    <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                      {imagePreview ? (
+                        <img
+                          src={imagePreview}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                          onError={() => setImagePreview(null)}
+                        />
+                      ) : (
+                        <FaUser className="text-indigo-300 text-3xl" />
+                      )}
+                    </div>
+                    {/* Overlay on hover */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                    >
+                      {isUploadingImage ? (
+                        <FaSpinner className="text-white w-5 h-5 animate-spin" />
+                      ) : (
+                        <span className="text-white text-xs font-semibold">Change</span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Upload button & hint */}
+                  <div className="flex flex-col justify-center gap-2 text-center sm:text-left">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingImage}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-indigo-200 text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isUploadingImage ? (
+                        <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Uploading...</>
+                      ) : (
+                        <><FaSave className="w-3.5 h-3.5" />Upload Photo</>
+                      )}
+                    </button>
+                    <p className="text-xs text-gray-400">JPG, PNG or GIF · Max 5MB</p>
+                    {profileForm.profile_picture && (
+                      <button
+                        onClick={() => {
+                          setImagePreview(null);
+                          setProfileForm((p) => ({ ...p, profile_picture: "" }));
+                        }}
+                        className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                      >
+                        Remove photo
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Full Name ── */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Full Name
-                  </label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Full Name</label>
                   <input
                     type="text"
                     name="name"
@@ -757,23 +857,21 @@ const SettingsPage = () => {
                   />
                 </div>
 
+                {/* ── Email (read-only) ── */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Email Address
-                  </label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Email Address</label>
                   <input
                     type="email"
-                    value={user?.email || ''}
+                    value={user?.email || ""}
                     readOnly
                     className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
                   <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
                 </div>
 
+                {/* ── Phone ── */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
-                    Phone Number
-                  </label>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Phone Number</label>
                   <input
                     type="tel"
                     name="phone"
@@ -787,19 +885,13 @@ const SettingsPage = () => {
                 <div className="flex items-center justify-end pt-4">
                   <button
                     onClick={handleProfileUpdate}
-                    disabled={isUpdatingProfile}
+                    disabled={isUpdatingProfile || isUploadingImage}
                     className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isUpdatingProfile ? (
-                      <>
-                        <FaSpinner className="w-4 h-4 animate-spin" />
-                        Updating...
-                      </>
+                      <><FaSpinner className="w-4 h-4 animate-spin" />Updating...</>
                     ) : (
-                      <>
-                        <FaSave className="w-4 h-4" />
-                        Save Changes
-                      </>
+                      <><FaSave className="w-4 h-4" />Save Changes</>
                     )}
                   </button>
                 </div>
