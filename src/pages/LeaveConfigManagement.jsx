@@ -43,8 +43,6 @@ const DEFAULT_FORM = {
   name: '',
   is_paid: true,
   allow_half_day: false,
-  accrual_type: 'none',
-  accrual_rate: 0,
   max_balance: 0,
   carry_forward_limit: 0,
   exclude_weekends: true,
@@ -271,10 +269,6 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               <InfoItem label="Max Balance" value={`${formatDays(record.max_balance)} days`} />
               <InfoItem label="Carry Forward" value={`${formatDays(record.carry_forward_limit)} days`} />
-              <InfoItem label="Accrual Type" value={<span className="capitalize">{record.accrual_type}</span>} />
-              {record.accrual_type !== 'none' && (
-                <InfoItem label="Accrual Rate" value={`${formatDays(record.accrual_rate)} days`} />
-              )}
               <InfoItem label="Half Day" value={<BoolCell value={record.allow_half_day} />} />
               <InfoItem label="Exclude Weekends" value={<BoolCell value={record.exclude_weekends} />} />
             </div>
@@ -361,7 +355,6 @@ const FormModal = ({
   onClose,
   onSaved,
   leaveTypeOptions,
-  accrualTypeOptions,
   existingCodes,
   submitDisabled = false,
   submitTitle = '',
@@ -371,7 +364,6 @@ const FormModal = ({
     ...editRecord,
     max_balance: Math.round(editRecord.max_balance || 0),
     carry_forward_limit: Math.round(editRecord.carry_forward_limit || 0),
-    accrual_rate: Math.round(editRecord.accrual_rate || 0),
   } : { ...DEFAULT_FORM });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
@@ -389,8 +381,6 @@ const FormModal = ({
     if (form.code?.trim().length > 10) e.code = 'Max 10 characters';
     if (!form.name?.trim()) e.name = 'Name is required';
     if (Number(form.max_balance) < 0) e.max_balance = 'Must be ≥ 0';
-    if (form.accrual_type && form.accrual_type !== 'none' && Number(form.accrual_rate) <= 0)
-      e.accrual_rate = 'Rate must be > 0 when accrual is active';
     return e;
   };
 
@@ -401,7 +391,6 @@ const FormModal = ({
     try {
       const payload = {
         ...form,
-        accrual_rate: Number(form.accrual_rate),
         max_balance: Number(form.max_balance),
         carry_forward_limit: Number(form.carry_forward_limit),
       };
@@ -409,9 +398,9 @@ const FormModal = ({
         await updateLeaveType(payload);
         toast.success('Leave type updated successfully');
       } else {
-        const { code, name, is_paid, allow_half_day, accrual_type, accrual_rate,
+        const { code, name, is_paid, allow_half_day,
           max_balance, carry_forward_limit, exclude_weekends } = payload;
-        await createLeaveType({ code, name, is_paid, allow_half_day, accrual_type, accrual_rate, max_balance, carry_forward_limit, exclude_weekends });
+        await createLeaveType({ code, name, is_paid, allow_half_day, max_balance, carry_forward_limit, exclude_weekends });
         toast.success('Leave type created successfully');
       }
       onSaved();
@@ -541,35 +530,6 @@ const FormModal = ({
           </div>
 
           <div>
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Accrual</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-600">Accrual Type</label>
-                <select value={form.accrual_type} onChange={(e) => set('accrual_type', e.target.value)} className={inputCls('accrual_type')}>
-                  {accrualTypeOptions.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-gray-600">Accrual Rate (days)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={form.accrual_rate}
-                  disabled={!form.accrual_type || form.accrual_type === 'none'}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
-                    set('accrual_rate', val);
-                  }}
-                  className={`${inputCls('accrual_rate')} ${!form.accrual_type || form.accrual_type === 'none' ? '!bg-gray-50 cursor-not-allowed text-gray-400' : ''}`}
-                />
-                {errors.accrual_rate && <p className="mt-1 text-xs text-red-500">{errors.accrual_rate}</p>}
-              </div>
-            </div>
-          </div>
-
-          <div>
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">Rules & Policies</h3>
             <div className="space-y-2.5">
               <ToggleSwitch checked={form.is_paid} onChange={(v) => set('is_paid', v)} label="Paid Leave" sublabel="Employees are compensated during this leave" />
@@ -605,7 +565,6 @@ const LeaveConfigManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
-  const [accrualTypeOptions, setAccrualTypeOptions] = useState([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [formModal, setFormModal] = useState({ open: false, record: null });
@@ -655,12 +614,6 @@ const LeaveConfigManagement = () => {
           description: item.value.description,
         }));
         setLeaveTypeOptions(typeOpts);
-
-        const accrualOpts = (data.accrual_types || []).map((item) => ({
-          value: item.value.value,
-          label: item.value.label,
-        }));
-        setAccrualTypeOptions(accrualOpts);
       })
       .catch(() => { }); // non-critical
   }, []);
@@ -1067,8 +1020,6 @@ const LeaveConfigManagement = () => {
           <FormModal
             key="form-modal"
             editRecord={formModal.record}
-            leaveTypeOptions={leaveTypeOptions}
-            accrualTypeOptions={accrualTypeOptions}
             existingCodes={new Set(records.map((r) => r.code?.toUpperCase()))}
             onClose={() => setFormModal({ open: false, record: null })}
             onSaved={() => {
