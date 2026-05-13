@@ -27,8 +27,6 @@ import LeaveManagement from "./pages/LeaveManagement";
 import LeaveConfigManagement from "./pages/LeaveConfigManagement";
 import LeaveBalanceManagement from "./pages/LeaveBalanceManagement";
 import InvitePackageManagement from "./pages/InvitePackage";
-import AttendanceManagement from "./pages/AttendanceManagement";
-import PendingAttendance from "./pages/PendingAttendance";
 import PermissionManagement from "./pages/PermissionManagement";
 import CompanyHolidays from "./pages/HolidayManagement";
 import MyCalendar from "./pages/MyCalendar";

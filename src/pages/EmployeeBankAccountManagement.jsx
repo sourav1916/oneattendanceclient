@@ -4,7 +4,8 @@ import {
   FaSearch, FaTimes, FaCheck,
   FaUser, FaSpinner,
   FaUniversity, FaStar, FaPlus,
-  FaMoneyBillWave, FaChartBar, FaEye, FaQrcode, FaShieldAlt
+  FaMoneyBillWave, FaChartBar, FaEye, FaQrcode, FaShieldAlt,
+  FaEdit, FaTrash, FaExclamationTriangle, FaChevronDown,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -13,6 +14,8 @@ import Modal from '../components/Modal';
 import { ManagementHub, ManagementTable, ManagementButton } from '../components/common';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { fetchIfscDetails } from '../utils/ifscLookup';
+import EmployeeSelect from '../components/common/EmployeeSelect';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -31,11 +34,45 @@ const STAT_STYLES = {
   amber: { iconWrap: 'bg-amber-50 text-amber-600', glow: 'bg-amber-100/70' },
 };
 
+// Valid account types for employee bank accounts per API spec
+const EMPLOYEE_ACCOUNT_TYPES = ['savings', 'current', 'upi'];
 const BANK_ACCOUNT_TYPES = ['bank', 'savings', 'current', 'loan'];
 const isBankAccount = (type) => BANK_ACCOUNT_TYPES.includes(type);
 
 const employeeBankAccountsRequestCache = new Map();
 const getEmployeeBankAccountsCacheKey = (companyId) => String(companyId ?? 'no-company');
+
+// ─── Form Defaults ──────────────────────────────────────────────────────────────
+
+const EMPTY_FORM = {
+  bank_id: null,
+  account_type: 'savings',
+  bank_name: '',
+  account_holder_name: '',
+  account_number: '',
+  ifsc_code: '',
+  branch_name: '',
+  address: '',
+  city: '',
+  district: '',
+  state: '',
+  micr: '',
+  contact: '',
+  upi_id: '',
+  is_primary: false,
+  employee_id: '',
+};
+
+const EMPTY_AUTO_LOCKED_FIELDS = {
+  bank_name: false,
+  branch_name: false,
+  address: false,
+  city: false,
+  district: false,
+  state: false,
+  micr: false,
+  contact: false,
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -86,6 +123,19 @@ const maskAccount = (num) => {
   if (num.length <= 4) return num;
   return '••••' + num.slice(-4);
 };
+
+// ─── Form Field ────────────────────────────────────────────────────────────────
+
+const FormField = ({ label, children }) => (
+  <div className="space-y-2">
+    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400">{label}</label>
+    {children}
+  </div>
+);
+
+const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/5 placeholder:font-normal placeholder:text-slate-400";
+
+const lockedInputClass = (locked) => `${inputCls} ${locked ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : ''}`;
 
 // ─── Mobile Card ───────────────────────────────────────────────────────────────
 
@@ -163,6 +213,16 @@ const EmployeeBankAccountManagement = () => {
   const [viewModal, setViewModal] = useState({ open: false, account: null });
   const [viewMode, setViewMode] = useState('table');
 
+  // ── Add Account Modal State ──────────────────────────────────────────────────
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [ifscLookupState, setIfscLookupState] = useState({ loading: false, error: '' });
+  const [autoLockedFields, setAutoLockedFields] = useState(EMPTY_AUTO_LOCKED_FIELDS);
+  const ifscLookupRequestRef = useRef(0);
+  const ifscLookupTimerRef = useRef(null);
+  const lastIfscLookupRef = useRef('');
+
   const getEffectiveWidth = () => {
     const width = window.innerWidth;
     const offset = width >= 1024 ? 280 : (width >= 768 ? 80 : 0);
@@ -183,9 +243,7 @@ const EmployeeBankAccountManagement = () => {
 
   useEffect(() => {
     isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
+    return () => { isMountedRef.current = false; };
   }, []);
 
   useEffect(() => {
@@ -196,14 +254,9 @@ const EmployeeBankAccountManagement = () => {
         setVisibleColumns(getVisibleColumns(getEffectiveWidth()));
       }, 150);
     };
-
     window.addEventListener('resize', handleResize);
     handleResize();
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', handleResize);
-    };
+    return () => { clearTimeout(timer); window.removeEventListener('resize', handleResize); };
   }, [getVisibleColumns]);
 
   // ── Fetch ────────────────────────────────────────────────────────────────────
@@ -227,9 +280,7 @@ const EmployeeBankAccountManagement = () => {
 
     try {
       const result = await requestPromise;
-      
       if (!isMountedRef.current) return;
-
       if (result.success) {
         setAccounts(result.data || []);
       } else {
@@ -292,18 +343,196 @@ const EmployeeBankAccountManagement = () => {
     { label: 'UPI/Cash Accounts', value: accounts.filter(a => a.account_type === 'cash' || a.account_type === 'upi').length, icon: FaMoneyBillWave, color: 'amber', isCount: true },
   ], [accounts]);
 
+  // ── IFSC Lookup ───────────────────────────────────────────────────────────────
+
+  const resetIfscLookupState = () => {
+    ifscLookupRequestRef.current += 1;
+    if (ifscLookupTimerRef.current) {
+      clearTimeout(ifscLookupTimerRef.current);
+      ifscLookupTimerRef.current = null;
+    }
+    lastIfscLookupRef.current = '';
+    setIfscLookupState({ loading: false, error: '' });
+    setAutoLockedFields(EMPTY_AUTO_LOCKED_FIELDS);
+  };
+
+  const handleIfscChange = (value) => {
+    const nextIfsc = value.toUpperCase();
+    setFormData((prev) => {
+      const shouldClearFetchedFields = !nextIfsc.trim() || nextIfsc.length < 11 || nextIfsc !== lastIfscLookupRef.current;
+      if (!shouldClearFetchedFields) return { ...prev, ifsc_code: nextIfsc };
+      return {
+        ...prev,
+        ifsc_code: nextIfsc,
+        bank_name: '',
+        branch_name: '',
+        address: '',
+        city: '',
+        district: '',
+        state: '',
+        micr: '',
+        contact: '',
+      };
+    });
+    resetIfscLookupState();
+  };
+
+  const applyIfscLookup = useCallback(async (ifscValue, { silent = false } = {}) => {
+    const ifsc = String(ifscValue || '').trim().toUpperCase();
+    if (ifsc.length !== 11) {
+      if (!silent) toast.error('Enter a valid 11-character IFSC code');
+      return false;
+    }
+
+    const requestId = ++ifscLookupRequestRef.current;
+    setIfscLookupState({ loading: true, error: '' });
+
+    try {
+      const details = await fetchIfscDetails(ifsc);
+      if (requestId !== ifscLookupRequestRef.current || !isMountedRef.current) return false;
+
+      lastIfscLookupRef.current = ifsc;
+      setAutoLockedFields({
+        bank_name: !!details.bank_name,
+        branch_name: !!details.branch_name,
+        address: !!details.address,
+        city: !!details.city,
+        district: !!details.district,
+        state: !!details.state,
+        micr: !!details.micr,
+        contact: !!details.contact,
+      });
+      setFormData((prev) => ({
+        ...prev,
+        ifsc_code: ifsc,
+        bank_name: details.bank_name || prev.bank_name,
+        branch_name: details.branch_name || prev.branch_name,
+        address: details.address || prev.address,
+        city: details.city || prev.city,
+        district: details.district || prev.district,
+        state: details.state || prev.state,
+        micr: details.micr || prev.micr,
+        contact: details.contact || prev.contact,
+      }));
+      return true;
+    } catch (error) {
+      if (requestId !== ifscLookupRequestRef.current || !isMountedRef.current) return false;
+      const message = error.message || 'Failed to fetch bank details';
+      setIfscLookupState({ loading: false, error: message });
+      if (!silent) toast.error(message);
+      return false;
+    } finally {
+      if (requestId === ifscLookupRequestRef.current && isMountedRef.current) {
+        setIfscLookupState((prev) => ({ ...prev, loading: false }));
+      }
+    }
+  }, []);
+
+  // Auto-lookup IFSC after debounce
+  useEffect(() => {
+    if (!showModal || !['savings', 'current'].includes(formData.account_type)) return undefined;
+
+    const ifsc = String(formData.ifsc_code || '').trim().toUpperCase();
+    if (ifsc.length !== 11 || ifsc === lastIfscLookupRef.current) return undefined;
+
+    if (ifscLookupTimerRef.current) clearTimeout(ifscLookupTimerRef.current);
+    ifscLookupTimerRef.current = setTimeout(() => {
+      void applyIfscLookup(ifsc, { silent: true });
+    }, 450);
+
+    return () => {
+      if (ifscLookupTimerRef.current) {
+        clearTimeout(ifscLookupTimerRef.current);
+        ifscLookupTimerRef.current = null;
+      }
+    };
+  }, [applyIfscLookup, formData.account_type, formData.ifsc_code, showModal]);
+
   // ── Modal helpers ─────────────────────────────────────────────────────────────
 
+  const openAddModal = () => {
+    setFormData({ ...EMPTY_FORM });
+    ifscLookupRequestRef.current += 1;
+    if (ifscLookupTimerRef.current) {
+      clearTimeout(ifscLookupTimerRef.current);
+      ifscLookupTimerRef.current = null;
+    }
+    lastIfscLookupRef.current = '';
+    setIfscLookupState({ loading: false, error: '' });
+    setAutoLockedFields(EMPTY_AUTO_LOCKED_FIELDS);
+    setShowModal(true);
+  };
+
+  const closeModal = useCallback(() => { if (!saving) setShowModal(false); }, [saving]);
   const closeViewModal = useCallback(() => setViewModal({ open: false, account: null }), []);
 
   useEffect(() => {
-    if (!viewModal.open) return;
+    if (!showModal && !viewModal.open) return;
     const handler = (e) => {
-      if (e.key === 'Escape') closeViewModal();
+      if (e.key === 'Escape') {
+        if (viewModal.open) { closeViewModal(); return; }
+        closeModal();
+      }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [closeViewModal, viewModal.open]);
+  }, [closeModal, closeViewModal, showModal, viewModal.open]);
+
+  // ── Action ───────────────────────────────────────────────────────────────────
+
+  const isBankType = ['savings', 'current'].includes(formData.account_type);
+  const isUpiType = formData.account_type === 'upi';
+
+  const handleAction = async () => {
+    if (!formData.employee_id) { toast.error('Employee ID is required'); return; }
+    if (!formData.account_holder_name.trim()) { toast.error('Account holder name is required'); return; }
+    if (isBankType) {
+      if (!formData.bank_name.trim()) { toast.error('Bank name is required'); return; }
+      if (!formData.account_number.trim()) { toast.error('Account number is required'); return; }
+      if (!formData.ifsc_code.trim()) { toast.error('IFSC code is required'); return; }
+    }
+    if (isUpiType) {
+      if (!formData.upi_id.trim()) { toast.error('UPI ID is required'); return; }
+    }
+
+    setSaving(true);
+    try {
+      const companyId = getCompanyId();
+
+      const payload = isBankType
+        ? {
+            bank_owner_type: 'employee',
+            employee_id: Number(formData.employee_id),
+            account_type: formData.account_type,
+            bank_name: formData.bank_name,
+            account_holder_name: formData.account_holder_name,
+            account_number: formData.account_number,
+            ifsc_code: formData.ifsc_code,
+            branch_name: formData.branch_name,
+            is_primary: formData.is_primary,
+          }
+        : {
+            bank_owner_type: 'employee',
+            employee_id: Number(formData.employee_id),
+            account_type: 'upi',
+            upi_id: formData.upi_id,
+            is_primary: formData.is_primary,
+          };
+
+      const response = await apiCall('/bank-accounts/create', 'POST', payload, companyId);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) throw new Error(result.message || 'Operation failed');
+
+      toast.success(result.message || 'Account added successfully');
+      setShowModal(false);
+      await fetchData({ force: true });
+    } catch (error) {
+      toast.error(error.message || 'An error occurred. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handlePageChange = useCallback((page) => { goToPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }, [goToPage]);
 
@@ -317,14 +546,12 @@ const EmployeeBankAccountManagement = () => {
       render: (account) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-             <FaUser size={14} />
+            <FaUser size={14} />
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-slate-800 text-sm truncate">{account.employee_name || account.account_holder_name}</div>
             {account.employee_id && (
-              <div className="text-[10px] text-slate-400 font-mono italic">
-                {account.employee_id}
-              </div>
+              <div className="text-[10px] text-slate-400 font-mono italic">{account.employee_id}</div>
             )}
           </div>
         </div>
@@ -336,10 +563,10 @@ const EmployeeBankAccountManagement = () => {
       visible: visibleColumns.showAccount,
       render: (account) => (
         <div className="min-w-0">
-           <div className="font-semibold text-slate-700 text-sm truncate">{account.account_holder_name}</div>
-           <div className="text-[10px] text-slate-400 font-mono italic truncate">
-             {account.account_type === 'upi' ? (account.upi_id || 'UPI ID') : (account.bank_name || 'Cash Account')}
-           </div>
+          <div className="font-semibold text-slate-700 text-sm truncate">{account.account_holder_name}</div>
+          <div className="text-[10px] text-slate-400 font-mono italic truncate">
+            {account.account_type === 'upi' ? (account.upi_id || 'UPI ID') : (account.bank_name || 'Cash Account')}
+          </div>
         </div>
       ),
     },
@@ -408,9 +635,7 @@ const EmployeeBankAccountManagement = () => {
           tone="blue"
           variant="solid"
           leftIcon={<FaPlus />}
-          onClick={() => {
-            toast.info("Adding employee accounts will be available soon.");
-          }}
+          onClick={openAddModal}
           className="whitespace-nowrap"
         >
           Add Account
@@ -442,7 +667,6 @@ const EmployeeBankAccountManagement = () => {
           transition={{ delay: 0.1 }}
           className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
         >
-          {/* Left Section: Search */}
           <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -455,8 +679,6 @@ const EmployeeBankAccountManagement = () => {
               />
             </div>
           </div>
-
-          {/* Right Section: View Switcher */}
           <div className="flex items-center justify-end">
             <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
             <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
@@ -508,7 +730,7 @@ const EmployeeBankAccountManagement = () => {
         )}
       </div>
 
-      {/* View Modal */}
+      {/* ── View Modal ────────────────────────────────────────────────────────── */}
       <Modal
         isOpen={viewModal.open && !!viewModal.account}
         onClose={closeViewModal}
@@ -534,11 +756,11 @@ const EmployeeBankAccountManagement = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 col-span-1 sm:col-span-2">
-               <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-blue-400">Employee Information</p>
-               <p className="font-bold text-sm text-blue-700">{viewModal.account?.employee_name}</p>
-               {viewModal.account?.employee_id && (
-                 <p className="font-mono text-xs font-semibold text-blue-600 mt-1">{viewModal.account.employee_id}</p>
-               )}
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-blue-400">Employee Information</p>
+              <p className="font-bold text-sm text-blue-700">{viewModal.account?.employee_name}</p>
+              {viewModal.account?.employee_id && (
+                <p className="font-mono text-xs font-semibold text-blue-600 mt-1">{viewModal.account.employee_id}</p>
+              )}
             </div>
 
             {viewModal.account?.account_type === 'upi' ? (
@@ -575,6 +797,203 @@ const EmployeeBankAccountManagement = () => {
               <p className="text-sm font-bold capitalize text-slate-700">{viewModal.account?.owner_type || 'Employee'}</p>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* ── Add Account Modal ────────────────────────────────────────────────── */}
+      <Modal
+        isOpen={showModal}
+        onClose={closeModal}
+        title="Add Employee Bank Account"
+        subtitle="Link a bank account or UPI ID for an employee"
+        icon={<FaPlus size={18} />}
+        size="2xl"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={closeModal}
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button
+              type="button"
+              onClick={handleAction}
+              disabled={saving || !formData.account_holder_name.trim() || !formData.employee_id}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-blue-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <div className="flex items-center justify-center gap-2">
+                  <FaSpinner className="animate-spin" />
+                  <span>Saving...</span>
+                </div>
+              ) : 'Add Account'}
+            </button>
+          </>
+        )}
+      >
+        <div className="space-y-5">
+          {/* Account Type Selector */}
+          <FormField label="Account Type">
+            <div className="flex flex-wrap gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+              {EMPLOYEE_ACCOUNT_TYPES.map((type) => {
+                const isActive = formData.account_type === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setFormData((p) => ({ ...p, account_type: type }))}
+                    className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${isActive
+                      ? 'bg-white text-blue-600 shadow-sm border border-blue-100 ring-4 ring-blue-500/5'
+                      : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                      }`}
+                  >
+                    {type === 'upi' ? <FaQrcode size={12} /> : <FaUniversity size={12} />}
+                    {type}
+                  </button>
+                );
+              })}
+            </div>
+          </FormField>
+
+          {/* Employee Selection */}
+          <FormField label="Select Employee *">
+            <EmployeeSelect
+              value={formData.employee_id}
+              onChange={(id, emp) => {
+                setFormData(p => ({
+                  ...p,
+                  employee_id: id,
+                  account_holder_name: emp ? emp.name : p.account_holder_name
+                }));
+              }}
+              placeholder="Search and select employee..."
+            />
+          </FormField>
+
+          {/* Account Holder Name */}
+          <FormField label="Account Holder Name *">
+            <input
+              type="text"
+              value={formData.account_holder_name}
+              onChange={(e) => setFormData((p) => ({ ...p, account_holder_name: e.target.value }))}
+              placeholder="e.g. John Doe"
+              className={inputCls}
+            />
+          </FormField>
+
+          {/* UPI Fields */}
+          {isUpiType && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+              <FormField label="UPI ID *">
+                <input
+                  type="text"
+                  value={formData.upi_id}
+                  onChange={(e) => setFormData((p) => ({ ...p, upi_id: e.target.value }))}
+                  placeholder="e.g. johndoe@upi"
+                  className={inputCls}
+                />
+              </FormField>
+            </motion.div>
+          )}
+
+          {/* Bank Fields */}
+          {isBankType && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex flex-col gap-5 overflow-hidden">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FormField label="Account Number *">
+                  <input
+                    type="text"
+                    value={formData.account_number}
+                    onChange={(e) => setFormData((p) => ({ ...p, account_number: e.target.value }))}
+                    placeholder="9876543210"
+                    className={inputCls}
+                  />
+                </FormField>
+
+                <FormField label="IFSC Code *">
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={formData.ifsc_code}
+                        onChange={(e) => handleIfscChange(e.target.value)}
+                        placeholder="SBIN0001234"
+                        className={inputCls}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyIfscLookup(formData.ifsc_code)}
+                        disabled={ifscLookupState.loading || formData.ifsc_code.trim().length !== 11}
+                        className="shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {ifscLookupState.loading ? 'Checking...' : 'Fetch'}
+                      </button>
+                    </div>
+                    {ifscLookupState.error && (
+                      <p className="text-xs font-semibold text-rose-500">{ifscLookupState.error}</p>
+                    )}
+                  </div>
+                </FormField>
+              </div>
+
+              <FormField label="Bank Name *">
+                <input
+                  type="text"
+                  value={formData.bank_name}
+                  onChange={(e) => setFormData((p) => ({ ...p, bank_name: e.target.value }))}
+                  readOnly={autoLockedFields.bank_name}
+                  placeholder="e.g. Regional Bank"
+                  className={lockedInputClass(autoLockedFields.bank_name)}
+                />
+              </FormField>
+
+              <FormField label="Branch Name">
+                <input
+                  type="text"
+                  value={formData.branch_name}
+                  onChange={(e) => setFormData((p) => ({ ...p, branch_name: e.target.value }))}
+                  readOnly={autoLockedFields.branch_name}
+                  placeholder="e.g. East Side Branch"
+                  className={lockedInputClass(autoLockedFields.branch_name)}
+                />
+              </FormField>
+
+              {/* Primary Toggle */}
+              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-700">Set as Primary Account</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">Mark this as the default account for this employee</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData((p) => ({ ...p, is_primary: !p.is_primary }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_primary ? 'bg-blue-500' : 'bg-slate-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.is_primary ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* UPI Primary Toggle */}
+          {isUpiType && (
+            <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-4">
+              <div>
+                <p className="text-sm font-bold text-slate-700">Set as Primary Account</p>
+                <p className="mt-0.5 text-[11px] text-slate-400">Mark this as the default account for this employee</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFormData((p) => ({ ...p, is_primary: !p.is_primary }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.is_primary ? 'bg-blue-500' : 'bg-slate-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.is_primary ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          )}
         </div>
       </Modal>
     </ManagementHub>
