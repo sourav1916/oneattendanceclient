@@ -196,12 +196,8 @@ const AttendanceLogsModal = ({ id, type, onClose }) => {
 
               {filters && (
                 <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 shadow-sm">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Filters</span>
-                  <span className="text-xs font-semibold text-slate-600">Attendance ID: {filters.attendance_id ?? id}</span>
-                  <span className="text-slate-300">|</span>
-                  <span className="text-xs font-semibold text-slate-600">Log Type: {filters.log_type || 'All'}</span>
-                  <span className="text-slate-300">|</span>
-                  <span className="text-xs font-semibold text-slate-600">Search: {filters.search || 'None'}</span>
+                  <span className="text-[10px] font-black tracking-widest text-slate-400">Activity Logs Against this record</span>
+                  
                 </div>
               )}
 

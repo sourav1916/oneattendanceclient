@@ -12,6 +12,7 @@ import Modal from '../components/Modal';
 import TimePickerField from '../components/TimePicker';
 import { ManagementCard, ManagementButton, EmployeeSelect, RefreshButton } from '../components/common';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
+import TimeDurationPickerField from '../components/TimeDurationPicker';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
@@ -97,13 +98,19 @@ const toTimeString = (minutes) => {
 
 const parseHToMinutes = (str) => {
   if (!str) return null;
-  const hMatch = str.match(/(\d+)\s*h/i);
-  const mMatch = str.match(/(\d+)\s*m/i);
+  const normalized = String(str).trim();
+  // Handle HH:mm format
+  const colonMatch = normalized.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (colonMatch) {
+    return parseInt(colonMatch[1], 10) * 60 + parseInt(colonMatch[2], 10);
+  }
+  const hMatch = normalized.match(/(\d+)\s*h/i);
+  const mMatch = normalized.match(/(\d+)\s*m/i);
   let totalMinutes = 0;
   if (hMatch) totalMinutes += parseInt(hMatch[1], 10) * 60;
   if (mMatch) totalMinutes += parseInt(mMatch[1], 10);
   if (!hMatch && !mMatch) {
-    const num = parseInt(str.trim(), 10);
+    const num = parseInt(normalized, 10);
     return isNaN(num) ? null : num;
   }
   return totalMinutes;
@@ -854,7 +861,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                     {/* Weekend & Holiday */}
                     {[
                       { id: 'weekend', label: 'Weekend',       icon: FaCalendarAlt,  color: 'sky'   },
-                      { id: 'holiday', label: 'Public Holiday', icon: FaUmbrellaBeach, color: 'amber' },
+                      { id: 'holiday', label: 'Holiday', icon: FaUmbrellaBeach, color: 'amber' },
                     ].map(opt => {
                       const isSelected = selectedLeave?.type === opt.id;
                       const Icon = opt.icon;
@@ -927,16 +934,15 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                   className="overflow-hidden"
                 >
                   <div className="p-4 rounded-2xl border border-orange-100 bg-orange-50/30 space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-orange-600 block">Overtime Duration (h/m format)</label>
-                    <input
-                      type="text"
+                    <TimeDurationPickerField
+                      label="Overtime Duration"
+                      mode="duration"
                       value={overtimeDuration}
-                      onChange={e => setOvertimeDuration(e.target.value)}
-                      placeholder="e.g. 1h 30m or 90m"
-                      className="w-full rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all"
+                      onChange={setOvertimeDuration}
+                      placeholder="Select duration"
                     />
                     <p className="text-[10px] font-medium text-orange-600/70">
-                      Format examples: <strong>1h 20m</strong>, <strong>45m</strong>, <strong>2h</strong>
+                      Select the total duration of overtime work.
                     </p>
                   </div>
                 </motion.div>
@@ -1726,7 +1732,7 @@ const toggleSelectEmployee = (emp) => {
         )}
         {modal?.type === 'logs' && (
           <AttendanceLogsModal
-            id={modal.emp.employee_id}
+            id={modal.emp.attendance_id || modal.emp.id}
             type="attendance"
             onClose={() => setModal(null)}
           />
