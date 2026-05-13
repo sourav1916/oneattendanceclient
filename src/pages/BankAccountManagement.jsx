@@ -331,7 +331,7 @@ const BankAccountManagement = () => {
 
     if (!requestPromise) {
       requestPromise = (async () => {
-        const response = await apiCall('/bank-accounts/managemant/company', 'GET', null, companyId);
+        const response = await apiCall('/bank-accounts/management/company', 'GET', null, companyId);
         return response.json();
       })();
       bankAccountsListRequestCache.set(cacheKey, requestPromise);

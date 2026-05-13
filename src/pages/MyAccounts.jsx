@@ -303,7 +303,7 @@ const EmployeeBankAccountManagement = () => {
     setLoading(true);
     try {
       const companyId = getCompanyId();
-      const response = await apiCall('/bank-accounts/employee/list', 'GET', null, companyId);
+      const response = await apiCall('/bank-accounts/my', 'GET', null, companyId);
       const result = await response.json();
       if (result.success) {
         setAccounts(result.data || []);

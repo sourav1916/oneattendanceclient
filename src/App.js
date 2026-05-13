@@ -35,6 +35,7 @@ import MyCalendar from "./pages/MyCalendar";
 import PayrollManagement from "./pages/PayrollManagement";
 import PayrollAdjustment from "./pages/PayrollAdjustment";
 import BankAccountManagement from "./pages/BankAccountManagement";
+import EmployeeBankAccountManagement from "./pages/EmployeeBankAccountManagement";
 import CompanySettings from "./pages/CompanySettings";
 import EmployeesShifts from "./pages/EmployeesShifts";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
@@ -63,9 +64,12 @@ import {
   FaHistory,
   FaListUl,
   FaCoffee,
+  FaBuilding,
+  FaUniversity,
 } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 
 const PAYROLL_HUB_TABS = [
   {
@@ -245,6 +249,29 @@ const ATTENDANCE_MANAGEMENT_HUB_TABS = [
   },
 ];
 
+const BANK_HUB_TABS = [
+  {
+    id: "company",
+    label: "Company Accounts",
+    shortLabel: "Company",
+    description: "Manage company bank accounts and cash wallets.",
+    icon: FaBuilding,
+    pageKey: "bankAccountManagement",
+    component: BankAccountManagement,
+    accent: "bg-violet-50 text-violet-700 border-violet-200",
+  },
+  {
+    id: "employees",
+    label: "Employee Accounts",
+    shortLabel: "Employees",
+    description: "View and manage employee bank accounts.",
+    icon: FaUniversity,
+    pageKey: "bankAccountManagement",
+    component: EmployeeBankAccountManagement,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+];
+
 
 function AppContent() {
   const { user, loading, mustSelectCompany } = useAuth();
@@ -372,7 +399,19 @@ function AppContent() {
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
         <Route path="/payroll-adjustments" element={<ProtectedRoute pageKey="payrollManagement"><Navigate to="/payroll-management?tab=adjustments" replace /></ProtectedRoute>} />
-        <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><BankAccountManagement /></MainLayout></ProtectedRoute>} />
+        <Route path="/bank-account-management" element={<ProtectedRoute pageKey="bankAccountManagement"><MainLayout><TabbedManagementHub
+          routePath="/bank-account-management"
+          defaultTab="company"
+          title="Bank Account Hub"
+          description="Manage company and employee bank accounts, wallets, and payment methods from one place."
+          eyebrow={<><FaUniversity size={11} /> Bank Accounts</>}
+          accent="violet"
+          tabs={BANK_HUB_TABS}
+          accessDeniedTitle="No bank account tabs available"
+          accessDeniedDescription="Your current role does not have access to bank account management."
+          accessDeniedIcon={FaInfoCircle}
+        />
+        </MainLayout></ProtectedRoute>}/>
         <Route path="/employee-profile/:employeeId/:tabKey?" element={<ProtectedRoute pageKey="employeeProfile"><MainLayout><EmployeeProfile /></MainLayout></ProtectedRoute>} />
         <Route path="/employee-salary-history/:employeeId" element={<ProtectedRoute pageKey="salaryManagement"><MainLayout><EmployeeSalaryHistory /></MainLayout></ProtectedRoute>} />
 
