@@ -16,6 +16,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementButton, RefreshButton } from '../components/common';
 import SelectField from '../components/SelectField';
+import CategoryPermissionSelector from '../components/common/CategoryPermissionSelector';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -78,10 +79,9 @@ const readApiResponse = async (res, fallbackMessage) => {
 
 // ─── Package Form ─────────────────────────────────────────────────────────────
 const PackageFormBody = ({
-  formData, onInputChange, onTogglePermission, onSelectAll, onClearAll,
-  allPermissions, permsLoading, packageUsage, onOpenEmployeeList
+  formData, setFormData,
+  allPermissions, permsLoading, packageUsage, onOpenEmployeeList, onInputChange
 }) => {
-  const [isPermissionsExpanded, setIsPermissionsExpanded] = useState(false);
 
   return (
     <div className="p-4 sm:p-5 space-y-4">
@@ -161,106 +161,11 @@ const PackageFormBody = ({
           </div>
 
           {/* Permissions Selection */}
-          <div className="border border-slate-100 rounded-2xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setIsPermissionsExpanded(!isPermissionsExpanded)}
-              className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 shadow-sm">
-                  <FaShieldAlt size={14} />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    Assign Permissions
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-lg text-[10px] font-bold border border-indigo-100 uppercase tracking-wider">
-                      {formData.permissions.length} Selected
-                    </span>
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-medium">Click to {isPermissionsExpanded ? 'collapse' : 'expand and configure'}</p>
-                </div>
-              </div>
-              <motion.div
-                animate={{ rotate: isPermissionsExpanded ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <FaChevronRight className="text-slate-400 text-xs" />
-              </motion.div>
-            </button>
-
-            <AnimatePresence>
-              {isPermissionsExpanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                >
-                  <div className="p-4 bg-white border-t border-slate-100 space-y-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={onSelectAll}
-                        className="text-[10px] px-2.5 py-1.5 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 transition-all font-bold border border-slate-200 shadow-sm"
-                      >
-                        SELECT ALL
-                      </button>
-                      <button
-                        type="button"
-                        onClick={onClearAll}
-                        className="text-[10px] px-2.5 py-1.5 bg-white text-slate-600 rounded-lg hover:bg-slate-50 transition-all font-bold border border-slate-200 shadow-sm"
-                      >
-                        CLEAR ALL
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[30vh] overflow-y-auto pr-1 custom-scrollbar">
-                      {allPermissions.map((perm) => {
-                        const isSelected = formData.permissions.includes(perm.id);
-                        return (
-                          <motion.div
-                            key={perm.id}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => onTogglePermission(perm.id)}
-                            className={`flex items-start gap-2.5 px-2.5 py-2 rounded-xl border transition-all duration-200 ${isSelected
-                              ? 'border-indigo-500 bg-indigo-50/30'
-                              : 'border-slate-100 bg-slate-50/50 hover:border-indigo-200 hover:bg-indigo-50/20'
-                              }`}
-                          >
-                            <div className={`mt-0.5 w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border transition-all ${isSelected
-                              ? 'bg-indigo-600 border-indigo-600'
-                              : 'border-slate-300 bg-white'
-                              }`}>
-                              {isSelected && <FaCheck size={8} className="text-white" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-slate-800 leading-tight">{perm.name}</p>
-                              <p className="text-[10px] text-slate-400 mt-1 font-mono uppercase tracking-tight">{perm.code}</p>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                      {allPermissions.length === 0 && (
-                        <div className="col-span-2 text-center py-8 text-slate-400 text-sm italic">
-                          No permissions available
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <p className="text-[11px] text-indigo-700 flex items-start gap-2">
-                        <FaInfoCircle className="text-indigo-500 flex-shrink-0 mt-0.5" />
-                        <span>
-                          Click permissions to toggle selection. All selected permissions will be assigned to this package and grant access to corresponding features.
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <CategoryPermissionSelector
+            allPermissions={allPermissions}
+            selectedIds={formData.permissions}
+            onChange={(newIds) => setFormData(prev => ({ ...prev, permissions: newIds }))}
+          />
         </>
       )}
     </div>
@@ -593,14 +498,24 @@ const PermissionManagement = () => {
     setModalType(MODAL_TYPES.EDIT);
     setActiveActionMenu(null);
   };
-  const openViewModal = (pkg) => { setSelectedPackage(pkg); setModalType(MODAL_TYPES.VIEW); setActiveActionMenu(null); };
+  const openViewModal = (pkg) => {
+    fetchAllPermissions();
+    setSelectedPackage(pkg);
+    setModalType(MODAL_TYPES.VIEW);
+    setActiveActionMenu(null);
+  };
   const openDeleteModal = (pkg) => {
     if (deleteAccess.disabled) return;
     setSelectedPackage(pkg);
     setModalType(MODAL_TYPES.DELETE_CONFIRM);
     setActiveActionMenu(null);
   };
-  const openPermListModal = (pkg) => { setSelectedPackage(pkg); setModalType(MODAL_TYPES.PERM_LIST); setActiveActionMenu(null); };
+  const openPermListModal = (pkg) => {
+    fetchAllPermissions();
+    setSelectedPackage(pkg);
+    setModalType(MODAL_TYPES.PERM_LIST);
+    setActiveActionMenu(null);
+  };
   const openEmployeeListModal = (pkg) => {
     fetchAllPermissionPackageOptions(); // Fetch options only when opening modal
     setSelectedPackage(pkg);
@@ -621,14 +536,6 @@ const PermissionManagement = () => {
 
   // ─── Form handlers ────────────────────────────────────────────────────────
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-  const togglePermission = (permId) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(permId)
-        ? prev.permissions.filter(id => id !== permId)
-        : [...prev.permissions, permId]
-    }));
-  };
   const handleCreate = async (e) => {
     e.preventDefault();
     const result = await createPackage(formData);
@@ -1206,10 +1113,8 @@ const PermissionManagement = () => {
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     <PackageFormBody
                       formData={formData}
+                      setFormData={setFormData}
                       onInputChange={handleInputChange}
-                      onTogglePermission={togglePermission}
-                      onSelectAll={() => setFormData(prev => ({ ...prev, permissions: allPermissions.map(p => p.id) }))}
-                      onClearAll={() => setFormData(prev => ({ ...prev, permissions: [] }))}
                       allPermissions={allPermissions}
                       permsLoading={permsLoading}
                       packageUsage={modalType === MODAL_TYPES.EDIT && selectedPackageUsage ? selectedPackageUsage : null}
@@ -1453,41 +1358,11 @@ const PermissionManagement = () => {
 
                       {modalType !== MODAL_TYPES.EMPLOYEE_LIST && (
                         <div className="p-4 sm:p-5">
-                          <div className="mb-3 flex items-center justify-between">
-                            <h4 className="flex items-center gap-2 text-[12px] font-bold text-slate-700">
-                              <FaShieldAlt className="text-indigo-500" size={12} />
-                              Package permissions
-                            </h4>
-                            <span className="rounded-lg bg-indigo-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-700">
-                              {selectedPackage.permissions?.length || 0} Total
-                            </span>
-                          </div>
-
-                          {selectedPackage.permissions?.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                              {(selectedPackage.permissions || []).map((permEntry, idx) => {
-                                const perm = normalisePermission(permEntry);
-                                const displayCode = perm?.code ?? (typeof permEntry === 'object' ? permEntry?.code : `#${permEntry}`);
-                                const displayName = perm?.name ?? (typeof permEntry === 'object' ? permEntry?.name : 'Unknown Permission');
-                                return (
-                                  <div key={idx} className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 text-[10px] font-black text-indigo-700">
-                                      {idx + 1}
-                                    </span>
-                                    <div className="min-w-0">
-                                      <p className="truncate text-xs font-bold text-slate-800">{displayName}</p>
-                                      <p className="truncate text-[9px] font-mono uppercase tracking-tight text-slate-400">{displayCode}</p>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
-                              <FaBan className="mx-auto mb-2 text-2xl text-slate-300" />
-                              <p className="text-sm font-semibold text-slate-500">No permissions assigned</p>
-                            </div>
-                          )}
+                          <CategoryPermissionSelector
+                            allPermissions={allPermissions.filter(p => (selectedPackage.permissions || []).some(sp => (sp.permission_id ?? sp.id) === p.id))}
+                            selectedIds={(selectedPackage.permissions || []).map(p => (p.permission_id ?? p.id))}
+                            readOnly={true}
+                          />
                         </div>
                       )}
                     </div>
