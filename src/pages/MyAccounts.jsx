@@ -5,13 +5,12 @@ import {
   FaEye, FaSpinner, FaChevronDown, FaListUl, FaCog,
   FaUniversity, FaStar, FaMoneyBillWave, FaChartBar,
   FaBuilding, FaShieldAlt, FaExclamationTriangle, FaUser,
-  FaCreditCard, FaIdCard,
+  FaCreditCard, FaIdCard, FaQrcode, FaMobileAlt,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
-import ModalScrollLock from '../components/ModalScrollLock';
 import { ManagementButton, ManagementHub, ManagementTable } from '../components/common';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +20,7 @@ import { fetchIfscDetails } from '../utils/ifscLookup';
 
 const ITEMS_PER_PAGE = 10;
 const STATUS_OPTIONS = ['active', 'inactive'];
+const ACCOUNT_TYPES = ['current', 'savings', 'upi'];
 
 const getCompanyId = () => {
   try {
@@ -37,17 +37,23 @@ const STAT_STYLES = {
   amber: { iconWrap: 'bg-amber-50  text-amber-600' },
 };
 
+const BANK_ACCOUNT_TYPES = ['bank', 'savings', 'current'];
+const isBankAccount = (type) => BANK_ACCOUNT_TYPES.includes(type);
+
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
 const AccountTypeBadge = ({ type, compact = false }) => {
   const isCash = type === 'cash';
+  const isUpi = type === 'upi';
   return (
     <span className={`inline-flex items-center gap-1 rounded-full font-semibold ${isCash
       ? 'bg-amber-100 border border-amber-200 text-amber-700'
-      : 'bg-indigo-100 border border-indigo-200 text-indigo-700'
+      : isUpi
+        ? 'bg-emerald-100 border border-emerald-200 text-emerald-700'
+        : 'bg-indigo-100 border border-indigo-200 text-indigo-700'
       } ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs'}`}>
-      {isCash ? <FaMoneyBillWave size={compact ? 8 : 10} /> : <FaUniversity size={compact ? 8 : 10} />}
-      {isCash ? 'CASH' : 'BANK'}
+      {isCash ? <FaMoneyBillWave size={compact ? 8 : 10} /> : isUpi ? <FaQrcode size={compact ? 8 : 10} /> : <FaUniversity size={compact ? 8 : 10} />}
+      {isCash ? 'CASH' : isUpi ? 'UPI' : 'BANK'}
     </span>
   );
 };
@@ -141,7 +147,9 @@ const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, delet
         </div>
         <div className="min-w-0">
           <h3 className="truncate font-bold text-slate-800">{account.account_holder_name}</h3>
-          <p className="text-[10px] text-slate-400 font-mono italic">{account.bank_name || 'Cash Account'}</p>
+          <p className="text-[10px] text-slate-400 font-mono italic">
+            {account.account_type === 'upi' ? (account.upi_id || 'UPI ID') : (account.bank_name || 'Cash Account')}
+          </p>
         </div>
       </div>
       <div onClick={(e) => e.stopPropagation()}>
@@ -157,12 +165,16 @@ const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, delet
       {account.is_primary && <PrimaryBadge compact />}
     </div>
 
-    {/* Card-style account number */}
-    {account.account_type === 'bank' && (
-      <div className="mt-4 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 p-4 text-white">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2">Account Number</p>
-        <p className="font-mono text-sm font-bold tracking-widest">{maskAccount(account.account_number)}</p>
-        {account.ifsc_code && (
+    {/* Card-style visual */}
+    {(isBankAccount(account.account_type) || account.account_type === 'upi') && (
+      <div className={`mt-4 rounded-xl p-4 text-white bg-gradient-to-br ${account.account_type === 'upi' ? 'from-emerald-600 to-teal-700' : 'from-violet-600 to-indigo-700'}`}>
+        <p className="text-[9px] font-bold uppercase tracking-widest text-white/60 mb-2">
+          {account.account_type === 'upi' ? 'UPI ID' : 'Account Number'}
+        </p>
+        <p className="font-mono text-sm font-bold tracking-widest truncate">
+          {account.account_type === 'upi' ? account.upi_id : maskAccount(account.account_number)}
+        </p>
+        {isBankAccount(account.account_type) && account.ifsc_code && (
           <div className="mt-3 flex items-center justify-between">
             <div>
               <p className="text-[9px] text-white/60 uppercase tracking-widest">IFSC</p>
@@ -174,6 +186,11 @@ const MobileBankCard = ({ account, onEdit, onDelete, onView, editDisabled, delet
                 <p className="text-xs font-bold truncate max-w-[100px]">{account.branch_name}</p>
               </div>
             )}
+          </div>
+        )}
+        {account.account_type === 'upi' && (
+          <div className="mt-3 flex items-center justify-end">
+            <FaQrcode size={18} className="text-white/30" />
           </div>
         )}
       </div>
@@ -211,7 +228,7 @@ const selectCls = "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3
 
 const EMPTY_FORM = {
   bank_id: null,
-  account_type: 'bank',
+  account_type: 'savings',
   bank_name: '',
   account_holder_name: '',
   account_number: '',
@@ -224,6 +241,7 @@ const EMPTY_FORM = {
   micr: '',
   contact: '',
   upi: false,
+  upi_id: '',
   is_primary: false,
   status: 'active',
 };
@@ -338,7 +356,7 @@ const EmployeeBankAccountManagement = () => {
   const stats = useMemo(() => [
     { label: 'Total Accounts', value: accounts.length, icon: FaCreditCard, color: 'violet', },
     { label: 'Active', value: accounts.filter(a => a.status === 'active').length, icon: FaCheck, color: 'emerald', },
-    { label: 'Bank Accounts', value: accounts.filter(a => a.account_type === 'bank').length, icon: FaUniversity, color: 'indigo', },
+    { label: 'Bank Accounts', value: accounts.filter(a => isBankAccount(a.account_type)).length, icon: FaUniversity, color: 'indigo', },
     { label: 'Primary Set', value: accounts.filter(a => a.is_primary).length, icon: FaStar, color: 'amber', },
   ], [accounts]);
 
@@ -366,11 +384,12 @@ const EmployeeBankAccountManagement = () => {
         micr: account.micr || '',
         contact: account.contact || '',
         upi: account.upi ?? false,
+        upi_id: account.upi_id || '',
         is_primary: account.is_primary || false,
         status: account.status || 'active',
       });
     } else if (!account) {
-      setFormData({ ...EMPTY_FORM, account_type: 'bank' });
+      setFormData({ ...EMPTY_FORM, account_type: 'savings' });
     }
     ifscLookupRequestRef.current += 1;
     if (ifscLookupTimerRef.current) {
@@ -500,7 +519,7 @@ const EmployeeBankAccountManagement = () => {
   }, [closeModal, closeViewModal, showModal, viewModal.open]);
 
   useEffect(() => {
-    if (!showModal || modalMode === 'delete' || formData.account_type !== 'bank') {
+    if (!showModal || modalMode === 'delete' || !isBankAccount(formData.account_type)) {
       return undefined;
     }
 
@@ -530,17 +549,20 @@ const EmployeeBankAccountManagement = () => {
   const handleAction = async () => {
     if (modalMode !== 'delete') {
       if (!formData.account_holder_name.trim()) { toast.error('Account holder name is required'); return; }
-      if (formData.account_type === 'bank') {
+      if (isBankAccount(formData.account_type)) {
         if (!formData.bank_name.trim()) { toast.error('Bank name is required'); return; }
         if (!formData.account_number.trim()) { toast.error('Account number is required'); return; }
         if (!formData.ifsc_code.trim()) { toast.error('IFSC code is required'); return; }
+      }
+      if (formData.account_type === 'upi') {
+        if (!formData.upi_id.trim()) { toast.error('UPI ID is required'); return; }
       }
     }
 
     setSaving(true);
     try {
       const companyId = getCompanyId();
-      const employeeId = employee?.id ?? employee?.employee_id ?? user?.id ?? null;
+      const employeeId = company?.employee_id ?? employee?.id ?? user?.id ?? null;
       let response;
 
       if (modalMode !== 'delete' && !employeeId) {
@@ -550,25 +572,33 @@ const EmployeeBankAccountManagement = () => {
       if (modalMode === 'create') {
         const payload = {
           employee_id: employeeId,
-          account_type: 'bank',
+          bank_owner_type: 'employee',
+          account_type: formData.account_type,
           account_holder_name: formData.account_holder_name,
           is_primary: formData.is_primary,
-          bank_name: formData.bank_name,
-          account_number: formData.account_number,
-          ifsc_code: formData.ifsc_code,
-          branch_name: formData.branch_name,
-          address: formData.address,
-          city: formData.city,
-          district: formData.district,
-          state: formData.state,
-          micr: formData.micr,
-          contact: formData.contact,
-          upi: formData.upi,
+          ...(isBankType && {
+            bank_name: formData.bank_name,
+            account_number: formData.account_number,
+            ifsc_code: formData.ifsc_code,
+            branch_name: formData.branch_name,
+            address: formData.address,
+            city: formData.city,
+            district: formData.district,
+            state: formData.state,
+            micr: formData.micr,
+            contact: formData.contact,
+            upi: formData.upi,
+          }),
+          ...(isUpiType && {
+            upi_id: formData.upi_id,
+          }),
         };
         response = await apiCall('/bank-accounts/create', 'POST', payload, companyId || company?.id || null);
       } else if (modalMode === 'edit') {
         const payload = {
           bank_id: formData.bank_id,
+          bank_owner_type: 'employee',
+          account_type: formData.account_type,
           bank_name: formData.bank_name,
           account_holder_name: formData.account_holder_name,
           account_number: formData.account_number,
@@ -581,8 +611,10 @@ const EmployeeBankAccountManagement = () => {
           micr: formData.micr,
           contact: formData.contact,
           upi: formData.upi,
+          upi_id: formData.upi_id,
           is_primary: formData.is_primary,
           status: formData.status,
+          employee_id: employeeId,
         };
         response = await apiCall('/bank-accounts/update', 'PUT', payload, companyId);
       } else if (modalMode === 'delete') {
@@ -607,7 +639,8 @@ const EmployeeBankAccountManagement = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [goToPage]);
 
-  const isBankType = modalMode === 'create' || formData.account_type !== 'cash';
+  const isBankType = isBankAccount(formData.account_type);
+  const isUpiType = formData.account_type === 'upi';
 
   // ── Table columns ──────────────────────────────────────────────────────────
 
@@ -618,11 +651,13 @@ const EmployeeBankAccountManagement = () => {
       render: (account) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-50 to-indigo-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
-            {account.account_type === 'cash' ? <FaMoneyBillWave size={14} /> : <FaUniversity size={14} />}
+            {account.account_type === 'cash' ? <FaMoneyBillWave size={14} /> : account.account_type === 'upi' ? <FaQrcode size={14} /> : <FaUniversity size={14} />}
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-slate-800 text-sm truncate">{account.account_holder_name}</div>
-            <div className="text-[10px] text-slate-400 font-mono italic">{account.bank_name || 'Cash Account'}</div>
+            <div className="text-[10px] text-slate-400 font-mono italic">
+              {account.account_type === 'upi' ? (account.upi_id || 'UPI ID') : (account.bank_name || 'Cash Account')}
+            </div>
           </div>
         </div>
       ),
@@ -641,7 +676,9 @@ const EmployeeBankAccountManagement = () => {
       key: 'account_number',
       label: 'Account No.',
       render: (account) => (
-        <span className="font-mono text-sm text-slate-600">{shortMask(account.account_number)}</span>
+        <span className="font-mono text-sm text-slate-600">
+          {account.account_type === 'upi' ? account.upi_id : shortMask(account.account_number)}
+        </span>
       ),
     },
     {
@@ -838,8 +875,8 @@ const EmployeeBankAccountManagement = () => {
         isOpen={viewModal.open && !!viewModal.account}
         onClose={closeViewModal}
         title={viewModal.account?.account_holder_name}
-        subtitle={viewModal.account?.bank_name || 'Cash Account'}
-        icon={viewModal.account?.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : <FaUniversity size={22} />}
+        subtitle={viewModal.account?.account_type === 'upi' ? viewModal.account?.upi_id : (viewModal.account?.bank_name || 'Cash Account')}
+        icon={viewModal.account?.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : viewModal.account?.account_type === 'upi' ? <FaQrcode size={22} /> : <FaUniversity size={22} />}
         size="lg"
         footer={
           <>
@@ -867,19 +904,23 @@ const EmployeeBankAccountManagement = () => {
             {viewModal.account?.is_primary && <PrimaryBadge />}
           </div>
 
-          {/* Card visual for bank accounts */}
-          {viewModal.account?.account_type === 'bank' && (
-            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-indigo-800 p-6 text-white shadow-lg">
+          {/* Card visual */}
+          {(viewModal.account?.account_type === 'bank' || viewModal.account?.account_type === 'upi') && (
+            <div className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg bg-gradient-to-br ${viewModal.account?.account_type === 'upi' ? 'from-emerald-600 via-teal-600 to-emerald-800' : 'from-violet-600 via-indigo-600 to-indigo-800'}`}>
               <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
               <div className="pointer-events-none absolute -bottom-4 right-12 h-20 w-20 rounded-full bg-white/5" />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-3">Account Number</p>
-              <p className="font-mono text-base font-bold tracking-[0.2em]">{maskAccount(viewModal.account?.account_number)}</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-3">
+                {viewModal.account?.account_type === 'upi' ? 'UPI ID' : 'Account Number'}
+              </p>
+              <p className="font-mono text-base font-bold tracking-[0.2em] truncate">
+                {viewModal.account?.account_type === 'upi' ? viewModal.account?.upi_id : maskAccount(viewModal.account?.account_number)}
+              </p>
               <div className="mt-4 flex justify-between items-end">
                 <div>
                   <p className="text-[9px] text-white/50 uppercase tracking-widest">Holder</p>
                   <p className="text-sm font-bold">{viewModal.account?.account_holder_name}</p>
                 </div>
-                <FaUniversity size={28} className="text-white/20" />
+                {viewModal.account?.account_type === 'upi' ? <FaQrcode size={28} className="text-white/20" /> : <FaUniversity size={28} className="text-white/20" />}
               </div>
             </div>
           )}
@@ -985,17 +1026,27 @@ const EmployeeBankAccountManagement = () => {
           }
         >
           <div className="space-y-5">
-            {modalMode === 'create' && (
-              <div className="rounded-xl border border-violet-100 bg-violet-50/70 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm font-bold text-violet-700">
-                  <FaUniversity size={14} />
-                  Bank Account
-                </div>
-                <p className="mt-1 text-xs text-violet-600">
-                  Cash wallet entries are not supported on this page.
-                </p>
+            <FormField label="Account Type">
+              <div className="flex flex-wrap gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                {ACCOUNT_TYPES.map((type) => {
+                  const isActive = formData.account_type === type;
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setFormData(p => ({ ...p, account_type: type }))}
+                      className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all duration-300 ${isActive
+                        ? 'bg-white text-violet-600 shadow-sm border border-violet-100 ring-4 ring-violet-500/5'
+                        : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                        }`}
+                    >
+                      {type === 'upi' ? <FaQrcode size={12} /> : <FaUniversity size={12} />}
+                      {type}
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </FormField>
 
             {/* Holder name */}
             <FormField label="Account Holder Name" required>
@@ -1007,6 +1058,20 @@ const EmployeeBankAccountManagement = () => {
                 className={inputCls}
               />
             </FormField>
+
+            {isUpiType && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                <FormField label="UPI ID" required>
+                  <input
+                    type="text"
+                    value={formData.upi_id}
+                    onChange={(e) => setFormData(p => ({ ...p, upi_id: e.target.value }))}
+                    placeholder="e.g. yourname@okaxis"
+                    className={inputCls}
+                  />
+                </FormField>
+              </motion.div>
+            )}
 
             {/* Bank-only fields */}
             {isBankType && (
@@ -1061,87 +1126,7 @@ const EmployeeBankAccountManagement = () => {
                   />
                 </FormField>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <FormField label="City">
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData(p => ({ ...p, city: e.target.value }))}
-                      readOnly={autoLockedFields.city}
-                      placeholder="City"
-                      className={lockedInputClass(autoLockedFields.city)}
-                    />
-                  </FormField>
-                  <FormField label="District">
-                    <input
-                      type="text"
-                      value={formData.district}
-                      onChange={(e) => setFormData(p => ({ ...p, district: e.target.value }))}
-                      readOnly={autoLockedFields.district}
-                      placeholder="District"
-                      className={lockedInputClass(autoLockedFields.district)}
-                    />
-                  </FormField>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <FormField label="State">
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => setFormData(p => ({ ...p, state: e.target.value }))}
-                      readOnly={autoLockedFields.state}
-                      placeholder="State"
-                      className={lockedInputClass(autoLockedFields.state)}
-                    />
-                  </FormField>
-                  <FormField label="MICR">
-                    <input
-                      type="text"
-                      value={formData.micr}
-                      onChange={(e) => setFormData(p => ({ ...p, micr: e.target.value }))}
-                      readOnly={autoLockedFields.micr}
-                      placeholder="736002507"
-                      className={lockedInputClass(autoLockedFields.micr)}
-                    />
-                  </FormField>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <FormField label="Contact">
-                    <input
-                      type="text"
-                      value={formData.contact}
-                      onChange={(e) => setFormData(p => ({ ...p, contact: e.target.value }))}
-                      readOnly={autoLockedFields.contact}
-                      placeholder="Branch contact number"
-                      className={lockedInputClass(autoLockedFields.contact)}
-                    />
-                  </FormField>
-                  <FormField label="UPI Enabled">
-                    <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                      <span className="text-sm font-semibold text-slate-600">{formData.upi ? 'Yes' : 'No'}</span>
-                      <button
-                        type="button"
-                        onClick={() => setFormData(p => ({ ...p, upi: !p.upi }))}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${formData.upi ? 'bg-violet-500' : 'bg-slate-300'}`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition-transform ${formData.upi ? 'translate-x-6' : 'translate-x-1'}`} />
-                      </button>
-                    </div>
-                  </FormField>
-                </div>
-
-                <FormField label="Address">
-                  <textarea
-                    rows="3"
-                    value={formData.address}
-                    onChange={(e) => setFormData(p => ({ ...p, address: e.target.value }))}
-                    readOnly={autoLockedFields.address}
-                    placeholder="Bank branch address"
-                    className={lockedTextareaClass(autoLockedFields.address)}
-                  />
-                </FormField>
               </div>
             )}
 
