@@ -1021,7 +1021,7 @@ const LeaveBalanceManagement = () => {
                     </p>
                   </div>
                 </div>
-                <button onClick={closeViewModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                <button onClick={closeViewModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
                   <FaTimes size={20} />
                 </button>
               </div>
@@ -1140,7 +1140,7 @@ const LeaveBalanceManagement = () => {
                         <p className="text-sm text-slate-500">This action cannot be undone</p>
                       </div>
                     </div>
-                    <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                    <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
                       <FaTimes className="h-4 w-4" />
                     </button>
                   </div>
@@ -1204,7 +1204,7 @@ const LeaveBalanceManagement = () => {
                         </p>
                       </div>
                     </div>
-                    <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                    <button type="button" onClick={closeModal} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
                       <FaTimes className="h-4 w-4" />
                     </button>
                   </div>

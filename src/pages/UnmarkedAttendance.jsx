@@ -95,6 +95,20 @@ const toTimeString = (minutes) => {
   return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
 };
 
+const parseHToMinutes = (str) => {
+  if (!str) return null;
+  const hMatch = str.match(/(\d+)\s*h/i);
+  const mMatch = str.match(/(\d+)\s*m/i);
+  let totalMinutes = 0;
+  if (hMatch) totalMinutes += parseInt(hMatch[1], 10) * 60;
+  if (mMatch) totalMinutes += parseInt(mMatch[1], 10);
+  if (!hMatch && !mMatch) {
+    const num = parseInt(str.trim(), 10);
+    return isNaN(num) ? null : num;
+  }
+  return totalMinutes;
+};
+
 const getHalfDayWindow = (shiftStart, shiftEnd, session = 'first') => {
   const startMins = toMinutes(shiftStart) ?? 9 * 60;
   const endMins = toMinutes(shiftEnd) ?? 18 * 60;
@@ -260,6 +274,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
     isDeductible  = false,
     leaveType     = 'paid',
     leaveTypeValue = null,
+    leaveDayOvertime = null,
   } = options;
 
   const base = {
@@ -322,6 +337,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
         status: 'leave',
         leave_type: leaveType,
         ...(leaveType === 'paid' && leaveTypeValue ? { leave_type_value: leaveTypeValue } : {}),
+        leave_day_overtime: leaveDayOvertime,
       };
 
     case 'actual_data': // Bulk: use shift times
@@ -471,6 +487,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [halfSession, setHalfSession] = useState('first');
   const [isOt, setIsOt]               = useState(false);
   const [isDeductible, setIsDeductible] = useState(false);
+  const [isOvertimeWork, setIsOvertimeWork] = useState(false);
+  const [overtimeDuration, setOvertimeDuration] = useState('');
 
   // Leave tab
   const [leaveSubTab, setLeaveSubTab]     = useState('paid');
@@ -496,6 +514,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     setHalfSession('first');
     setLeaveSubTab('paid');
     setSelectedLeave(null);
+    setIsOvertimeWork(false);
+    setOvertimeDuration('');
   }, [employee?.employee_id, initialTab]);
 
   useEffect(() => {
@@ -512,12 +532,12 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   // Fetch leave types when leave tab opens
   useEffect(() => {
     if (activeTab !== 'paid_leave') return;
-    if (leaveConfigs.length > 0) return;
+    if (leaveConfigs.length > 0 || leavesLoading) return;
     const fetchLeaves = async () => {
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-        const res  = await apiCall('/leave/company', 'GET', null, companyId);
+        const res  = await apiCall('/leave/company?is_paid=true', 'GET', null, companyId);
         const data = await res.json();
         if (data.success) setLeaveConfigs((data.data || []).filter(l => l.is_active));
       } catch (e) {
@@ -603,6 +623,17 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         } else {
           options.leaveType = 'unpaid';
           options.leaveTypeValue = null;
+        }
+
+        if (isOvertimeWork) {
+          const mins = parseHToMinutes(overtimeDuration);
+          if (!mins || mins <= 0) {
+            toast.error('Please enter a valid overtime duration (e.g. 1h 30m)');
+            return;
+          }
+          options.leaveDayOvertime = mins;
+        } else {
+          options.leaveDayOvertime = null;
         }
       }
 
@@ -865,6 +896,52 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 </p>
               </div>
             )}
+
+            {/* Overtime Switch */}
+            <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${isOvertimeWork ? 'bg-orange-100 text-orange-600' : 'bg-slate-200 text-slate-500'}`}>
+                  <FaClock size={18} />
+                </div>
+                <div>
+                  <p className="text-sm font-black text-slate-800">Overtime Work</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Add extra hours to this leave day</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOvertimeWork(!isOvertimeWork)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isOvertimeWork ? 'bg-orange-500' : 'bg-slate-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${isOvertimeWork ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {/* Overtime Duration Input */}
+            <AnimatePresence>
+              {isOvertimeWork && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 rounded-2xl border border-orange-100 bg-orange-50/30 space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-orange-600 block">Overtime Duration (h/m format)</label>
+                    <input
+                      type="text"
+                      value={overtimeDuration}
+                      onChange={e => setOvertimeDuration(e.target.value)}
+                      placeholder="e.g. 1h 30m or 90m"
+                      className="w-full rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all"
+                    />
+                    <p className="text-[10px] font-medium text-orange-600/70">
+                      Format examples: <strong>1h 20m</strong>, <strong>45m</strong>, <strong>2h</strong>
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         );
 
@@ -952,13 +1029,13 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
 
   useEffect(() => {
     if (action !== 'paid_leave') return;
-    if (leaveConfigs.length > 0) return;
+    if (leaveConfigs.length > 0 || leavesLoading) return;
 
     const fetchLeaves = async () => {
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-        const res = await apiCall('/leave/company', 'GET', null, companyId);
+        const res = await apiCall('/leave/company?is_paid=true', 'GET', null, companyId);
         const data = await res.json();
         if (data.success) setLeaveConfigs((data.data || []).filter((l) => l.is_active));
       } catch (e) {

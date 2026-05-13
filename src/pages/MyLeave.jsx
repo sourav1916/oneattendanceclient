@@ -562,19 +562,19 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
           </div>
 
           <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between group hover:border-violet-200 transition-all">
-             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Balance</span>
-             <div className="mt-1 flex items-baseline gap-1">
-                <span className={`text-2xl font-black ${remainingDays <= 0 ? 'text-rose-600' : 'text-slate-800'}`}>{formatDays(remainingDays)}</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Days Left</span>
-             </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Balance</span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className={`text-2xl font-black ${remainingDays <= 0 ? 'text-rose-600' : 'text-slate-800'}`}>{formatDays(remainingDays)}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Days Left</span>
+            </div>
           </div>
 
           <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 flex flex-col justify-between group hover:border-indigo-200 transition-all">
-             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Selected Range</span>
-             <div className="mt-1 flex items-baseline gap-1">
-                <span className={`text-2xl font-black ${overBalance ? 'text-rose-600' : 'text-indigo-600'}`}>{formatDays(selectedDays)}</span>
-                <span className="text-[10px] font-bold text-indigo-400 uppercase">Days Selected</span>
-             </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Selected Range</span>
+            <div className="mt-1 flex items-baseline gap-1">
+              <span className={`text-2xl font-black ${overBalance ? 'text-rose-600' : 'text-indigo-600'}`}>{formatDays(selectedDays)}</span>
+              <span className="text-[10px] font-bold text-indigo-400 uppercase">Days Selected</span>
+            </div>
           </div>
         </div>
 
@@ -647,9 +647,9 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
 
               {form.is_half_day && (
                 <AnimatePresence>
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }} 
-                    animate={{ height: 'auto', opacity: 1 }} 
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
                     className="overflow-hidden"
                   >
                     <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
@@ -658,11 +658,10 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
                           key={type}
                           type="button"
                           onClick={() => setForm(prev => ({ ...prev, half_day_type: type }))}
-                          className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
-                            form.half_day_type === type 
-                              ? 'bg-white text-violet-600 shadow-sm' 
+                          className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${form.half_day_type === type
+                              ? 'bg-white text-violet-600 shadow-sm'
                               : 'text-slate-500 hover:text-slate-700'
-                          }`}
+                            }`}
                         >
                           {type === 'first_half' ? '1st' : '2nd'} Half
                         </button>
@@ -779,10 +778,10 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
             {attachmentPreviews.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-2">
                 {attachmentPreviews.map((preview, index) => (
-                  <motion.div 
-                    initial={{ scale: 0.8, opacity: 0 }} 
-                    animate={{ scale: 1, opacity: 1 }} 
-                    key={preview.key} 
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    key={preview.key}
                     className="relative aspect-square rounded-lg border border-slate-200 bg-white group overflow-hidden shadow-sm"
                   >
                     {preview.isImage ? (
@@ -966,18 +965,18 @@ const MyLeave = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-    return (
-        <ManagementHub
-            eyebrow={<><FaCalendarAlt size={11} /> Leave management</>}
-            title="My Leaves"
-            description="Manage your leave applications and track leave balance."
-            accent="violet"
-            onRefresh={() => loadLeaves(pagination.page, true)}
-            actions={
-                <button
-                    type="button"
-                    onClick={() => setShowApply(true)}
-                    className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
+  return (
+    <ManagementHub
+      eyebrow={<><FaCalendarAlt size={11} /> Leave management</>}
+      title="My Leaves"
+      description="Manage your leave applications and track leave balance."
+      accent="violet"
+      onRefresh={() => loadLeaves(pagination.page, true)}
+      actions={
+        <button
+          type="button"
+          onClick={() => setShowApply(true)}
+          className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300"
         >
           <FaPlus />
           Apply Leave
@@ -1254,7 +1253,7 @@ const MyLeave = () => {
                     </div>
                   </div>
                 </div>
-                <button type="button" onClick={() => setViewLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                <button type="button" onClick={() => setViewLeave(null)} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
                   <FaTimes className="h-4 w-4" />
                 </button>
               </div>

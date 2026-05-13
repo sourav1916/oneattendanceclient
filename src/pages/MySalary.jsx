@@ -110,7 +110,7 @@ const PayrollViewModal = ({ payroll, employee, onClose }) => {
                         <p className="text-sm text-slate-500 mt-0.5">{MONTHS[p.month - 1]} {p.year}</p>
                     </div>
                 </div>
-                <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+                <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
                     <FaTimes className="h-4 w-4" />
                 </button>
             </div>

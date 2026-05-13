@@ -47,9 +47,7 @@ const DEFAULT_FORM = {
   accrual_rate: 0,
   max_balance: 0,
   carry_forward_limit: 0,
-  allow_negative_balance: false,
   exclude_weekends: true,
-  is_comp_off: false,
 };
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
@@ -101,7 +99,7 @@ const formatDate = (dateStr) => {
 const formatDays = (value) => {
   const number = Number(value);
   if (!Number.isFinite(number)) return '0';
-  return Number.isInteger(number) ? String(number) : number.toFixed(1);
+  return String(Math.round(number));
 };
 
 // ─── Badge components ─────────────────────────────────────────────────────────
@@ -248,7 +246,7 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
                 <p className="text-sm text-slate-500">{record.name} · {record.code}</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+            <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
               <FaTimes className="h-4 w-4" />
             </button>
           </div>
@@ -265,9 +263,6 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
                   <div className="mt-2 flex flex-wrap gap-2">
                     <PaidBadge isPaid={record.is_paid} />
                     <ActiveBadge isActive={record.is_active} />
-                    {record.is_comp_off && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 border border-purple-200">Comp Off</span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -281,7 +276,6 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
                 <InfoItem label="Accrual Rate" value={`${formatDays(record.accrual_rate)} days`} />
               )}
               <InfoItem label="Half Day" value={<BoolCell value={record.allow_half_day} />} />
-              <InfoItem label="Negative Balance" value={<BoolCell value={record.allow_negative_balance} />} />
               <InfoItem label="Exclude Weekends" value={<BoolCell value={record.exclude_weekends} />} />
             </div>
           </div>
@@ -339,7 +333,7 @@ const DeleteModal = ({ leaveType, onConfirm, onClose, loading, submitDisabled = 
             <p className="text-sm text-slate-500">{leaveType?.name}</p>
           </div>
         </div>
-        <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+        <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
           <FaTimes className="h-4 w-4" />
         </button>
       </div>
@@ -373,7 +367,12 @@ const FormModal = ({
   submitTitle = '',
 }) => {
   const isEdit = !!editRecord;
-  const [form, setForm] = useState(isEdit ? { ...editRecord } : { ...DEFAULT_FORM });
+  const [form, setForm] = useState(isEdit ? {
+    ...editRecord,
+    max_balance: Math.round(editRecord.max_balance || 0),
+    carry_forward_limit: Math.round(editRecord.carry_forward_limit || 0),
+    accrual_rate: Math.round(editRecord.accrual_rate || 0),
+  } : { ...DEFAULT_FORM });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -411,8 +410,8 @@ const FormModal = ({
         toast.success('Leave type updated successfully');
       } else {
         const { code, name, is_paid, allow_half_day, accrual_type, accrual_rate,
-          max_balance, carry_forward_limit, allow_negative_balance, exclude_weekends, is_comp_off } = payload;
-        await createLeaveType({ code, name, is_paid, allow_half_day, accrual_type, accrual_rate, max_balance, carry_forward_limit, allow_negative_balance, exclude_weekends, is_comp_off });
+          max_balance, carry_forward_limit, exclude_weekends } = payload;
+        await createLeaveType({ code, name, is_paid, allow_half_day, accrual_type, accrual_rate, max_balance, carry_forward_limit, exclude_weekends });
         toast.success('Leave type created successfully');
       }
       onSaved();
@@ -452,7 +451,7 @@ const FormModal = ({
               <p className="text-sm text-slate-500">{isEdit ? `Editing ${form.name}` : 'Configure a new leave type'}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all">
+          <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
             <FaTimes className="h-4 w-4" />
           </button>
         </div>
@@ -515,11 +514,11 @@ const FormModal = ({
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Max Balance (days)</label>
                 <input
                   type="text"
-                  inputMode="decimal"
+                  inputMode="numeric"
                   value={form.max_balance}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val === '' || /^\d*\.?\d*$/.test(val)) set('max_balance', val);
+                    const val = e.target.value.replace(/\D/g, '');
+                    set('max_balance', val);
                   }}
                   className={inputCls('max_balance')}
                 />
@@ -529,11 +528,11 @@ const FormModal = ({
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Carry Forward Limit (days)</label>
                 <input
                   type="text"
-                  inputMode="decimal"
+                  inputMode="numeric"
                   value={form.carry_forward_limit}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val === '' || /^\d*\.?\d*$/.test(val)) set('carry_forward_limit', val);
+                    const val = e.target.value.replace(/\D/g, '');
+                    set('carry_forward_limit', val);
                   }}
                   className={inputCls('carry_forward_limit')}
                 />
@@ -556,12 +555,12 @@ const FormModal = ({
                 <label className="mb-1.5 block text-xs font-medium text-gray-600">Accrual Rate (days)</label>
                 <input
                   type="text"
-                  inputMode="decimal"
+                  inputMode="numeric"
                   value={form.accrual_rate}
                   disabled={!form.accrual_type || form.accrual_type === 'none'}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                    if (val === '' || /^\d*\.?\d*$/.test(val)) set('accrual_rate', val);
+                    const val = e.target.value.replace(/\D/g, '');
+                    set('accrual_rate', val);
                   }}
                   className={`${inputCls('accrual_rate')} ${!form.accrual_type || form.accrual_type === 'none' ? '!bg-gray-50 cursor-not-allowed text-gray-400' : ''}`}
                 />
@@ -575,9 +574,7 @@ const FormModal = ({
             <div className="space-y-2.5">
               <ToggleSwitch checked={form.is_paid} onChange={(v) => set('is_paid', v)} label="Paid Leave" sublabel="Employees are compensated during this leave" />
               <ToggleSwitch checked={form.allow_half_day} onChange={(v) => set('allow_half_day', v)} label="Allow Half Day" sublabel="Employees can apply for half day" />
-              <ToggleSwitch checked={form.allow_negative_balance} onChange={(v) => set('allow_negative_balance', v)} label="Allow Negative Balance" sublabel="Leave can exceed available balance" />
               <ToggleSwitch checked={form.exclude_weekends} onChange={(v) => set('exclude_weekends', v)} label="Exclude Weekends" sublabel="Weekends not counted in leave duration" />
-              <ToggleSwitch checked={form.is_comp_off} onChange={(v) => set('is_comp_off', v)} label="Compensatory Off" sublabel="Earned by working on holidays/weekends" />
             </div>
           </div>
 
@@ -1012,12 +1009,6 @@ const LeaveConfigManagement = () => {
                   <ActiveBadge isActive={record.is_active} />
                   {record.exclude_weekends && (
                     <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 border border-amber-200">Excl. Weekends</span>
-                  )}
-                  {record.allow_negative_balance && (
-                    <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700 border border-orange-200">Neg. Balance</span>
-                  )}
-                  {record.is_comp_off && (
-                    <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700 border border-purple-200">Comp Off</span>
                   )}
                 </div>
               </motion.div>
