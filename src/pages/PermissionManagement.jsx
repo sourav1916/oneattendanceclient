@@ -761,7 +761,7 @@ const PermissionManagement = () => {
               Refresh
             </RefreshButton>
             <ManagementButton
-              tone="green"
+              tone="blue"
               variant="solid"
               leftIcon={<FaPlus />}
               onClick={openCreateModal}

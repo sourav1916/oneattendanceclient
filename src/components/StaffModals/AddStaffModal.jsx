@@ -74,7 +74,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [shiftEnd, setShiftEnd] = useState(DEFAULT_SHIFT_END);
   const [breakMinutes, setBreakMinutes] = useState(DEFAULT_DURATION);
   const [graceMinutes, setGraceMinutes] = useState(DEFAULT_DURATION);
-  const [weekends, setWeekends] = useState([]); // Array of {day, type}
+  const [weekends, setWeekends] = useState([]); // Array of days (strings)
 
   const [invitePackages, setInvitePackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -276,7 +276,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
-      setWeekends(pkg.weekends);
+      setWeekends(pkg.weekends.map(w => typeof w === 'object' ? w.day : w));
       if (pkg.weekends.length > 0) setIsWeekendsOpen(true);
     }
 
@@ -521,18 +521,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   };
 
   const toggleWeekend = (day) => {
-    setWeekends(prev => {
-      const exists = prev.find(w => w.day === day);
-      if (exists) {
-        return prev.filter(w => w.day !== day);
-      } else {
-        return [...prev, { day, type: 'full' }];
-      }
-    });
-  };
-
-  const updateWeekendType = (day, type) => {
-    setWeekends(prev => prev.map(w => w.day === day ? { ...w, type } : w));
+    setWeekends(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
   };
 
   const canCreateInvite = Boolean(selectedUser && designation && staffType && employmentType && selectedAttendanceMethods.length > 0 && !isSubmitting && !isLoadingConstants && !isSearchingUser && !submitDisabled);
@@ -850,39 +841,22 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       >
                         <div className="flex flex-col gap-2 pt-1">
                           {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
-                            const config = weekends.find(w => w.day === day);
+                            const isSelected = weekends.includes(day);
                             return (
                               <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
                                 <button
                                   type="button"
                                   onClick={() => toggleWeekend(day)}
-                                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${config
+                                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isSelected
                                     ? 'bg-indigo-600 text-white shadow-md'
                                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                                     }`}
                                 >
-                                  <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
-                                    {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                  <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                    {isSelected && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
                                   </div>
                                   {day.charAt(0).toUpperCase() + day.slice(1)}
                                 </button>
-                                {config && (
-                                  <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
-                                    {['full', 'half'].map(type => (
-                                      <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => updateWeekendType(day, type)}
-                                        className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase transition-all ${config.type === type
-                                          ? 'bg-slate-900 text-white'
-                                          : 'text-slate-400 hover:text-slate-600'
-                                          }`}
-                                      >
-                                        {type}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                             );
                           })}

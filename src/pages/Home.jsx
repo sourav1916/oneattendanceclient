@@ -55,12 +55,12 @@ function HomePage() {
   };
 
   useEffect(() => {
-    if (user && company) {
+    if (user && company && checkPageAccess('attendanceManagement').allowed) {
       fetchDashboardSummary();
     } else {
       setLoadingSummary(false);
     }
-  }, [user, company]);
+  }, [user, company, checkPageAccess]);
 
   // Show loading state
   if (loading) {
@@ -356,8 +356,9 @@ function HomePage() {
           </div>
         </header>
         {/* Unified Summary Card */}
-        <section className="mb-8">
-          {loadingSummary && !dashboardData ? (
+        {checkPageAccess('attendanceManagement').allowed && (
+          <section className="mb-8">
+            {loadingSummary && !dashboardData ? (
             <div className="h-32 w-full bg-white/50 animate-pulse rounded-2xl border border-slate-100"></div>
           ) : (
             <motion.div
@@ -440,7 +441,8 @@ function HomePage() {
               </div>
             </motion.div>
           )}
-        </section>
+          </section>
+        )}
         {/* Single High-Density Section Header */}
         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
           <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Workspace Shortcuts</h2>

@@ -107,7 +107,8 @@ const PERMISSION_ACCESS_CONFIG = {
       allowCompanyOwner: true,
     },
     bankAccountManagement: {
-      permissions: null,
+      permissions: ["bnk_view", "bnk_create", "bnk_update", "bnk_delete"],
+      allowCompanyOwner: true,
     },
     pendingAttendance: {
       permissions: ["att_view_all", "att_review"],
