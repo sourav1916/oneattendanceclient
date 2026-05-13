@@ -469,7 +469,7 @@ function HomePage() {
                 <action.icon className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs   text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight mb-1">{action.title}</h3>
+                <h3 className="text-sm text-slate-800 group-hover:text-indigo-600 transition-colors leading-tight mb-1">{action.title}</h3>
                 <p className="text-[10px] font-medium text-slate-400 line-clamp-2 leading-relaxed">{action.description}</p>
               </div>
             </motion.button>

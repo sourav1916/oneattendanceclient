@@ -292,7 +292,6 @@ const PermissionManagement = () => {
   const permsFetched = useRef(false);
   const isInitialLoad = useRef(true);
   const fetchInProgress = useRef(false);
-  const initialFetchDone = useRef(false);
 
   const emptyForm = { package_name: '', group_code: '', description: '', permissions: [] };
   const [formData, setFormData] = useState(emptyForm);
@@ -316,13 +315,6 @@ const PermissionManagement = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Reset page on new search
-  useEffect(() => {
-    if (!isInitialLoad.current) {
-      if (pagination.page !== 1) goToPage(1);
-      else fetchPackages(1);
-    }
-  }, [debouncedSearch]);
 
   const showGroupCode = windowWidth >= 540;
   const showDescription = windowWidth >= 1024;
@@ -500,20 +492,18 @@ const PermissionManagement = () => {
     }
   }, []);
 
+  // ─── API Triggers ────────────────────────────────────────────────────────
+  // Single unified useEffect to handle initial load, page changes, and search changes
   useEffect(() => {
-    if (!initialFetchDone.current) {
-      initialFetchDone.current = true;
-      fetchAllPermissions();
-      fetchAllPermissionPackageOptions();
-      fetchPackages(1, true);
-    }
-  }, [fetchPackages, fetchAllPermissions, fetchAllPermissionPackageOptions]);
+    fetchPackages(pagination.page, true);
+  }, [pagination.page, pagination.limit, debouncedSearch, fetchPackages]);
 
+  // Reset page to 1 when search changes
   useEffect(() => {
-    if (!isInitialLoad.current && !fetchInProgress.current && initialFetchDone.current) {
-      fetchPackages(pagination.page, true);
+    if (!isInitialLoad.current && pagination.page !== 1) {
+      goToPage(1);
     }
-  }, [pagination.page, fetchPackages]);
+  }, [debouncedSearch, goToPage]);
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
   const createPackage = async (data) => {
@@ -589,12 +579,14 @@ const PermissionManagement = () => {
   // ─── Modal handlers ───────────────────────────────────────────────────────
   const openCreateModal = () => {
     if (createAccess.disabled) return;
+    fetchAllPermissions(); // Fetch permissions only when opening modal
     setFormData(emptyForm);
     setModalType(MODAL_TYPES.CREATE);
     setActiveActionMenu(null);
   };
   const openEditModal = (pkg) => {
     if (updateAccess.disabled) return;
+    fetchAllPermissions(); // Fetch permissions only when opening modal
     setSelectedPackage(pkg);
     const permIds = (pkg.permissions || []).map(p => typeof p === 'object' ? (p.permission_id ?? p.id) : p);
     setFormData({ package_name: pkg.package_name, group_code: pkg.group_code, description: pkg.description || '', permissions: permIds });
@@ -610,6 +602,7 @@ const PermissionManagement = () => {
   };
   const openPermListModal = (pkg) => { setSelectedPackage(pkg); setModalType(MODAL_TYPES.PERM_LIST); setActiveActionMenu(null); };
   const openEmployeeListModal = (pkg) => {
+    fetchAllPermissionPackageOptions(); // Fetch options only when opening modal
     setSelectedPackage(pkg);
     setModalType(MODAL_TYPES.EMPLOYEE_LIST);
     setBulkTargetPackage(null);

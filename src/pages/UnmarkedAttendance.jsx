@@ -501,6 +501,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [leaveSubTab, setLeaveSubTab]     = useState('paid');
   const [leaveConfigs, setLeaveConfigs]   = useState([]);
   const [leavesLoading, setLeavesLoading] = useState(false);
+  const fetchStartedRef = useRef(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
 
   // Sync state when employee changes
@@ -539,8 +540,9 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   // Fetch leave types when leave tab opens
   useEffect(() => {
     if (activeTab !== 'paid_leave') return;
-    if (leaveConfigs.length > 0 || leavesLoading) return;
+    if (leaveConfigs.length > 0 || leavesLoading || fetchStartedRef.current) return;
     const fetchLeaves = async () => {
+      fetchStartedRef.current = true;
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
@@ -1022,6 +1024,7 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [leaveConfigs, setLeaveConfigs] = useState([]);
   const [leavesLoading, setLeavesLoading] = useState(false);
+  const fetchStartedRef = useRef(false);
 
   const actionMeta = BULK_ATTENDANCE_ACTIONS.find(a => a.id === action);
   if (!actionMeta) return null;
@@ -1035,9 +1038,10 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
 
   useEffect(() => {
     if (action !== 'paid_leave') return;
-    if (leaveConfigs.length > 0 || leavesLoading) return;
+    if (leaveConfigs.length > 0 || leavesLoading || fetchStartedRef.current) return;
 
     const fetchLeaves = async () => {
+      fetchStartedRef.current = true;
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
