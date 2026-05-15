@@ -354,7 +354,7 @@ const FormModal = ({
   editRecord,
   onClose,
   onSaved,
-  leaveTypeOptions,
+  leaveTypeOptions = [],
   existingCodes,
   submitDisabled = false,
   submitTitle = '',
@@ -609,9 +609,9 @@ const LeaveConfigManagement = () => {
     fetchConstants()
       .then((data) => {
         const typeOpts = (data.leave_types || []).map((item) => ({
-          value: item.value.value,
-          label: item.value.label,
-          description: item.value.description,
+          value: item?.value?.value,
+          label: item?.value?.label,
+          description: item?.value?.description,
         }));
         setLeaveTypeOptions(typeOpts);
       })
@@ -1021,6 +1021,7 @@ const LeaveConfigManagement = () => {
             key="form-modal"
             editRecord={formModal.record}
             existingCodes={new Set(records.map((r) => r.code?.toUpperCase()))}
+            leaveTypeOptions={leaveTypeOptions}
             onClose={() => setFormModal({ open: false, record: null })}
             onSaved={() => {
               setFormModal({ open: false, record: null });
