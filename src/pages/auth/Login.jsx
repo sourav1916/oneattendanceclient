@@ -18,6 +18,7 @@ import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { getPreciseLocation } from "../../utils/geolocation";
 import GoogleAuthButton from "../../components/GoogleAuthButton";
+import FacebookAuthButton from "../../components/FacebookAuthButton";
 
 const Login = () => {
   const { user, login, selectCompany, companies, mustSelectCompany, showCompanySelection, setShowCompanySelection } = useAuth();
@@ -313,6 +314,12 @@ const Login = () => {
                     {!otpSent ? (
                       <div className="space-y-5">
                         <GoogleAuthButton
+                          mode="login"
+                          disabled={isLoading}
+                          onAuthenticated={login}
+                        />
+
+                        <FacebookAuthButton
                           mode="login"
                           disabled={isLoading}
                           onAuthenticated={login}

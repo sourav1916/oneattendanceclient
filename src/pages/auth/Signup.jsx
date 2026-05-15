@@ -22,6 +22,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
 import { getPreciseLocation } from "../../utils/geolocation";
 import GoogleAuthButton from "../../components/GoogleAuthButton";
+import FacebookAuthButton from "../../components/FacebookAuthButton";
 
 
 const Signup = () => {
@@ -241,7 +242,9 @@ const Signup = () => {
         toast.success("Account created successfully 🎉");
         const token = json.data?.token || json.token;
         if (!token) throw new Error("Signup did not return a login token.");
-        setTimeout(async () => await login(token), 1500);
+        setTimeout(() => {
+          login(token);
+        }, 1500);
       } else {
         throw new Error(json.message || "Signup failed");
       }
@@ -488,6 +491,12 @@ const Signup = () => {
                     /* Step 1: Basic Info */
                     <>
                       <GoogleAuthButton
+                        mode="signup"
+                        disabled={isLoading}
+                        onAuthenticated={login}
+                      />
+
+                      <FacebookAuthButton
                         mode="signup"
                         disabled={isLoading}
                         onAuthenticated={login}
