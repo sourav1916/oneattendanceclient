@@ -7,6 +7,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import AcceptInvite from "./pages/AcceptInvite";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import DataDeletion from "./pages/legal/DataDeletion";
+import Terms from "./pages/legal/Terms";
 import MainLayout from "./layout/MainLayout";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -306,6 +307,7 @@ function AppContent() {
         <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/data-deletion" element={<DataDeletion />} />
+        <Route path="/terms" element={<Terms />} />
 
         {/* Protected Routes - Only accessible after company selection */}
         <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>} />
