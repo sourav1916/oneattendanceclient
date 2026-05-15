@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FaSearch, FaSpinner, FaChevronDown, FaUserCircle, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../../utils/api';
+import ProfileAvatar from './ProfileAvatar';
 
 const AVATAR_GRADIENTS = [
     'from-blue-500 to-indigo-600',
@@ -138,9 +139,13 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                     {selectedEmployee ? (
                         <div className="flex items-center gap-2">
-                            <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatarGradient(selectedEmployee.id)} flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>
+                            <ProfileAvatar
+                                record={selectedEmployee}
+                                name={selectedEmployee.name}
+                                className={`w-6 h-6 rounded-full bg-gradient-to-br ${avatarGradient(selectedEmployee.id)} flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden`}
+                            >
                                 {getInitials(selectedEmployee.name)}
-                            </div>
+                            </ProfileAvatar>
                             <span className="font-semibold text-gray-800 truncate">{selectedEmployee.name}</span>
                             <span className="text-xs text-gray-400 font-mono hidden sm:inline">({selectedEmployee.employee_code})</span>
                         </div>
@@ -204,9 +209,13 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
                                             onClick={() => handleSelect(emp)}
                                             className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${String(value) === String(emp.id) ? 'bg-blue-50 border border-blue-100' : 'hover:bg-gray-50 border border-transparent'}`}
                                         >
-                                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm`}>
+                                            <ProfileAvatar
+                                                record={emp}
+                                                name={emp.name}
+                                                className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm overflow-hidden`}
+                                            >
                                                 {getInitials(emp.name)}
-                                            </div>
+                                            </ProfileAvatar>
                                             <div className="min-w-0 flex-1">
                                                 <p className={`text-sm truncate ${String(value) === String(emp.id) ? 'font-bold text-blue-700' : 'font-semibold text-gray-800'}`}>
                                                     {emp.name}

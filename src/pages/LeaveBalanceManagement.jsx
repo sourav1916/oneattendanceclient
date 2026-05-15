@@ -16,6 +16,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import YearPicker from '../components/YearPicker';
 import EmployeeSelect from '../components/common/EmployeeSelect';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 const ITEMS_PER_PAGE = 10;
 const FETCH_BATCH_SIZE = 100;
@@ -768,9 +769,13 @@ const LeaveBalanceManagement = () => {
       label: 'Employee',
       render: (employee) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+          <ProfileAvatar
+            record={employee}
+            name={employee.employee_name}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden"
+          >
             {employee.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-          </div>
+          </ProfileAvatar>
           <div className="min-w-0">
             <div className="font-semibold text-slate-800 text-sm truncate">{employee.employee_name}</div>
             <div className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code}</div>

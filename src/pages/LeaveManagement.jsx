@@ -15,6 +15,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { EmployeeSelect, ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (d) => {
@@ -597,9 +598,13 @@ const LeaveManagement = () => {
                         </div>
                     )}
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        <ProfileAvatar
+                            record={leave}
+                            name={leave.employee_name}
+                            className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden"
+                        >
                             {leave.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </div>
+                        </ProfileAvatar>
                         <div className="min-w-0">
                             <div className="font-semibold text-slate-800 truncate">{leave.employee_name}</div>
                             <div className="text-[10px] text-slate-400 font-mono tracking-tighter">{leave.employee_code}</div>

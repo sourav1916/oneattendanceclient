@@ -20,6 +20,7 @@ import { ManagementCard, ManagementTable } from "../components/common";
 import Modal from "../components/Modal";
 import AttendanceLogsModal from "../components/AttendanceLogsModal";
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from "../components/AttendanceTypeTabs";
+import ProfileAvatar from "../components/common/ProfileAvatar";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -779,9 +780,13 @@ function ProfileCard({ data }) {
       className="bg-white rounded-xl border border-gray-100 shadow-sm p-5"
     >
       <div className="flex items-start gap-4 flex-wrap pb-2">
-        <div className={`w-[64px] h-[64px] rounded-xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none`}>
+        <ProfileAvatar
+          record={u}
+          name={u.name}
+          className={`w-[64px] h-[64px] rounded-xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none overflow-hidden`}
+        >
           {getInitials(u.name)}
-        </div>
+        </ProfileAvatar>
 
         <div className="flex-1 min-w-[160px]">
           <h2 className="text-2xl font-bold text-gray-800 leading-tight">{u.name}</h2>

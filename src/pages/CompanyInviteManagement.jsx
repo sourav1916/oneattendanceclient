@@ -19,6 +19,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from "../hooks/usePermissionAccess";
 import Modal from "../components/Modal";
 import { RefreshButton } from "../components/common";
+import ProfileAvatar from "../components/common/ProfileAvatar";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -463,9 +464,13 @@ export default function CompanyInvites() {
                             {visibleColumns.showUser && (
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                                  <ProfileAvatar
+                                    record={invite.user}
+                                    name={invite.user?.name || invite.user?.email}
+                                    className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold overflow-hidden"
+                                  >
                                     {invite.user?.name?.charAt(0)?.toUpperCase() || invite.user?.email?.charAt(0)?.toUpperCase()}
-                                  </div>
+                                  </ProfileAvatar>
                                   <div>
                                     <p className="font-semibold text-gray-800 truncate max-w-[120px] sm:max-w-[180px]">{invite.user?.name || "No name"}</p>
                                     {visibleColumns.showEmailInside && (
@@ -577,9 +582,13 @@ export default function CompanyInvites() {
                       onClick={() => openModal(invite, MODAL_TYPES.VIEW)}
                       className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                       <div className="flex items-start gap-4">
-                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
+                        <ProfileAvatar
+                          record={invite.user}
+                          name={invite.user?.name || invite.user?.email}
+                          className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                        >
                           <FaUserCircle className="text-white text-3xl" />
-                        </div>
+                        </ProfileAvatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
                             <h3 className="font-bold text-lg text-gray-800 truncate">{invite.user?.name || "No name"}</h3>
@@ -696,9 +705,13 @@ export default function CompanyInvites() {
               <div className="space-y-4">
                 {/* Profile Section */}
                 <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
-                  <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl shadow-lg">
+                  <ProfileAvatar
+                    record={selectedInvite.user}
+                    name={selectedInvite.user?.name || selectedInvite.user?.email}
+                    className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg flex items-center justify-center shrink-0 overflow-hidden"
+                  >
                     <FaUserCircle className="text-white text-md" />
-                  </div>
+                  </ProfileAvatar>
                   <div>
                     <h3 className="text-sm font-bold text-slate-800">{selectedInvite.user?.name || "No name"}</h3>
                     <div className="flex flex-wrap gap-3 mt-1.5">

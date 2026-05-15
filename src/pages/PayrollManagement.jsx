@@ -21,6 +21,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import { EmployeeSelect, RefreshButton } from '../components/common';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1121,9 +1122,13 @@ const PayrollManagement = () => {
                                                                                     }))}
                                                                                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 border border-transparent hover:border-emerald-100 cursor-pointer transition-colors group"
                                                                                 >
-                                                                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                                                                                    <ProfileAvatar
+                                                                                        record={emp}
+                                                                                        name={emp.name}
+                                                                                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}
+                                                                                    >
                                                                                         {getInitials(emp.name)}
-                                                                                    </div>
+                                                                                    </ProfileAvatar>
                                                                                     <div className="min-w-0 flex-1">
                                                                                         <div className="text-sm font-semibold text-gray-800 truncate">{emp.name}</div>
                                                                                         <div className="text-xs text-gray-500 truncate">{emp.employee_code}</div>
@@ -1194,9 +1199,13 @@ const PayrollManagement = () => {
                                                                                     }))}
                                                                                     className="flex items-center gap-3 p-2 rounded-lg bg-emerald-50/50 hover:bg-red-50 border border-emerald-100 hover:border-red-100 cursor-pointer transition-colors group"
                                                                                 >
-                                                                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                                                                                    <ProfileAvatar
+                                                                                        record={emp}
+                                                                                        name={emp.name}
+                                                                                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}
+                                                                                    >
                                                                                         {getInitials(emp.name)}
-                                                                                    </div>
+                                                                                    </ProfileAvatar>
                                                                                     <div className="min-w-0 flex-1">
                                                                                         <div className="text-sm font-semibold text-emerald-900 truncate group-hover:text-red-900">{emp.name}</div>
                                                                                         <div className="text-xs text-emerald-600 truncate group-hover:text-red-600">{emp.employee_code}</div>

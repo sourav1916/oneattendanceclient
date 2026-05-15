@@ -18,6 +18,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ModalScrollLock from "../components/ModalScrollLock";
 import ActionMenu from '../components/ActionMenu';
 import { RefreshButton } from '../components/common';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -190,9 +191,13 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 sm:p-6">
                         {/* Employee Profile */}
                         <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-                            <div className={`bg-gradient-to-br ${avatarGradient(employee.employee_id)} p-3 rounded-xl`}>
+                            <ProfileAvatar
+                                record={employee}
+                                name={u.name || employee.name}
+                                className={`w-16 h-16 bg-gradient-to-br ${avatarGradient(employee.employee_id)} rounded-xl flex items-center justify-center shrink-0 overflow-hidden`}
+                            >
                                 <FaUserCircle className="text-white text-4xl" />
-                            </div>
+                            </ProfileAvatar>
                             <div>
                                 <h3 className="text-xl font-bold text-gray-800">{u.name || employee.name || 'Unknown'}</h3>
                                 <p className="text-xs text-gray-600 flex items-center gap-2 mt-1">
@@ -280,9 +285,13 @@ const EmployeeCard = ({ employee, index, onClick }) => {
         >
             {/* Top */}
             <div className="flex items-start gap-3 mb-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                <ProfileAvatar
+                    record={employee}
+                    name={u.name || employee.name}
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden`}
+                >
                     <span className="text-white font-bold text-base">{getInitials(u.name || employee.name || '')}</span>
-                </div>
+                </ProfileAvatar>
                 <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-800 truncate text-sm">{u.name || employee.name || 'Unknown'}</h3>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{designationLabel(employee.designation)}</p>
@@ -681,9 +690,13 @@ const EmployeesShifts = () => {
                                                 >
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+                                                            <ProfileAvatar
+                                                                record={emp}
+                                                                name={u.name || emp.name}
+                                                                className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}
+                                                            >
                                                                 {getInitials(u.name || emp.name || '')}
-                                                            </div>
+                                                            </ProfileAvatar>
                                                             <div className="min-w-0">
                                                                 <p className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">{u.name || emp.name || 'Unknown'}</p>
                                                                 <p className="text-xs text-gray-500 flex items-center gap-1">

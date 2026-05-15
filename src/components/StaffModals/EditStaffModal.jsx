@@ -30,6 +30,7 @@ import {
 import TimeDurationPickerField from "../TimeDurationPicker";
 import ModalScrollLock from "../ModalScrollLock";
 import Modal from "../Modal";
+import ProfileAvatar from "../common/ProfileAvatar";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -402,6 +403,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           full_name: getResolvedUserName(staffData.user),
           email: staffData.user.email,
           phone: staffData.user.phone || null,
+          profile_picture: staffData.user.profile_picture || null,
           is_active: staffData.user.is_active,
           created_at: staffData.user.created_at || null,
         });
@@ -411,6 +413,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           full_name: staffData.user_name || staffData.name || `User #${staffData.user_id}`,
           email: staffData.email || "",
           phone: staffData.phone || null,
+          profile_picture: staffData.profile_picture || null,
           is_active: staffData.is_active,
           created_at: staffData.created_at || null,
         });
@@ -708,9 +711,13 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
+              <ProfileAvatar
+                record={selectedUser}
+                name={selectedUser.full_name || selectedUser.email}
+                className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200 overflow-hidden"
+              >
                 {selectedUser.full_name?.charAt(0)?.toUpperCase() || "U"}
-              </div>
+              </ProfileAvatar>
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="font-semibold text-slate-900">{selectedUser.full_name}</p>
                 <p className="flex items-center gap-2 text-sm text-slate-600">

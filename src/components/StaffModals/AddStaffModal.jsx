@@ -29,6 +29,7 @@ import {
 import ModalScrollLock from "../ModalScrollLock";
 import TimeDurationPickerField from "../TimeDurationPicker";
 import Modal from "../Modal";
+import ProfileAvatar from "../common/ProfileAvatar";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -406,6 +407,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
             full_name: getResolvedUserName(found),
             email: found.email,
             phone: found.phone || null,
+            profile_picture: found.profile_picture || null,
             is_active: found.is_active,
             created_at: found.created_at || null,
           });
@@ -623,9 +625,13 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                   </button>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200">
+                  <ProfileAvatar
+                    record={selectedUser}
+                    name={selectedUser.full_name || selectedUser.email}
+                    className="flex h-14 w-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-emerald-700 border border-emerald-200 overflow-hidden"
+                  >
                     {selectedUser.full_name?.charAt(0)?.toUpperCase() || "U"}
-                  </div>
+                  </ProfileAvatar>
                   <div className="min-w-0 flex-1 space-y-1">
                     <p className="font-semibold text-slate-900">{selectedUser.full_name}</p>
                     <p className="flex items-center gap-2 text-sm text-slate-600">

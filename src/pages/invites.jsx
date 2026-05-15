@@ -17,6 +17,7 @@ import ActionMenu from "../components/ActionMenu";
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementHub } from '../components/common';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // â”€â”€â”€ Constants & Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -362,9 +363,13 @@ export default function MyInvites() {
                   <FaUser className="text-purple-500" /> Invited By
                 </h4>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold">
+                  <ProfileAvatar
+                    record={invite.invited_by}
+                    name={invite.invited_by.name}
+                    className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold overflow-hidden"
+                  >
                     {invite.invited_by.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
+                  </ProfileAvatar>
                   <div>
                     <p className="font-semibold text-gray-800">{invite.invited_by.name}</p>
                     <p className="text-sm text-gray-600 flex items-center gap-1"><FaEnvelope size={12} /> {invite.invited_by.email}</p>
@@ -767,7 +772,13 @@ export default function MyInvites() {
                             {visibleColumns.showInvitedBy && (
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center"><FaUser className="text-purple-600" size={12} /></div>
+                                  <ProfileAvatar
+                                    record={invite.invited_by}
+                                    name={invite.invited_by?.name}
+                                    className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center overflow-hidden"
+                                  >
+                                    <FaUser className="text-purple-600" size={12} />
+                                  </ProfileAvatar>
                                   <div>
                                     <p className="text-sm font-medium text-gray-800">{invite.invited_by?.name}</p>
                                     <p className="text-xs text-gray-500">{invite.invited_by?.email}</p>

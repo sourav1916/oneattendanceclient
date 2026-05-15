@@ -23,6 +23,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import TimeDurationPickerField from '../components/TimeDurationPicker';
 import Modal from '../components/Modal';
 import { RefreshButton } from '../components/common';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,7 @@ const formatDurationDisplay = (value) => normalizeDuration(value, 'N/A');
 
 const normalizeEmployeeRecord = (employee) => ({
     ...employee,
+    profile_picture: employee?.profile_picture ?? employee?.user?.profile_picture ?? null,
     permission_package_id: employee?.permission_package_id ?? employee?.package_id ?? null,
     break_minutes: normalizeDuration(
         employee?.break_minutes,
@@ -1342,9 +1344,13 @@ const EmployeeManagement = () => {
                                                         <div className="flex items-center gap-3">
 
                                                             {/* Avatar Circle */}
-                                                            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-purple-100">
+                                                            <ProfileAvatar
+                                                                record={emp}
+                                                                name={emp.name}
+                                                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-purple-100 overflow-hidden"
+                                                            >
                                                                 <FaUser className="text-purple-500 text-sm" />
-                                                            </div>
+                                                            </ProfileAvatar>
 
                                                             {/* Name */}
                                                             <span className="text-gray-800 font-medium truncate max-w-[120px] sm:max-w-[180px]">
@@ -1441,9 +1447,13 @@ const EmployeeManagement = () => {
                                     className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                                 >
                                     <div className="flex items-start gap-4">
-                                        <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-xl">
+                                        <ProfileAvatar
+                                            record={emp}
+                                            name={emp.name}
+                                            className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                                        >
                                             <FaUserCircle className="text-white text-3xl" />
-                                        </div>
+                                        </ProfileAvatar>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-start">
                                                 <h3 className="font-bold text-lg text-gray-800 truncate">{emp.name}</h3>
@@ -1521,9 +1531,13 @@ const EmployeeManagement = () => {
                             {/* Profile Card */}
                             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div className="flex items-center gap-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-2xl font-bold text-white shadow-lg">
+                                    <ProfileAvatar
+                                        record={selectedEmployee}
+                                        name={selectedEmployee.name}
+                                        className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-2xl font-bold text-white shadow-lg overflow-hidden"
+                                    >
                                         {selectedEmployee.name?.charAt(0).toUpperCase()}
-                                    </div>
+                                    </ProfileAvatar>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="text-sm font-bold text-slate-900 truncate">{selectedEmployee.name}</h3>
                                         <div className="flex flex-wrap gap-2 mt-1">

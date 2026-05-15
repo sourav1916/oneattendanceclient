@@ -22,6 +22,7 @@ import Modal from "../components/Modal";
 import ModalScrollLock from '../components/ModalScrollLock';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { DatePickerField } from '../components/DatePicker';
+import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -230,9 +231,13 @@ const SalaryDetailModal = ({ salary, onClose }) => {
             title={salary.employee?.name}
             subtitle={`${salary.employee?.employee_code} · ${status.text}`}
             icon={
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} shadow-lg shadow-slate-200`}>
+                <ProfileAvatar
+                    record={salary.employee}
+                    name={salary.employee?.name}
+                    className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} shadow-lg shadow-slate-200 overflow-hidden`}
+                >
                     <span className="text-xl font-bold text-white">{getInitials(salary.employee?.name)}</span>
-                </div>
+                </ProfileAvatar>
             }
             size="4xl"
             footer={
@@ -1029,7 +1034,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                             : filteredEmployees.length === 0 ? (<div className="p-4 text-center text-slate-400 text-sm">No employees found</div>)
                                                 : filteredEmployees.map(emp => (
                                                     <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
-                                                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></div>
+                                                        <ProfileAvatar record={emp} name={emp.name} className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0 overflow-hidden`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></ProfileAvatar>
                                                         <div className="flex-1 min-w-0"><p className="font-bold text-slate-800 text-sm">{emp.name}</p><p className="text-[11px] text-slate-400">{emp.employee_code} • {emp.email}</p></div>
                                                     </button>
                                                 ))}
@@ -1038,7 +1043,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 {selectedEmployee && (
                                     <div className="mt-2 p-3 bg-green-50/50 border border-green-100 rounded-xl flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center shadow-sm`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></div>
+                                            <ProfileAvatar record={selectedEmployee} name={selectedEmployee.name} className={`w-9 h-9 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center shadow-sm overflow-hidden`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></ProfileAvatar>
                                             <div><p className="font-bold text-slate-800 text-sm">{selectedEmployee.name}</p><p className="text-[11px] text-slate-500">{selectedEmployee.employee_code}</p></div>
                                         </div>
                                         <button type="button" onClick={() => setSelectedEmployee(null)} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><FaTimes size={12} /></button>
@@ -1531,9 +1536,13 @@ const SalaryManagement = () => {
             className: 'max-w-[150px]',
             render: (salary) => (
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full shrink-0 bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center text-white font-semibold`}>
+                    <ProfileAvatar
+                        record={salary.employee}
+                        name={salary.employee?.name}
+                        className={`w-10 h-10 rounded-full shrink-0 bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center text-white font-semibold overflow-hidden`}
+                    >
                         {getInitials(salary.employee?.name)}
-                    </div>
+                    </ProfileAvatar>
                     <div className="min-w-0">
                         <p className="font-semibold text-gray-800 truncate">{salary.employee?.name || 'No name'}</p>
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
