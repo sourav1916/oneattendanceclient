@@ -235,13 +235,15 @@ const Signup = () => {
 
       const res = await apiCall('/auth/signup/complete', 'POST', payload);
 
-      const data = await res.json();
-      console.log(JSON.stringify(data));
+      const json = await res.json();
+      console.log(JSON.stringify(json));
       if (res.ok) {
         toast.success("Account created successfully 🎉");
-        setTimeout(async () => await login(data.token), 1500);
+        const token = json.data?.token || json.token;
+        if (!token) throw new Error("Signup did not return a login token.");
+        setTimeout(async () => await login(token), 1500);
       } else {
-        throw new Error(data.message || "Signup failed");
+        throw new Error(json.message || "Signup failed");
       }
     } catch (err) {
       toast.error(err.message);

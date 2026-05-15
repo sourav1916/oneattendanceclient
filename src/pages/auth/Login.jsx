@@ -179,11 +179,14 @@ const Login = () => {
       }
 
       const res = await apiCall('/auth/login/verify-otp', 'POST', payload);
-      const data = await res.json();
+      const json = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "OTP verification failed");
+      if (!res.ok) throw new Error(json.message || "OTP verification failed");
 
-      await login(data.token);
+      const token = json.data?.token || json.token;
+      if (!token) throw new Error("Authentication did not return a login token.");
+
+      await login(token);
       toast.success("Login successful 🎉");
     } catch (err) {
       toast.error(err.message);

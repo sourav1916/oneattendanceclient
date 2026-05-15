@@ -100,13 +100,15 @@ export default function GoogleAuthButton({
       }
 
       const response = await apiCall(endpoint, "POST", payload);
-      const data     = await response.json().catch(() => ({}));
+      const json     = await response.json().catch(() => ({}));
 
-      if (!response.ok) throw new Error(data.message || "Google authentication failed.");
-      if (!data.token)  throw new Error("Google authentication did not return a login token.");
+      if (!response.ok) throw new Error(json.message || "Google authentication failed.");
+      
+      const token = json.data?.token || json.token;
+      if (!token)  throw new Error("Google authentication did not return a login token.");
 
       toast.success(mode === "signup" ? "Signup successful 🎉" : "Login successful 🎉");
-      await onAuthenticated(data.token);
+      await onAuthenticated(token);
     } catch (err) {
       toast.error(err.message || "Google authentication failed.");
     } finally {
