@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import apiCall from "../utils/api";
 import { getPreciseLocation } from "../utils/geolocation";
 
-const FB_APP_ID = process.env.REACT_APP_FACEBOOK_APP_ID;
+const FB_APP_ID = process.env.FACEBOOK_APP_ID;
 const FB_SCRIPT_ID = "facebook-jssdk";
 const FB_SCRIPT_SRC = "https://connect.facebook.net/en_US/sdk.js";
 
