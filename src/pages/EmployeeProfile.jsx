@@ -243,13 +243,12 @@ export default function EmployeeProfilePage() {
     if (!PROFILE_TAB_IDS.has(nextTab) || nextTab === activeTab) return;
     navigate(`/employee-profile/${employeeId}/${nextTab}`);
   }, [activeTab, employeeId, navigate]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
       <div className="mx-auto max-w-7xl">
         {loading && (
           <div className="flex flex-col items-center py-16 gap-2 text-slate-400">
-            <div className="w-5 h-5 border-2 border-slate-200 border-t-emerald-500 rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
             <span className="text-sm">Fetching employee data…</span>
           </div>
         )}
@@ -281,10 +280,10 @@ export default function EmployeeProfilePage() {
                 eyebrow={<><FaIdCard size={11} /> Employee Profile</>}
                 title="Employee Profile"
                 description="Detailed overview of employee performance, attendance, and employment records."
-                accent="green"
+                accent="blue"
                 summary={(
                   <div className="flex items-center gap-2 text-sm bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
-                    <FaUserCircle className="text-emerald-500" />
+                    <FaUserCircle className="text-blue-500" />
                     <span className="font-medium text-gray-700">Staff Member</span>
                   </div>
                 )}

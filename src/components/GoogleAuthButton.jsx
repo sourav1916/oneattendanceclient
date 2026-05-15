@@ -77,7 +77,7 @@ export default function GoogleAuthButton({
   const [sdkReady,  setSdkReady]  = useState(false);
   const callbackRef = useRef(null); // always-fresh callback ref
 
-  const endpoint = "/auth/google/login";
+  const endpoint = "/auth/continue/google";
 
   // ── credential handler (kept in a ref so Google's callback never goes stale)
   const handleCredentialResponse = useCallback(async (credentialResponse) => {
