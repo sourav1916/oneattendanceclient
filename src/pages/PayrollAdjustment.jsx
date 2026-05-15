@@ -30,7 +30,7 @@ const backdropVariants = {
 
 export default function PayrollAdjustment() {
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
-    const createAccess = checkActionAccess('payrollManagement', 'create');
+    const createAccess = checkActionAccess('payrollAdjustment', 'create');
 
     const [adjustments, setAdjustments] = useState([]);
     const [summary, setSummary] = useState(null);

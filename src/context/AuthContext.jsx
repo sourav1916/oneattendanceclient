@@ -79,6 +79,12 @@ const normalizeAttendanceMethods = (value) => {
   return methods.map(normalizeAttendanceMethod).filter(Boolean);
 };
 
+const isAllowedPermission = (permission) => (
+  permission?.is_allowed === 1 ||
+  permission?.is_allowed === true ||
+  !Object.prototype.hasOwnProperty.call(permission || {}, "is_allowed")
+);
+
 
 
 export const AuthProvider = ({ children }) => {
@@ -299,7 +305,7 @@ export const AuthProvider = ({ children }) => {
     
     // Return true if the user has AT LEAST ONE of the required permissions active in THIS company
     return permsToCheck.some(code => 
-      permissions.some(p => p.code === code && p.is_allowed === 1)
+      permissions.some(p => p.code === code && isAllowedPermission(p))
     );
   };
 
