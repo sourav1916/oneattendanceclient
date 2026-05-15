@@ -5,6 +5,8 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import AcceptInvite from "./pages/AcceptInvite";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import DataDeletion from "./pages/legal/DataDeletion";
 import MainLayout from "./layout/MainLayout";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -302,6 +304,8 @@ function AppContent() {
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/data-deletion" element={<DataDeletion />} />
 
         {/* Protected Routes - Only accessible after company selection */}
         <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>} />
