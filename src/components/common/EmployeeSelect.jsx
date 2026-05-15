@@ -17,7 +17,7 @@ const avatarGradient = (id) => AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 const getInitials = (name = '') =>
     name.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-export default function EmployeeSelect({ value, onChange, placeholder = "Select an employee...", error }) {
+export default function EmployeeSelect({ value, onChange, placeholder = "Select an employee...", error, disabled=false }) {
     const [isOpen, setIsOpen] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');

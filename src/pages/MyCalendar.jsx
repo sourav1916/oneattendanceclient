@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaChevronLeft,
@@ -11,323 +11,299 @@ import {
   FaInfoCircle,
   FaUser,
   FaClock,
+  FaIdCard,
+  FaBriefcase,
+  FaSignOutAlt,
+  FaSignInAlt,
+  FaHourglassHalf,
 } from 'react-icons/fa';
 import apiCall from '../utils/api';
 import { ManagementHub } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
-// ─── DUMMY DATA (remove when API is ready) ────────────────────────────────────
-const DUMMY_DATA = {
-  "2026-05-01": { is_weekend:{}, is_holiday:{ name:"Buddha Purnima", is_optional:true }, is_leave:{}, worked:{}, status:"holiday" },
-  "2026-05-02": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"absent" },
-  "2026-05-03": { is_weekend:{ type:"Weekly Off" }, is_holiday:{}, is_leave:{}, worked:{}, status:"weekend" },
-  "2026-05-04": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{ punch_in:"09:05", punch_out:"18:30", work_hour:"9h 25m", early_late:"+0:05", is_dt:false, is_ot:true, half_day:null }, status:"present" },
-  "2026-05-05": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{ punch_in:"08:40", punch_out:"17:50", work_hour:"9h 10m", early_late:"-0:20", is_dt:false, is_ot:false, half_day:null }, status:"present" },
-  "2026-05-06": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{ punch_in:"09:30", punch_out:"20:00", work_hour:"10h 30m", early_late:"+0:30", is_dt:true, is_ot:true, half_day:null }, status:"present" },
-  "2026-05-07": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{ punch_in:"09:00", punch_out:"13:00", work_hour:"4h 00m", early_late:null, is_dt:false, is_ot:false, half_day:"1st half" }, status:"present" },
-  "2026-05-08": { is_weekend:{}, is_holiday:{}, is_leave:{ name:"Casual Leave", type:"CL" }, worked:{}, status:"leave" },
-  "2026-05-09": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{ punch_in:"09:10", punch_out:"18:20", work_hour:"9h 10m", early_late:"+0:10", is_dt:false, is_ot:false, half_day:null }, status:"present" },
-  "2026-05-10": { is_weekend:{ type:"Weekly Off" }, is_holiday:{}, is_leave:{}, worked:{}, status:"weekend" },
-  "2026-05-11": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-12": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-13": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-14": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-15": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-16": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-17": { is_weekend:{ type:"Weekly Off" }, is_holiday:{}, is_leave:{}, worked:{}, status:"weekend" },
-  "2026-05-18": { is_weekend:{}, is_holiday:{}, is_leave:{ name:"Medical Leave", type:"ML" }, worked:{}, status:"leave" },
-  "2026-05-19": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-20": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-21": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-22": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-23": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-24": { is_weekend:{ type:"Weekly Off" }, is_holiday:{}, is_leave:{}, worked:{}, status:"weekend" },
-  "2026-05-25": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-26": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-27": { is_weekend:{}, is_holiday:{ name:"Bakrid (tentative)", is_optional:false }, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-28": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-29": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-30": { is_weekend:{}, is_holiday:{}, is_leave:{}, worked:{}, status:"upcoming" },
-  "2026-05-31": { is_weekend:{ type:"Weekly Off" }, is_holiday:{}, is_leave:{}, worked:{}, status:"weekend" },
-};
-// ─────────────────────────────────────────────────────────────────────────────
-
-const USE_DUMMY = true; // ← set to false when your API is ready
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES = {
-  present:  { cell: 'bg-emerald-50 border-emerald-100',  pill: 'bg-emerald-700 text-emerald-50',  label: 'Present'  },
-  absent:   { cell: 'bg-rose-50 border-rose-100',        pill: 'bg-rose-700 text-rose-50',        label: 'Absent'   },
-  holiday:  { cell: 'bg-amber-50 border-amber-100',      pill: 'bg-amber-700 text-amber-50',      label: 'Holiday'  },
-  weekend:  { cell: 'bg-slate-50 border-slate-100',      pill: 'bg-slate-500 text-slate-50',      label: 'Weekend'  },
-  leave:    { cell: 'bg-violet-50 border-violet-100',    pill: 'bg-violet-700 text-violet-50',    label: 'Leave'    },
-  upcoming: { cell: 'bg-white border-gray-100',          pill: 'bg-gray-200 text-gray-500',       label: 'Upcoming' },
+  present:  { 
+    cell: 'bg-emerald-50/50 border-emerald-100/50',  
+    pill: 'bg-emerald-100 text-emerald-700 border-emerald-200',  
+    label: 'Present',
+    icon: FaCheckCircle,
+    color: 'text-emerald-600'
+  },
+  absent:   { 
+    cell: 'bg-rose-50/50 border-rose-100/50',        
+    pill: 'bg-rose-100 text-rose-700 border-rose-200',        
+    label: 'Absent',
+    icon: FaTimesCircle,
+    color: 'text-rose-600'
+  },
+  holiday:  { 
+    cell: 'bg-amber-50/50 border-amber-100/50',      
+    pill: 'bg-amber-100 text-amber-700 border-amber-200',      
+    label: 'Holiday',
+    icon: FaUmbrellaBeach,
+    color: 'text-amber-600'
+  },
+  weekend:  { 
+    cell: 'bg-slate-50/50 border-slate-100/50',      
+    pill: 'bg-slate-100 text-slate-700 border-slate-200',      
+    label: 'Weekend',
+    icon: FaCalendarAlt,
+    color: 'text-slate-600'
+  },
+  leave:    { 
+    cell: 'bg-violet-50/50 border-violet-100/50',    
+    pill: 'bg-violet-100 text-violet-700 border-violet-200',    
+    label: 'Leave',
+    icon: FaInfoCircle,
+    color: 'text-violet-600'
+  },
+  upcoming: { 
+    cell: 'bg-white border-gray-100',          
+    pill: 'bg-gray-100 text-gray-500 border-gray-200',       
+    label: 'Upcoming',
+    icon: FaClock,
+    color: 'text-gray-400'
+  },
+  half_day: {
+    cell: 'bg-orange-50/50 border-orange-100/50',
+    pill: 'bg-orange-100 text-orange-700 border-orange-200',
+    label: 'Half Day',
+    icon: FaHourglassHalf,
+    color: 'text-orange-600'
+  }
 };
 
-// ─── Calendar Cell ────────────────────────────────────────────────────────────
+// ─── Components ───────────────────────────────────────────────────────────────
+
 const CalendarCell = ({ cell, onClick }) => {
   const { dayNumber, isCurrentMonth, data, isToday } = cell;
   const status = data?.status || (isCurrentMonth ? 'upcoming' : null);
   const styles = STATUS_STYLES[status] || STATUS_STYLES.upcoming;
-  const w = data?.worked || {};
-
+  
   if (!isCurrentMonth) {
     return (
-      <div className="min-h-[110px] bg-gray-50/40 p-2">
+      <div className="min-h-[120px] bg-gray-50/30 p-2 border-r border-b border-gray-100">
         <span className="text-xs text-gray-300 font-medium">{dayNumber}</span>
       </div>
     );
   }
 
   return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.01, zIndex: 1 }}
       onClick={() => onClick(cell)}
       className={`
-        min-h-[110px] p-2 cursor-pointer transition-all hover:brightness-95 border
+        min-h-[120px] p-3 cursor-pointer transition-all border-r border-b 
         ${styles.cell}
-        ${isToday ? 'ring-2 ring-indigo-500 ring-inset z-[1]' : ''}
+        ${isToday ? 'bg-indigo-50/30 border-indigo-200 ring-1 ring-indigo-200 ring-inset' : 'border-gray-100'}
       `}
     >
-      {/* Day number + today badge */}
-      <div className="flex items-center justify-between mb-1.5">
-        {isToday ? (
-          <span className="w-[22px] h-[22px] rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
-            {dayNumber}
-          </span>
-        ) : (
-          <span className="text-xs font-semibold text-gray-800">{dayNumber}</span>
+      <div className="flex items-start justify-between mb-2">
+        <span className={`
+          flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold
+          ${isToday ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-gray-700'}
+        `}>
+          {dayNumber}
+        </span>
+        
+        {data?.is_holiday && (
+          <div className="text-amber-500" title={data.is_holiday.name}>
+            <FaUmbrellaBeach size={12} />
+          </div>
         )}
       </div>
 
-      {/* Status pill */}
-      {status && (
-        <span className={`inline-block text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${styles.pill}`}>
-          {styles.label}
-        </span>
-      )}
+      <div className="space-y-1.5">
+        {status && (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${styles.pill}`}>
+            <span className={`w-1 h-1 rounded-full ${styles.color.replace('text-', 'bg-')}`} />
+            {styles.label}
+          </span>
+        )}
 
-      {/* ── PRESENT: timing chips + work hours ── */}
-      {status === 'present' && (
-        <div className="mt-1.5 space-y-1">
-          {w.half_day ? (
-            // Type 2: Half day
-            <div className="flex flex-wrap gap-1">
-              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 uppercase tracking-wide">
-                Half day
-              </span>
-              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase tracking-wide">
-                {w.half_day}
-              </span>
-            </div>
-          ) : (
-            // Type 1: Early/Late + DT/OT
-            <div className="flex flex-wrap gap-1">
-              {w.early_late && (
-                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide
-                  ${w.early_late.startsWith('-')
-                    ? 'bg-emerald-200 text-emerald-900'
-                    : 'bg-rose-200 text-rose-900'
-                  }`}>
-                  {w.early_late}
-                </span>
-              )}
-              {w.is_dt && (
-                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-blue-200 text-blue-900 uppercase tracking-wide">
-                  DT
-                </span>
-              )}
-              {w.is_ot && (
-                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-pink-200 text-pink-900 uppercase tracking-wide">
-                  OT
-                </span>
-              )}
-            </div>
-          )}
-          {w.work_hour && (
-            <p className="text-[9px] font-semibold text-emerald-700">{w.work_hour}</p>
-          )}
-        </div>
-      )}
+        {/* Present / Worked details */}
+        {data?.worked && (
+          <div className="mt-1">
+            <p className="text-[10px] font-bold text-gray-800 flex items-center gap-1">
+              <FaClock size={8} className="text-gray-400" />
+              {data.worked.total_work}
+            </p>
+            {data.worked.overtime !== '0h 0m' && (
+              <p className="text-[9px] font-bold text-indigo-600">
+                OT: {data.worked.overtime}
+              </p>
+            )}
+          </div>
+        )}
 
-      {/* ── Type 3: LEAVE ── */}
-      {status === 'leave' && data?.is_leave?.name && (
-        <div className="mt-1.5 space-y-1">
-          <p className="text-[9px] font-semibold text-violet-800 leading-tight">{data.is_leave.name}</p>
-          {data.is_leave.type && (
-            <span className="inline-block text-[8px] font-bold px-1.5 py-0.5 rounded bg-violet-200 text-violet-900 uppercase tracking-wide">
-              {data.is_leave.type}
-            </span>
-          )}
-        </div>
-      )}
+        {/* Leave details */}
+        {data?.is_leave && (
+          <div className="mt-1">
+            <p className="text-[10px] font-bold text-violet-700 leading-tight truncate" title={data.is_leave.name}>
+              {data.is_leave.code} - {data.is_leave.name}
+            </p>
+          </div>
+        )}
 
-      {/* ── HOLIDAY name ── */}
-      {(status === 'holiday' || (status === 'upcoming' && data?.is_holiday?.name)) && (
-        <p className="text-[9px] font-semibold text-amber-800 leading-tight mt-1.5">
-          {data?.is_holiday?.name}
-          {data?.is_holiday?.is_optional && <span className="ml-1 text-amber-500">★</span>}
-        </p>
-      )}
-
-      {/* ── WEEKEND type ── */}
-      {status === 'weekend' && data?.is_weekend?.type && (
-        <p className="text-[9px] font-semibold text-slate-500 mt-1.5">{data.is_weekend.type}</p>
-      )}
-
-      {/* Info icon bottom-right */}
-      {data && (
-        <div className="flex justify-end mt-1">
-          <FaInfoCircle className="text-gray-300 w-2.5 h-2.5" />
-        </div>
-      )}
-    </div>
+        {/* Holiday details */}
+        {data?.is_holiday && (
+          <p className="text-[9px] font-medium text-amber-700 leading-tight line-clamp-2" title={data.is_holiday.name}>
+            {data.is_holiday.name}
+          </p>
+        )}
+      </div>
+    </motion.div>
   );
 };
 
-// ─── Summary Card ─────────────────────────────────────────────────────────────
-const SummaryCard = ({ label, value, icon: Icon, color, bg }) => (
-  <div className={`${bg} p-3 rounded-2xl border border-white shadow-sm flex items-center gap-3`}>
-    <div className={`p-2.5 rounded-xl bg-white/80 ${color}`}><Icon size={18} /></div>
-    <div>
-      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{label}</p>
-      <p className={`text-lg font-black text-gray-900`}>{value}</p>
-    </div>
-  </div>
-);
-
-// ─── Legend Item ──────────────────────────────────────────────────────────────
-const LegendItem = ({ color, label }) => (
-  <div className="flex items-center gap-2">
-    <div className={`w-2.5 h-2.5 rounded-full ${color}`} />
-    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{label}</span>
-  </div>
-);
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const styles = STATUS_STYLES[status];
-  if (!styles) return null;
+const SummaryCard = ({ label, value, icon: Icon, type }) => {
+  const styles = STATUS_STYLES[type] || STATUS_STYLES.upcoming;
   return (
-    <span className={`inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${styles.pill}`}>
-      {styles.label}
-    </span>
+    <div className={`p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5`}>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${styles.pill}`}>
+        <Icon />
+      </div>
+      <div>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1.5">{label}</p>
+        <p className="text-xl font-black text-gray-900">{value}</p>
+      </div>
+    </div>
   );
 };
 
-// ─── Day Details Modal ────────────────────────────────────────────────────────
+const EmployeeInfo = ({ employee }) => {
+  if (!employee) return null;
+  return (
+    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200 mb-8 relative overflow-hidden group">
+      {/* Decorative shapes */}
+      <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl transition-transform group-hover:scale-110" />
+      <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-3xl transition-transform group-hover:scale-110" />
+      
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl font-bold border border-white/30 shadow-inner">
+            {employee.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase() || <FaUser size={24} />}
+          </div>
+          <div>
+            <h2 className="text-2xl font-black tracking-tight">{employee.employee_name || 'My Calendar'}</h2>
+            <div className="flex flex-wrap items-center gap-3 mt-1.5 opacity-90">
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                <FaIdCard size={12} /> {employee.employee_code}
+              </span>
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-white/20 px-2.5 py-1 rounded-lg backdrop-blur-sm">
+                <FaBriefcase size={12} /> {employee.designation?.replace(/_/g, ' ')}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 md:gap-6 border-t md:border-t-0 md:border-l border-white/20 pt-6 md:pt-0 md:pl-8">
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-100 flex items-center gap-1.5">
+              <FaSignInAlt size={10} /> Shift Start
+            </p>
+            <p className="text-lg font-black">{employee.shift_start?.slice(0, 5) || '--:--'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-100 flex items-center gap-1.5">
+              <FaSignOutAlt size={10} /> Shift End
+            </p>
+            <p className="text-lg font-black">{employee.shift_end?.slice(0, 5) || '--:--'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-100 flex items-center gap-1.5">
+              <FaClock size={10} /> Expected
+            </p>
+            <p className="text-lg font-black">{employee.expected_work || '--'}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DayDetailsModal = ({ cell, onClose }) => {
   if (!cell) return null;
   const { date, data } = cell;
   const w = data?.worked || {};
-
   const formattedDate = date.toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  const InfoSection = ({ title, color, children, hasData }) => (
-    <div className={`${color} p-4 rounded-xl border border-black/5`}>
-      <h4 className="text-[10px] font-black uppercase tracking-widest mb-2 text-gray-500">{title}</h4>
-      {hasData ? children : <p className="text-xs italic text-gray-400">No record found</p>}
+  const InfoRow = ({ label, value, icon: Icon, color }) => (
+    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 border border-gray-100 transition-all hover:bg-white hover:shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${color}`}>
+          <Icon size={14} />
+        </div>
+        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+      </div>
+      <span className="text-sm font-black text-gray-800">{value || '—'}</span>
     </div>
   );
 
   return (
     <motion.div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <ModalScrollLock />
       <motion.div
-        className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col"
         initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Modal Header */}
-        <div className="flex justify-between items-start p-5 border-b border-gray-100 bg-gray-50/50">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
           <div>
-            <h3 className="text-base font-black text-gray-900">{formattedDate}</h3>
-            {data?.status && <div className="mt-1.5"><StatusBadge status={data.status} /></div>}
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">{formattedDate}</h3>
+            {data?.status && (
+              <span className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${STATUS_STYLES[data.status]?.pill}`}>
+                {STATUS_STYLES[data.status]?.label}
+              </span>
+            )}
           </div>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-600 rounded-xl transition-colors">
-            <FaTimesCircle size={18} />
+          <button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-2xl transition-all">
+            <FaTimesCircle size={20} />
           </button>
         </div>
 
-        <div className="p-5 overflow-y-auto flex-1 space-y-3">
-          {/* Work Info */}
-          <InfoSection title="Work Info" color="bg-emerald-50" hasData={Object.keys(w).length > 0}>
-            <div className="grid grid-cols-2 gap-3">
-              {w.punch_in && (
-                <div>
-                  <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch In</p>
-                  <p className="font-black text-emerald-900">{w.punch_in}</p>
-                </div>
-              )}
-              {w.punch_out && (
-                <div>
-                  <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest">Punch Out</p>
-                  <p className="font-black text-emerald-900">{w.punch_out}</p>
-                </div>
-              )}
-              {w.work_hour && (
-                <div>
-                  <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest">Total Hours</p>
-                  <p className="font-black text-emerald-900">{w.work_hour}</p>
-                </div>
-              )}
-              {w.half_day && (
-                <div>
-                  <p className="text-[9px] font-bold text-emerald-600/70 uppercase tracking-widest">Half Day</p>
-                  <p className="font-black text-emerald-900">{w.half_day}</p>
-                </div>
-              )}
+        <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          {data?.worked ? (
+            <div className="grid gap-3">
+              <InfoRow label="Work Hours" value={w.total_work} icon={FaClock} color="bg-emerald-100 text-emerald-600" />
+              <InfoRow label="Break Time" value={w.break} icon={FaHourglassHalf} color="bg-amber-100 text-amber-600" />
+              <InfoRow label="Overtime" value={w.overtime} icon={FaSignInAlt} color="bg-indigo-100 text-indigo-600" />
+              <InfoRow label="Target" value={w.expected_work} icon={FaSignOutAlt} color="bg-slate-100 text-slate-600" />
             </div>
-            {/* Timing + DT/OT badges */}
-            {(w.early_late || w.is_dt || w.is_ot) && (
-              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-emerald-100">
-                {w.early_late && (
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase
-                    ${w.early_late.startsWith('-') ? 'bg-emerald-200 text-emerald-900' : 'bg-rose-200 text-rose-900'}`}>
-                    {w.early_late.startsWith('-') ? 'Early' : 'Late'} {w.early_late}
-                  </span>
-                )}
-                {w.is_dt && <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-blue-200 text-blue-900 uppercase">Double Time</span>}
-                {w.is_ot && <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-pink-200 text-pink-900 uppercase">Overtime</span>}
+          ) : data?.is_leave ? (
+            <div className="p-6 bg-violet-50 rounded-3xl border border-violet-100 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mb-4 text-2xl">
+                <FaInfoCircle />
               </div>
-            )}
-          </InfoSection>
-
-          {/* Leave Info */}
-          <InfoSection title="Leave Info" color="bg-violet-50" hasData={data?.is_leave && Object.keys(data.is_leave).length > 0}>
-            {data?.is_leave?.name && (
-              <>
-                <p className="font-bold text-violet-900">{data.is_leave.name}</p>
-                {data.is_leave.type && (
-                  <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded bg-violet-200 text-violet-900 uppercase">
-                    {data.is_leave.type}
-                  </span>
-                )}
-              </>
-            )}
-          </InfoSection>
-
-          {/* Holiday Info */}
-          <InfoSection title="Holiday Info" color="bg-amber-50" hasData={data?.is_holiday && Object.keys(data.is_holiday).length > 0}>
-            {data?.is_holiday?.name && (
-              <div className="flex items-center gap-2">
-                <p className="font-bold text-amber-900">{data.is_holiday.name}</p>
-                {data.is_holiday.is_optional && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-800 uppercase">Optional</span>
-                )}
+              <h4 className="text-lg font-black text-violet-900 leading-tight mb-1">{data.is_leave.name}</h4>
+              <p className="text-sm font-bold text-violet-500 uppercase tracking-widest">{data.is_leave.code} • {data.is_leave.type?.replace('_', ' ')}</p>
+            </div>
+          ) : data?.is_holiday ? (
+            <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 text-2xl">
+                <FaUmbrellaBeach />
               </div>
-            )}
-          </InfoSection>
-
-          {/* Weekend Info */}
-          <InfoSection title="Weekend Info" color="bg-slate-50" hasData={data?.is_weekend && Object.keys(data.is_weekend).length > 0}>
-            {data?.is_weekend?.type && <p className="font-bold text-slate-900">{data.is_weekend.type}</p>}
-          </InfoSection>
+              <h4 className="text-lg font-black text-amber-900 leading-tight mb-1">{data.is_holiday.name}</h4>
+              <p className="text-sm font-bold text-amber-500 uppercase tracking-widest">
+                {data.is_holiday.is_optional ? 'Optional Holiday' : 'Public Holiday'}
+              </p>
+            </div>
+          ) : (
+            <div className="py-12 flex flex-col items-center text-center text-gray-400">
+              <FaCalendarAlt size={48} className="mb-4 opacity-20" />
+              <p className="font-bold uppercase tracking-widest text-xs">No activity recorded for this day</p>
+            </div>
+          )}
         </div>
       </motion.div>
     </motion.div>
@@ -335,10 +311,11 @@ const DayDetailsModal = ({ cell, onClose }) => {
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
+
 const MyCalendar = () => {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [calendarData, setCalendarData] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCell, setSelectedCell] = useState(null);
@@ -347,61 +324,48 @@ const MyCalendar = () => {
   const year = currentDate.getFullYear();
   const lastFetchedKeyRef = useRef(null);
 
+  const fetchCalendar = useCallback(async (m, y) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+      const response = await apiCall(`/shifts/my-calendar?month=${m}&year=${y}`, 'GET', null, companyId);
+      const json = await response.json();
+      
+      if (json.success) {
+        setData(json.data);
+      } else {
+        setError(json.message || 'Failed to fetch calendar');
+        toast.error(json.message || 'Failed to fetch calendar');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      toast.error('Could not connect to the server');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchKey = `${month}-${year}`;
     if (lastFetchedKeyRef.current === fetchKey) return;
     lastFetchedKeyRef.current = fetchKey;
+    fetchCalendar(month, year);
+  }, [month, year, fetchCalendar]);
 
-    const fetchCalendar = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        if (USE_DUMMY) {
-          // ── DUMMY: simulate network delay ──
-          await new Promise(r => setTimeout(r, 400));
-          setCalendarData(DUMMY_DATA);
-        } else {
-          // ── REAL API ──
-          const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-          const response = await apiCall(`/shifts/my-calendar?month=${month}&year=${year}`, 'GET', null, companyId);
-          const json = await response.json();
-          if (json.success) setCalendarData(json.data);
-          else setError(json.message || 'Failed to fetch calendar');
-        }
-      } catch (err) {
-        setError('Network error. Please try again.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCalendar();
-  }, [month, year]);
-
-  const changeMonth = delta => setCurrentDate(new Date(year, currentDate.getMonth() + delta, 1));
-
-  const calendarSummary = useMemo(() => {
-    if (!calendarData) return null;
-    let present = 0, absent = 0, holidays = 0, leaves = 0, weekends = 0;
-    Object.values(calendarData).forEach(day => {
-      if (day.status === 'present') present++;
-      else if (day.status === 'absent') absent++;
-      else if (day.status === 'holiday') holidays++;
-      else if (day.status === 'leave') leaves++;
-      else if (day.status === 'weekend') weekends++;
-    });
-    const totalWorkingDays = present + absent + leaves;
-    const attendance_percentage = totalWorkingDays > 0
-      ? ((present / totalWorkingDays) * 100).toFixed(1)
-      : 0;
-    return { present, absent, holidays, leaves, weekends, attendance_percentage };
-  }, [calendarData]);
+  const changeMonth = delta => {
+    const nextDate = new Date(year, currentDate.getMonth() + delta, 1);
+    setCurrentDate(nextDate);
+  };
 
   const calendarGrid = useMemo(() => {
     const firstDay = new Date(year, month - 1, 1).getDay();
     const daysInMonth = new Date(year, month, 0).getDate();
     const prevMonthDays = new Date(year, month - 1, 0).getDate();
     const grid = [];
+    
+    // 42 cells (6 rows of 7 days)
     for (let i = 0; i < 42; i++) {
       let dateObj, isCurrentMonth = true;
       if (i < firstDay) {
@@ -413,114 +377,136 @@ const MyCalendar = () => {
       } else {
         dateObj = new Date(year, month - 1, i - firstDay + 1);
       }
+      
       const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
       grid.push({
         date: dateObj,
         dayNumber: dateObj.getDate(),
         isCurrentMonth,
-        data: calendarData?.[dateStr] || null,
+        data: data?.days?.[dateStr] || null,
         isToday: new Date().toDateString() === dateObj.toDateString(),
       });
     }
     return grid;
-  }, [calendarData, month, year]);
+  }, [data, month, year]);
+
+  const summary = data?.summary || {};
 
   return (
     <ManagementHub
       eyebrow={<><FaCalendarAlt size={11} /> Dashboard</>}
-      title="My Calendar"
-      description="View your attendance, holidays, and leave schedules in one place."
+      title="Attendance Calendar"
+      description="Track your attendance, leave history, and upcoming holidays."
       accent="indigo"
+      onRefresh={() => fetchCalendar(month, year)}
     >
-      <div className="max-w-screen-2xl mx-auto px-4 pb-8">
+      <div className="max-w-screen-2xl mx-auto px-4 pb-12">
+        
+        {/* Header & Navigation */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+          <div className="flex items-center gap-4">
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+              {currentDate.toLocaleString('default', { month: 'long' })} {year}
+            </h2>
+            <div className="flex items-center gap-1.5 bg-white border border-gray-100 p-1.5 rounded-2xl shadow-sm">
+              <button 
+                onClick={() => changeMonth(-1)} 
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 transition-all active:scale-95"
+              >
+                <FaChevronLeft size={14} />
+              </button>
+              <button 
+                onClick={() => setCurrentDate(new Date())} 
+                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+              >
+                Today
+              </button>
+              <button 
+                onClick={() => changeMonth(1)} 
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 transition-all active:scale-95"
+              >
+                <FaChevronRight size={14} />
+              </button>
+            </div>
+          </div>
 
-        {/* Summary Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <SummaryCard label="Present"     value={calendarSummary?.present || 0}               icon={FaCheckCircle}  color="text-emerald-600" bg="bg-emerald-50" />
-          <SummaryCard label="Absent"      value={calendarSummary?.absent || 0}                icon={FaTimesCircle}  color="text-rose-600"    bg="bg-rose-50"    />
-          <SummaryCard label="Holidays"    value={calendarSummary?.holidays || 0}              icon={FaUmbrellaBeach} color="text-amber-600"   bg="bg-amber-50"   />
-          <SummaryCard label="Leaves"      value={calendarSummary?.leaves || 0}               icon={FaInfoCircle}   color="text-violet-600"  bg="bg-violet-50"  />
-          <SummaryCard label="Weekends"    value={calendarSummary?.weekends || 0}              icon={FaCalendarAlt}  color="text-slate-600"   bg="bg-slate-50"   />
-          <SummaryCard label="Attendance"  value={`${calendarSummary?.attendance_percentage || 0}%`} icon={FaClock} color="text-indigo-600"  bg="bg-indigo-50"  />
+          <div className="flex flex-wrap items-center gap-3">
+            {['present', 'absent', 'holiday', 'leave', 'weekend'].map(s => (
+              <div key={s} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-100 bg-white shadow-sm">
+                <div className={`w-2 h-2 rounded-full ${STATUS_STYLES[s].color.replace('text-', 'bg-')}`} />
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{STATUS_STYLES[s].label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Calendar */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        {/* Employee Profile Section */}
+        <EmployeeInfo employee={{ ...data?.employee, employee_name: user?.name }} />
 
-          {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-100">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-black text-gray-900">
-                {currentDate.toLocaleString('default', { month: 'long' })} {year}
-              </h2>
-              <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
-                <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all">
-                  <FaChevronLeft className="w-3 h-3" />
-                </button>
-                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold uppercase tracking-widest text-indigo-600 hover:bg-white hover:shadow-sm rounded-lg transition-all">
-                  Today
-                </button>
-                <button onClick={() => changeMonth(1)} className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all">
-                  <FaChevronRight className="w-3 h-3" />
-                </button>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+          <SummaryCard label="Total Days" value={summary.total_days || 0} icon={FaCalendarAlt} type="upcoming" />
+          <SummaryCard label="Present"    value={summary.present || 0}    icon={FaCheckCircle}  type="present"  />
+          <SummaryCard label="Absent"     value={summary.absent || 0}     icon={FaTimesCircle}  type="absent"   />
+          <SummaryCard label="Leaves"     value={summary.leave || 0}      icon={FaInfoCircle}   type="leave"    />
+          <SummaryCard label="Holidays"   value={summary.holiday || 0}    icon={FaUmbrellaBeach} type="holiday"  />
+          <SummaryCard label="Weekends"   value={summary.weekend || 0}    icon={FaCalendarAlt}  type="weekend"  />
+          <SummaryCard label="Half Days"  value={summary.half_day || 0}   icon={FaHourglassHalf} type="half_day" />
+        </div>
+
+        {/* Calendar Grid Container */}
+        <div className="bg-white rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
+          {loading && (
+            <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <FaSpinner className="w-10 h-10 animate-spin text-indigo-600" />
+                <p className="text-xs font-black text-indigo-900 uppercase tracking-widest animate-pulse">Synchronizing Data...</p>
               </div>
             </div>
+          )}
 
-            {user?.name && (
-              <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
-                <FaUser className="text-indigo-600" />
-                <div>
-                  <p className="text-xs font-black text-indigo-900 leading-none">{user.name}</p>
-                  {user.employee?.employee_code && (
-                    <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5">
-                      {user.employee.employee_code}
-                    </p>
-                  )}
-                </div>
+          {/* Days of Week Header */}
+          <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">
+            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+              <div key={day} className="py-4 text-center">
+                <span className="hidden md:block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{day}</span>
+                <span className="md:hidden text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{day.slice(0, 3)}</span>
               </div>
-            )}
-          </div>
-
-          {/* Day headers */}
-          <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-100">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <div key={d} className="py-3 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">{d}</div>
             ))}
           </div>
 
-          {/* Grid */}
-          <div className="grid grid-cols-7 gap-px bg-gray-100 relative">
-            {loading && (
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
-                <FaSpinner className="w-8 h-8 animate-spin text-indigo-600" />
+          {/* Main Grid */}
+          <div className="grid grid-cols-7 gap-px bg-gray-100">
+            {error ? (
+              <div className="col-span-7 py-32 flex flex-col items-center gap-4 text-rose-500">
+                <FaTimesCircle size={48} className="opacity-20" />
+                <p className="font-black uppercase tracking-widest text-sm">{error}</p>
+                <button 
+                  onClick={() => fetchCalendar(month, year)}
+                  className="px-6 py-2.5 bg-rose-50 text-rose-600 rounded-2xl font-bold text-xs uppercase tracking-widest border border-rose-100 hover:bg-rose-100 transition-all"
+                >
+                  Retry Request
+                </button>
               </div>
+            ) : (
+              calendarGrid.map((cell, idx) => (
+                <CalendarCell 
+                  key={idx} 
+                  cell={cell} 
+                  onClick={setSelectedCell} 
+                />
+              ))
             )}
-            {error && (
-              <div className="col-span-7 py-16 flex flex-col items-center gap-2 text-rose-500">
-                <FaTimesCircle size={28} />
-                <p className="text-sm font-semibold">{error}</p>
-              </div>
-            )}
-            {!error && calendarGrid.map((cell, idx) => (
-              <CalendarCell key={idx} cell={cell} onClick={setSelectedCell} />
-            ))}
           </div>
-        </div>
-
-        {/* Legend */}
-        <div className="mt-5 flex flex-wrap justify-center gap-5">
-          <LegendItem color="bg-emerald-500" label="Present" />
-          <LegendItem color="bg-rose-500"    label="Absent"  />
-          <LegendItem color="bg-amber-500"   label="Holiday" />
-          <LegendItem color="bg-violet-500"  label="Leave"   />
-          <LegendItem color="bg-slate-400"   label="Weekend" />
-          <LegendItem color="bg-gray-200"    label="Upcoming"/>
         </div>
       </div>
 
       <AnimatePresence>
         {selectedCell && (
-          <DayDetailsModal cell={selectedCell} onClose={() => setSelectedCell(null)} />
+          <DayDetailsModal 
+            cell={selectedCell} 
+            onClose={() => setSelectedCell(null)} 
+          />
         )}
       </AnimatePresence>
     </ManagementHub>

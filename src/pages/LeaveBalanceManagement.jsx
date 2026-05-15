@@ -15,6 +15,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import YearPicker from '../components/YearPicker';
+import EmployeeSelect from '../components/common/EmployeeSelect';
 
 const ITEMS_PER_PAGE = 10;
 const FETCH_BATCH_SIZE = 100;
@@ -426,9 +427,6 @@ const LeaveBalanceManagement = () => {
   );
 
   // State for searchable selects
-  const [employees, setEmployees] = useState([]);
-  const [employeesLoading, setEmployeesLoading] = useState(false);
-
   const [leaveConfigs, setLeaveConfigs] = useState([]);
   const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
 
@@ -447,38 +445,14 @@ const LeaveBalanceManagement = () => {
     leaves: [{ leave_config_id: '', total_allocated: 0 }], // for assign
   });
 
-  // Fetch employees with search
-  const fetchEmployees = useCallback(async (search = '') => {
-    setEmployeesLoading(true);
-    try {
-      const companyId = getCompanyId();
-      const url = search
-        ? `/employees/all-list?search=${encodeURIComponent(search)}`
-        : '/employees/all-list';
-      const response = await apiCall(url, 'GET', null, companyId);
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setEmployees(result.data);
-      } else {
-        setEmployees([]);
-      }
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      setEmployees([]);
-    } finally {
-      setEmployeesLoading(false);
-    }
-  }, []);
-
   // Fetch leave configs with search
   const fetchLeaveConfigs = useCallback(async (search = '') => {
     setLeaveConfigsLoading(true);
     try {
       const companyId = getCompanyId();
-      const url = search
-        ? `/leave/company?search=${encodeURIComponent(search)}`
-        : '/leave/company';
+      const params = new URLSearchParams({ is_paid: 'true' });
+      if (search) params.append('search', search);
+      const url = `/leave/company?${params.toString()}`;
       const response = await apiCall(url, 'GET', null, companyId);
       const result = await response.json();
 
@@ -495,9 +469,7 @@ const LeaveBalanceManagement = () => {
     }
   }, []);
 
-  const handleEmployeeSearch = useCallback((search) => {
-    fetchEmployees(search);
-  }, [fetchEmployees]);
+
 
   const handleLeaveConfigSearch = useCallback((search) => {
     fetchLeaveConfigs(search);
@@ -506,10 +478,9 @@ const LeaveBalanceManagement = () => {
   // Fetch lookup data when the modal opens so edit mode can resolve labels too.
   useEffect(() => {
     if (showModal && modalMode !== 'delete') {
-      fetchEmployees();
       fetchLeaveConfigs();
     }
-  }, [showModal, modalMode, fetchEmployees, fetchLeaveConfigs]);
+  }, [showModal, modalMode, fetchLeaveConfigs]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -1210,29 +1181,17 @@ const LeaveBalanceManagement = () => {
                   </div>
 
                   <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-6">
-                    <SearchableSelect
-                      label="Select Employee"
-                      placeholder="Choose an employee..."
-                      value={formData.employee_id}
-                      onChange={(value) => setFormData({ ...formData, employee_id: value })}
-                      options={employees}
-                      onSearch={handleEmployeeSearch}
-                      loading={employeesLoading}
-                      disabled={modalMode === 'edit'}
-                      getOptionLabel={(employee) => `${employee.name} (${employee.employee_code})`}
-                      getOptionValue={(employee) => employee.id}
-                      renderOption={(employee) => (
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 shrink-0">
-                            {employee.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-semibold text-slate-800 text-sm truncate">{employee.name}</p>
-                            <p className="text-[10px] text-slate-400 font-mono italic">{employee.employee_code} • {employee.email}</p>
-                          </div>
-                        </div>
-                      )}
-                    />
+                    <div>
+                      <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Select Employee
+                      </label>
+                      <EmployeeSelect
+                        value={formData.employee_id}
+                        onChange={(id) => setFormData({ ...formData, employee_id: id })}
+                        disabled={modalMode === 'edit'}
+                        placeholder="Choose an employee..."
+                      />
+                    </div>
 
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
