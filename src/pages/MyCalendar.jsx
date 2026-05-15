@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FaChevronLeft,
-  FaChevronRight,
   FaCalendarAlt,
   FaSpinner,
   FaCheckCircle,
@@ -22,6 +20,7 @@ import { ManagementHub } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -354,9 +353,10 @@ const MyCalendar = () => {
     fetchCalendar(month, year);
   }, [month, year, fetchCalendar]);
 
-  const changeMonth = delta => {
-    const nextDate = new Date(year, currentDate.getMonth() + delta, 1);
-    setCurrentDate(nextDate);
+  const handleFilterChange = (filter) => {
+    if (filter.month && filter.year) {
+      setCurrentDate(new Date(filter.year, filter.month - 1, 1));
+    }
   };
 
   const calendarGrid = useMemo(() => {
@@ -408,26 +408,14 @@ const MyCalendar = () => {
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">
               {currentDate.toLocaleString('default', { month: 'long' })} {year}
             </h2>
-            <div className="flex items-center gap-1.5 bg-white border border-gray-100 p-1.5 rounded-2xl shadow-sm">
-              <button 
-                onClick={() => changeMonth(-1)} 
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 transition-all active:scale-95"
-              >
-                <FaChevronLeft size={14} />
-              </button>
-              <button 
-                onClick={() => setCurrentDate(new Date())} 
-                className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-              >
-                Today
-              </button>
-              <button 
-                onClick={() => changeMonth(1)} 
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 transition-all active:scale-95"
-              >
-                <FaChevronRight size={14} />
-              </button>
-            </div>
+            
+            <AdvancedDateFilter
+              value={{ month, year }}
+              onChange={handleFilterChange}
+              tabOptions={['month']}
+              placeholder="Select Month"
+              buttonClassName="bg-white border border-gray-100 px-4 py-2.5 rounded-2xl shadow-sm hover:bg-gray-50 transition-all font-bold text-gray-700"
+            />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
