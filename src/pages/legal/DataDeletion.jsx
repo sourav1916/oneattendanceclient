@@ -60,7 +60,7 @@ const DataDeletion = () => {
               If you wish to delete your entire account and all associated attendance records from our servers, please send an email to:
             </p>
             <div className="mt-3 p-4 bg-slate-50 rounded-lg font-mono text-center border border-slate-200">
-              support@oneattendance.com
+              modaksubham69@gmail.com
             </div>
             <p className="mt-4 text-sm italic">
               Please include your registered email address. We will process your request within 48 hours and send you a confirmation.

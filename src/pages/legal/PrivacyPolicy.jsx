@@ -57,7 +57,7 @@ const PrivacyPolicy = () => {
 
           <div className="mt-12 p-6 bg-slate-50 rounded-xl border border-slate-200">
             <p className="text-sm">
-              If you have any questions about this Privacy Policy, please contact us at support@oneattendance.com.
+              If you have any questions about this Privacy Policy, please contact us at modaksubham69@gmail.com.
             </p>
           </div>
         </div>
