@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import apiCall from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -38,6 +38,7 @@ function HomePage() {
   const [openCreateCompanyModal, setOpenCreateCompanyModal] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingSummary, setLoadingSummary] = useState(true);
+  const fetchedRef = useRef(null);
 
   const fetchDashboardSummary = async () => {
     setLoadingSummary(true);
@@ -56,6 +57,9 @@ function HomePage() {
 
   useEffect(() => {
     if (user && company && checkPageAccess('attendanceManagement').allowed) {
+      // Avoid redundant calls if already fetched for this company
+      if (fetchedRef.current === company.id) return;
+      fetchedRef.current = company.id;
       fetchDashboardSummary();
     } else {
       setLoadingSummary(false);
