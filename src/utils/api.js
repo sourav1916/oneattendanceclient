@@ -43,6 +43,18 @@ export const apiCall = async (endpoint, method = 'GET', body = null, companyId =
 
   try {
     const response = await fetch(url, options);
+    
+    // Global 401 Unauthorized handler
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('company');
+      
+      // Redirect to login page if not already there
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    
     return response;
   } catch (error) {
     console.error(`API Call Error (${url}):`, error);
