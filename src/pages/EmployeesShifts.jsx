@@ -535,12 +535,7 @@ const EmployeesShifts = () => {
                                     </button>
                                 )}
                             </div>
-                            {!loading && employees.length > 0 && (
-                                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
-                                    {pagination.total} Employees
-                                </p>
-                            )}
-
+                            
                             <div className="flex justify-between">
                                 {/* Right Section: Controls */}
                                 <div className="flex items-center gap-3 justify-end">

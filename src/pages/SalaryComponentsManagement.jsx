@@ -852,12 +852,7 @@ const SalaryComponents = () => {
                                 </button>
                             )}
                         </div>
-                        {!loading && components.length > 0 && (
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
-                                {pagination.total} Components
-                            </p>
-                        )}
-
+                        
                         <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
 
                         <ManagementViewSwitcher

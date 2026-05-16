@@ -88,6 +88,11 @@ const clearCompanyHolidayRequestCache = () => {
   companyHolidayRequestCache.clear();
 };
 
+const clearAllHolidayCaches = () => {
+  masterHolidayRequestCache.clear();
+  companyHolidayRequestCache.clear();
+};
+
 // ==================== API SERVICE ====================
 const holidayService = {
   getMasterHolidays: async (year, month) => {
@@ -632,9 +637,9 @@ const HolidayManagementCalendar = () => {
     const key = `${currentYear}-${currentMonth}`;
 
     const fetchHolidays = async () => {
-      // Skip cache only when not a forced refresh (refreshKey > 0 means invalidate)
+      // Skip fetch if we already have data and this isn't a forced refresh
       if (allHolidays[key] && refreshKey === 0) { setIsLoading(false); return; }
-      // Reset lock so a fresh request always runs after a refresh
+      // Reset lock so a fresh request always runs
       fetchLock.current = null;
       setIsLoading(true);
       const company = JSON.parse(localStorage.getItem('company') || '{}');
@@ -689,8 +694,11 @@ const HolidayManagementCalendar = () => {
   const closeModal = useCallback(() => { setActiveModal(null); setModalData(null); }, []);
 
   const handleRefresh = useCallback(() => {
-    // Increment refreshKey to force the fetch useEffect to re-run even if
-    // currentYear/currentMonth hasn't changed (same month after CUD ops).
+    // Clear both module-level API caches so the service layer actually
+    // fetches fresh data from the server instead of returning cached values.
+    clearAllHolidayCaches();
+    // Clear local state and bump the key to force the useEffect to re-run
+    // even if currentYear/currentMonth hasn't changed.
     setAllHolidays({});
     setRefreshKey(k => k + 1);
   }, []);

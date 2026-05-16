@@ -873,11 +873,7 @@ const SalaryPackages = () => {
                                 </button>
                             )}
                         </div>
-                        {!loading && packages.length > 0 && (
-                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
-                                {pagination.total} Packages
-                            </p>
-                        )}
+                       
                     </div>
 
                     {/* Right Section: Controls */}

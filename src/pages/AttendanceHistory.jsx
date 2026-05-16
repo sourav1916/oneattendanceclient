@@ -33,7 +33,7 @@ import ActionMenu from '../components/ActionMenu';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { RefreshButton } from '../components/common';
 import { FaBriefcase } from 'react-icons/fa';
-import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType } from '../components/AttendanceTypeTabs';
+import AttendanceTypeTabs, { getAttendanceTypeConfig, normalizeAttendanceType, ATTENDANCE_TYPE_CONFIG } from '../components/AttendanceTypeTabs';
 import AttendanceLogsModal from '../components/AttendanceLogsModal';
 import Modal from '../components/Modal';
 
@@ -45,18 +45,14 @@ import Modal from '../components/Modal';
 
 const ITEMS_PER_PAGE = 10;
 
-const fetchMyAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE, params = {}, activeSubTab = 'today' }) => {
+const fetchMyAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAGE, params = {} }) => {
   const queryParams = new URLSearchParams({
     page,
     limit,
     ...params,
   }).toString();
 
-  const endpoint = activeSubTab === 'today'
-    ? `/attendance/my/today-punches?${queryParams}`
-    : `/attendance/my/past-punches?${queryParams}`;
-
-  return apiCall(endpoint, 'GET', null, companyId);
+  return apiCall(`/attendance/my/past-punches?${queryParams}`, 'GET', null, companyId);
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -361,14 +357,12 @@ const RecordCards = ({ records, onViewDetails, activeActionMenu, onToggleActionM
 
 const AttendanceHistory = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeSubTab = searchParams.get('subtab') || 'today';
   const activeType = normalizeAttendanceType(searchParams.get('type') || 'attendance');
 
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalRecords, setTotalRecords] = useState(0);
 
-  const [todaySummary, setTodaySummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [viewMode, setViewMode] = useState('table');
@@ -392,13 +386,6 @@ const AttendanceHistory = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const setActiveSubTab = (tab) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('subtab', tab);
-    setSearchParams(params);
-    goToPage(1);
-  };
-
   const setActiveType = (type) => {
     const params = new URLSearchParams(searchParams);
     params.set('type', type);
@@ -419,23 +406,18 @@ const AttendanceHistory = () => {
         type: activeType
       };
 
-      if (activeSubTab === 'past') {
-        if (dateFilter.date) params.date = dateFilter.date;
-        if (dateFilter.month) params.month = dateFilter.month;
-        if (dateFilter.year) params.year = dateFilter.year;
-        if (dateFilter.from_date) params.from_date = dateFilter.from_date;
-        if (dateFilter.to_date) params.to_date = dateFilter.to_date;
-        if (debouncedSearch) params.search = debouncedSearch;
-      } else {
-        if (debouncedSearch) params.search = debouncedSearch;
-      }
+      if (dateFilter.date) params.date = dateFilter.date;
+      if (dateFilter.month) params.month = dateFilter.month;
+      if (dateFilter.year) params.year = dateFilter.year;
+      if (dateFilter.from_date) params.from_date = dateFilter.from_date;
+      if (dateFilter.to_date) params.to_date = dateFilter.to_date;
+      if (debouncedSearch) params.search = debouncedSearch;
 
       const response = await fetchMyAttendanceAPI({
         companyId: company?.id,
         page: params.page,
         limit: params.limit,
         params,
-        activeSubTab
       });
 
       const data = await response.json();
@@ -443,9 +425,6 @@ const AttendanceHistory = () => {
         const normalizedRecords = normalizeHistoryRecords(data.data || [], activeType);
         setRecords(normalizedRecords);
         setTotalRecords(data.meta?.total ?? normalizedRecords.length ?? 0);
-        if (activeSubTab === 'today' && data.summary) {
-          setTodaySummary(data.summary);
-        }
       } else {
         toast.error(data.message || 'Failed to fetch attendance data');
       }
@@ -456,7 +435,7 @@ const AttendanceHistory = () => {
       setLoading(false);
       fetchLock.current = false;
     }
-  }, [pagination.page, pagination.limit, dateFilter, debouncedSearch, activeSubTab, activeType]);
+  }, [pagination.page, pagination.limit, dateFilter, debouncedSearch, activeType]);
 
   useEffect(() => {
     if (searchTerm === debouncedSearch) return;
@@ -520,204 +499,117 @@ const AttendanceHistory = () => {
         </div>
       </div>
 
-      {/* Compact Sub Tab & Type Switcher */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-        <div className="inline-flex rounded-xl bg-slate-100 p-1">
-          <button
-            onClick={() => setActiveSubTab('today')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${activeSubTab === 'today'
-              ? 'bg-white text-indigo-600 shadow-sm scale-[1.02]'
-              : 'text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            <FaHistory size={12} className={activeSubTab === 'today' ? 'text-indigo-500' : ''} />
-            Today
-          </button>
-          <button
-            onClick={() => setActiveSubTab('past')}
-            className={`flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-bold transition-all ${activeSubTab === 'past'
-              ? 'bg-white text-violet-600 shadow-sm scale-[1.02]'
-              : 'text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            <FaCalendarAlt size={12} className={activeSubTab === 'past' ? 'text-violet-500' : ''} />
-            Past
-          </button>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <AttendanceTypeTabs value={activeType} onChange={setActiveType} />
-        </div>
-      </div>
 
       <div className="space-y-4">
-        {activeSubTab === 'today' ? (
-          <div className="space-y-6 p-2 lg:p-0 max-w-7xl mx-auto">
-            {loading && records.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                <FaSpinner className="animate-spin text-4xl mb-4 text-indigo-500" />
-                <p className="text-sm font-medium">Fetching today's logs...</p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {todaySummary && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                    className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
+          >
+            <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+              <div className="relative flex-1 w-full">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                <input
+                  type="text"
+                  placeholder="Search by code, status, mode..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                   >
-                    {[
-                      { label: 'Hours Worked', value: formatHours(todaySummary.total_worked_hours), from: 'from-emerald-50', to: 'to-teal-50', textColor: 'text-emerald-700', icon: <FaClock className="text-emerald-500" /> },
-                      { label: 'Break Taken', value: `${todaySummary.total_break_minutes}m`, from: 'from-amber-50', to: 'to-orange-50', textColor: 'text-amber-700', icon: <FaCoffee className="text-amber-500" /> },
-                      { label: 'Total Punches', value: todaySummary.total_punches, from: 'from-indigo-50', to: 'to-blue-50', textColor: 'text-indigo-700', icon: <FaCheckCircle className="text-indigo-500" /> },
-                    ].map(s => (
-                      <div key={s.label} className={`bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex items-center gap-4`}>
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${s.from} ${s.to} flex items-center justify-center shadow-inner`}>
-                          {s.icon}
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{s.label}</span>
-                          <p className={`text-xl   ${s.textColor}`}>{s.value}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </motion.div>
+                    <FaTimes size={14} />
+                  </button>
                 )}
-
-                <div>
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6">
-                    <div className="flex items-center justify-between gap-3 w-full md:w-auto">
-                      <div className="h-1 w-8 bg-indigo-500 rounded-full" />
-                      <h3 className="text-lg   text-slate-800">Today's Logs</h3>
-                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-tighter">
-                        {totalRecords} Records
-                      </span>
-                    </div>
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
-                  </div>
-
-                  {records.length > 0 ? (
-                    viewMode === 'table' ? (
-                      <RecordTable
-                        records={records}
-                        onViewDetails={openDetails}
-                        activeActionMenu={activeActionMenu}
-                        onToggleActionMenu={toggleActionMenu}
-                        activeType={activeType}
-                        onLogs={setLogsModalRecord}
-                      />
-                    ) : (
-                      <RecordCards
-                        records={records}
-                        onViewDetails={openDetails}
-                        activeActionMenu={activeActionMenu}
-                        onToggleActionMenu={toggleActionMenu}
-                        activeType={activeType}
-                        onLogs={setLogsModalRecord}
-                      />
-                    )
-                  ) : (
-                    <div className="text-center py-16 bg-white rounded-xl border border-dashed border-slate-200">
-                      <FaHistory className="mx-auto text-4xl text-slate-200 mb-3" />
-                      <p className="text-slate-400 font-medium">No {activeType} records found for today.</p>
-                    </div>
-                  )}
-                </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="max-w-7xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2 mb-2"
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
-                <div className="relative flex-1 w-full">
-                  <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                  <input
-                    type="text"
-                    placeholder="Search by code, status, mode..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium"
-                  />
-                  {searchTerm && (
+            </div>
+
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              {/* Attendance / Break icon-only toggle */}
+              <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-0.5">
+                {Object.values(ATTENDANCE_TYPE_CONFIG).map((tab) => {
+                  const TabIcon = tab.icon;
+                  const isActive = activeType === tab.value;
+                  return (
                     <button
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                      key={tab.value}
+                      type="button"
+                      onClick={() => setActiveType(tab.value)}
+                      title={tab.label}
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg transition-all ${
+                        isActive
+                          ? tab.activeClassName
+                          : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
                     >
-                      <FaTimes size={14} />
+                      <TabIcon size={15} />
                     </button>
-                  )}
-                </div>
-                {!loading && records.length > 0 && (
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden xl:block border-l pl-4 border-gray-200">
-                    <span className="text-slate-900">{records.length}</span> / {totalRecords} Records
-                  </p>
-                )}
+                  );
+                })}
               </div>
-
-              <div className="flex items-center justify-between gap-3 w-full md:w-auto">
-                <div className="relative">
-                  <AdvancedDateFilter
-                    value={dateFilter}
-                    onChange={(val) => setDateFilter(val)}
-                    buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
-                    tabOptions={["date", "month", "range"]}
-                  />
-                </div>
-                <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
-                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
-              </div>
-            </motion.div>
-
-            {loading && records.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                <FaSpinner className="animate-spin text-4xl mb-4 text-violet-500" />
-                <p className="text-sm font-medium">Loading history logs...</p>
-              </div>
-            ) : records.length > 0 ? (
-              viewMode === 'table' ? (
-                <RecordTable
-                  records={records}
-                  onViewDetails={openDetails}
-                  activeActionMenu={activeActionMenu}
-                  onToggleActionMenu={toggleActionMenu}
-                  activeType={activeType}
-                  onLogs={setLogsModalRecord}
+              <div className="relative">
+                <AdvancedDateFilter
+                  value={dateFilter}
+                  onChange={(val) => setDateFilter(val)}
+                  buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
+                  tabOptions={["date", "month", "range"]}
                 />
-              ) : (
-                <RecordCards
-                  records={records}
-                  onViewDetails={openDetails}
-                  activeActionMenu={activeActionMenu}
-                  onToggleActionMenu={toggleActionMenu}
-                  activeType={activeType}
-                  onLogs={setLogsModalRecord}
-                />
-              )
-            ) : (
-              <div className="rounded-xl bg-white py-20 text-center shadow-sm border border-gray-100">
-                <FaCalendarAlt className="mx-auto mb-4 text-6xl text-gray-100" />
-                <h3 className="text-xl font-bold text-gray-400 uppercase tracking-widest">No Records Found</h3>
-                <p className="mt-1 text-sm text-gray-400">Try adjusting your search or filters.</p>
               </div>
-            )}
+              <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
+            </div>
+          </motion.div>
 
-            {!loading && totalRecords > 0 && (
-              <Pagination
-                currentPage={pagination.page}
-                totalItems={totalRecords}
-                itemsPerPage={pagination.limit}
-                onPageChange={goToPage}
-                showInfo={!isTinyViewport}
-                onLimitChange={changeLimit}
+          {loading && records.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <FaSpinner className="animate-spin text-4xl mb-4 text-violet-500" />
+              <p className="text-sm font-medium">Loading history logs...</p>
+            </div>
+          ) : records.length > 0 ? (
+            viewMode === 'table' ? (
+              <RecordTable
+                records={records}
+                onViewDetails={openDetails}
+                activeActionMenu={activeActionMenu}
+                onToggleActionMenu={toggleActionMenu}
+                activeType={activeType}
+                onLogs={setLogsModalRecord}
               />
-            )}
-          </div>
-        )}
+            ) : (
+              <RecordCards
+                records={records}
+                onViewDetails={openDetails}
+                activeActionMenu={activeActionMenu}
+                onToggleActionMenu={toggleActionMenu}
+                activeType={activeType}
+                onLogs={setLogsModalRecord}
+              />
+            )
+          ) : (
+            <div className="rounded-xl bg-white py-20 text-center shadow-sm border border-gray-100">
+              <FaCalendarAlt className="mx-auto mb-4 text-6xl text-gray-100" />
+              <h3 className="text-xl font-bold text-gray-400 uppercase tracking-widest">No Records Found</h3>
+              <p className="mt-1 text-sm text-gray-400">Try adjusting your search or filters.</p>
+            </div>
+          )}
+
+          {!loading && totalRecords > 0 && (
+            <Pagination
+              currentPage={pagination.page}
+              totalItems={totalRecords}
+              itemsPerPage={pagination.limit}
+              onPageChange={goToPage}
+              showInfo={!isTinyViewport}
+              onLimitChange={changeLimit}
+            />
+          )}
+        </div>
       </div>
 
       {modalOpen && selectedRecord && (
