@@ -331,10 +331,26 @@ const PunchAttendance = () => {
               <span className="text-xs font-black uppercase tracking-widest">Fetching status...</span>
             </div>
           ) : allowedActions.length === 0 ? (
-            <div className="py-12 flex flex-col items-center gap-3 text-slate-300">
-              <FaBolt className="text-4xl opacity-30" />
-              <p className="text-sm font-black text-slate-400">No actions available</p>
-              <p className="text-xs text-slate-300">Your attendance status is up to date</p>
+            <div className="py-12 flex flex-col items-center gap-3 text-center px-4">
+              {dayInfo?.is_holiday || dayInfo?.is_weekend ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center mb-2">
+                    <FaCalendarAlt className="text-3xl text-indigo-400" />
+                  </div>
+                  <p className="text-lg font-black text-indigo-600">
+                    {dayInfo.is_holiday ? "It's a Holiday!" : "Enjoy your Weekend!"}
+                  </p>
+                  <p className="text-sm text-slate-500 max-w-[250px]">
+                    Today is marked as your {dayInfo.is_holiday ? "holiday" : "weekend"}. Take some time off to rest and recharge!
+                  </p>
+                </>
+              ) : (
+                <>
+                  <FaBolt className="text-4xl opacity-30 text-slate-300" />
+                  <p className="text-sm font-black text-slate-400">No actions available</p>
+                  <p className="text-xs text-slate-400">Your attendance status is up to date</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
