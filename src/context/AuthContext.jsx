@@ -138,7 +138,9 @@ export const AuthProvider = ({ children }) => {
       const res = await apiCall('/users/profile-role', 'GET');
 
       if (!res.ok) {
-        logout(); // For any problem of response it gonna logout
+        if (res.status === 401) {
+          logout();
+        }
         return;
       }
 
@@ -228,11 +230,10 @@ export const AuthProvider = ({ children }) => {
         }
 
       } else {
-        logout();
+        console.warn("Profile fetch returned success: false");
       }
     } catch (error) {
       console.error("Profile fetch failed:", error);
-      logout();
     } finally {
       setLoading(false);
     }
