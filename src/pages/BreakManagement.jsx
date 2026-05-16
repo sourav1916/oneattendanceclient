@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaChevronLeft, FaChevronRight, FaClock, FaUser, FaSearch,
   FaCalendarAlt, FaBuilding, FaTrash, FaHistory,
-  FaPlus, FaPlay, FaStop, FaChevronDown, FaCoffee, FaTimes,FaCheck
+  FaPlus, FaPlay, FaStop, FaChevronDown, FaCoffee, FaTimes, FaCheck
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
@@ -39,9 +39,9 @@ const StatusSelect = ({ value, onChange, options }) => {
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
+        className="w-full min-w-[200px] px-4 py-2.5 bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
       >
         <span className={value === 'all' ? "text-gray-400" : "font-medium text-gray-800"}>
           {selectedOption ? selectedOption.label : 'Day Status...'}
@@ -245,10 +245,10 @@ const buildBreakDefaults = (employee, action) => {
     getTimeValue(record?.end_time);
   const openBreak = Array.isArray(employee?.breaks)
     ? employee.breaks.find((item) => {
-        const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-        const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-        return Boolean(startTime && !endTime);
-      })
+      const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
+      const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
+      return Boolean(startTime && !endTime);
+    })
     : null;
   const openBreakStart = getTimeValue(openBreak?.break_start) || getTimeValue(openBreak?.punch_in) || '';
 
@@ -699,9 +699,8 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggleSelect?.(emp); }}
-          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${
-            selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
-          }`}
+          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
+            }`}
         >
           {selected && <FaCheck size={9} />}
         </button>
@@ -728,75 +727,75 @@ const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectio
               </span>
             )}
             <button
-            onClick={(e) => { e.stopPropagation(); onAction(emp, 'today_breaks'); }}
-            disabled={cardActionsDisabled}
-            className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm ml-0.5"
-            title="View Today's Breaks"
-          >
-            <FaHistory size={11} />
-          </button>
+              onClick={(e) => { e.stopPropagation(); onAction(emp, 'today_breaks'); }}
+              disabled={cardActionsDisabled}
+              className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm ml-0.5"
+              title="View Today's Breaks"
+            >
+              <FaHistory size={11} />
+            </button>
           </div>
         }
       >
         <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
-        <div className="flex-1 space-y-4">
-          <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
-            <FaCalendarAlt size={9} />
-            <span>{emp.date} | {emp.day_label}</span>
-            {emp.department && (
-              <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.department}</span></>
-            )}
-          </div>
-          <div className="flex gap-5 flex-wrap text-xs">
-            <span className="text-gray-700 font-semibold">Total Breaks: <span className="font-black text-gray-900">{emp.breaks.length}</span></span>
-            <span className="text-gray-700 font-semibold">Break Used: <span className={`font-black ${over ? 'text-rose-500' : 'text-orange-500'}`}>{formatMins(used)}</span></span>
-            <span className="text-gray-700 font-semibold">Break Max: <span className="font-black text-gray-900">{formatMins(fallbackMax)}</span></span>
-          </div>
-          <div className="flex gap-5 flex-wrap text-xs">
-            <span className="text-gray-700 font-semibold">Break Start: <span className="font-black text-gray-900">{startTime ? startTime.slice(0, 8) : '--'}</span></span>
-            <span className="text-gray-700 font-semibold">Break End: <span className="font-black text-gray-900">{endTime ? endTime.slice(0, 8) : '--'}</span></span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Break usage</span>
-            <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-rose-500' : 'bg-orange-400'}`} style={{ width: `${barPct}%` }} />
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
+              <FaCalendarAlt size={9} />
+              <span>{emp.date} | {emp.day_label}</span>
+              {emp.department && (
+                <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.department}</span></>
+              )}
             </div>
-            <span className={`text-[10px] font-black whitespace-nowrap ${over ? 'text-rose-500' : 'text-gray-600'}`}>{formatMins(used)} / {formatMins(fallbackMax)}</span>
+            <div className="flex gap-5 flex-wrap text-xs">
+              <span className="text-gray-700 font-semibold">Total Breaks: <span className="font-black text-gray-900">{emp.breaks.length}</span></span>
+              <span className="text-gray-700 font-semibold">Break Used: <span className={`font-black ${over ? 'text-rose-500' : 'text-orange-500'}`}>{formatMins(used)}</span></span>
+              <span className="text-gray-700 font-semibold">Break Max: <span className="font-black text-gray-900">{formatMins(fallbackMax)}</span></span>
+            </div>
+            <div className="flex gap-5 flex-wrap text-xs">
+              <span className="text-gray-700 font-semibold">Break Start: <span className="font-black text-gray-900">{startTime ? startTime.slice(0, 8) : '--'}</span></span>
+              <span className="text-gray-700 font-semibold">Break End: <span className="font-black text-gray-900">{endTime ? endTime.slice(0, 8) : '--'}</span></span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Break usage</span>
+              <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-rose-500' : 'bg-orange-400'}`} style={{ width: `${barPct}%` }} />
+              </div>
+              <span className={`text-[10px] font-black whitespace-nowrap ${over ? 'text-rose-500' : 'text-gray-600'}`}>{formatMins(used)} / {formatMins(fallbackMax)}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
+            <ManagementButton
+              size="sm"
+              tone="amber"
+              variant="soft"
+              fullWidth
+              disabled={!canAddBreak || cardActionsDisabled}
+              onClick={() => onAction(emp, 'add_break')}
+            >
+              <FaPlus size={9} className="mr-1" /> Add Break
+            </ManagementButton>
+            <ManagementButton
+              size="sm"
+              tone="emerald"
+              variant="soft"
+              fullWidth
+              disabled={hasOpenBreak || cardActionsDisabled}
+              onClick={() => onAction(emp, 'live_break_start')}
+            >
+              <FaPlay size={9} className="mr-1" /> Start Break
+            </ManagementButton>
+            <ManagementButton
+              size="sm"
+              tone="rose"
+              variant="soft"
+              fullWidth
+              disabled={!hasOpenBreak || cardActionsDisabled}
+              onClick={() => onAction(emp, 'live_break_end')}
+            >
+              <FaStop size={9} className="mr-1" /> End Break
+            </ManagementButton>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
-          <ManagementButton
-            size="sm"
-            tone="amber"
-            variant="soft"
-            fullWidth
-            disabled={!canAddBreak || cardActionsDisabled}
-            onClick={() => onAction(emp, 'add_break')}
-          >
-            <FaPlus size={9} className="mr-1" /> Add Break
-          </ManagementButton>
-          <ManagementButton
-            size="sm"
-            tone="emerald"
-            variant="soft"
-            fullWidth
-            disabled={hasOpenBreak || cardActionsDisabled}
-            onClick={() => onAction(emp, 'live_break_start')}
-          >
-            <FaPlay size={9} className="mr-1" /> Start Break
-          </ManagementButton>
-          <ManagementButton
-            size="sm"
-            tone="rose"
-            variant="soft"
-            fullWidth
-            disabled={!hasOpenBreak || cardActionsDisabled}
-            onClick={() => onAction(emp, 'live_break_end')}
-          >
-            <FaStop size={9} className="mr-1" /> End Break
-          </ManagementButton>
-        </div>
-      </div>
       </ManagementCard>
     </div>
   );
@@ -1066,9 +1065,9 @@ const BreakManagement = () => {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm mb-6"
         >
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)] gap-3">
+          <div className="flex justify-between w-full flex-col lg:flex-row gap-4">
             {/* Search Field */}
-            <div className="min-w-0">
+            <div className="flex-1">
               <div className="relative">
                 <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                 <input
@@ -1091,31 +1090,34 @@ const BreakManagement = () => {
             </div>
 
             {/* Filters Wrapper */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(140px,170px)_minmax(0,1fr)_minmax(180px,220px)_auto] gap-2.5 items-center">
-              <div className="min-w-0">
-                <StatusSelect
-                  value={dayStatus}
-                  onChange={handleStatusChange}
-                  options={STATUS_OPTIONS}
-                />
-              </div>
+            <div className="flex gap-4 flex-col md:flex-row lg:flex-row">
 
-              <div className="min-w-0">
+              <div className="flex-1">
                 <EmployeeSelect
                   value={selectedEmployee}
                   onChange={handleEmployeeChange}
                   placeholder="Specific Employee..."
                 />
               </div>
+              <div className="flex flex-row gap-4">
+                <div className="flex-1">
+                  <StatusSelect
+                    value={dayStatus}
+                    onChange={handleStatusChange}
+                    options={STATUS_OPTIONS}
+                  />
+                </div>
+                <div className="flex-1">
+                  <AdvancedDateFilter
+                    value={dateFilter}
+                    onChange={handleDateChange}
+                    buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                    placeholder="Pick Date"
+                  />
+                </div>
 
-              <div className="min-w-0">
-                <AdvancedDateFilter
-                  value={dateFilter}
-                  onChange={handleDateChange}
-                  buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-                  placeholder="Pick Date"
-                />
               </div>
+
 
             </div>
           </div>
@@ -1131,19 +1133,16 @@ const BreakManagement = () => {
             <button
               type="button"
               onClick={toggleSelectionMode}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none ${
-                isSelectionMode ? 'bg-amber-500' : 'bg-slate-200'
-              }`}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none ${isSelectionMode ? 'bg-amber-500' : 'bg-slate-200'
+                }`}
             >
               <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                  isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'
-                }`}
+                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'
+                  }`}
               />
             </button>
-            <span className={`text-xs font-black uppercase tracking-widest ${
-              isSelectionMode ? 'text-amber-600' : 'text-slate-400'
-            }`}>
+            <span className={`text-xs font-black uppercase tracking-widest ${isSelectionMode ? 'text-amber-600' : 'text-slate-400'
+              }`}>
               {isSelectionMode ? 'Bulk Mode ON' : 'Bulk Mode'}
             </span>
           </div>
@@ -1153,13 +1152,12 @@ const BreakManagement = () => {
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-                  selectedIds.length === employees.length && employees.length > 0
-                    ? 'bg-indigo-600 border-indigo-600 text-white'
-                    : selectedIds.length > 0
+                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${selectedIds.length === employees.length && employees.length > 0
+                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                  : selectedIds.length > 0
                     ? 'bg-indigo-100 border-indigo-400'
                     : 'bg-white border-slate-300 hover:border-indigo-400'
-                }`}
+                  }`}
               >
                 {selectedIds.length === employees.length && employees.length > 0 && <FaCheck size={9} className="text-white" />}
                 {selectedIds.length > 0 && selectedIds.length < employees.length && (

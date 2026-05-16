@@ -27,49 +27,49 @@ import ProfileAvatar from '../components/common/ProfileAvatar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-  const customSelectStyles = {
+const customSelectStyles = {
     control: (base, state) => ({
-      ...base,
-      minHeight: "48px",
-      backgroundColor: "#f9fafb",
-      fontSize: "0.875rem",
-      borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
-      boxShadow: state.isFocused ? "0 0 0 4px rgba(99, 102, 241, 0.10)" : "none",
-      "&:hover": { borderColor: "#cbd5e1" },
-      borderRadius: "0.75rem",
-      padding: "0 0.5rem",
+        ...base,
+        minHeight: "48px",
+        backgroundColor: "#f9fafb",
+        fontSize: "0.875rem",
+        borderColor: state.isFocused ? "#6366f1" : "#e2e8f0",
+        boxShadow: state.isFocused ? "0 0 0 4px rgba(99, 102, 241, 0.10)" : "none",
+        "&:hover": { borderColor: "#cbd5e1" },
+        borderRadius: "0.75rem",
+        padding: "0 0.5rem",
     }),
     valueContainer: (base) => ({
-      ...base,
-      padding: "0 14px",
-      fontSize: "0.875rem",
+        ...base,
+        padding: "0 14px",
+        fontSize: "0.875rem",
     }),
     input: (base) => ({
-      ...base,
-      margin: 0,
-      padding: 0,
-      fontSize: "0.875rem",
+        ...base,
+        margin: 0,
+        padding: 0,
+        fontSize: "0.875rem",
     }),
     placeholder: (base) => ({
-      ...base,
-      color: "#94a3b8",
-      fontWeight: 500,
-      fontSize: "0.875rem",
+        ...base,
+        color: "#94a3b8",
+        fontWeight: 500,
+        fontSize: "0.875rem",
     }),
     singleValue: (base) => ({
-      ...base,
-      color: "#334155",
-      fontWeight: 500,
-      fontSize: "0.875rem",
+        ...base,
+        color: "#334155",
+        fontWeight: 500,
+        fontSize: "0.875rem",
     }),
     option: (base, state) => ({
-      ...base,
-      fontSize: "0.875rem",
-      backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
-      color: state.isSelected ? "white" : "#1e293b",
-      "&:active": { backgroundColor: "#6366f1" },
+        ...base,
+        fontSize: "0.875rem",
+        backgroundColor: state.isSelected ? "#6366f1" : state.isFocused ? "#f1f5f9" : "white",
+        color: state.isSelected ? "white" : "#1e293b",
+        "&:active": { backgroundColor: "#6366f1" },
     }),
-  };
+};
 
 const MODAL_TYPES = {
     NONE: 'NONE',
@@ -1136,7 +1136,7 @@ const EmployeeManagement = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="min-h-screen">
 
             {/* Header */}
             <motion.div

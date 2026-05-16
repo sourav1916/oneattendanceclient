@@ -127,10 +127,10 @@ function ProfileHub({ eyebrow, title, description, accent = "slate", summary, ta
                     disabled={disabled}
                     title={tab.title || tab.description || tab.label}
                     className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${isActive
-                        ? activeButtonStyles
-                        : disabled
-                          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                      ? activeButtonStyles
+                      : disabled
+                        ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
                       }`}
                   >
                     {Icon ? (typeof Icon === "function" ? <Icon size={13} /> : Icon) : null}
@@ -1424,7 +1424,7 @@ function useShiftConfig(onView, width) {
       render: (s) => (
         <div className="flex flex-col">
           <span className="text-sm text-gray-700 font-medium">
-            {s.start_time ? new Date(s.start_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"} 
+            {s.start_time ? new Date(s.start_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"}
             {" → "}
             {s.end_time ? new Date(s.end_time.replace(' ', 'T')).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : "—"}
           </span>
@@ -1892,7 +1892,7 @@ function EmployeeProfilePageLegacy() {
   useEffect(() => { fetchProfile(employeeId); }, [employeeId, fetchProfile]);
 
   return (
-    <div className="min-h-screen p-3 md:p-6 font-sans">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
 
         {/* Header */}

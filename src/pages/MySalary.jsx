@@ -378,7 +378,7 @@ const MyPayroll = () => {
     // ─── Render ─────────────────────────────────────────────────────────────────
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="min-h-screen">
 
             {/* Header */}
             <motion.div

@@ -264,7 +264,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
     const s = employee.monthly_summary || {};
     const u = employee;
     const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
-    
+
     const totalDays = (s.present_days || 0) + (s.absent_days || 0) + (s.leave_days || 0) + (s.holiday_days || 0) + (s.weekend_days || 0);
     const workDays = (s.present_days || 0) + (s.absent_days || 0);
     const attendancePct = workDays > 0 ? ((s.present_days || 0) / workDays) * 100 : 0;
@@ -472,7 +472,7 @@ const EmployeesShifts = () => {
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
     return (
-        <div className="min-h-screen p-3 md:p-6 font-sans">
+        <div className="min-h-screen">
             <div className="max-w-7xl mx-auto">
 
                 <div className="space-y-6 p-2 lg:p-0">
@@ -527,7 +527,7 @@ const EmployeesShifts = () => {
                                     </button>
                                 )}
                             </div>
-                            
+
                             <div className="flex justify-between">
                                 {/* Right Section: Controls */}
                                 <div className="flex items-center gap-3 justify-end">
@@ -661,7 +661,7 @@ const EmployeesShifts = () => {
                                         {employees.map((emp, index) => {
                                             const s = emp.monthly_summary || {};
                                             const u = emp;
-                                            
+
                                             const workDays = (s.present_days || 0) + (s.absent_days || 0);
                                             const attendancePct = workDays > 0 ? ((s.present_days || 0) / workDays) * 100 : 0;
                                             const totalWorkHours = (s.worked_minutes || 0) / 60;

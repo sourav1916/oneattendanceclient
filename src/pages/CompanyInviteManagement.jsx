@@ -268,17 +268,17 @@ export default function CompanyInvites() {
     setEditingInvite(null);
   };
 
-  const openModal = (invite, type) => { 
-    setSelectedInvite(invite); 
-    setModalType(type); 
+  const openModal = (invite, type) => {
+    setSelectedInvite(invite);
+    setModalType(type);
     setActiveActionMenu(null);
     setShowPermissions(false);
     setShowAttendance(false);
     setShowWeekends(false);
   };
-  const closeModal = () => { 
-    setSelectedInvite(null); 
-    setModalType(null); 
+  const closeModal = () => {
+    setSelectedInvite(null);
+    setModalType(null);
     setShowPermissions(false);
     setShowAttendance(false);
     setShowWeekends(false);
@@ -321,7 +321,7 @@ export default function CompanyInvites() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen p-3 md:p-6 font-sans">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}

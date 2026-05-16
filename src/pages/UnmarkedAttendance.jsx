@@ -28,20 +28,20 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_CONFIG = {
-  present:    { label: 'Present',    color: 'bg-emerald-500 text-white', dot: 'bg-emerald-500' },
-  half_day:   { label: 'Half Day',   color: 'bg-sky-500 text-white',     dot: 'bg-sky-500'     },
-  absent:     { label: 'Absent',     color: 'bg-rose-500 text-white',    dot: 'bg-rose-500'    },
-  paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white',  dot: 'bg-violet-500'  },
-  leave:      { label: 'Leave',      color: 'bg-violet-500 text-white',  dot: 'bg-violet-500'  },
-  unmarked:   { label: 'Unmarked',   color: 'bg-slate-400 text-white',   dot: 'bg-slate-400'   },
+  present: { label: 'Present', color: 'bg-emerald-500 text-white', dot: 'bg-emerald-500' },
+  half_day: { label: 'Half Day', color: 'bg-sky-500 text-white', dot: 'bg-sky-500' },
+  absent: { label: 'Absent', color: 'bg-rose-500 text-white', dot: 'bg-rose-500' },
+  paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white', dot: 'bg-violet-500' },
+  leave: { label: 'Leave', color: 'bg-violet-500 text-white', dot: 'bg-violet-500' },
+  unmarked: { label: 'Unmarked', color: 'bg-slate-400 text-white', dot: 'bg-slate-400' },
 };
 
 const BULK_ATTENDANCE_ACTIONS = [
-  { id: 'actual_data', label: 'Actual Data', tone: 'slate',   toneClass: 'bg-slate-500 text-white'   },
-  { id: 'paid_leave',  label: 'Paid Leave',  tone: 'violet',  toneClass: 'bg-violet-500 text-white'  },
-  { id: 'absent',      label: 'Absent',      tone: 'rose',    toneClass: 'bg-rose-500 text-white'    },
-  { id: 'present',     label: 'Present',     tone: 'emerald', toneClass: 'bg-emerald-500 text-white' },
-  { id: 'half_day',    label: 'Half Day',    tone: 'sky',     toneClass: 'bg-sky-500 text-white'     },
+  { id: 'actual_data', label: 'Actual Data', tone: 'slate', toneClass: 'bg-slate-500 text-white' },
+  { id: 'paid_leave', label: 'Paid Leave', tone: 'violet', toneClass: 'bg-violet-500 text-white' },
+  { id: 'absent', label: 'Absent', tone: 'rose', toneClass: 'bg-rose-500 text-white' },
+  { id: 'present', label: 'Present', tone: 'emerald', toneClass: 'bg-emerald-500 text-white' },
+  { id: 'half_day', label: 'Half Day', tone: 'sky', toneClass: 'bg-sky-500 text-white' },
 ];
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ const formatDate = (dateStr) => {
 const formatMins = (m) => {
   if (!m || m === 0) return '0m';
   const hours = Math.floor(m / 60);
-  const mins  = m % 60;
+  const mins = m % 60;
   if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   return `${mins}m`;
 };
@@ -215,30 +215,30 @@ const mapApiEmployee = (emp, fallbackDate) => {
 
   return {
     // Use employee_id as stable unique ID for selection logic
-    id:            emp.employee_id,
-    employee_id:   emp.employee_id,
-    user_id:       emp.user_id,
-    company_id:    emp.company_id,
-    name:          emp.name,
-    email:         emp.email,
-    phone:         emp.phone,
+    id: emp.employee_id,
+    employee_id: emp.employee_id,
+    user_id: emp.user_id,
+    company_id: emp.company_id,
+    name: emp.name,
+    email: emp.email,
+    phone: emp.phone,
     employee_code: emp.employee_code,
-    designation:   emp.designation || '',
-    department:    emp.designation ? emp.designation.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
-    status:        emp.status,    // employee active/inactive status
-    joining_date:  emp.joining_date,
+    designation: emp.designation || '',
+    department: emp.designation ? emp.designation.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
+    status: emp.status,    // employee active/inactive status
+    joining_date: emp.joining_date,
 
     // Shift info
-    shift_start:         emp.shift?.start_time   || null,
-    shift_end:           emp.shift?.end_time     || null,
-    shift_label:         emp.shift
+    shift_start: emp.shift?.start_time || null,
+    shift_end: emp.shift?.end_time || null,
+    shift_label: emp.shift
       ? `${formatTime(emp.shift.start_time) || '—'} – ${formatTime(emp.shift.end_time) || '—'}`
       : 'No Shift',
     expected_work_minutes: emp.shift?.expected_work_minutes || 0,
-    grace_minutes:         emp.shift?.grace_minutes         || 0,
+    grace_minutes: emp.shift?.grace_minutes || 0,
 
     // Display date
-    date:      displayDate,
+    date: displayDate,
     day_label: displayDate
       ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
       : '',
@@ -247,47 +247,47 @@ const mapApiEmployee = (emp, fallbackDate) => {
     attendances: attendances,
 
     // Primary attendance record values
-    attendance_id:  att?.attendance_id  || null,
-    day_status:     att?.day_status     || 'unmarked',
-    is_verified:    att?.is_verified    || false,
-    is_deductible:  isDeductible,
-    is_overtime:    isOvertime,
-    is_ot:          isOvertime,
+    attendance_id: att?.attendance_id || null,
+    day_status: att?.day_status || 'unmarked',
+    is_verified: att?.is_verified || false,
+    is_deductible: isDeductible,
+    is_overtime: isOvertime,
+    is_ot: isOvertime,
     flags,
-    remark:         att?.remark         || '',
+    remark: att?.remark || '',
     has_punch_data: Boolean(primaryPunchIn || primaryPunchOut),
     primary_punch_in: primaryPunchIn,
     primary_punch_out: primaryPunchOut,
-    punch_in:       displayPunchIn,
-    punch_out:      displayPunchOut,
-    calculations:   att?.calculations  || {
-      worked_minutes:      0,
-      break_minutes:       0,
+    punch_in: displayPunchIn,
+    punch_out: displayPunchOut,
+    calculations: att?.calculations || {
+      worked_minutes: 0,
+      break_minutes: 0,
       extra_break_minutes: 0,
-      late_minutes:        0,
+      late_minutes: 0,
       early_leave_minutes: 0,
-      overtime_minutes:    0,
+      overtime_minutes: 0,
     },
     attendance_record: att,
   };
 };
 const buildMarkPayload = (emp, action, options = {}) => {
   const {
-    punchIn       = emp.punch_in  || emp.shift_start || '09:00',
-    punchOut      = emp.punch_out || emp.shift_end   || '18:00',
-    halfDayType   = 'first_half',
-    notes         = '',
-    isOvertime    = false,
-    isDeductible  = false,
-    leaveType     = 'paid',
+    punchIn = emp.punch_in || emp.shift_start || '09:00',
+    punchOut = emp.punch_out || emp.shift_end || '18:00',
+    halfDayType = 'first_half',
+    notes = '',
+    isOvertime = false,
+    isDeductible = false,
+    leaveType = 'paid',
     leaveTypeValue = null,
     leaveDayOvertime = null,
   } = options;
 
   const base = {
     employee_id: emp.employee_id,
-    date:        emp.date,
-    type:        'attendance',
+    date: emp.date,
+    type: 'attendance',
     notes,
   };
 
@@ -295,20 +295,20 @@ const buildMarkPayload = (emp, action, options = {}) => {
     case 'present':
       return {
         ...base,
-        status:       'present',
-        start_time:   getExactPunchTime(punchIn)  || '09:00',
-        end_time:     getExactPunchTime(punchOut) || '18:00',
-        is_overtime:  isOvertime,
+        status: 'present',
+        start_time: getExactPunchTime(punchIn) || '09:00',
+        end_time: getExactPunchTime(punchOut) || '18:00',
+        is_overtime: isOvertime,
         is_deductible: isDeductible,
       };
 
     case 'half_day':
       return {
         ...base,
-        status:          'half_day',
-        start_time:      getExactPunchTime(punchIn)  || '09:00',
-        end_time:        getExactPunchTime(punchOut) || '18:00',
-        half_day_type:   halfDayType === 'second_half' ? 'second_half' : 'first_half',
+        status: 'half_day',
+        start_time: getExactPunchTime(punchIn) || '09:00',
+        end_time: getExactPunchTime(punchOut) || '18:00',
+        half_day_type: halfDayType === 'second_half' ? 'second_half' : 'first_half',
       };
 
     case 'absent':
@@ -320,20 +320,20 @@ const buildMarkPayload = (emp, action, options = {}) => {
     case 'fine': // Deduction: mark present + is_deductible
       return {
         ...base,
-        status:        'present',
-        start_time:    getExactPunchTime(punchIn)  || '09:00',
-        end_time:      getExactPunchTime(punchOut) || '18:00',
+        status: 'present',
+        start_time: getExactPunchTime(punchIn) || '09:00',
+        end_time: getExactPunchTime(punchOut) || '18:00',
         is_deductible: true,
-        is_overtime:   false,
+        is_overtime: false,
       };
 
     case 'ot': // Overtime: mark present + is_overtime
       return {
         ...base,
-        status:       'present',
-        start_time:   getExactPunchTime(punchIn)  || '09:00',
-        end_time:     getExactPunchTime(punchOut) || '18:00',
-        is_overtime:  true,
+        status: 'present',
+        start_time: getExactPunchTime(punchIn) || '09:00',
+        end_time: getExactPunchTime(punchOut) || '18:00',
+        is_overtime: true,
         is_deductible: false,
       };
 
@@ -350,10 +350,10 @@ const buildMarkPayload = (emp, action, options = {}) => {
     case 'actual_data': // Bulk: use shift times
       return {
         ...base,
-        status:    'present',
+        status: 'present',
         start_time: getExactPunchTime(emp.shift_start) || '09:00',
-        end_time:   getExactPunchTime(emp.shift_end)   || '18:00',
-        is_overtime:   Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
+        end_time: getExactPunchTime(emp.shift_end) || '18:00',
+        is_overtime: Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
         is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
       };
 
@@ -421,7 +421,7 @@ const StatusSelect = ({ value, onChange, options }) => {
     <div className="relative w-full" ref={ref}>
       <div
         onClick={() => setIsOpen(o => !o)}
-        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
+        className="w-full min-w-[200px] px-4 py-2.5 bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
       >
         <span className={!value ? 'text-gray-400' : 'font-medium text-gray-800'}>
           {selected?.label || 'Day Status...'}
@@ -459,12 +459,12 @@ const StatusSelect = ({ value, onChange, options }) => {
 const SummaryBar = ({ counts }) => {
   if (!counts) return null;
   const items = [
-    { label: 'Total',    value: counts.total_employees, icon: FaUsers,     color: 'text-slate-600',   bg: 'bg-slate-50'   },
-    { label: 'Present',  value: counts.present,         icon: FaUserCheck,  color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Absent',   value: counts.absent,          icon: FaUserTimes,  color: 'text-rose-600',    bg: 'bg-rose-50'    },
-    { label: 'Half Day', value: counts.half_day,        icon: FaUserClock,  color: 'text-sky-600',     bg: 'bg-sky-50'     },
-    { label: 'Leave',    value: counts.leave,           icon: FaUmbrellaBeach, color: 'text-violet-600', bg: 'bg-violet-50' },
-    { label: 'Unmarked', value: counts.unmarked,        icon: FaUser,       color: 'text-amber-600',   bg: 'bg-amber-50'   },
+    { label: 'Total', value: counts.total_employees, icon: FaUsers, color: 'text-slate-600', bg: 'bg-slate-50' },
+    { label: 'Present', value: counts.present, icon: FaUserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Absent', value: counts.absent, icon: FaUserTimes, color: 'text-rose-600', bg: 'bg-rose-50' },
+    { label: 'Half Day', value: counts.half_day, icon: FaUserClock, color: 'text-sky-600', bg: 'bg-sky-50' },
+    { label: 'Leave', value: counts.leave, icon: FaUmbrellaBeach, color: 'text-violet-600', bg: 'bg-violet-50' },
+    { label: 'Unmarked', value: counts.unmarked, icon: FaUser, color: 'text-amber-600', bg: 'bg-amber-50' },
   ];
   return (
     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
@@ -486,20 +486,20 @@ const SummaryBar = ({ counts }) => {
 
 // ─── MANAGE ATTENDANCE MODAL ───────────────────────────────────────────────────
 const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
-  const [activeTab, setActiveTab]     = useState(initialTab || 'present');
-  const [loading, setLoading]         = useState(false);
-  const [punchIn, setPunchIn]         = useState('');
-  const [punchOut, setPunchOut]       = useState('');
-  const [notes, setNotes]             = useState('');
+  const [activeTab, setActiveTab] = useState(initialTab || 'present');
+  const [loading, setLoading] = useState(false);
+  const [punchIn, setPunchIn] = useState('');
+  const [punchOut, setPunchOut] = useState('');
+  const [notes, setNotes] = useState('');
   const [halfSession, setHalfSession] = useState('first');
-  const [isOt, setIsOt]               = useState(false);
+  const [isOt, setIsOt] = useState(false);
   const [isDeductible, setIsDeductible] = useState(false);
   const [isOvertimeWork, setIsOvertimeWork] = useState(false);
   const [overtimeDuration, setOvertimeDuration] = useState('');
 
   // Leave tab
-  const [leaveSubTab, setLeaveSubTab]     = useState('paid');
-  const [leaveConfigs, setLeaveConfigs]   = useState([]);
+  const [leaveSubTab, setLeaveSubTab] = useState('paid');
+  const [leaveConfigs, setLeaveConfigs] = useState([]);
   const [leavesLoading, setLeavesLoading] = useState(false);
   const fetchStartedRef = useRef(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -512,7 +512,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     const rowPunchOut = getExactPunchTime(employee?.primary_punch_out || employee?.attendance_record?.punch_out || employee?.attendance_record?.end_time);
     const shiftIn = getExactPunchTime(employee?.shift_start) || '09:00';
     const shiftOut = getExactPunchTime(employee?.shift_end) || '18:00';
-    const defaultIn  = hasRowPunchData ? (rowPunchIn || shiftIn) : shiftIn;
+    const defaultIn = hasRowPunchData ? (rowPunchIn || shiftIn) : shiftIn;
     const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : shiftOut;
     setPunchIn(defaultIn);
     setPunchOut(defaultOut);
@@ -546,7 +546,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       setLeavesLoading(true);
       try {
         const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-        const res  = await apiCall('/leave/company?is_paid=true', 'GET', null, companyId);
+        const res = await apiCall('/leave/company?is_paid=true', 'GET', null, companyId);
         const data = await res.json();
         if (data.success) setLeaveConfigs((data.data || []).filter(l => l.is_active));
       } catch (e) {
@@ -565,40 +565,40 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       const [h, m] = t.split(':').map(Number);
       return h * 60 + (m || 0);
     };
-    const shiftStart     = employee?.shift_start || '09:00';
-    const shiftEnd       = employee?.shift_end   || '18:00';
-    const expectedMins   = employee?.expected_work_minutes || 540;
-    const graceMins      = employee?.grace_minutes || 15;
-    const pIn  = toMins(punchIn);
+    const shiftStart = employee?.shift_start || '09:00';
+    const shiftEnd = employee?.shift_end || '18:00';
+    const expectedMins = employee?.expected_work_minutes || 540;
+    const graceMins = employee?.grace_minutes || 15;
+    const pIn = toMins(punchIn);
     const pOut = toMins(punchOut);
     const actualMins = (punchIn && punchOut)
       ? (pOut >= pIn ? pOut - pIn : (1440 - pIn) + pOut)
       : 0;
     const diff = actualMins - expectedMins;
     return {
-      expected:     formatMins(expectedMins),
-      actual:       formatMins(actualMins),
-      grace:        `${graceMins}m`,
-      window:       `${formatTime(shiftStart) || '09:00 AM'} – ${formatTime(shiftEnd) || '06:00 PM'}`,
-      isOvertime:   diff >  graceMins,
+      expected: formatMins(expectedMins),
+      actual: formatMins(actualMins),
+      grace: `${graceMins}m`,
+      window: `${formatTime(shiftStart) || '09:00 AM'} – ${formatTime(shiftEnd) || '06:00 PM'}`,
+      isOvertime: diff > graceMins,
       isDeductible: diff < -graceMins,
-      isHalfDay:    actualMins > 0 && actualMins < (expectedMins / 2 + 30),
-      diffMins:     Math.abs(diff),
-      diffLabel:    formatMins(Math.abs(diff)),
-      status:       diff >= -graceMins ? 'Within scheduled time' : 'Below scheduled time',
-      statusColor:  diff >= -graceMins
+      isHalfDay: actualMins > 0 && actualMins < (expectedMins / 2 + 30),
+      diffMins: Math.abs(diff),
+      diffLabel: formatMins(Math.abs(diff)),
+      status: diff >= -graceMins ? 'Within scheduled time' : 'Below scheduled time',
+      statusColor: diff >= -graceMins
         ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
         : 'bg-rose-50 text-rose-700 border-rose-100',
     };
   }, [punchIn, punchOut, employee]);
 
   const TABS = [
-    { id: 'present',   label: 'Present',   icon: FaCheckCircle,  color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { id: 'half_day',  label: 'Half Day',  icon: FaHourglassHalf,color: 'text-sky-500',     bg: 'bg-sky-50'     },
-    { id: 'absent',    label: 'Absent',    icon: FaTimesCircle,  color: 'text-rose-500',    bg: 'bg-rose-50'    },
-    { id: 'fine',      label: 'Deduction', icon: FaMoneyBillWave,color: 'text-amber-500',   bg: 'bg-amber-50'   },
-    { id: 'ot',        label: 'Overtime',  icon: FaClock,        color: 'text-orange-500',  bg: 'bg-orange-50'  },
-    { id: 'paid_leave',label: 'Leave',     icon: FaUmbrellaBeach,color: 'text-violet-500',  bg: 'bg-violet-50'  },
+    { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { id: 'half_day', label: 'Half Day', icon: FaHourglassHalf, color: 'text-sky-500', bg: 'bg-sky-50' },
+    { id: 'absent', label: 'Absent', icon: FaTimesCircle, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { id: 'fine', label: 'Deduction', icon: FaMoneyBillWave, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { id: 'ot', label: 'Overtime', icon: FaClock, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { id: 'paid_leave', label: 'Leave', icon: FaUmbrellaBeach, color: 'text-violet-500', bg: 'bg-violet-50' },
   ];
 
   const handleApply = async () => {
@@ -613,7 +613,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
 
       if (activeTab === 'present') {
         if (!punchIn || !punchOut) { toast.error('Punch In & Out are required'); return; }
-        options.isOvertime   = isOt   !== null ? isOt   : metrics.isOvertime;
+        options.isOvertime = isOt !== null ? isOt : metrics.isOvertime;
         options.isDeductible = isDeductible !== null ? isDeductible : metrics.isDeductible;
       }
 
@@ -654,8 +654,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   };
 
   const activeTabMeta = TABS.find(t => t.id === activeTab);
-  const toneColor     = activeTabMeta?.color.split('-')[1] || 'indigo';
-  const shiftPunchIn  = getExactPunchTime(employee?.shift_start) || '09:00';
+  const toneColor = activeTabMeta?.color.split('-')[1] || 'indigo';
+  const shiftPunchIn = getExactPunchTime(employee?.shift_start) || '09:00';
   const shiftPunchOut = getExactPunchTime(employee?.shift_end) || '18:00';
 
   const renderContent = () => {
@@ -664,7 +664,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
         return (
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
               <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
             {/* Live metrics */}
@@ -676,9 +676,9 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[10px]">
                 {[
                   ['Expected work', metrics.expected],
-                  ['Actual time',   metrics.actual],
-                  ['Grace period',  metrics.grace],
-                  ['Shift window',  metrics.window],
+                  ['Actual time', metrics.actual],
+                  ['Grace period', metrics.grace],
+                  ['Shift window', metrics.window],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between border-b border-current/10 pb-1">
                     <span className="opacity-70 font-bold uppercase">{k}</span>
@@ -690,8 +690,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
             {/* OT / Deductible toggles */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Overtime',    val: isOt,          set: setIsOt,          auto: metrics.isOvertime,   color: 'orange' },
-                { label: 'Deductible',  val: isDeductible,  set: setIsDeductible,  auto: metrics.isDeductible, color: 'rose'   },
+                { label: 'Overtime', val: isOt, set: setIsOt, auto: metrics.isOvertime, color: 'orange' },
+                { label: 'Deductible', val: isDeductible, set: setIsDeductible, auto: metrics.isDeductible, color: 'rose' },
               ].map(c => (
                 <div
                   key={c.label}
@@ -743,7 +743,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
               <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
           </div>
@@ -779,7 +779,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
               <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
           </div>
@@ -802,7 +802,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             )}
             <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In"  value={punchIn}  initialValue={shiftPunchIn}  onChange={setPunchIn}  />
+              <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
               <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
           </div>
@@ -817,11 +817,10 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 <button
                   key={tab.id}
                   onClick={() => { setLeaveSubTab(tab.id); setSelectedLeave(null); }}
-                  className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${
-                    leaveSubTab === tab.id
-                      ? tab.id === 'paid' ? 'bg-violet-600 text-white shadow-sm' : 'bg-rose-500 text-white shadow-sm'
-                      : 'text-slate-500 hover:bg-white/60'
-                  }`}
+                  className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${leaveSubTab === tab.id
+                    ? tab.id === 'paid' ? 'bg-violet-600 text-white shadow-sm' : 'bg-rose-500 text-white shadow-sm'
+                    : 'text-slate-500 hover:bg-white/60'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -843,9 +842,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                         <div
                           key={leave.id}
                           onClick={() => setSelectedLeave({ type: 'leave', data: leave })}
-                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                            isSelected ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100' : 'bg-white border-slate-100 hover:border-violet-200'
-                          }`}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100' : 'bg-white border-slate-100 hover:border-violet-200'
+                            }`}
                         >
                           <div className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${isSelected ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -862,7 +860,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                     })}
                     {/* Weekend & Holiday */}
                     {[
-                      { id: 'weekend', label: 'Weekend',       icon: FaCalendarAlt,  color: 'sky'   },
+                      { id: 'weekend', label: 'Weekend', icon: FaCalendarAlt, color: 'sky' },
                       { id: 'holiday', label: 'Holiday', icon: FaUmbrellaBeach, color: 'amber' },
                     ].map(opt => {
                       const isSelected = selectedLeave?.type === opt.id;
@@ -871,9 +869,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                         <div
                           key={opt.id}
                           onClick={() => setSelectedLeave({ type: opt.id })}
-                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
-                            isSelected ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'
-                          }`}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'
+                            }`}
                         >
                           <div className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? `bg-${opt.color}-500 text-white` : 'bg-slate-100 text-slate-500'}`}>
@@ -983,9 +980,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap group ${
-                  isActive ? `bg-white shadow-sm border border-slate-200 ${tab.color}` : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
-                }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap group ${isActive ? `bg-white shadow-sm border border-slate-200 ${tab.color}` : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
+                  }`}
               >
                 <div className={`shrink-0 h-6 w-6 rounded-md flex items-center justify-center transition-colors ${isActive ? tab.bg : 'bg-slate-100 group-hover:bg-slate-200'}`}>
                   <Icon size={12} />
@@ -1224,9 +1220,8 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
         <button
           type="button"
           onClick={e => { e.stopPropagation(); onToggleSelect?.(emp); }}
-          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${
-            selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
-          }`}
+          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
+            }`}
         >
           {selected && <FaCheck size={9} />}
         </button>
@@ -1311,12 +1306,12 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
           </div>
           {/* Action buttons */}
           <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
-            <ManagementButton size="sm" tone="emerald" variant={emp.day_status === 'present'    ? 'solid' : 'soft'}    disabled={cardActionsDisabled} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
-            <ManagementButton size="sm" tone="blue"    variant={emp.day_status === 'half_day'   ? 'solid' : 'soft'}    disabled={cardActionsDisabled} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
-            <ManagementButton size="sm" tone="rose"    variant={emp.day_status === 'absent'     ? 'solid' : 'soft'}    disabled={cardActionsDisabled} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-            <ManagementButton size="sm" tone="slate"   variant={Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
-            <ManagementButton size="sm" tone="amber"   variant={Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
-            <ManagementButton size="sm" tone="violet"  variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
+            <ManagementButton size="sm" tone="emerald" variant={emp.day_status === 'present' ? 'solid' : 'soft'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
+            <ManagementButton size="sm" tone="blue" variant={emp.day_status === 'half_day' ? 'solid' : 'soft'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
+            <ManagementButton size="sm" tone="rose" variant={emp.day_status === 'absent' ? 'solid' : 'soft'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
+            <ManagementButton size="sm" tone="slate" variant={Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
+            <ManagementButton size="sm" tone="amber" variant={Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
+            <ManagementButton size="sm" tone="violet" variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
           </div>
         </div>
       </ManagementCard>
@@ -1329,24 +1324,24 @@ const UnmarkedAttendance = () => {
   const today = new Date().toISOString().slice(0, 10);
 
   const [dateFilter, setDateFilter] = useState({ date: today, month: '', year: '', from_date: '', to_date: '' });
-  const [employees, setEmployees]   = useState([]);
-  const [counts, setCounts]         = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [search, setSearch]         = useState('');
-  const [dayStatus, setDayStatus]   = useState('');
+  const [employees, setEmployees] = useState([]);
+  const [counts, setCounts] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [dayStatus, setDayStatus] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [modal, setModal]           = useState(null);   // { type, emp }
-  const [saving, setSaving]         = useState(false);
-  const [selectedIds, setSelectedIds]         = useState([]);
+  const [modal, setModal] = useState(null);   // { type, emp }
+  const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [bulkAction, setBulkAction]           = useState(null);
-  const [bulkModalOpen, setBulkModalOpen]     = useState(false);
+  const [bulkAction, setBulkAction] = useState(null);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
 
   // ── useRef dedup: prevent duplicate inflight calls ──────────────────────────
   const abortControllerRef = useRef(null);
-  const lastFetchKeyRef    = useRef('');
+  const lastFetchKeyRef = useRef('');
 
   const buildFetchKey = useCallback(() => {
     let fromDate = '', toDate = '';
@@ -1354,10 +1349,10 @@ const UnmarkedAttendance = () => {
       fromDate = toDate = dateFilter.date;
     } else if (dateFilter.from_date && dateFilter.to_date) {
       fromDate = dateFilter.from_date;
-      toDate   = dateFilter.to_date;
+      toDate = dateFilter.to_date;
     } else if (dateFilter.month && dateFilter.year) {
       fromDate = `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01`;
-      toDate   = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
+      toDate = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
     }
     return `${fromDate}|${toDate}|${pagination.page}|${pagination.limit}|${search}|${dayStatus}|${selectedEmployee ?? ''}`;
   }, [dateFilter, pagination.page, pagination.limit, search, dayStatus, selectedEmployee]);
@@ -1382,19 +1377,19 @@ const UnmarkedAttendance = () => {
         fromDate = toDate = dateFilter.date;
       } else if (dateFilter.from_date && dateFilter.to_date) {
         fromDate = dateFilter.from_date;
-        toDate   = dateFilter.to_date;
+        toDate = dateFilter.to_date;
       } else if (dateFilter.month && dateFilter.year) {
         fromDate = `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01`;
-        toDate   = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
+        toDate = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
       }
 
-      const companyId   = JSON.parse(localStorage.getItem('company'))?.id;
+      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
       const statusParam = dayStatus ? `&day_status=${dayStatus}` : '';
-      const empParam    = selectedEmployee ? `&employee_id=${selectedEmployee}` : '';
+      const empParam = selectedEmployee ? `&employee_id=${selectedEmployee}` : '';
       const url = `/attendance/list?from_date=${fromDate}&to_date=${toDate}&page=${pagination.page}&limit=${pagination.limit}&search=${encodeURIComponent(search)}${statusParam}${empParam}&type=attendance`;
 
       const response = await apiCall(url, 'GET', null, companyId);
-      const result   = await response.json();
+      const result = await response.json();
 
       if (result.success) {
         const fallbackDate = fromDate || today;
@@ -1402,10 +1397,10 @@ const UnmarkedAttendance = () => {
         setEmployees(mapped);
         setCounts(result.meta?.counts || null);
         updatePagination({
-          total:       result.meta?.total       || 0,
+          total: result.meta?.total || 0,
           total_pages: result.meta?.total_pages || 1,
-          page:        result.meta?.page        || 1,
-          limit:       result.meta?.limit       || 20,
+          page: result.meta?.page || 1,
+          limit: result.meta?.limit || 20,
         });
       } else {
         throw new Error(result.message || 'Failed to fetch attendance');
@@ -1426,10 +1421,10 @@ const UnmarkedAttendance = () => {
   }, [fetchAttendance]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-  const handleDateChange     = (val) => { setDateFilter(val); goToPage(1); };
-  const handleSearch         = (val) => { setSearch(val);     goToPage(1); };
-  const handleStatusChange   = (val) => { setDayStatus(val);  goToPage(1); };
-  const handleEmployeeChange = (id)  => { setSelectedEmployee(id); goToPage(1); };
+  const handleDateChange = (val) => { setDateFilter(val); goToPage(1); };
+  const handleSearch = (val) => { setSearch(val); goToPage(1); };
+  const handleStatusChange = (val) => { setDayStatus(val); goToPage(1); };
+  const handleEmployeeChange = (id) => { setSelectedEmployee(id); goToPage(1); };
 
   const handleAction = (emp, action) => setModal({ type: action, emp });
 
@@ -1438,8 +1433,8 @@ const UnmarkedAttendance = () => {
     setSaving(true);
     try {
       const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      const response  = await apiCall('/attendance/mark', 'POST', payload, companyId);
-      const result    = await response.json();
+      const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
+      const result = await response.json();
       if (result.success) {
         toast.success('Attendance updated successfully!');
         setModal(null);
@@ -1489,7 +1484,7 @@ const UnmarkedAttendance = () => {
       toast.error(err.message || 'Bulk update failed');
     }
   };
-const toggleSelectEmployee = (emp) => {
+  const toggleSelectEmployee = (emp) => {
     setSelectedIds(prev =>
       prev.includes(emp.employee_id)
         ? prev.filter(id => id !== emp.employee_id)
@@ -1555,9 +1550,9 @@ const toggleSelectEmployee = (emp) => {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm"
         >
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.9fr)] gap-3">
+          <div className="flex justify-between w-full flex-col lg:flex-row gap-4">
             {/* Search */}
-            <div className="min-w-0">
+            <div className="flex-1">
               <div className="relative">
                 <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                 <input
@@ -1576,21 +1571,25 @@ const toggleSelectEmployee = (emp) => {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(140px,170px)_minmax(0,1fr)_minmax(180px,220px)_auto] gap-2.5 items-center">
-              <div className="min-w-0">
-                <StatusSelect value={dayStatus} onChange={handleStatusChange} options={STATUS_OPTIONS} />
-              </div>
-              <div className="min-w-0">
+            <div className="flex gap-4 flex-col md:flex-row lg:flex-row">
+              <div className="flex-1">
                 <EmployeeSelect value={selectedEmployee} onChange={handleEmployeeChange} placeholder="Specific Employee..." />
               </div>
-              <div className="min-w-0">
-                <AdvancedDateFilter
-                  value={dateFilter}
-                  onChange={handleDateChange}
-                  buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-                  placeholder="Pick Date"
-                />
+              <div className="flex flex-row gap-4">
+                <div className="flex-1">
+                  <StatusSelect value={dayStatus} onChange={handleStatusChange} options={STATUS_OPTIONS} />
+                </div>
+                <div className="flex-1">
+                  <AdvancedDateFilter
+                    value={dateFilter}
+                    onChange={handleDateChange}
+                    buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
+                    placeholder="Pick Date"
+                  />
+                </div>
+
               </div>
+
             </div>
           </div>
         </motion.div>
@@ -1618,13 +1617,12 @@ const toggleSelectEmployee = (emp) => {
               <button
                 type="button"
                 onClick={toggleSelectAll}
-                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all ${
-                  selectedIds.length === employees.length && employees.length > 0
-                    ? 'bg-indigo-600 border-indigo-600 text-white'
-                    : selectedIds.length > 0
+                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all ${selectedIds.length === employees.length && employees.length > 0
+                  ? 'bg-indigo-600 border-indigo-600 text-white'
+                  : selectedIds.length > 0
                     ? 'bg-indigo-100 border-indigo-400'
                     : 'bg-white border-slate-300 hover:border-indigo-400'
-                }`}
+                  }`}
               >
                 {selectedIds.length === employees.length && employees.length > 0 && <FaCheck size={9} className="text-white" />}
                 {selectedIds.length > 0 && selectedIds.length < employees.length && (
@@ -1686,7 +1684,7 @@ const toggleSelectEmployee = (emp) => {
           {isSelectionMode && selectedIds.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0,  scale: 1   }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"

@@ -49,7 +49,9 @@ const getVisibleColumns = (width) => ({
   showName: true,
   showDesignation: width >= 640,
   showStatus: width >= 768,
-  showEmployment: width >= 1024
+  showEmployment: width >= 1024,
+  showPermissions: width >= 1200,
+  showSchedule: width >= 1400
 });
 
 // Weekday options
@@ -1153,7 +1155,7 @@ export default function InvitePackageManagement() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen p-3 md:p-6 font-sans">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto">
 
         {/* ── Page Header ── */}
@@ -1265,12 +1267,14 @@ export default function InvitePackageManagement() {
               <table className="w-full table-fixed text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs xsm:hidden">
                   <tr>
-                    {visibleColumns.showCode        && <th className="w-[12%] px-4 lg:px-6 py-4">Code</th>}
-                    {visibleColumns.showName        && <th className="w-[24%] px-4 lg:px-6 py-4">Package Name</th>}
-                    {visibleColumns.showDesignation && <th className="w-[16%] px-4 lg:px-6 py-4">Designation</th>}
-                    {visibleColumns.showEmployment  && <th className="w-[20%] px-4 lg:px-6 py-4">Employment</th>}
-                    {visibleColumns.showStatus      && <th className="w-[12%] px-4 lg:px-6 py-4">Status</th>}
-                    <th className="px-2 py-4 flex justify-end"><FaCog className="text-gray-700 mr-4" size={16} /></th>
+                    {visibleColumns.showCode        && <th className="px-4 lg:px-6 py-4">Code</th>}
+                    {visibleColumns.showName        && <th className="px-4 lg:px-6 py-4">Package Name</th>}
+                    {visibleColumns.showDesignation && <th className="px-4 lg:px-6 py-4">Designation</th>}
+                    {visibleColumns.showEmployment  && <th className="px-4 lg:px-6 py-4">Employment</th>}
+                    {visibleColumns.showPermissions && <th className="px-4 lg:px-6 py-4">Permissions</th>}
+                    {visibleColumns.showSchedule    && <th className="px-4 lg:px-6 py-4">Schedule</th>}
+                    {visibleColumns.showStatus      && <th className="px-4 lg:px-6 py-4">Status</th>}
+                    <th className="px-2 py-4 text-right w-16"><FaCog className="text-gray-700 ml-auto mr-4" size={16} /></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -1305,23 +1309,50 @@ export default function InvitePackageManagement() {
                         {visibleColumns.showEmployment && (
                           <td className="px-4 lg:px-6 py-4">
                             <div className="flex flex-wrap gap-1 min-w-0">
-                              <span className="max-w-full truncate px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+                              <span className="max-w-[120px] truncate px-2 py-1 bg-purple-50 text-purple-700 rounded text-[10px] sm:text-xs font-medium">
                                 {formatDisplay(pkg.employment_type)}
                               </span>
-                              <span className="max-w-full truncate px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs font-medium">
+                              <span className="max-w-[120px] truncate px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-[10px] sm:text-xs font-medium">
                                 {formatDisplay(pkg.salary_type)}
                               </span>
                             </div>
                           </td>
                         )}
+                        {visibleColumns.showPermissions && (
+                          <td className="px-4 lg:px-6 py-4">
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <FaShieldAlt className="text-indigo-400 shrink-0" />
+                              <span className="truncate max-w-[140px]">
+                                {pkg.permission_package_name || "N/A"}
+                              </span>
+                            </div>
+                          </td>
+                        )}
+                        {visibleColumns.showSchedule && (
+                          <td className="px-4 lg:px-6 py-4">
+                            <div className="flex flex-col gap-1 text-xs text-gray-600">
+                              <div className="flex items-center gap-1.5">
+                                <FaClock className="text-orange-400 shrink-0" />
+                                <span className="whitespace-nowrap">
+                                  {pkg.shift_start} - {pkg.shift_end}
+                                </span>
+                              </div>
+                              {pkg.weekends?.length > 0 && (
+                                <div className="text-[10px] text-gray-500 font-medium">
+                                  {pkg.weekends.length} Off Day{pkg.weekends.length !== 1 ? 's' : ''}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )}
                         {visibleColumns.showStatus && (
                           <td className="px-4 lg:px-6 py-4">
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium border ${status.className}`}>
                               <StatusIcon size={12} />{status.text}
                             </span>
                           </td>
                         )}
-                        <td className="w-12 px-2 py-4 text-right max-w-[150px] align-top" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-2 py-4 text-center align-middle" onClick={(e) => e.stopPropagation()}>
                           <ActionMenu
                             menuId={pkg.id}
                             activeId={activeActionMenu}
