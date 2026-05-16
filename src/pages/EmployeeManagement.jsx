@@ -76,7 +76,6 @@ const MODAL_TYPES = {
     EDIT: 'EDIT',
     VIEW: 'VIEW',
     DELETE_CONFIRM: 'DELETE_CONFIRM',
-    WEEKEND_MANAGE: 'WEEKEND_MANAGE',
 };
 
 const modalVariants = {
@@ -146,6 +145,8 @@ const normalizeEmployeeRecord = (employee) => ({
         normalizeDuration(employee?.grace_minutes, DEFAULT_DURATION),
 });
 
+const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
 const EmployeeEditModal = ({
     isOpen,
     selectedEmployee,
@@ -171,23 +172,16 @@ const EmployeeEditModal = ({
     const formatDisplay = (value) =>
         value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
 
+    // weekends is now string[]: ["friday", "sunday"]
     const toggleWeekend = (day) => {
         setFormData(prev => {
             const currentWeekends = Array.isArray(prev.weekends) ? prev.weekends : [];
-            const exists = currentWeekends.find(w => w.day === day);
-            if (exists) {
-                return { ...prev, weekends: currentWeekends.filter(w => w.day !== day) };
+            if (currentWeekends.includes(day)) {
+                return { ...prev, weekends: currentWeekends.filter(d => d !== day) };
             } else {
-                return { ...prev, weekends: [...currentWeekends, { day, type: 'full' }] };
+                return { ...prev, weekends: [...currentWeekends, day] };
             }
         });
-    };
-
-    const updateWeekendType = (day, type) => {
-        setFormData(prev => ({
-            ...prev,
-            weekends: (prev.weekends || []).map(w => w.day === day ? { ...w, type } : w)
-        }));
     };
 
     return (
@@ -443,41 +437,23 @@ const EmployeeEditModal = ({
                                         className="overflow-hidden"
                                     >
                                         <div className="flex flex-col gap-2 pt-4">
-                                            {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
-                                                const config = (formData.weekends || []).find(w => w.day === day);
+                                            {DAYS_OF_WEEK.map(day => {
+                                                const isSelected = (formData.weekends || []).includes(day);
                                                 return (
-                                                    <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => toggleWeekend(day)}
-                                                            className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${config
-                                                                ? 'bg-indigo-600 text-white shadow-md'
-                                                                : 'bg-white text-slate-600 border border-slate-200'
-                                                                }`}
-                                                        >
-                                                            <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${config ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
-                                                                {config && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
-                                                            </div>
-                                                            {day.charAt(0).toUpperCase() + day.slice(1)}
-                                                        </button>
-                                                        {config && (
-                                                            <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
-                                                                {['full', 'half'].map(type => (
-                                                                    <button
-                                                                        key={type}
-                                                                        type="button"
-                                                                        onClick={() => updateWeekendType(day, type)}
-                                                                        className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${config.type === type
-                                                                            ? 'bg-slate-900 text-white'
-                                                                            : 'text-slate-400'
-                                                                            }`}
-                                                                    >
-                                                                        {type}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    <button
+                                                        key={day}
+                                                        type="button"
+                                                        onClick={() => toggleWeekend(day)}
+                                                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all border ${isSelected
+                                                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                                                            : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-200 hover:bg-indigo-50'
+                                                            }`}
+                                                    >
+                                                        <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                                            {isSelected && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                                        </div>
+                                                        {day.charAt(0).toUpperCase() + day.slice(1)}
+                                                    </button>
                                                 );
                                             })}
                                         </div>
@@ -521,15 +497,6 @@ const EmployeeManagement = () => {
         shift_start: DEFAULT_SHIFT_START, shift_end: DEFAULT_SHIFT_END,
         break_minutes: DEFAULT_DURATION, grace_minutes: DEFAULT_DURATION,
         weekends: []
-    });
-    const [weekendConfig, setWeekendConfig] = useState({
-        monday: 'none',
-        tuesday: 'none',
-        wednesday: 'none',
-        thursday: 'none',
-        friday: 'none',
-        saturday: 'none',
-        sunday: 'none'
     });
 
     const [attendanceMethodsConfig, setAttendanceMethodsConfig] = useState({});
@@ -846,7 +813,7 @@ const EmployeeManagement = () => {
                 shift_end: employeeData.shift_end,
                 break_minutes: employeeData.break_minutes,
                 grace_minutes: employeeData.grace_minutes,
-                weekends: employeeData.weekends
+                weekends: employeeData.weekends  // string[]: ["friday", "sunday"]
             };
 
             const response = await apiCall('/employees/update', 'PUT', payload, company?.id);
@@ -919,6 +886,12 @@ const EmployeeManagement = () => {
             // Find the permission package
             const selectedPackage = permissionPackages.find(p => p.value === (normalizedEmployee.permission_package_id || normalizedEmployee.package_id));
 
+            // Normalize weekends to string[]: handle both old [{day, type}] and new ["friday"] formats
+            const rawWeekends = normalizedEmployee.weekends;
+            const normalizedWeekends = Array.isArray(rawWeekends)
+                ? rawWeekends.map(w => (typeof w === 'string' ? w : w?.day)).filter(Boolean)
+                : [];
+
             setFormData({
                 name: normalizedEmployee.name || '',
                 designation: normalizedEmployee.designation || '',
@@ -936,7 +909,7 @@ const EmployeeManagement = () => {
                 shift_end: normalizedEmployee.shift_end || DEFAULT_SHIFT_END,
                 break_minutes: normalizeDuration(normalizedEmployee.break_minutes, DEFAULT_DURATION),
                 grace_minutes: normalizeDuration(normalizedEmployee.grace_minutes, DEFAULT_DURATION),
-                weekends: Array.isArray(normalizedEmployee.weekends) ? normalizedEmployee.weekends : []
+                weekends: normalizedWeekends
             });
 
             setModalType(MODAL_TYPES.EDIT);
@@ -968,30 +941,6 @@ const EmployeeManagement = () => {
         if (deleteEmployeeAccess.disabled) return;
         setSelectedEmployee(emp);
         setModalType(MODAL_TYPES.DELETE_CONFIRM);
-        setActiveActionMenu(null);
-    };
-
-    const openWeekendModal = (employee) => {
-        const normalizedEmployee = normalizeEmployeeRecord(employee);
-        setSelectedEmployee(normalizedEmployee);
-
-        // Initialize weekend config from employee data if available
-        const initialConfig = {
-            monday: 'none', tuesday: 'none', wednesday: 'none', thursday: 'none',
-            friday: 'none', saturday: 'none', sunday: 'none'
-        };
-
-        if (normalizedEmployee.weekends && Array.isArray(normalizedEmployee.weekends)) {
-            normalizedEmployee.weekends.forEach(w => {
-                const day = w.day.toLowerCase();
-                if (initialConfig.hasOwnProperty(day)) {
-                    initialConfig[day] = w.type.toLowerCase();
-                }
-            });
-        }
-
-        setWeekendConfig(initialConfig);
-        setModalType(MODAL_TYPES.WEEKEND_MANAGE);
         setActiveActionMenu(null);
     };
 
@@ -1046,7 +995,7 @@ const EmployeeManagement = () => {
             shift_end: formData.shift_end,
             break_minutes: formData.break_minutes,
             grace_minutes: formData.grace_minutes,
-            weekends: formData.weekends
+            weekends: formData.weekends  // string[]: ["friday", "sunday"]
         });
 
         if (result.success) {
@@ -1068,42 +1017,6 @@ const EmployeeManagement = () => {
         }
     };
 
-    const handleWeekendSubmit = async (e) => {
-        e.preventDefault();
-        if (!selectedEmployee) return;
-
-        setLoading(true);
-        try {
-            const company = JSON.parse(localStorage.getItem('company'));
-
-            // Format weekends for payload: only include those with type 'half' or 'full'
-            const weekends = Object.entries(weekendConfig)
-                .filter(([, type]) => type !== 'none')
-                .map(([day, type]) => ({ day, type }));
-
-            const payload = {
-                employee_id: selectedEmployee.id,
-                weekends: weekends
-            };
-
-            const response = await apiCall('/employees/weekends/manage', 'PUT', payload, company?.id);
-            const result = await response.json();
-
-            if (result.success) {
-                toast.success('Weekend configuration updated successfully!');
-                employeeListRequestCache.clear();
-                await fetchEmployees(pagination.page, false);
-                closeModal();
-            } else {
-                throw new Error(result.message || 'Failed to update weekend configuration');
-            }
-        } catch (e) {
-            toast.error(e.message || 'Failed to update weekend configuration');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleToggleMethod = (methodId) => {
@@ -1115,8 +1028,6 @@ const EmployeeManagement = () => {
             }
         }));
     };
-
-    const handleInternalMethodChange = () => { };
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -1154,7 +1065,6 @@ const EmployeeManagement = () => {
 
     // ─── Responsive Columns ──────────────────────────────────────────────────
 
-    // ─── Responsive Columns ──────────────────────────────────────────────────
     const getEffectiveWidth = () => {
         const width = window.innerWidth;
         const offset = width >= 1024 ? 280 : (width >= 768 ? 80 : 0);
@@ -1342,8 +1252,6 @@ const EmployeeManagement = () => {
                                                 {visibleColumns.showName && (
                                                     <td className="px-6 py-4 font-semibold">
                                                         <div className="flex items-center gap-3">
-
-                                                            {/* Avatar Circle */}
                                                             <ProfileAvatar
                                                                 record={emp}
                                                                 name={emp.name}
@@ -1351,12 +1259,9 @@ const EmployeeManagement = () => {
                                                             >
                                                                 <FaUser className="text-purple-500 text-sm" />
                                                             </ProfileAvatar>
-
-                                                            {/* Name */}
                                                             <span className="text-gray-800 font-medium truncate max-w-[120px] sm:max-w-[180px]">
                                                                 {emp.name}
                                                             </span>
-
                                                         </div>
                                                     </td>
                                                 )}
@@ -1413,14 +1318,6 @@ const EmployeeManagement = () => {
                                                                 className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                                                             },
                                                             {
-                                                                label: 'Weekend Manage',
-                                                                icon: <FaCalendarAlt size={14} />,
-                                                                onClick: () => openWeekendModal(emp),
-                                                                disabled: !updateEmployeeAccess.enabled && updateEmployeeAccess.disabled, // Using same permission as edit for now
-                                                                title: updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : '',
-                                                                className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
-                                                            },
-                                                            {
                                                                 label: 'Delete',
                                                                 icon: <FaTrash size={14} />,
                                                                 onClick: () => openDeleteModal(emp),
@@ -1475,7 +1372,6 @@ const EmployeeManagement = () => {
                                         <button onClick={() => openEmployeeProfile(emp)} disabled={readEmployeeAccess.disabled} title={readEmployeeAccess.disabled ? getAccessMessage(readEmployeeAccess) : ''} className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaUserCircle size={16} /></button>
                                         <button onClick={() => openViewModal(emp)} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={16} /></button>
                                         <button onClick={() => openEditModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={16} /></button>
-                                        <button onClick={() => openWeekendModal(emp)} disabled={updateEmployeeAccess.disabled} title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaCalendarAlt size={16} /></button>
                                         <button onClick={() => openDeleteModal(emp)} disabled={deleteEmployeeAccess.disabled} title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaTrash size={16} /></button>
                                     </div>
                                 </motion.div>
@@ -1663,13 +1559,16 @@ const EmployeeManagement = () => {
                                             <FaCalendarAlt className="text-purple-500" /> Weekly Holidays
                                         </h4>
                                         <div className="flex flex-wrap gap-1.5">
-                                            {selectedEmployee.weekends.map((w, idx) => (
-                                                <div key={idx} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[10px] font-bold text-slate-700 shadow-sm flex items-center gap-1.5 capitalize">
-                                                    <div className="w-1 h-1 rounded-full bg-purple-500"></div>
-                                                    {w.day}
-                                                    <span className="text-[9px] text-slate-400 font-normal ml-0.5">({w.type})</span>
-                                                </div>
-                                            ))}
+                                            {selectedEmployee.weekends.map((w, idx) => {
+                                                // Support both string[] and [{day, type}] from API
+                                                const dayName = typeof w === 'string' ? w : w?.day;
+                                                return (
+                                                    <div key={idx} className="px-2 py-1 bg-white rounded-lg border border-slate-200 text-[10px] font-bold text-slate-700 shadow-sm flex items-center gap-1.5 capitalize">
+                                                        <div className="w-1 h-1 rounded-full bg-purple-500"></div>
+                                                        {dayName}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -1699,73 +1598,6 @@ const EmployeeManagement = () => {
                     updateDisabled={updateEmployeeAccess.disabled}
                     submitTitle={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ""}
                 />
-
-                {/* WEEKEND MANAGE MODAL */}
-                <Modal
-                    isOpen={modalType === MODAL_TYPES.WEEKEND_MANAGE && !!selectedEmployee}
-                    onClose={closeModal}
-                    title="Weekend Management"
-                    subtitle={selectedEmployee ? <>Configure weekend for <span className="font-semibold text-slate-700">{selectedEmployee.name}</span></> : ""}
-                    icon={<FaCalendarAlt className="h-6 w-6" />}
-                    size="lg"
-                    footer={
-                        <>
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                disabled={loading}
-                                className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                form="weekend-form"
-                                disabled={loading}
-                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm shadow-lg shadow-purple-100 hover:shadow-xl transition-all flex items-center gap-2"
-                            >
-                                {loading ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                                Save Configuration
-                            </button>
-                        </>
-                    }
-                >
-                    <form id="weekend-form" onSubmit={handleWeekendSubmit} className="space-y-4">
-                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                            <div key={day} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md hover:border-purple-200">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-purple-600 font-bold uppercase text-xs group-hover:bg-purple-50">
-                                        {day.substring(0, 3)}
-                                    </div>
-                                    <span className="capitalize font-medium text-gray-700">{day}</span>
-                                </div>
-
-                                <div className="flex bg-white p-1 rounded-xl shadow-inner border border-gray-200">
-                                    {[
-                                        { value: 'none', label: 'Working', color: 'bg-gray-100 text-gray-600' },
-                                        { value: 'half', label: 'Half Day', color: 'bg-blue-500 text-white' },
-                                        { value: 'full', label: 'Full Day', color: 'bg-indigo-600 text-white' }
-                                    ].map((opt) => {
-                                        const isActive = weekendConfig[day] === opt.value;
-                                        return (
-                                            <button
-                                                key={opt.value}
-                                                type="button"
-                                                onClick={() => setWeekendConfig(prev => ({ ...prev, [day]: opt.value }))}
-                                                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${isActive
-                                                    ? `${opt.color} shadow-lg scale-105 ring-2 ring-white`
-                                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-                                                    }`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
-                    </form>
-                </Modal>
 
                 {/* DELETE MODAL */}
                 <Modal
@@ -1802,7 +1634,6 @@ const EmployeeManagement = () => {
                 </Modal>
             </AnimatePresence>
 
-
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 8px;
@@ -1822,7 +1653,5 @@ const EmployeeManagement = () => {
         </div>
     );
 };
-
-// InfoItem removed from bottom as it was moved to top
 
 export default EmployeeManagement;
