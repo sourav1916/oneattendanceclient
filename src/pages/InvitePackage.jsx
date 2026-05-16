@@ -19,6 +19,7 @@ import usePermissionAccess from "../hooks/usePermissionAccess";
 import { useAuth } from "../context/AuthContext";
 import TimeDurationPickerField from "../components/TimeDurationPicker";
 import { RefreshButton } from '../components/common';
+import SelectField from "../components/SelectField";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -411,31 +412,40 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <FaUserTie className="text-indigo-500" /> Designation
                   </label>
-                  <select name="designation" value={formData.designation} onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
-                    <option value="">Select designation</option>
-                    {constants.designations.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-                  </select>
+                  <SelectField
+                    name="designation"
+                    options={constants.designations}
+                    value={constants.designations.find(d => d.value === formData.designation) || null}
+                    onChange={(option) => handleChange({ target: { name: 'designation', value: option ? option.value : '' } })}
+                    placeholder="Select designation"
+                    isClearable
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <FaBriefcase className="text-indigo-500" /> Employment Type
                   </label>
-                  <select name="employment_type" value={formData.employment_type} onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
-                    <option value="">Select type</option>
-                    {constants.employment_types.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                  </select>
+                  <SelectField
+                    name="employment_type"
+                    options={constants.employment_types}
+                    value={constants.employment_types.find(t => t.value === formData.employment_type) || null}
+                    onChange={(option) => handleChange({ target: { name: 'employment_type', value: option ? option.value : '' } })}
+                    placeholder="Select type"
+                    isClearable
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <FaDollarSign className="text-indigo-500" /> Salary Type
                   </label>
-                  <select name="salary_type" value={formData.salary_type} onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
-                    <option value="">Select type</option>
-                    {constants.salary_types.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                  </select>
+                  <SelectField
+                    name="salary_type"
+                    options={constants.salary_types}
+                    value={constants.salary_types.find(s => s.value === formData.salary_type) || null}
+                    onChange={(option) => handleChange({ target: { name: 'salary_type', value: option ? option.value : '' } })}
+                    placeholder="Select type"
+                    isClearable
+                  />
                 </div>
               </div>
 
@@ -445,11 +455,14 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <FaShieldAlt className="text-indigo-500" /> Permission Package
                   </label>
-                  <select name="permission_package_id" value={formData.permission_package_id} onChange={handleChange}
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10">
-                    <option value="">Select permission package</option>
-                    {permissionPackages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.package_name}</option>)}
-                  </select>
+                  <SelectField
+                    name="permission_package_id"
+                    options={permissionPackages.map(pkg => ({ value: pkg.id, label: pkg.package_name }))}
+                    value={permissionPackages.map(pkg => ({ value: pkg.id, label: pkg.package_name })).find(p => String(p.value) === String(formData.permission_package_id)) || null}
+                    onChange={(option) => handleChange({ target: { name: 'permission_package_id', value: option ? option.value : '' } })}
+                    placeholder="Select permission package"
+                    isClearable
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">

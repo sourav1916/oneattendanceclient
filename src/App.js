@@ -174,7 +174,7 @@ const EMPLOYEE_HUB_TABS = [
   },
   {
     id: "invites",
-    label: "Invite Management",
+    label: "Employee Onboarding",
     shortLabel: "Invites",
     description: "Send and manage invitations for new employees.",
     icon: FaUserPlus,
@@ -184,7 +184,7 @@ const EMPLOYEE_HUB_TABS = [
   },
   {
     id: "packages",
-    label: "Invite Packages",
+    label: "Onboarding Packages",
     shortLabel: "Packages",
     description: "Create reusable invite packages for onboarding workflows.",
     icon: FaBoxes,
