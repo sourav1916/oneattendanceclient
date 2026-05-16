@@ -145,13 +145,15 @@ const InfoRow = ({ icon, label, value }) => (
 
 const EmployeeDetailModal = ({ employee, onClose }) => {
     if (!employee) return null;
-    const s = employee.summary || {};
-    const u = employee.user || {};
+    const s = employee.monthly_summary || {};
+    const u = employee;
 
     const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
-    const statusColor = employee.status === 'active'
-        ? 'bg-green-100 text-green-700 border-green-200'
-        : 'bg-gray-100 text-gray-600 border-gray-200';
+
+    const totalDays = (s.present_days || 0) + (s.absent_days || 0) + (s.leave_days || 0) + (s.holiday_days || 0) + (s.weekend_days || 0);
+    const workDays = (s.present_days || 0) + (s.absent_days || 0);
+    const attendancePct = workDays > 0 ? ((s.present_days || 0) / workDays) * 100 : 0;
+    const totalWorkHours = (s.worked_minutes || 0) / 60;
 
     return (
         <AnimatePresence>
@@ -216,28 +218,19 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joined Date" value={formatDate(employee.joining_date)} />
                             <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Employment Type" value={designationLabel(employee.employment_type)} />
                             <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={designationLabel(employee.salary_type)} />
-                            <InfoItem
-                                icon={<FaShieldAlt className="text-orange-500" />}
-                                label="Status"
-                                value={
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
-                                        {employee.status}
-                                    </span>
-                                }
-                            />
                         </div>
 
                         {/* Monthly Stats */}
                         <div className="mt-4">
                             <label className="text-xs font-semibold text-gray-700 flex items-center gap-2 mb-2">
-                                <FaChartBar className="text-blue-500" /> Monthly Breakdown ({MONTHS[s.month - 1]} {s.year})
+                                <FaChartBar className="text-blue-500" /> Monthly Breakdown
                             </label>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                                <StatPill value={s.worked_days} label="Worked Days" color="green" />
-                                <StatPill value={s.leave_days} label="Leave Days" color="purple" />
-                                <StatPill value={s.holidays} label="Holidays" color="blue" />
-                                <StatPill value={s.absent_days} label="Absent Days" color="red" />
-                                <StatPill value={formatHours(s.total_work_hours)} label="Total Hours" color="orange" />
+                                <StatPill value={s.present_days || 0} label="Worked Days" color="green" />
+                                <StatPill value={s.leave_days || 0} label="Leave Days" color="purple" />
+                                <StatPill value={s.holiday_days || 0} label="Holidays" color="blue" />
+                                <StatPill value={s.absent_days || 0} label="Absent Days" color="red" />
+                                <StatPill value={formatHours(totalWorkHours)} label="Total Hours" color="orange" />
                             </div>
                         </div>
 
@@ -245,11 +238,11 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                         <div className="mt-4 bg-gray-50 rounded-xl p-3 border border-gray-200">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-xs font-semibold text-gray-700">Attendance Rate</span>
-                                <AttendanceBadge pct={s.attendance_percentage} />
+                                <AttendanceBadge pct={attendancePct} />
                             </div>
-                            <MiniStatBar worked={s.worked_days} total={s.total_days_in_month} pct={s.attendance_percentage} />
+                            <MiniStatBar worked={s.present_days || 0} total={totalDays} pct={attendancePct} />
                             <p className="text-[10px] text-gray-500 mt-2">
-                                Average {formatHours(s.average_hours_per_day)} / working day
+                                Average {s.present_days > 0 ? formatHours(totalWorkHours / s.present_days) : '0h'} / working day
                             </p>
                         </div>
                     </div>
@@ -268,12 +261,14 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 // ─── Employee Card (Grid) ─────────────────────────────────────────────────────
 
 const EmployeeCard = ({ employee, index, onClick }) => {
-    const s = employee.summary || {};
-    const u = employee.user || {};
+    const s = employee.monthly_summary || {};
+    const u = employee;
     const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
-    const statusColor = employee.status === 'active'
-        ? 'bg-green-50 text-green-700 border-green-200'
-        : 'bg-gray-100 text-gray-500 border-gray-200';
+    
+    const totalDays = (s.present_days || 0) + (s.absent_days || 0) + (s.leave_days || 0) + (s.holiday_days || 0) + (s.weekend_days || 0);
+    const workDays = (s.present_days || 0) + (s.absent_days || 0);
+    const attendancePct = workDays > 0 ? ((s.present_days || 0) / workDays) * 100 : 0;
+    const totalWorkHours = (s.worked_minutes || 0) / 60;
 
     return (
         <motion.div
@@ -296,38 +291,35 @@ const EmployeeCard = ({ employee, index, onClick }) => {
                     <h3 className="font-bold text-gray-800 truncate text-sm">{u.name || employee.name || 'Unknown'}</h3>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{designationLabel(employee.designation)}</p>
                     <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${statusColor}`}>
-                            {employee.status}
-                        </span>
                         <span className="text-xs text-gray-400 font-mono">{employee.employee_code}</span>
                     </div>
                 </div>
-                <AttendanceBadge pct={s.attendance_percentage} />
+                <AttendanceBadge pct={attendancePct} />
             </div>
 
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="bg-green-50 border border-green-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-green-700">{formatDays(s.worked_days)}</p>
+                    <p className="text-sm font-bold text-green-700">{formatDays(s.present_days || 0)}</p>
                     <p className="text-xs text-green-500">Worked</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-blue-700">{formatHours(s.total_work_hours)}</p>
+                    <p className="text-sm font-bold text-blue-700">{formatHours(totalWorkHours)}</p>
                     <p className="text-xs text-blue-500">Hours</p>
                 </div>
                 <div className="bg-red-50 border border-red-100 rounded-xl p-2 text-center">
-                    <p className="text-sm font-bold text-red-600">{formatDays(s.absent_days)}</p>
+                    <p className="text-sm font-bold text-red-600">{formatDays(s.absent_days || 0)}</p>
                     <p className="text-xs text-red-400">Absent</p>
                 </div>
             </div>
 
             {/* Bar */}
-            <MiniStatBar worked={s.worked_days} total={s.total_days_in_month} pct={s.attendance_percentage} />
+            <MiniStatBar worked={s.present_days || 0} total={totalDays} pct={attendancePct} />
 
             {/* Footer */}
             <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-xs text-gray-400">
-                    {formatDays(s.leave_days)} leaves · {formatDays(s.holidays)} holidays
+                    {formatDays(s.leave_days || 0)} leaves · {formatDays(s.holiday_days || 0)} holidays
                 </span>
                 <span className="text-xs text-blue-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     View <FaEye size={10} />
@@ -662,17 +654,17 @@ const EmployeesShifts = () => {
                                             {showLeave && <th className="px-6 py-4">Leave</th>}
                                             {showAbsent && <th className="px-6 py-4">Absent</th>}
                                             {showAttendance && <th className="px-6 py-4">Attendance</th>}
-                                            {showStatus && <th className="px-6 py-4">Status</th>}
                                             <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {employees.map((emp, index) => {
-                                            const s = emp.summary || {};
-                                            const u = emp.user || {};
-                                            const statusColor = emp.status === 'active'
-                                                ? 'bg-green-100 text-green-800 border-green-200'
-                                                : 'bg-gray-100 text-gray-600 border-gray-200';
+                                            const s = emp.monthly_summary || {};
+                                            const u = emp;
+                                            
+                                            const workDays = (s.present_days || 0) + (s.absent_days || 0);
+                                            const attendancePct = workDays > 0 ? ((s.present_days || 0) / workDays) * 100 : 0;
+                                            const totalWorkHours = (s.worked_minutes || 0) / 60;
 
                                             return (
                                                 <motion.tr
@@ -710,39 +702,32 @@ const EmployeesShifts = () => {
                                                         </td>
                                                     )}
                                                     {showWorked && (
-                                                        <td className="px-6 py-4 font-semibold text-gray-700">{formatDays(s.worked_days)}d</td>
+                                                        <td className="px-6 py-4 font-semibold text-gray-700">{formatDays(s.present_days || 0)}d</td>
                                                     )}
                                                     {showHours && (
                                                         <td className="px-6 py-4">
                                                             <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-100 whitespace-nowrap">
-                                                                {formatHours(s.total_work_hours)}
+                                                                {formatHours(totalWorkHours)}
                                                             </span>
                                                         </td>
                                                     )}
                                                     {showLeave && (
-                                                        <td className="px-6 py-4 text-purple-600 font-medium">{formatDays(s.leave_days)}d</td>
+                                                        <td className="px-6 py-4 text-purple-600 font-medium">{formatDays(s.leave_days || 0)}d</td>
                                                     )}
                                                     {showAbsent && (
-                                                        <td className="px-6 py-4 text-red-500 font-medium">{formatDays(s.absent_days)}d</td>
+                                                        <td className="px-6 py-4 text-red-500 font-medium">{formatDays(s.absent_days || 0)}d</td>
                                                     )}
                                                     {showAttendance && (
                                                         <td className="px-6 py-4">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden flex-shrink-0">
                                                                     <div
-                                                                        className={`h-full rounded-full ${s.attendance_percentage >= 80 ? 'bg-green-400' : s.attendance_percentage >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                                                                        style={{ width: `${Math.min(s.attendance_percentage, 100)}%` }}
+                                                                        className={`h-full rounded-full ${attendancePct >= 80 ? 'bg-green-400' : attendancePct >= 50 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                                                                        style={{ width: `${Math.min(attendancePct, 100)}%` }}
                                                                     />
                                                                 </div>
-                                                                <AttendanceBadge pct={s.attendance_percentage} />
+                                                                <AttendanceBadge pct={attendancePct} />
                                                             </div>
-                                                        </td>
-                                                    )}
-                                                    {showStatus && (
-                                                        <td className="px-6 py-4">
-                                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
-                                                                {emp.status}
-                                                            </span>
                                                         </td>
                                                     )}
                                                     <td className="px-6 py-4 text-right">
