@@ -298,7 +298,7 @@ export default function EmployeeProfilePage() {
               >
                 <div className="space-y-4">
                   {activeTab === "attendance" ? (
-                    <EmployeeAttendanceCalendar employeeId={profile.employee?.id ?? employeeId} />
+                    <EmployeeAttendanceCalendar employee={profile.employee} fallbackId={employeeId} />
                   ) : (
                     <TabContent
                       tabKey={activeTab}
@@ -356,6 +356,7 @@ const CALENDAR_STATUS_STYLES = {
   leave: { cell: "bg-violet-50/50 border-violet-100/50", pill: "bg-violet-100 text-violet-700 border-violet-200", label: "Leave", color: "text-violet-600" },
   upcoming: { cell: "bg-white border-gray-100", pill: "bg-gray-100 text-gray-500 border-gray-200", label: "Upcoming", color: "text-gray-400" },
   half_day: { cell: "bg-orange-50/50 border-orange-100/50", pill: "bg-orange-100 text-orange-700 border-orange-200", label: "Half Day", color: "text-orange-600" },
+  not_joined: { cell: "bg-slate-50/30 border-slate-100/50 opacity-60", pill: "bg-slate-100 text-slate-500 border-slate-200", label: "Not Joined", color: "text-slate-400" },
 };
 
 const CalendarCell = ({ cell, onClick }) => {
@@ -385,13 +386,13 @@ const CalendarCell = ({ cell, onClick }) => {
 
 const CalendarSummaryCard = ({ label, value, icon: Icon, type }) => {
   const styles = CALENDAR_STATUS_STYLES[type] || CALENDAR_STATUS_STYLES.upcoming;
-  return <div className="p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5"><div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${styles.pill}`}><Icon /></div><div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1.5">{label}</p><p className="text-xl font-black text-gray-900">{value}</p></div></div>;
+  return <div className="p-4 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5"><div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${styles.pill}`}><Icon /></div><div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1.5">{label}</p><p className="text-xl font-black text-gray-900">{value}</p></div></div>;
 };
 
 const CalendarEmployeeInfo = ({ employee }) => {
   if (!employee) return null;
   return (
-    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200 mb-8 relative overflow-hidden group">
+    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-xl p-6 text-white shadow-xl shadow-indigo-200 mb-8 relative overflow-hidden group">
       <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl transition-transform group-hover:scale-110" />
       <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-3xl transition-transform group-hover:scale-110" />
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -421,14 +422,15 @@ const CalendarDayDetailsModal = ({ cell, onClose }) => {
       <motion.div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col" initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white"><div><h3 className="text-xl font-black text-gray-900 tracking-tight">{formattedDate}</h3>{data?.status && <span className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${CALENDAR_STATUS_STYLES[data.status]?.pill}`}>{CALENDAR_STATUS_STYLES[data.status]?.label}</span>}</div><button onClick={onClose} className="w-10 h-10 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 rounded-2xl transition-all"><FaTimesCircle size={20} /></button></div>
         <div className="p-6 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
-          {data?.worked ? <div className="grid gap-3"><InfoRow label="Work Hours" value={w.total_work} icon={FaClock} color="bg-emerald-100 text-emerald-600" /><InfoRow label="Break Time" value={w.break} icon={FaHourglassHalf} color="bg-amber-100 text-amber-600" /><InfoRow label="Overtime" value={w.overtime} icon={FaSignInAlt} color="bg-indigo-100 text-indigo-600" /><InfoRow label="Target" value={w.expected_work} icon={FaSignOutAlt} color="bg-slate-100 text-slate-600" /></div> : data?.is_leave ? <div className="p-6 bg-violet-50 rounded-3xl border border-violet-100 flex flex-col items-center text-center"><div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mb-4 text-2xl"><FaInfoCircle /></div><h4 className="text-lg font-black text-violet-900 leading-tight mb-1">{data.is_leave.name}</h4><p className="text-sm font-bold text-violet-500 uppercase tracking-widest">{data.is_leave.code} • {data.is_leave.type?.replace("_", " ")}</p></div> : data?.is_holiday ? <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100 flex flex-col items-center text-center"><div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 text-2xl"><FaUmbrellaBeach /></div><h4 className="text-lg font-black text-amber-900 leading-tight mb-1">{data.is_holiday.name}</h4><p className="text-sm font-bold text-amber-500 uppercase tracking-widest">{data.is_holiday.is_optional ? "Optional Holiday" : "Public Holiday"}</p></div> : <div className="py-12 flex flex-col items-center text-center text-gray-400"><FaCalendarAlt size={48} className="mb-4 opacity-20" /><p className="font-bold uppercase tracking-widest text-xs">No activity recorded for this day</p></div>}
+          {data?.worked ? <div className="grid gap-3"><InfoRow label="Work Hours" value={w.total_work} icon={FaClock} color="bg-emerald-100 text-emerald-600" /><InfoRow label="Break Time" value={w.break} icon={FaHourglassHalf} color="bg-amber-100 text-amber-600" /><InfoRow label="Overtime" value={w.overtime} icon={FaSignInAlt} color="bg-indigo-100 text-indigo-600" /><InfoRow label="Target" value={w.expected_work} icon={FaSignOutAlt} color="bg-slate-100 text-slate-600" /></div> : data?.is_leave ? <div className="p-6 bg-violet-50 rounded-3xl border border-violet-100 flex flex-col items-center text-center"><div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mb-4 text-2xl"><FaInfoCircle /></div><h4 className="text-lg font-black text-violet-900 leading-tight mb-1">{data.is_leave.name}</h4><p className="text-sm font-bold text-violet-500 uppercase tracking-widest">{data.is_leave.code} • {data.is_leave.type?.replace("_", " ")}</p></div> : data?.is_holiday ? <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100 flex flex-col items-center text-center"><div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-4 text-2xl"><FaUmbrellaBeach /></div><h4 className="text-lg font-black text-amber-900 leading-tight mb-1">{data.is_holiday.name}</h4><p className="text-sm font-bold text-amber-500 uppercase tracking-widest">{data.is_holiday.is_optional ? "Optional Holiday" : "Public Holiday"}</p></div> : data?.status === 'not_joined' ? <div className="py-12 flex flex-col items-center text-center text-slate-400"><FaInfoCircle size={48} className="mb-4 opacity-20" /><p className="font-bold uppercase tracking-widest text-xs">Not Joined on this Date</p></div> : <div className="py-12 flex flex-col items-center text-center text-gray-400"><FaCalendarAlt size={48} className="mb-4 opacity-20" /><p className="font-bold uppercase tracking-widest text-xs">No activity recorded for this day</p></div>}
         </div>
       </motion.div>
     </motion.div>
   );
 };
 
-function EmployeeAttendanceCalendar({ employeeId }) {
+function EmployeeAttendanceCalendar({ employee, fallbackId }) {
+  const employeeId = employee?.id || fallbackId;
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -485,13 +487,14 @@ function EmployeeAttendanceCalendar({ employeeId }) {
     }
     return grid;
   }, [data, month, year]);
-  const summary = data?.summary || {};
+  const summary = data?.meta || {};
+  const shiftDetails = data?.shift_details || {};
   return (
     <div className="max-w-screen-2xl mx-auto pb-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8"><div className="flex items-center gap-4"><h2 className="text-3xl font-black text-gray-900 tracking-tight">{currentDate.toLocaleString("default", { month: "long" })} {year}</h2><AdvancedDateFilter value={{ month, year }} onChange={(filter) => filter.month && filter.year && setCurrentDate(new Date(filter.year, filter.month - 1, 1))} tabOptions={["month"]} placeholder="Select Month" buttonClassName="bg-white border border-gray-100 px-4 py-2.5 rounded-2xl shadow-sm hover:bg-gray-50 transition-all font-bold text-gray-700" /></div><div className="flex flex-wrap items-center gap-3">{["present", "absent", "holiday", "leave", "weekend"].map((s) => <div key={s} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-100 bg-white shadow-sm"><div className={`w-2 h-2 rounded-full ${CALENDAR_STATUS_STYLES[s].color.replace("text-", "bg-")}`} /><span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{CALENDAR_STATUS_STYLES[s].label}</span></div>)}</div></div>
-      <CalendarEmployeeInfo employee={data?.employee} />
+      <CalendarEmployeeInfo employee={{ ...employee, ...shiftDetails, employee_name: employee.name || employee.employee_name, employee_code: employee.code || employee.employee_code }} />
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8"><CalendarSummaryCard label="Total Days" value={summary.total_days || 0} icon={FaCalendarAlt} type="upcoming" /><CalendarSummaryCard label="Present" value={summary.present || 0} icon={FaCheckCircle} type="present" /><CalendarSummaryCard label="Absent" value={summary.absent || 0} icon={FaTimesCircle} type="absent" /><CalendarSummaryCard label="Leaves" value={summary.leave || 0} icon={FaInfoCircle} type="leave" /><CalendarSummaryCard label="Holidays" value={summary.holiday || 0} icon={FaUmbrellaBeach} type="holiday" /><CalendarSummaryCard label="Weekends" value={summary.weekend || 0} icon={FaCalendarAlt} type="weekend" /><CalendarSummaryCard label="Half Days" value={summary.half_day || 0} icon={FaHourglassHalf} type="half_day" /></div>
-      <div className="bg-white rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
+      <div className="bg-white rounded-xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
         {loading && <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-sm flex items-center justify-center"><div className="flex flex-col items-center gap-4"><FaSpinner className="w-10 h-10 animate-spin text-indigo-600" /><p className="text-xs font-black text-indigo-900 uppercase tracking-widest animate-pulse">Synchronizing Data...</p></div></div>}
         <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => <div key={day} className="py-4 text-center"><span className="hidden md:block text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{day}</span><span className="md:hidden text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">{day.slice(0, 3)}</span></div>)}</div>
         <div className="grid grid-cols-7 gap-px bg-gray-100">{error ? <div className="col-span-7 py-32 flex flex-col items-center gap-4 text-rose-500"><FaTimesCircle size={48} className="opacity-20" /><p className="font-black uppercase tracking-widest text-sm">{error}</p><button onClick={() => fetchCalendar(month, year)} className="px-6 py-2.5 bg-rose-50 text-rose-600 rounded-2xl font-bold text-xs uppercase tracking-widest border border-rose-100 hover:bg-rose-100 transition-all">Retry Request</button></div> : calendarGrid.map((cell, idx) => <CalendarCell key={idx} cell={cell} onClick={setSelectedCell} />)}</div>

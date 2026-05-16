@@ -73,6 +73,13 @@ const STATUS_STYLES = {
     label: 'Half Day',
     icon: FaHourglassHalf,
     color: 'text-orange-600'
+  },
+  not_joined: {
+    cell: 'bg-slate-50/30 border-slate-100/50 opacity-60',
+    pill: 'bg-slate-100 text-slate-500 border-slate-200',
+    label: 'Not Joined',
+    icon: FaInfoCircle,
+    color: 'text-slate-400'
   }
 };
 
@@ -162,7 +169,7 @@ const CalendarCell = ({ cell, onClick }) => {
 const SummaryCard = ({ label, value, icon: Icon, type }) => {
   const styles = STATUS_STYLES[type] || STATUS_STYLES.upcoming;
   return (
-    <div className={`p-4 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5`}>
+    <div className={`p-4 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-md hover:-translate-y-0.5`}>
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg ${styles.pill}`}>
         <Icon />
       </div>
@@ -177,7 +184,7 @@ const SummaryCard = ({ label, value, icon: Icon, type }) => {
 const EmployeeInfo = ({ employee }) => {
   if (!employee) return null;
   return (
-    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200 mb-8 relative overflow-hidden group">
+    <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-xl p-6 text-white shadow-xl shadow-indigo-200 mb-8 relative overflow-hidden group">
       {/* Decorative shapes */}
       <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl transition-transform group-hover:scale-110" />
       <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-indigo-400/20 rounded-full blur-3xl transition-transform group-hover:scale-110" />
@@ -297,6 +304,11 @@ const DayDetailsModal = ({ cell, onClose }) => {
                 {data.is_holiday.is_optional ? 'Optional Holiday' : 'Public Holiday'}
               </p>
             </div>
+          ) : data?.status === 'not_joined' ? (
+            <div className="py-12 flex flex-col items-center text-center text-slate-400">
+              <FaInfoCircle size={48} className="mb-4 opacity-20" />
+              <p className="font-bold uppercase tracking-widest text-xs">Not Joined on this Date</p>
+            </div>
           ) : (
             <div className="py-12 flex flex-col items-center text-center text-gray-400">
               <FaCalendarAlt size={48} className="mb-4 opacity-20" />
@@ -390,7 +402,8 @@ const MyCalendar = () => {
     return grid;
   }, [data, month, year]);
 
-  const summary = data?.summary || {};
+  const summary = data?.meta || {};
+  const shiftDetails = data?.shift_details || {};
 
   return (
     <ManagementHub
@@ -429,7 +442,7 @@ const MyCalendar = () => {
         </div>
 
         {/* Employee Profile Section */}
-        <EmployeeInfo employee={{ ...data?.employee, employee_name: user?.name }} />
+        <EmployeeInfo employee={{ ...shiftDetails, employee_name: user?.name, employee_code: user?.employee_code, designation: user?.designation }} />
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
@@ -443,7 +456,7 @@ const MyCalendar = () => {
         </div>
 
         {/* Calendar Grid Container */}
-        <div className="bg-white rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
+        <div className="bg-white rounded-xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden relative">
           {loading && (
             <div className="absolute inset-0 z-20 bg-white/60 backdrop-blur-sm flex items-center justify-center">
               <div className="flex flex-col items-center gap-4">
