@@ -290,14 +290,60 @@ const CalendarCell = ({ cell, onClick }) => {
 
 // ─── Stats Summary Bar ────────────────────────────────────────────────────────
 
-const StatPill = ({ label, value, type }) => {
-  const styles = STATUS_STYLES[type] || STATUS_STYLES.upcoming;
-  const Icon = styles.icon;
+const CALENDAR_STATUS_STYLES = {
+  present: {
+    cell: "bg-emerald-50/60 border-emerald-100",
+    pill: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    label: "Present", dot: "bg-emerald-500", color: "text-emerald-600",
+  },
+  absent: {
+    cell: "bg-rose-50/60 border-rose-100",
+    pill: "bg-rose-100 text-rose-700 border-rose-200",
+    label: "Absent", dot: "bg-rose-500", color: "text-rose-600",
+  },
+  holiday: {
+    cell: "bg-amber-50/60 border-amber-100",
+    pill: "bg-amber-100 text-amber-700 border-amber-200",
+    label: "Holiday", dot: "bg-amber-500", color: "text-amber-600",
+  },
+  weekend: {
+    cell: "bg-slate-50/60 border-slate-100",
+    pill: "bg-slate-100 text-slate-600 border-slate-200",
+    label: "Weekend", dot: "bg-slate-400", color: "text-slate-500",
+  },
+  leave: {
+    cell: "bg-violet-50/60 border-violet-100",
+    pill: "bg-violet-100 text-violet-700 border-violet-200",
+    label: "Leave", dot: "bg-violet-500", color: "text-violet-600",
+  },
+  upcoming: {
+    cell: "bg-white border-gray-100",
+    pill: "bg-gray-100 text-gray-500 border-gray-200",
+    label: "Upcoming", dot: "bg-gray-300", color: "text-gray-400",
+  },
+  half_day: {
+    cell: "bg-orange-50/60 border-orange-100",
+    pill: "bg-orange-100 text-orange-700 border-orange-200",
+    label: "Half Day", dot: "bg-orange-500", color: "text-orange-600",
+  },
+  not_joined: {
+    cell: "bg-slate-50/30 border-slate-100 opacity-50",
+    pill: "bg-slate-100 text-slate-500 border-slate-200",
+    label: "Not Joined", dot: "bg-slate-300", color: "text-slate-400",
+  },
+};
+
+const CalendarSummaryCard = ({ label, value, icon: Icon, type }) => {
+  const styles = CALENDAR_STATUS_STYLES[type] || CALENDAR_STATUS_STYLES.upcoming;
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-gray-100 shadow-sm">
-      <Icon className={`${styles.color} text-xs`} size={12} />
-      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
-      <span className="text-sm font-black text-gray-900 ml-auto">{value}</span>
+    <div className="p-3.5 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center gap-3 hover:shadow-md transition-all hover:-translate-y-0.5">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${styles.pill}`}>
+        <Icon size={14} />
+      </div>
+      <div>
+        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{label}</p>
+        <p className="text-lg font-black text-gray-900">{value}</p>
+      </div>
     </div>
   );
 };
@@ -582,7 +628,7 @@ const MyCalendar = () => {
       const response = await apiCall(`/shifts/my-calendar?month=${m}&year=${y}`, 'GET', null, companyId);
       const json = await response.json();
       if (json.success) {
-        setData(json.data);
+        setData({ ...json.data, meta: json.meta });
       } else {
         setError(json.message || 'Failed to fetch calendar');
         toast.error(json.message || 'Failed to fetch calendar');
@@ -709,15 +755,15 @@ const MyCalendar = () => {
           </div>
         </div>
 
-        {/* ── Stats Row ── */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-5">
-          <StatPill label="Total"    value={meta.total_days || 0} type="upcoming" />
-          <StatPill label="Present"  value={meta.present || 0}    type="present"  />
-          <StatPill label="Absent"   value={meta.absent || 0}     type="absent"   />
-          <StatPill label="Leave"    value={meta.leave || 0}      type="leave"    />
-          <StatPill label="Holiday"  value={meta.holiday || 0}    type="holiday"  />
-          <StatPill label="Weekend"  value={meta.weekend || 0}    type="weekend"  />
-          <StatPill label="Half Day" value={meta.half_day || 0}   type="half_day" />
+        {/* Stats row — from data.meta */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-4">
+          <CalendarSummaryCard label="Total" value={meta.total_days || 0} icon={FaCalendarAlt} type="upcoming" />
+          <CalendarSummaryCard label="Present" value={meta.present || 0} icon={FaCheckCircle} type="present" />
+          <CalendarSummaryCard label="Absent" value={meta.absent || 0} icon={FaTimesCircle} type="absent" />
+          <CalendarSummaryCard label="Leave" value={meta.leave || 0} icon={FaInfoCircle} type="leave" />
+          <CalendarSummaryCard label="Holiday" value={meta.holiday || 0} icon={FaUmbrellaBeach} type="holiday" />
+          <CalendarSummaryCard label="Weekend" value={meta.weekend || 0} icon={FaCalendarAlt} type="weekend" />
+          <CalendarSummaryCard label="Half Day" value={meta.half_day || 0} icon={FaHourglassHalf} type="half_day" />
         </div>
 
         {/* ── Calendar Grid ── */}

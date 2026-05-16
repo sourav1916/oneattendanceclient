@@ -632,7 +632,7 @@ function EmployeeAttendanceCalendar({ employee, fallbackId }) {
       );
       const json = await response.json();
       if (json.success) {
-        setData(json.data);
+        setData({ ...json.data, meta: json.meta });
       } else {
         setError(json.message || "Failed to fetch calendar");
         toast.error(json.message || "Failed to fetch calendar");
