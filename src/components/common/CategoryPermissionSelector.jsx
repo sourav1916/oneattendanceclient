@@ -108,8 +108,8 @@ const CategoryRow = React.memo(({ cat, perms, selectedIds, onToggleCat, onToggle
                 return (
                   <div
                     key={perm.id}
-                    onClick={() => onTogglePerm(perm.id)}
-                    className={`flex items-start gap-2 px-2 py-1.5 rounded-lg cursor-pointer border transition-all duration-150 ${isSelected
+                    onClick={!readOnly ? () => onTogglePerm(perm.id) : undefined}
+                    className={`flex items-start gap-2 px-2 py-1.5 rounded-lg border transition-all duration-150 ${readOnly ? 'cursor-default' : 'cursor-pointer'} ${isSelected
                         ? `${style.bg} ${style.border}`
                         : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-white'
                       }`}
