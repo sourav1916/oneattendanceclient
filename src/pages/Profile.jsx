@@ -16,7 +16,7 @@ const getInitials = (name) =>
     name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
 const formatDate = (iso) => {
-    if (!iso) return "N/A";
+    if (!iso) return "";
     return new Date(iso).toLocaleDateString("en-IN", {
         day: "numeric", month: "short", year: "numeric",
     });
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                                 </span>
                                 <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
                                 <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                                    <FaPhone className="text-indigo-400" />{user.phone}
+                                    <FaPhone className="text-indigo-400" />{user.phone || ''}
                                 </span>
                                 <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
                                 <span className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -303,7 +303,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-slate-800">{company.name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{company.legal_name}</p>
+                                            <p className="text-xs text-slate-500 truncate">{company.legal_name || ''}</p>
                                         </div>
                                         <div className="flex items-center gap-3 flex-shrink-0">
                                             {company.is_active === 1 && (
@@ -342,12 +342,12 @@ export default function ProfilePage() {
                                                             {
                                                                 icon: FaCity,
                                                                 label: "City / State",
-                                                                val: `${company.city}, ${company.state}`,
+                                                                val: [company.city, company.state].filter(Boolean).join(", "),
                                                             },
                                                             {
                                                                 icon: FaGlobe,
                                                                 label: "Country",
-                                                                val: `${company.country} — ${company.postal_code}`,
+                                                                val: [company.country, company.postal_code].filter(Boolean).join(" — "),
                                                             },
                                                             {
                                                                 icon: FaCalendarAlt,

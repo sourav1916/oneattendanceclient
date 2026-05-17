@@ -76,6 +76,7 @@ export default function GoogleAuthButton({
   const [loading,   setLoading]   = useState(false);
   const [sdkReady,  setSdkReady]  = useState(false);
   const callbackRef = useRef(null); // always-fresh callback ref
+  const locationPromiseRef = useRef(null); // location fetch Promise (started on user click)
 
   const endpoint = "/auth/continue/google";
 
@@ -89,15 +90,20 @@ export default function GoogleAuthButton({
     try {
       setLoading(true);
 
-      let locationData = null;
-      try { locationData = await getPreciseLocation(); } catch (_) { /* optional */ }
+      // Await the location promise started on click (may already be resolved)
+      let loc = null;
+      try {
+        if (locationPromiseRef.current) {
+          loc = await locationPromiseRef.current;
+        }
+      } catch (_) { /* location unavailable — send empty strings */ }
 
-      const payload = { credential: credentialResponse.credential };
-      if (locationData) {
-        payload.latitude          = locationData.latitude;
-        payload.longitude         = locationData.longitude;
-        payload.location_accuracy = locationData.accuracy;
-      }
+      const payload = {
+        credential: credentialResponse.credential,
+        platform:   "web",
+        latitude:   loc?.latitude  ?? "",
+        longitude:  loc?.longitude ?? "",
+      };
 
       const response = await apiCall(endpoint, "POST", payload);
       const json     = await response.json().catch(() => ({}));
@@ -157,6 +163,9 @@ export default function GoogleAuthButton({
   // ── forward our visible button's click to Google's hidden button
   const handleVisibleButtonClick = () => {
     if (loading || disabled || !sdkReady) return;
+
+    // Start location fetch on user gesture so the browser shows the permission prompt
+    locationPromiseRef.current = getPreciseLocation().catch(() => null);
 
     // The rendered button is the first <div> or <iframe> child Google puts in
     const googleBtn =
