@@ -176,7 +176,10 @@ export const AuthProvider = ({ children }) => {
         }
 
         // ✅ COMPANIES (MERGE)
-        const ownedCompanies = data.companies?.owned_companies || [];
+        const ownedCompanies = (data.companies?.owned_companies || []).map(c => ({
+          ...c,
+          role: c.role || 'company_owner'
+        }));
         const memberCompanies = data.companies?.companies || [];
         const allCompanies = [...ownedCompanies, ...memberCompanies];
 

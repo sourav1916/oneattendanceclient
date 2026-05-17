@@ -226,13 +226,11 @@ const Signup = () => {
         name: fullName,
         email: email,
         password: password,
-        phone: phone
+        phone: isNaN(phone) || phone === "" ? phone : Number(phone),
+        platform: "web",
+        latitude: locationData?.latitude ?? "",
+        longitude: locationData?.longitude ?? ""
       };
-
-      if (locationData) {
-        payload.latitude = locationData.latitude;
-        payload.longitude = locationData.longitude;
-      }
 
       const res = await apiCall('/auth/signup/complete', 'POST', payload);
 

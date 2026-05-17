@@ -170,14 +170,11 @@ const Login = () => {
 
       const payload = {
         email,
-        otp: otpString
+        otp: otpString,
+        platform: "web",
+        latitude: locationData?.latitude ?? "",
+        longitude: locationData?.longitude ?? ""
       };
-
-      if (locationData) {
-        payload.latitude = locationData.latitude;
-        payload.longitude = locationData.longitude;
-        payload.location_accuracy = locationData.accuracy; // Pass accuracy for record-keeping
-      }
 
       const res = await apiCall('/auth/login/verify-otp', 'POST', payload);
       const json = await res.json();
@@ -395,20 +392,31 @@ const Login = () => {
                       <p className="text-xs text-gray-500">{userCompanies.length} available</p>
                     </div>
                     <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar mb-4">
-                      {userCompanies.map((c) => (
-                        <button key={c.id} onClick={() => handleCompanySelect(c)} className={`w-full text-left p-3 border rounded-xl transition-all ${selectedCompany?.id === c.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">{c.name.charAt(0)}</div>
-                              <div>
-                                <p className="font-semibold text-gray-900 text-sm">{c.name}</p>
-                                <p className="text-xs text-gray-500">{c.email}</p>
+                      {userCompanies.map((c) => {
+                        const formattedRole = c.role
+                          ? c.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                          : 'Employee';
+                        const isOwner = c.role === 'company_owner';
+                        return (
+                          <button key={c.id} onClick={() => handleCompanySelect(c)} className={`w-full text-left p-3 border rounded-xl transition-all ${selectedCompany?.id === c.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{c.name.charAt(0)}</div>
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-gray-900 text-sm truncate">{c.name}</p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${isOwner ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-indigo-50 text-indigo-700 border-indigo-100'}`}>
+                                      <FaUserShield size={8} />
+                                      {formattedRole}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
+                              {selectedCompany?.id === c.id && <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0"><FaCheckCircle className="text-white text-[10px]" /></div>}
                             </div>
-                            {selectedCompany?.id === c.id && <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center"><FaCheckCircle className="text-white text-[10px]" /></div>}
-                          </div>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                     <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleConfirmCompany} disabled={!selectedCompany} className={`w-full py-3 rounded-xl font-semibold shadow-md ${selectedCompany ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
                       Continue to Dashboard
