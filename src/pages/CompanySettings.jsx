@@ -354,9 +354,11 @@ const CompanyManagement = () => {
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
         try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const companyId = company?.id ?? null;
             let url = `/company/list?page=${page}&limit=${pagination.limit}`;
             if (search) url += `&search=${encodeURIComponent(search)}`;
-            const res = await apiCall(url, 'GET');
+            const res = await apiCall(url, 'GET', null, companyId);
             const result = await res.json();
             if (result.success) {
                 setCompanies(result.data || []);

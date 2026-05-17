@@ -6,6 +6,7 @@ const ACCESS_REASONS = {
   NO_PERMISSION: "no_permission",
   NO_COMPANY: "no_company",
   OWNER_RESTRICTED: "owner_restricted",
+  OWNER_ONLY: "owner_only",
   MISSING_CONFIG: "missing_config",
 };
 
@@ -184,7 +185,7 @@ const PERMISSION_ACCESS_CONFIG = {
       permissions: ["att_view_all", "att_verify"],
     },
     companySettings: {
-      permissions: ["company_view", "company_update", "company_delete", "company_manage_settings", "shift_create", "shift_view", "shift_view_all", "shift_update"],
+      requireCompanyOwner: true,
     },
     holidayManagement: {
       permissions: ["holiday_create", "holiday_view", "holiday_update", "holiday_delete"],
@@ -329,18 +330,18 @@ const PERMISSION_ACCESS_CONFIG = {
       read: { permissions: "leave_balance_view_all" },
     },
     companySettings: {
-      read: { permissions: ["company_view", "company_update", "company_delete", "company_manage_settings", "shift_create", "shift_view", "shift_view_all", "shift_update"] },
-      updateCompany: { permissions: "company_update" },
-      updateSettings: { permissions: "company_manage_settings" },
-      updateBranding: { permissions: "company_update" },
-      updateSecurity: { permissions: "company_manage_settings" },
-      updateNotifications: { permissions: "company_manage_settings" },
-      update: { permissions: "company_update" },
-      delete: { permissions: "company_delete" },
-      shiftCreate: { permissions: "shift_create" },
-      shiftRead: { permissions: ["shift_view", "shift_view_all"] },
-      shiftUpdate: { permissions: "shift_update" },
-      shiftDelete: { permissions: "shift_update" },
+      read: { requireCompanyOwner: true },
+      updateCompany: { requireCompanyOwner: true },
+      updateSettings: { requireCompanyOwner: true },
+      updateBranding: { requireCompanyOwner: true },
+      updateSecurity: { requireCompanyOwner: true },
+      updateNotifications: { requireCompanyOwner: true },
+      update: { requireCompanyOwner: true },
+      delete: { requireCompanyOwner: true },
+      shiftCreate: { requireCompanyOwner: true },
+      shiftRead: { requireCompanyOwner: true },
+      shiftUpdate: { requireCompanyOwner: true },
+      shiftDelete: { requireCompanyOwner: true },
     },
     holidayManagement: {
       create: { permissions: "holiday_create" },
@@ -418,6 +419,10 @@ const getAccessMessage = (access) => {
     return "Disabled for company owner";
   }
 
+  if (access.reason === ACCESS_REASONS.OWNER_ONLY) {
+    return "Only the company owner can access this";
+  }
+
   if (access.reason === ACCESS_REASONS.NO_COMPANY) {
     return "Select a company first";
   }
@@ -481,6 +486,7 @@ export const usePermissionAccess = () => {
     disableForCompanyOwner = false,
     requireCompany = false,
     requireAttendanceMethods = false,
+    requireCompanyOwner = false,
   }) => {
     const normalizedPermissions = normalizePermissions(requiredPermissions);
 
@@ -490,6 +496,15 @@ export const usePermissionAccess = () => {
 
     if (disableForCompanyOwner && isCompanyOwnerForCurrentCompany) {
       return buildAccessResult(false, ACCESS_REASONS.OWNER_RESTRICTED, normalizedPermissions);
+    }
+
+    // Hard gate: only company owners are allowed, regardless of permissions
+    if (requireCompanyOwner) {
+      return buildAccessResult(
+        isCompanyOwnerForCurrentCompany,
+        isCompanyOwnerForCurrentCompany ? ACCESS_REASONS.ALLOWED : ACCESS_REASONS.OWNER_ONLY,
+        normalizedPermissions
+      );
     }
 
     if (allowCompanyOwner && isCompanyOwnerForCurrentCompany) {
