@@ -1,0 +1,399 @@
+import { createContext, useContext, useState, useEffect, useRef } from "react";
+import React from "react";
+import apiCall from "../utils/api";
+
+const AuthContext = createContext();
+
+const AUTH_BOOTSTRAP_BYPASS_PATHS = ["/accept-invite"];
+
+const shouldBypassAuthBootstrap = () =>
+  AUTH_BOOTSTRAP_BYPASS_PATHS.some((path) => window.location.pathname === path);
+
+const ATTENDANCE_METHOD_LABELS = {
+  manual: "Manual",
+  gps: "GPS",
+  face: "Face Recognition",
+  qr: "QR Code",
+  fingerprint: "Fingerprint",
+  ip: "IP Address",
+};
+
+const formatAttendanceMethodLabel = (method) => {
+  if (!method) return "";
+  return method
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const normalizeAttendanceMethod = (item) => {
+  if (typeof item === "string") {
+    const method = item.trim().toLowerCase();
+    if (!method) return null;
+
+    return {
+      method,
+      label: ATTENDANCE_METHOD_LABELS[method] || formatAttendanceMethodLabel(method),
+      is_manual: true,
+      is_auto: false,
+    };
+  }
+
+  if (item && typeof item === "object") {
+    const method = String(item.method || item.key || item.id || item.value || "").trim().toLowerCase();
+    if (!method) return null;
+
+    const isAuto = item.is_auto === 1 || item.is_auto === true;
+    const isManual =
+      item.is_manual === 1 ||
+      item.is_manual === true ||
+      (!Object.prototype.hasOwnProperty.call(item, "is_manual") && !isAuto);
+
+    return {
+      ...item,
+      method,
+      label: item.label || ATTENDANCE_METHOD_LABELS[method] || formatAttendanceMethodLabel(method),
+      is_manual: isManual,
+      is_auto: isAuto,
+    };
+  }
+
+  return null;
+};
+
+const normalizeAttendanceMethods = (value) => {
+  if (!value) return [];
+
+  let methods = value;
+  if (typeof methods === "string") {
+    try {
+      methods = JSON.parse(methods);
+    } catch {
+      methods = methods.includes(",")
+        ? methods.split(",").map((method) => method.trim())
+        : [methods.trim()];
+    }
+  }
+
+  if (!Array.isArray(methods)) return [];
+
+  return methods.map(normalizeAttendanceMethod).filter(Boolean);
+};
+
+const isAllowedPermission = (permission) => (
+  permission?.is_allowed === 1 ||
+  permission?.is_allowed === true ||
+  !Object.prototype.hasOwnProperty.call(permission || {}, "is_allowed")
+);
+
+
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [employee, setEmployee] = useState(null);
+  const [company, setCompany] = useState(null);
+  const [companies, setCompanies] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+  const [mustSelectCompany, setMustSelectCompany] = useState(false);
+  const [showCompanySelection, setShowCompanySelection] = useState(false);
+  const [activeRole, setActiveRole] = useState(null);
+  const [userDetails, setUserDetails] = useState(null);
+  const [attendanceMethods, setAttendanceMethods] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [serverUnavailable, setServerUnavailable] = useState(false);
+
+  const triggerRefresh = () => setRefreshKey(prev => prev + 1);
+
+  const initialized = useRef(false);
+
+  // ✅ LOGOUT
+  const logout = async () => {
+    try {
+      // Call the logout API to invalidate the session on the server
+      await apiCall('/auth/logout', 'POST');
+    } catch (error) {
+      console.error("Logout API failed:", error);
+    } finally {
+      // Always clear local data regardless of API success
+      localStorage.removeItem("token");
+      localStorage.removeItem("company");
+
+      setUser(null);
+      setEmployee(null);
+      setCompany(null);
+      setCompanies([]);
+      setPermissions([]);
+      setUserDetails(null);
+      setAttendanceMethods([]);
+      setActiveRole(null);
+
+      setMustSelectCompany(false);
+      setShowCompanySelection(false);
+      setLoading(false);
+      setServerUnavailable(false);
+    }
+  };
+
+  // ✅ FETCH PROFILE
+  const fetchUserProfile = async (token) => {
+    try {
+      const res = await apiCall('/users/profile-role', 'GET');
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          logout();
+          setServerUnavailable(false);
+        } else {
+          console.error("Profile fetch returned non-ok status:", res.status);
+          setServerUnavailable(true);
+        }
+        return;
+      }
+
+      const response = await res.json();
+
+      if (response.success && response.data) {
+        const data = response.data;
+
+        setUserDetails(data);
+
+        // ✅ USER
+        const userData = {
+          id: data.user?.id,
+          name: data.user?.name || "User",
+          full_name: data.user?.name || "User",
+          email: data.user?.email,
+          phone: data.user?.phone,
+          is_active: data.user?.is_active === 1 || data.user?.is_active === true,
+          is_system_admin: data.meta?.is_system_admin === 1 || data.meta?.is_system_admin === true,
+          role: response.role || "employee",
+          profile_picture: data.user?.profile_picture,
+        };
+
+        setUser(userData);
+
+        // ✅ ATTENDANCE METHODS handled below during company selection
+
+        // ✅ EMPLOYEE FLAG
+        if (data.meta?.is_employee) {
+          setEmployee(data.user);
+        } else {
+          setEmployee(null);
+        }
+
+        // ✅ COMPANIES (MERGE)
+        const ownedCompanies = (data.companies?.owned_companies || []).map(c => ({
+          ...c,
+          role: c.role || 'company_owner'
+        }));
+        const memberCompanies = data.companies?.companies || [];
+        const allCompanies = [...ownedCompanies, ...memberCompanies];
+
+        setCompanies(allCompanies);
+
+        const storedCompany = localStorage.getItem("company");
+
+        if (allCompanies.length === 1) {
+          const single = allCompanies[0];
+          setCompany(single);
+          setPermissions(single.permissions || []);
+          setAttendanceMethods(normalizeAttendanceMethods(single.attendance_methods || []));
+          setActiveRole(single.role || null);
+          localStorage.setItem("company", JSON.stringify(single));
+          setMustSelectCompany(false);
+          setShowCompanySelection(false);
+        }
+        else if (allCompanies.length > 1) {
+          if (storedCompany) {
+            const parsed = JSON.parse(storedCompany);
+
+            const found = allCompanies.find(c => c.id === parsed.id);
+
+            if (found) {
+              setCompany(found);
+              setPermissions(found.permissions || []);
+              setAttendanceMethods(normalizeAttendanceMethods(found.attendance_methods || []));
+              setActiveRole(found.role || null);
+              setMustSelectCompany(false);
+              setShowCompanySelection(false);
+            } else {
+              localStorage.removeItem("company");
+              setCompany(null);
+              setMustSelectCompany(true);
+              setShowCompanySelection(true);
+            }
+          } else {
+            setCompany(null);
+            setMustSelectCompany(true);
+            setShowCompanySelection(true);
+          }
+        }
+        else {
+          // No companies
+          setCompanies([]);
+          setCompany(null);
+          setPermissions([]);
+          localStorage.removeItem("company");
+          setMustSelectCompany(false);
+          setShowCompanySelection(false);
+        }
+
+        // Reset serverUnavailable on full success
+        setServerUnavailable(false);
+
+      } else {
+        console.warn("Profile fetch returned success: false");
+        setServerUnavailable(true);
+      }
+    } catch (error) {
+      console.error("Profile fetch failed:", error);
+      setServerUnavailable(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ INIT
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    if (shouldBypassAuthBootstrap()) {
+      setLoading(false);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    fetchUserProfile(token);
+  }, []);
+
+  // ✅ LOGIN
+  const login = async (token) => {
+    localStorage.setItem("token", token);
+    localStorage.removeItem("company");
+    setLoading(true);
+    await fetchUserProfile(token);
+  };
+
+  // ✅ REFRESH
+  const refreshUser = async () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      await fetchUserProfile(token);
+    }
+  };
+
+  // ✅ RETRY CONNECTION
+  const retryConnection = async () => {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    if (token) {
+      await fetchUserProfile(token);
+    } else {
+      setLoading(false);
+      setServerUnavailable(false);
+    }
+  };
+
+  // ✅ SELECT COMPANY
+  const selectCompany = (selectedCompany) => {
+    setCompany(selectedCompany);
+    setPermissions(selectedCompany.permissions || []);
+    setAttendanceMethods(normalizeAttendanceMethods(selectedCompany.attendance_methods || []));
+    setActiveRole(selectedCompany.role || null);
+    localStorage.setItem("company", JSON.stringify(selectedCompany));
+    setMustSelectCompany(false);
+    setShowCompanySelection(false);
+    triggerRefresh();
+  };
+
+  // ✅ GET CURRENT COMPANY
+  const getCurrentCompany = () => {
+    if (company) return company;
+    const storedCompany = localStorage.getItem("company");
+    return storedCompany ? JSON.parse(storedCompany) : null;
+  };
+
+  // ✅ PERMISSION HELPER 🔥
+  const hasPermission = (requiredPermissions) => {
+    // System Admins override
+    if (userDetails?.meta?.is_system_admin === 1) return true;
+    
+    if (!requiredPermissions || requiredPermissions.length === 0) return true;
+    
+    // Support either a single code or an array of codes
+    const permsToCheck = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+    
+    // Return true if the user has AT LEAST ONE of the required permissions active in THIS company
+    return permsToCheck.some(code => 
+      permissions.some(p => p.code === code && isAllowedPermission(p))
+    );
+  };
+
+  // ✅ FINAL VALUE
+  const value = {
+    user,
+    employee,
+    company: getCurrentCompany(),
+    companies,
+    permissions,
+    setCompanies,
+
+    login,
+    logout,
+    refreshUser,
+    selectCompany,
+
+    mustSelectCompany,
+    showCompanySelection,
+    setShowCompanySelection,
+
+    loading,
+    serverUnavailable,
+    retryConnection,
+    isAuthenticated: !!user && !mustSelectCompany,
+
+    // ✅ FLAGS
+    rawPermissions: permissions,
+    hasPermission,
+
+    isEmployee: userDetails?.meta?.is_employee || false,
+    isCompanyOwner: userDetails?.meta?.is_owner || false,
+    isSystemAdmin: userDetails?.meta?.is_system_admin === 1,
+
+    hasMultipleCompanies: companies.length > 1,
+    hasCompanies: companies.length > 0,
+
+    isActive: user?.is_active || false,
+    userRole: user?.role || null,
+
+    employeeDetails: employee,
+    companyDetails: getCurrentCompany(),
+    userDetails,
+    attendanceMethods,
+    activeRole,
+    refreshKey,
+    triggerRefresh,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// ✅ HOOK
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+  return context;
+};
