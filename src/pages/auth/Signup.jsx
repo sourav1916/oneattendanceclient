@@ -153,14 +153,30 @@ const Signup = () => {
       return;
     }
 
+    if (!password) {
+      toast.error("Please set a password");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
     try {
       setLoadingAction("request-otp");
-      const res = await apiCall('/auth/signup/request-otp', 'POST', {
-        email: activeTab === "email" ? email : "",
-        phone: activeTab === "phone" ? (countryCode + phone) : "",
-        signup_type: activeTab,
-      });
 
+      const payload = {
+        signup_type: activeTab,
+      };
+
+      if (activeTab === "phone") {
+        payload.phone = countryCode + phone;
+      } else {
+        payload.email = email;
+      }
+
+      const res = await apiCall('/auth/signup/request-otp', 'POST', payload);
       const data = await res.json();
 
       if (res.ok) {
@@ -196,79 +212,35 @@ const Signup = () => {
     try {
       setLoadingAction("verify-otp");
 
-      const verifyRes = await apiCall('/auth/signup/verify-otp', 'POST', {
+      const payload = {
         signup_type: activeTab,
-        email: activeTab === "email" ? email : "",
-        phone: activeTab === "phone" ? (countryCode + phone) : "",
         otp: Number(otpString),
-        password: "", // Will be configured in Step 3
+        password: password,
         name: fullName,
         platform: "web"
-      });
+      };
 
+      if (activeTab === "phone") {
+        payload.phone = countryCode + phone;
+      } else {
+        payload.email = email;
+      }
+
+      const verifyRes = await apiCall('/auth/signup/verify-otp', 'POST', payload);
       const verifyData = await verifyRes.json();
+
       if (!verifyRes.ok) {
         throw new Error(verifyData.message || "Invalid OTP");
       }
 
-      toast.success("OTP verified successfully ✅");
-      setCurrentStep(3);
+      toast.success("Account created successfully 🎉");
+      const token = verifyData.data?.token || verifyData.token;
+      if (!token) throw new Error("Signup did not return a session token.");
 
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setLoadingAction(null);
-    }
-  };
+      setTimeout(() => {
+        login(token);
+      }, 1500);
 
-  const handleCreateAccount = async () => {
-    if (isLoading) return;
-
-    if (activeTab === "phone" && !email) {
-      toast.error("Please enter your email address");
-      return;
-    }
-
-    if (activeTab === "email" && !phone) {
-      toast.error("Please enter your phone number");
-      return;
-    }
-
-    if (!password) {
-      toast.error("Please set a password");
-      return;
-    }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
-      return;
-    }
-
-    try {
-      setLoadingAction("create-account");
-
-      const fullPhone = countryCode + phone;
-      const payload = {
-        signup_type: activeTab,
-        email: email,
-        password: password,
-        name: fullName,
-        phone: isNaN(fullPhone) || fullPhone === "" ? fullPhone : Number(fullPhone),
-        platform: "web"
-      };
-
-      const res = await apiCall('/auth/signup/complete', 'POST', payload);
-      const json = await res.json();
-
-      if (res.ok) {
-        toast.success("Account created successfully 🎉");
-        const token = json.data?.token || json.token;
-        if (!token) throw new Error("Signup did not return a session token.");
-        setTimeout(() => {
-          login(token);
-        }, 1500);
-      } else {
-        throw new Error(json.message || "Signup failed");
-      }
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -281,11 +253,18 @@ const Signup = () => {
 
     try {
       setLoadingAction("resend-otp");
-      const res = await apiCall('/auth/signup/request-otp', 'POST', {
-        email: activeTab === "email" ? email : "",
-        phone: activeTab === "phone" ? phone : "",
+
+      const payload = {
         signup_type: activeTab,
-      });
+      };
+
+      if (activeTab === "phone") {
+        payload.phone = countryCode + phone;
+      } else {
+        payload.email = email;
+      }
+
+      const res = await apiCall('/auth/signup/request-otp', 'POST', payload);
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
@@ -308,7 +287,6 @@ const Signup = () => {
     switch (currentStep) {
       case 1: return "Create Account";
       case 2: return "Verify OTP";
-      case 3: return "Account Details";
       default: return "Sign Up";
     }
   };
@@ -464,7 +442,6 @@ const Signup = () => {
                 >
                   {currentStep === 1 && "Fill in details using chosen tab below"}
                   {currentStep === 2 && (activeTab === "phone" ? "Enter the code sent to your phone" : "Enter the code sent to your email")}
-                  {currentStep === 3 && "Secure your account with password and secondary email/phone"}
                 </motion.p>
               </motion.div>
 
@@ -585,6 +562,38 @@ const Signup = () => {
                         </div>
                       )}
 
+                      <div className="relative">
+                        <HiOutlineLockClosed className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Choose password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onFocus={() => setFocusedField('password')}
+                          onBlur={() => setFocusedField(null)}
+                          disabled={isLoading}
+                          className="w-full pl-11 pr-11 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                          className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        >
+                          {showPassword ? "👁️" : "👁️‍🗨️"}
+                        </button>
+                      </div>
+
+                      <div className="text-xs text-gray-600">
+                        <p className="mb-1 text-gray-500 font-medium">Password must contain:</p>
+                        <ul className="space-y-1">
+                          <li className={`flex items-center space-x-2 ${password.length >= 6 ? 'text-green-600 font-semibold' : 'text-gray-500'}`}>
+                            <span className={password.length >= 6 ? 'text-green-600' : ''}>✓</span>
+                            <span>At least 6 characters</span>
+                          </li>
+                        </ul>
+                      </div>
+
                       <motion.button
                         whileHover={{ scale: isLoading ? 1 : 1.02 }}
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -698,104 +707,13 @@ const Signup = () => {
                               <FaSpinner className="h-5 w-5 animate-spin" />
                             </div>
                           ) : (
-                            'Verify'
+                            'Create Account'
                           )}
                         </motion.button>
                       </div>
                     </>
                   )}
 
-                  {currentStep === 3 && (
-                    /* Step 3: Secondary Info & Password Setup */
-                    <>
-                      {activeTab === "phone" ? (
-                        <div className="relative">
-                          <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                          <input
-                            type="email"
-                            placeholder="Email Address (secondary)"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={isLoading}
-                            className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <div className="relative w-20 flex-shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => setIsModalOpen(true)}
-                              disabled={isLoading}
-                              className="w-full flex items-center justify-between px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none bg-gray-50 text-sm font-semibold text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
-                            >
-                              <span>
-                                {getFlagEmoji(countryCodes.find(c => c.dial_code === countryCode)?.code || "IN")} +{countryCode}
-                              </span>
-                              <span className="text-gray-400 text-xs">▼</span>
-                            </button>
-                          </div>
-                          <div className="relative flex-grow">
-                            <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                            <input
-                              type="tel"
-                              placeholder="Phone Number (secondary)"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              disabled={isLoading}
-                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="relative">
-                        <HiOutlineLockClosed className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Choose password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          disabled={isLoading}
-                          className="w-full pl-11 pr-11 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          disabled={isLoading}
-                          className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                        >
-                          {showPassword ? "👁️" : "👁️‍🗨️"}
-                        </button>
-                      </div>
-
-                      <div className="text-xs text-gray-600">
-                        <p className="mb-1">Password must contain:</p>
-                        <ul className="space-y-1">
-                          <li className={`flex items-center space-x-2 ${password.length >= 6 ? 'text-green-600' : 'text-gray-500'}`}>
-                            <span className={password.length >= 6 ? 'text-green-600' : ''}>✓</span>
-                            <span>At least 6 characters</span>
-                          </li>
-                        </ul>
-                      </div>
-
-                      <motion.button
-                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                        onClick={handleCreateAccount}
-                        disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-sm"
-                      >
-                        {loadingAction === "create-account" ? (
-                          <div className="flex items-center justify-center">
-                            <FaSpinner className="h-5 w-5 animate-spin" />
-                          </div>
-                        ) : (
-                          'Create Account'
-                        )}
-                      </motion.button>
-                    </>
-                  )}
                 </motion.div>
               </AnimatePresence>
 

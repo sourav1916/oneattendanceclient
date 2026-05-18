@@ -41,7 +41,7 @@ const CountryCodeModal = ({ isOpen, onClose, onSelect, selectedCode }) => {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 border border-gray-100 flex flex-col max-h-[75vh]"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden z-10 border border-gray-100 flex flex-col max-h-[85vh]"
         >
           {/* Header */}
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50">
