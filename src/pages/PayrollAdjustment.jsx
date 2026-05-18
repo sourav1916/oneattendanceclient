@@ -512,7 +512,7 @@ export default function PayrollAdjustment() {
                     </div>
 
                     {/* Bottom Row on md/sm, Right Part on lg */}
-                    <div className="flex flex-row items-center gap-3 justify-between lg:justify-end flex-1 min-w-0">
+                    <div className="flex flex-col lg:flex-row  items-center gap-3 justify-between lg:justify-end flex-1 min-w-0">
                         <div className="flex flex-row items-center gap-3 flex-1 lg:flex-none">
                             {/* Month and Year picker */}
                             <div className="shrink-0">
