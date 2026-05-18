@@ -543,6 +543,7 @@ export default function PayrollAdjustment() {
                                     onChange={(opt) => setAdjustmentType(opt ? opt.value : '')}
                                     isClearable={false}
                                     placeholder="Adjustment Type"
+                                    styles={{ control: (base) => ({ ...base, minHeight: '42px', height: '42px' }) }}
                                 />
                             </div>
                         </div>
