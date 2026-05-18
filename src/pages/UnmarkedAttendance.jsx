@@ -99,7 +99,6 @@ const toTimeString = (minutes) => {
 const parseHToMinutes = (str) => {
   if (!str) return null;
   const normalized = String(str).trim();
-  // Handle HH:mm format
   const colonMatch = normalized.match(/^(\d{1,2}):(\d{1,2})$/);
   if (colonMatch) {
     return parseInt(colonMatch[1], 10) * 60 + parseInt(colonMatch[2], 10);
@@ -171,17 +170,9 @@ const normalizeAttendanceRecord = (record) => {
     is_overtime: isOvertime,
     is_deductible: isDeductible,
     flags: {
-      overtime: {
-        enabled: isOvertime,
-        minutes: overtimeMinutes,
-      },
-      deductible: {
-        enabled: isDeductible,
-        minutes: deductibleMinutes,
-      },
-      half_day: {
-        enabled: flags.half_day?.enabled ?? dayStatus === 'half_day',
-      },
+      overtime: { enabled: isOvertime, minutes: overtimeMinutes },
+      deductible: { enabled: isDeductible, minutes: deductibleMinutes },
+      half_day: { enabled: flags.half_day?.enabled ?? dayStatus === 'half_day' },
     },
   };
 };
@@ -197,9 +188,6 @@ const pickPunchAttendance = (attendances = []) => {
   return normalized.find(att => att.punch_in || att.punch_out) || null;
 };
 
-// â”€â”€â”€ MAP API EMPLOYEE â†’ UI EMPLOYEE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// The API returns attendances[] â€” we take the MOST RELEVANT entry for display.
-// We use employee_id as the stable unique key for selection.
 const mapApiEmployee = (emp, fallbackDate) => {
   const attendances = emp.attendances || [];
   const att = pickPrimaryAttendance(attendances);
@@ -213,8 +201,10 @@ const mapApiEmployee = (emp, fallbackDate) => {
   const displayPunchIn = primaryPunchIn || punchAtt?.punch_in || null;
   const displayPunchOut = primaryPunchOut || punchAtt?.punch_out || null;
 
+  // Detect half_day_type from existing attendance record
+  const halfDayType = att?.half_day_type || null;
+
   return {
-    // Use employee_id as stable unique ID for selection logic
     id: emp.employee_id,
     employee_id: emp.employee_id,
     user_id: emp.user_id,
@@ -225,10 +215,9 @@ const mapApiEmployee = (emp, fallbackDate) => {
     employee_code: emp.employee_code,
     designation: emp.designation || '',
     department: emp.designation ? emp.designation.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '',
-    status: emp.status,    // employee active/inactive status
+    status: emp.status,
     joining_date: emp.joining_date,
 
-    // Shift info
     shift_start: emp.shift?.start_time || null,
     shift_end: emp.shift?.end_time || null,
     shift_label: emp.shift
@@ -237,18 +226,15 @@ const mapApiEmployee = (emp, fallbackDate) => {
     expected_work_minutes: emp.shift?.expected_work_minutes || 0,
     grace_minutes: emp.shift?.grace_minutes || 0,
 
-    // Display date
     date: displayDate,
     day_label: displayDate
       ? new Date(`${displayDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
       : '',
 
-    // All raw attendance records (for logs / multi-entry awareness)
     attendances: attendances,
-
-    // Primary attendance record values
     attendance_id: att?.attendance_id || null,
     day_status: att?.day_status || 'unmarked',
+    half_day_type: halfDayType,
     is_verified: att?.is_verified || false,
     is_deductible: isDeductible,
     is_overtime: isOvertime,
@@ -271,6 +257,7 @@ const mapApiEmployee = (emp, fallbackDate) => {
     attendance_record: att,
   };
 };
+
 const buildMarkPayload = (emp, action, options = {}) => {
   const {
     punchIn = emp.punch_in || emp.shift_start || '09:00',
@@ -312,29 +299,46 @@ const buildMarkPayload = (emp, action, options = {}) => {
       };
 
     case 'absent':
-      return {
-        ...base,
-        status: 'absent',
-      };
+      return { ...base, status: 'absent' };
 
-    case 'fine': // Deduction: mark present + is_deductible
+    // Deductible: toggle is_deductible on existing present/half_day record
+    case 'allow_deductible':
       return {
         ...base,
-        status: 'present',
-        start_time: getExactPunchTime(punchIn) || '09:00',
-        end_time: getExactPunchTime(punchOut) || '18:00',
+        status: emp.day_status,
+        start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
+        end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
         is_deductible: true,
-        is_overtime: false,
+        is_overtime: Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
       };
-
-    case 'ot': // Overtime: mark present + is_overtime
+    case 'remove_deductible':
       return {
         ...base,
-        status: 'present',
-        start_time: getExactPunchTime(punchIn) || '09:00',
-        end_time: getExactPunchTime(punchOut) || '18:00',
-        is_overtime: true,
+        status: emp.day_status,
+        start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
+        end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
         is_deductible: false,
+        is_overtime: Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
+      };
+
+    // Overtime: toggle is_overtime on existing present/half_day record
+    case 'allow_overtime':
+      return {
+        ...base,
+        status: emp.day_status,
+        start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
+        end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
+        is_overtime: true,
+        is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
+      };
+    case 'remove_overtime':
+      return {
+        ...base,
+        status: emp.day_status,
+        start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
+        end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
+        is_overtime: false,
+        is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
       };
 
     case 'paid_leave':
@@ -347,7 +351,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
         leave_day_overtime: leaveDayOvertime,
       };
 
-    case 'actual_data': // Bulk: use shift times
+    case 'actual_data':
       return {
         ...base,
         status: 'present',
@@ -362,7 +366,6 @@ const buildMarkPayload = (emp, action, options = {}) => {
   }
 };
 
-// ─── STATUS SELECT ─────────────────────────────────────────────────────────────
 const buildBulkApprovePayload = (employees, action, notes, options = {}) => {
   if (!Array.isArray(employees) || employees.length === 0) return null;
 
@@ -405,6 +408,8 @@ const buildBulkApprovePayload = (employees, action, notes, options = {}) => {
 
   return payload;
 };
+
+// ─── STATUS SELECT ─────────────────────────────────────────────────────────────
 const StatusSelect = ({ value, onChange, options }) => {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
@@ -484,18 +489,156 @@ const SummaryBar = ({ counts }) => {
   );
 };
 
-// ─── MANAGE ATTENDANCE MODAL ───────────────────────────────────────────────────
+// ─── DEDUCTIBLE / OVERTIME ACTION MODAL ───────────────────────────────────────
+// Compact confirm modal — NO punch in/out fields
+const FlagActionModal = ({ employee, flagType, onClose, onSubmit }) => {
+  const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  const isDeductible = flagType === 'deductible';
+  const currentlyEnabled = isDeductible
+    ? Boolean(employee?.is_deductible || employee?.flags?.deductible?.enabled)
+    : Boolean(employee?.is_overtime || employee?.is_ot || employee?.flags?.overtime?.enabled);
+
+  const action = currentlyEnabled
+    ? (isDeductible ? 'remove_deductible' : 'remove_overtime')
+    : (isDeductible ? 'allow_deductible' : 'allow_overtime');
+
+  const config = isDeductible
+    ? {
+      label: 'Deduction',
+      icon: FaMoneyBillWave,
+      color: 'rose',
+      allowLabel: 'Allow Deduction',
+      removeLabel: 'Remove Deduction',
+      allowDesc: 'Mark this attendance as having a salary deduction applied.',
+      removeDesc: 'Remove the deduction flag from this attendance record.',
+      deductMins: (employee?.calculations?.late_minutes || 0) +
+        (employee?.calculations?.early_leave_minutes || 0) +
+        (employee?.calculations?.extra_break_minutes || 0),
+    }
+    : {
+      label: 'Overtime',
+      icon: FaClock,
+      color: 'orange',
+      allowLabel: 'Allow Overtime',
+      removeLabel: 'Remove Overtime',
+      allowDesc: 'Mark this attendance as having overtime hours eligible for compensation.',
+      removeDesc: 'Remove the overtime flag from this attendance record.',
+      otMins: employee?.calculations?.overtime_minutes || 0,
+    };
+
+  const Icon = config.icon;
+  const colorMap = {
+    rose: { bg: 'bg-rose-50', border: 'border-rose-100', icon: 'bg-rose-100 text-rose-600', title: 'text-rose-900', desc: 'text-rose-700/70', badge: 'bg-rose-100 text-rose-700', btn: 'rose' },
+    orange: { bg: 'bg-orange-50', border: 'border-orange-100', icon: 'bg-orange-100 text-orange-600', title: 'text-orange-900', desc: 'text-orange-700/70', badge: 'bg-orange-100 text-orange-700', btn: 'amber' },
+  };
+  const c = colorMap[config.color];
+
+  const handleApply = async () => {
+    setLoading(true);
+    try {
+      const payload = buildMarkPayload(employee, action, { notes });
+      await onSubmit(payload);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={currentlyEnabled ? config.removeLabel : config.allowLabel}
+      subtitle={employee?.name}
+      size="md"
+      footer={
+        <>
+          <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
+          <ManagementButton tone={c.btn} loading={loading} onClick={handleApply}>
+            {currentlyEnabled ? config.removeLabel : config.allowLabel}
+          </ManagementButton>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {/* Status card */}
+        <div className={`rounded-2xl border ${c.border} ${c.bg} p-4 flex gap-3 items-start`}>
+          <div className={`h-10 w-10 shrink-0 rounded-xl flex items-center justify-center ${c.icon}`}>
+            <Icon size={18} />
+          </div>
+          <div>
+            <h4 className={`text-sm font-black ${c.title}`}>
+              {currentlyEnabled ? `Remove ${config.label}` : `Allow ${config.label}`}
+            </h4>
+            <p className={`text-xs font-medium mt-0.5 ${c.desc}`}>
+              {currentlyEnabled ? config.removeDesc : config.allowDesc}
+            </p>
+          </div>
+        </div>
+
+        {/* Current status info */}
+        <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Status</p>
+            <p className="text-sm font-bold text-slate-700 mt-0.5">
+              {STATUS_CONFIG[employee?.day_status]?.label || 'Unknown'} ·{' '}
+              {employee?.punch_in ? formatTime(employee.punch_in) : '—'} → {employee?.punch_out ? formatTime(employee.punch_out) : '—'}
+            </p>
+          </div>
+          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${currentlyEnabled ? `${c.badge}` : 'bg-slate-200 text-slate-500'}`}>
+            {currentlyEnabled ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+
+        {/* Calculated minutes hint */}
+        {isDeductible && config.deductMins > 0 && (
+          <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-100 px-4 py-2.5">
+            <FaMoneyBillWave size={12} className="text-rose-500 shrink-0" />
+            <p className="text-xs font-bold text-rose-700">
+              Calculated deductible time: <strong>{formatMins(config.deductMins)}</strong>
+              {employee?.calculations?.late_minutes > 0 && ` (Late: ${formatMins(employee.calculations.late_minutes)})`}
+              {employee?.calculations?.early_leave_minutes > 0 && ` (Early out: ${formatMins(employee.calculations.early_leave_minutes)})`}
+              {employee?.calculations?.extra_break_minutes > 0 && ` (Extra break: ${formatMins(employee.calculations.extra_break_minutes)})`}
+            </p>
+          </div>
+        )}
+        {!isDeductible && config.otMins > 0 && (
+          <div className="flex items-center gap-2 rounded-xl bg-orange-50 border border-orange-100 px-4 py-2.5">
+            <FaClock size={12} className="text-orange-500 shrink-0" />
+            <p className="text-xs font-bold text-orange-700">
+              Calculated overtime: <strong>{formatMins(config.otMins)}</strong>
+            </p>
+          </div>
+        )}
+
+        {/* Notes */}
+        <div>
+          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes / Reason (optional)</label>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={2}
+            placeholder="Add any details or reasoning..."
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+          />
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── MANAGE ATTENDANCE MODAL (4 tabs only) ─────────────────────────────────────
 const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [activeTab, setActiveTab] = useState(initialTab || 'present');
   const [loading, setLoading] = useState(false);
   const [punchIn, setPunchIn] = useState('');
   const [punchOut, setPunchOut] = useState('');
   const [notes, setNotes] = useState('');
-  const [halfSession, setHalfSession] = useState('first');
-  const [isOt, setIsOt] = useState(false);
-  const [isDeductible, setIsDeductible] = useState(false);
-  const [isOvertimeWork, setIsOvertimeWork] = useState(false);
-  const [overtimeDuration, setOvertimeDuration] = useState('');
+
+  // Half day: default from existing data
+  const defaultHalfSession = employee?.half_day_type === 'second_half' ? 'second' : 'first';
+  const [halfSession, setHalfSession] = useState(defaultHalfSession);
 
   // Leave tab
   const [leaveSubTab, setLeaveSubTab] = useState('paid');
@@ -503,6 +646,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [leavesLoading, setLeavesLoading] = useState(false);
   const fetchStartedRef = useRef(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
+  const [isOvertimeWork, setIsOvertimeWork] = useState(false);
+  const [overtimeDuration, setOvertimeDuration] = useState('');
 
   // Sync state when employee changes
   useEffect(() => {
@@ -516,16 +661,16 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     const defaultOut = hasRowPunchData ? (rowPunchOut || shiftOut) : shiftOut;
     setPunchIn(defaultIn);
     setPunchOut(defaultOut);
-    setIsOt(Boolean(employee?.is_overtime || employee?.is_ot || employee?.flags?.overtime?.enabled || (employee?.calculations?.overtime_minutes || 0) > 0));
-    setIsDeductible(Boolean(employee?.is_deductible || employee?.flags?.deductible?.enabled || (employee?.calculations?.late_minutes || 0) > 0 || (employee?.calculations?.early_leave_minutes || 0) > 0 || (employee?.calculations?.extra_break_minutes || 0) > 0));
     setNotes('');
-    setHalfSession('first');
+    // Default half session from existing data
+    setHalfSession(employee?.half_day_type === 'second_half' ? 'second' : 'first');
     setLeaveSubTab('paid');
     setSelectedLeave(null);
     setIsOvertimeWork(false);
     setOvertimeDuration('');
   }, [employee?.employee_id, initialTab]);
 
+  // Auto-calculate half day punch times
   useEffect(() => {
     if (activeTab !== 'half_day') return;
     const { punchIn: autoPunchIn, punchOut: autoPunchOut } = getHalfDayWindow(
@@ -537,7 +682,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     setPunchOut(autoPunchOut);
   }, [activeTab, halfSession, employee?.shift_start, employee?.shift_end]);
 
-  // Fetch leave types when leave tab opens
+  // Fetch leave types
   useEffect(() => {
     if (activeTab !== 'paid_leave') return;
     if (leaveConfigs.length > 0 || leavesLoading || fetchStartedRef.current) return;
@@ -558,7 +703,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     fetchLeaves();
   }, [activeTab]);
 
-  // Live calculation metrics
+  // Live calculation for present tab
   const metrics = useMemo(() => {
     const toMins = (t) => {
       if (!t) return 0;
@@ -582,7 +727,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       window: `${formatTime(shiftStart) || '09:00 AM'} – ${formatTime(shiftEnd) || '06:00 PM'}`,
       isOvertime: diff > graceMins,
       isDeductible: diff < -graceMins,
-      isHalfDay: actualMins > 0 && actualMins < (expectedMins / 2 + 30),
       diffMins: Math.abs(diff),
       diffLabel: formatMins(Math.abs(diff)),
       status: diff >= -graceMins ? 'Within scheduled time' : 'Below scheduled time',
@@ -592,34 +736,28 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     };
   }, [punchIn, punchOut, employee]);
 
+  // Only 4 tabs now
   const TABS = [
     { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'half_day', label: 'Half Day', icon: FaHourglassHalf, color: 'text-sky-500', bg: 'bg-sky-50' },
     { id: 'absent', label: 'Absent', icon: FaTimesCircle, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { id: 'fine', label: 'Deduction', icon: FaMoneyBillWave, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { id: 'ot', label: 'Overtime', icon: FaClock, color: 'text-orange-500', bg: 'bg-orange-50' },
     { id: 'paid_leave', label: 'Leave', icon: FaUmbrellaBeach, color: 'text-violet-500', bg: 'bg-violet-50' },
   ];
 
   const handleApply = async () => {
     setLoading(true);
     try {
-      let options = {
-        notes,
-        punchIn,
-        punchOut,
-        halfDayType: halfSession === 'second' ? 'second_half' : 'first_half',
-      };
+      let options = { notes, punchIn, punchOut };
 
       if (activeTab === 'present') {
         if (!punchIn || !punchOut) { toast.error('Punch In & Out are required'); return; }
-        options.isOvertime = isOt !== null ? isOt : metrics.isOvertime;
-        options.isDeductible = isDeductible !== null ? isDeductible : metrics.isDeductible;
+        options.isOvertime = metrics.isOvertime;
+        options.isDeductible = metrics.isDeductible;
       }
 
-      if ((activeTab === 'half_day' || activeTab === 'fine' || activeTab === 'ot') && (!punchIn || !punchOut)) {
-        toast.error('Punch In & Out are required');
-        return;
+      if (activeTab === 'half_day') {
+        if (!punchIn || !punchOut) { toast.error('Punch In & Out are required'); return; }
+        options.halfDayType = halfSession === 'second' ? 'second_half' : 'first_half';
       }
 
       if (activeTab === 'paid_leave') {
@@ -654,7 +792,8 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   };
 
   const activeTabMeta = TABS.find(t => t.id === activeTab);
-  const toneColor = activeTabMeta?.color.split('-')[1] || 'indigo';
+  const toneMap = { present: 'emerald', half_day: 'blue', absent: 'rose', paid_leave: 'violet' };
+  const toneColor = toneMap[activeTab] || 'indigo';
   const shiftPunchIn = getExactPunchTime(employee?.shift_start) || '09:00';
   const shiftPunchOut = getExactPunchTime(employee?.shift_end) || '18:00';
 
@@ -667,7 +806,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
               <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
             </div>
-            {/* Live metrics */}
             <div className={`rounded-2xl border p-4 transition-colors ${metrics.statusColor}`}>
               <div className="flex justify-between items-center mb-3">
                 <span className="text-[11px] font-black uppercase tracking-wider">{metrics.status}</span>
@@ -687,26 +825,24 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                 ))}
               </div>
             </div>
-            {/* OT / Deductible toggles */}
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Overtime', val: isOt, set: setIsOt, auto: metrics.isOvertime, color: 'orange' },
-                { label: 'Deductible', val: isDeductible, set: setIsDeductible, auto: metrics.isDeductible, color: 'rose' },
+                { label: 'Overtime', val: metrics.isOvertime, color: 'orange', auto: true },
+                { label: 'Deductible', val: metrics.isDeductible, color: 'rose', auto: true },
               ].map(c => (
                 <div
                   key={c.label}
-                  onClick={() => c.set(v => !v)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all select-none
-                    ${c.val ? `bg-${c.color}-50 border-${c.color}-200` : 'bg-white border-slate-100 hover:border-slate-200'}`}
+                  className={`p-4 rounded-2xl border select-none
+                    ${c.val ? `bg-${c.color}-50 border-${c.color}-200` : 'bg-white border-slate-100'}`}
                 >
                   <div className="flex justify-between items-center">
                     <p className="text-[11px] font-black text-slate-800">{c.label}</p>
-                    <div className={`h-5 w-9 rounded-full p-0.5 transition-colors ${c.val ? `bg-${c.color}-500` : 'bg-slate-200'}`}>
+                    <div className={`h-5 w-9 rounded-full p-0.5 ${c.val ? `bg-${c.color}-500` : 'bg-slate-200'}`}>
                       <div className={`h-4 w-4 rounded-full bg-white shadow transition-transform ${c.val ? 'translate-x-4' : ''}`} />
                     </div>
                   </div>
                   <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">
-                    Auto: {c.auto ? 'Yes' : 'No'}
+                    Auto-detected: {c.val ? 'Yes' : 'No'}
                   </p>
                 </div>
               ))}
@@ -720,26 +856,49 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
             <div>
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Session</label>
               <div className="grid grid-cols-2 gap-3">
-                {['first', 'second'].map(s => (
-                  <ManagementButton
-                    key={s}
-                    tone="blue"
-                    variant={halfSession === s ? 'solid' : 'soft'}
-                    onClick={() => setHalfSession(s)}
+                {[
+                  { id: 'first', label: '1st Half (Morning)', desc: 'Shift start → Midpoint' },
+                  { id: 'second', label: '2nd Half (Afternoon)', desc: 'Midpoint → Shift end' },
+                ].map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setHalfSession(s.id)}
+                    className={`p-3 rounded-xl border text-left transition-all ${halfSession === s.id
+                      ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-100'
+                      : 'bg-white border-slate-100 hover:border-sky-200'
+                      }`}
                   >
-                    {s === 'first' ? '1st Half' : '2nd Half'}
-                  </ManagementButton>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-xs font-black text-slate-800">{s.label}</p>
+                      {halfSession === s.id && (
+                        <div className="h-4 w-4 rounded-full bg-sky-500 flex items-center justify-center">
+                          <FaCheck size={8} className="text-white" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium">{s.desc}</p>
+                  </button>
                 ))}
               </div>
             </div>
+
+            {/* Show if this came from existing data */}
+            {employee?.half_day_type && (
+              <div className="flex items-center gap-2 rounded-xl bg-sky-50 border border-sky-100 px-3 py-2">
+                <FaCheckCircle size={11} className="text-sky-500 shrink-0" />
+                <p className="text-[10px] font-bold text-sky-700">
+                  Current record: <strong>{employee.half_day_type === 'second_half' ? '2nd Half' : '1st Half'}</strong> — defaulted above
+                </p>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-sky-100 bg-sky-50/50 px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-sky-500">
-                Auto calculated from shift
-              </p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-sky-500">Auto calculated from shift</p>
               <p className="mt-1 text-xs font-semibold text-sky-700">
                 {halfSession === 'first'
-                  ? 'Punch In will use shift start and Punch Out will use the midpoint.'
-                  : 'Punch In will use the midpoint and Punch Out will use shift end.'}
+                  ? 'Punch In uses shift start, Punch Out uses the midpoint.'
+                  : 'Punch In uses the midpoint, Punch Out uses shift end.'}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -762,56 +921,9 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
           </div>
         );
 
-      case 'fine':
-        return (
-          <div className="space-y-5">
-            {(employee?.calculations?.late_minutes || 0) > 0 && (
-              <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4 flex gap-3">
-                <div className="h-10 w-10 shrink-0 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center">
-                  <FaMoneyBillWave size={16} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-rose-900">Late Arrival Detected</h4>
-                  <p className="text-xs text-rose-700/70 font-medium">
-                    Late by {formatMins(employee.calculations.late_minutes)}.
-                  </p>
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
-              <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
-            </div>
-          </div>
-        );
-
-      case 'ot':
-        return (
-          <div className="space-y-5">
-            {(employee?.calculations?.overtime_minutes || 0) > 0 && (
-              <div className="bg-orange-50/50 border border-orange-100 rounded-2xl p-4 flex gap-3">
-                <div className="h-10 w-10 shrink-0 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
-                  <FaClock size={16} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-orange-900">Overtime Calculation</h4>
-                  <p className="text-xs text-orange-700/70 font-medium">
-                    Calculated OT: {formatMins(employee.calculations.overtime_minutes)}.
-                  </p>
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-4">
-              <TimePickerField label="Punch In" value={punchIn} initialValue={shiftPunchIn} onChange={setPunchIn} />
-              <TimePickerField label="Punch Out" value={punchOut} initialValue={shiftPunchOut} onChange={setPunchOut} />
-            </div>
-          </div>
-        );
-
       case 'paid_leave':
         return (
           <div className="space-y-4">
-            {/* Sub-tab */}
             <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
               {[{ id: 'paid', label: '💳 Paid Leave' }, { id: 'unpaid', label: '🔴 Unpaid Leave' }].map(tab => (
                 <button
@@ -842,8 +954,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                         <div
                           key={leave.id}
                           onClick={() => setSelectedLeave({ type: 'leave', data: leave })}
-                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100' : 'bg-white border-slate-100 hover:border-violet-200'
-                            }`}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-violet-50 border-violet-300 ring-2 ring-violet-100' : 'bg-white border-slate-100 hover:border-violet-200'}`}
                         >
                           <div className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${isSelected ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -858,7 +969,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                         </div>
                       );
                     })}
-                    {/* Weekend & Holiday */}
                     {[
                       { id: 'weekend', label: 'Weekend', icon: FaCalendarAlt, color: 'sky' },
                       { id: 'holiday', label: 'Holiday', icon: FaUmbrellaBeach, color: 'amber' },
@@ -869,8 +979,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
                         <div
                           key={opt.id}
                           onClick={() => setSelectedLeave({ type: opt.id })}
-                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'
-                            }`}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? `bg-${opt.color}-50 border-${opt.color}-300 ring-2 ring-${opt.color}-100` : 'bg-white border-slate-100 hover:border-slate-200'}`}
                         >
                           <div className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? `bg-${opt.color}-500 text-white` : 'bg-slate-100 text-slate-500'}`}>
@@ -903,7 +1012,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             )}
 
-            {/* Overtime Switch */}
             <div className="flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
               <div className="flex items-center gap-3">
                 <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-colors ${isOvertimeWork ? 'bg-orange-100 text-orange-600' : 'bg-slate-200 text-slate-500'}`}>
@@ -923,7 +1031,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </button>
             </div>
 
-            {/* Overtime Duration Input */}
             <AnimatePresence>
               {isOvertimeWork && (
                 <motion.div
@@ -971,7 +1078,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       }
     >
       <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
-        {/* Tab nav */}
+        {/* Tab nav — 4 tabs only */}
         <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center p-2 gap-1 overflow-x-auto scrollbar-hide">
           {TABS.map(tab => {
             const Icon = tab.icon;
@@ -980,8 +1087,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap group ${isActive ? `bg-white shadow-sm border border-slate-200 ${tab.color}` : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'
-                  }`}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 whitespace-nowrap group ${isActive ? `bg-white shadow-sm border border-slate-200 ${tab.color}` : 'text-slate-500 hover:bg-white/50 hover:text-slate-800'}`}
               >
                 <div className={`shrink-0 h-6 w-6 rounded-md flex items-center justify-center transition-colors ${isActive ? tab.bg : 'bg-slate-100 group-hover:bg-slate-200'}`}>
                   <Icon size={12} />
@@ -991,7 +1097,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
             );
           })}
         </div>
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-white">
           {renderContent()}
           <hr className="border-slate-100" />
@@ -1035,7 +1140,6 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
   useEffect(() => {
     if (action !== 'paid_leave') return;
     if (leaveConfigs.length > 0 || leavesLoading || fetchStartedRef.current) return;
-
     const fetchLeaves = async () => {
       fetchStartedRef.current = true;
       setLeavesLoading(true);
@@ -1050,7 +1154,6 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
         setLeavesLoading(false);
       }
     };
-
     fetchLeaves();
   }, [action, leaveConfigs.length]);
 
@@ -1059,17 +1162,9 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
       toast.error('Please select a paid leave value');
       return;
     }
-
     setLoading(true);
     try {
-      await onSubmit({
-        action,
-        employees: bulkEmps,
-        notes,
-        halfSession,
-        leaveSubTab,
-        selectedLeave,
-      });
+      await onSubmit({ action, employees: bulkEmps, notes, halfSession, leaveSubTab, selectedLeave });
     } finally {
       setLoading(false);
     }
@@ -1166,10 +1261,7 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
                         })}
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: 'weekend', label: 'Weekend' },
-                          { id: 'holiday', label: 'Holiday' },
-                        ].map((opt) => {
+                        {[{ id: 'weekend', label: 'Weekend' }, { id: 'holiday', label: 'Holiday' }].map((opt) => {
                           const isSelected = selectedLeave?.type === opt.id;
                           return (
                             <button
@@ -1205,23 +1297,37 @@ const BulkAttendanceModal = ({ employees: bulkEmps, action, onClose, onSubmit })
     </Modal>
   );
 };
+
+// ─── EMPLOYEE ATTENDANCE CARD ──────────────────────────────────────────────────
 const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
   const statusCfg = STATUS_CONFIG[emp.day_status] || STATUS_CONFIG.unmarked;
   const cardActionsDisabled = isSelectionMode && selected;
+
+  const canShowFlagActions = emp.day_status === 'present' || emp.day_status === 'half_day';
+
+  // ✅ Only use the actual flags from API response — NOT derived from calculations
+  const isDeductible = Boolean(emp.is_deductible || emp.flags?.deductible?.enabled);
+  const isOvertime = Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled);
+
+  const deductMins = (emp.calculations?.late_minutes || 0) +
+    (emp.calculations?.early_leave_minutes || 0) +
+    (emp.calculations?.extra_break_minutes || 0);
+  const otMins = emp.calculations?.overtime_minutes || 0;
+
   const verificationCardClass = emp.is_verified
     ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
     : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70';
   const verificationBadgeClass = emp.is_verified
     ? 'bg-emerald-600 text-white'
     : 'bg-amber-600 text-white';
+
   return (
     <div className="relative">
       {isSelectionMode && (
         <button
           type="button"
           onClick={e => { e.stopPropagation(); onToggleSelect?.(emp); }}
-          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
-            }`}
+          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'}`}
         >
           {selected && <FaCheck size={9} />}
         </button>
@@ -1251,7 +1357,7 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
           </div>
         }
       >
-        <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
+        <div className={`flex flex-col md:flex-row gap-6 md:items-start ${isSelectionMode ? 'pl-5' : ''}`}>
           {/* Info */}
           <div className="flex-1 space-y-1">
             <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
@@ -1266,37 +1372,22 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
               Expected: <span className="font-black">{formatMinutes(emp.expected_work_minutes)}</span>
             </p>
             <div className="flex flex-wrap gap-3 text-xs">
-              <span>
-                In:{' '}
-                <span className={emp.punch_in ? 'text-emerald-600 font-bold' : 'text-slate-400 font-semibold'}>
-                  {emp.punch_in ? formatTime(emp.punch_in) : '—'}
-                </span>
-              </span>
+              <span>In: <span className={emp.punch_in ? 'text-emerald-600 font-bold' : 'text-slate-400 font-semibold'}>{emp.punch_in ? formatTime(emp.punch_in) : '—'}</span></span>
               <span className="text-gray-300">|</span>
-              <span>
-                Out:{' '}
-                <span className={emp.punch_out ? 'text-emerald-600 font-bold' : 'text-slate-400 font-semibold'}>
-                  {emp.punch_out ? formatTime(emp.punch_out) : '—'}
-                </span>
-              </span>
+              <span>Out: <span className={emp.punch_out ? 'text-emerald-600 font-bold' : 'text-slate-400 font-semibold'}>{emp.punch_out ? formatTime(emp.punch_out) : '—'}</span></span>
               {emp.calculations?.worked_minutes > 0 && (
                 <><span className="text-gray-300">|</span><span className="text-gray-600 font-semibold">Worked: <strong>{formatMins(emp.calculations.worked_minutes)}</strong></span></>
               )}
             </div>
+
+            {/* ✅ Status badges — only shown when truly active from API flags */}
             <div className="flex flex-wrap items-center gap-2">
-              {Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) && (
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Deductible</span>
+              {canShowFlagActions && isDeductible && deductMins > 0 && (
+                <span className="text-[10px] text-rose-500 font-bold">Late: {formatMins(deductMins)}</span>
               )}
-              {Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) && (
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">Overtime</span>
+              {canShowFlagActions && isOvertime && otMins > 0 && (
+                <span className="text-[10px] text-orange-500 font-bold">OT: {formatMins(otMins)}</span>
               )}
-              {(emp.calculations?.late_minutes || 0) > 0 && (
-                <span className="text-[10px] text-rose-500 font-bold">Late: {formatMins(emp.calculations.late_minutes)}</span>
-              )}
-              {(emp.calculations?.overtime_minutes || 0) > 0 && (
-                <span className="text-[10px] text-orange-500 font-bold">OT: {formatMins(emp.calculations.overtime_minutes)}</span>
-              )}
-              {/* Multi-entry indicator */}
               {(emp.attendances?.length || 0) > 1 && (
                 <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
                   {emp.attendances.length} entries
@@ -1304,14 +1395,87 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
               )}
             </div>
           </div>
-          {/* Action buttons */}
-          <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
-            <ManagementButton size="sm" tone="emerald" variant={emp.day_status === 'present' ? 'solid' : 'soft'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'present')}>Present</ManagementButton>
-            <ManagementButton size="sm" tone="blue" variant={emp.day_status === 'half_day' ? 'solid' : 'soft'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'half_day')}>Half Day</ManagementButton>
-            <ManagementButton size="sm" tone="rose" variant={emp.day_status === 'absent' ? 'solid' : 'soft'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'absent')}>Absent</ManagementButton>
-            <ManagementButton size="sm" tone="slate" variant={Boolean(emp.is_deductible || emp.flags?.deductible?.enabled || (emp.calculations?.late_minutes || 0) > 0 || (emp.calculations?.early_leave_minutes || 0) > 0 || (emp.calculations?.extra_break_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'fine')}>Deduct</ManagementButton>
-            <ManagementButton size="sm" tone="amber" variant={Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled || (emp.calculations?.overtime_minutes || 0) > 0) ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'ot')}>OT</ManagementButton>
-            <ManagementButton size="sm" tone="violet" variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'} disabled={cardActionsDisabled} onClick={() => onAction(emp, 'paid_leave')}>Leave</ManagementButton>
+
+          {/* ✅ Action buttons grid — all 6 using ManagementButton */}
+          <div className="grid grid-cols-2 gap-2 shrink-0 md:w-48">
+            {/* Row 1 */}
+            <ManagementButton
+              size="sm"
+              tone="emerald"
+              variant={emp.day_status === 'present' ? 'solid' : 'soft'}
+              disabled={cardActionsDisabled}
+              onClick={() => onAction(emp, 'present')}
+            >
+              Present
+            </ManagementButton>
+
+            <ManagementButton
+              size="sm"
+              tone="blue"
+              variant={emp.day_status === 'half_day' ? 'solid' : 'soft'}
+              disabled={cardActionsDisabled}
+              onClick={() => onAction(emp, 'half_day')}
+            >
+              Half Day
+            </ManagementButton>
+
+            {/* Row 2 */}
+            <ManagementButton
+              size="sm"
+              tone="rose"
+              variant={emp.day_status === 'absent' ? 'solid' : 'soft'}
+              disabled={cardActionsDisabled}
+              onClick={() => onAction(emp, 'absent')}
+            >
+              Absent
+            </ManagementButton>
+
+            <ManagementButton
+              size="sm"
+              tone="violet"
+              variant={emp.day_status === 'leave' || emp.day_status === 'paid_leave' ? 'solid' : 'outline'}
+              disabled={cardActionsDisabled}
+              onClick={() => onAction(emp, 'paid_leave')}
+            >
+              Leave
+            </ManagementButton>
+
+            {/* Row 3 — Deduct & OT: always rendered, disabled unless flag is true */}
+            <ManagementButton
+              size="sm"
+              tone="rose"
+              variant={canShowFlagActions && isDeductible ? 'solid' : 'soft'}
+              disabled={cardActionsDisabled || !canShowFlagActions || !isDeductible}
+              onClick={() => onAction(emp, 'flag_deductible')}
+              title={
+                !canShowFlagActions
+                  ? 'Only available for Present or Half Day'
+                  : !isDeductible
+                    ? `No deduction flag set${deductMins > 0 ? ` (${formatMins(deductMins)} late — enable flag to apply)` : ''}`
+                    : `Remove deduction (${formatMins(deductMins)})`
+              }
+            >
+              <FaMoneyBillWave size={9} className="mr-1" />
+              Deduct{deductMins > 0 ? ` ${formatMins(deductMins)}` : ''}
+            </ManagementButton>
+
+            <ManagementButton
+              size="sm"
+              tone="amber"
+              variant={canShowFlagActions && isOvertime ? 'solid' : 'soft'}
+              disabled={cardActionsDisabled || !canShowFlagActions || !isOvertime}
+              onClick={() => onAction(emp, 'flag_overtime')}
+              title={
+                !canShowFlagActions
+                  ? 'Only available for Present or Half Day'
+                  : !isOvertime
+                    ? `No overtime flag set${otMins > 0 ? ` (${formatMins(otMins)} calculated — enable flag to apply)` : ''}`
+                    : `Remove overtime (${formatMins(otMins)})`
+              }
+            >
+              <FaClock size={9} className="mr-1" />
+              OT{otMins > 0 ? ` ${formatMins(otMins)}` : ''}
+            </ManagementButton>
           </div>
         </div>
       </ManagementCard>
@@ -1330,7 +1494,7 @@ const UnmarkedAttendance = () => {
   const [search, setSearch] = useState('');
   const [dayStatus, setDayStatus] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [modal, setModal] = useState(null);   // { type, emp }
+  const [modal, setModal] = useState(null); // { type, emp }
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -1339,7 +1503,6 @@ const UnmarkedAttendance = () => {
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
 
-  // ── useRef dedup: prevent duplicate inflight calls ──────────────────────────
   const abortControllerRef = useRef(null);
   const lastFetchKeyRef = useRef('');
 
@@ -1359,15 +1522,10 @@ const UnmarkedAttendance = () => {
 
   const fetchAttendance = useCallback(async (force = false) => {
     const key = buildFetchKey();
-
-    // Dedup: skip if same key already in-flight or completed (unless forced)
     if (!force && key === lastFetchKeyRef.current) return;
     lastFetchKeyRef.current = key;
 
-    // Abort any previous in-flight request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
     setLoading(true);
@@ -1406,7 +1564,7 @@ const UnmarkedAttendance = () => {
         throw new Error(result.message || 'Failed to fetch attendance');
       }
     } catch (err) {
-      if (err.name === 'AbortError') return; // Intentional abort — ignore
+      if (err.name === 'AbortError') return;
       console.error('Fetch error:', err);
       toast.error(err.message || 'Failed to load attendance data');
     } finally {
@@ -1414,21 +1572,29 @@ const UnmarkedAttendance = () => {
     }
   }, [buildFetchKey, dateFilter, pagination.page, pagination.limit, search, dayStatus, selectedEmployee, updatePagination, today]);
 
-  // Debounced auto-fetch
   useEffect(() => {
     const timer = setTimeout(() => fetchAttendance(), 300);
     return () => clearTimeout(timer);
   }, [fetchAttendance]);
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleDateChange = (val) => { setDateFilter(val); goToPage(1); };
   const handleSearch = (val) => { setSearch(val); goToPage(1); };
   const handleStatusChange = (val) => { setDayStatus(val); goToPage(1); };
   const handleEmployeeChange = (id) => { setSelectedEmployee(id); goToPage(1); };
 
-  const handleAction = (emp, action) => setModal({ type: action, emp });
+  const handleAction = (emp, action) => {
+    // Flag actions open the dedicated flag modal
+    if (action === 'flag_deductible') {
+      setModal({ type: 'flag_deductible', emp });
+      return;
+    }
+    if (action === 'flag_overtime') {
+      setModal({ type: 'flag_overtime', emp });
+      return;
+    }
+    setModal({ type: action, emp });
+  };
 
-  // POST /attendance/mark for single employee
   const handleSubmit = async (payload) => {
     setSaving(true);
     try {
@@ -1438,7 +1604,7 @@ const UnmarkedAttendance = () => {
       if (result.success) {
         toast.success('Attendance updated successfully!');
         setModal(null);
-        lastFetchKeyRef.current = ''; // Force re-fetch
+        lastFetchKeyRef.current = '';
         fetchAttendance(true);
       } else {
         throw new Error(result.message || 'Failed to update attendance');
@@ -1450,7 +1616,6 @@ const UnmarkedAttendance = () => {
     }
   };
 
-  // PUT /attendance/approve for bulk selected employees
   const handleBulkSubmit = async ({ action, employees: bulkEmps, notes, halfSession, leaveSubTab, selectedLeave }) => {
     if (!bulkEmps.length) return;
     try {
@@ -1470,9 +1635,7 @@ const UnmarkedAttendance = () => {
 
       const response = await apiCall('/attendance/approve', 'PUT', payload, companyId);
       const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to approve attendance');
-      }
+      if (!result.success) throw new Error(result.message || 'Failed to approve attendance');
 
       toast.success(`${bulkEmps.length} record${bulkEmps.length > 1 ? 's' : ''} updated successfully`);
       setBulkModalOpen(false);
@@ -1484,6 +1647,7 @@ const UnmarkedAttendance = () => {
       toast.error(err.message || 'Bulk update failed');
     }
   };
+
   const toggleSelectEmployee = (emp) => {
     setSelectedIds(prev =>
       prev.includes(emp.employee_id)
@@ -1510,9 +1674,15 @@ const UnmarkedAttendance = () => {
     [employees, selectedIds]
   );
 
+  // Determine modal type
+  const isManageModal = modal && !['logs', 'flag_deductible', 'flag_overtime'].includes(modal.type);
+  const isFlagDeductModal = modal?.type === 'flag_deductible';
+  const isFlagOtModal = modal?.type === 'flag_overtime';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 space-y-4">
+        {/* Header */}
         <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
@@ -1520,38 +1690,25 @@ const UnmarkedAttendance = () => {
                 <FaUsers size={11} />
                 Attendance management
               </div>
-              <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
-                Attendance Management
-              </h1>
-              <p className="mt-1 text-sm text-slate-500">
-                Review attendance, breaks, and records from one workspace.
-              </p>
+              <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">Attendance Management</h1>
+              <p className="mt-1 text-sm text-slate-500">Review attendance, breaks, and records from one workspace.</p>
             </div>
-
             <div className="flex items-center gap-3 justify-end">
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
                 <FaUserClock className="text-indigo-500" />
                 <span className="font-medium text-slate-700">{pagination.total}</span>
                 <span className="text-slate-500">records</span>
               </div>
-              <RefreshButton
-                loading={loading}
-                onClick={() => { lastFetchKeyRef.current = ''; fetchAttendance(true); }}
-              >
+              <RefreshButton loading={loading} onClick={() => { lastFetchKeyRef.current = ''; fetchAttendance(true); }}>
                 Refresh
               </RefreshButton>
             </div>
           </div>
         </div>
 
-        {/* ── Filter Bar ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm"
-        >
+        {/* Filter Bar */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm">
           <div className="flex justify-between w-full flex-col lg:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1">
               <div className="relative">
                 <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
@@ -1569,8 +1726,6 @@ const UnmarkedAttendance = () => {
                 )}
               </div>
             </div>
-
-            {/* Filters */}
             <div className="flex gap-4 flex-col md:flex-row lg:flex-row">
               <div className="flex-1">
                 <EmployeeSelect value={selectedEmployee} onChange={handleEmployeeChange} placeholder="Specific Employee..." />
@@ -1587,17 +1742,15 @@ const UnmarkedAttendance = () => {
                     placeholder="Pick Date"
                   />
                 </div>
-
               </div>
-
             </div>
           </div>
         </motion.div>
 
-        {/* ── Summary Counts ── */}
+        {/* Summary Counts */}
         <SummaryBar counts={counts} />
 
-        {/* ── Bulk Mode Bar ── */}
+        {/* Bulk Mode Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm">
           <div className="flex items-center gap-3">
             <button
@@ -1641,7 +1794,7 @@ const UnmarkedAttendance = () => {
           )}
         </div>
 
-        {/* ── Employee Cards ── */}
+        {/* Employee Cards */}
         <div className="space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
@@ -1679,7 +1832,7 @@ const UnmarkedAttendance = () => {
           )}
         </div>
 
-        {/* ── Floating Bulk Action Bar ── */}
+        {/* Floating Bulk Action Bar */}
         <AnimatePresence>
           {isSelectionMode && selectedIds.length > 0 && (
             <motion.div
@@ -1713,9 +1866,10 @@ const UnmarkedAttendance = () => {
         </AnimatePresence>
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       <AnimatePresence>
-        {modal && modal.type !== 'logs' && (
+        {/* Main manage modal — 4 tabs */}
+        {isManageModal && (
           <ManageAttendanceModal
             key={`modal-${modal.emp.employee_id}`}
             employee={modal.emp}
@@ -1724,6 +1878,30 @@ const UnmarkedAttendance = () => {
             onSubmit={handleSubmit}
           />
         )}
+
+        {/* Deductible flag modal */}
+        {isFlagDeductModal && (
+          <FlagActionModal
+            key={`deduct-${modal.emp.employee_id}`}
+            employee={modal.emp}
+            flagType="deductible"
+            onClose={() => setModal(null)}
+            onSubmit={handleSubmit}
+          />
+        )}
+
+        {/* Overtime flag modal */}
+        {isFlagOtModal && (
+          <FlagActionModal
+            key={`ot-${modal.emp.employee_id}`}
+            employee={modal.emp}
+            flagType="overtime"
+            onClose={() => setModal(null)}
+            onSubmit={handleSubmit}
+          />
+        )}
+
+        {/* Bulk modal */}
         {bulkModalOpen && bulkAction && (
           <BulkAttendanceModal
             employees={selectedEmployees}
@@ -1732,6 +1910,8 @@ const UnmarkedAttendance = () => {
             onSubmit={handleBulkSubmit}
           />
         )}
+
+        {/* Logs modal */}
         {modal?.type === 'logs' && (
           <AttendanceLogsModal
             id={modal.emp.attendance_id || modal.emp.id}
