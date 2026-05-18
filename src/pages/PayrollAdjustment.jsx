@@ -1,36 +1,39 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-    FaPlus, FaSearch, FaSpinner, FaFileInvoiceDollar,
-    FaCalendarAlt, FaDollarSign, FaEye, FaCalculator,
-    FaTimes, FaFilter, FaMoneyBillWave, FaCoins
+    FaPlus, FaSpinner, FaCalendarAlt, FaCalculator,
+    FaMoneyBillWave, FaCoins, FaEdit, FaEye, FaTrash
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
-import ModalScrollLock from '../components/ModalScrollLock';
-import ManagementGrid from '../components/ManagementGrid';
-import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import Modal from '../components/Modal';
 import usePermissionAccess from '../hooks/usePermissionAccess';
-import { EmployeeSelect } from '../components/common';
+import { EmployeeSelect, ManagementCard, ManagementTable, ManagementHub, ManagementButton } from '../components/common';
+import ProfileAvatar from '../components/common/ProfileAvatar';
+import SelectField from '../components/SelectField';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", duration: 0.5 } },
-    exit: { opacity: 0, scale: 0.95, y: 20, transition: { duration: 0.3 } }
-};
-
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
-    exit: { opacity: 0 }
-};
+const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
+    <div
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+    >
+        <motion.div
+            className="bg-white w-3 h-3 rounded-full shadow-md"
+            initial={false}
+            animate={{ x: isOn ? 20 : 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+    </div>
+);
 
 export default function PayrollAdjustment() {
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const createAccess = checkActionAccess('payrollAdjustment', 'create');
+    const updateAccess = checkActionAccess('payrollAdjustment', 'update');
 
     const [adjustments, setAdjustments] = useState([]);
     const [summary, setSummary] = useState(null);
@@ -39,19 +42,27 @@ export default function PayrollAdjustment() {
     
     // Filters
     const currentDate = new Date();
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
     const [adjustmentType, setAdjustmentType] = useState('');
-    const [usageType, setUsageType] = useState('');
     
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
 
     const isMounted = useRef(true);
     const fetchInProgress = useRef(false);
     
-    // Create Modal State
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    // Modal & Selection States
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingAdjustment, setEditingAdjustment] = useState(null);
+    const [detailAdjustment, setDetailAdjustment] = useState(null);
+    const [deleteConfirmState, setDeleteConfirmState] = useState(null); // { type: 'single' | 'bulk', id?: number, ids?: number[] }
     const [submitting, setSubmitting] = useState(false);
+    const [activeMenuId, setActiveMenuId] = useState(null);
+    
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+
     const [formData, setFormData] = useState({
         employee_id: '',
         adjustment_type: 'bonus',
@@ -59,7 +70,6 @@ export default function PayrollAdjustment() {
         name: '',
         remark: '',
         amount: '',
-        currency: 'INR',
         adjustment_period: `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
     });
 
@@ -83,7 +93,7 @@ export default function PayrollAdjustment() {
             });
 
             if (adjustmentType) params.append('adjustment_type', adjustmentType);
-            if (usageType) params.append('usage_type', usageType);
+            if (selectedEmployeeId) params.append('employee_id', selectedEmployeeId.toString());
 
             const response = await apiCall(`/payroll/adjustments/list?${params}`, 'GET', null, company?.id);
             const result = await response.json();
@@ -107,18 +117,57 @@ export default function PayrollAdjustment() {
             setLoading(false);
             fetchInProgress.current = false;
         }
-    }, [pagination.page, pagination.limit, selectedMonth, selectedYear, adjustmentType, usageType, updatePagination]);
+    }, [pagination.page, pagination.limit, selectedMonth, selectedYear, adjustmentType, selectedEmployeeId, updatePagination]);
 
     useEffect(() => {
         if (isMounted.current) {
             fetchAdjustments(pagination.page);
         }
-    }, [pagination.page, pagination.limit, selectedMonth, selectedYear, adjustmentType, usageType]);
+    }, [pagination.page, pagination.limit, selectedMonth, selectedYear, adjustmentType, selectedEmployeeId]);
 
-    const handleCreate = async (e) => {
+    const openCreateModal = () => {
+        setEditingAdjustment(null);
+        setFormData({
+            employee_id: '',
+            adjustment_type: 'bonus',
+            usage_type: 'payroll',
+            name: '',
+            remark: '',
+            amount: '',
+            adjustment_period: `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
+        });
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (adj) => {
+        setEditingAdjustment(adj);
+        setFormData({
+            employee_id: adj.employee_id || '',
+            adjustment_type: adj.adjustment_type || 'bonus',
+            usage_type: adj.usage_type || 'payroll',
+            name: adj.name || '',
+            remark: adj.remark || '',
+            amount: adj.amount ? parseFloat(adj.amount).toString() : '',
+            adjustment_period: adj.adjustment_period ? adj.adjustment_period.split('T')[0] : `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        if (submitting) return;
+        setIsModalOpen(false);
+        setEditingAdjustment(null);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
-        if (!formData.employee_id || !formData.name || !formData.amount || !formData.adjustment_period) {
+        if (!editingAdjustment && !formData.employee_id) {
+            toast.warning('Please select an employee');
+            return;
+        }
+
+        if (!formData.name || !formData.amount || !formData.adjustment_period) {
             toast.warning('Please fill in all required fields');
             return;
         }
@@ -126,31 +175,122 @@ export default function PayrollAdjustment() {
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const response = await apiCall('/payroll/adjustments', 'POST', {
-                ...formData,
-                amount: parseFloat(formData.amount),
-                employee_id: parseInt(formData.employee_id)
+            
+            let response;
+            if (editingAdjustment) {
+                response = await apiCall('/payroll/adjustments/update', 'PUT', {
+                    id: editingAdjustment.id,
+                    adjustment_type: formData.adjustment_type,
+                    usage_type: formData.usage_type,
+                    name: formData.name,
+                    remark: formData.remark,
+                    amount: parseFloat(formData.amount),
+                    adjustment_period: formData.adjustment_period
+                }, company?.id);
+            } else {
+                response = await apiCall('/payroll/adjustments', 'POST', {
+                    employee_id: parseInt(formData.employee_id),
+                    adjustment_type: formData.adjustment_type,
+                    usage_type: formData.usage_type,
+                    name: formData.name,
+                    remark: formData.remark,
+                    amount: parseFloat(formData.amount),
+                    adjustment_period: formData.adjustment_period
+                }, company?.id);
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                toast.success(editingAdjustment ? 'Adjustment updated successfully!' : 'Adjustment created successfully!');
+                setIsModalOpen(false);
+                setFormData({
+                    employee_id: '',
+                    adjustment_type: 'bonus',
+                    usage_type: 'payroll',
+                    name: '',
+                    remark: '',
+                    amount: '',
+                    adjustment_period: `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`
+                });
+                setEditingAdjustment(null);
+                fetchAdjustments(editingAdjustment ? pagination.page : 1);
+            } else {
+                throw new Error(result.message || `Failed to ${editingAdjustment ? 'update' : 'create'} adjustment`);
+            }
+        } catch (e) {
+            toast.error(e.message || `Failed to ${editingAdjustment ? 'update' : 'create'} adjustment`);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteClick = (id) => {
+        setDeleteConfirmState({ type: 'single', id });
+    };
+
+    const handleBulkDeleteClick = () => {
+        if (selectedIds.length === 0) return;
+        setDeleteConfirmState({ type: 'bulk', ids: selectedIds });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmState) return;
+        
+        setSubmitting(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const idsToDelete = deleteConfirmState.type === 'single' 
+                ? [deleteConfirmState.id] 
+                : deleteConfirmState.ids;
+                
+            const response = await apiCall('/payroll/adjustments/delete', 'DELETE', {
+                ids: idsToDelete
             }, company?.id);
             
             const result = await response.json();
             if (result.success) {
-                toast.success('Adjustment created successfully!');
-                setIsCreateModalOpen(false);
-                setFormData({
-                    ...formData,
-                    name: '',
-                    remark: '',
-                    amount: '',
-                });
-                fetchAdjustments(1);
+                toast.success(deleteConfirmState.type === 'single' 
+                    ? 'Adjustment deleted successfully!' 
+                    : `${idsToDelete.length} adjustments deleted successfully!`
+                );
+                
+                if (deleteConfirmState.type === 'bulk') {
+                    setSelectedIds([]);
+                    setIsSelectionMode(false);
+                } else {
+                    setSelectedIds(prev => prev.filter(id => id !== deleteConfirmState.id));
+                }
+                
+                setDeleteConfirmState(null);
+                fetchAdjustments(deleteConfirmState.type === 'bulk' ? 1 : pagination.page);
             } else {
-                throw new Error(result.message || 'Failed to create adjustment');
+                throw new Error(result.message || 'Failed to delete adjustment');
             }
         } catch (e) {
-            toast.error(e.message || 'Failed to create adjustment');
+            toast.error(e.message || 'Failed to delete');
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(prev => {
+            if (prev) setSelectedIds([]);
+            return !prev;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === adjustments.length && adjustments.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(adjustments.map(adj => adj.id));
+        }
+    };
+
+    const toggleSelectRow = (e, id) => {
+        e.stopPropagation();
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
     const formatCurrency = (amount) => {
@@ -164,355 +304,639 @@ export default function PayrollAdjustment() {
         return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
     };
 
-    return (
-        <div className="space-y-6">
-            
-            {/* Header & Controls */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-            >
-                <div>
-                    <h2 className="text-xl font-bold text-gray-900">Payroll Adjustments</h2>
-                    <p className="text-sm text-gray-500 mt-1">Manage bonuses, fines, and ledger adjustments.</p>
+    const typeOptions = [
+        { value: '', label: 'All Types' },
+        { value: 'bonus', label: 'Bonus' },
+        { value: 'fine', label: 'Fine' }
+    ];
+
+    const selectedTypeOption = useMemo(() => typeOptions.find(opt => opt.value === adjustmentType) || typeOptions[0], [adjustmentType]);
+
+    const ActionMenuButtons = (adj) => [
+        {
+            label: 'View Details',
+            icon: <FaEye size={13} />,
+            onClick: () => setDetailAdjustment(adj),
+            className: 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
+        },
+        { 
+            label: 'Edit', 
+            icon: <FaEdit size={13} />, 
+            onClick: () => openEditModal(adj), 
+            disabled: updateAccess.disabled,
+            title: updateAccess.disabled ? getAccessMessage(updateAccess) : 'Edit adjustment',
+            className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' 
+        },
+        {
+            label: 'Delete',
+            icon: <FaTrash size={13} />,
+            onClick: () => handleDeleteClick(adj.id),
+            disabled: updateAccess.disabled,
+            title: updateAccess.disabled ? getAccessMessage(updateAccess) : 'Delete adjustment',
+            className: 'text-rose-600 hover:text-rose-700 hover:bg-rose-50'
+        }
+    ];
+
+    const columns = useMemo(() => [
+        {
+            key: 'employee',
+            label: (
+                <div className="flex items-center gap-4">
+                    {isSelectionMode && (
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.length > 0 && selectedIds.length === adjustments.length}
+                            onChange={toggleSelectAll}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                    )}
+                    <ToggleSwitch
+                        isOn={isSelectionMode}
+                        onToggle={toggleSelectionMode}
+                        accent="blue"
+                    />
+                    <span>Employee</span>
                 </div>
-                <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    disabled={createAccess.disabled}
-                    title={createAccess.disabled ? getAccessMessage(createAccess) : ''}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all font-bold shadow-md hover:shadow-lg disabled:opacity-50"
-                >
-                    <FaPlus size={14} /> Create Adjustment
-                </button>
-            </motion.div>
-
-            {/* Summary Cards */}
-            {summary && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-green-500"></span> Payroll Bonus
-                        </p>
-                        <p className="text-xl font-black text-green-600">{formatCurrency(summary.payroll?.bonus)}</p>
-                    </motion.div>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-red-500"></span> Payroll Fine
-                        </p>
-                        <p className="text-xl font-black text-red-600">{formatCurrency(summary.payroll?.fine)}</p>
-                    </motion.div>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-teal-500"></span> Ledger Bonus
-                        </p>
-                        <p className="text-xl font-black text-teal-600">{formatCurrency(summary.ledger?.bonus)}</p>
-                    </motion.div>
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-orange-500"></span> Ledger Fine
-                        </p>
-                        <p className="text-xl font-black text-orange-600">{formatCurrency(summary.ledger?.fine)}</p>
-                    </motion.div>
-                </div>
-            )}
-
-            {/* Filter Bar */}
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col lg:flex-row gap-4 justify-between"
-            >
-                <div className="flex flex-wrap items-center gap-3">
-                    <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none"
-                    >
-                        {Array.from({ length: 12 }, (_, i) => (
-                            <option key={i + 1} value={i + 1}>
-                                {new Date(2000, i).toLocaleString('default', { month: 'short' })}
-                            </option>
-                        ))}
-                    </select>
-
-                    <select
-                        value={selectedYear}
-                        onChange={(e) => setSelectedYear(Number(e.target.value))}
-                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none"
-                    >
-                        {Array.from({ length: 5 }, (_, i) => {
-                            const year = currentDate.getFullYear() - 2 + i;
-                            return <option key={year} value={year}>{year}</option>;
-                        })}
-                    </select>
-
-                    <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
-
-                    <select
-                        value={adjustmentType}
-                        onChange={(e) => setAdjustmentType(e.target.value)}
-                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none"
-                    >
-                        <option value="">All Types</option>
-                        <option value="bonus">Bonus</option>
-                        <option value="fine">Fine</option>
-                    </select>
-
-                    <select
-                        value={usageType}
-                        onChange={(e) => setUsageType(e.target.value)}
-                        className="px-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none"
-                    >
-                        <option value="">All Usages</option>
-                        <option value="payroll">Payroll</option>
-                        <option value="ledger">Ledger</option>
-                    </select>
-                </div>
-
-                <div className="flex justify-end">
-                    <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                </div>
-            </motion.div>
-
-            {loading && !adjustments.length ? (
-                <SkeletonComponent />
-            ) : !loading && adjustments.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
-                    <FaCalculator className="text-6xl text-gray-200 mx-auto mb-4" />
-                    <p className="text-xl text-gray-500 font-medium">No adjustments found</p>
-                    <p className="text-gray-400 mt-2 text-sm">Try changing your filters or create a new adjustment.</p>
-                </div>
-            ) : (
-                <>
-                    {viewMode === 'table' && (
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
-                                        <tr>
-                                            <th className="px-6 py-4">Employee</th>
-                                            <th className="px-6 py-4">Adjustment Name</th>
-                                            <th className="px-6 py-4">Type</th>
-                                            <th className="px-6 py-4">Usage</th>
-                                            <th className="px-6 py-4">Period</th>
-                                            <th className="px-6 py-4 text-right">Amount</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {adjustments.map((adj) => (
-                                            <tr key={adj.id} className="hover:bg-blue-50/30 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-gray-800">{adj.employee?.name}</td>
-                                                <td className="px-6 py-4">
-                                                    <p className="text-gray-800 font-medium">{adj.name}</p>
-                                                    {adj.remark && <p className="text-xs text-gray-500 truncate max-w-xs">{adj.remark}</p>}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                                                        adj.adjustment_type === 'bonus' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                                    }`}>
-                                                        {adj.adjustment_type.toUpperCase()}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-600 uppercase">
-                                                        {adj.usage_type}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-gray-600">
-                                                    {formatDate(adj.adjustment_period)}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className={`font-bold ${
-                                                        adj.adjustment_type === 'bonus' ? 'text-green-600' : 'text-red-600'
-                                                    }`}>
-                                                        {adj.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(adj.amount)}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+            ),
+            render: (adj) => (
+                <div className="flex items-center gap-4">
+                    {isSelectionMode && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <input
+                                type="checkbox"
+                                checked={selectedIds.includes(adj.id)}
+                                onChange={(e) => toggleSelectRow(e, adj.id)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            />
                         </div>
                     )}
-
-                    {viewMode === 'card' && (
-                        <ManagementGrid viewMode={viewMode}>
-                            {adjustments.map((adj) => (
-                                <div key={adj.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-gray-900">{adj.employee?.name}</h3>
-                                            <p className="text-xs text-gray-500">{formatDate(adj.adjustment_period)}</p>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                                            adj.adjustment_type === 'bonus' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                        }`}>
-                                            {adj.adjustment_type}
-                                        </span>
-                                    </div>
-                                    <div className="mb-4">
-                                        <p className="text-sm font-semibold text-gray-800">{adj.name}</p>
-                                        {adj.remark && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{adj.remark}</p>}
-                                    </div>
-                                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                                        <span className="text-xs font-semibold text-gray-400 uppercase">{adj.usage_type}</span>
-                                        <span className={`text-lg font-black ${
-                                            adj.adjustment_type === 'bonus' ? 'text-green-600' : 'text-red-600'
-                                        }`}>
-                                            {adj.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(adj.amount)}
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </ManagementGrid>
-                    )}
-
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalItems={pagination.total}
-                        itemsPerPage={pagination.limit}
-                        onPageChange={goToPage}
-                        showInfo={true}
-                        onLimitChange={changeLimit}
-                    />
-                </>
-            )}
-
-            {/* Create Modal */}
-            <AnimatePresence>
-                {isCreateModalOpen && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6"
-                        onClick={() => !submitting && setIsCreateModalOpen(false)}
-                    >
-                        <ModalScrollLock />
-                        <motion.div variants={modalVariants}
-                            className="bg-white relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-                            onClick={e => e.stopPropagation()}
+                    <div className="flex items-center gap-3">
+                        <ProfileAvatar
+                            record={adj}
+                            name={adj.employee_name}
+                            className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-100 flex-shrink-0"
                         >
-                            {/* Header */}
-                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white z-10 flex-shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                                        <FaCoins className="text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-lg font-bold text-gray-900">Create Adjustment</h2>
-                                        <p className="text-xs text-gray-500">Add a new bonus or fine</p>
-                                    </div>
+                            {adj.employee_name?.charAt(0).toUpperCase() || 'E'}
+                        </ProfileAvatar>
+                        <div>
+                            <p className="font-semibold text-gray-800 leading-tight">{adj.employee_name || 'N/A'}</p>
+                            {adj.employee_code && <p className="text-[10px] text-gray-500 font-mono mt-0.5">{adj.employee_code}</p>}
+                        </div>
+                    </div>
+                </div>
+            )
+        },
+        {
+            key: 'name',
+            label: 'Adjustment Name',
+            render: (adj) => (
+                <div>
+                    <p className="text-gray-800 font-semibold">{adj.name}</p>
+                    {adj.remark && <p className="text-xs text-gray-500 max-w-xs truncate mt-0.5">{adj.remark}</p>}
+                </div>
+            )
+        },
+        {
+            key: 'adjustment_type',
+            label: 'Type',
+            render: (adj) => (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    adj.adjustment_type === 'bonus' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${adj.adjustment_type === 'bonus' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                    {adj.adjustment_type === 'bonus' ? 'Bonus' : 'Fine'}
+                </span>
+            )
+        },
+        {
+            key: 'adjustment_period',
+            label: 'Period',
+            render: (adj) => (
+                <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-gray-400 text-xs" />
+                    <span className="text-sm font-medium text-gray-600">{formatDate(adj.adjustment_period)}</span>
+                </div>
+            )
+        },
+        {
+            key: 'amount',
+            label: 'Amount',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            render: (adj) => (
+                <span className={`font-black text-base ${
+                    adj.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'
+                }`}>
+                    {adj.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(adj.amount)}
+                </span>
+            )
+        }
+    ], [isSelectionMode, selectedIds, adjustments]);
+
+    return (
+        <ManagementHub
+            eyebrow={<><FaCalculator size={11} /> Payroll Adjustments</>}
+            title="Payroll Adjustments"
+            description="Manage bonuses, fines, and ledger adjustments."
+            accent="blue"
+            onRefresh={() => fetchAdjustments(pagination.page)}
+            refreshing={loading}
+            actions={
+                <ManagementButton
+                    tone="blue"
+                    variant="solid"
+                    leftIcon={<FaPlus />}
+                    onClick={openCreateModal}
+                    disabled={createAccess.disabled}
+                    title={createAccess.disabled ? getAccessMessage(createAccess) : 'Create Adjustment'}
+                >
+                    Create Adjustment
+                </ManagementButton>
+            }
+        >
+            <div className="space-y-6 p-2 lg:p-0">
+                {/* Summary Cards */}
+                {summary && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <motion.div
+                            whileHover={{ y: -4, scale: 1.01 }}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="relative overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/40 via-white to-emerald-50/10 p-6 shadow-sm transition-all"
+                        >
+                            <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-24 h-24 rounded-full bg-emerald-500/5 blur-xl pointer-events-none"></div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                                    <FaMoneyBillWave size={20} />
                                 </div>
-                                <button onClick={() => !submitting && setIsCreateModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400">
-                                    <FaTimes />
+                                <div>
+                                    <p className="text-xs font-bold text-emerald-600/80 uppercase tracking-widest mb-0.5">Total Payroll Bonus</p>
+                                    <p className="text-2xl font-black text-emerald-700">{formatCurrency(summary.payroll?.bonus)}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                        <motion.div
+                            whileHover={{ y: -4, scale: 1.01 }}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 }}
+                            className="relative overflow-hidden rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/40 via-white to-rose-50/10 p-6 shadow-sm transition-all"
+                        >
+                            <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-24 h-24 rounded-full bg-rose-500/5 blur-xl pointer-events-none"></div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-rose-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-rose-500/20">
+                                    <FaCoins size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-rose-600/80 uppercase tracking-widest mb-0.5">Total Payroll Fine</p>
+                                    <p className="text-2xl font-black text-rose-700">{formatCurrency(summary.payroll?.fine)}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Filter Bar */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between"
+                >
+                    {/* Top Row on md/sm, Left Part on lg (At first shows employee select) */}
+                    <div className="w-full lg:w-80 shrink-0">
+                        <EmployeeSelect
+                            value={selectedEmployeeId}
+                            onChange={(id) => setSelectedEmployeeId(id || '')}
+                            placeholder="All Employees"
+                        />
+                    </div>
+
+                    {/* Bottom Row on md/sm, Right Part on lg */}
+                    <div className="flex flex-row items-center gap-3 justify-between lg:justify-end flex-1 min-w-0">
+                        <div className="flex flex-row items-center gap-3 flex-1 lg:flex-none">
+                            {/* Month and Year picker */}
+                            <div className="shrink-0">
+                                <AdvancedDateFilter
+                                    tabOptions={["month"]}
+                                    value={{
+                                        date: "",
+                                        month: selectedMonth,
+                                        year: selectedYear,
+                                        from_date: "",
+                                        to_date: ""
+                                    }}
+                                    onChange={(val) => {
+                                        if (val && val.month && val.year) {
+                                            setSelectedMonth(Number(val.month));
+                                            setSelectedYear(Number(val.year));
+                                        }
+                                    }}
+                                    buttonClassName="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none hover:border-gray-300 transition-all flex items-center justify-between cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Adjustment Type Filter */}
+                            <div className="shrink-0">
+                                <SelectField
+                                    options={typeOptions}
+                                    value={selectedTypeOption}
+                                    onChange={(opt) => setAdjustmentType(opt ? opt.value : '')}
+                                    isClearable={false}
+                                    placeholder="Adjustment Type"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                            <div className="h-8 w-px bg-gray-100 hidden lg:block"></div>
+                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                        </div>
+                    </div>
+                </motion.div>
+
+                {loading && !adjustments.length ? (
+                    <SkeletonComponent />
+                ) : !loading && adjustments.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <FaCalculator className="text-6xl text-gray-200 mx-auto mb-4" />
+                        <p className="text-xl text-gray-500 font-medium">No adjustments found</p>
+                        <p className="text-gray-400 mt-2 text-sm">Try changing your filters or create a new adjustment.</p>
+                    </div>
+                ) : (
+                    <>
+                        {viewMode === 'table' && (
+                            <ManagementTable
+                                rows={adjustments}
+                                columns={columns}
+                                rowKey="id"
+                                onRowClick={(row) => setDetailAdjustment(row)}
+                                getActions={ActionMenuButtons}
+                                activeId={activeMenuId}
+                                onToggleAction={(e, id) => setActiveMenuId((current) => (current === id ? null : id))}
+                                accent="blue"
+                            />
+                        )}
+
+                        {viewMode === 'card' && (
+                            <ManagementGrid viewMode={viewMode}>
+                                {adjustments.map((adj) => (
+                                    <ManagementCard
+                                        key={adj.id}
+                                        accent="blue"
+                                        onClick={() => setDetailAdjustment(adj)}
+                                        hoverable
+                                        eyebrow={
+                                            <div className="flex items-center gap-2">
+                                                {isSelectionMode && (
+                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedIds.includes(adj.id)}
+                                                            onChange={(e) => toggleSelectRow(e, adj.id)}
+                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer mr-2"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                    adj.adjustment_type === 'bonus' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                                }`}>
+                                                    {adj.adjustment_type}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-gray-400"># {adj.id}</span>
+                                            </div>
+                                        }
+                                        title={adj.employee_name}
+                                        subtitle={adj.employee_code}
+                                        icon={
+                                            <ProfileAvatar
+                                                record={adj}
+                                                name={adj.employee_name}
+                                                className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-100 flex-shrink-0"
+                                            >
+                                                {adj.employee_name?.charAt(0).toUpperCase() || 'E'}
+                                            </ProfileAvatar>
+                                        }
+                                        actions={ActionMenuButtons(adj)}
+                                        activeId={activeMenuId}
+                                        onToggle={(e, id) => setActiveMenuId((current) => (current === id ? null : id))}
+                                        menuId={`adjustment-${adj.id}`}
+                                        footer={
+                                            <div className="flex w-full items-center justify-between pt-4 border-t border-gray-100">
+                                                <div className="flex items-center gap-1 text-gray-400 text-xs">
+                                                    <FaCalendarAlt />
+                                                    <span>{formatDate(adj.adjustment_period)}</span>
+                                                </div>
+                                                <span className={`text-lg font-black ${
+                                                    adj.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'
+                                                }`}>
+                                                    {adj.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(adj.amount)}
+                                                </span>
+                                            </div>
+                                        }
+                                    >
+                                        <div className="mb-4">
+                                            <p className="text-sm font-semibold text-gray-800">{adj.name}</p>
+                                            {adj.remark && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{adj.remark}</p>}
+                                        </div>
+                                    </ManagementCard>
+                                ))}
+                            </ManagementGrid>
+                        )}
+
+                        <Pagination
+                            currentPage={pagination.page}
+                            totalItems={pagination.total}
+                            itemsPerPage={pagination.limit}
+                            onPageChange={goToPage}
+                            showInfo={true}
+                            onLimitChange={changeLimit}
+                        />
+                    </>
+                )}
+
+                {/* Selection Action Bar (Bottom Right Floating) */}
+                <AnimatePresence>
+                    {selectedIds.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 100 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 100 }}
+                            className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
+                        >
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
+                                <span className="text-sm font-black text-slate-800">{selectedIds.length} Selected</span>
+                            </div>
+                            <div className="h-10 w-px bg-gray-200 mx-2"></div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
+                                    className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                                >
+                                    Close
                                 </button>
+                                <ManagementButton
+                                    tone="rose"
+                                    variant="solid"
+                                    size="sm"
+                                    leftIcon={<FaTrash />}
+                                    onClick={handleBulkDeleteClick}
+                                    className="shadow-lg shadow-rose-200"
+                                >
+                                    Delete Selected
+                                </ManagementButton>
                             </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                            {/* Body */}
-                            <div className="overflow-y-auto flex-1 p-6 space-y-5 bg-gray-50/50">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Employee *</label>
-                                    <EmployeeSelect 
-                                        value={formData.employee_id} 
-                                        onChange={(id) => setFormData({ ...formData, employee_id: id })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
+                {/* Create/Edit Modal */}
+                <Modal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    title={editingAdjustment ? 'Edit Adjustment' : 'Create Adjustment'}
+                    subtitle={editingAdjustment ? 'Modify existing bonus or fine' : 'Add a new bonus or fine'}
+                    icon={<FaCoins className="text-blue-600 h-5 w-5" />}
+                    size="2xl"
+                    footer={
+                        <div className="flex justify-end gap-3 w-full">
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                disabled={submitting}
+                                className="px-6 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                form="payroll-adjustment-form"
+                                disabled={submitting}
+                                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {submitting ? <FaSpinner className="animate-spin" /> : null}
+                                {submitting ? 'Saving...' : 'Save Adjustment'}
+                            </button>
+                        </div>
+                    }
+                >
+                    <form id="payroll-adjustment-form" onSubmit={handleSubmit} className="space-y-5">
+                        {editingAdjustment ? (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Employee</label>
+                                <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl">
+                                    <ProfileAvatar
+                                        record={editingAdjustment}
+                                        name={editingAdjustment.employee_name}
+                                        className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-100 flex-shrink-0"
+                                    >
+                                        {editingAdjustment.employee_name?.charAt(0).toUpperCase() || 'E'}
+                                    </ProfileAvatar>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Type *</label>
-                                        <select
-                                            value={formData.adjustment_type}
-                                            onChange={(e) => setFormData({ ...formData, adjustment_type: e.target.value })}
-                                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold"
-                                        >
-                                            <option value="bonus">Bonus (+)</option>
-                                            <option value="fine">Fine (-)</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Usage *</label>
-                                        <select
-                                            value={formData.usage_type}
-                                            onChange={(e) => setFormData({ ...formData, usage_type: e.target.value })}
-                                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold"
-                                        >
-                                            <option value="payroll">Payroll</option>
-                                            <option value="ledger">Ledger</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Adjustment Name *</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g., Performance Bonus"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Remark</label>
-                                    <textarea
-                                        placeholder="Add any context or details..."
-                                        rows="2"
-                                        value={formData.remark}
-                                        onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
-                                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none"
-                                    ></textarea>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Amount ({formData.currency}) *</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0.00"
-                                            value={formData.amount}
-                                            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Period *</label>
-                                        <input
-                                            type="date"
-                                            value={formData.adjustment_period}
-                                            onChange={(e) => setFormData({ ...formData, adjustment_period: e.target.value })}
-                                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-700"
-                                        />
+                                        <p className="font-semibold text-gray-800">{editingAdjustment.employee_name || 'N/A'}</p>
+                                        {editingAdjustment.employee_code && <p className="text-xs text-gray-500 font-mono mt-0.5">{editingAdjustment.employee_code}</p>}
                                     </div>
                                 </div>
                             </div>
+                        ) : (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Employee *</label>
+                                <EmployeeSelect 
+                                    value={formData.employee_id} 
+                                    onChange={(id) => setFormData({ ...formData, employee_id: id })}
+                                />
+                            </div>
+                        )}
 
-                            {/* Footer */}
-                            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-end gap-3 flex-shrink-0">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Adjustment Type *</label>
+                                <SelectField
+                                    options={[
+                                        { value: 'bonus', label: 'Bonus (+)' },
+                                        { value: 'fine', label: 'Fine (-)' }
+                                    ]}
+                                    value={formData.adjustment_type === 'bonus' ? { value: 'bonus', label: 'Bonus (+)' } : { value: 'fine', label: 'Fine (-)' }}
+                                    onChange={(opt) => setFormData({ ...formData, adjustment_type: opt ? opt.value : 'bonus' })}
+                                    isClearable={false}
+                                    placeholder="Select adjustment type"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Usage Type *</label>
+                                <SelectField
+                                    options={[
+                                        { value: 'payroll', label: 'Payroll' },
+                                        { value: 'ledger', label: 'Ledger' }
+                                    ]}
+                                    value={formData.usage_type === 'ledger' ? { value: 'ledger', label: 'Ledger' } : { value: 'payroll', label: 'Payroll' }}
+                                    onChange={(opt) => setFormData({ ...formData, usage_type: opt ? opt.value : 'payroll' })}
+                                    isClearable={false}
+                                    placeholder="Select usage type"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Adjustment Name *</label>
+                            <input
+                                type="text"
+                                placeholder="e.g., Performance Bonus"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-800"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Remark</label>
+                            <textarea
+                                placeholder="Add any context or details..."
+                                rows="2"
+                                value={formData.remark}
+                                onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none font-medium text-gray-800"
+                            ></textarea>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Amount *</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={formData.amount}
+                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-gray-800"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Period *</label>
+                                <input
+                                    type="date"
+                                    value={formData.adjustment_period}
+                                    onChange={(e) => setFormData({ ...formData, adjustment_period: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-gray-700 font-semibold"
+                                />
+                            </div>
+                        </div>
+                    </form>
+                </Modal>
+
+                {/* View Details Modal */}
+                {detailAdjustment && (
+                    <Modal
+                        isOpen={!!detailAdjustment}
+                        onClose={() => setDetailAdjustment(null)}
+                        title="Adjustment Details"
+                        subtitle={`${detailAdjustment.employee_name} · ${detailAdjustment.name}`}
+                        icon={<FaEye className="h-6 w-6 text-blue-600" />}
+                        size="lg"
+                        footer={
+                            <div className="flex justify-end w-full">
                                 <button
                                     type="button"
-                                    onClick={() => !submitting && setIsCreateModalOpen(false)}
-                                    className="px-6 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all"
+                                    onClick={() => setDetailAdjustment(null)}
+                                    className="rounded-xl bg-gray-100 py-2.5 px-5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        }
+                    >
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 flex items-center gap-4">
+                                <ProfileAvatar
+                                    record={detailAdjustment}
+                                    name={detailAdjustment.employee_name}
+                                    className="w-12 h-12 rounded-xl bg-white text-indigo-600 font-bold text-lg border border-indigo-100 flex-shrink-0"
+                                >
+                                    {detailAdjustment.employee_name?.charAt(0).toUpperCase() || 'E'}
+                                </ProfileAvatar>
+                                <div>
+                                    <h3 className="text-lg font-black tracking-tight text-slate-800 leading-tight">{detailAdjustment.employee_name || 'N/A'}</h3>
+                                    {detailAdjustment.employee_code && <p className="text-xs text-slate-500 font-mono mt-0.5">{detailAdjustment.employee_code}</p>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Adjustment Period</label>
+                                    <div className="text-sm font-medium text-gray-800">{formatDate(detailAdjustment.adjustment_period)}</div>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Adjustment Type</label>
+                                    <div className="text-sm font-medium text-gray-800 capitalize">{detailAdjustment.adjustment_type || 'N/A'}</div>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Usage Type</label>
+                                    <div className="text-sm font-medium text-gray-800 capitalize">{detailAdjustment.usage_type || 'Payroll'}</div>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Amount</label>
+                                    <div className={`text-base font-bold ${detailAdjustment.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                        {detailAdjustment.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(detailAdjustment.amount)}
+                                    </div>
+                                </div>
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3 col-span-2">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Adjustment Name</label>
+                                    <div className="text-sm font-medium text-gray-800">{detailAdjustment.name || 'N/A'}</div>
+                                </div>
+                            </div>
+
+                            {detailAdjustment.remark && (
+                                <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-3">
+                                    <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-gray-500">Remark / Notes</label>
+                                    <div className="text-sm italic leading-relaxed text-gray-700">"{detailAdjustment.remark}"</div>
+                                </div>
+                            )}
+                        </div>
+                    </Modal>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {deleteConfirmState && (
+                    <Modal
+                        isOpen={!!deleteConfirmState}
+                        onClose={() => setDeleteConfirmState(null)}
+                        title="Confirm Deletion"
+                        subtitle={
+                            deleteConfirmState.type === 'single'
+                                ? "Are you sure you want to permanently delete this payroll adjustment?"
+                                : `Are you sure you want to permanently delete the ${deleteConfirmState.ids.length} selected payroll adjustments?`
+                        }
+                        icon={<FaTrash className="h-6 w-6 text-rose-600" />}
+                        size="md"
+                        footer={
+                            <div className="flex justify-end gap-3 w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setDeleteConfirmState(null)}
+                                    disabled={submitting}
+                                    className="px-5 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={handleCreate}
+                                    onClick={confirmDelete}
                                     disabled={submitting}
-                                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                                    className="px-5 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-bold hover:bg-rose-700 transition-all disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {submitting ? <FaSpinner className="animate-spin" /> : null}
-                                    {submitting ? 'Saving...' : 'Save Adjustment'}
+                                    {submitting ? 'Deleting...' : 'Delete'}
                                 </button>
                             </div>
-                        </motion.div>
-                    </motion.div>
+                        }
+                    >
+                        <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 text-sm text-rose-800 leading-relaxed">
+                            <span className="font-bold">Warning:</span> This action is permanent and cannot be undone. The payroll adjustment record will be deleted from the system immediately.
+                        </div>
+                    </Modal>
                 )}
-            </AnimatePresence>
-
-        </div>
+            </div>
+        </ManagementHub>
     );
 }

@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 
-const API_BASE_URL = 'https://api-attendance.onesaas.in';
-
 export const getProfilePictureUrl = (profilePicture) => {
   if (!profilePicture || typeof profilePicture !== 'string') return null;
   const value = profilePicture.trim();
   if (!value) return null;
-  return value.startsWith('http') ? value : `${API_BASE_URL}${value.startsWith('/') ? value : `/${value}`}`;
+  return value;
 };
 
 export const getUserProfilePicture = (record) =>

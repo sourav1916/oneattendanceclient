@@ -138,11 +138,6 @@ const Signup = () => {
   const handleRequestOtp = async () => {
     if (isLoading) return;
 
-    if (!fullName) {
-      toast.error("Please enter your name");
-      return;
-    }
-
     if (activeTab === "phone" && !phone) {
       toast.error("Please enter your phone number");
       return;
@@ -150,16 +145,6 @@ const Signup = () => {
 
     if (activeTab === "email" && !email) {
       toast.error("Please enter your email address");
-      return;
-    }
-
-    if (!password) {
-      toast.error("Please set a password");
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
       return;
     }
 
@@ -202,6 +187,21 @@ const Signup = () => {
 
   const handleVerifyOtp = async () => {
     if (isLoading) return;
+
+    if (!fullName) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    if (!password) {
+      toast.error("Please set a password");
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
 
     const otpString = otp.join("");
     if (otpString.length !== 6) {
@@ -503,20 +503,6 @@ const Signup = () => {
                         </button>
                       </div>
 
-                      <div className="relative">
-                        <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                        <input
-                          type="text"
-                          placeholder="Full name"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          onFocus={() => setFocusedField('fullName')}
-                          onBlur={() => setFocusedField(null)}
-                          disabled={isLoading}
-                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                        />
-                      </div>
-
                       {activeTab === "phone" ? (
                         <div className="flex gap-2">
                           <div className="relative w-20 flex-shrink-0">
@@ -562,38 +548,6 @@ const Signup = () => {
                         </div>
                       )}
 
-                      <div className="relative">
-                        <HiOutlineLockClosed className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Choose password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          onFocus={() => setFocusedField('password')}
-                          onBlur={() => setFocusedField(null)}
-                          disabled={isLoading}
-                          className="w-full pl-11 pr-11 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          disabled={isLoading}
-                          className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                        >
-                          {showPassword ? "👁️" : "👁️‍🗨️"}
-                        </button>
-                      </div>
-
-                      <div className="text-xs text-gray-600">
-                        <p className="mb-1 text-gray-500 font-medium">Password must contain:</p>
-                        <ul className="space-y-1">
-                          <li className={`flex items-center space-x-2 ${password.length >= 6 ? 'text-green-600 font-semibold' : 'text-gray-500'}`}>
-                            <span className={password.length >= 6 ? 'text-green-600' : ''}>✓</span>
-                            <span>At least 6 characters</span>
-                          </li>
-                        </ul>
-                      </div>
-
                       <motion.button
                         whileHover={{ scale: isLoading ? 1 : 1.02 }}
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -618,29 +572,50 @@ const Signup = () => {
                   {currentStep === 2 && (
                     /* Step 2: OTP Verification */
                     <>
-                      {/* Read-only verification target */}
-                      <div className="relative">
-                        {activeTab === "phone" ? (
-                          <>
-                            <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                            <input
-                              type="tel"
-                              value={phone}
-                              disabled
-                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
-                            />
-                          </>
-                        ) : (
-                          <>
-                            <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                            <input
-                              type="email"
-                              value={email}
-                              disabled
-                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
-                            />
-                          </>
-                        )}
+                      <div className="relative mb-3">
+                        <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                        <input
+                          type="text"
+                          placeholder="Full name"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          onFocus={() => setFocusedField('fullName')}
+                          onBlur={() => setFocusedField(null)}
+                          disabled={isLoading}
+                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
+                        />
+                      </div>
+
+                      <div className="relative mb-3">
+                        <HiOutlineLockClosed className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Choose password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          onFocus={() => setFocusedField('password')}
+                          onBlur={() => setFocusedField(null)}
+                          disabled={isLoading}
+                          className="w-full pl-11 pr-11 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          disabled={isLoading}
+                          className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        >
+                          {showPassword ? "👁️" : "👁️‍🗨️"}
+                        </button>
+                      </div>
+
+                      <div className="text-xs text-gray-600 mb-3">
+                        <p className="mb-1 text-gray-500 font-medium">Password must contain:</p>
+                        <ul className="space-y-1">
+                          <li className={`flex items-center space-x-2 ${password.length >= 6 ? 'text-green-600 font-semibold' : 'text-gray-500'}`}>
+                            <span className={password.length >= 6 ? 'text-green-600' : ''}>✓</span>
+                            <span>At least 6 characters</span>
+                          </li>
+                        </ul>
                       </div>
 
                       <div className="flex justify-center gap-2">
