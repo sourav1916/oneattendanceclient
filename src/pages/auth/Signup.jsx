@@ -346,38 +346,12 @@ const Signup = () => {
           <FaUserPlus />
         </motion.div>
 
-        {/* Progress Steps */}
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 z-20">
-          {[1, 2, 3].map((step) => (
-            <div key={step} className="flex items-center">
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{
-                  scale: currentStep >= step ? 1 : 0.8,
-                  backgroundColor: currentStep >= step ? "#10B981" : "#9CA3AF"
-                }}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-              >
-                {currentStep > step ? "✓" : step}
-              </motion.div>
-              {step < 3 && (
-                <motion.div
-                  animate={{
-                    backgroundColor: currentStep > step ? "#10B981" : "#9CA3AF"
-                  }}
-                  className="w-16 h-1 mx-2 rounded"
-                  style={{ backgroundColor: currentStep > step ? "#10B981" : "#9CA3AF" }}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
+       
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10 mt-16"
+          className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10 my-auto"
         >
           {/* Left Side - Welcome Text */}
           <motion.div
