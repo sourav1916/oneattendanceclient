@@ -115,6 +115,35 @@ const parseHToMinutes = (str) => {
   return totalMinutes;
 };
 
+const hasApiValue = (value) => value !== undefined && value !== null;
+
+const toApiBoolean = (value) => {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0 || value === '' || value === null || value === undefined) return false;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes'].includes(normalized)) return true;
+    if (['false', '0', 'no'].includes(normalized)) return false;
+  }
+  return Boolean(value);
+};
+
+const readApiFlag = (...values) => {
+  const value = values.find(hasApiValue);
+  return toApiBoolean(value);
+};
+
+const getDeductibleFlag = (source) => readApiFlag(
+  source?.is_deductible,
+  source?.flags?.deductible?.enabled
+);
+
+const getOvertimeFlag = (source) => readApiFlag(
+  source?.is_overtime,
+  source?.is_ot,
+  source?.flags?.overtime?.enabled
+);
+
 const getHalfDayWindow = (shiftStart, shiftEnd, session = 'first') => {
   const startMins = toMinutes(shiftStart) ?? 9 * 60;
   const endMins = toMinutes(shiftEnd) ?? 18 * 60;
@@ -150,16 +179,8 @@ const normalizeAttendanceRecord = (record) => {
     (calculations.extra_break_minutes || 0)
   );
 
-  const isOvertime = Boolean(
-    flags.overtime?.enabled ||
-    record.is_overtime ||
-    overtimeMinutes > 0
-  );
-  const isDeductible = Boolean(
-    flags.deductible?.enabled ||
-    record.is_deductible ||
-    deductibleMinutes > 0
-  );
+  const isOvertime = readApiFlag(record.is_overtime, flags.overtime?.enabled);
+  const isDeductible = readApiFlag(record.is_deductible, flags.deductible?.enabled);
 
   return {
     ...record,
@@ -194,15 +215,18 @@ const mapApiEmployee = (emp, fallbackDate) => {
   const punchAtt = pickPunchAttendance(attendances);
   const displayDate = att?.attendance_date || fallbackDate || '';
   const flags = att?.flags || {};
-  const isOvertime = Boolean(att?.is_overtime || flags.overtime?.enabled);
-  const isDeductible = Boolean(att?.is_deductible || flags.deductible?.enabled);
+
+  // ✅ Only use the actual is_overtime / is_deductible flags from API — not derived from calculations
+  const isOvertime = getOvertimeFlag(att);
+  const isDeductible = getDeductibleFlag(att);
+
   const primaryPunchIn = att?.punch_in || null;
   const primaryPunchOut = att?.punch_out || null;
   const displayPunchIn = primaryPunchIn || punchAtt?.punch_in || null;
   const displayPunchOut = primaryPunchOut || punchAtt?.punch_out || null;
 
-  // Detect half_day_type from existing attendance record
-  const halfDayType = att?.half_day_type || null;
+  // ✅ FIX: read half_day_session (API field) with half_day_type as fallback
+  const halfDayType = att?.half_day_session || att?.half_day_type || null;
 
   return {
     id: emp.employee_id,
@@ -301,7 +325,6 @@ const buildMarkPayload = (emp, action, options = {}) => {
     case 'absent':
       return { ...base, status: 'absent' };
 
-    // Deductible: toggle is_deductible on existing present/half_day record
     case 'allow_deductible':
       return {
         ...base,
@@ -309,7 +332,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
         start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
         end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
         is_deductible: true,
-        is_overtime: Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
+        is_overtime: getOvertimeFlag(emp),
       };
     case 'remove_deductible':
       return {
@@ -318,10 +341,9 @@ const buildMarkPayload = (emp, action, options = {}) => {
         start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
         end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
         is_deductible: false,
-        is_overtime: Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
+        is_overtime: getOvertimeFlag(emp),
       };
 
-    // Overtime: toggle is_overtime on existing present/half_day record
     case 'allow_overtime':
       return {
         ...base,
@@ -329,7 +351,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
         start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
         end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
         is_overtime: true,
-        is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
+        is_deductible: getDeductibleFlag(emp),
       };
     case 'remove_overtime':
       return {
@@ -338,7 +360,7 @@ const buildMarkPayload = (emp, action, options = {}) => {
         start_time: getExactPunchTime(emp.punch_in || emp.shift_start) || '09:00',
         end_time: getExactPunchTime(emp.punch_out || emp.shift_end) || '18:00',
         is_overtime: false,
-        is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
+        is_deductible: getDeductibleFlag(emp),
       };
 
     case 'paid_leave':
@@ -357,8 +379,8 @@ const buildMarkPayload = (emp, action, options = {}) => {
         status: 'present',
         start_time: getExactPunchTime(emp.shift_start) || '09:00',
         end_time: getExactPunchTime(emp.shift_end) || '18:00',
-        is_overtime: Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled),
-        is_deductible: Boolean(emp.is_deductible || emp.flags?.deductible?.enabled),
+        is_overtime: getOvertimeFlag(emp),
+        is_deductible: getDeductibleFlag(emp),
       };
 
     default:
@@ -490,15 +512,14 @@ const SummaryBar = ({ counts }) => {
 };
 
 // ─── DEDUCTIBLE / OVERTIME ACTION MODAL ───────────────────────────────────────
-// Compact confirm modal — NO punch in/out fields
 const FlagActionModal = ({ employee, flagType, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [notes, setNotes] = useState('');
 
   const isDeductible = flagType === 'deductible';
   const currentlyEnabled = isDeductible
-    ? Boolean(employee?.is_deductible || employee?.flags?.deductible?.enabled)
-    : Boolean(employee?.is_overtime || employee?.is_ot || employee?.flags?.overtime?.enabled);
+    ? getDeductibleFlag(employee)
+    : getOvertimeFlag(employee);
 
   const action = currentlyEnabled
     ? (isDeductible ? 'remove_deductible' : 'remove_overtime')
@@ -636,7 +657,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
   const [punchOut, setPunchOut] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Half day: default from existing data
+  // ✅ half_day_type is now correctly populated from half_day_session via mapApiEmployee
   const defaultHalfSession = employee?.half_day_type === 'second_half' ? 'second' : 'first';
   const [halfSession, setHalfSession] = useState(defaultHalfSession);
 
@@ -662,7 +683,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     setPunchIn(defaultIn);
     setPunchOut(defaultOut);
     setNotes('');
-    // Default half session from existing data
+    // ✅ half_day_type correctly reads second_half from API via mapApiEmployee fix
     setHalfSession(employee?.half_day_type === 'second_half' ? 'second' : 'first');
     setLeaveSubTab('paid');
     setSelectedLeave(null);
@@ -736,7 +757,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
     };
   }, [punchIn, punchOut, employee]);
 
-  // Only 4 tabs now
   const TABS = [
     { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { id: 'half_day', label: 'Half Day', icon: FaHourglassHalf, color: 'text-sky-500', bg: 'bg-sky-50' },
@@ -883,7 +903,7 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
               </div>
             </div>
 
-            {/* Show if this came from existing data */}
+            {/* ✅ Shows correct session from API response */}
             {employee?.half_day_type && (
               <div className="flex items-center gap-2 rounded-xl bg-sky-50 border border-sky-100 px-3 py-2">
                 <FaCheckCircle size={11} className="text-sky-500 shrink-0" />
@@ -1078,7 +1098,6 @@ const ManageAttendanceModal = ({ employee, initialTab, onClose, onSubmit }) => {
       }
     >
       <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
-        {/* Tab nav — 4 tabs only */}
         <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 flex flex-row items-center p-2 gap-1 overflow-x-auto scrollbar-hide">
           {TABS.map(tab => {
             const Icon = tab.icon;
@@ -1306,8 +1325,8 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
   const canShowFlagActions = emp.day_status === 'present' || emp.day_status === 'half_day';
 
   // ✅ Only use the actual flags from API response — NOT derived from calculations
-  const isDeductible = Boolean(emp.is_deductible || emp.flags?.deductible?.enabled);
-  const isOvertime = Boolean(emp.is_overtime || emp.is_ot || emp.flags?.overtime?.enabled);
+  const isDeductible = getDeductibleFlag(emp);
+  const isOvertime = getOvertimeFlag(emp);
 
   const deductMins = (emp.calculations?.late_minutes || 0) +
     (emp.calculations?.early_leave_minutes || 0) +
@@ -1380,7 +1399,7 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
               )}
             </div>
 
-            {/* ✅ Status badges — only shown when truly active from API flags */}
+            {/* Status badges — only shown when truly active from API flags */}
             <div className="flex flex-wrap items-center gap-2">
               {canShowFlagActions && isDeductible && deductMins > 0 && (
                 <span className="text-[10px] text-rose-500 font-bold">Late: {formatMins(deductMins)}</span>
@@ -1396,7 +1415,7 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
             </div>
           </div>
 
-          {/* ✅ Action buttons grid — all 6 using ManagementButton */}
+          {/* Action buttons grid — all 6 using ManagementButton */}
           <div className="grid grid-cols-2 gap-2 shrink-0 md:w-48">
             {/* Row 1 */}
             <ManagementButton
@@ -1440,7 +1459,7 @@ const EmployeeAttendanceCard = ({ emp, onAction, selected, onToggleSelect, isSel
               Leave
             </ManagementButton>
 
-            {/* Row 3 — Deduct & OT: always rendered, disabled unless flag is true */}
+            {/* Row 3 — Deduct & OT: always rendered, disabled unless flag is true from API */}
             <ManagementButton
               size="sm"
               tone="rose"
@@ -1494,7 +1513,7 @@ const UnmarkedAttendance = () => {
   const [search, setSearch] = useState('');
   const [dayStatus, setDayStatus] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [modal, setModal] = useState(null); // { type, emp }
+  const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -1583,7 +1602,6 @@ const UnmarkedAttendance = () => {
   const handleEmployeeChange = (id) => { setSelectedEmployee(id); goToPage(1); };
 
   const handleAction = (emp, action) => {
-    // Flag actions open the dedicated flag modal
     if (action === 'flag_deductible') {
       setModal({ type: 'flag_deductible', emp });
       return;
@@ -1674,7 +1692,6 @@ const UnmarkedAttendance = () => {
     [employees, selectedIds]
   );
 
-  // Determine modal type
   const isManageModal = modal && !['logs', 'flag_deductible', 'flag_overtime'].includes(modal.type);
   const isFlagDeductModal = modal?.type === 'flag_deductible';
   const isFlagOtModal = modal?.type === 'flag_overtime';
@@ -1868,7 +1885,6 @@ const UnmarkedAttendance = () => {
 
       {/* Modals */}
       <AnimatePresence>
-        {/* Main manage modal — 4 tabs */}
         {isManageModal && (
           <ManageAttendanceModal
             key={`modal-${modal.emp.employee_id}`}
@@ -1879,7 +1895,6 @@ const UnmarkedAttendance = () => {
           />
         )}
 
-        {/* Deductible flag modal */}
         {isFlagDeductModal && (
           <FlagActionModal
             key={`deduct-${modal.emp.employee_id}`}
@@ -1890,7 +1905,6 @@ const UnmarkedAttendance = () => {
           />
         )}
 
-        {/* Overtime flag modal */}
         {isFlagOtModal && (
           <FlagActionModal
             key={`ot-${modal.emp.employee_id}`}
@@ -1901,7 +1915,6 @@ const UnmarkedAttendance = () => {
           />
         )}
 
-        {/* Bulk modal */}
         {bulkModalOpen && bulkAction && (
           <BulkAttendanceModal
             employees={selectedEmployees}
@@ -1911,7 +1924,6 @@ const UnmarkedAttendance = () => {
           />
         )}
 
-        {/* Logs modal */}
         {modal?.type === 'logs' && (
           <AttendanceLogsModal
             id={modal.emp.attendance_id || modal.emp.id}
