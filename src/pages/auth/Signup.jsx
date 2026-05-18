@@ -3,9 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUserShield,
-  FaUser,
-  FaEnvelope,
-  FaLock,
   FaArrowRight,
   FaArrowLeft,
   FaCheckCircle,
@@ -23,7 +20,6 @@ import { useAuth } from "../../context/AuthContext";
 import { getPreciseLocation } from "../../utils/geolocation";
 import GoogleAuthButton from "../../components/GoogleAuthButton";
 import FacebookAuthButton from "../../components/FacebookAuthButton";
-
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -134,7 +130,6 @@ const Signup = () => {
       if (prevInput) prevInput.focus();
     }
   };
-
 
   const handleRequestOtp = async () => {
     if (isLoading) return;
@@ -272,7 +267,7 @@ const Signup = () => {
 
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
-      toast.success("OTP resent to your email ðŸ“§");
+      toast.success("OTP resent to your email 📧");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -289,8 +284,6 @@ const Signup = () => {
     }
   };
 
-  // Add animation styles to a separate CSS file or use style tag in index.html
-  // For now, we'll add them inline in a style tag without the jsx prop
   const animationStyles = `
     @keyframes slideIn {
       from {
@@ -389,7 +382,7 @@ const Signup = () => {
           {/* Left Side - Welcome Text */}
           <motion.div
             variants={itemVariants}
-            className="mb-10 lg:mb-0 lg:w-1/2 text-white px-4 lg:px-8"
+            className="hidden lg:block lg:w-1/2 text-white px-4 lg:px-8"
           >
             <motion.h1
               initial={{ scale: 0.5, opacity: 0 }}
@@ -437,30 +430,29 @@ const Signup = () => {
           {/* Right Side - Signup Card */}
           <motion.div
             variants={itemVariants}
-            className="w-full lg:w-96"
+            className="w-full max-w-[400px] lg:w-96"
           >
             <motion.div
               initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, type: "spring" }}
-              className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl"
-              style={{ minHeight: "480px" }}
+              className="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-2xl"
             >
               {/* Header */}
               <motion.div
                 variants={itemVariants}
-                className="flex flex-col items-center mb-4"
+                className="flex flex-col items-center mb-3"
               >
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.1 }}
                   transition={{ duration: 0.5 }}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl text-white text-2xl shadow-lg"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 p-2.5 rounded-xl text-white text-xl shadow-md"
                 >
                   <FaUserShield />
                 </motion.div>
                 <motion.h2
                   variants={itemVariants}
-                  className="text-xl font-bold text-gray-800 mt-2"
+                  className="text-lg font-bold text-gray-800 mt-1.5"
                 >
                   {getStepTitle()}
                 </motion.h2>
@@ -483,7 +475,7 @@ const Signup = () => {
                   animate="center"
                   exit="exit"
                   transition={{ type: "tween", duration: 0.3 }}
-                  className="space-y-5"
+                  className="space-y-3.5"
                 >
                   {currentStep === 1 && (
                     /* Step 1: Basic Info */
@@ -500,14 +492,14 @@ const Signup = () => {
                         onAuthenticated={login}
                       />
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div className="h-px flex-1 bg-gray-200" />
-                        <span className="text-xs font-semibold uppercase text-gray-400">or</span>
+                        <span className="text-[10px] font-bold uppercase text-gray-400">or</span>
                         <div className="h-px flex-1 bg-gray-200" />
                       </div>
 
                       <div className="relative">
-                        <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                           type="text"
                           placeholder="Full name"
@@ -516,12 +508,12 @@ const Signup = () => {
                           onFocus={() => setFocusedField('fullName')}
                           onBlur={() => setFocusedField(null)}
                           disabled={isLoading}
-                          className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
+                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
                         />
                       </div>
 
                       <div className="relative">
-                        <HiOutlineMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                        <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                           type="email"
                           placeholder="Email address"
@@ -530,7 +522,7 @@ const Signup = () => {
                           onFocus={() => setFocusedField('email')}
                           onBlur={() => setFocusedField(null)}
                           disabled={isLoading}
-                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
+                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
                         />
                       </div>
 
@@ -539,7 +531,7 @@ const Signup = () => {
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         onClick={handleRequestOtp}
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 relative overflow-hidden group"
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 relative overflow-hidden group text-sm"
                       >
                         {loadingAction === "request-otp" ? (
                           <div className="flex items-center justify-center">
@@ -570,14 +562,14 @@ const Signup = () => {
                             onChange={(e) => handleOtpChange(index, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
                             disabled={isLoading}
-                            className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
+                            className="w-10 h-12 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
                             whileFocus={{ scale: 1.05 }}
                           />
                         ))}
                       </div>
 
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center space-x-2 text-gray-600">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center space-x-1.5 text-gray-600">
                           <FaRegClock />
                           <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Code expired?'}</span>
                         </div>
@@ -590,19 +582,19 @@ const Signup = () => {
                             }`}
                         >
                           <div className="flex items-center space-x-1">
-                            {loadingAction === "resend-otp" ? <FaSpinner className="h-3.5 w-3.5 animate-spin" /> : <BiReset />}
+                            {loadingAction === "resend-otp" ? <FaSpinner className="h-3 w-3 animate-spin" /> : <BiReset />}
                             <span>{loadingAction === "resend-otp" ? "Sending..." : "Resend"}</span>
                           </div>
                         </motion.button>
                       </div>
 
-                      <div className="flex gap-3">
+                      <div className="flex gap-2">
                         <motion.button
                           whileHover={{ scale: isLoading ? 1 : 1.02 }}
                           whileTap={{ scale: isLoading ? 1 : 0.98 }}
                           onClick={() => setCurrentStep(1)}
                           disabled={isLoading}
-                          className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition-colors"
+                          className="flex-1 bg-gray-500 text-white py-2.5 rounded-xl font-semibold hover:bg-gray-600 transition-colors text-sm"
                         >
                           <div className="flex items-center justify-center space-x-2">
                             <FaArrowLeft />
@@ -615,7 +607,7 @@ const Signup = () => {
                           whileTap={{ scale: isLoading ? 1 : 0.98 }}
                           onClick={handleVerifyOtp}
                           disabled={isLoading}
-                          className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                          className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-sm"
                         >
                           {loadingAction === "verify-otp" ? (
                             <div className="flex items-center justify-center">
@@ -633,7 +625,7 @@ const Signup = () => {
                     /* Step 3: Set Password */
                     <>
                       <div className="relative">
-                        <HiOutlineUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                        <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                           type="tel"
                           placeholder="Phone number"
@@ -641,32 +633,32 @@ const Signup = () => {
                           onChange={(e) => setPhone(e.target.value)}
                           required
                           disabled={isLoading}
-                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
+                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
                         />
                       </div>
 
                       <div className="relative">
-                        <HiOutlineLockClosed className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl" />
+                        <HiOutlineLockClosed className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                           type={showPassword ? "text" : "password"}
                           placeholder="Create password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={isLoading}
-                          className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white disabled:opacity-60"
+                          className="w-full pl-11 pr-11 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           disabled={isLoading}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                          className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                         >
                           {showPassword ? "👁️" : "👁️‍🗨️"}
                         </button>
                       </div>
 
-                      <div className="text-sm text-gray-600">
-                        <p className="mb-2">Password must contain:</p>
+                      <div className="text-xs text-gray-600">
+                        <p className="mb-1">Password must contain:</p>
                         <ul className="space-y-1">
                           <li className={`flex items-center space-x-2 ${password.length >= 6 ? 'text-green-600' : 'text-gray-500'}`}>
                             <span className={password.length >= 6 ? 'text-green-600' : ''}>✓</span>
@@ -680,7 +672,7 @@ const Signup = () => {
                         whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         onClick={handleCreateAccount}
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                        className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-sm"
                       >
                         {loadingAction === "create-account" ? (
                           <div className="flex items-center justify-center">
@@ -698,7 +690,7 @@ const Signup = () => {
               {/* Login Link */}
               <motion.div
                 variants={itemVariants}
-                className="mt-4 text-center text-sm text-gray-600"
+                className="mt-3.5 text-center text-xs text-gray-600"
               >
                 Already have an account?{' '}
                 <Link to="/login">
@@ -716,7 +708,7 @@ const Signup = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1 }}
-                className="mt-3 flex items-center justify-center space-x-2 text-xs text-gray-500"
+                className="mt-2.5 flex items-center justify-center space-x-2 text-xs text-gray-500"
               >
                 <FaShieldAlt className="text-green-500" />
                 <span>Your data is protected with 256-bit encryption</span>

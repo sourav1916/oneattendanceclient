@@ -321,7 +321,7 @@ const Login = () => {
         <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10">
 
           {/* Left Content */}
-          <motion.div variants={itemVariants} className="mb-10 lg:mb-0 lg:w-1/2 text-white px-4 lg:px-8">
+          <motion.div variants={itemVariants} className="hidden lg:block lg:w-1/2 text-white px-4 lg:px-8">
             <motion.h1 initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, type: "spring" }} className="text-5xl lg:text-6xl font-bold leading-tight">
               Welcome to <span className="bg-clip-text text-transparent bg-gradient-to-r from-yellow-300 to-pink-300">OneAttendance</span>
             </motion.h1>
@@ -339,7 +339,7 @@ const Login = () => {
           </motion.div>
 
           {/* Right Card */}
-          <motion.div variants={itemVariants} className="w-full lg:w-96">
+          <motion.div variants={itemVariants} className="w-full max-w-[400px] lg:w-96">
             <div className="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-2xl">
               <AnimatePresence mode="wait">
                 {!showCompanySelection ? (

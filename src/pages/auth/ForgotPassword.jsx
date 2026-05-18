@@ -11,7 +11,6 @@ import {
   FaRegClock,
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
-import { BiReset } from "react-icons/bi";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 
@@ -193,7 +192,7 @@ const ForgotPassword = () => {
         </motion.div>
 
         <motion.div initial="hidden" animate="visible" variants={containerVariants} className="flex flex-col lg:flex-row items-center justify-between w-full lg:max-w-6xl max-w-xl relative z-10">
-          <motion.div variants={itemVariants} className="mb-10 lg:mb-0 lg:w-1/2 text-white px-4 lg:px-8">
+          <motion.div variants={itemVariants} className="hidden lg:block lg:w-1/2 text-white px-4 lg:px-8">
             <motion.h1
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -221,16 +220,16 @@ const ForgotPassword = () => {
             </div>
           </motion.div>
 
-          <motion.div variants={itemVariants} className="w-full lg:w-96">
-            <div className="bg-white/95 backdrop-blur-lg p-8 rounded-xl shadow-2xl">
-              <div className="flex flex-col items-center mb-8">
-                <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-xl text-white text-3xl shadow-lg">
+          <motion.div variants={itemVariants} className="w-full max-w-[400px] lg:w-96">
+            <div className="bg-white/95 backdrop-blur-lg p-6 rounded-xl shadow-2xl">
+              <div className="flex flex-col items-center mb-3">
+                <motion.div whileHover={{ rotate: 360, scale: 1.1 }} className="bg-gradient-to-r from-blue-600 to-purple-600 p-2.5 rounded-xl text-white text-xl shadow-md">
                   <FaUserShield />
                 </motion.div>
-                <h2 className="text-2xl font-bold text-gray-800 mt-4">
+                <h2 className="text-lg font-bold text-gray-800 mt-1.5">
                   {step === "request" ? "Forgot Password" : step === "verify" ? "Verify OTP" : "Reset Password"}
                 </h2>
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-xs text-gray-500 text-center">
                   {step === "request"
                     ? "Enter your email to receive an OTP"
                     : step === "verify"
@@ -240,16 +239,16 @@ const ForgotPassword = () => {
               </div>
 
               {step === "request" && (
-                <div className="space-y-5">
+                <div className="space-y-3.5">
                   <div className="relative">
-                    <HiOutlineMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                     <input
                       type="email"
                       placeholder="Email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isLoading}
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60"
+                      className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
                     />
                   </div>
                   <motion.button
@@ -257,7 +256,7 @@ const ForgotPassword = () => {
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
                     onClick={handleRequestOtp}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg text-sm disabled:opacity-60"
                   >
                     {loadingAction === "request" ? <FaSpinner className="mx-auto h-5 w-5 animate-spin" /> : "Request OTP"}
                   </motion.button>
@@ -265,14 +264,14 @@ const ForgotPassword = () => {
               )}
 
               {step === "verify" && (
-                <div className="space-y-5">
+                <div className="space-y-3.5">
                   <div className="relative">
-                    <HiOutlineMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                     <input
                       type="email"
                       value={email}
                       disabled
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500"
+                      className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
                     />
                   </div>
 
@@ -288,13 +287,13 @@ const ForgotPassword = () => {
                         onChange={(e) => handleOtpChange(index, e.target.value.replace(/\D/g, ""))}
                         onKeyDown={(e) => handleOtpKeyDown(index, e)}
                         disabled={isLoading}
-                        className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60"
+                        className="w-10 h-12 text-center text-xl font-bold border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60"
                       />
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-2 text-gray-600">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-1.5 text-gray-600">
                       <FaRegClock />
                       <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : "OTP expired?"}</span>
                     </div>
@@ -305,10 +304,10 @@ const ForgotPassword = () => {
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
                     onClick={handleRequestOtp}
                     disabled={resendTimer > 0 || isLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg text-sm disabled:opacity-60"
                   >
                     {loadingAction === "request" ? (
-                      <span className="inline-flex items-center justify-center gap-2">
+                      <span className="inline-flex items-center justify-center gap-2 text-sm">
                         <FaSpinner className="h-4 w-4 animate-spin" />
                         Sending OTP
                       </span>
@@ -322,7 +321,7 @@ const ForgotPassword = () => {
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
                     onClick={handleVerifyOtp}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60"
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-500 text-white py-2.5 rounded-xl font-semibold shadow-lg text-sm disabled:opacity-60"
                   >
                     {loadingAction === "verify" ? <FaSpinner className="mx-auto h-5 w-5 animate-spin" /> : "Verify OTP"}
                   </motion.button>
@@ -330,46 +329,46 @@ const ForgotPassword = () => {
               )}
 
               {step === "reset" && (
-                <div className="space-y-5">
+                <div className="space-y-3.5">
                   <div className="relative">
-                    <HiOutlineMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                     <input
                       type="email"
                       value={email}
                       disabled
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500"
+                      className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
                     />
                   </div>
 
                   <div className="relative">
-                    <HiOutlineLockClosed className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
+                    <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="New password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       disabled={isLoading}
-                      className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60"
+                      className="w-full pl-11 pr-11 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 disabled:opacity-50"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 disabled:opacity-50 text-sm"
                     >
                       {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
 
                   <div className="relative">
-                    <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <FaLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
                     <input
                       type="password"
                       placeholder="Confirm password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       disabled={isLoading}
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 disabled:opacity-60"
+                      className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
                     />
                   </div>
 
@@ -378,14 +377,14 @@ const ForgotPassword = () => {
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
                     onClick={handleResetPassword}
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold shadow-lg disabled:opacity-60"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-xl font-semibold shadow-lg text-sm disabled:opacity-60"
                   >
                     {loadingAction === "reset" ? <FaSpinner className="mx-auto h-5 w-5 animate-spin" /> : "Reset Password"}
                   </motion.button>
                 </div>
               )}
 
-              <div className="mt-6 text-center text-sm text-gray-600">
+              <div className="mt-4 text-center text-xs text-gray-600">
                 Remembered it? <Link to="/login" className="text-blue-600 font-semibold hover:underline">Back to Login</Link>
               </div>
             </div>
