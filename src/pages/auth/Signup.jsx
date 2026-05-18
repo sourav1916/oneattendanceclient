@@ -14,6 +14,8 @@ import {
 } from "react-icons/fa";
 import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlinePhone } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
+import countryCodes from "../../utils/countryCodes.json";
+import { CountryCodeModal, getFlagEmoji } from "../../components/common";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
@@ -24,6 +26,9 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("phone"); // default to "phone"
+  const [isTabLocked, setIsTabLocked] = useState(false);
+  const [countryCode, setCountryCode] = useState("91");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -152,7 +157,7 @@ const Signup = () => {
       setLoadingAction("request-otp");
       const res = await apiCall('/auth/signup/request-otp', 'POST', {
         email: activeTab === "email" ? email : "",
-        phone: activeTab === "phone" ? phone : "",
+        phone: activeTab === "phone" ? (countryCode + phone) : "",
         signup_type: activeTab,
       });
 
@@ -160,6 +165,7 @@ const Signup = () => {
 
       if (res.ok) {
         setOtpSent(true);
+        setIsTabLocked(true);
         setResendTimer(60);
         setOtp(["", "", "", "", "", ""]);
         setCurrentStep(2);
@@ -193,7 +199,7 @@ const Signup = () => {
       const verifyRes = await apiCall('/auth/signup/verify-otp', 'POST', {
         signup_type: activeTab,
         email: activeTab === "email" ? email : "",
-        phone: activeTab === "phone" ? phone : "",
+        phone: activeTab === "phone" ? (countryCode + phone) : "",
         otp: Number(otpString),
         password: "", // Will be configured in Step 3
         name: fullName,
@@ -240,12 +246,13 @@ const Signup = () => {
     try {
       setLoadingAction("create-account");
 
+      const fullPhone = countryCode + phone;
       const payload = {
         signup_type: activeTab,
         email: email,
         password: password,
         name: fullName,
-        phone: isNaN(phone) || phone === "" ? phone : Number(phone),
+        phone: isNaN(fullPhone) || fullPhone === "" ? fullPhone : Number(fullPhone),
         platform: "web"
       };
 
@@ -498,24 +505,22 @@ const Signup = () => {
                         <button
                           type="button"
                           onClick={() => setActiveTab("phone")}
-                          disabled={isLoading}
-                          className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${
-                            activeTab === "phone"
+                          disabled={isLoading || isTabLocked}
+                          className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === "phone"
                               ? "bg-white text-gray-600 shadow-sm"
                               : "text-gray-500 hover:text-gray-700"
-                          }`}
+                            } ${isTabLocked ? "opacity-60 cursor-not-allowed" : ""}`}
                         >
                           Phone
                         </button>
                         <button
                           type="button"
                           onClick={() => setActiveTab("email")}
-                          disabled={isLoading}
-                          className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${
-                            activeTab === "email"
+                          disabled={isLoading || isTabLocked}
+                          className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === "email"
                               ? "bg-white text-gray-600 shadow-sm"
                               : "text-gray-500 hover:text-gray-700"
-                          }`}
+                            } ${isTabLocked ? "opacity-60 cursor-not-allowed" : ""}`}
                         >
                           Email
                         </button>
@@ -536,18 +541,33 @@ const Signup = () => {
                       </div>
 
                       {activeTab === "phone" ? (
-                        <div className="relative">
-                          <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                          <input
-                            type="tel"
-                            placeholder="Phone Number (primary)"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            onFocus={() => setFocusedField('phone')}
-                            onBlur={() => setFocusedField(null)}
-                            disabled={isLoading}
-                            className="w-full pl-11 pr-4 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
-                          />
+                        <div className="flex gap-2">
+                          <div className="relative w-20 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setIsModalOpen(true)}
+                              disabled={isLoading || isTabLocked}
+                              className="w-full flex items-center justify-between px-3 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none bg-gray-50 text-sm font-semibold text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors rounded-xl"
+                            >
+                              <span>
+                                {getFlagEmoji(countryCodes.find(c => c.dial_code === countryCode)?.code || "IN")} +{countryCode}
+                              </span>
+                              <span className="text-gray-400 text-xs">▼</span>
+                            </button>
+                          </div>
+                          <div className="relative flex-grow">
+                            <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                            <input
+                              type="tel"
+                              placeholder="Phone Number (primary)"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              onFocus={() => setFocusedField('phone')}
+                              onBlur={() => setFocusedField(null)}
+                              disabled={isLoading}
+                              className="w-full pl-11 pr-4 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
+                            />
+                          </div>
                         </div>
                       ) : (
                         <div className="relative">
@@ -701,16 +721,31 @@ const Signup = () => {
                           />
                         </div>
                       ) : (
-                        <div className="relative">
-                          <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                          <input
-                            type="tel"
-                            placeholder="Phone Number (secondary)"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            disabled={isLoading}
-                            className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                          />
+                        <div className="flex gap-2">
+                          <div className="relative w-20 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setIsModalOpen(true)}
+                              disabled={isLoading}
+                              className="w-full flex items-center justify-between px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none bg-gray-50 text-sm font-semibold text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                            >
+                              <span>
+                                {getFlagEmoji(countryCodes.find(c => c.dial_code === countryCode)?.code || "IN")} +{countryCode}
+                              </span>
+                              <span className="text-gray-400 text-xs">▼</span>
+                            </button>
+                          </div>
+                          <div className="relative flex-grow">
+                            <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                            <input
+                              type="tel"
+                              placeholder="Phone Number (secondary)"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              disabled={isLoading}
+                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
+                            />
+                          </div>
                         </div>
                       )}
 
@@ -793,6 +828,12 @@ const Signup = () => {
             </motion.div>
           </motion.div>
         </motion.div>
+        <CountryCodeModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSelect={(code) => setCountryCode(code)}
+          selectedCode={countryCode}
+        />
       </div>
     </>
   );

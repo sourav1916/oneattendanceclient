@@ -12,8 +12,10 @@ import {
   FaSpinner,
   FaMobileAlt
 } from "react-icons/fa";
-import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlinePhone } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
+import countryCodes from "../../utils/countryCodes.json";
+import { CountryCodeModal, getFlagEmoji } from "../../components/common";
 import { useAuth } from "../../context/AuthContext";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
@@ -25,6 +27,9 @@ const Login = () => {
   const { user, login, selectCompany, companies, mustSelectCompany, showCompanySelection, setShowCompanySelection } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("phone"); // default to "phone"
+  const [isTabLocked, setIsTabLocked] = useState(false);
+  const [countryCode, setCountryCode] = useState("91");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -142,7 +147,7 @@ const Login = () => {
       setLoadingAction("request-otp");
       const payload = {
         login_type: activeTab === "phone" ? "mobile" : "email",
-        mobile: activeTab === "phone" ? mobile : "",
+        mobile: activeTab === "phone" ? (countryCode + mobile) : "",
         email: activeTab === "email" ? email : "",
         password: password
       };
@@ -153,11 +158,12 @@ const Login = () => {
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
 
       setOtpSent(true);
+      setIsTabLocked(true);
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
       toast.success(
-        activeTab === "phone" 
-          ? "OTP sent to your phone number 📱" 
+        activeTab === "phone"
+          ? "OTP sent to your phone number 📱"
           : "OTP sent to your email 📧"
       );
     } catch (err) {
@@ -191,8 +197,8 @@ const Login = () => {
 
       const payload = {
         login_type: activeTab === "phone" ? "phone" : "email",
-        mobile: activeTab === "phone" ? mobile : "",
-        phone: activeTab === "phone" ? mobile : "",
+        mobile: activeTab === "phone" ? (countryCode + mobile) : "",
+        phone: activeTab === "phone" ? (countryCode + mobile) : "",
         email: activeTab === "email" ? email : "",
         password: password,
         otp: otpString,
@@ -220,7 +226,7 @@ const Login = () => {
 
   const handleResendOtp = async () => {
     if (resendTimer > 0 || isLoading) return;
-    
+
     if (activeTab === "phone") {
       if (!mobile || !password) {
         toast.error("Please enter both phone number and password");
@@ -250,8 +256,8 @@ const Login = () => {
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
       toast.success(
-        activeTab === "phone" 
-          ? "OTP resent to your phone number 📱" 
+        activeTab === "phone"
+          ? "OTP resent to your phone number 📱"
           : "OTP resent to your email 📧"
       );
     } catch (err) {
@@ -377,42 +383,55 @@ const Login = () => {
                           <button
                             type="button"
                             onClick={() => setActiveTab("phone")}
-                            disabled={isLoading}
-                            className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${
-                              activeTab === "phone"
+                            disabled={isLoading || isTabLocked}
+                            className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === "phone"
                                 ? "bg-white text-gray-600 shadow-sm"
                                 : "text-gray-500 hover:text-gray-700"
-                            }`}
+                              } ${isTabLocked ? "opacity-60 cursor-not-allowed" : ""}`}
                           >
                             Phone
                           </button>
                           <button
                             type="button"
                             onClick={() => setActiveTab("email")}
-                            disabled={isLoading}
-                            className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${
-                              activeTab === "email"
+                            disabled={isLoading || isTabLocked}
+                            className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${activeTab === "email"
                                 ? "bg-white text-gray-600 shadow-sm"
                                 : "text-gray-500 hover:text-gray-700"
-                            }`}
+                              } ${isTabLocked ? "opacity-60 cursor-not-allowed" : ""}`}
                           >
                             Email
                           </button>
                         </div>
 
                         {activeTab === "phone" ? (
-                          <div className="relative">
-                            <FaMobileAlt className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                            <input
-                              type="tel"
-                              placeholder="Phone (+91 9876543210)"
-                              value={mobile}
-                              onChange={(e) => setMobile(e.target.value)}
-                              onFocus={() => setFocusedField('phone')}
-                              onBlur={() => setFocusedField(null)}
-                              disabled={isLoading}
-                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
-                            />
+                          <div className="flex gap-2">
+                            <div className="relative w-20 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setIsModalOpen(true)}
+                                disabled={isLoading || isTabLocked}
+                                className="w-full flex items-center justify-between px-3 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm font-semibold text-gray-700 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                              >
+                                <span>
+                                  {getFlagEmoji(countryCodes.find(c => c.dial_code === countryCode)?.code || "IN")} +{countryCode}
+                                </span>
+                                <span className="text-gray-400 text-xs">▼</span>
+                              </button>
+                            </div>
+                            <div className="relative flex-grow">
+                              <HiOutlinePhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                              <input
+                                type="tel"
+                                placeholder="Phone number"
+                                value={mobile}
+                                onChange={(e) => setMobile(e.target.value)}
+                                onFocus={() => setFocusedField('phone')}
+                                onBlur={() => setFocusedField(null)}
+                                disabled={isLoading}
+                                className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
+                              />
+                            </div>
                           </div>
                         ) : (
                           <div className="relative">
@@ -529,6 +548,12 @@ const Login = () => {
             </div>
           </motion.div>
         </motion.div>
+        <CountryCodeModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSelect={(code) => setCountryCode(code)}
+          selectedCode={countryCode}
+        />
       </div>
     </>
   );
