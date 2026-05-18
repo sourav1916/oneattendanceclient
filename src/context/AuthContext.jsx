@@ -100,6 +100,7 @@ export const AuthProvider = ({ children }) => {
   const [userDetails, setUserDetails] = useState(null);
   const [attendanceMethods, setAttendanceMethods] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [serverUnavailable, setServerUnavailable] = useState(false);
 
   const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
@@ -129,6 +130,7 @@ export const AuthProvider = ({ children }) => {
       setMustSelectCompany(false);
       setShowCompanySelection(false);
       setLoading(false);
+      setServerUnavailable(false);
     }
   };
 
@@ -140,6 +142,10 @@ export const AuthProvider = ({ children }) => {
       if (!res.ok) {
         if (res.status === 401) {
           logout();
+          setServerUnavailable(false);
+        } else {
+          console.error("Profile fetch returned non-ok status:", res.status);
+          setServerUnavailable(true);
         }
         return;
       }
@@ -232,11 +238,16 @@ export const AuthProvider = ({ children }) => {
           setShowCompanySelection(false);
         }
 
+        // Reset serverUnavailable on full success
+        setServerUnavailable(false);
+
       } else {
         console.warn("Profile fetch returned success: false");
+        setServerUnavailable(true);
       }
     } catch (error) {
       console.error("Profile fetch failed:", error);
+      setServerUnavailable(true);
     } finally {
       setLoading(false);
     }
@@ -275,6 +286,18 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
     if (token) {
       await fetchUserProfile(token);
+    }
+  };
+
+  // ✅ RETRY CONNECTION
+  const retryConnection = async () => {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    if (token) {
+      await fetchUserProfile(token);
+    } else {
+      setLoading(false);
+      setServerUnavailable(false);
     }
   };
 
@@ -332,6 +355,8 @@ export const AuthProvider = ({ children }) => {
     setShowCompanySelection,
 
     loading,
+    serverUnavailable,
+    retryConnection,
     isAuthenticated: !!user && !mustSelectCompany,
 
     // ✅ FLAGS

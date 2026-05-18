@@ -46,6 +46,7 @@ import EmployeeProfile from "./pages/EmployeeProfile";
 import EmployeeSalaryHistory from "./pages/EmployeeSalaryHistory";
 import UnmarkedAttendance from "./pages/UnmarkedAttendance";
 import BreakManagement from "./pages/BreakManagement";
+import ServerUnavailable from "./pages/ServerUnavailable";
 import {
   TabbedManagementHub,
 } from "./components/common";
@@ -275,8 +276,11 @@ const BANK_HUB_TABS = [
 
 
 function AppContent() {
-  const { user, loading, mustSelectCompany } = useAuth();
+  const { user, loading, mustSelectCompany, serverUnavailable, retryConnection } = useAuth();
 
+  if (serverUnavailable) {
+    return <ServerUnavailable onReload={retryConnection} isRetrying={loading} />;
+  }
 
   // Show loading state
   if (loading) {
