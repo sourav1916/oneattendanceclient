@@ -12,18 +12,18 @@ import {
   FaUserPlus,
   FaSpinner
 } from "react-icons/fa";
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from "react-icons/hi";
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlinePhone } from "react-icons/hi";
 import { BiReset } from "react-icons/bi";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
-import { getPreciseLocation } from "../../utils/geolocation";
 import GoogleAuthButton from "../../components/GoogleAuthButton";
 import FacebookAuthButton from "../../components/FacebookAuthButton";
 
 const Signup = () => {
   const navigate = useNavigate();
 
+  const [activeTab, setActiveTab] = useState("phone"); // default to "phone"
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +31,6 @@ const Signup = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
 
   const [otpSent, setOtpSent] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
   const [loadingAction, setLoadingAction] = useState(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [focusedField, setFocusedField] = useState(null);
@@ -134,16 +133,27 @@ const Signup = () => {
   const handleRequestOtp = async () => {
     if (isLoading) return;
 
-    if (!email || !fullName) {
-      toast.error("Please enter both full name and email");
+    if (!fullName) {
+      toast.error("Please enter your name");
+      return;
+    }
+
+    if (activeTab === "phone" && !phone) {
+      toast.error("Please enter your phone number");
+      return;
+    }
+
+    if (activeTab === "email" && !email) {
+      toast.error("Please enter your email address");
       return;
     }
 
     try {
       setLoadingAction("request-otp");
       const res = await apiCall('/auth/signup/request-otp', 'POST', {
-        email: email,
-        phone: phone,
+        email: activeTab === "email" ? email : "",
+        phone: activeTab === "phone" ? phone : "",
+        signup_type: activeTab,
       });
 
       const data = await res.json();
@@ -153,7 +163,11 @@ const Signup = () => {
         setResendTimer(60);
         setOtp(["", "", "", "", "", ""]);
         setCurrentStep(2);
-        toast.success("OTP sent to your email 📧");
+        toast.success(
+          activeTab === "phone"
+            ? "OTP sent to your phone number 📱"
+            : "OTP sent to your email 📧"
+        );
       } else {
         throw new Error(data.message || "Failed to send OTP");
       }
@@ -175,20 +189,25 @@ const Signup = () => {
 
     try {
       setLoadingAction("verify-otp");
-      const res = await apiCall('/auth/signup/verify-otp', 'POST', {
-        email: email,
-        otp: otpString
+
+      const verifyRes = await apiCall('/auth/signup/verify-otp', 'POST', {
+        signup_type: activeTab,
+        email: activeTab === "email" ? email : "",
+        phone: activeTab === "phone" ? phone : "",
+        otp: Number(otpString),
+        password: "", // Will be configured in Step 3
+        name: fullName,
+        platform: "web"
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setEmailVerified(true);
-        setCurrentStep(3);
-        toast.success("Email verified successfully ✅");
-      } else {
-        throw new Error(data.message || "Invalid OTP");
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) {
+        throw new Error(verifyData.message || "Invalid OTP");
       }
+
+      toast.success("OTP verified successfully ✅");
+      setCurrentStep(3);
+
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -198,6 +217,16 @@ const Signup = () => {
 
   const handleCreateAccount = async () => {
     if (isLoading) return;
+
+    if (activeTab === "phone" && !email) {
+      toast.error("Please enter your email address");
+      return;
+    }
+
+    if (activeTab === "email" && !phone) {
+      toast.error("Please enter your phone number");
+      return;
+    }
 
     if (!password) {
       toast.error("Please set a password");
@@ -210,31 +239,23 @@ const Signup = () => {
 
     try {
       setLoadingAction("create-account");
-      let locationData = null;
-      try {
-        locationData = await getPreciseLocation();
-      } catch (err) {
-        console.warn("Precise location unavailable during signup:", err);
-      }
 
       const payload = {
-        name: fullName,
+        signup_type: activeTab,
         email: email,
         password: password,
+        name: fullName,
         phone: isNaN(phone) || phone === "" ? phone : Number(phone),
-        platform: "web",
-        latitude: locationData?.latitude ?? "",
-        longitude: locationData?.longitude ?? ""
+        platform: "web"
       };
 
       const res = await apiCall('/auth/signup/complete', 'POST', payload);
-
       const json = await res.json();
-      console.log(JSON.stringify(json));
+
       if (res.ok) {
         toast.success("Account created successfully 🎉");
         const token = json.data?.token || json.token;
-        if (!token) throw new Error("Signup did not return a login token.");
+        if (!token) throw new Error("Signup did not return a session token.");
         setTimeout(() => {
           login(token);
         }, 1500);
@@ -250,16 +271,13 @@ const Signup = () => {
 
   const handleResendOtp = async () => {
     if (resendTimer > 0 || isLoading) return;
-    if (!email || !fullName) {
-      toast.error("Please enter both full name and email");
-      return;
-    }
 
     try {
       setLoadingAction("resend-otp");
       const res = await apiCall('/auth/signup/request-otp', 'POST', {
-        email: email,
-        phone: phone,
+        email: activeTab === "email" ? email : "",
+        phone: activeTab === "phone" ? phone : "",
+        signup_type: activeTab,
       });
       const data = await res.json();
 
@@ -267,7 +285,11 @@ const Signup = () => {
 
       setResendTimer(60);
       setOtp(["", "", "", "", "", ""]);
-      toast.success("OTP resent to your email 📧");
+      toast.success(
+        activeTab === "phone"
+          ? "OTP resent to your phone number 📱"
+          : "OTP resent to your email 📧"
+      );
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -278,8 +300,8 @@ const Signup = () => {
   const getStepTitle = () => {
     switch (currentStep) {
       case 1: return "Create Account";
-      case 2: return "Verify Email";
-      case 3: return "Set Password";
+      case 2: return "Verify OTP";
+      case 3: return "Account Details";
       default: return "Sign Up";
     }
   };
@@ -346,7 +368,6 @@ const Signup = () => {
           <FaUserPlus />
         </motion.div>
 
-       
         <motion.div
           initial="hidden"
           animate="visible"
@@ -434,9 +455,9 @@ const Signup = () => {
                   variants={itemVariants}
                   className="text-xs text-gray-500 text-center"
                 >
-                  {currentStep === 1 && "Fill in your details to get started"}
-                  {currentStep === 2 && "Enter the verification code sent to your email"}
-                  {currentStep === 3 && "Create a strong password for your account"}
+                  {currentStep === 1 && "Fill in details using chosen tab below"}
+                  {currentStep === 2 && (activeTab === "phone" ? "Enter the code sent to your phone" : "Enter the code sent to your email")}
+                  {currentStep === 3 && "Secure your account with password and secondary email/phone"}
                 </motion.p>
               </motion.div>
 
@@ -472,6 +493,34 @@ const Signup = () => {
                         <div className="h-px flex-1 bg-gray-200" />
                       </div>
 
+                      {/* Tabs for choosing Phone vs Email Signup type */}
+                      <div className="flex bg-gray-100 p-0.5 rounded-lg mb-1">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("phone")}
+                          disabled={isLoading}
+                          className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${
+                            activeTab === "phone"
+                              ? "bg-white text-gray-600 shadow-sm"
+                              : "text-gray-500 hover:text-gray-700"
+                          }`}
+                        >
+                          Phone
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("email")}
+                          disabled={isLoading}
+                          className={`flex-1 py-1.5 text-center text-sm font-semibold rounded-md transition-all duration-200 ${
+                            activeTab === "email"
+                              ? "bg-white text-gray-600 shadow-sm"
+                              : "text-gray-500 hover:text-gray-700"
+                          }`}
+                        >
+                          Email
+                        </button>
+                      </div>
+
                       <div className="relative">
                         <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
@@ -486,19 +535,35 @@ const Signup = () => {
                         />
                       </div>
 
-                      <div className="relative">
-                        <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                        <input
-                          type="email"
-                          placeholder="Email address"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          onFocus={() => setFocusedField('email')}
-                          onBlur={() => setFocusedField(null)}
-                          disabled={isLoading}
-                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                        />
-                      </div>
+                      {activeTab === "phone" ? (
+                        <div className="relative">
+                          <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                          <input
+                            type="tel"
+                            placeholder="Phone Number (primary)"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            onFocus={() => setFocusedField('phone')}
+                            onBlur={() => setFocusedField(null)}
+                            disabled={isLoading}
+                            className="w-full pl-11 pr-4 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                          <input
+                            type="email"
+                            placeholder="Email Address (primary)"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            onFocus={() => setFocusedField('email')}
+                            onBlur={() => setFocusedField(null)}
+                            disabled={isLoading}
+                            className="w-full pl-11 pr-4 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
+                          />
+                        </div>
+                      )}
 
                       <motion.button
                         whileHover={{ scale: isLoading ? 1 : 1.02 }}
@@ -524,6 +589,31 @@ const Signup = () => {
                   {currentStep === 2 && (
                     /* Step 2: OTP Verification */
                     <>
+                      {/* Read-only verification target */}
+                      <div className="relative">
+                        {activeTab === "phone" ? (
+                          <>
+                            <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                            <input
+                              type="tel"
+                              value={phone}
+                              disabled
+                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                            <input
+                              type="email"
+                              value={email}
+                              disabled
+                              className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
+                            />
+                          </>
+                        )}
+                      </div>
+
                       <div className="flex justify-center gap-2">
                         {otp.map((digit, index) => (
                           <motion.input
@@ -596,26 +686,39 @@ const Signup = () => {
                   )}
 
                   {currentStep === 3 && (
-                    /* Step 3: Set Password */
+                    /* Step 3: Secondary Info & Password Setup */
                     <>
-                      <div className="relative">
-                        <HiOutlineUser className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                        <input
-                          type="tel"
-                          placeholder="Phone number"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          required
-                          disabled={isLoading}
-                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
-                        />
-                      </div>
+                      {activeTab === "phone" ? (
+                        <div className="relative">
+                          <HiOutlineMail className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                          <input
+                            type="email"
+                            placeholder="Email Address (secondary)"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            disabled={isLoading}
+                            className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <HiOutlinePhone className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
+                          <input
+                            type="tel"
+                            placeholder="Phone Number (secondary)"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            disabled={isLoading}
+                            className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm disabled:opacity-60"
+                          />
+                        </div>
+                      )}
 
                       <div className="relative">
                         <HiOutlineLockClosed className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                           type={showPassword ? "text" : "password"}
-                          placeholder="Create password"
+                          placeholder="Choose password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={isLoading}
