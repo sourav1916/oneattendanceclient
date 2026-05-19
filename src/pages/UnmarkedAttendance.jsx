@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Modal from '../components/Modal';
 import TimePickerField from '../components/TimePicker';
+import SelectField from '../components/SelectField';
 import TimeDurationPickerField from '../components/TimeDurationPicker';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import Pagination, { usePagination } from '../components/PaginationComponent';
@@ -630,14 +631,12 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                       return next;
                     });
                   }}
-                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${
-                    leaveDayOvertimeEnabled ? 'bg-indigo-600' : 'bg-slate-300'
-                  }`}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${leaveDayOvertimeEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                    }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
-                      leaveDayOvertimeEnabled ? 'translate-x-6' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${leaveDayOvertimeEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
               </div>
@@ -1016,16 +1015,18 @@ export default function UnmarkedAttendance() {
           {/* Status + Date — share a row on sm+md, each fixed width on lg */}
           <div className="flex w-full gap-3 md:flex-1 lg:w-auto lg:flex-none">
             <div className="relative flex-1 lg:w-[220px] lg:flex-none">
-              <FaFilter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-              >
-                {listDayStatusOptions.map((option) => (
-                  <option key={option.value || 'all'} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+              <FaFilter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={12} />
+              <SelectField
+                value={listDayStatusOptions.find((o) => o.value === statusFilter) || null}
+                onChange={(option) => setStatusFilter(option?.value || '')}
+                options={listDayStatusOptions}
+                styles={{
+                  control: (provided) => ({
+                    ...provided,
+                    paddingLeft: '1.5rem',
+                  }),
+                }}
+              />
             </div>
 
             <div className="flex-1 lg:w-[180px] lg:flex-none">
