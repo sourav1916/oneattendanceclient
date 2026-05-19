@@ -1144,7 +1144,7 @@ const SETTINGS_HUB_TABS = [
 
 const SettingsPage = () => {
   return (
-    <div className="min-h-screen py-4 sm:py-6 lg:py-8 px-3 sm:px-4 lg:px-6 xl:px-8">
+    <div className="min-h-screen">
       {/* Decorative Elements - Hidden on very small screens */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none hidden sm:block">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
