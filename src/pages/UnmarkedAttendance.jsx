@@ -348,11 +348,10 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag }) => {
         <div className="flex w-full shrink-0 flex-col justify-between gap-3 border-t border-slate-100 pt-3 lg:w-[360px] lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
           <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
             <StatusBadge status={employee.day_status} />
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-              employee.is_verified
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-amber-200 bg-amber-50 text-amber-700'
-            }`}>
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${employee.is_verified
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-amber-200 bg-amber-50 text-amber-700'
+              }`}>
               {employee.is_verified ? 'Verified' : 'Pending'}
             </span>
           </div>
@@ -514,9 +513,8 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 key={option.value}
                 type="button"
                 onClick={() => setStatus(option.value)}
-                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${
-                  isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
               >
                 <Icon size={13} />
                 {option.label}
@@ -558,11 +556,10 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                   key={option.value}
                   type="button"
                   onClick={() => setHalfDaySession(option.value)}
-                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                    halfDaySession === option.value
-                      ? 'border-blue-200 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${halfDaySession === option.value
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                    : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
                   {option.label}
                 </button>
@@ -623,13 +620,12 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 type="button"
                 onClick={toggleOvertime}
                 disabled={!overtimeEnabled}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                  isOvertime && overtimeEnabled
-                    ? 'border-orange-200 bg-orange-50 text-orange-700'
-                    : overtimeEnabled
-                      ? 'border-orange-200 bg-white text-orange-700 hover:bg-orange-50'
-                      : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
-                }`}
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isOvertime && overtimeEnabled
+                  ? 'border-orange-200 bg-orange-50 text-orange-700'
+                  : overtimeEnabled
+                    ? 'border-orange-200 bg-white text-orange-700 hover:bg-orange-50'
+                    : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
+                  }`}
               >
                 <span>
                   <span className="block text-sm font-bold">Overtime</span>
@@ -643,13 +639,12 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 type="button"
                 onClick={toggleDeductible}
                 disabled={!deductibleEnabled}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                  isDeductible && deductibleEnabled
-                    ? 'border-rose-200 bg-rose-50 text-rose-700'
-                    : deductibleEnabled
-                      ? 'border-rose-200 bg-white text-rose-700 hover:bg-rose-50'
-                      : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
-                }`}
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isDeductible && deductibleEnabled
+                  ? 'border-rose-200 bg-rose-50 text-rose-700'
+                  : deductibleEnabled
+                    ? 'border-rose-200 bg-white text-rose-700 hover:bg-rose-50'
+                    : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
+                  }`}
               >
                 <span>
                   <span className="block text-sm font-bold">Deductible</span>
@@ -940,9 +935,10 @@ export default function UnmarkedAttendance() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm lg:grid-cols-[minmax(220px,1fr)_240px_220px_180px]"
+          className="flex flex-wrap gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
         >
-          <div className="relative min-w-0 flex-1">
+          {/* Search — full row on sm+md, flex-1 on lg */}
+          <div className="relative w-full lg:flex-1">
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -963,31 +959,39 @@ export default function UnmarkedAttendance() {
             )}
           </div>
 
-          <EmployeeSelect
-            value={employeeId}
-            onChange={(value) => setEmployeeId(value || '')}
-            placeholder="All employees"
-          />
+          {/* Employee — full row on sm, flex-1 on md, w-[240px] on lg */}
+          <div className="w-full md:flex-1 lg:w-[240px] lg:flex-none">
+            <EmployeeSelect
+              value={employeeId}
+              onChange={(value) => setEmployeeId(value || '')}
+              placeholder="All employees"
+            />
+          </div>
 
-          <AdvancedDateFilter
-            value={dateFilter}
-            onChange={setDateFilter}
-            placeholder="Date or range"
-            tabOptions={['date', 'range']}
-            buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-          />
+          {/* Status + Date — share a row on sm+md, each fixed width on lg */}
+          <div className="flex w-full gap-3 md:flex-1 lg:w-auto lg:flex-none">
+            <div className="relative flex-1 lg:w-[220px] lg:flex-none">
+              <FaFilter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              >
+                {listDayStatusOptions.map((option) => (
+                  <option key={option.value || 'all'} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
 
-          <div className="relative">
-            <FaFilter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="w-full appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-8 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-            >
-              {listDayStatusOptions.map((option) => (
-                <option key={option.value || 'all'} value={option.value}>{option.label}</option>
-              ))}
-            </select>
+            <div className="flex-1 lg:w-[180px] lg:flex-none">
+              <AdvancedDateFilter
+                value={dateFilter}
+                onChange={setDateFilter}
+                placeholder="Date or range"
+                tabOptions={['date', 'range']}
+                buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+              />
+            </div>
           </div>
         </motion.div>
 
