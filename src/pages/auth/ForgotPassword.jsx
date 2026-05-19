@@ -13,12 +13,14 @@ import {
 import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
+import { usePasswordValidation } from "../../hooks/usePasswordValidation";
 
 const OTP_LENGTH = 6;
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { validatePassword } = usePasswordValidation();
 
   const [email, setEmail] = useState(location.state?.email || "");
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
@@ -132,8 +134,9 @@ const ForgotPassword = () => {
       toast.error("Please enter a new password");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters long");
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      toast.error("Password does not meet the security requirements");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -359,6 +362,30 @@ const ForgotPassword = () => {
                       {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
+
+                  {newPassword && (
+                    <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1.5 text-xs">
+                      <p className="font-semibold text-gray-700">Password must contain:</p>
+                      <div className="grid grid-cols-1 gap-1">
+                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).minLength ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{validatePassword(newPassword).minLength ? '✓' : '•'}</span>
+                          <span>At least 8 characters</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasUpper ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{validatePassword(newPassword).hasUpper ? '✓' : '•'}</span>
+                          <span>At least 1 uppercase letter</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasNumber ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{validatePassword(newPassword).hasNumber ? '✓' : '•'}</span>
+                          <span>At least 1 number</span>
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasSpecial ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{validatePassword(newPassword).hasSpecial ? '✓' : '•'}</span>
+                          <span>At least 1 special character</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="relative">
                     <FaLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />

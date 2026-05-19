@@ -19,11 +19,13 @@ import { CountryCodeModal, getFlagEmoji } from "../../components/common";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { useAuth } from "../../context/AuthContext";
+import { usePasswordValidation } from "../../hooks/usePasswordValidation";
 import GoogleAuthButton from "../../components/GoogleAuthButton";
 import FacebookAuthButton from "../../components/FacebookAuthButton";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { validatePassword } = usePasswordValidation();
 
   const [activeTab, setActiveTab] = useState("phone"); // default to "phone"
   const [isTabLocked, setIsTabLocked] = useState(false);
@@ -198,8 +200,9 @@ const Signup = () => {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      toast.error("Password does not meet the security requirements");
       return;
     }
 
@@ -610,14 +613,26 @@ const Signup = () => {
                         </button>
                       </div>
 
-                      <div className="text-xs text-gray-600 mb-3">
-                        <p className="mb-1 text-gray-500 font-medium">Password must contain:</p>
-                        <ul className="space-y-1">
-                          <li className={`flex items-center space-x-2 ${password.length >= 6 ? 'text-green-600 font-semibold' : 'text-gray-500'}`}>
-                            <span className={password.length >= 6 ? 'text-green-600' : ''}>✓</span>
-                            <span>At least 6 characters</span>
-                          </li>
-                        </ul>
+                      <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1.5 text-xs mb-3">
+                        <p className="font-semibold text-gray-700">Password must contain:</p>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className={`flex items-center gap-1.5 ${validatePassword(password).minLength ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                            <span>{validatePassword(password).minLength ? '✓' : '•'}</span>
+                            <span>At least 8 characters</span>
+                          </div>
+                          <div className={`flex items-center gap-1.5 ${validatePassword(password).hasUpper ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                            <span>{validatePassword(password).hasUpper ? '✓' : '•'}</span>
+                            <span>At least 1 uppercase letter</span>
+                          </div>
+                          <div className={`flex items-center gap-1.5 ${validatePassword(password).hasNumber ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                            <span>{validatePassword(password).hasNumber ? '✓' : '•'}</span>
+                            <span>At least 1 number</span>
+                          </div>
+                          <div className={`flex items-center gap-1.5 ${validatePassword(password).hasSpecial ? 'text-green-600 font-semibold' : 'text-gray-400'}`}>
+                            <span>{validatePassword(password).hasSpecial ? '✓' : '•'}</span>
+                            <span>At least 1 special character</span>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="flex justify-center gap-2">

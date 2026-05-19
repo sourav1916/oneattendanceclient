@@ -2,10 +2,9 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaBuilding, FaPlus, FaShieldAlt,
-  FaBars, FaTimes, FaSpinner
+  FaBars, FaTimes, FaSpinner, FaCog
 } from "react-icons/fa";
-import { FiLock, FiMonitor, FiTrash2, FiChevronDown } from "react-icons/fi";
-import { FiLogOut } from "react-icons/fi";
+import { FiLock, FiMonitor, FiTrash2, FiChevronDown, FiLogOut } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import CompanyCard from "../components/Settings/CompanyCard";
@@ -14,29 +13,17 @@ import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
 import ModalScrollLock from "../components/ModalScrollLock";
 import Skeleton from "../components/SkeletonComponent";
 import apiCall from "../utils/api";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const SETTINGS_TABS = [
-  { id: "companies", label: "Companies", icon: FaBuilding },
-  { id: "security", label: "Security", icon: FaShieldAlt },
-];
-
-const containerVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
-};
-
-
+import { TabbedManagementHub } from "../components/common";
+import { usePasswordValidation } from "../hooks/usePasswordValidation";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// Collapsible card wrapper
+// Collapsible card wrapper (kept for other potential uses, though not used in new sub-tab layout)
 const SecurityCard = ({ title, icon, badge, danger, headerAction, children }) => {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className={`bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border mt-4 overflow-hidden transition-all
+    <div className={`bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border mt-4 overflow-hidden transition-all
     ${danger ? "border-red-100" : "border-gray-100"}`}
     >
       <button
@@ -81,7 +68,9 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
-const SettingsPage = () => {
+// ─── Sub-Components ──────────────────────────────────────────────────────────
+
+const CompaniesTab = () => {
   const { user, loading, refreshUser, companies, setCompanies, company } = useAuth();
 
   const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -90,148 +79,6 @@ const SettingsPage = () => {
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [activeCompany, setActiveCompany] = useState(null);
   const [editingCompany, setEditingCompany] = useState(null);
-
-  const [activeTab, setActiveTab] = useState("companies");
-
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  {/* ---- Active Sessions Card ---- */ }
-
-  const [sessions, setSessions] = useState([]);
-  const [loadingSessions, setLoadingSessions] = useState(true);
-  const [loggingOutId, setLoggingOutId] = useState(null);
-  const [loggingOutAll, setLoggingOutAll] = useState(false);
-  // New state for delete account
-  const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
-  const [deleteStep, setDeleteStep] = useState("email");
-  const [deleteEmail, setDeleteEmail] = useState("");
-  const [deleteOtp, setDeleteOtp] = useState("");
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-
-
-  const handleDeleteAccount = () => {
-    setDeleteConfirmText("");
-    setDeleteEmail("");
-    setDeleteOtp("");
-    setDeleteStep("confirm");
-    setOtpSent(false);
-    setShowAccountDeleteModal(true);
-  };
-
-  const handleSendDeleteOtp = async () => {
-    if (!deleteEmail.trim()) {
-      toast.error("Please enter your email address");
-      return;
-    }
-    if (deleteEmail.trim().toLowerCase() !== user?.email?.toLowerCase()) {
-      toast.error("Email does not match your account email");
-      return;
-    }
-    setIsSendingOtp(true);
-    try {
-      const response = await apiCall('/users/delete/request-otp', 'POST', { email: deleteEmail });
-      const data = await response.json();
-      if (data.success) {
-        setOtpSent(true);
-        setDeleteStep("otp");
-        toast.success("OTP sent to your email");
-      } else {
-        toast.error(data.message || "Failed to send OTP");
-      }
-    } catch {
-      toast.error("Network error. Please try again.");
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  const handleConfirmDeleteAccount = async () => {
-    if (!deleteOtp.trim()) {
-      toast.error("Please enter the OTP");
-      return;
-    }
-    setIsVerifyingOtp(true);
-    try {
-      const response = await apiCall('/users/delete/confirm', 'DELETE', {
-        email: deleteEmail,
-        otp: deleteOtp,
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success("Account deleted successfully");
-        setShowAccountDeleteModal(false);
-        // Clear auth and redirect
-        localStorage.clear();
-        window.location.href = '/login';
-      } else {
-        toast.error(data.message || "Invalid OTP. Please try again.");
-      }
-    } catch {
-      toast.error("Network error. Please try again.");
-    } finally {
-      setIsVerifyingOtp(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === "security") fetchSessions();
-  }, [activeTab]);
-
-  const fetchSessions = async () => {
-    setLoadingSessions(true);
-    try {
-      const response = await apiCall('/auth/sessions', 'GET');
-      const data = await response.json();
-      setSessions(data.sessions || []);
-    } catch {
-      toast.error("Failed to load sessions");
-    } finally {
-      setLoadingSessions(false);
-    }
-  };
-
-  const forceLogout = async (sessionId) => {
-    setLoggingOutId(sessionId);
-    try {
-      const response = await apiCall('/auth/logout-session', 'POST', { session_id: sessionId });
-      const data = await response.json(); // ← add this
-      if (data.success) {
-        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-        toast.success("Device logged out");
-      } else {
-        toast.error(data.message || "Failed to logout session");
-      }
-    } catch {
-      toast.error("Failed to logout session");
-    } finally {
-      setLoggingOutId(null);
-    }
-  };
-
-  const forceLogoutAll = async () => {
-    setLoggingOutAll(true);
-    try {
-      const response = await apiCall('/auth/logout-all', 'POST');
-      const data = await response.json(); // ← add this
-      if (data.success) {
-        setSessions((prev) => prev.filter((s) => s.is_current));
-        toast.success("All other devices logged out");
-      } else {
-        toast.error(data.message || "Failed to logout all");
-      }
-    } catch {
-      toast.error("Failed to logout all sessions");
-    } finally {
-      setLoggingOutAll(false);
-    }
-  };
 
   useEffect(() => {
     loadActiveCompany();
@@ -260,7 +107,6 @@ const SettingsPage = () => {
       }
     }
   }, [user, companies, company, setCompanies]);
-
 
   const loadActiveCompany = () => {
     const storedCompany = JSON.parse(localStorage.getItem("company"));
@@ -363,94 +209,23 @@ const SettingsPage = () => {
     setCompanyToDelete(null);
   };
 
-
   const handleAddCompanyClick = () => {
     setOpenCreateModal(true);
   };
 
-  // Password validation function
-  const validatePasswords = () => {
-    if (!currentPassword.trim()) {
-      toast.error('Current password is required');
-      return false;
-    }
-    if (!newPassword.trim()) {
-      toast.error('New password is required');
-      return false;
-    }
-    if (newPassword.length < 4) {
-      toast.error('New password must be at least 4 characters long');
-      return false;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('New passwords do not match');
-      return false;
-    }
-    if (currentPassword === newPassword) {
-      toast.error('New password must be different from current password');
-      return false;
-    }
-    return true;
-  };
-
-  // Password update handler (no 2FA function)
-  const handlePasswordUpdate = async () => {
-    if (!validatePasswords()) return;
-
-    setIsUpdatingPassword(true);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        toast.error("Authentication expired. Please login again.");
-        return;
-      }
-
-      const response = await apiCall('/users/update-password', 'PUT', {
-        user_id: user?.id,
-        old_password: currentPassword,
-        new_password: newPassword,
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        toast.success(data.message || "Password updated successfully!");
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        if (response.status === 401) {
-          toast.error("Current password is incorrect");
-        } else {
-          toast.error(data.message || "Failed to update password");
-        }
-      }
-    } catch (error) {
-      console.error("Password update error:", error);
-      toast.error("Network error. Please check your connection and try again.");
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
-  const ActiveIcon = SETTINGS_TABS.find(tab => tab.id === activeTab)?.icon || FaBuilding;
-
   if (loading) {
-    return (
-      <Skeleton />
-    );
+    return <Skeleton />;
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center w-full max-w-[90%] sm:max-w-md mx-auto p-6 sm:p-8 bg-white rounded-xl shadow-xl">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Session Expired</h2>
-          <p className="text-sm sm:text-base text-gray-600 mb-6">Please login again to continue</p>
+      <div className="flex items-center justify-center p-6 bg-white rounded-xl shadow-xl">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Session Expired</h2>
+          <p className="text-sm text-gray-600 mb-6">Please login again to continue</p>
           <button
             onClick={() => window.location.href = '/login'}
-            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
           >
             Go to Login
           </button>
@@ -459,345 +234,95 @@ const SettingsPage = () => {
     );
   }
 
-  // (Handled by the find on SETTINGS_TABS above)
-
   return (
-    <div className="min-h-screen py-4 sm:py-6 lg:py-8 px-3 sm:px-4 lg:px-6 xl:px-8">
-      {/* Decorative Elements - Hidden on very small screens */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none hidden sm:block">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      </div>
+    <div className="space-y-6">
+      <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-gray-100 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2 text-gray-800">
+            <FaBuilding className="text-indigo-600 text-base sm:text-xl" />
+            <span>Manage Companies</span>
+          </h2>
 
-      <div className="max-w-7xl mx-auto relative">
-        {/* Header - Responsive */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 sm:mb-8"
-        >
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl   text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 mb-1 sm:mb-2">
-            Settings
-          </h1>
-          <p className="text-sm sm:text-base lg:text-lg text-gray-600">
-            Manage your account settings and preferences
-          </p>
-        </motion.div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              onClick={handleAddCompanyClick}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-xl text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl w-full sm:w-auto"
+            >
+              <FaPlus className="w-4 h-4" />
+              <span className="whitespace-nowrap">Create Your Company</span>
+            </button>
+          </div>
+        </div>
 
-        {/* Mobile Tabs Dropdown - Visible on small screens */}
-        <div className="block sm:hidden mb-4">
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full flex items-center justify-between p-3 bg-white rounded-xl shadow-md border border-gray-200"
+        {activeCompany && companies.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center gap-4 shadow-sm"
           >
-            <div className="flex items-center gap-2">
-              <ActiveIcon className="w-5 h-5 text-indigo-600" />
-              <span className="font-medium text-gray-900">
-                {SETTINGS_TABS.find(tab => tab.id === activeTab)?.label}
-              </span>
-            </div>
-            {isMobileMenuOpen ? <FaTimes className="w-4 h-4 text-gray-500" /> : <FaBars className="w-4 h-4 text-gray-500" />}
-          </button>
-
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-[calc(100%-1.5rem)] mt-2 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
-              >
-                {SETTINGS_TABS.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${activeTab === tab.id
-                        ? "bg-indigo-50 text-indigo-600"
-                        : "text-gray-700 hover:bg-gray-50"
-                        }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="font-medium">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Desktop Tabs - Hidden on small screens */}
-        <div className="hidden sm:block mb-6 lg:mb-8 border-b border-gray-200 overflow-x-auto text-center justify-center place-items-center">
-          <nav className="flex space-x-4 lg:space-x-8 min-w-max pb-1 items-center justify-center">
-            {SETTINGS_TABS.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-3 lg:py-4 px-2 lg:px-1 border-b-2 font-medium text-xs lg:text-sm transition-colors whitespace-nowrap ${activeTab === tab.id
-                    ? "border-indigo-600 text-indigo-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                >
-                  <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Tab Content - Fully Responsive */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Companies Tab */}
-          {activeTab === "companies" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border border-gray-100 p-4 sm:p-6">
-              {/* Header - Responsive */}
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2 text-gray-800">
-                  <FaBuilding className="text-indigo-600 text-base sm:text-xl" />
-                  <span>Manage Companies</span>
-                </h2>
-
-                <div className="flex flex-col xs:flex-row gap-2 sm:gap-3">
-                  <button
-                    onClick={handleAddCompanyClick}
-                    className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 sm:px-4 py-2 rounded-xl text-sm sm:text-base hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl w-full xs:w-auto"
-                  >
-                    <FaPlus className="w-4 h-4" />
-                    <span className="whitespace-nowrap">Create Your Company</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Active Company Info - Moved to Top */}
-              {activeCompany && companies.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center gap-4 shadow-sm"
-                >
-                  <div className="shrink-0">
-                    {activeCompany.logo_url ? (
-                      <img
-                        src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`}
-                        alt="Company Logo"
-                        className="w-16 h-16 rounded-xl object-cover border border-white shadow-md bg-white"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null}
-                    <div className={`w-16 h-16 rounded-xl bg-indigo-600 items-center justify-center shadow-lg ${activeCompany.logo_url ? 'hidden' : 'flex'}`}>
-                      <FaBuilding className="text-white text-2xl" />
-                    </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider">Active Workspace</span>
-                      {activeCompany.role && (
-                        <span className="px-2 py-0.5 rounded-full bg-white border border-indigo-100 text-indigo-600 text-[10px] font-bold uppercase tracking-wider">
-                          {activeCompany.role.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                    </div>
-                    <p className="font-bold text-gray-900 text-lg truncate leading-tight">{activeCompany.name}</p>
-                    <p className="text-sm text-indigo-600/70 font-medium truncate">{activeCompany.legal_name || "Primary Organization"}</p>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Companies List - Responsive */}
-              <div className="space-y-3">
-                {companies.length === 0 ? (
-                  <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 px-4">
-                    <FaBuilding className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">No companies found</p>
-                    <button
-                      onClick={() => setOpenCreateModal(true)}
-                      className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-base shadow-sm border border-gray-200 hover:border-indigo-300 transition-all"
-                    >
-                      <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
-                      Create your first company
-                    </button>
-                  </div>
-                ) : (
-                  [...companies]
-                    .sort((a, b) => (a.id === activeCompany?.id ? -1 : b.id === activeCompany?.id ? 1 : 0))
-                    .map((company) => (
-                      <CompanyCard
-                        key={company.id}
-                        company={company}
-                        isActive={activeCompany?.id === company.id}
-                        canManageCompany={company.role !== "employee"}
-                        onSwitch={selectCompany}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
-                    ))
-                )}
+            <div className="shrink-0">
+              {activeCompany.logo_url ? (
+                <img
+                  src={activeCompany.logo_url.startsWith('http') ? activeCompany.logo_url : `https://api-attendance.onesaas.in${activeCompany.logo_url}`}
+                  alt="Company Logo"
+                  className="w-16 h-16 rounded-xl object-cover border border-white shadow-md bg-white"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              <div className={`w-16 h-16 rounded-xl bg-indigo-600 items-center justify-center shadow-lg ${activeCompany.logo_url ? 'hidden' : 'flex'}`}>
+                <FaBuilding className="text-white text-2xl" />
               </div>
             </div>
-          )}
-
-          {activeTab === "security" && (
-            <>
-              <SecurityCard
-                title="Change Password"
-                icon={<FiLock />}
-              >
-                <div className="space-y-3">
-                  <input
-                    type="password"
-                    placeholder="Current Password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                    disabled={isUpdatingPassword}
-                  />
-                  <input
-                    type="password"
-                    placeholder="New Password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                    disabled={isUpdatingPassword}
-                  />
-                  <input
-                    type="password"
-                    placeholder="Confirm New Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                    disabled={isUpdatingPassword}
-                  />
-                  <button
-                    onClick={handlePasswordUpdate}
-                    disabled={isUpdatingPassword}
-                    className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUpdatingPassword ? (
-                      <><FaSpinner className="w-4 h-4 animate-spin inline mr-2" />Updating...</>
-                    ) : "Update Password"}
-                  </button>
-                </div>
-              </SecurityCard>
-
-              <SecurityCard
-                title="Active Sessions"
-                icon={<FiMonitor />}
-                badge={`${sessions.length} device${sessions.length !== 1 ? "s" : ""}`}
-                headerAction={
-                  <button
-                    onClick={forceLogoutAll}
-                    disabled={loggingOutAll || sessions.filter((s) => !s.is_current).length === 0}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loggingOutAll ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FiLogOut className="w-3 h-3" />}
-                    Logout All Other Devices
-                  </button>
-                }
-              >
-                {loadingSessions ? (
-                  <div className="flex items-center justify-center py-8 text-gray-400 text-sm gap-2">
-                    <FaSpinner className="animate-spin w-4 h-4" /> Loading sessions...
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {sessions.map((session) => (
-                      <div
-                        key={session.id}
-                        className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all flex-wrap
-                ${session.is_current
-                            ? "bg-indigo-50/60 border-indigo-200"
-                            : "bg-gray-50 border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30"
-                          }`}
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0
-                  ${session.device_name.toLowerCase().includes("ios") ? "bg-pink-100"
-                              : session.device_name.toLowerCase().includes("android") ? "bg-green-100"
-                                : "bg-indigo-100"}`}>
-                            {getDeviceIcon(session.device_name)}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-semibold text-gray-800 truncate">{session.device_name}</span>
-                              {session.is_current && (
-                                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                  This Device
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="text-xs text-gray-500">{session.ip_address}</span>
-                              {session.location?.latitude && (
-                                <span className="text-xs text-gray-400">
-                                  📍 {parseFloat(session.location.latitude).toFixed(3)}, {parseFloat(session.location.longitude).toFixed(3)}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-gray-400 mt-0.5">
-                              Last active {timeAgo(session.last_active)} · Signed in {timeAgo(session.login_at)}
-                            </p>
-                          </div>
-                        </div>
-                        {session.is_current ? (
-                          <span className="text-xs text-indigo-500 font-semibold px-2">✓ Active</span>
-                        ) : (
-                          <button
-                            onClick={() => forceLogout(session.id)}
-                            disabled={loggingOutId === session.id}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-500 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                          >
-                            {loggingOutId === session.id ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FiLogOut className="w-3 h-3" />}
-                            Logout
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider">Active Workspace</span>
+                {activeCompany.role && (
+                  <span className="px-2 py-0.5 rounded-full bg-white border border-indigo-100 text-indigo-600 text-[10px] font-bold uppercase tracking-wider">
+                    {activeCompany.role.replace(/_/g, ' ')}
+                  </span>
                 )}
-              </SecurityCard>
-
-              {/* Delete Account Section */}
-              <div className="bg-red-50/50 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-sm border border-red-100 p-4 sm:p-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-500">
-                    <FiTrash2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-base font-bold text-red-700">Delete Account</h3>
-                    <p className="text-[11px] sm:text-xs text-red-500">Permanently remove your account and all your records. This is irreversible.</p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleDeleteAccount}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-md active:scale-95"
-                >
-                  Delete Account
-                </button>
               </div>
-            </>
-          )}
+              <p className="font-bold text-gray-900 text-lg truncate leading-tight">{activeCompany.name}</p>
+              <p className="text-sm text-indigo-600/70 font-medium truncate">{activeCompany.legal_name || "Primary Organization"}</p>
+            </div>
+          </motion.div>
+        )}
 
-        </motion.div>
+        <div className="space-y-3">
+          {companies.length === 0 ? (
+            <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 px-4">
+              <FaBuilding className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-gray-500 mb-3 sm:mb-4">No companies found</p>
+              <button
+                onClick={() => setOpenCreateModal(true)}
+                className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium bg-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-sm sm:text-base shadow-sm border border-gray-200 hover:border-indigo-300 transition-all"
+              >
+                <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
+                Create your first company
+              </button>
+            </div>
+          ) : (
+            [...companies]
+              .sort((a, b) => (a.id === activeCompany?.id ? -1 : b.id === activeCompany?.id ? 1 : 0))
+              .map((company) => (
+                <CompanyCard
+                  key={company.id}
+                  company={company}
+                  isActive={activeCompany?.id === company.id}
+                  canManageCompany={company.role !== "employee"}
+                  onSwitch={selectCompany}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))
+          )}
+        </div>
       </div>
 
-      {/* Modals */}
       <CreateCompanyModal
         isOpen={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
@@ -818,8 +343,6 @@ const SettingsPage = () => {
         company={editingCompany}
       />
 
-
-      {/* delete modal */}
       <AnimatePresence>
         {showDeleteModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
@@ -859,6 +382,513 @@ const SettingsPage = () => {
           </div>
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+const SecurityTab = () => {
+  const { user, loading, refreshUser } = useAuth();
+  const { validatePassword } = usePasswordValidation();
+
+  const [securitySubTab, setSecuritySubTab] = useState("password"); // "password" | "sessions" | "ownership"
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [keepLogin, setKeepLogin] = useState(false);
+
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [loggingOutId, setLoggingOutId] = useState(null);
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
+
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState("confirm");
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteOtp, setDeleteOtp] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    setLoadingSessions(true);
+    try {
+      const response = await apiCall('/auth/sessions', 'GET');
+      const data = await response.json();
+      setSessions(data.sessions || []);
+    } catch {
+      toast.error("Failed to load sessions");
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const forceLogout = async (sessionId) => {
+    setLoggingOutId(sessionId);
+    try {
+      const response = await apiCall('/auth/logout-session', 'POST', { session_id: sessionId });
+      const data = await response.json();
+      if (data.success) {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+        toast.success("Device logged out");
+      } else {
+        toast.error(data.message || "Failed to logout session");
+      }
+    } catch {
+      toast.error("Failed to logout session");
+    } finally {
+      setLoggingOutId(null);
+    }
+  };
+
+  const forceLogoutAll = async () => {
+    setLoggingOutAll(true);
+    try {
+      const response = await apiCall('/auth/logout-all', 'POST');
+      const data = await response.json();
+      if (data.success) {
+        setSessions((prev) => prev.filter((s) => s.is_current));
+        toast.success("All other devices logged out");
+      } else {
+        toast.error(data.message || "Failed to logout all");
+      }
+    } catch {
+      toast.error("Failed to logout all sessions");
+    } finally {
+      setLoggingOutAll(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setDeleteConfirmText("");
+    setDeleteEmail("");
+    setDeleteOtp("");
+    setDeleteStep("confirm");
+    setShowAccountDeleteModal(true);
+  };
+
+  const handleSendDeleteOtp = async () => {
+    if (!deleteEmail.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
+    if (deleteEmail.trim().toLowerCase() !== user?.email?.toLowerCase()) {
+      toast.error("Email does not match your account email");
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      const response = await apiCall('/users/delete/request-otp', 'POST', { email: deleteEmail });
+      const data = await response.json();
+      if (data.success) {
+        setDeleteStep("otp");
+        toast.success("OTP sent to your email");
+      } else {
+        toast.error(data.message || "Failed to send OTP");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    if (!deleteOtp.trim()) {
+      toast.error("Please enter the OTP");
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const response = await apiCall('/users/delete/confirm', 'DELETE', {
+        email: deleteEmail,
+        otp: deleteOtp,
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success("Account deleted successfully");
+        setShowAccountDeleteModal(false);
+        localStorage.clear();
+        window.location.href = '/login';
+      } else {
+        toast.error(data.message || "Invalid OTP. Please try again.");
+      }
+    } catch {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const validatePasswords = () => {
+    if (!currentPassword.trim()) {
+      toast.error('Current password is required');
+      return false;
+    }
+    if (!newPassword.trim()) {
+      toast.error('New password is required');
+      return false;
+    }
+    const validation = validatePassword(newPassword);
+    if (!validation.isValid) {
+      toast.error('New password does not meet security requirements');
+      return false;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return false;
+    }
+    if (currentPassword === newPassword) {
+      toast.error('New password must be different from current password');
+      return false;
+    }
+    return true;
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (!validatePasswords()) return;
+
+    setIsUpdatingPassword(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        toast.error("Authentication expired. Please login again.");
+        return;
+      }
+
+      const response = await apiCall('/users/update-password', 'PUT', {
+        user_id: user?.id,
+        old_password: currentPassword,
+        new_password: newPassword,
+        keep_login: keepLogin,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success(data.message || "Password updated successfully!");
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setKeepLogin(false);
+      } else {
+        if (response.status === 401) {
+          toast.error("Current password is incorrect");
+        } else {
+          toast.error(data.message || "Failed to update password");
+        }
+      }
+    } catch (error) {
+      console.error("Password update error:", error);
+      toast.error("Network error. Please check your connection and try again.");
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
+  if (loading) {
+    return <Skeleton />;
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center p-6 bg-white rounded-xl shadow-xl">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Session Expired</h2>
+          <p className="text-sm text-gray-600 mb-6">Please login again to continue</p>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Premium capsule sub-tabs */}
+      <div className="flex flex-wrap gap-2 p-1.5 bg-gray-50 border border-gray-200/80 rounded-xl mb-6 max-w-lg">
+        <button
+          onClick={() => setSecuritySubTab("password")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300
+          ${securitySubTab === "password"
+              ? "bg-white text-indigo-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+            }`}
+        >
+          <FiLock className="w-3.5 h-3.5" />
+          <span className="whitespace-nowrap">Change Password</span>
+        </button>
+        <button
+          onClick={() => setSecuritySubTab("sessions")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300
+          ${securitySubTab === "sessions"
+              ? "bg-white text-indigo-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+            }`}
+        >
+          <FiMonitor className="w-3.5 h-3.5" />
+          <span className="whitespace-nowrap">Sessions</span>
+        </button>
+        <button
+          onClick={() => setSecuritySubTab("ownership")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300
+          ${securitySubTab === "ownership"
+              ? "bg-white text-red-600 shadow-sm"
+              : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+            }`}
+        >
+          <FiTrash2 className="w-3.5 h-3.5" />
+          <span className="whitespace-nowrap">Account Ownership</span>
+        </button>
+      </div>
+
+      {/* Change Password Sub-Tab */}
+      {securitySubTab === "password" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-xl border border-gray-100 p-5 sm:p-6 space-y-4"
+        >
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+              <FiLock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">Change Password</h3>
+              <p className="text-xs text-slate-500">Update your account login password to ensure security</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 w-full">
+            <input
+              type="password"
+              placeholder="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-3 sm:px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              disabled={isUpdatingPassword}
+            />
+            <div className="space-y-1">
+              <input
+                type="password"
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                disabled={isUpdatingPassword}
+              />
+              {newPassword && (
+                <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1.5 text-xs mt-1.5">
+                  <p className="font-semibold text-gray-700">Password requirements:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).minLength ? 'text-emerald-600 font-medium' : 'text-gray-400'}`}>
+                      <span>{validatePassword(newPassword).minLength ? '✓' : '•'}</span>
+                      <span>At least 8 characters</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasUpper ? 'text-emerald-600 font-medium' : 'text-gray-400'}`}>
+                      <span>{validatePassword(newPassword).hasUpper ? '✓' : '•'}</span>
+                      <span>At least 1 uppercase letter</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasNumber ? 'text-emerald-600 font-medium' : 'text-gray-400'}`}>
+                      <span>{validatePassword(newPassword).hasNumber ? '✓' : '•'}</span>
+                      <span>At least 1 number</span>
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasSpecial ? 'text-emerald-600 font-medium' : 'text-gray-400'}`}>
+                      <span>{validatePassword(newPassword).hasSpecial ? '✓' : '•'}</span>
+                      <span>At least 1 special character</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <input
+              type="password"
+              placeholder="Confirm New Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 sm:px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+              disabled={isUpdatingPassword}
+            />
+
+            {/* Premium Caution & Keep Login Switch */}
+            <div className="p-4 bg-amber-50/60 border border-amber-100/70 rounded-2xl space-y-3">
+              <div className="flex items-start gap-2.5">
+                <span className="text-amber-500 mt-0.5 text-sm">⚠️</span>
+                <div>
+                  <p className="text-xs font-bold text-amber-800">Security Warning</p>
+                  <p className="text-[11px] text-amber-700/90 leading-relaxed mt-0.5">
+                    By default, changing your password will automatically log you out of all other devices for security.
+                    Turn on the switch below if you wish to remain logged in on other active devices.
+                  </p>
+                </div>
+              </div>
+
+              <label className="flex items-center justify-between cursor-pointer select-none py-1 border-t border-amber-100/50 pt-2.5">
+                <span className="text-xs font-semibold text-slate-700">Keep other devices logged in</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={keepLogin}
+                    onChange={(e) => setKeepLogin(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </div>
+              </label>
+            </div>
+
+            <button
+              onClick={handlePasswordUpdate}
+              disabled={isUpdatingPassword}
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUpdatingPassword ? (
+                <><FaSpinner className="w-4 h-4 animate-spin inline mr-2" />Updating...</>
+              ) : "Update Password"}
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Sessions Sub-Tab */}
+      {securitySubTab === "sessions" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-xl border border-gray-100 p-5 sm:p-6 space-y-4"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+                <FiMonitor className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-gray-800">Active Sessions</h3>
+                <p className="text-xs text-slate-500">Manage all browser sessions and devices currently logged into your account</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={forceLogoutAll}
+              disabled={loggingOutAll || sessions.filter((s) => !s.is_current).length === 0}
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed self-start sm:self-auto"
+            >
+              {loggingOutAll ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FiLogOut className="w-3 h-3" />}
+              <span className="whitespace-nowrap">Logout All Other Devices</span>
+            </button>
+          </div>
+
+          {loadingSessions ? (
+            <div className="flex items-center justify-center py-12 text-gray-400 text-sm gap-2">
+              <FaSpinner className="animate-spin w-4 h-4" /> Loading sessions...
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all flex-wrap
+                  ${session.is_current
+                      ? "bg-indigo-50/60 border-indigo-200"
+                      : "bg-gray-50 border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30"
+                    }`}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0
+                    ${session.device_name.toLowerCase().includes("ios") ? "bg-pink-100"
+                        : session.device_name.toLowerCase().includes("android") ? "bg-green-100"
+                          : "bg-indigo-100"}`}>
+                      {getDeviceIcon(session.device_name)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-gray-800 truncate">{session.device_name}</span>
+                        {session.is_current && (
+                          <span className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                            This Device
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-xs text-gray-500">{session.ip_address}</span>
+                        {session.location?.latitude && (
+                          <span className="text-xs text-gray-400">
+                            📍 {parseFloat(session.location.latitude).toFixed(3)}, {parseFloat(session.location.longitude).toFixed(3)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Last active {timeAgo(session.last_active)} · Signed in {timeAgo(session.login_at)}
+                      </p>
+                    </div>
+                  </div>
+                  {session.is_current ? (
+                    <span className="text-xs text-indigo-500 font-semibold px-2">✓ Active</span>
+                  ) : (
+                    <button
+                      onClick={() => forceLogout(session.id)}
+                      disabled={loggingOutId === session.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-500 border border-gray-200 rounded-lg text-xs font-semibold hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      {loggingOutId === session.id ? <FaSpinner className="w-3 h-3 animate-spin" /> : <FiLogOut className="w-3 h-3" />}
+                      Logout
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Account Ownership Sub-Tab */}
+      {securitySubTab === "ownership" && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl shadow-xl border border-gray-100 p-5 sm:p-6 space-y-4"
+        >
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
+              <FiTrash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">Account Ownership & Deletion</h3>
+              <p className="text-xs text-slate-500">Manage your profile state and permanent deletion options</p>
+            </div>
+          </div>
+
+          <div className="bg-red-50/50 rounded-xl border border-red-100 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center text-red-500 flex-shrink-0">
+                <FiTrash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-bold text-red-700">Delete Account</h4>
+                <p className="text-xs text-red-500">Permanently remove your account and all associated workspace records. This is irreversible.</p>
+              </div>
+            </div>
+            <button
+              onClick={handleDeleteAccount}
+              className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-xl text-xs sm:text-sm font-semibold hover:bg-red-700 transition-all shadow-md active:scale-95 flex-shrink-0"
+            >
+              Delete Account
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Account Delete Modal */}
       <AnimatePresence>
         {showAccountDeleteModal && (
@@ -870,7 +900,6 @@ const SettingsPage = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               className="w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden"
             >
-              {/* Modal Header */}
               <div className="bg-red-600 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FiTrash2 className="text-white w-5 h-5" />
@@ -885,7 +914,6 @@ const SettingsPage = () => {
               </div>
 
               <div className="p-6">
-                {/* Warning Banner */}
                 <div className="flex gap-3 bg-red-50 border border-red-100 rounded-xl p-3 mb-5">
                   <span className="text-red-500 text-lg flex-shrink-0 mt-0.5">⚠️</span>
                   <div>
@@ -1087,6 +1115,54 @@ const SettingsPage = () => {
           </div>
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+// ─── Main Hub Definitions ───────────────────────────────────────────────────
+
+const SETTINGS_HUB_TABS = [
+  {
+    id: "companies",
+    label: "Companies",
+    shortLabel: "Companies",
+    description: "Manage your companies and organizational workspaces.",
+    icon: FaBuilding,
+    component: CompaniesTab,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  {
+    id: "security",
+    label: "Security",
+    shortLabel: "Security",
+    description: "Update your password, manage active sessions, and delete account.",
+    icon: FaShieldAlt,
+    component: SecurityTab,
+    accent: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  },
+];
+
+const SettingsPage = () => {
+  return (
+    <div className="min-h-screen py-4 sm:py-6 lg:py-8 px-3 sm:px-4 lg:px-6 xl:px-8">
+      {/* Decorative Elements - Hidden on very small screens */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none hidden sm:block">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      </div>
+
+      <TabbedManagementHub
+        routePath="/settings"
+        defaultTab="companies"
+        title="Settings"
+        description="Manage your account settings, companies, active sessions, and security preferences."
+        eyebrow={<><FaCog size={11} /> Settings</>}
+        accent="blue"
+        tabs={SETTINGS_HUB_TABS}
+        accessDeniedTitle="Access Denied"
+        accessDeniedDescription="You do not have access to these settings."
+        accessDeniedIcon={FaShieldAlt}
+      />
 
       <style>{`
         @keyframes blob {
@@ -1102,23 +1178,9 @@ const SettingsPage = () => {
         .animation-delay-2000 {
           animation-delay: 2s;
         }
-        
-        /* Custom breakpoint for extra small devices */
-        @media (min-width: 480px) {
-          .xs\\:flex-row {
-            flex-direction: row;
-          }
-          .xs\\:self-auto {
-            align-self: auto;
-          }
-          .xs\\:w-auto {
-            width: auto;
-          }
-        }
       `}</style>
     </div>
   );
 };
-
 
 export default SettingsPage;
