@@ -124,13 +124,24 @@ const getFlagEligibility = (employee, startTime = employee?.punch_in_time, endTi
   const expectedMinutes = Number(employee.expected_work_minutes) || calculateWorkedMinutes(employee.shift_start, employee.shift_end);
   const workedMinutes = calculateWorkedMinutes(startTime, endTime);
   const graceMinutes = getGraceMinutes(employee);
-  const differenceMinutes = workedMinutes - expectedMinutes;
+
+  const overtimeEligible = workedMinutes > expectedMinutes + graceMinutes;
+  const deductibleEligible = workedMinutes < expectedMinutes - graceMinutes;
+
+  let differenceMinutes = 0;
+  if (overtimeEligible) {
+    differenceMinutes = workedMinutes - expectedMinutes;
+  } else if (deductibleEligible) {
+    differenceMinutes = expectedMinutes - workedMinutes;
+  } else {
+    differenceMinutes = Math.abs(workedMinutes - expectedMinutes);
+  }
 
   return {
-    overtime: differenceMinutes > graceMinutes,
-    deductible: differenceMinutes < -graceMinutes,
+    overtime: overtimeEligible,
+    deductible: deductibleEligible,
     workedMinutes,
-    differenceMinutes: Math.abs(differenceMinutes),
+    differenceMinutes,
   };
 };
 
@@ -421,10 +432,50 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag }) => {
 };
 
 const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSave, saving = false }) => {
+  const hasActualTime = Boolean(employee?.punch_in_time || employee?.punch_out_time);
+
+  const getDefaultTimes = (currentStatus, currentHalfDaySession) => {
+    if (hasActualTime) {
+      return {
+        punchIn: employee?.punch_in_time || '',
+        punchOut: employee?.punch_out_time || '',
+      };
+    }
+
+    const sStart = stripSeconds(employee?.shift_start) || '09:00';
+    const sEnd = stripSeconds(employee?.shift_end) || '18:00';
+
+    if (currentStatus === 'half_day') {
+      const startMins = timeToMinutes(sStart);
+      const endMins = timeToMinutes(sEnd);
+      if (startMins !== null && endMins !== null) {
+        const shiftDuration = endMins >= startMins ? endMins - startMins : (24 * 60 - startMins) + endMins;
+        const halfDuration = Math.round(shiftDuration / 2);
+        const midpointMins = (startMins + halfDuration) % 1440;
+        const midpoint = minutesToDurationValue(midpointMins);
+
+        if (currentHalfDaySession === 'second_half') {
+          return { punchIn: midpoint, punchOut: sEnd };
+        } else {
+          return { punchIn: sStart, punchOut: midpoint };
+        }
+      }
+    }
+
+    return { punchIn: sStart, punchOut: sEnd };
+  };
+
   const [status, setStatus] = useState(initialStatus || 'present');
-  const [punchIn, setPunchIn] = useState(employee?.punch_in_time || '');
-  const [punchOut, setPunchOut] = useState(employee?.punch_out_time || '');
   const [halfDaySession, setHalfDaySession] = useState(employee?.half_day_session || 'first_half');
+  const [punchIn, setPunchIn] = useState(() => {
+    const defaults = getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half');
+    return defaults.punchIn;
+  });
+  const [punchOut, setPunchOut] = useState(() => {
+    const defaults = getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half');
+    return defaults.punchOut;
+  });
+
   const [leaveType, setLeaveType] = useState(employee?.leave_type || 'paid');
   const [leaveCode, setLeaveCode] = useState(employee?.leave_sub_type || 'CL');
   const [leaveDayOvertimeEnabled, setLeaveDayOvertimeEnabled] = useState(Boolean(employee?.leave_day_overtime));
@@ -434,10 +485,14 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   const [notes, setNotes] = useState(employee?.remark || '');
 
   useEffect(() => {
-    setStatus(initialStatus || 'present');
-    setPunchIn(employee?.punch_in_time || '');
-    setPunchOut(employee?.punch_out_time || '');
-    setHalfDaySession(employee?.half_day_session || 'first_half');
+    const targetStatus = initialStatus || 'present';
+    const targetSession = employee?.half_day_session || 'first_half';
+    const defaults = getDefaultTimes(targetStatus, targetSession);
+
+    setStatus(targetStatus);
+    setHalfDaySession(targetSession);
+    setPunchIn(defaults.punchIn);
+    setPunchOut(defaults.punchOut);
     setLeaveType(employee?.leave_type || 'paid');
     setLeaveCode(employee?.leave_sub_type || 'CL');
     setLeaveDayOvertimeEnabled(Boolean(employee?.leave_day_overtime));
@@ -446,6 +501,24 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
     setIsDeductible(false);
     setNotes(employee?.remark || '');
   }, [employee, initialStatus]);
+
+  const handleStatusChange = (newStatus) => {
+    setStatus(newStatus);
+    if (!hasActualTime && (newStatus === 'present' || newStatus === 'half_day')) {
+      const defaults = getDefaultTimes(newStatus, halfDaySession);
+      setPunchIn(defaults.punchIn);
+      setPunchOut(defaults.punchOut);
+    }
+  };
+
+  const handleHalfDaySessionChange = (newSession) => {
+    setHalfDaySession(newSession);
+    if (!hasActualTime) {
+      const defaults = getDefaultTimes(status, newSession);
+      setPunchIn(defaults.punchIn);
+      setPunchOut(defaults.punchOut);
+    }
+  };
 
   const showTimeFields = status === 'present' || status === 'half_day';
   const canUsePayrollFlags = showTimeFields;
@@ -532,7 +605,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
               <button
                 key={option.value}
                 type="button"
-                onClick={() => setStatus(option.value)}
+                onClick={() => handleStatusChange(option.value)}
                 className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                   }`}
               >
@@ -575,7 +648,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setHalfDaySession(option.value)}
+                  onClick={() => handleHalfDaySessionChange(option.value)}
                   className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${halfDaySession === option.value
                     ? 'border-blue-200 bg-blue-50 text-blue-700'
                     : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
