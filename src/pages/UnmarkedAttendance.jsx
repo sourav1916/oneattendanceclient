@@ -321,7 +321,10 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag }) => {
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-slate-200 bg-white p-3 shadow-md shadow-slate-100 transition hover:shadow-lg"
+      className={`rounded-xl border p-3 shadow-md transition hover:shadow-lg ${employee.is_verified
+        ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
+        : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
+        }`}
     >
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
         <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px]">
