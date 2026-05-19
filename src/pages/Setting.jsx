@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaBuilding, FaPlus, FaUser, FaBell, FaShieldAlt, FaCog,
-  FaMoon, FaSun, FaBars, FaTimes, FaSave, FaSpinner
+  FaBuilding, FaPlus, FaShieldAlt,
+  FaBars, FaTimes, FaSpinner
 } from "react-icons/fa";
 import { FiLock, FiMonitor, FiTrash2, FiChevronDown } from "react-icons/fi";
 import { FiLogOut } from "react-icons/fi";
@@ -13,16 +13,13 @@ import CreateCompanyModal from "../components/CompanyModals/CreateCompanyModal";
 import EditCompanyModal from "../components/CompanyModals/EditCompanyModal";
 import ModalScrollLock from "../components/ModalScrollLock";
 import Skeleton from "../components/SkeletonComponent";
-import apiCall, { uploadFile } from "../utils/api";
+import apiCall from "../utils/api";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SETTINGS_TABS = [
   { id: "companies", label: "Companies", icon: FaBuilding },
-  { id: "profile", label: "Profile", icon: FaUser },
-  { id: "notifications", label: "Notifications", icon: FaBell },
   { id: "security", label: "Security", icon: FaShieldAlt },
-  { id: "preferences", label: "Preferences", icon: FaCog },
 ];
 
 const containerVariants = {
@@ -94,10 +91,6 @@ const SettingsPage = () => {
   const [activeCompany, setActiveCompany] = useState(null);
   const [editingCompany, setEditingCompany] = useState(null);
 
-
-  const [darkMode, setDarkMode] = useState(false);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [pushNotifications, setPushNotifications] = useState(false);
   const [activeTab, setActiveTab] = useState("companies");
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -105,17 +98,6 @@ const SettingsPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  const [profileForm, setProfileForm] = useState({
-    name: user?.name,
-    phone: user?.phone,
-    profile_picture: user?.profile_picture || ""
-  });
-  const [originalProfile, setOriginalProfile] = useState({
-    name: user?.name,
-    phone: user?.phone,
-    profile_picture: user?.profile_picture || ""
-  });
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   {/* ---- Active Sessions Card ---- */ }
 
@@ -123,20 +105,6 @@ const SettingsPage = () => {
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [loggingOutId, setLoggingOutId] = useState(null);
   const [loggingOutAll, setLoggingOutAll] = useState(false);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState(() => {
-    if (!user?.profile_picture) return null;
-    return user.profile_picture.startsWith('http') ? user.profile_picture : `https://api-attendance.onesaas.in${user.profile_picture}`;
-  });
-
-  useEffect(() => {
-    if (user?.profile_picture) {
-      const url = user.profile_picture.startsWith('http') ? user.profile_picture : `https://api-attendance.onesaas.in${user.profile_picture}`;
-      setImagePreview(url);
-    }
-  }, [user?.profile_picture]);
-
-  const fileInputRef = useRef(null); // add useRef to imports
   // New state for delete account
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [showAccountDeleteModal, setShowAccountDeleteModal] = useState(false);
@@ -400,94 +368,6 @@ const SettingsPage = () => {
     setOpenCreateModal(true);
   };
 
-  const handleProfileChange = (e) => {
-    setProfileForm({
-      ...profileForm,
-      [e.target.name]: e.target.value
-    });
-  };
-  const handleImageUpload = async (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
-        return;
-      }
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image must be less than 5MB");
-        return;
-      }
-
-      setIsUploadingImage(true);
-      try {
-        const url = await uploadFile(file);
-        setProfileForm((prev) => ({ ...prev, profile_picture: url }));
-        setImagePreview(url);
-        toast.success("Image uploaded successfully!");
-      } catch (error) {
-        toast.error(error.message || "Failed to upload image");
-        setImagePreview(user?.profile_picture || null);
-      } finally {
-        setIsUploadingImage(false);
-      }
-    }
-  };
-
-  const handleProfileUpdate = async () => {
-    const changedFields = {};
-    Object.keys(profileForm).forEach(key => {
-      if (profileForm[key] !== originalProfile[key]) {
-        changedFields[key] = profileForm[key];
-      }
-    });
-
-    if (Object.keys(changedFields).length === 0) {
-      toast.info("No changes detected");
-      return;
-    }
-
-    setIsUpdatingProfile(true);
-
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        toast.error("Authentication expired. Please login again.");
-        return;
-      }
-
-      const payload = {
-        user_id: user.id,
-        ...changedFields
-      };
-
-      const response = await apiCall('/users/update-profile', 'PUT', payload);
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.message || "Failed to update profile");
-        return;
-      }
-
-      if (result.success) {
-        await refreshUser();
-        setOriginalProfile({ ...profileForm });
-        toast.success("Profile updated successfully! 🎉");
-      } else {
-        toast.error(result.message || "Something went wrong");
-      }
-    } catch (error) {
-      console.error("Profile update error:", error);
-      toast.error("Network error. Please check your internet connection.");
-    } finally {
-      setIsUpdatingProfile(false);
-    }
-  };
-
   // Password validation function
   const validatePasswords = () => {
     if (!currentPassword.trim()) {
@@ -554,11 +434,6 @@ const SettingsPage = () => {
       setIsUpdatingPassword(false);
     }
   };
-
-  const handleNotificationSettings = () => {
-    toast.success("Notification preferences updated!");
-  };
-
   const ActiveIcon = SETTINGS_TABS.find(tab => tab.id === activeTab)?.icon || FaBuilding;
 
   if (loading) {
@@ -778,186 +653,6 @@ const SettingsPage = () => {
             </div>
           )}
 
-          {/* Profile Tab - Updated with working API integration */}
-          {activeTab === "profile" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border border-gray-100 p-4 sm:p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-                  <FaUser className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Profile Information</h2>
-              </div>
-
-              <div className="space-y-5">
-
-                {/* ── Profile Picture ── */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-                  {/* Avatar preview */}
-                  <div className="relative group flex-shrink-0">
-                    <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
-                      {imagePreview ? (
-                        <img
-                          src={imagePreview.startsWith('http') ? imagePreview : `https://api-attendance.onesaas.in${imagePreview}`}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                          onError={() => setImagePreview(null)}
-                        />
-                      ) : (
-                        <FaUser className="text-indigo-300 text-3xl" />
-                      )}
-                    </div>
-                    {/* Overlay on hover */}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingImage}
-                      className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    >
-                      {isUploadingImage ? (
-                        <FaSpinner className="text-white w-5 h-5 animate-spin" />
-                      ) : (
-                        <span className="text-white text-xs font-semibold">Change</span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Upload button & hint */}
-                  <div className="flex flex-col justify-center gap-2 text-center sm:text-left">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageUpload}
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingImage}
-                      className="inline-flex items-center gap-2 px-4 py-2 border border-indigo-200 text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isUploadingImage ? (
-                        <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Uploading...</>
-                      ) : (
-                        <><FaSave className="w-3.5 h-3.5" />Upload Photo</>
-                      )}
-                    </button>
-                    <p className="text-xs text-gray-400">JPG, PNG or GIF · Max 5MB</p>
-                    {profileForm.profile_picture && (
-                      <button
-                        onClick={() => {
-                          setImagePreview(null);
-                          setProfileForm((p) => ({ ...p, profile_picture: "" }));
-                        }}
-                        className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                      >
-                        Remove photo
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* ── Full Name ── */}
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={profileForm.name}
-                    onChange={handleProfileChange}
-                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-
-                {/* ── Email (read-only) ── */}
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    value={user?.email || ""}
-                    readOnly
-                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
-                </div>
-
-                {/* ── Phone ── */}
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={profileForm.phone}
-                    onChange={handleProfileChange}
-                    className="w-full px-3 sm:px-4 py-2.5 text-sm sm:text-base border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                    placeholder="Enter your phone number"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end pt-4">
-                  <button
-                    onClick={handleProfileUpdate}
-                    disabled={isUpdatingProfile || isUploadingImage}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isUpdatingProfile ? (
-                      <><FaSpinner className="w-4 h-4 animate-spin" />Updating...</>
-                    ) : (
-                      <><FaSave className="w-4 h-4" />Save Changes</>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Notifications Tab - Responsive */}
-          {activeTab === "notifications" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border border-gray-100 p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Notification Preferences</h2>
-
-              <div className="space-y-4">
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">Email Notifications</p>
-                    <p className="text-xs sm:text-sm text-gray-500">Receive updates via email</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer self-start xs:self-auto">
-                    <input
-                      type="checkbox"
-                      checked={emailNotifications}
-                      onChange={(e) => setEmailNotifications(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">Push Notifications</p>
-                    <p className="text-xs sm:text-sm text-gray-500">Receive push notifications in browser</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer self-start xs:self-auto">
-                    <input
-                      type="checkbox"
-                      checked={pushNotifications}
-                      onChange={(e) => setPushNotifications(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-
-                <button
-                  onClick={handleNotificationSettings}
-                  className="w-full sm:w-auto mt-4 px-4 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm sm:text-base font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
-                >
-                  Save Preferences
-                </button>
-              </div>
-            </div>
-          )}
-
           {activeTab === "security" && (
             <>
               <SecurityCard
@@ -1099,62 +794,6 @@ const SettingsPage = () => {
             </>
           )}
 
-          {/* Preferences Tab - Responsive */}
-          {activeTab === "preferences" && (
-            <div className="bg-white/95 backdrop-blur-xl rounded-xl sm:rounded-xl shadow-xl border border-gray-100 p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-gray-800">Application Preferences</h2>
-
-              <div className="space-y-4">
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                    {darkMode ?
-                      <FaMoon className="text-indigo-600 text-base sm:text-xl flex-shrink-0" /> :
-                      <FaSun className="text-yellow-500 text-base sm:text-xl flex-shrink-0" />
-                    }
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 text-sm sm:text-base">Dark Mode</p>
-                      <p className="text-xs sm:text-sm text-gray-500 truncate">Toggle between light and dark theme</p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer self-start xs:self-auto">
-                    <input
-                      type="checkbox"
-                      checked={darkMode}
-                      onChange={(e) => setDarkMode(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                  </label>
-                </div>
-
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">Language</p>
-                    <p className="text-xs sm:text-sm text-gray-500">Select your preferred language</p>
-                  </div>
-                  <select className="w-full xs:w-auto px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-                    <option>English</option>
-                    <option>Spanish</option>
-                    <option>French</option>
-                    <option>German</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-xl">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 text-sm sm:text-base">Time Zone</p>
-                    <p className="text-xs sm:text-sm text-gray-500">Set your local time zone</p>
-                  </div>
-                  <select className="w-full xs:w-auto px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-                    <option>UTC (GMT+0)</option>
-                    <option>IST (GMT+5:30)</option>
-                    <option>EST (GMT-5)</option>
-                    <option>PST (GMT-8)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
         </motion.div>
       </div>
 

@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FaEnvelope, FaPhone, FaBuilding, FaMapMarkerAlt, FaShieldAlt,
     FaCrown, FaCheckCircle, FaCalendarAlt, FaChevronRight, FaIdBadge,
     FaGlobe, FaCity, FaUserCircle, FaHashtag, FaBolt, FaLayerGroup,
-    FaUserShield
+    FaUserShield, FaUser, FaSave, FaSpinner, FaExclamationTriangle
 } from "react-icons/fa";
+import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
+import apiCall, { uploadFile } from "../utils/api";
+import Modal from "../components/Modal";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
-const PROFILE_TABS = ["Overview", "Companies", "Permissions"];
+const PROFILE_TABS = ["Overview", "Edit Profile", "Companies", "Permissions"];
 
 const getInitials = (name) =>
     name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
@@ -29,10 +32,256 @@ const containerVariants = {
 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+const getContactValue = (user, key) => String(user?.[key] || "").trim();
+const getFullPhone = (countryCode, phone) => `${String(countryCode || "").trim()}${String(phone || "").trim()}`;
+
 export default function ProfilePage() {
-    const { userDetails, loading, activeRole, companies, permissions } = useAuth();
+    const { userDetails, loading, activeRole, companies, permissions, refreshUser } = useAuth();
     const [activeTab, setActiveTab] = useState("Overview");
     const [expandedCompany, setExpandedCompany] = useState(null);
+    const [profileForm, setProfileForm] = useState({
+        name: "",
+        profile_picture: "",
+    });
+    const [originalProfile, setOriginalProfile] = useState({
+        name: "",
+        profile_picture: "",
+    });
+    const [contactModal, setContactModal] = useState(null);
+    const [contactForm, setContactForm] = useState({
+        email: "",
+        country_code: "+91",
+        phone: "",
+        otp: "",
+    });
+    const [contactStep, setContactStep] = useState("form");
+    const [pendingContactValue, setPendingContactValue] = useState("");
+    const [isRequestingContactOtp, setIsRequestingContactOtp] = useState(false);
+    const [isVerifyingContactOtp, setIsVerifyingContactOtp] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const fileInputRef = useRef(null);
+    const currentUser = userDetails?.user;
+
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const nextProfile = {
+            name: currentUser.name || "",
+            profile_picture: currentUser.profile_picture || "",
+        };
+
+        setProfileForm(nextProfile);
+        setOriginalProfile(nextProfile);
+        setImagePreview(
+            currentUser.profile_picture
+                ? currentUser.profile_picture.startsWith("http")
+                    ? currentUser.profile_picture
+                    : `https://api-attendance.onesaas.in${currentUser.profile_picture}`
+                : null
+        );
+    }, [currentUser?.id, currentUser?.name, currentUser?.phone, currentUser?.profile_picture]);
+
+    const handleProfileChange = (event) => {
+        const { name, value } = event.target;
+        setProfileForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleImageUpload = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            toast.error("Please select an image file");
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("Image must be less than 5MB");
+            return;
+        }
+
+        setIsUploadingImage(true);
+        try {
+            const url = await uploadFile(file);
+            setProfileForm((prev) => ({ ...prev, profile_picture: url }));
+            setImagePreview(url);
+            toast.success("Image uploaded successfully!");
+        } catch (error) {
+            toast.error(error.message || "Failed to upload image");
+            setImagePreview(originalProfile.profile_picture || null);
+        } finally {
+            setIsUploadingImage(false);
+            event.target.value = "";
+        }
+    };
+
+    const handleProfileUpdate = async () => {
+        if (!currentUser?.id) {
+            toast.error("User profile not found");
+            return;
+        }
+
+        const changedFields = {};
+        Object.keys(profileForm).forEach((key) => {
+            if (profileForm[key] !== originalProfile[key]) {
+                changedFields[key] = profileForm[key];
+            }
+        });
+
+        if (Object.keys(changedFields).length === 0) {
+            toast.info("No changes detected");
+            return;
+        }
+
+        setIsUpdatingProfile(true);
+        try {
+            if (!localStorage.getItem("token")) {
+                toast.error("Authentication expired. Please login again.");
+                return;
+            }
+
+            const response = await apiCall("/users/update-profile", "PUT", {
+                user_id: currentUser.id,
+                ...changedFields,
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.success) {
+                toast.error(result.message || "Failed to update profile");
+                return;
+            }
+
+            await refreshUser();
+            setOriginalProfile({ ...profileForm });
+            toast.success("Profile updated successfully!");
+        } catch (error) {
+            console.error("Profile update error:", error);
+            toast.error("Network error. Please check your internet connection.");
+        } finally {
+            setIsUpdatingProfile(false);
+        }
+    };
+
+    const closeContactModal = () => {
+        setContactModal(null);
+        setContactStep("form");
+        setPendingContactValue("");
+        setContactForm({
+            email: "",
+            country_code: "+91",
+            phone: "",
+            otp: "",
+        });
+    };
+
+    const openContactModal = (type) => {
+        const email = getContactValue(currentUser, "email");
+        const phone = getContactValue(currentUser, "phone");
+
+        if (type === "phone" && !email) {
+            setContactModal({ type: "email", blockedType: "phone" });
+            setContactForm((prev) => ({ ...prev, email: "", otp: "" }));
+            setContactStep("form");
+            return;
+        }
+
+        if (type === "email" && !phone) {
+            setContactModal({ type: "phone", blockedType: "email" });
+            setContactForm((prev) => ({ ...prev, country_code: "+91", phone: "", otp: "" }));
+            setContactStep("form");
+            return;
+        }
+
+        setContactModal({ type, blockedType: null });
+        setContactForm((prev) => ({
+            ...prev,
+            email: "",
+            country_code: "+91",
+            phone: "",
+            otp: "",
+        }));
+        setContactStep("form");
+    };
+
+    const requestContactOtp = async () => {
+        if (!contactModal?.type) return;
+
+        const type = contactModal.type;
+        const value = type === "email"
+            ? contactForm.email.trim()
+            : getFullPhone(contactForm.country_code, contactForm.phone);
+
+        if (!value) {
+            toast.error(type === "email" ? "Email is required" : "Phone number is required");
+            return;
+        }
+
+        setIsRequestingContactOtp(true);
+        try {
+            const endpoint = type === "email"
+                ? "/users/request-update-email-otp"
+                : "/users/request-update-phone-otp";
+            const payload = type === "email" ? { email: value } : { phone: value };
+            const response = await apiCall(endpoint, "POST", payload);
+            const result = await response.json();
+
+            if (!response.ok || result.success === false) {
+                toast.error(result.message || `Failed to request ${type} OTP`);
+                return;
+            }
+
+            setPendingContactValue(value);
+            setContactStep("otp");
+            setContactForm((prev) => ({ ...prev, otp: "" }));
+            toast.success(result.message || "OTP sent successfully");
+        } catch (error) {
+            console.error("Contact OTP request error:", error);
+            toast.error("Network error. Please try again.");
+        } finally {
+            setIsRequestingContactOtp(false);
+        }
+    };
+
+    const verifyContactOtp = async () => {
+        if (!contactModal?.type) return;
+        if (!contactForm.otp.trim()) {
+            toast.error("OTP is required");
+            return;
+        }
+
+        const type = contactModal.type;
+        const value = pendingContactValue || (type === "email"
+            ? contactForm.email.trim()
+            : getFullPhone(contactForm.country_code, contactForm.phone));
+
+        setIsVerifyingContactOtp(true);
+        try {
+            const endpoint = type === "email"
+                ? "/users/verify-update-email-otp"
+                : "/users/verify-update-phone-otp";
+            const payload = type === "email"
+                ? { email: value, otp: contactForm.otp.trim() }
+                : { phone: value, otp: contactForm.otp.trim() };
+            const response = await apiCall(endpoint, "POST", payload);
+            const result = await response.json();
+
+            if (!response.ok || result.success === false) {
+                toast.error(result.message || `Failed to update ${type}`);
+                return;
+            }
+
+            await refreshUser();
+            toast.success(result.message || `${type === "email" ? "Email" : "Phone number"} updated successfully`);
+            closeContactModal();
+        } catch (error) {
+            console.error("Contact OTP verify error:", error);
+            toast.error("Network error. Please try again.");
+        } finally {
+            setIsVerifyingContactOtp(false);
+        }
+    };
 
     // Loading state
     if (loading || !userDetails) {
@@ -190,12 +439,12 @@ export default function ProfilePage() {
                                 </div>
                                 <ul className="px-5 py-2 divide-y divide-slate-100">
                                     {[
-                                        { icon: FaEnvelope, label: "Email", value: user.email },
-                                        { icon: FaPhone, label: "Phone", value: user.phone },
+                                        { icon: FaEnvelope, label: "Email", value: user.email || "Not added", action: () => openContactModal("email") },
+                                        { icon: FaPhone, label: "Phone", value: user.phone || "Not added", action: () => openContactModal("phone") },
                                         { icon: FaCalendarAlt, label: "Joined", value: formatDate(user.created_at) },
                                         { icon: FaUserCircle, label: "Status", value: user.is_active === 1 ? "Active" : "Inactive" },
                                         { icon: FaUserShield, label: "System Admin", value: user.is_system_admin === 1 ? "Yes" : "No" },
-                                    ].map(({ icon: Icon, label, value }, i) => (
+                                    ].map(({ icon: Icon, label, value, action }, i) => (
                                         <motion.li
                                             key={label}
                                             initial={{ opacity: 0, x: -12 }}
@@ -208,8 +457,17 @@ export default function ProfilePage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs text-slate-400">{label}</p>
-                                                <p className="text-sm font-medium text-slate-700 truncate">{value}</p>
+                                                <p className={`text-sm font-medium truncate ${value === "Not added" ? "text-amber-600" : "text-slate-700"}`}>{value}</p>
                                             </div>
+                                            {action && (
+                                                <button
+                                                    type="button"
+                                                    onClick={action}
+                                                    className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-lg hover:bg-indigo-100 transition-colors"
+                                                >
+                                                    {value === "Not added" ? "Add" : "Change"}
+                                                </button>
+                                            )}
                                         </motion.li>
                                     ))}
                                 </ul>
@@ -261,6 +519,121 @@ export default function ProfilePage() {
                                         <div className={`w-1.5 h-10 rounded-full bg-gradient-to-b ${item.color} opacity-60`} />
                                     </motion.div>
                                 ))}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* ── EDIT PROFILE ── */}
+                    {activeTab === "Edit Profile" && (
+                        <motion.div
+                            key="edit-profile"
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6"
+                        >
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center">
+                                    <FaUser className="text-indigo-500 text-sm" />
+                                </div>
+                                <div>
+                                    <p className="text-base font-semibold text-slate-800">Profile Information</p>
+                                    <p className="text-xs text-slate-500">Update your name and profile photo.</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-5">
+                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                                    <div className="relative group flex-shrink-0">
+                                        <div className="w-24 h-24 rounded-2xl border-4 border-white shadow-lg overflow-hidden bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                                            {imagePreview ? (
+                                                <img
+                                                    src={imagePreview.startsWith("http") ? imagePreview : `https://api-attendance.onesaas.in${imagePreview}`}
+                                                    alt="Profile"
+                                                    className="w-full h-full object-cover"
+                                                    onError={() => setImagePreview(null)}
+                                                />
+                                            ) : (
+                                                <FaUser className="text-indigo-300 text-3xl" />
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isUploadingImage}
+                                            className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center disabled:cursor-not-allowed"
+                                        >
+                                            {isUploadingImage ? (
+                                                <FaSpinner className="text-white w-5 h-5 animate-spin" />
+                                            ) : (
+                                                <span className="text-white text-xs font-semibold">Change</span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-col justify-center gap-2 text-center sm:text-left">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleImageUpload}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            disabled={isUploadingImage}
+                                            className="inline-flex items-center gap-2 px-4 py-2 border border-indigo-200 text-indigo-600 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isUploadingImage ? (
+                                                <><FaSpinner className="w-3.5 h-3.5 animate-spin" />Uploading...</>
+                                            ) : (
+                                                <><FaSave className="w-3.5 h-3.5" />Upload Photo</>
+                                            )}
+                                        </button>
+                                        <p className="text-xs text-slate-400">JPG, PNG or GIF. Max 5MB</p>
+                                        {profileForm.profile_picture && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setImagePreview(null);
+                                                    setProfileForm((prev) => ({ ...prev, profile_picture: "" }));
+                                                }}
+                                                className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                                            >
+                                                Remove photo
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={profileForm.name}
+                                        onChange={handleProfileChange}
+                                        className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                        placeholder="Enter your full name"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-end pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleProfileUpdate}
+                                        disabled={isUpdatingProfile || isUploadingImage}
+                                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-medium hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isUpdatingProfile ? (
+                                            <><FaSpinner className="w-4 h-4 animate-spin" />Updating...</>
+                                        ) : (
+                                            <><FaSave className="w-4 h-4" />Save Changes</>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -440,6 +813,133 @@ export default function ProfilePage() {
 
                 </AnimatePresence>
             </div>
+
+            <Modal
+                isOpen={Boolean(contactModal)}
+                onClose={closeContactModal}
+                title={`${contactStep === "otp" ? "Verify" : contactModal?.blockedType ? "Add" : "Change"} ${contactModal?.type === "email" ? "Email" : "Phone Number"}`}
+                subtitle={contactStep === "otp" ? "Enter the OTP to confirm this change." : "We will send an OTP before saving the new contact detail."}
+                icon={contactModal?.type === "email" ? <FaEnvelope /> : <FaPhone />}
+                size="md"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            onClick={closeContactModal}
+                            className="px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 rounded-xl hover:bg-white hover:text-slate-800 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        {contactStep === "form" ? (
+                            <button
+                                type="button"
+                                onClick={requestContactOtp}
+                                disabled={isRequestingContactOtp}
+                                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 rounded-xl hover:from-indigo-700 hover:via-violet-700 hover:to-fuchsia-700 shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isRequestingContactOtp && <FaSpinner className="w-3.5 h-3.5 animate-spin" />}
+                                Send OTP
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={verifyContactOtp}
+                                disabled={isVerifyingContactOtp}
+                                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 rounded-xl hover:from-indigo-700 hover:via-violet-700 hover:to-fuchsia-700 shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isVerifyingContactOtp && <FaSpinner className="w-3.5 h-3.5 animate-spin" />}
+                                Verify & Save
+                            </button>
+                        )}
+                    </>
+                }
+            >
+                {(contactModal?.blockedType || contactStep === "form") && (
+                    <div className={`mb-4 flex items-start gap-3 rounded-xl border p-3 ${contactModal?.blockedType ? "border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50" : "border-indigo-200 bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50"}`}>
+                        <FaExclamationTriangle className={`mt-0.5 shrink-0 ${contactModal?.blockedType ? "text-amber-500" : "text-indigo-500"}`} />
+                        <div>
+                            <p className={`text-sm font-semibold ${contactModal?.blockedType ? "text-amber-800" : "text-indigo-800"}`}>
+                                {contactModal?.blockedType
+                                    ? contactModal.blockedType === "email" ? "Phone number required first" : "Email required first"
+                                    : "OTP verification required"}
+                            </p>
+                            <p className={`mt-0.5 text-xs ${contactModal?.blockedType ? "text-amber-700" : "text-indigo-700"}`}>
+                                {contactModal?.blockedType
+                                    ? `You cannot change your ${contactModal.blockedType === "email" ? "email" : "phone number"} until you add a ${contactModal.type === "email" ? "email address" : "phone number"} first.`
+                                    : `Enter the new ${contactModal?.type === "email" ? "email address" : "phone number"} below. We will send an OTP before saving it.`}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {contactStep === "form" ? (
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-sky-50 p-3">
+                            <p className="text-xs font-bold uppercase tracking-wide text-cyan-700">
+                                Current {contactModal?.type === "email" ? "Email" : "Phone Number"}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-slate-800 break-all">
+                                {contactModal?.type === "email"
+                                    ? getContactValue(currentUser, "email") || "Not added"
+                                    : getContactValue(currentUser, "phone") || "Not added"}
+                            </p>
+                        </div>
+
+                        {contactModal?.type === "email" ? (
+                            <div>
+                                <label className="block text-sm font-semibold text-violet-700 mb-2">New Email Address</label>
+                                <input
+                                    type="email"
+                                    value={contactForm.email}
+                                    onChange={(event) => setContactForm((prev) => ({ ...prev, email: event.target.value }))}
+                                    className="w-full px-4 py-2.5 text-sm border border-violet-200 bg-white rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
+                                    placeholder="demo@gmail.com"
+                                />
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="block text-sm font-semibold text-violet-700 mb-2">New Phone Number</label>
+                                <div className="grid grid-cols-[96px_1fr] gap-3">
+                                    <input
+                                        type="text"
+                                        aria-label="Country code"
+                                        value={contactForm.country_code}
+                                        onChange={(event) => setContactForm((prev) => ({ ...prev, country_code: event.target.value }))}
+                                        className="w-full px-4 py-2.5 text-sm border border-violet-200 bg-violet-50 rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
+                                        placeholder="+91"
+                                    />
+                                    <input
+                                        type="tel"
+                                        aria-label="New phone number"
+                                        value={contactForm.phone}
+                                        onChange={(event) => setContactForm((prev) => ({ ...prev, phone: event.target.value }))}
+                                        className="w-full px-4 py-2.5 text-sm border border-violet-200 bg-white rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
+                                        placeholder="093748710921"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <div className="rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 p-3">
+                            <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">OTP sent for</p>
+                            <p className="text-sm font-semibold text-slate-800 break-all">{pendingContactValue}</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-emerald-700 mb-2">OTP</label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                value={contactForm.otp}
+                                onChange={(event) => setContactForm((prev) => ({ ...prev, otp: event.target.value.replace(/[^0-9]/g, "") }))}
+                                className="w-full px-4 py-2.5 text-sm border border-emerald-200 bg-white rounded-xl focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all"
+                                placeholder="123456"
+                            />
+                        </div>
+                    </div>
+                )}
+            </Modal>
 
             <style>{`
                 @keyframes float {
