@@ -11,6 +11,8 @@ import { useAuth } from "../context/AuthContext";
 import apiCall, { uploadFile } from "../utils/api";
 import Modal from "../components/Modal";
 import CategoryPermissionSelector from "../components/common/CategoryPermissionSelector";
+import { CountryCodeModal, getFlagEmoji } from "../components/common";
+import countryCodes from "../utils/countryCodes.json";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -35,6 +37,24 @@ const containerVariants = {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 const getContactValue = (user, key) => String(user?.[key] || "").trim();
 const getFullPhone = (countryCode, phone) => `${String(countryCode || "").trim()}${String(phone || "").trim()}`;
+const formatPhoneDisplay = (phone) => {
+    if (!phone) return "";
+    const p = String(phone).trim();
+    if (!p) return "";
+    if (p.startsWith("+")) {
+        // e.g. "+919547444749" → "+91 9547444749"
+        const match = p.match(/^(\+\d{1,4})(\d+)$/);
+        return match ? `${match[1]} ${match[2]}` : p;
+    }
+    // Try to detect embedded country code (e.g. "919547444749" → "+91 9547444749")
+    const sorted = [...countryCodes].sort((a, b) => b.dial_code.length - a.dial_code.length);
+    for (const c of sorted) {
+        if (p.startsWith(c.dial_code) && p.length > c.dial_code.length) {
+            return `+${c.dial_code} ${p.slice(c.dial_code.length)}`;
+        }
+    }
+    return p; // plain local number — show as-is
+};
 const formatPermissionText = (value) =>
     value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "";
 
@@ -54,12 +74,14 @@ export default function ProfilePage() {
     const [profileForm, setProfileForm] = useState({
         name: "",
         profile_picture: "",
+        whatsapp_country_code: "+91",
         whatsapp: "",
         profession: "",
     });
     const [originalProfile, setOriginalProfile] = useState({
         name: "",
         profile_picture: "",
+        whatsapp_country_code: "+91",
         whatsapp: "",
         profession: "",
     });
@@ -77,6 +99,8 @@ export default function ProfilePage() {
     const [imagePreview, setImagePreview] = useState(null);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+    const [isWhatsappCodeModalOpen, setIsWhatsappCodeModalOpen] = useState(false);
+    const [isContactCodeModalOpen, setIsContactCodeModalOpen] = useState(false);
     const fileInputRef = useRef(null);
     const currentUser = userDetails?.user;
     const groupedPermissions = useMemo(() => (
@@ -97,10 +121,32 @@ export default function ProfilePage() {
     useEffect(() => {
         if (!currentUser) return;
 
+        let wcc = "+91";
+        let wn = currentUser.whatsapp || "";
+        if (wn.startsWith("+")) {
+            // e.g. "+919547444749" → wcc="+91", wn="9547444749"
+            const match = wn.match(/^(\+\d{1,4})(.*)$/);
+            if (match) {
+                wcc = match[1];
+                wn = match[2];
+            }
+        } else if (wn.length > 0) {
+            // e.g. "929547444749" stored without + → try to detect country code
+            const sortedCodes = [...countryCodes].sort((a, b) => b.dial_code.length - a.dial_code.length);
+            for (const c of sortedCodes) {
+                if (wn.startsWith(c.dial_code)) {
+                    wcc = "+" + c.dial_code;
+                    wn = wn.slice(c.dial_code.length);
+                    break;
+                }
+            }
+        }
+
         const nextProfile = {
             name: currentUser.name || "",
             profile_picture: currentUser.profile_picture || "",
-            whatsapp: currentUser.whatsapp || "",
+            whatsapp_country_code: wcc,
+            whatsapp: wn,
             profession: currentUser.profession || "",
         };
 
@@ -174,10 +220,14 @@ export default function ProfilePage() {
                 return;
             }
 
+            const whatsappValue = profileForm.whatsapp.trim()
+                ? getFullPhone(profileForm.whatsapp_country_code, profileForm.whatsapp)
+                : "";
+
             const payload = {
                 name: profileForm.name,
                 profile_picture: profileForm.profile_picture,
-                whatsapp: profileForm.whatsapp,
+                whatsapp: whatsappValue,
                 profession: profileForm.profession,
             };
 
@@ -389,7 +439,7 @@ export default function ProfilePage() {
                                         {getInitials(user.name)}
                                     </span>
                                 )}
-                                {user.is_active === 1 && (
+                                {(user.is_active === 1 || user.is_active === true) && (
                                     <span className="absolute bottom-1 right-1 w-5 h-5 bg-green-400 border-2 border-white rounded-full flex items-center justify-center z-10">
                                         <FaCheckCircle className="text-white text-[8px]" />
                                     </span>
@@ -421,7 +471,7 @@ export default function ProfilePage() {
                                 </span>
                                 <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
                                 <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                                    <FaPhone className="text-indigo-400" />{user.phone || ''}
+                                    <FaPhone className="text-indigo-400" />{formatPhoneDisplay(user.phone) || ''}
                                 </span>
                                 <span className="w-1 h-1 bg-slate-300 rounded-full hidden sm:block" />
                                 <span className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -476,10 +526,10 @@ export default function ProfilePage() {
                                 <ul className="px-5 py-2 divide-y divide-slate-100">
                                     {[
                                         { icon: FaEnvelope, label: "Email", value: user.email || "Not added", action: () => openContactModal("email") },
-                                        { icon: FaPhone, label: "Phone", value: user.phone || "Not added", action: () => openContactModal("phone") },
+                                        { icon: FaPhone, label: "Phone", value: formatPhoneDisplay(user.phone) || "Not added", action: () => openContactModal("phone") },
                                         { icon: FaCalendarAlt, label: "Joined", value: formatDate(user.created_at) },
-                                        { icon: FaUserCircle, label: "Status", value: user.is_active === 1 ? "Active" : "Inactive" },
-                                        { icon: FaUserShield, label: "System Admin", value: user.is_system_admin === 1 ? "Yes" : "No" },
+                                        { icon: FaUserCircle, label: "Status", value: (user.is_active === 1 || user.is_active === true) ? "Active" : "Inactive" },
+                                        { icon: FaUserShield, label: "System Admin", value: (user.is_system_admin === 1 || user.is_system_admin === true) ? "Yes" : "No" },
                                     ].map(({ icon: Icon, label, value, action }, i) => (
                                         <motion.li
                                             key={label}
@@ -659,14 +709,26 @@ export default function ProfilePage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-2">WhatsApp</label>
-                                        <input
-                                            type="tel"
-                                            name="whatsapp"
-                                            value={profileForm.whatsapp}
-                                            onChange={handleProfileChange}
-                                            className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                            placeholder="Enter WhatsApp number"
-                                        />
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsWhatsappCodeModalOpen(true)}
+                                                className="flex-shrink-0 flex items-center justify-between gap-1 px-3 py-2.5 border border-slate-200 bg-slate-50 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition-colors w-24"
+                                            >
+                                                <span>
+                                                    {getFlagEmoji(countryCodes.find(c => c.dial_code === profileForm.whatsapp_country_code.replace("+", ""))?.code || "IN")}{" "}{profileForm.whatsapp_country_code}
+                                                </span>
+                                                <span className="text-slate-400 text-xs">▼</span>
+                                            </button>
+                                            <input
+                                                type="tel"
+                                                name="whatsapp"
+                                                value={profileForm.whatsapp}
+                                                onChange={handleProfileChange}
+                                                className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                                placeholder="Enter WhatsApp number"
+                                            />
+                                        </div>
                                     </div>
 
                                     <div>
@@ -934,21 +996,23 @@ export default function ProfilePage() {
                         ) : (
                             <div>
                                 <label className="block text-sm font-semibold text-violet-700 mb-2">New Phone Number</label>
-                                <div className="grid grid-cols-[96px_1fr] gap-3">
-                                    <input
-                                        type="text"
-                                        aria-label="Country code"
-                                        value={contactForm.country_code}
-                                        onChange={(event) => setContactForm((prev) => ({ ...prev, country_code: event.target.value }))}
-                                        className="w-full px-4 py-2.5 text-sm border border-violet-200 bg-violet-50 rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
-                                        placeholder="+91"
-                                    />
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsContactCodeModalOpen(true)}
+                                        className="flex-shrink-0 flex items-center justify-between gap-1 px-3 py-2.5 border border-violet-200 bg-violet-50 rounded-xl text-sm font-semibold text-slate-700 hover:bg-violet-100 transition-colors w-24"
+                                    >
+                                        <span>
+                                            {getFlagEmoji(countryCodes.find(c => c.dial_code === contactForm.country_code.replace("+", ""))?.code || "IN")}{" "}{contactForm.country_code}
+                                        </span>
+                                        <span className="text-slate-400 text-xs">▼</span>
+                                    </button>
                                     <input
                                         type="tel"
                                         aria-label="New phone number"
                                         value={contactForm.phone}
                                         onChange={(event) => setContactForm((prev) => ({ ...prev, phone: event.target.value }))}
-                                        className="w-full px-4 py-2.5 text-sm border border-violet-200 bg-white rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
+                                        className="flex-1 px-4 py-2.5 text-sm border border-violet-200 bg-white rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
                                         placeholder="093748710921"
                                     />
                                 </div>
@@ -975,6 +1039,20 @@ export default function ProfilePage() {
                     </div>
                 )}
             </Modal>
+
+            {/* Country Code Modals */}
+            <CountryCodeModal
+                isOpen={isWhatsappCodeModalOpen}
+                onClose={() => setIsWhatsappCodeModalOpen(false)}
+                onSelect={(code) => setProfileForm((prev) => ({ ...prev, whatsapp_country_code: "+" + code }))}
+                selectedCode={profileForm.whatsapp_country_code.replace("+", "")}
+            />
+            <CountryCodeModal
+                isOpen={isContactCodeModalOpen}
+                onClose={() => setIsContactCodeModalOpen(false)}
+                onSelect={(code) => setContactForm((prev) => ({ ...prev, country_code: "+" + code }))}
+                selectedCode={contactForm.country_code.replace("+", "")}
+            />
 
             <style>{`
                 @keyframes float {

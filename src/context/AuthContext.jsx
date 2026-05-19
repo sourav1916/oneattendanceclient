@@ -158,14 +158,17 @@ export const AuthProvider = ({ children }) => {
         setUserDetails(data);
 
         // ✅ USER
+        const isActive = data.user?.is_active === 1 || data.user?.is_active === true;
+        const isSystemAdmin = data.user?.is_system_admin === 1 || data.user?.is_system_admin === true;
+
         const userData = {
           id: data.user?.id,
           name: data.user?.name || "User",
           full_name: data.user?.name || "User",
           email: data.user?.email,
           phone: data.user?.phone,
-          is_active: data.user?.is_active === 1 || data.user?.is_active === true,
-          is_system_admin: data.meta?.is_system_admin === 1 || data.meta?.is_system_admin === true,
+          is_active: isActive,
+          is_system_admin: isSystemAdmin,
           role: response.role || "employee",
           profile_picture: data.user?.profile_picture,
         };
@@ -174,19 +177,32 @@ export const AuthProvider = ({ children }) => {
 
         // ✅ ATTENDANCE METHODS handled below during company selection
 
+        // ✅ Derive meta-like flags from new API structure
+        const ownedCompanyList = data.companies?.owned_companies || [];
+        const memberCompanyList = data.companies?.companies || [];
+        const isOwner = ownedCompanyList.length > 0;
+        const isEmployee = memberCompanyList.length > 0;
+
+        // Inject synthetic meta so rest of context and components can still read it
+        data.meta = {
+          is_owner: isOwner,
+          is_employee: isEmployee,
+          is_system_admin: isSystemAdmin ? 1 : 0,
+        };
+
         // ✅ EMPLOYEE FLAG
-        if (data.meta?.is_employee) {
+        if (isEmployee) {
           setEmployee(data.user);
         } else {
           setEmployee(null);
         }
 
         // ✅ COMPANIES (MERGE)
-        const ownedCompanies = (data.companies?.owned_companies || []).map(c => ({
+        const ownedCompanies = (ownedCompanyList).map(c => ({
           ...c,
           role: c.role || 'company_owner'
         }));
-        const memberCompanies = data.companies?.companies || [];
+        const memberCompanies = memberCompanyList;
         const allCompanies = [...ownedCompanies, ...memberCompanies];
 
         setCompanies(allCompanies);
