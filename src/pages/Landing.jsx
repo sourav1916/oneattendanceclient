@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import {
   FaClock,
   FaUsers,
@@ -16,6 +17,7 @@ import {
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   // Animation variants
   const fadeInUp = {
@@ -112,35 +114,55 @@ export default function LandingPage() {
               </h1>
             </motion.div>
             <div className="flex space-x-4 xsm:space-x-0 items-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/login')}
-                className="px-6 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg transition-all duration-200 relative overflow-hidden group"
-              >
-                <span className="relative z-10">Login</span>
-                <motion.div
-                  className="absolute inset-0 bg-blue-100"
-                  initial={{ scale: 0, opacity: 0 }}
-                  whileHover={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/signup')}
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg relative overflow-hidden group"
-              >
-                <span className="hidden xsm:inline">Free</span>
-                <span className="xsm:hidden">Get Started Free</span>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
-                  initial={{ x: "100%" }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.button>
+              {isAuthenticated ? (
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/home')}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg relative overflow-hidden group flex items-center gap-2"
+                >
+                  <span className="relative z-10">Go to Dashboard</span>
+                  <FaArrowRight className="relative z-10 text-sm group-hover:translate-x-1 transition-transform" />
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
+                    initial={{ x: "100%" }}
+                    whileHover={{ x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.button>
+              ) : (
+                <>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/login')}
+                    className="px-6 py-2 text-blue-600 font-semibold hover:bg-blue-50 rounded-lg transition-all duration-200 relative overflow-hidden group"
+                  >
+                    <span className="relative z-10">Login</span>
+                    <motion.div
+                      className="absolute inset-0 bg-blue-100"
+                      initial={{ scale: 0, opacity: 0 }}
+                      whileHover={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate('/signup')}
+                    className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg relative overflow-hidden group"
+                  >
+                    <span className="hidden xsm:inline">Free</span>
+                    <span className="xsm:hidden">Get Started Free</span>
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
+                      initial={{ x: "100%" }}
+                      whileHover={{ x: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -196,28 +218,53 @@ export default function LandingPage() {
               initial="initial"
               animate="animate"
             >
-              <motion.button
-                variants={fadeInUp}
-                whileHover={{ scale: 1.05, boxShadow: "0 25px 30px -12px rgba(0, 0, 0, 0.25)" }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/login')}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-lg rounded-xl shadow-2xl flex items-center gap-2 group relative overflow-hidden"
-              >
-                <span className="relative z-10">Start Free Trial</span>
-                <motion.div
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="relative z-10"
+              {isAuthenticated ? (
+                <motion.button
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.05, boxShadow: "0 25px 30px -12px rgba(0, 0, 0, 0.25)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/home')}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-lg rounded-xl shadow-2xl flex items-center gap-2 group relative overflow-hidden"
                 >
-                  <FaArrowRight />
-                </motion.div>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
-                  initial={{ x: "100%" }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.button>
+                  <span className="relative z-10">Go to Dashboard</span>
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="relative z-10"
+                  >
+                    <FaArrowRight />
+                  </motion.div>
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
+                    initial={{ x: "100%" }}
+                    whileHover={{ x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.button>
+              ) : (
+                <motion.button
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.05, boxShadow: "0 25px 30px -12px rgba(0, 0, 0, 0.25)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/login')}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-lg rounded-xl shadow-2xl flex items-center gap-2 group relative overflow-hidden"
+                >
+                  <span className="relative z-10">Start Free Trial</span>
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="relative z-10"
+                  >
+                    <FaArrowRight />
+                  </motion.div>
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700"
+                    initial={{ x: "100%" }}
+                    whileHover={{ x: 0 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.button>
+              )}
 
               <motion.button
                 variants={fadeInUp}
@@ -360,31 +407,51 @@ export default function LandingPage() {
             initial="initial"
             whileInView="animate"
           >
-            <motion.button
-              variants={fadeInUp}
-              whileHover={{ scale: 1.05, boxShadow: "0 30px 30px -15px rgba(0, 0, 0, 0.3)" }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/signup')}
-              className="px-10 py-4 bg-white text-blue-600 font-bold text-lg rounded-xl shadow-2xl flex items-center justify-center gap-2 group"
-            >
-              Create Free Account
-              <motion.div
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+            {isAuthenticated ? (
+              <motion.button
+                variants={fadeInUp}
+                whileHover={{ scale: 1.05, boxShadow: "0 30px 30px -15px rgba(0, 0, 0, 0.3)" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/home')}
+                className="px-10 py-4 bg-white text-blue-600 font-bold text-lg rounded-xl shadow-2xl flex items-center justify-center gap-2 group"
               >
-                <FaCheckCircle className="text-green-500" />
-              </motion.div>
-            </motion.button>
+                Go to Dashboard
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <FaArrowRight className="text-blue-600" />
+                </motion.div>
+              </motion.button>
+            ) : (
+              <>
+                <motion.button
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.05, boxShadow: "0 30px 30px -15px rgba(0, 0, 0, 0.3)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/signup')}
+                  className="px-10 py-4 bg-white text-blue-600 font-bold text-lg rounded-xl shadow-2xl flex items-center justify-center gap-2 group"
+                >
+                  Create Free Account
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <FaCheckCircle className="text-green-500" />
+                  </motion.div>
+                </motion.button>
 
-            <motion.button
-              variants={fadeInUp}
-              whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/login')}
-              className="px-10 py-4 font-semibold text-lg rounded-xl border-2 border-white hover:bg-white/20 transition-all duration-200"
-            >
-              Login Now
-            </motion.button>
+                <motion.button
+                  variants={fadeInUp}
+                  whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.2)" }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/login')}
+                  className="px-10 py-4 font-semibold text-lg rounded-xl border-2 border-white hover:bg-white/20 transition-all duration-200"
+                >
+                  Login Now
+                </motion.button>
+              </>
+            )}
           </motion.div>
         </div>
       </motion.section>
