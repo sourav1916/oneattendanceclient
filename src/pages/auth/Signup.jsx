@@ -524,10 +524,12 @@ const Signup = () => {
                               type="tel"
                               placeholder="Phone Number (primary)"
                               value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
+                              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                               onFocus={() => setFocusedField('phone')}
                               onBlur={() => setFocusedField(null)}
                               disabled={isLoading}
+                              maxLength={10}
+                              inputMode="numeric"
                               className="w-full pl-11 pr-4 py-2.5 border-2 border-purple-300 focus:border-purple-500 focus:outline-none transition-all duration-300 bg-gray-50 focus:bg-white text-sm rounded-xl disabled:opacity-60"
                             />
                           </div>

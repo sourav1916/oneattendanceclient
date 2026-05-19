@@ -163,7 +163,11 @@ export default function ProfilePage() {
 
     const handleProfileChange = (event) => {
         const { name, value } = event.target;
-        setProfileForm((prev) => ({ ...prev, [name]: value }));
+        if (name === "whatsapp") {
+            setProfileForm((prev) => ({ ...prev, whatsapp: value.replace(/\D/g, "").slice(0, 10) }));
+        } else {
+            setProfileForm((prev) => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleImageUpload = async (event) => {
@@ -725,6 +729,8 @@ export default function ProfilePage() {
                                                 name="whatsapp"
                                                 value={profileForm.whatsapp}
                                                 onChange={handleProfileChange}
+                                                maxLength={10}
+                                                inputMode="numeric"
                                                 className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                                 placeholder="Enter WhatsApp number"
                                             />
@@ -1011,9 +1017,11 @@ export default function ProfilePage() {
                                         type="tel"
                                         aria-label="New phone number"
                                         value={contactForm.phone}
-                                        onChange={(event) => setContactForm((prev) => ({ ...prev, phone: event.target.value }))}
+                                        onChange={(event) => setContactForm((prev) => ({ ...prev, phone: event.target.value.replace(/\D/g, "").slice(0, 10) }))}
+                                        maxLength={10}
+                                        inputMode="numeric"
                                         className="flex-1 px-4 py-2.5 text-sm border border-violet-200 bg-white rounded-xl focus:ring-4 focus:ring-violet-500/15 focus:border-violet-500 transition-all"
-                                        placeholder="093748710921"
+                                        placeholder="Enter phone number"
                                     />
                                 </div>
                             </div>

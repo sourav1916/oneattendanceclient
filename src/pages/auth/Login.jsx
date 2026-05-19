@@ -425,10 +425,12 @@ const Login = () => {
                                 type="tel"
                                 placeholder="Phone number"
                                 value={mobile}
-                                onChange={(e) => setMobile(e.target.value)}
+                                onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
                                 onFocus={() => setFocusedField('phone')}
                                 onBlur={() => setFocusedField(null)}
                                 disabled={isLoading}
+                                maxLength={10}
+                                inputMode="numeric"
                                 className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
                               />
                             </div>
