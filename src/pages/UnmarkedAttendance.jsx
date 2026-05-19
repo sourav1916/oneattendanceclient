@@ -22,6 +22,7 @@ import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Modal from '../components/Modal';
 import TimePickerField from '../components/TimePicker';
+import TimeDurationPickerField from '../components/TimeDurationPicker';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import {
@@ -96,6 +97,19 @@ const calculateWorkedMinutes = (startTime, endTime) => {
   const end = timeToMinutes(endTime);
   if (start === null || end === null) return 0;
   return end >= start ? end - start : (24 * 60 - start) + end;
+};
+
+const minutesToDurationValue = (minutes) => {
+  const total = Math.max(0, Number(minutes) || 0);
+  const hours = Math.floor(total / 60);
+  const mins = total % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+};
+
+const durationValueToMinutes = (value) => {
+  if (!value) return null;
+  const [hours = '0', minutes = '0'] = String(value).split(':');
+  return (Number(hours) || 0) * 60 + (Number(minutes) || 0);
 };
 
 const getGraceMinutes = (employee) => Number(employee?.grace_minutes ?? employee?.shift?.grace_minutes ?? 0) || 0;
@@ -409,7 +423,8 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   const [halfDaySession, setHalfDaySession] = useState(employee?.half_day_session || 'first_half');
   const [leaveType, setLeaveType] = useState(employee?.leave_type || 'paid');
   const [leaveCode, setLeaveCode] = useState(employee?.leave_sub_type || 'CL');
-  const [leaveDayOvertime, setLeaveDayOvertime] = useState(employee?.leave_day_overtime ?? '');
+  const [leaveDayOvertimeEnabled, setLeaveDayOvertimeEnabled] = useState(Boolean(employee?.leave_day_overtime));
+  const [leaveDayOvertime, setLeaveDayOvertime] = useState(employee?.leave_day_overtime ? minutesToDurationValue(employee.leave_day_overtime) : null);
   const [isOvertime, setIsOvertime] = useState(false);
   const [isDeductible, setIsDeductible] = useState(false);
   const [notes, setNotes] = useState(employee?.remark || '');
@@ -421,7 +436,8 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
     setHalfDaySession(employee?.half_day_session || 'first_half');
     setLeaveType(employee?.leave_type || 'paid');
     setLeaveCode(employee?.leave_sub_type || 'CL');
-    setLeaveDayOvertime(employee?.leave_day_overtime ?? '');
+    setLeaveDayOvertimeEnabled(Boolean(employee?.leave_day_overtime));
+    setLeaveDayOvertime(employee?.leave_day_overtime ? minutesToDurationValue(employee.leave_day_overtime) : null);
     setIsOvertime(false);
     setIsDeductible(false);
     setNotes(employee?.remark || '');
@@ -455,7 +471,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
       half_day_session: status === 'half_day' ? halfDaySession : '',
       leave_type: status === 'leave' ? leaveType : '',
       leave_sub_type: status === 'leave' && leaveType === 'paid' ? leaveCode : '',
-      leave_day_overtime: status === 'leave' && leaveDayOvertime !== '' ? Number(leaveDayOvertime) : null,
+      leave_day_overtime: status === 'leave' && leaveDayOvertimeEnabled ? durationValueToMinutes(leaveDayOvertime) : null,
       is_overtime: overtimeEnabled && isOvertime,
       is_deductible: deductibleEnabled && isDeductible,
       notes,
@@ -598,17 +614,46 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 </select>
               </label>
             )}
-            <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Day Overtime</span>
-              <input
-                type="number"
-                min="0"
-                value={leaveDayOvertime}
-                onChange={(event) => setLeaveDayOvertime(event.target.value)}
-                placeholder="Minutes"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-              />
-            </label>
+            <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Day Overtime</p>
+                  <p className="mt-0.5 text-xs font-medium text-slate-400">Enable only when overtime applies on leave day</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLeaveDayOvertimeEnabled((current) => {
+                      const next = !current;
+                      if (next && !leaveDayOvertime) setLeaveDayOvertime('01:00');
+                      if (!next) setLeaveDayOvertime(null);
+                      return next;
+                    });
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${
+                    leaveDayOvertimeEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${
+                      leaveDayOvertimeEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {leaveDayOvertimeEnabled && (
+                <div className="mt-4">
+                  <TimeDurationPickerField
+                    label="Overtime Duration"
+                    value={leaveDayOvertime}
+                    onChange={setLeaveDayOvertime}
+                    placeholder="Select duration"
+                    mode="duration"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
 
