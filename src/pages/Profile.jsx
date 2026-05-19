@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     FaEnvelope, FaPhone, FaBuilding, FaMapMarkerAlt, FaShieldAlt,
-    FaCrown, FaCheckCircle, FaCalendarAlt, FaChevronRight, FaIdBadge,
+    FaCrown, FaCheckCircle, FaCalendarAlt, FaIdBadge,
     FaGlobe, FaCity, FaUserCircle, FaHashtag, FaBolt, FaLayerGroup,
     FaUserShield, FaUser, FaSave, FaSpinner, FaExclamationTriangle
 } from "react-icons/fa";
@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import apiCall, { uploadFile } from "../utils/api";
 import Modal from "../components/Modal";
+import CategoryPermissionSelector from "../components/common/CategoryPermissionSelector";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -34,18 +35,33 @@ const containerVariants = {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 const getContactValue = (user, key) => String(user?.[key] || "").trim();
 const getFullPhone = (countryCode, phone) => `${String(countryCode || "").trim()}${String(phone || "").trim()}`;
+const formatPermissionText = (value) =>
+    value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "";
+
+const getPermissionCategory = (permission) => {
+    if (permission?.category || permission?.permission_category) {
+        return formatPermissionText(permission.category || permission.permission_category);
+    }
+
+    const code = String(permission?.code || permission?.permission_code || "");
+    const [prefix] = code.split("_");
+    return formatPermissionText(prefix) || "Other";
+};
 
 export default function ProfilePage() {
     const { userDetails, loading, activeRole, companies, permissions, refreshUser } = useAuth();
     const [activeTab, setActiveTab] = useState("Overview");
-    const [expandedCompany, setExpandedCompany] = useState(null);
     const [profileForm, setProfileForm] = useState({
         name: "",
         profile_picture: "",
+        whatsapp: "",
+        profession: "",
     });
     const [originalProfile, setOriginalProfile] = useState({
         name: "",
         profile_picture: "",
+        whatsapp: "",
+        profession: "",
     });
     const [contactModal, setContactModal] = useState(null);
     const [contactForm, setContactForm] = useState({
@@ -63,6 +79,20 @@ export default function ProfilePage() {
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
     const fileInputRef = useRef(null);
     const currentUser = userDetails?.user;
+    const groupedPermissions = useMemo(() => (
+        (permissions || []).map((permission, index) => {
+            const id = permission.permission_id ?? permission.id ?? index + 1;
+            const fallbackName = formatPermissionText(permission.permission_code ?? permission.code) || "Permission";
+            return {
+                id,
+                code: permission.permission_code ?? permission.code ?? "",
+                name: permission.permission_name ?? permission.name ?? fallbackName,
+                action: permission.permission_action ?? permission.action ?? "",
+                category: getPermissionCategory(permission),
+            };
+        })
+    ), [permissions]);
+    const groupedPermissionIds = useMemo(() => groupedPermissions.map((permission) => permission.id), [groupedPermissions]);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -70,6 +100,8 @@ export default function ProfilePage() {
         const nextProfile = {
             name: currentUser.name || "",
             profile_picture: currentUser.profile_picture || "",
+            whatsapp: currentUser.whatsapp || "",
+            profession: currentUser.profession || "",
         };
 
         setProfileForm(nextProfile);
@@ -81,7 +113,7 @@ export default function ProfilePage() {
                     : `https://api-attendance.onesaas.in${currentUser.profile_picture}`
                 : null
         );
-    }, [currentUser?.id, currentUser?.name, currentUser?.phone, currentUser?.profile_picture]);
+    }, [currentUser?.id, currentUser?.name, currentUser?.profile_picture, currentUser?.whatsapp, currentUser?.profession]);
 
     const handleProfileChange = (event) => {
         const { name, value } = event.target;
@@ -142,10 +174,14 @@ export default function ProfilePage() {
                 return;
             }
 
-            const response = await apiCall("/users/update-profile", "PUT", {
-                user_id: currentUser.id,
-                ...changedFields,
-            });
+            const payload = {
+                name: profileForm.name,
+                profile_picture: profileForm.profile_picture,
+                whatsapp: profileForm.whatsapp,
+                profession: profileForm.profession,
+            };
+
+            const response = await apiCall("/users/update-profile", "PUT", payload);
             const result = await response.json();
 
             if (!response.ok || !result.success) {
@@ -315,7 +351,7 @@ export default function ProfilePage() {
                 <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float animation-delay-2000" />
             </div>
 
-            <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 {/* ── Profile Hero ── */}
                 <motion.div
@@ -396,7 +432,7 @@ export default function ProfilePage() {
                     </div>
                 </motion.div>
 
-                <div className="flex gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm mb-6">
+                <div className="flex gap-1 p-1 bg-white/20 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm mb-6">
                     {PROFILE_TABS.map((tab) => (
                         <button
                             key={tab}
@@ -620,6 +656,32 @@ export default function ProfilePage() {
                                     />
                                 </div>
 
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">WhatsApp</label>
+                                        <input
+                                            type="tel"
+                                            name="whatsapp"
+                                            value={profileForm.whatsapp}
+                                            onChange={handleProfileChange}
+                                            className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            placeholder="Enter WhatsApp number"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">Profession</label>
+                                        <input
+                                            type="text"
+                                            name="profession"
+                                            value={profileForm.profession}
+                                            onChange={handleProfileChange}
+                                            className="w-full px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                            placeholder="Teacher"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="flex items-center justify-end pt-2">
                                     <button
                                         type="button"
@@ -656,98 +718,76 @@ export default function ProfilePage() {
                                 </p>
                             </div>
 
-                            {companies.map((company, i) => (
-                                <motion.div
-                                    key={company.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1, type: "spring", stiffness: 180, damping: 22 }}
-                                    className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300"
-                                >
-                                    {/* Header row */}
-                                    <button
-                                        onClick={() =>
-                                            setExpandedCompany(expandedCompany === company.id ? null : company.id)
-                                        }
-                                        className="w-full flex items-center gap-4 p-5 text-left hover:bg-slate-50/60 transition-colors duration-200"
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {companies.map((company, i) => (
+                                    <motion.div
+                                        key={company.id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.08, type: "spring", stiffness: 180, damping: 22 }}
+                                        whileHover={{ y: -3 }}
+                                        className="group bg-white/85 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300"
                                     >
-                                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                                            <FaBuilding className="text-white w-5 h-5" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-semibold text-slate-800">{company.name}</p>
-                                            <p className="text-xs text-slate-500 truncate">{company.legal_name || ''}</p>
-                                        </div>
-                                        <div className="flex items-center gap-3 flex-shrink-0">
-                                            {company.is_active === 1 && (
-                                                <span className="text-xs font-medium text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
-                                                    Active
-                                                </span>
-                                            )}
-                                            <motion.div
-                                                animate={{ rotate: expandedCompany === company.id ? 90 : 0 }}
-                                                transition={{ duration: 0.2 }}
-                                            >
-                                                <FaChevronRight className="text-slate-400 text-xs" />
-                                            </motion.div>
-                                        </div>
-                                    </button>
-
-                                    {/* Expanded details */}
-                                    <AnimatePresence>
-                                        {expandedCompany === company.id && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.25 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="px-5 pb-5 pt-4 border-t border-slate-100">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {[
-                                                            {
-                                                                icon: FaMapMarkerAlt,
-                                                                label: "Address",
-                                                                val: [company.address_line1, company.address_line2]
-                                                                    .filter(Boolean).join(", "),
-                                                            },
-                                                            {
-                                                                icon: FaCity,
-                                                                label: "City / State",
-                                                                val: [company.city, company.state].filter(Boolean).join(", "),
-                                                            },
-                                                            {
-                                                                icon: FaGlobe,
-                                                                label: "Country",
-                                                                val: [company.country, company.postal_code].filter(Boolean).join(" — "),
-                                                            },
-                                                            {
-                                                                icon: FaCalendarAlt,
-                                                                label: "Registered",
-                                                                val: formatDate(company.created_at),
-                                                            },
-                                                        ].map(({ icon: Icon, label, val }) => (
-                                                            <div
-                                                                key={label}
-                                                                className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl"
-                                                            >
-                                                                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                    <Icon className="text-indigo-500 text-xs" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-xs text-slate-400">{label}</p>
-                                                                    <p className="text-sm font-medium text-slate-700">{val}</p>
-                                                                </div>
-                                                            </div>
-                                                        ))}
+                                        <div className="h-2 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
+                                        <div className="p-5">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-indigo-500/20">
+                                                    <FaBuilding className="text-white w-5 h-5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-slate-800 truncate">{company.name}</p>
+                                                            <p className="text-xs text-slate-500 truncate">{company.legal_name || "No legal name"}</p>
+                                                        </div>
+                                                        <span className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full border ${company.is_active === 1
+                                                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                                                            : "text-slate-500 bg-slate-50 border-slate-200"
+                                                            }`}>
+                                                            {company.is_active === 1 ? "Active" : "Inactive"}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            ))}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-2.5 mt-5">
+                                                {[
+                                                    {
+                                                        icon: FaMapMarkerAlt,
+                                                        label: "Address",
+                                                        val: [company.address_line1, company.address_line2].filter(Boolean).join(", ") || "Not added",
+                                                    },
+                                                    {
+                                                        icon: FaCity,
+                                                        label: "City / State",
+                                                        val: [company.city, company.state].filter(Boolean).join(", ") || "Not added",
+                                                    },
+                                                    {
+                                                        icon: FaGlobe,
+                                                        label: "Country",
+                                                        val: [company.country, company.postal_code].filter(Boolean).join(" - ") || "Not added",
+                                                    },
+                                                    {
+                                                        icon: FaCalendarAlt,
+                                                        label: "Registered",
+                                                        val: formatDate(company.created_at) || "Not available",
+                                                    },
+                                                ].map(({ icon: Icon, label, val }) => (
+                                                    <div key={label} className="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3">
+                                                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 border border-slate-100">
+                                                            <Icon className="text-indigo-500 text-xs" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                                                            <p className="text-sm font-medium text-slate-700 break-words">{val}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
                         </motion.div>
                     )}
 
@@ -774,40 +814,12 @@ export default function ProfilePage() {
                                 </div>
                             </div>
 
-                            {/* Permission cards */}
-                            {permissions.map((perm, i) => (
-                                <motion.div
-                                    key={perm.code}
-                                    initial={{ opacity: 0, y: 16 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.1, type: "spring", stiffness: 200, damping: 22 }}
-                                    whileHover={{ scale: 1.01 }}
-                                    className="group relative overflow-hidden bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-lg transition-all duration-300"
-                                >
-                                    {/* Hover gradient wash */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none" />
-
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                                            <FaShieldAlt className="text-white w-5 h-5" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
-                                                <p className="font-semibold text-slate-800">{perm.name}</p>
-                                                <span className="text-xs font-bold text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full font-mono">
-                                                    {perm.code}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-slate-500 capitalize">
-                                                {perm.action.replace(/_/g, " ")}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Bottom sweep line on hover */}
-                                    <div className="absolute bottom-0 left-0 h-0.5 w-0 group-hover:w-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-500" />
-                                </motion.div>
-                            ))}
+                            <CategoryPermissionSelector
+                                allPermissions={groupedPermissions}
+                                selectedIds={groupedPermissionIds}
+                                onChange={() => { }}
+                                readOnly
+                            />
                         </motion.div>
                     )}
 
