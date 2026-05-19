@@ -335,6 +335,7 @@ export default function ProfilePage() {
     // Destructure directly from userDetails (which is response.data)
     const { user } = userDetails;
     const total_companies = companies.length;
+    console.log("companies", companies);
 
     // Format activeRole for display
     const role = activeRole
@@ -711,83 +712,106 @@ export default function ProfilePage() {
                             className="flex flex-col gap-4"
                         >
                             {/* Count pill */}
-                            <div className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm self-start">
-                                <FaLayerGroup className="text-indigo-500 text-sm" />
-                                <p className="text-sm font-semibold text-slate-700">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm self-start">
+                                <FaLayerGroup className="text-indigo-500 text-xs" />
+                                <p className="text-xs font-semibold text-slate-600">
                                     {total_companies} {total_companies === 1 ? "Company" : "Companies"} found
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {companies.map((company, i) => (
-                                    <motion.div
-                                        key={company.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.08, type: "spring", stiffness: 180, damping: 22 }}
-                                        whileHover={{ y: -3 }}
-                                        className="group bg-white/85 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300"
-                                    >
-                                        <div className="h-2 bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500" />
-                                        <div className="p-5">
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-indigo-500/20">
-                                                    <FaBuilding className="text-white w-5 h-5" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                {companies.map((company, i) => {
+                                    const initials = company.name?.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "??";
+                                    const colors = [
+                                        { bg: "bg-indigo-50", text: "text-indigo-800", bar: "from-indigo-500 to-purple-500" },
+                                        { bg: "bg-teal-50", text: "text-teal-800", bar: "from-teal-500 to-emerald-500" },
+                                        { bg: "bg-rose-50", text: "text-rose-800", bar: "from-rose-500 to-orange-400" },
+                                        { bg: "bg-blue-50", text: "text-blue-800", bar: "from-blue-500 to-cyan-400" },
+                                        { bg: "bg-amber-50", text: "text-amber-800", bar: "from-amber-500 to-orange-400" },
+                                    ];
+                                    const c = colors[i % colors.length];
+
+                                    // Build address string from available fields
+                                    const addressParts = [];
+                                    if (company.address_line1) addressParts.push(company.address_line1);
+                                    if (company.address_line2) addressParts.push(company.address_line2);
+                                    if (company.city) addressParts.push(company.city);
+                                    if (company.state) addressParts.push(company.state);
+                                    if (company.postal_code) addressParts.push(company.postal_code);
+                                    if (company.country) addressParts.push(company.country);
+
+                                    const fullAddress = addressParts.length > 0 ? addressParts.join(", ") : "Location not set";
+                                    const shortAddress = [company.city, company.state].filter(Boolean).join(", ") ||
+                                        [company.address_line1, company.city].filter(Boolean).join(", ") ||
+                                        "Location not set";
+
+                                    return (
+                                        <motion.div
+                                            key={company.id}
+                                            initial={{ opacity: 0, y: 16 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.06, type: "spring", stiffness: 200, damping: 22 }}
+                                            whileHover={{ y: -2 }}
+                                            className="bg-white/85 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200"
+                                        >
+                                            {/* Color bar */}
+                                            <div className={`h-1 bg-gradient-to-r ${c.bar}`} />
+
+                                            <div className="p-3.5">
+                                                {/* Avatar + Name */}
+                                                <div className="flex items-center gap-2.5 mb-3">
+                                                    <div className={`w-9 h-9 ${c.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                                                        <span className={`text-xs font-bold ${c.text}`}>{initials}</span>
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-semibold text-slate-800 truncate leading-tight">{company.name}</p>
+                                                        <p className="text-[11px] text-slate-400 truncate">{company.legal_name || "No legal name"}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="min-w-0">
-                                                            <p className="font-bold text-slate-800 truncate">{company.name}</p>
-                                                            <p className="text-xs text-slate-500 truncate">{company.legal_name || "No legal name"}</p>
-                                                        </div>
-                                                        <span className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full border ${company.is_active === 1
-                                                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                                                            : "text-slate-500 bg-slate-50 border-slate-200"
-                                                            }`}>
-                                                            {company.is_active === 1 ? "Active" : "Inactive"}
+
+                                                {/* Address - show full address with hover tooltip for truncation */}
+                                                <div className="group relative mb-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <FaMapMarkerAlt className="text-slate-300 text-[10px] flex-shrink-0 mt-0.5" />
+                                                        <span
+                                                            className="text-[11px] text-slate-500 line-clamp-2 cursor-help"
+                                                            title={fullAddress}
+                                                        >
+                                                            {shortAddress}
                                                         </span>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="grid grid-cols-1 gap-2.5 mt-5">
-                                                {[
-                                                    {
-                                                        icon: FaMapMarkerAlt,
-                                                        label: "Address",
-                                                        val: [company.address_line1, company.address_line2].filter(Boolean).join(", ") || "Not added",
-                                                    },
-                                                    {
-                                                        icon: FaCity,
-                                                        label: "City / State",
-                                                        val: [company.city, company.state].filter(Boolean).join(", ") || "Not added",
-                                                    },
-                                                    {
-                                                        icon: FaGlobe,
-                                                        label: "Country",
-                                                        val: [company.country, company.postal_code].filter(Boolean).join(" - ") || "Not added",
-                                                    },
-                                                    {
-                                                        icon: FaCalendarAlt,
-                                                        label: "Registered",
-                                                        val: formatDate(company.created_at) || "Not available",
-                                                    },
-                                                ].map(({ icon: Icon, label, val }) => (
-                                                    <div key={label} className="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3">
-                                                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 border border-slate-100">
-                                                            <Icon className="text-indigo-500 text-xs" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                                                            <p className="text-sm font-medium text-slate-700 break-words">{val}</p>
-                                                        </div>
+                                                
+
+                                                {/* Date */}
+                                                {company.created_at && (
+                                                    <div className="flex items-center gap-1.5 mb-3">
+                                                        <FaCalendarAlt className="text-slate-300 text-[10px] flex-shrink-0" />
+                                                        <span className="text-[11px] text-slate-500">{formatDate(company.created_at)}</span>
                                                     </div>
-                                                ))}
+                                                )}
+
+                                                {/* Footer */}
+                                                <div className="flex items-center justify-end pt-1 border-t border-slate-100">
+                                                   
+                                                    <span className="text-[10px] text-slate-400 truncate max-w-[80px] text-right">
+                                                        {company.role || company.user_role || "Member"}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                        </motion.div>
+                                    );
+                                })}
                             </div>
+
+                            {/* Show message if no companies */}
+                            {total_companies === 0 && (
+                                <div className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200">
+                                    <FaBuilding className="text-4xl text-slate-300 mx-auto mb-3" />
+                                    <p className="text-slate-500">No companies found</p>
+                                </div>
+                            )}
                         </motion.div>
                     )}
 
