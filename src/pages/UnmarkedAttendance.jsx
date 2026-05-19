@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FaBan,
@@ -774,6 +774,8 @@ export default function UnmarkedAttendance() {
   const [modalState, setModalState] = useState(null);
   const [flagConfirm, setFlagConfirm] = useState(null);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
+  const activeListRequestKey = useRef(null);
+  const latestListRequestId = useRef(0);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -791,27 +793,36 @@ export default function UnmarkedAttendance() {
       return;
     }
 
+    const params = new URLSearchParams({
+      page: String(pagination.page),
+      limit: String(pagination.limit),
+      type: 'attendance',
+    });
+
+    if (debouncedSearch) params.append('search', debouncedSearch);
+    if (dateFilter?.date) {
+      params.append('from_date', dateFilter.date);
+      params.append('to_date', dateFilter.date);
+    } else {
+      if (dateFilter?.from_date) params.append('from_date', dateFilter.from_date);
+      if (dateFilter?.to_date) params.append('to_date', dateFilter.to_date);
+    }
+    if (employeeId) params.append('employee_id', employeeId);
+    if (statusFilter) params.append('day_status', statusFilter);
+
+    const requestKey = `${companyId}:${params.toString()}`;
+    if (activeListRequestKey.current === requestKey) {
+      return;
+    }
+
+    activeListRequestKey.current = requestKey;
+    const requestId = latestListRequestId.current + 1;
+    latestListRequestId.current = requestId;
+
     if (showRefresh) setRefreshing(true);
     else setLoading(true);
 
     try {
-      const params = new URLSearchParams({
-        page: String(pagination.page),
-        limit: String(pagination.limit),
-        type: 'attendance',
-      });
-
-      if (debouncedSearch) params.append('search', debouncedSearch);
-      if (dateFilter?.date) {
-        params.append('from_date', dateFilter.date);
-        params.append('to_date', dateFilter.date);
-      } else {
-        if (dateFilter?.from_date) params.append('from_date', dateFilter.from_date);
-        if (dateFilter?.to_date) params.append('to_date', dateFilter.to_date);
-      }
-      if (employeeId) params.append('employee_id', employeeId);
-      if (statusFilter) params.append('day_status', statusFilter);
-
       const response = await apiCall(`/attendance/list?${params.toString()}`, 'GET', null, companyId);
       const result = await response.json();
 
@@ -819,14 +830,24 @@ export default function UnmarkedAttendance() {
         throw new Error(result.message || 'Failed to load attendance list');
       }
 
+      if (requestId !== latestListRequestId.current) return;
+
       setEmployees(normalizeAttendanceResponse(result));
       updatePagination(normalizeMeta(result, pagination));
     } catch (error) {
+      if (requestId !== latestListRequestId.current) return;
+
       setEmployees([]);
       toast.error(error.message || 'Failed to load attendance list');
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (activeListRequestKey.current === requestKey) {
+        activeListRequestKey.current = null;
+      }
+
+      if (requestId === latestListRequestId.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
