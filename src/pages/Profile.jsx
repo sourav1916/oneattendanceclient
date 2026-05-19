@@ -335,7 +335,6 @@ export default function ProfilePage() {
     // Destructure directly from userDetails (which is response.data)
     const { user } = userDetails;
     const total_companies = companies.length;
-    console.log("companies", companies);
 
     // Format activeRole for display
     const role = activeRole
