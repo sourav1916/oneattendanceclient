@@ -667,7 +667,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isOvertime && overtimeEnabled
                   ? 'border-orange-200 bg-orange-50 text-orange-700'
                   : overtimeEnabled
-                    ? 'border-orange-200 bg-white text-orange-700 hover:bg-orange-50'
+                    ? 'border-orange-200 bg-white text-orange-700 '
                     : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
                   }`}
               >
@@ -686,7 +686,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isDeductible && deductibleEnabled
                   ? 'border-rose-200 bg-rose-50 text-rose-700'
                   : deductibleEnabled
-                    ? 'border-rose-200 bg-white text-rose-700 hover:bg-rose-50'
+                    ? 'border-rose-200 bg-white text-rose-700'
                     : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
                   }`}
               >
