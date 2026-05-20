@@ -541,7 +541,8 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
           <button
             type="submit"
             form="leave-form"
-            disabled={saving || isUploading}
+            disabled={saving || isUploading || overBalance}
+            title={overBalance ? `Selected ${formatDays(selectedDays)} day(s), but only ${formatDays(remainingDays)} day(s) are available.` : ''}
             className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-md shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? <FaSpinner className="animate-spin" /> : (isEditing ? <FaEdit /> : <FaPlus />)}

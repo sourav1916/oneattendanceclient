@@ -254,6 +254,35 @@ export default function CompanyInvites() {
   };
 
   // ── Edit ───────────────────────────────────────────────────────────────────
+  const handleResendInvite = async (invite) => {
+    const inviteId = invite?.id ?? invite?.invite_id;
+    if (!inviteId) {
+      toast.error("Invite ID not found.");
+      return;
+    }
+
+    const processingKey = `resend-${inviteId}`;
+    try {
+      setProcessingId(processingKey);
+      setActiveActionMenu(null);
+
+      const company = JSON.parse(localStorage.getItem("company"));
+      const response = await apiCall('/company/invites/resend', 'POST', { invite_id: inviteId }, company?.id);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Failed to resend invite");
+      }
+
+      toast.success(result.message || "Invitation resent successfully.");
+      await fetchInvites(pagination.page, debouncedSearchTerm, false);
+    } catch (err) {
+      toast.error(err.message || "Something went wrong while resending.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const handleEditClick = (invite) => {
     if (updateInviteAccess.disabled) return;
     setEditingInvite(normalizeInviteRecord(invite));
@@ -557,6 +586,17 @@ export default function CompanyInvites() {
                                       disabled: cancelInviteAccess.disabled,
                                       title: cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : "",
                                       className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                    }
+                                  ] : [])
+                                  ,
+                                  ...(invite.status === "pending" ? [
+                                    {
+                                      label: processingId === `resend-${invite.id ?? invite.invite_id}` ? 'Resending...' : 'Resend Invite',
+                                      icon: processingId === `resend-${invite.id ?? invite.invite_id}` ? <FaSpinner size={14} className="animate-spin" /> : <FaEnvelope size={14} />,
+                                      onClick: () => handleResendInvite(invite),
+                                      disabled: processingId === `resend-${invite.id ?? invite.invite_id}` || !(invite.id ?? invite.invite_id),
+                                      title: !(invite.id ?? invite.invite_id) ? "Invite ID not found" : "",
+                                      className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
                                     }
                                   ] : [])
                                 ]}
