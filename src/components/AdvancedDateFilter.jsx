@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
-  FaCalendarAlt, FaTimes, FaCheck, FaUndo,
+  FaCalendarAlt, FaTimes, FaCheck, FaUndo, FaChevronLeft, FaChevronRight,
 } from "react-icons/fa";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -41,6 +41,12 @@ function startOfDay(d) {
   const c = new Date(d);
   c.setHours(0, 0, 0, 0);
   return c;
+}
+
+function shiftDate(date, days) {
+  const next = new Date(date || new Date());
+  next.setDate(next.getDate() + days);
+  return startOfDay(next);
 }
 
 function sameDay(a, b) {
@@ -245,6 +251,7 @@ export default function AdvancedDateFilter({
   placeholder = "Filter by date",
   buttonClassName = "",
   tabOptions = DEFAULT_TAB_OPTIONS,
+  showDateStepper = false,
 }) {
   const allowedTabs = Array.isArray(tabOptions) && tabOptions.length > 0
     ? tabOptions
@@ -374,6 +381,17 @@ export default function AdvancedDateFilter({
     setIsOpen(false);
   }
 
+  function applySingleDate(date) {
+    const selectedDate = startOfDay(date || new Date());
+    setSelectedSingle(selectedDate);
+    setViewDate(selectedDate);
+    onChange?.({ date: toIsoDate(selectedDate), month: "", year: "", from_date: "", to_date: "" });
+  }
+
+  function getStepperDate() {
+    return parseDateValue(value?.date || value?.from_date || value?.to_date || toIsoDate(new Date())) || today;
+  }
+
   // --- Display label on trigger button ---
   function getDisplayLabel() {
     if (!value) return placeholder;
@@ -407,15 +425,29 @@ export default function AdvancedDateFilter({
     { key: "month", label: "Month & year" },
     { key: "range", label: "Date range" },
   ].filter((tab) => allowedTabs.includes(tab.key));
+  const shouldShowStepper = showDateStepper && allowedTabs.includes("date");
+  const stepperDate = getStepperDate();
+  const canStepForward = stepperDate < today;
 
   return (
     <div className="relative inline-block w-full">
       {/* Trigger */}
+      <div className={shouldShowStepper ? "flex w-full min-w-[260px] items-stretch gap-1.5" : ""}>
+        {shouldShowStepper && (
+          <button
+            type="button"
+            onClick={() => applySingleDate(shiftDate(getStepperDate(), -1))}
+            className="flex w-9 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 shadow-sm transition hover:bg-blue-100"
+            title="Previous day"
+          >
+            <FaChevronLeft size={11} />
+          </button>
+        )}
       <button
         ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(prev => !prev)}
-        className={`${buttonClassName} flex items-center justify-between gap-2`.trim()}
+        className={`${buttonClassName} flex min-w-[180px] flex-1 items-center justify-between gap-2`.trim()}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >
@@ -425,6 +457,24 @@ export default function AdvancedDateFilter({
         </span>
         <span className="flex-shrink-0 text-[10px] text-gray-400">▾</span>
       </button>
+        {shouldShowStepper && (
+          <button
+            type="button"
+            onClick={() => {
+              if (canStepForward) applySingleDate(shiftDate(stepperDate, 1));
+            }}
+            disabled={!canStepForward}
+            className={`flex w-9 flex-shrink-0 items-center justify-center rounded-xl border shadow-sm transition ${
+              canStepForward
+                ? "border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
+            }`}
+            title={canStepForward ? "Next day" : "Future dates are not available"}
+          >
+            <FaChevronRight size={11} />
+          </button>
+        )}
+      </div>
 
       {/* Modal Portal */}
       {isOpen && createPortal(

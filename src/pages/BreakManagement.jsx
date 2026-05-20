@@ -79,6 +79,11 @@ function getTimeStr(t) {
     return '';
 }
 
+function getTodayIso() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function formatMins(m) {
     if (!m) return '0 min';
     const n = Number(m);
@@ -410,7 +415,7 @@ const BreakManagementPage = () => {
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalTarget, setEditModalTarget] = useState(null);
     const [dateFilter, setDateFilter] = useState({
-        date: new Date().toISOString().slice(0, 10),
+        date: getTodayIso(),
         month: '', year: '', from_date: '', to_date: '',
     });
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
@@ -584,7 +589,7 @@ const BreakManagementPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex flex-wrap gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
                 >
-                    <div className="relative w-full lg:flex-1">
+                    <div className="relative w-full lg:w-[300px] lg:flex-none">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
@@ -613,21 +618,20 @@ const BreakManagementPage = () => {
                         />
                     </div>
 
-                    <div className="w-full md:flex-1 lg:w-[180px] lg:flex-none">
+                    <div className="w-full md:flex-1 lg:w-[260px] lg:flex-none">
                         <AdvancedDateFilter
                             value={dateFilter}
                             onChange={(val) => { setDateFilter(val); goToPage(1); }}
                             placeholder="Date or range"
                             tabOptions={['date', 'range']}
+                            showDateStepper
                             buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
                         />
                     </div>
 
-                    {!loading && records.length > 0 && (
-                        <div className="flex w-full justify-end lg:w-auto">
-                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="amber" />
-                        </div>
-                    )}
+                    <div className="flex w-full justify-end lg:w-auto">
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="amber" />
+                    </div>
                 </motion.div>
 
                 {/* Loading skeleton */}

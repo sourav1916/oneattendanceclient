@@ -82,7 +82,10 @@ const stripSeconds = (value) => {
   return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
 };
 
-const getToday = () => new Date().toISOString().slice(0, 10);
+const getToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const normalizeStatusForAction = (status) => (status === 'paid_leave' ? 'leave' : status);
 
@@ -98,6 +101,12 @@ const calculateWorkedMinutes = (startTime, endTime) => {
   const end = timeToMinutes(endTime);
   if (start === null || end === null) return 0;
   return end >= start ? end - start : (24 * 60 - start) + end;
+};
+
+const getExpectedWorkMinutes = (employee, status = employee?.day_status) => {
+  const normalizedStatus = normalizeStatusForAction(status);
+  const fullDayExpected = Number(employee?.expected_work_minutes) || calculateWorkedMinutes(employee?.shift_start, employee?.shift_end);
+  return normalizedStatus === 'half_day' ? Math.round(fullDayExpected / 2) : fullDayExpected;
 };
 
 const minutesToDurationValue = (minutes) => {
@@ -121,7 +130,7 @@ const getFlagEligibility = (employee, startTime = employee?.punch_in_time, endTi
     return { overtime: false, deductible: false, workedMinutes: 0, differenceMinutes: 0 };
   }
 
-  const expectedMinutes = Number(employee.expected_work_minutes) || calculateWorkedMinutes(employee.shift_start, employee.shift_end);
+  const expectedMinutes = getExpectedWorkMinutes(employee, status);
   const workedMinutes = calculateWorkedMinutes(startTime, endTime);
   const graceMinutes = getGraceMinutes(employee);
 
@@ -433,17 +442,12 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag }) => {
 
 const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSave, saving = false }) => {
   const hasActualTime = Boolean(employee?.punch_in_time || employee?.punch_out_time);
+  const hasCompleteActualTime = Boolean(employee?.punch_in_time && employee?.punch_out_time);
 
   const getDefaultTimes = (currentStatus, currentHalfDaySession) => {
-    if (hasActualTime) {
-      return {
-        punchIn: employee?.punch_in_time || '',
-        punchOut: employee?.punch_out_time || '',
-      };
-    }
-
     const sStart = stripSeconds(employee?.shift_start) || '09:00';
     const sEnd = stripSeconds(employee?.shift_end) || '18:00';
+    let calculatedTimes = { punchIn: sStart, punchOut: sEnd };
 
     if (currentStatus === 'half_day') {
       const startMins = timeToMinutes(sStart);
@@ -455,14 +459,21 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
         const midpoint = minutesToDurationValue(midpointMins);
 
         if (currentHalfDaySession === 'second_half') {
-          return { punchIn: midpoint, punchOut: sEnd };
+          calculatedTimes = { punchIn: midpoint, punchOut: sEnd };
         } else {
-          return { punchIn: sStart, punchOut: midpoint };
+          calculatedTimes = { punchIn: sStart, punchOut: midpoint };
         }
       }
     }
 
-    return { punchIn: sStart, punchOut: sEnd };
+    if (hasActualTime && currentStatus !== 'half_day') {
+      return {
+        punchIn: employee?.punch_in_time || calculatedTimes.punchIn,
+        punchOut: employee?.punch_out_time || calculatedTimes.punchOut,
+      };
+    }
+
+    return calculatedTimes;
   };
 
   const [status, setStatus] = useState(initialStatus || 'present');
@@ -504,7 +515,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
 
   const handleStatusChange = (newStatus) => {
     setStatus(newStatus);
-    if (!hasActualTime && (newStatus === 'present' || newStatus === 'half_day')) {
+    if (newStatus === 'half_day' || (!hasCompleteActualTime && newStatus === 'present')) {
       const defaults = getDefaultTimes(newStatus, halfDaySession);
       setPunchIn(defaults.punchIn);
       setPunchOut(defaults.punchOut);
@@ -513,7 +524,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
 
   const handleHalfDaySessionChange = (newSession) => {
     setHalfDaySession(newSession);
-    if (!hasActualTime) {
+    if (status === 'half_day' || !hasCompleteActualTime) {
       const defaults = getDefaultTimes(status, newSession);
       setPunchIn(defaults.punchIn);
       setPunchOut(defaults.punchOut);
@@ -846,7 +857,13 @@ export default function UnmarkedAttendance() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [employeeId, setEmployeeId] = useState('');
-  const [dateFilter, setDateFilter] = useState({});
+  const [dateFilter, setDateFilter] = useState({
+    date: getToday(),
+    month: '',
+    year: '',
+    from_date: '',
+    to_date: '',
+  });
   const [modalState, setModalState] = useState(null);
   const [flagConfirm, setFlagConfirm] = useState(null);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -1079,7 +1096,7 @@ export default function UnmarkedAttendance() {
           className="flex flex-wrap gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
         >
           {/* Search — full row on sm+md, flex-1 on lg */}
-          <div className="relative w-full lg:flex-1">
+          <div className="relative w-full lg:w-[300px] lg:flex-none">
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -1126,12 +1143,13 @@ export default function UnmarkedAttendance() {
               />
             </div>
 
-            <div className="flex-1 lg:w-[180px] lg:flex-none">
+            <div className="flex-1 lg:w-[260px] lg:flex-none">
               <AdvancedDateFilter
                 value={dateFilter}
                 onChange={setDateFilter}
                 placeholder="Date or range"
                 tabOptions={['date', 'range']}
+                showDateStepper
                 buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
               />
             </div>
