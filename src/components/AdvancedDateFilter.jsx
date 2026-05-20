@@ -409,7 +409,7 @@ export default function AdvancedDateFilter({
   ].filter((tab) => allowedTabs.includes(tab.key));
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block w-full">
       {/* Trigger */}
       <button
         ref={triggerRef}
