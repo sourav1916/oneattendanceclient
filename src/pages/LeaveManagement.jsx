@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
     FaEye, FaEdit, FaCheck, FaTrash, FaSpinner, FaTimes, FaPlus,
     FaCloudUploadAlt, FaCog, FaSearch, FaFilter, FaCalendarAlt,
-    FaClock, FaUser, FaClipboardList, FaChartBar, FaPaperclip
+    FaClock, FaUser, FaClipboardList, FaChartBar, FaPaperclip, FaExclamationTriangle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall, { uploadFile } from '../utils/api';
@@ -197,6 +197,7 @@ const LeaveManagement = () => {
     const [leaveConfigs, setLeaveConfigs] = useState([]);
     const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
     const [createUploading, setCreateUploading] = useState(false);
+    const [overBalanceConfirm, setOverBalanceConfirm] = useState(null);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
 
@@ -300,6 +301,7 @@ const LeaveManagement = () => {
         setShowCreateModal(false);
         setCreateForm(getEmptyCreateForm());
         setCreateEmployee(null);
+        setOverBalanceConfirm(null);
     };
 
     const handleCreateAttachmentChange = async (event) => {
@@ -391,13 +393,14 @@ const LeaveManagement = () => {
         };
     }, [approveLeave]);
 
-    const submitCreateLeave = async () => {
+    const submitCreateLeave = async ({ skipBalanceConfirm = false } = {}) => {
         if (!createForm.employee_id) return toast.warn('Employee is required');
         if (!createForm.leave_config_id) return toast.warn('Leave type is required');
         if (!createForm.start_date || !createForm.end_date) return toast.warn('Leave date range is required');
         if (createForm.end_date < createForm.start_date) return toast.warn('End date cannot be before start date');
-        if (createOverBalance) {
-            return toast.warn(`Selected ${formatDays(createRequestedDays)} day(s), but ${selectedCreateLeaveConfig.name} has only ${formatDays(selectedCreateLeaveConfig.remaining)} day(s) remaining.`);
+        if (createOverBalance && !skipBalanceConfirm) {
+            setOverBalanceConfirm('create');
+            return;
         }
 
         setSubmitting(true);
@@ -422,6 +425,7 @@ const LeaveManagement = () => {
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to create leave');
 
             toast.success('Leave created successfully');
+            setOverBalanceConfirm(null);
             closeCreateModal();
             fetchLeaves(1, debouncedSearch, typeFilter, true);
         } catch (error) {
@@ -431,7 +435,7 @@ const LeaveManagement = () => {
         }
     };
 
-    const submitApprove = async () => {
+    const submitApprove = async ({ skipBalanceConfirm = false } = {}) => {
         if (!approveLeave) return;
 
         const originalStartDate = toDateInputValue(approveLeave.start_date);
@@ -448,8 +452,8 @@ const LeaveManagement = () => {
             return;
         }
 
-        if (approveOverBalance) {
-            toast.warn(`Selected ${formatDays(approveRequestedDays)} day(s), but ${selectedApproveLeaveConfig.name} has only ${formatDays(selectedApproveLeaveConfig.remaining)} day(s) remaining.`);
+        if (approveOverBalance && !skipBalanceConfirm) {
+            setOverBalanceConfirm('approve');
             return;
         }
 
@@ -475,6 +479,7 @@ const LeaveManagement = () => {
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to approve');
             toast.success('Leave approved successfully');
+            setOverBalanceConfirm(null);
             setApproveLeave(null);
             setApproveRemarks('');
             setApproveForm({
@@ -729,6 +734,42 @@ const LeaveManagement = () => {
     );
 
     const approveOverBalance = Boolean(selectedApproveLeaveConfig && approveRequestedDays > selectedApproveLeaveConfig.remaining);
+
+    const overBalanceDetails = useMemo(() => {
+        if (overBalanceConfirm === 'create' && selectedCreateLeaveConfig) {
+            return {
+                title: 'Create Leave Anyway?',
+                actionLabel: 'Create Leave',
+                employeeName: createEmployee?.name || createEmployee?.employee_name || 'selected employee',
+                leaveName: selectedCreateLeaveConfig.name,
+                requestedDays: createRequestedDays,
+                remainingDays: selectedCreateLeaveConfig.remaining,
+                onConfirm: () => submitCreateLeave({ skipBalanceConfirm: true }),
+            };
+        }
+
+        if (overBalanceConfirm === 'approve' && selectedApproveLeaveConfig && approveLeave) {
+            return {
+                title: 'Approve Leave Anyway?',
+                actionLabel: 'Approve Leave',
+                employeeName: approveLeave.employee_name || 'selected employee',
+                leaveName: selectedApproveLeaveConfig.name,
+                requestedDays: approveRequestedDays,
+                remainingDays: selectedApproveLeaveConfig.remaining,
+                onConfirm: () => submitApprove({ skipBalanceConfirm: true }),
+            };
+        }
+
+        return null;
+    }, [
+        overBalanceConfirm,
+        selectedCreateLeaveConfig,
+        createEmployee,
+        createRequestedDays,
+        selectedApproveLeaveConfig,
+        approveLeave,
+        approveRequestedDays,
+    ]);
 
     const columns = [
         {
@@ -1035,7 +1076,7 @@ const LeaveManagement = () => {
                                 <button
                                     type="button"
                                     onClick={submitCreateLeave}
-                                    disabled={submitting || createUploading || createOverBalance}
+                                    disabled={submitting || createUploading}
                                     className="flex px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {submitting ? <FaSpinner className="animate-spin" /> : <FaPlus />}
@@ -1322,6 +1363,7 @@ const LeaveManagement = () => {
                             setApproveLeave(null);
                             setApproveEmployee(null);
                             setApproveRemarks('');
+                            setOverBalanceConfirm(null);
                             setApproveForm({
                                 start_date: '',
                                 end_date: '',
@@ -1341,6 +1383,7 @@ const LeaveManagement = () => {
                                         setApproveLeave(null);
                                         setApproveEmployee(null);
                                         setApproveRemarks('');
+                                        setOverBalanceConfirm(null);
                                         setApproveForm({
                                             start_date: '',
                                             end_date: '',
@@ -1355,7 +1398,7 @@ const LeaveManagement = () => {
                                 <button
                                     type="button"
                                     onClick={submitApprove}
-                                    disabled={submitting || approveOverBalance || approveEmployeeLoading}
+                                    disabled={submitting || approveEmployeeLoading}
                                     className="flex px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {submitting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
@@ -1470,6 +1513,52 @@ const LeaveManagement = () => {
                                     onChange={(e) => setApproveRemarks(e.target.value)}
                                 />
                             </div>
+                        </div>
+                    </Modal>
+                )}
+
+                {overBalanceDetails && (
+                    <Modal
+                        isOpen={!!overBalanceDetails}
+                        onClose={() => {
+                            if (!submitting) setOverBalanceConfirm(null);
+                        }}
+                        title={overBalanceDetails.title}
+                        subtitle="Leave balance is lower than the selected date range."
+                        icon={<FaExclamationTriangle className="h-6 w-6" />}
+                        size="md"
+                        footer={
+                            <div className="flex gap-3 w-full justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setOverBalanceConfirm(null)}
+                                    disabled={submitting}
+                                    className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all disabled:opacity-60"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={overBalanceDetails.onConfirm}
+                                    disabled={submitting}
+                                    className="flex px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-xl font-medium hover:from-amber-700 hover:to-orange-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed items-center justify-center gap-2"
+                                >
+                                    {submitting ? <FaSpinner className="animate-spin" /> : <FaExclamationTriangle />}
+                                    {submitting ? 'Submitting...' : overBalanceDetails.actionLabel}
+                                </button>
+                            </div>
+                        }
+                    >
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                <p className="font-bold">This request exceeds the available leave balance.</p>
+                                <p className="mt-2 leading-relaxed">
+                                    {overBalanceDetails.employeeName} selected {formatDays(overBalanceDetails.requestedDays)} day(s) of {overBalanceDetails.leaveName}, but only {formatDays(overBalanceDetails.remainingDays)} day(s) are available.
+                                </p>
+                            </div>
+                            <p className="text-sm leading-relaxed text-slate-600">
+                                Confirm only if you want to continue submitting this leave request despite the balance shortage.
+                            </p>
                         </div>
                     </Modal>
                 )}
