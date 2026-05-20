@@ -1487,7 +1487,7 @@ export default function UnmarkedAttendance() {
                 onClick={() => setShowBulkApproveModal(true)}
                 className="shadow-lg shadow-blue-200"
               >
-                Approve Selected
+                Continue To Choose Mode
               </ManagementButton>
             </div>
           </motion.div>
