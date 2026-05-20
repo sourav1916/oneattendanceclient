@@ -127,7 +127,14 @@ const buildBreakRow = (employee, attendanceRecord, fallbackDate = '') => {
   const date = attendanceRecord?.attendance_date || attendanceRecord?.punch_date || employee?.date || fallbackDate || '';
   const calculations = attendanceRecord?.calculations || {};
   const usedBreakMinutes = getBreakDurationMins(startTime, endTime, 0);
-  const maxBreakMinutes = Number(calculations?.break_minutes ?? 0) || 0;
+  const maxBreakMinutes = Number(
+    calculations?.break_minutes
+    ?? calculations?.total_break_time
+    ?? shift?.allowed_break_minutes
+    ?? employee?.calculations?.break_minutes
+    ?? employee?.calculations?.total_break_time
+    ?? 0
+  ) || 0;
 
   return {
     id: attendanceRecord?.attendance_id ?? attendanceRecord?.id ?? employee?.id ?? null,
@@ -164,8 +171,9 @@ const normalizeBreakEmployee = (row, fallbackDate = '') => {
   if (!row || typeof row !== 'object') return null;
 
   const attendances = Array.isArray(row.attendances) ? row.attendances : [];
+  const rowBreaks = Array.isArray(row.breaks) ? row.breaks : [];
   const breakAttendances = attendances.filter((item) => item?.type === 'break');
-  const sourceAttendances = breakAttendances.length > 0 ? breakAttendances : attendances;
+  const sourceAttendances = rowBreaks.length > 0 ? rowBreaks : (breakAttendances.length > 0 ? breakAttendances : attendances);
   const sortedAttendances = [...sourceAttendances].sort((a, b) => {
     const aId = Number(a?.attendance_id ?? a?.id ?? 0);
     const bId = Number(b?.attendance_id ?? b?.id ?? 0);
@@ -178,7 +186,12 @@ const normalizeBreakEmployee = (row, fallbackDate = '') => {
     const mins = getBreakDurationMins(startTime, endTime, 0);
     return acc + (Number(mins) || 0);
   }, 0);
-  const totalBreakMaxMins = sourceAttendances.reduce((acc, item) => acc + (Number(item?.calculations?.break_minutes ?? 0) || 0), 0);
+  const calculatedBreakMaxMins = sourceAttendances.reduce((acc, item) => {
+    return acc + (Number(item?.calculations?.break_minutes ?? item?.calculations?.total_break_time ?? 0) || 0);
+  }, 0);
+  const totalBreakMaxMins = calculatedBreakMaxMins
+    || Number(row?.shift?.allowed_break_minutes ?? row?.calculations?.break_minutes ?? row?.calculations?.total_break_time ?? 0)
+    || 0;
   const hasOpenBreak = sourceAttendances.some((item) => {
     const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
     const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
@@ -343,7 +356,7 @@ const getExactPunchTime = (value) => {
 
 const normalizeBreakRow = (row, fallbackDate = '') => {
   if (!row || typeof row !== 'object') return null;
-  if (Array.isArray(row.attendances)) {
+  if (Array.isArray(row.attendances) || Array.isArray(row.breaks)) {
     return normalizeBreakEmployee(row, fallbackDate);
   }
   return buildBreakRow(row, row, fallbackDate);
