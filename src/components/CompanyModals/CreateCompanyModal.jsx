@@ -264,6 +264,17 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
             className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
+            {isGeocoding && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/75 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-3 rounded-2xl border border-indigo-100 bg-white px-6 py-5 shadow-xl">
+                  <FaSpinner className="h-7 w-7 animate-spin text-indigo-600" />
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-gray-800">Fetching geo location...</p>
+                    <p className="mt-1 text-xs text-gray-400">Please wait until the location request finishes.</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Sticky Header */}
             <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
               <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">

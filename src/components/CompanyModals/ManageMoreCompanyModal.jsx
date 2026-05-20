@@ -175,6 +175,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
   const [activeMethod, setActiveMethod] = useState('manual');
   const [loadingMethods, setLoadingMethods] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [enabledMethods, setEnabledMethods] = useState([]);
   const [ips, setIps] = useState([]);
   const [ipInput, setIpInput] = useState('');
@@ -347,6 +348,7 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
   };
 
   const handleUseCurrentLocation = async () => {
+    setIsDetectingLocation(true);
     try {
       const position = await getPreciseLocation({ fetchAddress: true });
       setAddress((prev) => ({
@@ -363,6 +365,8 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
       toast.success('Location detected successfully');
     } catch (error) {
       toast.error(error.message || 'Failed to detect location');
+    } finally {
+      setIsDetectingLocation(false);
     }
   };
 
@@ -573,10 +577,20 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             <button
               type="button"
               onClick={handleUseCurrentLocation}
+              disabled={isDetectingLocation}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 flex-1"
             >
-              <FaLocationArrow size={12} />
-              Use current location
+              {isDetectingLocation ? (
+                <>
+                  <FaSpinner className="animate-spin" size={12} />
+                  Fetching location...
+                </>
+              ) : (
+                <>
+                  <FaLocationArrow size={12} />
+                  Use current location
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -660,6 +674,17 @@ export default function ManageMoreCompanyModal({ isOpen, company, onClose, onSuc
             className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
+            {isDetectingLocation && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/75 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-3 rounded-2xl border border-indigo-100 bg-white px-6 py-5 shadow-xl">
+                  <FaSpinner className="h-7 w-7 animate-spin text-indigo-600" />
+                  <div className="text-center">
+                    <p className="text-sm font-bold text-gray-800">Fetching geo location...</p>
+                    <p className="mt-1 text-xs text-gray-400">Please wait until the location request finishes.</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
               <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
                 <FaInfoCircle className="text-indigo-500" />
