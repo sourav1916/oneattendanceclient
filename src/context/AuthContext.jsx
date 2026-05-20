@@ -85,6 +85,23 @@ const isAllowedPermission = (permission) => (
   !Object.prototype.hasOwnProperty.call(permission || {}, "is_allowed")
 );
 
+const getStoredCompany = () => {
+  const storedCompany = localStorage.getItem("company");
+  if (!storedCompany || storedCompany === "undefined" || storedCompany === "null") return null;
+
+  try {
+    return JSON.parse(storedCompany);
+  } catch {
+    localStorage.removeItem("company");
+    return null;
+  }
+};
+
+const isSameCompanyId = (left, right) => {
+  if (left === undefined || left === null || right === undefined || right === null) return false;
+  return String(left) === String(right);
+};
+
 
 
 export const AuthProvider = ({ children }) => {
@@ -207,7 +224,7 @@ export const AuthProvider = ({ children }) => {
 
         setCompanies(allCompanies);
 
-        const storedCompany = localStorage.getItem("company");
+        const storedCompany = getStoredCompany();
 
         if (allCompanies.length === 1) {
           const single = allCompanies[0];
@@ -221,9 +238,7 @@ export const AuthProvider = ({ children }) => {
         }
         else if (allCompanies.length > 1) {
           if (storedCompany) {
-            const parsed = JSON.parse(storedCompany);
-
-            const found = allCompanies.find(c => c.id === parsed.id);
+            const found = allCompanies.find(c => isSameCompanyId(c.id, storedCompany.id));
 
             if (found) {
               setCompany(found);
@@ -332,8 +347,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ GET CURRENT COMPANY
   const getCurrentCompany = () => {
     if (company) return company;
-    const storedCompany = localStorage.getItem("company");
-    return storedCompany ? JSON.parse(storedCompany) : null;
+    return getStoredCompany();
   };
 
   // ✅ PERMISSION HELPER 🔥
