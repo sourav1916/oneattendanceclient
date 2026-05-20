@@ -5,10 +5,11 @@ import {
     FaSpinner, FaSearch, FaTimes, FaEye,
     FaRegClock, FaFileInvoiceDollar, FaExclamationTriangle,
     FaCheckCircle, FaTimesCircle, FaHourglassHalf, FaIdCard,
-    FaUserTag, FaWallet, FaCalendarCheck, FaUserTie, FaDollarSign, FaCog
+    FaUserTag, FaWallet, FaCalendarCheck, FaUserTie, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
+import CurrencyIcon from '../components/common/CurrencyIcon';
 import apiCall from '../utils/api';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
@@ -423,7 +424,7 @@ const MyPayroll = () => {
                         { icon: FaIdCard, label: 'Employee ID', value: `#${employee.id}`, bg: 'bg-blue-50', border: 'border-blue-100', iconCls: 'text-blue-500' },
                         { icon: FaUserTie, label: 'Designation', value: formatLabel(employee.designation), bg: 'bg-indigo-50', border: 'border-indigo-100', iconCls: 'text-indigo-500' },
                         { icon: FaBriefcase, label: 'Employment Type', value: formatLabel(employee.employment_type), bg: 'bg-purple-50', border: 'border-purple-100', iconCls: 'text-purple-500' },
-                        { icon: FaDollarSign, label: 'Salary Type', value: formatLabel(employee.salary_type), bg: 'bg-emerald-50', border: 'border-emerald-100', iconCls: 'text-emerald-500' },
+                        { icon: CurrencyIcon, label: 'Salary Type', value: formatLabel(employee.salary_type), bg: 'bg-emerald-50', border: 'border-emerald-100', iconCls: 'text-emerald-500' },
                     ].map((item, i) => (
                         <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 * i }}
                             className={`p-3 ${item.bg} ${item.border} border rounded-xl flex items-center gap-3`}

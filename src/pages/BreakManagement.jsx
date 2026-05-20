@@ -1,1286 +1,901 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  FaChevronLeft, FaChevronRight, FaClock, FaUser, FaSearch,
-  FaCalendarAlt, FaBuilding, FaTrash, FaHistory,
-  FaPlus, FaPlay, FaStop, FaChevronDown, FaCoffee, FaTimes, FaCheck
+    FaPlus, FaSpinner, FaCheckCircle,
+    FaTimesCircle, FaExclamationTriangle, FaTimes,
+    FaEdit, FaInfoCircle,
+    FaListUl, FaTh, FaEye,
+    FaBuilding, FaMapMarkerAlt, FaGlobe, FaSearch,
+    FaClock, FaNetworkWired, FaUserCheck, FaRoad, FaCity,
+    FaCrosshairs, FaHistory, FaLink, FaMapPin, FaEnvelope,
+    FaCheck, FaMinusCircle, FaCog, FaUser, FaCalendarAlt,
+    FaCoffee, FaPlay, FaStop, FaChevronDown, FaPhone,
+    FaShieldAlt, FaBan
 } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
-import Modal from '../components/Modal';
-import TimePickerField from '../components/TimePicker';
-import { ManagementCard, ManagementButton, EmployeeSelect, RefreshButton } from '../components/common';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
+import SkeletonComponent from '../components/SkeletonComponent';
+import ActionMenu from '../components/ActionMenu';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { EmployeeSelect, ManagementHub, RefreshButton } from '../components/common';
+import ModalScrollLock from '../components/ModalScrollLock';
+import TimePickerField from '../components/TimePicker';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const STATUS_OPTIONS = [
-  { value: 'all', label: 'Day Status...' },
-  { value: 'present', label: 'Present' },
-  { value: 'absent', label: 'Absent' },
-  { value: 'paid_leave', label: 'Paid Leave' },
-  { value: 'half_day', label: 'Half Day' },
-  { value: 'unmarked', label: 'Unmarked' },
+// ─── Variants ──────────────────────────────────────────────────────────────────
+
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.92, y: 24 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.45 } },
+    exit: { opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.25 } }
+};
+const backdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+    exit: { opacity: 0 }
+};
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+const avatarPalette = [
+    { bg: '#EEF2FF', text: '#4338CA' },
+    { bg: '#F0FDF4', text: '#15803D' },
+    { bg: '#FFF7ED', text: '#C2410C' },
+    { bg: '#FDF4FF', text: '#9333EA' },
+    { bg: '#EFF6FF', text: '#1D4ED8' },
 ];
 
-const StatusSelect = ({ value, onChange, options }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const dropdownRef = React.useRef(null);
+function getInitials(name) {
+    if (!name) return '?';
+    return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
 
-  React.useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+function formatDate(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
-  const selectedOption = options.find(o => o.value === value);
+function formatDateTime(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
 
-  return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full min-w-[200px] px-4 py-2.5 bg-gray-50 border border-gray-200 hover:border-gray-300 rounded-xl text-sm outline-none focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all flex items-center justify-between cursor-pointer"
-      >
-        <span className={value === 'all' ? "text-gray-400" : "font-medium text-gray-800"}>
-          {selectedOption ? selectedOption.label : 'Day Status...'}
-        </span>
-        <FaChevronDown className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} size={12} />
-      </div>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.15 }}
-            className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden"
-          >
-            <div className="max-h-60 overflow-y-auto p-1">
-              {options.map((opt) => (
-                <div
-                  key={opt.value}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
-                  }}
-                  className={`px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-colors ${value === opt.value ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
-                >
-                  {opt.label}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+function formatTime(t) {
+    if (!t) return '—';
+    if (typeof t === 'object' && t.time) return t.time.slice(0, 5);
+    if (typeof t === 'string') return t.slice(0, 5);
+    return '—';
+}
+
+function getTimeStr(t) {
+    if (!t) return '';
+    if (typeof t === 'object' && t.time) return t.time.slice(0, 5);
+    if (typeof t === 'string') return t.slice(0, 5);
+    return '';
+}
+
+function formatMins(m) {
+    if (!m) return '0 min';
+    const n = Number(m);
+    if (n < 60) return `${n} min`;
+    return `${Math.floor(n / 60)}h ${n % 60}m`;
+}
+
+function getBreakDurationMins(startTime, endTime) {
+    if (!startTime || !endTime) return 0;
+    const start = new Date(`1970-01-01T${startTime}`);
+    const end = new Date(`1970-01-01T${endTime}`);
+    if (isNaN(start) || isNaN(end)) return 0;
+    return Math.max(0, Math.round((end - start) / 60000));
+}
+
+function desigLabel(str) {
+    if (!str) return '—';
+    return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ─── Small Reusable Components ─────────────────────────────────────────────────
+
+const InfoItem = ({ icon, label, value }) => (
+    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+            {icon} {label}
+        </label>
+        <div className="text-gray-800 font-semibold text-sm break-words">{value || '—'}</div>
     </div>
-  );
-};
-
-const addDays = (dateStr, days) => {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-};
-
-const formatDate = (dateStr) => {
-  try {
-    const d = new Date(`${dateStr}T00:00:00`);
-    return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-  } catch { return dateStr; }
-};
-
-const formatMins = (m) => {
-  if (!m) return '0 min';
-  if (m < 60) return `${m} min`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
-};
-
-const nowTime = () => new Date().toTimeString().slice(0, 5);
-
-const totalBreakMins = (breaks) =>
-  breaks.reduce((acc, b) => acc + (b.dur || 0), 0);
-
-const getTimeValue = (record) => {
-  if (!record) return '';
-  if (typeof record === 'string') return record.slice(0, 8);
-  if (typeof record === 'object') return record.time ? String(record.time).slice(0, 8) : '';
-  return '';
-};
-
-const getBreakDurationMins = (startTime, endTime, fallback = 0) => {
-  if (!startTime || !endTime) return fallback;
-  const start = new Date(`1970-01-01T${startTime}`);
-  const end = new Date(`1970-01-01T${endTime}`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return fallback;
-  const diff = Math.max(0, Math.round((end - start) / 60000));
-  return Number.isFinite(diff) ? diff : fallback;
-};
-
-const buildBreakRow = (employee, attendanceRecord, fallbackDate = '') => {
-  const shift = employee?.shift || attendanceRecord?.shift || null;
-  const startRecord = attendanceRecord?.break_start || attendanceRecord?.break_start_ || attendanceRecord?.punch_in || null;
-  const endRecord = attendanceRecord?.break_end || attendanceRecord?.break_end_ || attendanceRecord?.punch_out || null;
-  const startTime = getTimeValue(startRecord) || '';
-  const endTime = getTimeValue(endRecord) || '';
-  const date = attendanceRecord?.attendance_date || attendanceRecord?.punch_date || employee?.date || fallbackDate || '';
-  const calculations = attendanceRecord?.calculations || {};
-  const usedBreakMinutes = getBreakDurationMins(startTime, endTime, 0);
-  const maxBreakMinutes = Number(
-    calculations?.break_minutes
-    ?? calculations?.total_break_time
-    ?? shift?.allowed_break_minutes
-    ?? employee?.calculations?.break_minutes
-    ?? employee?.calculations?.total_break_time
-    ?? 0
-  ) || 0;
-
-  return {
-    id: attendanceRecord?.attendance_id ?? attendanceRecord?.id ?? employee?.id ?? null,
-    attendance_id: attendanceRecord?.attendance_id ?? attendanceRecord?.id ?? null,
-    employee_id: employee?.employee_id ?? attendanceRecord?.employee_id ?? null,
-    name: employee?.name ?? attendanceRecord?.name ?? '',
-    employee_code: employee?.employee_code ?? attendanceRecord?.employee_code ?? '',
-    department: employee?.designation ? employee.designation.replace(/_/g, ' ').toUpperCase() : '',
-    date,
-    day_label: date ? new Date(`${date}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long' }) : '',
-    type: attendanceRecord?.type || 'break',
-    status: attendanceRecord?.status || attendanceRecord?.day_status || 'present',
-    start_time: startTime,
-    end_time: endTime,
-    start_record: startRecord,
-    end_record: endRecord,
-    breaks: Array.isArray(attendanceRecord?.breaks) ? attendanceRecord.breaks : [],
-    total_break_mins: usedBreakMinutes,
-    break_used_mins: usedBreakMinutes,
-    break_max_mins: maxBreakMinutes,
-    has_break_history: true,
-    has_open_break: Boolean(startTime && !endTime),
-    calculations: {
-      ...(attendanceRecord?.calculations || {}),
-      break_minutes: maxBreakMinutes,
-    },
-    on_break: Boolean(startTime && !endTime),
-    attendance_record: attendanceRecord,
-    shift,
-  };
-};
-
-const normalizeBreakEmployee = (row, fallbackDate = '') => {
-  if (!row || typeof row !== 'object') return null;
-
-  const attendances = Array.isArray(row.attendances) ? row.attendances : [];
-  const rowBreaks = Array.isArray(row.breaks) ? row.breaks : [];
-  const breakAttendances = attendances.filter((item) => item?.type === 'break');
-  const sourceAttendances = rowBreaks.length > 0 ? rowBreaks : (breakAttendances.length > 0 ? breakAttendances : attendances);
-  const sortedAttendances = [...sourceAttendances].sort((a, b) => {
-    const aId = Number(a?.attendance_id ?? a?.id ?? 0);
-    const bId = Number(b?.attendance_id ?? b?.id ?? 0);
-    return bId - aId;
-  });
-  const primaryAttendance = sortedAttendances[0] || null;
-  const totalBreakUsedMins = sourceAttendances.reduce((acc, item) => {
-    const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-    const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-    const mins = getBreakDurationMins(startTime, endTime, 0);
-    return acc + (Number(mins) || 0);
-  }, 0);
-  const calculatedBreakMaxMins = sourceAttendances.reduce((acc, item) => {
-    return acc + (Number(item?.calculations?.break_minutes ?? item?.calculations?.total_break_time ?? 0) || 0);
-  }, 0);
-  const totalBreakMaxMins = calculatedBreakMaxMins
-    || Number(row?.shift?.allowed_break_minutes ?? row?.calculations?.break_minutes ?? row?.calculations?.total_break_time ?? 0)
-    || 0;
-  const hasOpenBreak = sourceAttendances.some((item) => {
-    const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-    const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-    return Boolean(startTime && !endTime);
-  });
-  const isVerified = sourceAttendances.length > 0 && sourceAttendances.every((item) => item?.is_verified !== false);
-
-  if (!primaryAttendance && !row?.attendance_date && !fallbackDate) {
-    return {
-      id: row?.id ?? row?.employee_id ?? null,
-      attendance_id: row?.id ?? row?.employee_id ?? null,
-      employee_id: row?.employee_id ?? null,
-      name: row?.name ?? '',
-      employee_code: row?.employee_code ?? '',
-      department: row?.designation ? row.designation.replace(/_/g, ' ').toUpperCase() : '',
-      date: '',
-      day_label: '',
-      type: 'break',
-      status: 'present',
-      start_time: '',
-      end_time: '',
-      start_record: null,
-      end_record: null,
-      breaks: [],
-      total_break_mins: 0,
-      break_used_mins: 0,
-      break_max_mins: 0,
-      has_break_history: false,
-      has_open_break: false,
-      calculations: { break_minutes: 0 },
-      on_break: false,
-      attendance_record: null,
-      shift: row?.shift || null,
-      is_verified: false,
-    };
-  }
-
-  const mapped = buildBreakRow(row, primaryAttendance || {}, fallbackDate);
-  return {
-    ...mapped,
-    breaks: sourceAttendances,
-    total_break_mins: totalBreakUsedMins,
-    break_used_mins: totalBreakUsedMins,
-    break_max_mins: totalBreakMaxMins,
-    has_break_history: sourceAttendances.length > 0,
-    has_open_break: hasOpenBreak,
-    calculations: {
-      ...(mapped.calculations || {}),
-      break_minutes: totalBreakMaxMins,
-    },
-    is_verified: isVerified,
-  };
-};
-
-const buildBreakDefaults = (employee, action) => {
-  const record = employee?.attendance_record || employee || {};
-  const startFromRecord =
-    getTimeValue(record?.break_start) ||
-    getTimeValue(record?.punch_in) ||
-    getTimeValue(record?.start_time);
-  const endFromRecord =
-    getTimeValue(record?.break_end) ||
-    getTimeValue(record?.punch_out) ||
-    getTimeValue(record?.end_time);
-  const openBreak = Array.isArray(employee?.breaks)
-    ? employee.breaks.find((item) => {
-      const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-      const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-      return Boolean(startTime && !endTime);
-    })
-    : null;
-  const openBreakStart = getTimeValue(openBreak?.break_start) || getTimeValue(openBreak?.punch_in) || '';
-
-  return {
-    breakStart: action === 'live_break_end' ? (openBreakStart || startFromRecord || '') : (startFromRecord || ''),
-    breakEnd: action === 'live_break_start' ? '' : (endFromRecord || ''),
-  };
-};
-
-const STATUS_CONFIG = {
-  present: { label: 'Present', color: 'bg-emerald-500 text-white' },
-  half_day: { label: 'Half Day', color: 'bg-sky-500 text-white' },
-  absent: { label: 'Absent', color: 'bg-rose-500 text-white' },
-  paid_leave: { label: 'Paid Leave', color: 'bg-violet-500 text-white' },
-  unmarked: { label: 'Unmarked', color: 'bg-slate-500 text-white' },
-};
-
-const BULK_BREAK_ACTIONS = [
-  { id: 'actual_data', label: 'Actual Data', tone: 'slate' },
-  { id: 'paid_leave', label: 'Paid Leave', tone: 'violet' },
-  { id: 'absent', label: 'Absent', tone: 'rose' },
-  { id: 'present', label: 'Present', tone: 'emerald' },
-  { id: 'half_day', label: 'Half Day', tone: 'sky' },
-];
-
-const BULK_BREAK_TONE_CLASSES = {
-  actual_data: 'bg-slate-500 text-white shadow-slate-200',
-  paid_leave: 'bg-violet-500 text-white shadow-violet-200',
-  absent: 'bg-rose-500 text-white shadow-rose-200',
-  present: 'bg-emerald-500 text-white shadow-emerald-200',
-  half_day: 'bg-sky-500 text-white shadow-sky-200',
-};
-
-const ToggleSwitch = ({ isOn, onToggle, accent = 'blue' }) => (
-  <div
-    onClick={(e) => { e.stopPropagation(); onToggle(); }}
-    className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
-  >
-    <motion.div
-      className="bg-white w-3 h-3 rounded-full shadow-md"
-      initial={false}
-      animate={{ x: isOn ? 20 : 0 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-    />
-  </div>
 );
 
-const buildBulkAttendancePayload = (employee, action, notes, halfSession = 'first') => {
-  const punchIn = getExactPunchTime(employee?.attendance_record?.punch_in) || '09:00';
-  const punchOut = getExactPunchTime(employee?.attendance_record?.punch_out) || '18:00';
-  const basePayload = {
-    employee_id: employee.employee_id,
-    date: employee.date,
-    type: 'attendance',
-    notes: notes || '',
-  };
+const VerifiedBadge = ({ isVerified }) => (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border
+        ${isVerified
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${isVerified ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+        {isVerified ? 'Verified' : 'Pending'}
+    </span>
+);
 
-  if (action === 'absent') {
-    return { ...basePayload, status: 'absent' };
-  }
-
-  if (action === 'paid_leave') {
-    return { ...basePayload, status: 'leave', value1: 'paid' };
-  }
-
-  if (action === 'half_day') {
-    return {
-      ...basePayload,
-      status: 'half_day',
-      start_time: punchIn,
-      end_time: punchOut,
-      value1: halfSession === 'second' ? 'second_half' : 'first_half',
+const DayStatusBadge = ({ status }) => {
+    const cfg = {
+        present: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        absent: 'bg-red-50 text-red-600 border-red-200',
+        half_day: 'bg-sky-50 text-sky-700 border-sky-200',
+        paid_leave: 'bg-violet-50 text-violet-700 border-violet-200',
+        unmarked: 'bg-gray-50 text-gray-500 border-gray-200',
     };
-  }
-
-  return {
-    ...basePayload,
-    status: 'present',
-    start_time: punchIn,
-    end_time: punchOut,
-    is_overtime: Boolean(employee?.attendance_record?.is_overtime),
-    is_deductible: Boolean(employee?.attendance_record?.is_deductible),
-  };
+    const label = (status || 'unmarked').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return (
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${cfg[status] || cfg.unmarked}`}>
+            {label}
+        </span>
+    );
 };
 
-const getExactPunchTime = (value) => {
-  if (!value) return '';
-  if (typeof value === 'string') return value.slice(0, 5);
-  if (typeof value === 'object') return value?.time ? String(value.time).slice(0, 5) : '';
-  return '';
-};
-
-const normalizeBreakRow = (row, fallbackDate = '') => {
-  if (!row || typeof row !== 'object') return null;
-  if (Array.isArray(row.attendances) || Array.isArray(row.breaks)) {
-    return normalizeBreakEmployee(row, fallbackDate);
-  }
-  return buildBreakRow(row, row, fallbackDate);
-};
-
-// ─── UNIFIED BREAK MODAL ──────────────────────────────────────────────────────
-const ManageBreaksModal = ({ employee, action, onClose, onSubmit }) => {
-  const [loading, setLoading] = useState(false);
-  const defaults = useMemo(() => buildBreakDefaults(employee, action), [employee, action]);
-  const [breakStart, setBreakStart] = useState(defaults.breakStart);
-  const [breakEnd, setBreakEnd] = useState('');
-  const [notes, setNotes] = useState('');
-  const openBreakStart = useMemo(() => {
-    const breaks = Array.isArray(employee?.breaks) ? employee.breaks : [];
-    const openBreak = breaks.find((item) => {
-      const startTime = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-      const endTime = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-      return Boolean(startTime && !endTime);
-    });
-    return getTimeValue(openBreak?.break_start) || getTimeValue(openBreak?.punch_in) || '';
-  }, [employee?.breaks]);
-  const requiresStart = action === 'add_break' || action === 'live_break_start';
-  const requiresEnd = action === 'add_break' || action === 'live_break_end';
-  const isSaveDisabled = loading || (requiresStart && !breakStart) || (requiresEnd && !breakEnd);
-
-  useEffect(() => {
-    setBreakStart(defaults.breakStart);
-    setBreakEnd(defaults.breakEnd);
-    setNotes('');
-  }, [defaults.breakStart, defaults.breakEnd, employee?.id, action]);
-
-  const handleSubmit = async () => {
-    if (requiresStart && !breakStart) return toast.error('Start time required');
-    if (requiresEnd && !breakEnd) return toast.error('End time required');
-    setLoading(true);
-    try {
-      const resolvedDate = employee.date
-        || employee.attendance_record?.attendance_date
-        || employee.attendance_record?.punch_date
-        || new Date().toISOString().slice(0, 10);
-      const payload = {
-        employee_id: employee.employee_id,
-        date: resolvedDate,
-        type: 'break',
-        notes,
-      };
-
-      if (action === 'live_break_start') {
-        payload.start_time = breakStart;
-      } else if (action === 'live_break_end') {
-        payload.end_time = breakEnd;
-      } else {
-        payload.start_time = breakStart;
-        payload.end_time = breakEnd || null;
-      }
-
-      await onSubmit(payload);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title="Manage Breaks"
-      subtitle={employee.name}
-      size="4xl"
-      footer={
-        <>
-          <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
-          <ManagementButton tone="amber" loading={loading} disabled={isSaveDisabled} onClick={handleSubmit}>
-            Save Break
-          </ManagementButton>
-        </>
-      }
-    >
-      <div className="space-y-6 p-8">
-        {action === 'add_break' && (
-          <div className="grid grid-cols-2 gap-4">
-            <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
-            <TimePickerField label="End" value={breakEnd} onChange={setBreakEnd} />
-          </div>
-        )}
-        {action === 'live_break_start' && (
-          <div className="grid grid-cols-1 gap-4">
-            <TimePickerField label="Start" value={breakStart} onChange={setBreakStart} />
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Start break only</p>
-              <p className="mt-1 text-xs font-semibold text-emerald-700">
-                This action stores only the break start time.
-              </p>
-            </div>
-          </div>
-        )}
-        {action === 'live_break_end' && (
-          <div className="grid grid-cols-1 gap-4">
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Open break start</p>
-              <p className="mt-1 text-sm font-black text-slate-800">{openBreakStart || breakStart || '--'}</p>
-            </div>
-            <TimePickerField label="End" value={breakEnd} onChange={setBreakEnd} />
-            <div className="rounded-2xl border border-rose-100 bg-rose-50/60 px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-rose-600">End break only</p>
-              <p className="mt-1 text-xs font-semibold text-rose-700">
-                This action stores only the break end time.
-              </p>
-            </div>
-          </div>
-        )}
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            rows={3}
-            placeholder="Add any details..."
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-          />
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
-const TodayBreaksModal = ({ employee, onClose }) => {
-  const breaks = Array.isArray(employee?.breaks) ? employee.breaks : [];
-
-  return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title="Today's Breaks"
-      subtitle={employee?.name || 'Employee'}
-      size="4xl"
-      footer={
-        <ManagementButton tone="slate" variant="soft" onClick={onClose}>
-          Close
-        </ManagementButton>
-      }
-    >
-      <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Employee</p>
-            <p className="text-sm font-bold text-slate-800">{employee?.name || '--'}</p>
-            <p className="text-[11px] text-slate-500">{employee?.employee_code || '--'} {employee?.date ? `· ${employee.date}` : ''}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Breaks</p>
-            <p className="text-lg font-black text-indigo-600">{breaks.length}</p>
-          </div>
-        </div>
-
-        {breaks.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
-            <p className="text-sm font-semibold text-slate-500">No breaks taken today.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {breaks.map((item, index) => {
-              const start = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-              const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-              const startMethod = item?.break_start?.method || item?.punch_in?.method || '--';
-              const endMethod = item?.break_end?.method || item?.punch_out?.method || '--';
-              const creator = item?.created_by?.name
-                || item?.verified_by?.name
-                || item?.created?.by?.name
-                || item?.created_by
-                || item?.verified_by
-                || 'System';
-              const usedMinutes = getBreakDurationMins(start, end, Number(item?.calculations?.break_minutes || 0));
-
-              return (
-                <div key={item?.attendance_id || item?.id || index} className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between gap-3 px-4 py-3 bg-slate-50/80 border-b border-slate-100">
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">Break #{index + 1}</p>
-                      <p className="text-[11px] text-slate-500">
-                        {item?.attendance_date || employee?.date || '--'} {item?.day_status ? `· ${item.day_status}` : ''}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                      {item?.type || 'break'}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
-                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Break In</p>
-                      <p className="text-sm font-black text-slate-800">{start || '--'}</p>
-                      <p className="text-[11px] text-slate-500 mt-1">Method: {startMethod || '--'}</p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Break Out</p>
-                      <p className="text-sm font-black text-slate-800">{end || '--'}</p>
-                      <p className="text-[11px] text-slate-500 mt-1">Method: {endMethod || '--'}</p>
-                    </div>
-                  </div>
-
-                  <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
-                      <p className="font-black uppercase tracking-widest text-amber-500 text-[9px]">Used</p>
-                      <p className="font-bold text-slate-800 mt-1">{formatMins(usedMinutes)}</p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
-                      <p className="font-black uppercase tracking-widest text-slate-400 text-[9px]">Created By</p>
-                      <p className="font-bold text-slate-800 mt-1">{creator}</p>
-                    </div>
-                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
-                      <p className="font-black uppercase tracking-widest text-slate-400 text-[9px]">Verified</p>
-                      <p className="font-bold text-slate-800 mt-1">{item?.is_verified ? 'Yes' : 'No'}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-};
-const BulkAttendanceModal = ({ employees, action, onClose, onSubmit }) => {
-  const [loading, setLoading] = useState(false);
-  const [notes, setNotes] = useState('');
-  const [halfSession, setHalfSession] = useState('first');
-
-  const actionMeta = BULK_BREAK_ACTIONS.find(item => item.id === action);
-
-  const handleConfirm = async () => {
-    setLoading(true);
-    try {
-      await onSubmit({
-        action,
-        employees,
-        notes,
-        halfSession,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!actionMeta) return null;
-
-  return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title="Bulk Attendance Update"
-      subtitle={`${employees.length} employee${employees.length > 1 ? 's' : ''} selected`}
-      size="4xl"
-      footer={
-        <>
-          <ManagementButton tone="slate" variant="soft" onClick={onClose}>Cancel</ManagementButton>
-          <ManagementButton tone={actionMeta.tone} loading={loading} onClick={handleConfirm}>
-            Apply to All
-          </ManagementButton>
-        </>
-      }
-    >
-      <div className="flex max-h-[520px] -m-6 flex-col overflow-hidden">
-        <div className="w-full shrink-0 bg-slate-50/50 border-b border-slate-100 px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${BULK_BREAK_TONE_CLASSES[action]}`}>
-              {actionMeta.label}
-            </span>
-            <span className="text-xs font-semibold text-slate-500">
-              This will apply to all selected records.
-            </span>
-          </div>
-          <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            {employees.length} selected
-          </span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-white">
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2">Selected Records</p>
-            <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
-              {employees.map((emp) => (
-                <div key={emp.id} className="flex items-center justify-between rounded-xl bg-white px-4 py-3 border border-slate-100">
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{emp.name}</p>
-                    <p className="text-xs text-slate-500">{emp.employee_code} · {formatDate(emp.date)}</p>
-                  </div>
-                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${STATUS_CONFIG[emp.status]?.color || 'bg-slate-100 text-slate-700'}`}>
-                    {STATUS_CONFIG[emp.status]?.label || 'Unmarked'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {action === 'half_day' && (
+const SummaryCard = ({ icon, label, value, gradient, delay = 0 }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay, duration: 0.4 }}
+        className={`bg-gradient-to-r ${gradient} rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300`}>
+        <div className="flex items-center justify-between">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2.5">Half Day Session</label>
-              <div className="grid grid-cols-2 gap-3">
-                <ManagementButton tone="sky" variant={halfSession === 'first' ? 'solid' : 'soft'} onClick={() => setHalfSession('first')}>First Half</ManagementButton>
-                <ManagementButton tone="sky" variant={halfSession === 'second' ? 'solid' : 'soft'} onClick={() => setHalfSession('second')}>Second Half</ManagementButton>
-              </div>
+                <p className="text-xs opacity-80 mb-1">{label}</p>
+                <p className="text-3xl font-bold">{value}</p>
             </div>
-          )}
-
-          <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1.5">Notes (optional)</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Add one note for all selected employees..."
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-800 outline-none resize-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all" />
-          </div>
+            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-xl">
+                {icon}
+            </div>
         </div>
-      </div>
-    </Modal>
-  );
-};
+    </motion.div>
+);
 
-// ─── EMPLOYEE BREAK CARD ──────────────────────────────────────────────────────
-const EmployeeBreakCard = ({ emp, onAction, selected, onToggleSelect, isSelectionMode }) => {
-  const used = Number(emp.break_used_mins ?? emp.total_break_mins ?? 0);
-  const max = Number(emp.break_max_mins ?? emp.calculations?.break_minutes ?? 0);
-  const fallbackMax = max;
-  const barPct = fallbackMax > 0 ? Math.min(100, Math.round((used / fallbackMax) * 100)) : 0;
-  const over = fallbackMax > 0 ? used > fallbackMax : false;
-  const statusCfg = STATUS_CONFIG[emp.status];
-  const breaks = Array.isArray(emp.breaks) ? emp.breaks : [];
-  const hasBreakHistory = breaks.length > 0;
-  const allBreaksComplete = breaks.every((item) => {
-    const start = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-    const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-    return Boolean(start && end);
-  });
-  const hasOpenBreak = Boolean(emp.has_open_break || breaks.some((item) => {
-    const start = getTimeValue(item?.break_start) || getTimeValue(item?.punch_in) || '';
-    const end = getTimeValue(item?.break_end) || getTimeValue(item?.punch_out) || '';
-    return Boolean(start && !end);
-  }));
-  const canAddBreak = hasBreakHistory && allBreaksComplete && !hasOpenBreak;
-  const isVerified = hasBreakHistory && breaks.every((item) => item?.is_verified !== false);
-  const cardToneClass = !hasBreakHistory || !isVerified
-    ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
-    : 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70';
-  const verificationLabel = !hasBreakHistory ? 'No Break Yet' : (isVerified ? 'Verified' : 'Pending');
-  const verificationLabelClass = !hasBreakHistory || !isVerified
-    ? 'bg-amber-600 text-white'
-    : 'bg-emerald-600 text-white';
-  const cardActionsDisabled = isSelectionMode && selected;
-  const startTime = emp.start_time || emp.attendance_record?.break_start?.time || emp.attendance_record?.punch_in?.time || '';
-  const endTime = emp.end_time || emp.attendance_record?.break_end?.time || emp.attendance_record?.punch_out?.time || '';
-  return (
-    <div className="relative">
-      {isSelectionMode && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onToggleSelect?.(emp); }}
-          className={`absolute top-3 left-3 z-10 h-4 w-4 rounded-md border-2 flex items-center justify-center transition-all shadow-sm ${selected ? 'bg-indigo-600 border-indigo-600 text-white scale-110' : 'bg-white border-slate-300 hover:border-indigo-400'
-            }`}
-        >
-          {selected && <FaCheck size={9} />}
-        </button>
-      )}
-      <ManagementCard
-        title={emp.name}
-        subtitle={`[${emp.employee_code}]`}
-        accent={emp.on_break ? 'orange' : 'slate'}
-        icon={<FaUser className="text-slate-500" />}
-        className={cardToneClass}
-        badge={
-          <div className="flex items-center gap-1.5">
-            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${verificationLabelClass}`}>
-              {verificationLabel}
-            </span>
-            {statusCfg && (
-              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${statusCfg.color}`}>
-                {statusCfg.label}
-              </span>
-            )}
-            {emp.on_break && (
-              <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500 text-white animate-pulse">
-                On Break
-              </span>
-            )}
-            <button
-              onClick={(e) => { e.stopPropagation(); onAction(emp, 'today_breaks'); }}
-              disabled={cardActionsDisabled}
-              className="p-1.5 rounded-lg bg-white/80 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-slate-200 shadow-sm ml-0.5"
-              title="View Today's Breaks"
-            >
-              <FaHistory size={11} />
-            </button>
-          </div>
-        }
-      >
-        <div className={`flex flex-col md:flex-row gap-6 md:items-center ${isSelectionMode ? 'pl-5' : ''}`}>
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-1 text-xs text-indigo-500 font-semibold flex-wrap">
-              <FaCalendarAlt size={9} />
-              <span>{emp.date} | {emp.day_label}</span>
-              {emp.department && (
-                <><span className="text-gray-300 mx-1">·</span><FaBuilding size={9} className="text-gray-400" /><span className="text-gray-500">{emp.department}</span></>
-              )}
-            </div>
-            <div className="flex gap-5 flex-wrap text-xs">
-              <span className="text-gray-700 font-semibold">Total Breaks: <span className="font-black text-gray-900">{emp.breaks.length}</span></span>
-              <span className="text-gray-700 font-semibold">Break Used: <span className={`font-black ${over ? 'text-rose-500' : 'text-orange-500'}`}>{formatMins(used)}</span></span>
-              <span className="text-gray-700 font-semibold">Break Max: <span className="font-black text-gray-900">{formatMins(fallbackMax)}</span></span>
-            </div>
-            <div className="flex gap-5 flex-wrap text-xs">
-              <span className="text-gray-700 font-semibold">Break Start: <span className="font-black text-gray-900">{startTime ? startTime.slice(0, 8) : '--'}</span></span>
-              <span className="text-gray-700 font-semibold">Break End: <span className="font-black text-gray-900">{endTime ? endTime.slice(0, 8) : '--'}</span></span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Break usage</span>
-              <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div className={`h-full rounded-full transition-all duration-500 ${over ? 'bg-rose-500' : 'bg-orange-400'}`} style={{ width: `${barPct}%` }} />
-              </div>
-              <span className={`text-[10px] font-black whitespace-nowrap ${over ? 'text-rose-500' : 'text-gray-600'}`}>{formatMins(used)} / {formatMins(fallbackMax)}</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2 shrink-0 md:w-72">
-            <ManagementButton
-              size="sm"
-              tone="amber"
-              variant="soft"
-              fullWidth
-              disabled={!canAddBreak || cardActionsDisabled}
-              onClick={() => onAction(emp, 'add_break')}
-            >
-              <FaPlus size={9} className="mr-1" /> Add Break
-            </ManagementButton>
-            <ManagementButton
-              size="sm"
-              tone="emerald"
-              variant="soft"
-              fullWidth
-              disabled={hasOpenBreak || cardActionsDisabled}
-              onClick={() => onAction(emp, 'live_break_start')}
-            >
-              <FaPlay size={9} className="mr-1" /> Start Break
-            </ManagementButton>
-            <ManagementButton
-              size="sm"
-              tone="rose"
-              variant="soft"
-              fullWidth
-              disabled={!hasOpenBreak || cardActionsDisabled}
-              onClick={() => onAction(emp, 'live_break_end')}
-            >
-              <FaStop size={9} className="mr-1" /> End Break
-            </ManagementButton>
-          </div>
-        </div>
-      </ManagementCard>
-    </div>
-  );
-};
+// ─── Break Detail Modal ────────────────────────────────────────────────────────
 
-// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
-const BreakManagement = () => {
-  const [dateFilter, setDateFilter] = useState({
-    date: '',
-    month: '',
-    year: '',
-    from_date: '',
-    to_date: '',
-  });
-  const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
-  const [search, setSearch] = useState('');
-  const [dayStatus, setDayStatus] = useState('all');
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [modal, setModal] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [bulkSaving, setBulkSaving] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const lastRequestKeyRef = useRef('');
+const BreakDetailModal = ({ record, onClose, onEdit }) => {
+    if (!record) return null;
+    const idx = (record.employee_id || 0) % 5;
+    const breakStart = record.break_start;
+    const breakEnd = record.break_end;
+    const startStr = formatTime(breakStart);
+    const endStr = formatTime(breakEnd);
+    const durationMins = getBreakDurationMins(getTimeStr(breakStart), getTimeStr(breakEnd));
 
-  const fetchBreaks = useCallback(async (force = false) => {
-    const requestKey = `${pagination.page}-${pagination.limit}-${search}-${dayStatus}-${selectedEmployee}-${JSON.stringify(dateFilter)}`;
-    if (!force && requestKey === lastRequestKeyRef.current && !loading) return;
-    if (force) lastRequestKeyRef.current = '';
-    lastRequestKeyRef.current = requestKey;
-
-    setLoading(true);
-    try {
-      let fromDate = '', toDate = '';
-      if (dateFilter.date) {
-        fromDate = toDate = dateFilter.date;
-      } else if (dateFilter.from_date && dateFilter.to_date) {
-        fromDate = dateFilter.from_date;
-        toDate = dateFilter.to_date;
-      } else if (dateFilter.month && dateFilter.year) {
-        fromDate = `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01`;
-        toDate = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
-      }
-
-      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      const statusParam = dayStatus === 'all' ? '' : `&day_status=${dayStatus}`;
-      const empParam = selectedEmployee ? `&employee_id=${selectedEmployee}` : '';
-      const response = await apiCall(
-        `/attendance/list?from_date=${fromDate}&to_date=${toDate}&page=${pagination.page}&limit=${pagination.limit}&search=${search}&type=break${statusParam}${empParam}`,
-        'GET',
-        null,
-        companyId
-      );
-      const result = await response.json();
-      if (result.success) {
-        const mapped = (result.data || []).map(emp => normalizeBreakRow(emp, dateFilter.date || dateFilter.from_date || ''));
-        setEmployees(mapped);
-        updatePagination({
-          total: result.meta.total,
-          total_pages: result.meta.total_pages,
-          page: result.meta.page,
-          limit: result.meta.limit
-        });
-      } else {
-        throw new Error(result.message || 'Failed to fetch break data');
-      }
-    } catch (err) {
-      console.error('Fetch error:', err);
-      toast.error(err.message || 'Failed to load break data');
-    } finally {
-      setLoading(false);
-    }
-  }, [dateFilter, pagination.page, pagination.limit, search, dayStatus, selectedEmployee, updatePagination]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchBreaks();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [fetchBreaks]);
-
-  const handleDateChange = (val) => {
-    setDateFilter(val);
-    goToPage(1);
-  };
-
-  const handleSearch = (val) => {
-    setSearch(val);
-    goToPage(1);
-  };
-
-  const handleStatusChange = (status) => {
-    setDayStatus(status);
-    goToPage(1);
-  };
-
-  const handleEmployeeChange = (id) => {
-    setSelectedEmployee(id);
-    goToPage(1);
-  };
-
-  const displayDate = useMemo(() => {
-    if (dateFilter.date) return formatDate(dateFilter.date);
-    if (dateFilter.month && dateFilter.year) return `${dateFilter.month}/${dateFilter.year}`;
-    if (dateFilter.from_date && dateFilter.to_date) return `${formatDate(dateFilter.from_date)} - ${formatDate(dateFilter.to_date)}`;
-    return 'Select Date';
-  }, [dateFilter]);
-
-  const handleAction = (emp, action) => {
-    setModal({ type: action, emp });
-  };
-
-  const handleUpdate = async (payload) => {
-    setSaving(true);
-    try {
-      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      const response = await apiCall('/attendance/mark', 'POST', payload, companyId);
-      const result = await response.json();
-      if (result.success) {
-        toast.success('Updated successfully!');
-        setModal(null);
-        lastRequestKeyRef.current = '';
-        await fetchBreaks(true);
-      } else {
-        throw new Error(result.message || 'Update failed');
-      }
-    } catch (err) {
-      toast.error(err.message || 'Update failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleSelectEmployee = (emp) => {
-    setSelectedIds((prev) => (
-      prev.includes(emp.id)
-        ? prev.filter((id) => id !== emp.id)
-        : [...prev, emp.id]
-    ));
-  };
-
-  const toggleSelectAll = () => {
-    const visibleIds = employees.map((emp) => emp.id);
-    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
-    setSelectedIds(allSelected ? [] : visibleIds);
-  };
-
-  const toggleSelectionMode = () => {
-    setIsSelectionMode((prev) => {
-      if (prev) setSelectedIds([]);
-      return !prev;
-    });
-  };
-
-  const selectedEmployees = useMemo(
-    () => employees.filter((emp) => selectedIds.includes(emp.id)),
-    [employees, selectedIds]
-  );
-
-  const getSelectedAttendanceDate = (emp) =>
-    emp?.date
-    || emp?.attendance_record?.attendance_date
-    || emp?.attendance_record?.punch_date
-    || '';
-
-  const handleBulkReview = async (action) => {
-    if (!selectedEmployees.length) return;
-    setBulkSaving(true);
-    try {
-      const companyId = JSON.parse(localStorage.getItem('company'))?.id;
-      if (action === 'approve') {
-        const attendanceDates = selectedEmployees.map(getSelectedAttendanceDate).filter(Boolean);
-        const uniqueDates = [...new Set(attendanceDates)];
-
-        if (uniqueDates.length !== 1) {
-          toast.error('Select break records from the same date');
-          return;
-        }
-
-        const employeeIds = selectedEmployees
-          .map((emp) => emp.employee_id || emp.employeeId || emp.id)
-          .filter(Boolean);
-
-        if (employeeIds.length === 0) {
-          toast.error('No employee records selected');
-          return;
-        }
-
-        const response = await apiCall('/attendance/approve', 'PUT', {
-          attendance_date: uniqueDates[0],
-          employee_ids: employeeIds,
-          attendance_type: 'break',
-          notes: '',
-        }, companyId);
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.message || 'Failed to approve breaks');
-        }
-
-        toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} approved successfully`);
-      } else {
-        const punchIds = selectedEmployees
-          .map(emp => emp.attendance_id || emp.attendance_record?.attendance_id || emp.attendance_record?.id || emp.id)
-          .filter(Boolean);
-        if (punchIds.length === 0) {
-          toast.error('No attendance records selected');
-          return;
-        }
-
-        const response = await apiCall('/attendance/reject', 'PUT', { punch_ids: punchIds, notes: '' }, companyId);
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.message || `Failed to ${action}`);
-        }
-
-        toast.success(`${selectedEmployees.length} record${selectedEmployees.length > 1 ? 's' : ''} rejected successfully`);
-      }
-
-      setSelectedIds([]);
-      lastRequestKeyRef.current = '';
-      await fetchBreaks(true);
-    } catch (err) {
-      toast.error(err.message || `Bulk ${action} failed`);
-    } finally {
-      setBulkSaving(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 space-y-4">
-        <div className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700">
-                <FaClock size={11} />
-                Break management
-              </div>
-              <h1 className="mt-3 text-2xl font-black text-slate-900 md:text-3xl">
-                Break Management
-              </h1>
-              <p className="mt-1 text-sm text-slate-500">
-                Monitor employee breaks, punches, and work sessions from one workspace.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 justify-end">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
-                <FaHistory className="text-amber-500" />
-                <span className="font-medium text-slate-700">{pagination.total}</span>
-                <span className="text-slate-500">records</span>
-              </div>
-              <RefreshButton
-                loading={loading}
-                onClick={() => fetchBreaks(true)}
-              >
-                Refresh
-              </RefreshButton>
-            </div>
-          </div>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-gray-100 bg-white p-3.5 sm:p-4 shadow-sm mb-6"
-        >
-          <div className="flex justify-between w-full flex-col lg:flex-row gap-4">
-            {/* Search Field */}
-            <div className="flex-1">
-              <div className="relative">
-                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                <input
-                  type="text"
-                  placeholder="Search by name, code or email..."
-                  value={search}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-9 text-sm font-medium text-gray-800 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    onClick={() => handleSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 transition hover:bg-white hover:text-gray-600"
-                  >
-                    <FaTimes size={12} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Filters Wrapper */}
-            <div className="flex gap-4 flex-col md:flex-row lg:flex-row">
-
-              <div className="flex-1">
-                <EmployeeSelect
-                  value={selectedEmployee}
-                  onChange={handleEmployeeChange}
-                  placeholder="Specific Employee..."
-                />
-              </div>
-              <div className="flex flex-row gap-4">
-                <div className="flex-1">
-                  <StatusSelect
-                    value={dayStatus}
-                    onChange={handleStatusChange}
-                    options={STATUS_OPTIONS}
-                  />
-                </div>
-                <div className="flex-1">
-                  <AdvancedDateFilter
-                    value={dateFilter}
-                    onChange={handleDateChange}
-                    buttonClassName="w-full inline-flex items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-gray-50"
-                    placeholder="Pick Date"
-                  />
-                </div>
-
-              </div>
-
-
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ── Bulk Selection Control Bar (below filter, above cards) ── */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm"
-        >
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={toggleSelectionMode}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-300 focus:outline-none ${isSelectionMode ? 'bg-amber-500' : 'bg-slate-200'
-                }`}
-            >
-              <span
-                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${isSelectionMode ? 'translate-x-4' : 'translate-x-0.5'
-                  }`}
-              />
-            </button>
-            <span className={`text-xs font-black uppercase tracking-widest ${isSelectionMode ? 'text-amber-600' : 'text-slate-400'
-              }`}>
-              {isSelectionMode ? 'Bulk Mode ON' : 'Bulk Mode'}
-            </span>
-          </div>
-
-          {isSelectionMode && employees.length > 0 && (
-            <label className="flex cursor-pointer items-center gap-2.5 select-none">
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className={`h-4 w-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${selectedIds.length === employees.length && employees.length > 0
-                  ? 'bg-indigo-600 border-indigo-600 text-white'
-                  : selectedIds.length > 0
-                    ? 'bg-indigo-100 border-indigo-400'
-                    : 'bg-white border-slate-300 hover:border-indigo-400'
-                  }`}
-              >
-                {selectedIds.length === employees.length && employees.length > 0 && <FaCheck size={9} className="text-white" />}
-                {selectedIds.length > 0 && selectedIds.length < employees.length && (
-                  <span className="block w-2 h-0.5 bg-indigo-500 rounded" />
-                )}
-              </button>
-              <span className="text-xs font-semibold text-slate-600">
-                {selectedIds.length > 0 ? `${selectedIds.length} of ${employees.length} selected` : `Select all ${employees.length} records`}
-              </span>
-              {selectedIds.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedIds([])}
-                  className="ml-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors"
-                >
-                  Clear
-                </button>
-              )}
-            </label>
-          )}
-        </motion.div>
-
-        <div className="space-y-3">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-              <div className="h-12 w-12 border-4 border-indigo-500/20 border-t-indigo-600 rounded-full animate-spin mb-4" />
-              <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Fetching data...</p>
-            </div>
-          ) : employees.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
-              <div className="h-16 w-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4"><FaCoffee size={30} /></div>
-              <p className="text-slate-600 font-black">No break records found</p>
-              <p className="text-slate-400 text-sm mt-1">Try changing the date or search query</p>
-            </div>
-          ) : (
-            <>
-              {employees.map(emp => (
-                <EmployeeBreakCard
-                  key={emp.id}
-                  emp={emp}
-                  onAction={handleAction}
-                  selected={selectedIds.includes(emp.id)}
-                  onToggleSelect={toggleSelectEmployee}
-                  isSelectionMode={isSelectionMode}
-                />
-              ))}
-              <Pagination
-                currentPage={pagination.page}
-                totalItems={pagination.total}
-                itemsPerPage={pagination.limit}
-                onPageChange={goToPage}
-                onLimitChange={changeLimit}
-              />
-            </>
-          )}
-        </div>
-
+    return (
         <AnimatePresence>
-          {isSelectionMode && selectedIds.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-2xl backdrop-blur-md"
-            >
-              <div className="flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-100 px-3 py-1.5 mr-1">
-                <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                <span className="text-xs font-black text-indigo-700">{selectedIds.length} selected</span>
-              </div>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6"
+                onClick={onClose}>
+                <ModalScrollLock />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+                    className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+                    onClick={e => e.stopPropagation()}>
 
-              <div className="w-px h-6 bg-slate-200 mx-1" />
+                    {/* Fixed Header */}
+                    <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
+                        <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                            <FaCoffee className="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">Break Details</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">View break record information</p>
+                        </div>
+                        <button onClick={onClose}
+                            className="ml-auto w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600"
+                            aria-label="Close">
+                            <FaTimes className="w-4 h-4" />
+                        </button>
+                    </div>
 
-              <button
-                type="button"
-                onClick={() => handleBulkReview('approve')}
-                disabled={bulkSaving}
-                className="rounded-xl px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm bg-emerald-600 text-white disabled:opacity-60"
-              >
-                Approve
-              </button>
+                    {/* Scrollable Body */}
+                    <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
 
-              <button
-                type="button"
-                onClick={() => setSelectedIds([])}
-                className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
-                title="Clear selection"
-              >
-                <FaTimes size={12} />
-              </button>
+                        {/* Identity */}
+                        <div className="flex flex-col sm:flex-row items-center gap-5 pb-5 border-b border-gray-100">
+                            <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow ring-4 ring-gray-100 flex-shrink-0"
+                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
+                                {record.profile_picture
+                                    ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                                    : getInitials(record.name)}
+                            </div>
+                            <div className="text-center sm:text-left">
+                                <h3 className="text-2xl font-black text-gray-900">{record.name}</h3>
+                                <p className="text-sm text-gray-400 mt-0.5">{desigLabel(record.designation)}</p>
+                                <div className="mt-2 flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                    <VerifiedBadge isVerified={record.is_verified} />
+                                    <DayStatusBadge status={record.day_status} />
+                                    <span className="text-xs text-gray-300 font-mono">#{record.attendance_id}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Employee Info */}
+                        <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <FaUser className="w-3 h-3" /> Employee Info
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <InfoItem icon={<FaUser className="text-blue-400" />} label="Employee Code" value={record.employee_code} />
+                                <InfoItem icon={<FaEnvelope className="text-blue-400" />} label="Email" value={record.email} />
+                                <InfoItem icon={<FaPhone className="text-blue-400" />} label="Phone" value={record.phone} />
+                                <InfoItem icon={<FaCalendarAlt className="text-blue-400" />} label="Joining Date" value={formatDate(record.joining_date)} />
+                            </div>
+                        </div>
+
+                        {/* Break Info */}
+                        <div>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <FaCoffee className="w-3 h-3" /> Break Info
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <InfoItem icon={<FaCalendarAlt className="text-amber-400" />} label="Attendance Date" value={formatDate(record.attendance_date)} />
+                                <InfoItem icon={<FaClock className="text-amber-400" />} label="Allowed Break" value={formatMins(record.allowed_break_minutes)} />
+                                <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                    <label className="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                        <FaPlay className="text-emerald-400" /> Break Start
+                                    </label>
+                                    <div className="text-gray-800 font-semibold text-sm">{startStr}</div>
+                                    {breakStart?.method && (
+                                        <div className="text-xs text-gray-400 mt-1">Method: {breakStart.method}</div>
+                                    )}
+                                </div>
+                                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                                    <label className="text-xs font-semibold text-red-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                        <FaStop className="text-red-400" /> Break End
+                                    </label>
+                                    <div className="text-gray-800 font-semibold text-sm">{endStr}</div>
+                                    {breakEnd?.method && (
+                                        <div className="text-xs text-gray-400 mt-1">Method: {breakEnd.method}</div>
+                                    )}
+                                </div>
+                            </div>
+                            {durationMins > 0 && (
+                                <div className="mt-3 bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Duration Used</span>
+                                    <span className="text-lg font-black text-indigo-700">{formatMins(durationMins)}</span>
+                                </div>
+                            )}
+                            {record.remark && (
+                                <div className="mt-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">Remark</label>
+                                    <div className="text-gray-700 text-sm">{record.remark}</div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Fixed Footer */}
+                    <div className="flex flex-col justify-end sm:flex-row gap-3 px-6 py-4 border-t border-gray-100 bg-white flex-shrink-0">
+                        <button onClick={() => { onEdit(record); onClose(); }}
+                            className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-semibold items-center justify-center gap-2 shadow-sm">
+                            <FaEdit size={14} /> Edit Break
+                        </button>
+                    </div>
+                </motion.div>
             </motion.div>
-          )}
         </AnimatePresence>
-      </div>
-
-      <AnimatePresence>
-        {modal && !['attendance_logs', 'clear_all', 'today_breaks'].includes(modal.type) && (
-          <ManageBreaksModal
-            employee={modal.emp}
-            action={modal.type}
-            onClose={() => setModal(null)}
-            onSubmit={handleUpdate}
-          />
-        )}
-        {modal?.type === 'today_breaks' && (
-          <TodayBreaksModal employee={modal.emp} onClose={() => setModal(null)} />
-        )}
-      </AnimatePresence>
-    </div>
-  );
+    );
 };
 
-export default BreakManagement;
+// ─── Delete Confirm Modal ──────────────────────────────────────────────────────
+
+// ─── Create / Edit Break Modal ─────────────────────────────────────────────────
+
+const BreakFormModal = ({ record, onClose, onSubmit, saving, isEdit = false }) => {
+    const [breakStart, setBreakStart] = useState(isEdit ? getTimeStr(record?.break_start) : '');
+    const [breakEnd, setBreakEnd] = useState(isEdit ? getTimeStr(record?.break_end) : '');
+    const [notes, setNotes] = useState(record?.remark || '');
+    const [employeeId, setEmployeeId] = useState(isEdit ? (record?.employee_id || '') : '');
+    const [date, setDate] = useState(isEdit ? (record?.attendance_date || '') : new Date().toISOString().slice(0, 10));
+
+    const isSaveDisabled = saving || !breakStart || (!isEdit && !employeeId) || !date;
+
+    const handleSubmit = () => {
+        if (!breakStart) return toast.error('Break start time is required');
+        if (!isEdit && !employeeId) return toast.error('Employee ID is required');
+        const payload = {
+            ...(isEdit ? { attendance_id: record.attendance_id } : { employee_id: employeeId }),
+            date,
+            type: 'break',
+            start_time: breakStart,
+            end_time: breakEnd || null,
+            notes,
+        };
+        onSubmit(payload);
+    };
+
+    return (
+        <AnimatePresence>
+            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
+                className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6"
+                onClick={onClose}>
+                <ModalScrollLock />
+                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
+                    className="bg-white relative w-full max-w-lg rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
+                    onClick={e => e.stopPropagation()}>
+
+                    <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
+                        <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center">
+                            <FaCoffee className="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">{isEdit ? 'Edit Break' : 'Create Break'}</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">{isEdit ? `Editing record #${record?.attendance_id}` : 'Add a new break record'}</p>
+                        </div>
+                        <button onClick={onClose}
+                            className="ml-auto w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600">
+                            <FaTimes className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+                        {!isEdit && (
+                            <div>
+                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Employee ID <span className="text-red-400">*</span></label>
+                                <input
+                                    type="number"
+                                    value={employeeId}
+                                    onChange={e => setEmployeeId(e.target.value)}
+                                    placeholder="Enter employee ID..."
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium outline-none shadow-sm transition-all focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10"
+                                />
+                            </div>
+                        )}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Date <span className="text-red-400">*</span></label>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={e => setDate(e.target.value)}
+                                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium outline-none shadow-sm transition-all focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <TimePickerField label="Break Start *" value={breakStart} onChange={setBreakStart} />
+                            <TimePickerField label="Break End" value={breakEnd} onChange={setBreakEnd} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Notes (optional)</label>
+                            <textarea
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                                rows={3}
+                                placeholder="Add any details..."
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-800 outline-none resize-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-white flex-shrink-0">
+                        <button onClick={onClose}
+                            className="px-5 py-2.5 border-2 border-gray-100 text-gray-600 rounded-xl hover:bg-gray-50 transition-all font-semibold">
+                            Cancel
+                        </button>
+                        <button onClick={handleSubmit} disabled={isSaveDisabled}
+                            className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl hover:from-amber-500 hover:to-orange-600 transition-all font-semibold flex items-center gap-2 shadow-md disabled:opacity-50">
+                            {saving ? <FaSpinner className="animate-spin" size={14} /> : (isEdit ? <FaEdit size={14} /> : <FaPlus size={14} />)}
+                            {saving ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Break')}
+                        </button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
+
+const BreakManagementPage = () => {
+    const [records, setRecords] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [employeeId, setEmployeeId] = useState('');
+    const [viewMode, setViewMode] = useState('table');
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [detailTarget, setDetailTarget] = useState(null);
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [editModalTarget, setEditModalTarget] = useState(null);
+    const [dateFilter, setDateFilter] = useState({
+        date: new Date().toISOString().slice(0, 10),
+        month: '', year: '', from_date: '', to_date: '',
+    });
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+    const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
+    const fetchInProgress = useRef(false);
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 500);
+        return () => clearTimeout(t);
+    }, [searchTerm]);
+
+    const buildDateParams = useCallback(() => {
+        if (dateFilter.date) return { from_date: dateFilter.date, to_date: dateFilter.date };
+        if (dateFilter.from_date && dateFilter.to_date) return { from_date: dateFilter.from_date, to_date: dateFilter.to_date };
+        if (dateFilter.month && dateFilter.year) {
+            const from = `${dateFilter.year}-${String(dateFilter.month).padStart(2, '0')}-01`;
+            const to = new Date(dateFilter.year, dateFilter.month, 0).toISOString().slice(0, 10);
+            return { from_date: from, to_date: to };
+        }
+        return { from_date: '', to_date: '' };
+    }, [dateFilter]);
+
+    const fetchRecords = useCallback(async (page = pagination.page, search = debouncedSearch, resetLoading = true) => {
+        if (fetchInProgress.current) return;
+        fetchInProgress.current = true;
+        if (resetLoading) setLoading(true);
+        try {
+            const { from_date, to_date } = buildDateParams();
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id ?? null;
+            let url = `/attendance/list?page=${page}&limit=${pagination.limit}&type=break&from_date=${from_date}&to_date=${to_date}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            if (employeeId) url += `&employee_id=${encodeURIComponent(employeeId)}`;
+            const res = await apiCall(url, 'GET', null, companyId);
+            const result = await res.json();
+            if (result.success) {
+                setRecords(result.data || []);
+                const meta = result.meta || {};
+                updatePagination({
+                    page: Number(meta.page ?? page),
+                    limit: Number(meta.limit ?? pagination.limit),
+                    total: Number(meta.total ?? 0),
+                    total_pages: Number(meta.total_pages ?? 1),
+                    is_last_page: meta.is_last_page ?? false,
+                });
+            } else {
+                throw new Error(result.message || 'Failed to fetch break records');
+            }
+        } catch (e) {
+            toast.error(e.message || 'Failed to load break records');
+        } finally {
+            setLoading(false);
+            fetchInProgress.current = false;
+            setIsInitialLoad(false);
+        }
+    }, [pagination.page, pagination.limit, debouncedSearch, buildDateParams, employeeId, updatePagination]);
+
+    useEffect(() => {
+        if (!isInitialLoad) {
+            if (pagination.page !== 1) goToPage(1);
+            else fetchRecords(1, debouncedSearch, true);
+        }
+    }, [debouncedSearch, dateFilter, employeeId]);
+
+    useEffect(() => {
+        if (!isInitialLoad && !fetchInProgress.current) {
+            fetchRecords(pagination.page, debouncedSearch, true);
+        }
+    }, [pagination.page, pagination.limit]);
+
+    useEffect(() => {
+        fetchRecords(1, '', true);
+    }, []);
+
+    const handleCreate = async (payload) => {
+        setSaving(true);
+        try {
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id ?? null;
+            const res = await apiCall('/attendance/mark', 'POST', payload, companyId);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'Failed to create break');
+            toast.success('Break created successfully!');
+            setCreateModalOpen(false);
+            fetchRecords(1, debouncedSearch, true);
+        } catch (e) {
+            toast.error(e.message || 'Failed to create break');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleEdit = async (payload) => {
+        setSaving(true);
+        try {
+            const companyId = JSON.parse(localStorage.getItem('company'))?.id ?? null;
+            const res = await apiCall('/attendance/update', 'PUT', payload, companyId);
+            const result = await res.json();
+            if (!result.success) throw new Error(result.message || 'Update failed');
+            toast.success('Break updated successfully!');
+            setEditModalTarget(null);
+            fetchRecords(pagination.page, debouncedSearch, true);
+        } catch (e) {
+            toast.error(e.message || 'Failed to update break');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const stats = useMemo(() => ({
+        total: pagination.total || 0,
+        verified: records.filter(r => r.is_verified).length,
+        open: records.filter(r => getTimeStr(r.break_start) && !getTimeStr(r.break_end)).length,
+        present: records.filter(r => r.day_status === 'present').length,
+    }), [records, pagination.total]);
+
+    const isMobile = windowWidth < 640;
+    const isTablet = windowWidth < 1024;
+    const showEmail = !isMobile;
+    const showDesig = !isMobile;
+    const showEndTime = !isTablet;
+    const showDate = !isMobile;
+
+    if (isInitialLoad && loading) return <SkeletonComponent />;
+
+    return (
+        <ManagementHub
+            eyebrow={<><FaCoffee size={11} /> Break management</>}
+            title="Break Management"
+            description="Monitor and manage employee break records with time tracking."
+            accent="amber"
+            summary={
+                <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                    <FaCoffee className="text-amber-400" />
+                    <span className="font-semibold text-gray-700">{stats.total}</span>
+                    <span className="text-gray-400">records</span>
+                </div>
+            }
+            actions={
+                <>
+                    <RefreshButton loading={loading} onClick={() => fetchRecords(pagination.page, debouncedSearch, true)}>
+                        Refresh
+                    </RefreshButton>
+                    <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
+                        onClick={() => setCreateModalOpen(true)}
+                        className="group relative px-5 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
+                        <FaPlus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+                        <span className="text-sm">Create Break</span>
+                        <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                    </motion.button>
+                </>
+            }
+        >
+            <div className="mx-auto max-w-screen-2xl space-y-4 px-2">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                    <SummaryCard icon={<FaCoffee />} label="Total Records" value={stats.total} gradient="from-amber-400 to-orange-500" delay={0.05} />
+                    <SummaryCard icon={<FaCheckCircle />} label="Verified" value={stats.verified} gradient="from-emerald-400 to-teal-500" delay={0.10} />
+                    <SummaryCard icon={<FaPlay />} label="Open Breaks" value={stats.open} gradient="from-violet-400 to-purple-500" delay={0.15} />
+                    <SummaryCard icon={<FaUserCheck />} label="Present Today" value={stats.present} gradient="from-blue-400 to-indigo-500" delay={0.20} />
+                </div>
+
+                {/* Search / Filter / View Toolbar */}
+                <motion.div
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-wrap gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                >
+                    <div className="relative w-full lg:flex-1">
+                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(event) => setSearchTerm(event.target.value)}
+                            placeholder="Search by employee name, code, or email..."
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-10 text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
+                        />
+                        {searchTerm && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                                title="Clear search"
+                            >
+                                <FaTimes size={13} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="w-full md:flex-1 lg:w-[240px] lg:flex-none">
+                        <EmployeeSelect
+                            value={employeeId}
+                            onChange={(value) => setEmployeeId(value || '')}
+                            placeholder="All employees"
+                        />
+                    </div>
+
+                    <div className="w-full md:flex-1 lg:w-[180px] lg:flex-none">
+                        <AdvancedDateFilter
+                            value={dateFilter}
+                            onChange={(val) => { setDateFilter(val); goToPage(1); }}
+                            placeholder="Date or range"
+                            tabOptions={['date', 'range']}
+                            buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                        />
+                    </div>
+
+                    {!loading && records.length > 0 && (
+                        <div className="flex w-full justify-end lg:w-auto">
+                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="amber" />
+                        </div>
+                    )}
+                </motion.div>
+
+                {/* Loading skeleton */}
+                {loading && !records.length && <SkeletonComponent />}
+
+                {/* Empty State */}
+                {!loading && records.length === 0 && (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-xl shadow-md border border-gray-100 p-16 text-center">
+                        <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                            <FaCoffee className="text-4xl text-amber-200" />
+                        </div>
+                        <p className="text-xl font-bold text-gray-600 mb-2">No break records found</p>
+                        <p className="text-gray-400 text-sm">
+                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Create Break" to add a record'}
+                        </p>
+                        {debouncedSearch
+                            ? <button onClick={() => setSearchTerm('')} className="mt-4 px-5 py-2 bg-amber-50 text-amber-600 rounded-xl hover:bg-amber-100 text-sm font-semibold">Clear Search</button>
+                            : <button onClick={() => setCreateModalOpen(true)} className="mt-4 px-6 py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl text-sm font-semibold shadow-lg">Create Break</button>}
+                    </motion.div>
+                )}
+
+                {/* Table View */}
+                {!loading && records.length > 0 && viewMode === 'table' && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
+                                    <tr>
+                                        <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
+                                        {showDesig && <th className="px-5 py-4 font-semibold tracking-wider">Designation</th>}
+                                        {showDate && <th className="px-5 py-4 font-semibold tracking-wider">Date</th>}
+                                        <th className="px-5 py-4 font-semibold tracking-wider">Break Start</th>
+                                        {showEndTime && <th className="px-5 py-4 font-semibold tracking-wider">Break End</th>}
+                                        <th className="px-5 py-4 font-semibold tracking-wider">Status</th>
+                                        <th className="px-5 py-4 font-semibold tracking-wider">Verified</th>
+                                        <th className="px-5 py-4 text-right font-semibold tracking-wider"><FaCog className="w-4 h-4 ml-auto" /></th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {records.map((record, i) => {
+                                        const idx = (record.employee_id || 0) % 5;
+                                        const startStr = formatTime(record.break_start);
+                                        const endStr = formatTime(record.break_end);
+                                        const isOpen = getTimeStr(record.break_start) && !getTimeStr(record.break_end);
+                                        return (
+                                            <motion.tr key={record.attendance_id}
+                                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                                                className="hover:bg-amber-50/30 transition-colors cursor-pointer group"
+                                                onClick={() => setDetailTarget(record)}>
+
+                                                {/* Employee */}
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
+                                                            style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
+                                                            {record.profile_picture
+                                                                ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                                                                : getInitials(record.name)}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-gray-800">{record.name}</p>
+                                                            <p className="text-xs text-indigo-400 font-mono">{record.employee_code}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* Designation */}
+                                                {showDesig && (
+                                                    <td className="px-5 py-4">
+                                                        <p className="text-xs text-gray-500 font-medium">{desigLabel(record.designation)}</p>
+                                                    </td>
+                                                )}
+
+                                                {/* Date */}
+                                                {showDate && (
+                                                    <td className="px-5 py-4">
+                                                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                                                            <FaCalendarAlt className="text-amber-400 flex-shrink-0" />
+                                                            <span>{formatDate(record.attendance_date)}</span>
+                                                        </div>
+                                                    </td>
+                                                )}
+
+                                                {/* Break Start */}
+                                                <td className="px-5 py-4">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <FaPlay className="text-emerald-400 flex-shrink-0" size={10} />
+                                                        <span className="text-xs font-mono font-semibold text-gray-700">{startStr}</span>
+                                                        {isOpen && (
+                                                            <span className="ml-1 px-1.5 py-0.5 bg-orange-50 border border-orange-200 rounded text-[10px] font-bold text-orange-500 animate-pulse">LIVE</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+
+                                                {/* Break End */}
+                                                {showEndTime && (
+                                                    <td className="px-5 py-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <FaStop className="text-red-400 flex-shrink-0" size={10} />
+                                                            <span className="text-xs font-mono font-semibold text-gray-700">{endStr}</span>
+                                                        </div>
+                                                    </td>
+                                                )}
+
+                                                {/* Day Status */}
+                                                <td className="px-5 py-4">
+                                                    <DayStatusBadge status={record.day_status} />
+                                                </td>
+
+                                                {/* Verified */}
+                                                <td className="px-5 py-4">
+                                                    <VerifiedBadge isVerified={record.is_verified} />
+                                                </td>
+
+                                                {/* Actions */}
+                                                <td className="px-5 py-4 text-right" onClick={e => e.stopPropagation()}>
+                                                    <ActionMenu
+                                                        menuId={`table-${record.attendance_id}`}
+                                                        activeId={activeActionMenu}
+                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                                        actions={[
+                                                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-blue-600 hover:bg-blue-50' },
+                                                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                                        ]}
+                                                    />
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Card View */}
+                {!loading && records.length > 0 && viewMode === 'card' && (
+                    <ManagementGrid viewMode={viewMode}>
+                        {records.map((record, i) => {
+                            const idx = (record.employee_id || 0) % 5;
+                            const startStr = formatTime(record.break_start);
+                            const endStr = formatTime(record.break_end);
+                            const isOpen = getTimeStr(record.break_start) && !getTimeStr(record.break_end);
+                            const durationMins = getBreakDurationMins(getTimeStr(record.break_start), getTimeStr(record.break_end));
+                            return (
+                                <motion.div key={record.attendance_id}
+                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                                    onClick={() => setDetailTarget(record)}
+                                    className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
+
+                                    {/* Header */}
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
+                                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
+                                                {record.profile_picture
+                                                    ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                                                    : getInitials(record.name)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="font-bold text-gray-800 text-sm leading-tight truncate group-hover:text-amber-600 transition-colors">{record.name}</h3>
+                                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[150px] font-mono">{record.employee_code}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1.5">
+                                            <VerifiedBadge isVerified={record.is_verified} />
+                                            {isOpen && (
+                                                <span className="px-2 py-0.5 bg-orange-50 border border-orange-200 rounded text-[10px] font-bold text-orange-500 animate-pulse">LIVE</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Body */}
+                                    <div className="space-y-2.5 mb-4 flex-1">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <FaCalendarAlt className="text-amber-400 flex-shrink-0 w-3 h-3" />
+                                            <span>{formatDate(record.attendance_date)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <FaUser className="text-blue-400 flex-shrink-0 w-3 h-3" />
+                                            <span>{desigLabel(record.designation)}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            <div className="bg-emerald-50 rounded-lg px-3 py-2 border border-emerald-100">
+                                                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-500 mb-0.5">Start</p>
+                                                <p className="text-xs font-mono font-bold text-gray-800">{startStr}</p>
+                                                {record.break_start?.method && (
+                                                    <p className="text-[10px] text-gray-400">{record.break_start.method}</p>
+                                                )}
+                                            </div>
+                                            <div className="bg-red-50 rounded-lg px-3 py-2 border border-red-100">
+                                                <p className="text-[9px] font-black uppercase tracking-widest text-red-400 mb-0.5">End</p>
+                                                <p className="text-xs font-mono font-bold text-gray-800">{endStr}</p>
+                                                {record.break_end?.method && (
+                                                    <p className="text-[10px] text-gray-400">{record.break_end.method}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {durationMins > 0 && (
+                                            <div className="flex items-center justify-between bg-indigo-50 rounded-lg px-3 py-2 border border-indigo-100">
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Duration</span>
+                                                <span className="text-xs font-black text-indigo-700">{formatMins(durationMins)}</span>
+                                            </div>
+                                        )}
+                                        <DayStatusBadge status={record.day_status} />
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100" onClick={e => e.stopPropagation()}>
+                                        <span className="text-xs text-gray-300 font-mono">#{record.attendance_id}</span>
+                                        <ActionMenu
+                                            menuId={`card-${record.attendance_id}`}
+                                            activeId={activeActionMenu}
+                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                            actions={[
+                                                { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-blue-600 hover:bg-blue-50' },
+                                                { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                            ]}
+                                        />
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </ManagementGrid>
+                )}
+
+                {/* Pagination */}
+                {!loading && (records.length > 0 || pagination.total > 0) && (
+                    <Pagination
+                        currentPage={pagination.page}
+                        totalItems={pagination.total}
+                        itemsPerPage={pagination.limit}
+                        onPageChange={(p) => { if (p !== pagination.page) goToPage(p); }}
+                        showInfo={true}
+                        onLimitChange={changeLimit}
+                    />
+                )}
+            </div>
+
+            {/* Modals */}
+            <AnimatePresence>
+                {detailTarget && (
+                    <BreakDetailModal
+                        record={detailTarget}
+                        onClose={() => setDetailTarget(null)}
+                        onEdit={(r) => { setDetailTarget(null); setEditModalTarget(r); }}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {createModalOpen && (
+                    <BreakFormModal
+                        onClose={() => setCreateModalOpen(false)}
+                        onSubmit={handleCreate}
+                        saving={saving}
+                        isEdit={false}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {editModalTarget && (
+                    <BreakFormModal
+                        record={editModalTarget}
+                        onClose={() => setEditModalTarget(null)}
+                        onSubmit={handleEdit}
+                        saving={saving}
+                        isEdit={true}
+                    />
+                )}
+            </AnimatePresence>
+        </ManagementHub>
+    );
+};
+
+export default BreakManagementPage;
