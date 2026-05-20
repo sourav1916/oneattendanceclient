@@ -56,24 +56,24 @@ export default function ManagementHub({
           initial={{ opacity: 0, y: -14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="mb-2 rounded-xl sm: m-[10px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-slate-200/60 backdrop-blur md:p-6"
+          className="mb-0.5 rounded-lg sm:m-1 border border-slate-200 bg-white/90 p-2.5 shadow-sm shadow-slate-200/40 backdrop-blur md:p-3"
         >
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               {eyebrow && (
                 <div className={joinClasses(
-                  'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em]',
+                  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em]',
                   accentClass
                 )}>
                   {eyebrow}
                 </div>
               )}
-              {title && <h1 className="mt-3 text-2xl font-bold text-slate-900 md:text-3xl">{title}</h1>}
-              {description && <p className="mt-2 text-sm text-slate-500 md:text-base">{description}</p>}
+              {title && <h1 className="mt-1 text-lg font-bold text-slate-900 md:text-xl">{title}</h1>}
+              {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
             </div>
 
             {(summary || actions || onRefresh) && (
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
                 {summary}
                 {onRefresh && (
                   <RefreshButton
@@ -91,7 +91,7 @@ export default function ManagementHub({
           </div>
 
           {tabs?.length > 0 && (
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = tab.id === activeTab;
@@ -105,7 +105,7 @@ export default function ManagementHub({
                     disabled={disabled}
                     title={tab.title || tab.description || tab.label}
                     className={joinClasses(
-                      'inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200',
+                      'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all duration-200',
                       isActive
                         ? activeButtonStyles[accent] || activeButtonStyles.slate
                         : disabled
@@ -122,7 +122,7 @@ export default function ManagementHub({
           )}
         </motion.div>
 
-        <div className={`p-[10px] lg:p-2 ${contentClassName || ""}`}>{children}</div>
+        <div className={`p-1 ${contentClassName || ""}`}>{children}</div>
       </div>
     </div>
   );

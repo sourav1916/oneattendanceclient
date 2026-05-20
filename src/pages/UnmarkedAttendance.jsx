@@ -314,33 +314,34 @@ const ToggleSwitch = ({ isOn, onToggle }) => (
   </div>
 );
 
-const Summary = ({ counts }) => {
-  const items = [
-    { key: 'total_employees', label: 'Total', icon: FaUser, tone: 'slate', className: 'bg-slate-50 text-slate-700 border-slate-200' },
-    { key: 'present', label: 'Present', icon: FaCheck, tone: 'emerald', className: STATUS_META.present.className },
-    { key: 'absent', label: 'Absent', icon: FaBan, tone: 'rose', className: STATUS_META.absent.className },
-    { key: 'half_day', label: 'Half Day', icon: FaHourglassHalf, tone: 'blue', className: STATUS_META.half_day.className },
-    { key: 'leave', label: 'Leave', icon: FaUmbrellaBeach, tone: 'violet', className: STATUS_META.leave.className },
-    { key: 'unmarked', label: 'Unmarked', icon: FaExclamationTriangle, tone: 'amber', className: STATUS_META.unmarked.className },
-  ];
+  const Summary = ({ counts }) => {
+    const items = [
+      { key: 'total_employees', label: 'Total', icon: FaUser, tone: 'slate', className: 'bg-slate-50 text-slate-700 border-slate-200' },
+      { key: 'present', label: 'Present', icon: FaCheck, tone: 'emerald', className: STATUS_META.present.className },
+      { key: 'absent', label: 'Absent', icon: FaBan, tone: 'rose', className: STATUS_META.absent.className },
+      { key: 'half_day', label: 'Half Day', icon: FaHourglassHalf, tone: 'blue', className: STATUS_META.half_day.className },
+      { key: 'leave', label: 'Leave', icon: FaUmbrellaBeach, tone: 'violet', className: STATUS_META.leave.className },
+      { key: 'unmarked', label: 'Unmarked', icon: FaExclamationTriangle, tone: 'amber', className: STATUS_META.unmarked.className },
+    ];
 
-  return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-      {items.map((item) => {
-        const Icon = item.icon;
-        return (
-          <div key={item.key} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border ${item.className}`}>
-              <Icon size={14} />
+    return (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div key={item.key} className="rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+              <div className={`mb-2 inline-flex h-7 w-7 items-center justify-center rounded-xl border ${item.className}`}> 
+                <Icon size={12} />
+              </div>
+              <p className="text-xl font-bold text-slate-900">{counts?.[item.key] ?? 0}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{item.label}</p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{counts?.[item.key] ?? 0}</p>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{item.label}</p>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+          );
+        })}
+      </div>
+    );
+  };
+
 
 const EmployeeAvatar = ({ employee }) => (
   <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-100 text-xs font-bold text-slate-600">

@@ -41,32 +41,32 @@ export default function ManagementCard({
   const cardBody = (
     <div
       className={joinClasses(
-        'rounded-xl border bg-white p-5 shadow-md transition-all duration-300',
+        'rounded-lg border bg-white p-2.5 shadow-sm transition-all duration-300',
         accentMap[accent] || accentMap.slate,
-        hoverable && 'hover:-translate-y-1 hover:shadow-xl',
+        hoverable && 'hover:-translate-y-0.5 hover:shadow-md',
         onClick && 'cursor-pointer',
         className
       )}
       onClick={onClick}
     >
       {(eyebrow || title || subtitle || badge || headerAction || actions) && (
-        <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="mb-2 flex items-start justify-between gap-1.5">
           <div className="min-w-0">
             {eyebrow && (
-              <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
                 {eyebrow}
               </p>
             )}
-            <div className="flex items-center gap-2">
-              {icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">{icon}</span>}
+            <div className="flex items-center gap-1.5">
+              {icon && <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600">{icon}</span>}
               <div className="min-w-0">
-                {title && <h3 className="truncate text-base font-bold text-slate-900">{title}</h3>}
-                {subtitle && <p className="mt-0.5 text-sm text-slate-500">{subtitle}</p>}
+                {title && <h3 className="truncate text-[13px] font-bold text-slate-900">{title}</h3>}
+                {subtitle && <p className="text-[11px] text-slate-500">{subtitle}</p>}
               </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             {badge}
             {headerAction}
             {actions && (
@@ -84,7 +84,7 @@ export default function ManagementCard({
       <div className={bodyClassName}>{children}</div>
 
       {footer && (
-        <div className={joinClasses('mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4', footerClassName)}>
+        <div className={joinClasses('mt-2 flex items-center justify-between gap-1.5 border-t border-slate-100 pt-2', footerClassName)}>
           {footer}
         </div>
       )}
@@ -93,9 +93,9 @@ export default function ManagementCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay }}
+      transition={{ duration: 0.3, delay }}
     >
       {cardBody}
     </motion.div>
