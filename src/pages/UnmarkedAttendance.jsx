@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaBan,
   FaBriefcase,
   FaCalendarAlt,
   FaCheck,
+  FaCheckSquare,
   FaClock,
   FaEdit,
   FaExclamationTriangle,
@@ -13,6 +14,7 @@ import {
   FaMoneyBillWave,
   FaRegCalendarCheck,
   FaSearch,
+  FaSquare,
   FaSpinner,
   FaTimes,
   FaUmbrellaBeach,
@@ -63,6 +65,15 @@ const listDayStatusOptions = [
   { value: 'paid_leave', label: 'Paid Leave' },
   { value: 'half_day', label: 'Half Day' },
   { value: 'unmarked', label: 'Unmarked' },
+];
+
+const bulkModeOptions = [
+  { value: 'all', label: 'All Approve' },
+  { value: 'actual', label: 'Verify Actual' },
+  { value: 'present', label: 'Mark Present' },
+  { value: 'half_day', label: 'Mark Half Day' },
+  { value: 'leave', label: 'Mark Leave' },
+  { value: 'absent', label: 'Mark Absent' },
 ];
 
 const formatTitle = (value) =>
@@ -285,6 +296,24 @@ const FieldLabel = ({ label, children }) => (
   </div>
 );
 
+const ToggleSwitch = ({ isOn, onToggle }) => (
+  <div
+    onClick={(event) => {
+      event.stopPropagation();
+      onToggle();
+    }}
+    className={`flex h-5 w-10 cursor-pointer items-center rounded-full p-1 transition-all duration-300 ${isOn ? 'bg-blue-500 shadow-inner' : 'bg-gray-300'
+      }`}
+  >
+    <motion.div
+      className="h-3 w-3 rounded-full bg-white shadow-md"
+      initial={false}
+      animate={{ x: isOn ? 20 : 0 }}
+      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+    />
+  </div>
+);
+
 const Summary = ({ counts }) => {
   const items = [
     { key: 'total_employees', label: 'Total', icon: FaUser, tone: 'slate', className: 'bg-slate-50 text-slate-700 border-slate-200' },
@@ -330,7 +359,7 @@ const EmployeeAvatar = ({ employee }) => (
   </div>
 );
 
-const EmployeeRowCard = ({ employee, onManage, onToggleFlag }) => {
+const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, onSelect, isSelectionMode = false }) => {
   const activeStatus = normalizeStatusForAction(employee.day_status);
   const statusButtonVariant = (status) => (activeStatus === status ? 'solid' : 'soft');
   const eligibility = getFlagEligibility(employee);
@@ -341,13 +370,29 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag }) => {
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl border p-3 shadow-md transition hover:shadow-lg ${employee.is_verified
-        ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
-        : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
+      className={`rounded-xl border p-3 shadow-md transition hover:shadow-lg ${selected
+        ? 'ring-2 ring-blue-400 ring-offset-2'
+        : ''
+        } ${employee.is_verified
+          ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
+          : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
         }`}
     >
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
         <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px]">
+          {isSelectionMode && (
+            <button
+              type="button"
+              onClick={() => onSelect?.(employee.employee_id)}
+              className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition ${selected
+                ? 'border-blue-200 bg-blue-50 text-blue-600'
+                : 'border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-blue-500'
+                }`}
+              title={selected ? 'Unselect employee' : 'Select employee'}
+            >
+              {selected ? <FaCheckSquare size={15} /> : <FaSquare size={15} />}
+            </button>
+          )}
           <EmployeeAvatar employee={employee} />
           <div className="min-w-0 flex-1">
             <div className="min-w-0">
@@ -804,6 +849,103 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   );
 };
 
+const BulkApprovalPanel = ({
+  bulkMode,
+  setBulkMode,
+  bulkHalfDayType,
+  setBulkHalfDayType,
+  bulkLeaveType,
+  setBulkLeaveType,
+  bulkLeaveTypeValue,
+  setBulkLeaveTypeValue,
+  bulkNotes,
+  setBulkNotes,
+}) => (
+  <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Bulk Mode</span>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {bulkModeOptions.map((option) => {
+            const isActive = bulkMode === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setBulkMode(option.value)}
+                className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${isActive
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {bulkMode === 'half_day' && (
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Half Day</span>
+          <select
+            value={bulkHalfDayType}
+            onChange={(event) => setBulkHalfDayType(event.target.value)}
+            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+          >
+            <option value="first_half">First Half</option>
+            <option value="second_half">Second Half</option>
+          </select>
+        </label>
+      )}
+
+      {bulkMode === 'leave' && (
+        <>
+          <label className="block">
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Type</span>
+            <select
+              value={bulkLeaveType}
+              onChange={(event) => setBulkLeaveType(event.target.value)}
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+            >
+              <option value="paid">Paid</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+          </label>
+          {bulkLeaveType === 'paid' && (
+            <label className="block">
+              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Value</span>
+              <select
+                value={bulkLeaveTypeValue}
+                onChange={(event) => setBulkLeaveTypeValue(event.target.value)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+              >
+                <option value="CL">CL</option>
+                <option value="SL">SL</option>
+                <option value="EL">EL</option>
+                <option value="ML">ML</option>
+                <option value="weekend">Weekend</option>
+                <option value="holiday">Holiday</option>
+              </select>
+            </label>
+          )}
+        </>
+      )}
+
+      <label className="block md:col-span-2 xl:col-span-2">
+        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Notes</span>
+        <input
+          type="text"
+          value={bulkNotes}
+          onChange={(event) => setBulkNotes(event.target.value)}
+          placeholder="Bulk approval note"
+          className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+        />
+      </label>
+    </div>
+  </div>
+);
+
 const FlagConfirmModal = ({ state, onClose, onConfirm, saving }) => {
   const employee = state?.employee;
   if (!employee) return null;
@@ -853,6 +995,7 @@ export default function UnmarkedAttendance() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -864,6 +1007,14 @@ export default function UnmarkedAttendance() {
     from_date: '',
     to_date: '',
   });
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
+  const [bulkMode, setBulkMode] = useState('all');
+  const [bulkHalfDayType, setBulkHalfDayType] = useState('first_half');
+  const [bulkLeaveType, setBulkLeaveType] = useState('paid');
+  const [bulkLeaveTypeValue, setBulkLeaveTypeValue] = useState('CL');
+  const [bulkNotes, setBulkNotes] = useState('Bulk approved based on actual mode');
   const [modalState, setModalState] = useState(null);
   const [flagConfirm, setFlagConfirm] = useState(null);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -954,10 +1105,106 @@ export default function UnmarkedAttendance() {
     }
   }, [debouncedSearch, dateFilter, employeeId, statusFilter]);
 
+  useEffect(() => {
+    const visibleIds = new Set(employees.map((employee) => employee.employee_id));
+    setSelectedEmployeeIds((current) => current.filter((id) => visibleIds.has(id)));
+  }, [employees]);
+
+  useEffect(() => {
+    const notesByMode = {
+      all: 'Bulk approved selected attendance',
+      actual: 'Bulk approved based on actual mode',
+      present: 'Manual override: Employee forgot ID card',
+      half_day: 'Manual override: Employee forgot ID card',
+      leave: 'Manual override: Employee forgot ID card',
+      absent: 'Unexcused absence',
+    };
+    setBulkNotes(notesByMode[bulkMode] || '');
+  }, [bulkMode]);
+
   const counts = useMemo(() => buildCounts(employees), [employees]);
+  const visibleEmployeeIds = useMemo(() => employees.map((employee) => employee.employee_id), [employees]);
+  const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id) => selectedEmployeeIds.includes(id));
 
   const handleManage = (employee, initialStatus) => {
     setModalState({ employee, initialStatus });
+  };
+
+  const toggleSelectedEmployee = (employeeIdValue) => {
+    setSelectedEmployeeIds((current) =>
+      current.includes(employeeIdValue)
+        ? current.filter((id) => id !== employeeIdValue)
+        : [...current, employeeIdValue]
+    );
+  };
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode((current) => {
+      if (current) setSelectedEmployeeIds([]);
+      return !current;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    setSelectedEmployeeIds((current) => {
+      if (allVisibleSelected) {
+        const visibleIds = new Set(visibleEmployeeIds);
+        return current.filter((id) => !visibleIds.has(id));
+      }
+      return Array.from(new Set([...current, ...visibleEmployeeIds]));
+    });
+  };
+
+  const getBulkAttendanceDate = () => dateFilter?.date || dateFilter?.from_date || dateFilter?.to_date || getToday();
+
+  const handleBulkApprove = async () => {
+    if (!selectedEmployeeIds.length) {
+      toast.error('Select at least one employee');
+      return;
+    }
+
+    const companyId = getCompanyId();
+    if (!companyId) {
+      toast.error('Company ID not found');
+      return;
+    }
+
+    const payload = {
+      attendance_date: getBulkAttendanceDate(),
+      employee_ids: selectedEmployeeIds,
+      attendance_type: 'attendance',
+      mode: bulkMode,
+      notes: bulkNotes,
+    };
+
+    if (bulkMode === 'half_day') {
+      payload.half_day_type = bulkHalfDayType;
+    }
+
+    if (bulkMode === 'leave') {
+      payload.leave_type = bulkLeaveType;
+      if (bulkLeaveType === 'paid') payload.leave_type_value = bulkLeaveTypeValue;
+    }
+
+    setBulkSaving(true);
+    try {
+      const response = await apiCall('/attendance/approve', 'PUT', payload, companyId);
+      const result = await response.json();
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || 'Bulk approval failed');
+      }
+
+      toast.success(result.message || 'Attendance approved successfully');
+      setSelectedEmployeeIds([]);
+      setIsSelectionMode(false);
+      setShowBulkApproveModal(false);
+      loadData(true);
+    } catch (error) {
+      toast.error(error.message || 'Bulk approval failed');
+    } finally {
+      setBulkSaving(false);
+    }
   };
 
   const buildMarkPayload = (formPayload, sourceEmployee = modalState?.employee) => {
@@ -1156,6 +1403,7 @@ export default function UnmarkedAttendance() {
           </div>
         </motion.div>
 
+
         {loading ? (
           <div className="flex items-center justify-center rounded-xl border border-slate-100 bg-white py-16 shadow-sm">
             <FaSpinner className="animate-spin text-3xl text-blue-500" />
@@ -1167,13 +1415,32 @@ export default function UnmarkedAttendance() {
             <p className="mt-1 text-sm text-slate-400">Try adjusting your search or status filter.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+
+          <div className="space-y-3 bg-white px-4  rounded-xl shadow-xl">
+            <div className="flex w-full items-center justify-start gap-3 mt-4 lg:w-auto">
+              {isSelectionMode && (
+                <button
+                  type="button"
+                  onClick={toggleSelectAllVisible}
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  {allVisibleSelected ? <FaCheckSquare size={14} /> : <FaSquare size={14} />}
+                </button>
+              )}
+              <div className="flex items-center gap-2 px-3 py-2">
+                <ToggleSwitch isOn={isSelectionMode} onToggle={toggleSelectionMode} />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Bulk</span>
+              </div>
+            </div>
             {employees.map((employee) => (
               <EmployeeRowCard
                 key={employee.employee_id}
                 employee={employee}
                 onManage={handleManage}
                 onToggleFlag={handleToggleFlag}
+                selected={selectedEmployeeIds.includes(employee.employee_id)}
+                onSelect={toggleSelectedEmployee}
+                isSelectionMode={isSelectionMode}
               />
             ))}
           </div>
@@ -1187,6 +1454,94 @@ export default function UnmarkedAttendance() {
           onLimitChange={changeLimit}
         />
       </div>
+
+      <AnimatePresence>
+        {selectedEmployeeIds.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 rounded-2xl border border-white/20 bg-white/80 px-6 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-md"
+          >
+            <div className="flex flex-col">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Bulk Actions</span>
+              <span className="text-sm font-black text-slate-800">{selectedEmployeeIds.length} Selected</span>
+            </div>
+            <div className="mx-2 h-10 w-px bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedEmployeeIds([]);
+                  setIsSelectionMode(false);
+                }}
+                className="px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:text-gray-700"
+              >
+                Close
+              </button>
+              <ManagementButton
+                tone="blue"
+                variant="solid"
+                leftIcon={<FaCheck />}
+                onClick={() => setShowBulkApproveModal(true)}
+                className="shadow-lg shadow-blue-200"
+              >
+                Approve Selected
+              </ManagementButton>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {showBulkApproveModal && (
+        <Modal
+          isOpen={showBulkApproveModal}
+          onClose={() => setShowBulkApproveModal(false)}
+          title="Bulk Approve Attendance"
+          subtitle={`${selectedEmployeeIds.length} employee${selectedEmployeeIds.length > 1 ? 's' : ''} selected`}
+          icon={<FaCheck className="h-5 w-5" />}
+          size="2xl"
+          footer={(
+            <div className="flex w-full justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowBulkApproveModal(false)}
+                disabled={bulkSaving}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <ManagementButton
+                tone="blue"
+                leftIcon={<FaCheck />}
+                loading={bulkSaving}
+                disabled={!selectedEmployeeIds.length}
+                onClick={handleBulkApprove}
+              >
+                Confirm Approve {selectedEmployeeIds.length}
+              </ManagementButton>
+            </div>
+          )}
+        >
+          <div className="space-y-4">
+            <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm font-medium text-blue-700">
+              You are about to approve attendance for <span className="font-bold">{selectedEmployeeIds.length}</span> selected employee{selectedEmployeeIds.length > 1 ? 's' : ''}.
+            </p>
+            <BulkApprovalPanel
+              bulkMode={bulkMode}
+              setBulkMode={setBulkMode}
+              bulkHalfDayType={bulkHalfDayType}
+              setBulkHalfDayType={setBulkHalfDayType}
+              bulkLeaveType={bulkLeaveType}
+              setBulkLeaveType={setBulkLeaveType}
+              bulkLeaveTypeValue={bulkLeaveTypeValue}
+              setBulkLeaveTypeValue={setBulkLeaveTypeValue}
+              bulkNotes={bulkNotes}
+              setBulkNotes={setBulkNotes}
+            />
+          </div>
+        </Modal>
+      )}
 
       <ManageAttendanceModal
         isOpen={Boolean(modalState)}
