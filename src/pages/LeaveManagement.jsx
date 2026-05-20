@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
 import SelectField from '../components/SelectField';
-import { DateRangePickerField } from '../components/DatePicker';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
@@ -909,22 +909,24 @@ const LeaveManagement = () => {
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                                         Date Range <span className="text-rose-500">*</span>
                                     </label>
-                                    <DateRangePickerField
-                                        value={{ start: createForm.start_date, end: createForm.end_date }}
-                                        onChange={(range) => {
-                                            const nextStart = range?.start || '';
-                                            const nextEnd = createForm.is_half_day ? nextStart : (range?.end || nextStart);
+                                    <AdvancedDateFilter
+                                        value={{
+                                            date: (createForm.start_date && createForm.start_date === createForm.end_date) ? createForm.start_date : "",
+                                            from_date: (createForm.start_date && createForm.start_date !== createForm.end_date) ? createForm.start_date : "",
+                                            to_date: (createForm.end_date && createForm.start_date !== createForm.end_date) ? createForm.end_date : "",
+                                        }}
+                                        onChange={(result) => {
+                                            const nextStart = result?.date || result?.from_date || '';
+                                            const nextEnd = createForm.is_half_day ? nextStart : (result?.date || result?.to_date || nextStart);
                                             setCreateForm((prev) => ({
                                                 ...prev,
                                                 start_date: nextStart,
                                                 end_date: nextEnd,
                                             }));
                                         }}
+                                        tabOptions={["date", "range"]}
                                         placeholder="Select leave date range"
                                         buttonClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm shadow-sm transition hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 font-medium"
-                                        initialTab="range"
-                                        mode="range"
-                                        showQuickSelect={false}
                                     />
                                 </div>
 
@@ -1143,14 +1145,15 @@ const LeaveManagement = () => {
                             <p className="text-gray-600 text-sm leading-relaxed">Approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>. You can adjust the date range or convert it to a half-day before approving.</p>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Leave Date Range</label>
-                                <DateRangePickerField
+                                <AdvancedDateFilter
                                     value={{
-                                        start: approveForm.start_date,
-                                        end: approveForm.is_half_day ? approveForm.start_date : approveForm.end_date,
+                                        date: (approveForm.start_date && approveForm.start_date === (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date)) ? approveForm.start_date : "",
+                                        from_date: (approveForm.start_date && approveForm.start_date !== (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date)) ? approveForm.start_date : "",
+                                        to_date: (approveForm.end_date && approveForm.start_date !== (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date)) ? (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date) : "",
                                     }}
-                                    onChange={(range) => {
-                                        const nextStart = range?.start || '';
-                                        const nextEnd = approveForm.is_half_day ? nextStart : (range?.end || nextStart);
+                                    onChange={(result) => {
+                                        const nextStart = result?.date || result?.from_date || '';
+                                        const nextEnd = approveForm.is_half_day ? nextStart : (result?.date || result?.to_date || nextStart);
 
                                         setApproveForm((prev) => ({
                                             ...prev,
@@ -1158,10 +1161,8 @@ const LeaveManagement = () => {
                                             end_date: nextEnd,
                                         }));
                                     }}
+                                    tabOptions={["date", "range"]}
                                     placeholder="Select leave date range"
-                                    mode="both"
-                                    initialTab="single"
-                                    showQuickSelect={false}
                                     buttonClassName="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                                 />
                             </div>
