@@ -290,12 +290,22 @@ const BreakFormModal = ({ record, onClose, onSubmit, saving, isEdit = false }) =
     const [notes, setNotes] = useState(record?.remark || '');
     const [employeeId, setEmployeeId] = useState(isEdit ? (record?.employee_id || '') : '');
     const [date, setDate] = useState(isEdit ? (record?.attendance_date || '') : new Date().toISOString().slice(0, 10));
+    const initialEmployee = useMemo(() => {
+        if (!record?.employee_id) return null;
+        return {
+            id: record.employee_id,
+            name: record.name,
+            employee_code: record.employee_code,
+            designation: record.designation,
+            profile_picture: record.profile_picture,
+        };
+    }, [record]);
 
-    const isSaveDisabled = saving || !breakStart || (!isEdit && !employeeId) || !date;
+    const isSaveDisabled = saving || !breakStart || !employeeId || !date;
 
     const handleSubmit = () => {
         if (!breakStart) return toast.error('Break start time is required');
-        if (!isEdit && !employeeId) return toast.error('Employee ID is required');
+        if (!employeeId) return toast.error('Employee is required');
         const payload = {
             ...(isEdit ? { attendance_id: record.attendance_id } : { employee_id: employeeId }),
             date,
@@ -332,18 +342,16 @@ const BreakFormModal = ({ record, onClose, onSubmit, saving, isEdit = false }) =
                     </div>
 
                     <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
-                        {!isEdit && (
-                            <div>
-                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Employee ID <span className="text-red-400">*</span></label>
-                                <input
-                                    type="number"
-                                    value={employeeId}
-                                    onChange={e => setEmployeeId(e.target.value)}
-                                    placeholder="Enter employee ID..."
-                                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-medium outline-none shadow-sm transition-all focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10"
-                                />
-                            </div>
-                        )}
+                        <div>
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Employee <span className="text-red-400">*</span></label>
+                            <EmployeeSelect
+                                value={employeeId}
+                                onChange={(value) => setEmployeeId(value || '')}
+                                placeholder="Choose an employee..."
+                                disabled={isEdit}
+                                initialEmployee={initialEmployee}
+                            />
+                        </div>
                         <div>
                             <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Date <span className="text-red-400">*</span></label>
                             <input
