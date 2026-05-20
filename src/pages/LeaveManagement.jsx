@@ -410,7 +410,7 @@ const LeaveManagement = () => {
                 employee_id: Number(createForm.employee_id),
                 leave_config_id: String(createForm.leave_config_id),
                 start_date: createForm.start_date,
-                end_date: createForm.is_half_day ? createForm.start_date : createForm.end_date,
+                end_date: createForm.end_date,
                 is_half_day: createForm.is_half_day ? 1 : 0,
                 attachments: createForm.attachments.map((file) => file.url),
                 remarks: createForm.remarks,
@@ -467,7 +467,7 @@ const LeaveManagement = () => {
 
             if (hasDateChange || approveForm.is_half_day) {
                 payload.start_date = approveForm.start_date;
-                payload.end_date = approveForm.is_half_day ? approveForm.start_date : approveForm.end_date;
+                payload.end_date = approveForm.end_date;
             }
 
             if (approveForm.is_half_day) {
@@ -703,7 +703,7 @@ const LeaveManagement = () => {
     );
 
     const createRequestedDays = useMemo(
-        () => getRequestedDays(createForm.start_date, createForm.is_half_day ? createForm.start_date : createForm.end_date, createForm.is_half_day),
+        () => getRequestedDays(createForm.start_date, createForm.end_date, createForm.is_half_day),
         [createForm.start_date, createForm.end_date, createForm.is_half_day]
     );
 
@@ -729,7 +729,7 @@ const LeaveManagement = () => {
     }, [approveLeave, approveLeaveOptions]);
 
     const approveRequestedDays = useMemo(
-        () => getRequestedDays(approveForm.start_date, approveForm.is_half_day ? approveForm.start_date : approveForm.end_date, approveForm.is_half_day),
+        () => getRequestedDays(approveForm.start_date, approveForm.end_date, approveForm.is_half_day),
         [approveForm.start_date, approveForm.end_date, approveForm.is_half_day]
     );
 
@@ -1172,7 +1172,7 @@ const LeaveManagement = () => {
                                         }}
                                         onChange={(result) => {
                                             const nextStart = result?.date || result?.from_date || '';
-                                            const nextEnd = createForm.is_half_day ? nextStart : (result?.date || result?.to_date || nextStart);
+                                            const nextEnd = result?.date || result?.to_date || nextStart;
                                             setCreateForm((prev) => ({
                                                 ...prev,
                                                 start_date: nextStart,
@@ -1206,7 +1206,6 @@ const LeaveManagement = () => {
                                                     setCreateForm((prev) => ({
                                                         ...prev,
                                                         is_half_day: checked,
-                                                        end_date: checked ? prev.start_date : prev.end_date,
                                                         half_day_type: checked ? (prev.half_day_type || 'first_half') : 'first_half',
                                                     }));
                                                 }}
@@ -1439,13 +1438,13 @@ const LeaveManagement = () => {
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Leave Date Range</label>
                                 <AdvancedDateFilter
                                     value={{
-                                        date: (approveForm.start_date && approveForm.start_date === (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date)) ? approveForm.start_date : "",
-                                        from_date: (approveForm.start_date && approveForm.start_date !== (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date)) ? approveForm.start_date : "",
-                                        to_date: (approveForm.end_date && approveForm.start_date !== (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date)) ? (approveForm.is_half_day ? approveForm.start_date : approveForm.end_date) : "",
+                                        date: (approveForm.start_date && approveForm.start_date === approveForm.end_date) ? approveForm.start_date : "",
+                                        from_date: (approveForm.start_date && approveForm.start_date !== approveForm.end_date) ? approveForm.start_date : "",
+                                        to_date: (approveForm.end_date && approveForm.start_date !== approveForm.end_date) ? approveForm.end_date : "",
                                     }}
                                     onChange={(result) => {
                                         const nextStart = result?.date || result?.from_date || '';
-                                        const nextEnd = approveForm.is_half_day ? nextStart : (result?.date || result?.to_date || nextStart);
+                                        const nextEnd = result?.date || result?.to_date || nextStart;
 
                                         setApproveForm((prev) => ({
                                             ...prev,
@@ -1476,7 +1475,6 @@ const LeaveManagement = () => {
                                             setApproveForm((prev) => ({
                                                 ...prev,
                                                 is_half_day: checked,
-                                                end_date: checked ? prev.start_date : prev.end_date,
                                                 half_day_type: prev.half_day_type || 'first_half',
                                             }));
                                         }}
