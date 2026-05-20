@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import apiCall, { uploadFile } from "../../utils/api";
+import { useAuth } from "../../context/AuthContext";
 import { getPreciseLocation } from "../../utils/geolocation";
+
 import {
   FaBuilding, FaTimes, FaCheck, FaSpinner,
   FaMapMarkerAlt, FaGlobe, FaCity, FaRoad,
