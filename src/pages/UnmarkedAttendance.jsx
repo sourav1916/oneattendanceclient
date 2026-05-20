@@ -68,7 +68,6 @@ const listDayStatusOptions = [
 ];
 
 const bulkModeOptions = [
-  { value: 'all',      label: 'All Approve' },
   { value: 'actual',   label: 'Verify Actual' },
   { value: 'present',  label: 'Mark Present' },
   { value: 'half_day', label: 'Mark Half Day' },
@@ -77,7 +76,6 @@ const bulkModeOptions = [
 ];
 
 const bulkModeDefaultNotes = {
-  all:      'Bulk approved selected attendance',
   actual:   'Bulk approved based on actual mode',
   present:  'Manual override: Employee forgot ID card',
   half_day: 'Manual override: Employee forgot ID card',
@@ -340,7 +338,7 @@ const EmployeeAvatar = ({ employee }) => (
 
 // ─── Employee Row Card ────────────────────────────────────────────────────────
 
-const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, onSelect, isSelectionMode = false }) => {
+const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, onSelect, isSelectionMode }) => {
   const activeStatus = normalizeStatusForAction(employee.day_status);
   const statusButtonVariant = (s) => (activeStatus === s ? 'solid' : 'soft');
   const eligibility            = getFlagEligibility(employee);
@@ -361,19 +359,17 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
     >
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
         <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px]">
-          {/* Per-card selection toggle — only in bulk mode */}
-          {isSelectionMode && (
-            <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
-              <ToggleSwitch
-                isOn={selected}
-                onToggle={() => onSelect?.(employee.employee_id)}
-                size="sm"
-              />
-              <span className={`text-[9px] font-bold uppercase tracking-wider ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
-                {selected ? 'On' : 'Off'}
-              </span>
-            </div>
-          )}
+          {/* Per-card selection toggle */}
+          <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
+            <ToggleSwitch
+              isOn={selected}
+              onToggle={() => onSelect?.(employee.employee_id)}
+              size="sm"
+            />
+            <span className={`text-[9px] font-bold uppercase tracking-wider ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
+              {selected ? 'On' : 'Off'}
+            </span>
+          </div>
 
           <EmployeeAvatar employee={employee} />
 
@@ -840,11 +836,10 @@ export default function UnmarkedAttendance() {
   const [employeeId,          setEmployeeId]          = useState('');
   const [dateFilter,          setDateFilter]          = useState({ date: getToday(), month: '', year: '', from_date: '', to_date: '' });
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
-  const [isSelectionMode,     setIsSelectionMode]     = useState(false);
   const [showBulkModal,       setShowBulkModal]       = useState(false);
   /** 'selected' | 'all' — determines what employee_ids to send */
   const [bulkScope,           setBulkScope]           = useState('selected');
-  const [bulkMode,            setBulkMode]            = useState('all');
+  const [bulkMode,            setBulkMode]            = useState('actual');
   const [bulkHalfDayType,     setBulkHalfDayType]     = useState('first_half');
   const [bulkLeaveType,       setBulkLeaveType]       = useState('paid');
   const [bulkLeaveTypeValue,  setBulkLeaveTypeValue]  = useState('CL');
@@ -936,10 +931,6 @@ export default function UnmarkedAttendance() {
   const toggleSelectedEmployee = (empId) =>
     setSelectedEmployeeIds((cur) => cur.includes(empId) ? cur.filter((id) => id !== empId) : [...cur, empId]);
 
-  const toggleSelectionMode = () => {
-    setIsSelectionMode((cur) => { if (cur) setSelectedEmployeeIds([]); return !cur; });
-  };
-
   const toggleSelectAllVisible = () => {
     setSelectedEmployeeIds((cur) => {
       if (allVisibleSelected) {
@@ -1002,7 +993,6 @@ export default function UnmarkedAttendance() {
       if (!response.ok || result.success === false) throw new Error(result.message || 'Bulk approval failed');
       toast.success(result.message || 'Attendance approved successfully');
       setSelectedEmployeeIds([]);
-      setIsSelectionMode(false);
       setShowBulkModal(false);
       loadData(true);
     } catch (error) {
@@ -1156,29 +1146,20 @@ export default function UnmarkedAttendance() {
           <div className="space-y-3 rounded-xl bg-white px-4 shadow-xl">
 
             {/* ── TOP BULK CONTROL BAR ───────────────────────────────────────
-                Left:  "Select all" button (only when selection mode is ON)
-                Right: Bulk mode toggle switch
+                Left:  "Select all" button
             ──────────────────────────────────────────────────────────────── */}
             <div className="flex w-full items-center justify-between pt-4">
               <div className="flex items-center gap-3">
-                {isSelectionMode && (
-                  <button
-                    type="button"
-                    onClick={toggleSelectAllVisible}
-                    className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                  >
-                    {allVisibleSelected
-                      ? <><FaCheckSquare size={13} /> Deselect all</>
-                      : <><FaCheck size={13} /> Select all</>
-                    }
-                  </button>
-                )}
-              </div>
-
-              {/* Bulk toggle — always on the right */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Bulk</span>
-                <ToggleSwitch isOn={isSelectionMode} onToggle={toggleSelectionMode} />
+                <button
+                  type="button"
+                  onClick={toggleSelectAllVisible}
+                  className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
+                >
+                  {allVisibleSelected
+                    ? <><FaCheckSquare size={13} /> Deselect all</>
+                    : <><FaCheck size={13} /> Select all</>
+                  }
+                </button>
               </div>
             </div>
 
@@ -1191,7 +1172,6 @@ export default function UnmarkedAttendance() {
                 onToggleFlag={handleToggleFlag}
                 selected={selectedEmployeeIds.includes(employee.employee_id)}
                 onSelect={toggleSelectedEmployee}
-                isSelectionMode={isSelectionMode}
               />
             ))}
             <div className="pb-2" />
@@ -1233,7 +1213,7 @@ export default function UnmarkedAttendance() {
               {/* Close */}
               <button
                 type="button"
-                onClick={() => { setSelectedEmployeeIds([]); setIsSelectionMode(false); }}
+                onClick={() => setSelectedEmployeeIds([])}
                 className="px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:text-gray-700"
               >
                 Close
@@ -1243,8 +1223,13 @@ export default function UnmarkedAttendance() {
               <button
                 type="button"
                 onClick={openBulkModalForAll}
-                className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
-                title="Apply to all employees across all pages"
+                disabled={!allVisibleSelected}
+                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${
+                  allVisibleSelected
+                    ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                    : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                }`}
+                title={allVisibleSelected ? "Apply to all employees across all pages" : "Select all visible employees to enable"}
               >
                 <FaLayerGroup size={13} />
                 All
