@@ -73,6 +73,7 @@ function CollapsibleSection({ title, icon, children, defaultOpen = false, badge 
 }
 
 function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreated }) {
+  const { refreshUser, selectCompany } = useAuth();
   const [companyForm, setCompanyForm] = useState(INITIAL_FORM(userId));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -219,10 +220,16 @@ function CreateCompanyModal({ isOpen, onClose, onSuccess, userId, onCompanyCreat
       const res = await apiCall('/company/create', 'POST', payload);
       const result = await res.json();
       if (!result.success) { toast.error(result.message || "Failed to create company"); return; }
-      localStorage.setItem("company", JSON.stringify(result.data));
+      const createdCompany = result.data?.company || result.company || result.data;
+      if (createdCompany?.id) {
+        selectCompany?.(createdCompany);
+      } else {
+        localStorage.removeItem("company");
+      }
+      await refreshUser?.();
       if (onCompanyCreated) await onCompanyCreated();
       toast.success(result.message || "Company created successfully 🎉");
-      onSuccess?.(result.data);
+      onSuccess?.(createdCompany);
       handleClose();
     } catch (error) {
       toast.error("Network error. Please check your internet connection.");
