@@ -180,7 +180,7 @@ const getInitials = (name = '') =>
 
 const mapEmployee = (employee) => {
   const attendance = employee.attendances?.[0] || employee.attendance || employee;
-  const calculations = attendance.calculations || {};
+  const calculations = employee.calculations || attendance.calculations || {};
   const sourceEmployee = employee.employee || {};
 
   return {
@@ -211,7 +211,7 @@ const mapEmployee = (employee) => {
     punch_out_time: attendance.punch_out?.time || attendance.end_time || '',
     punch_out_method: attendance.punch_out?.method || '',
     worked_minutes: calculations.worked_minutes || 0,
-    break_minutes: calculations.break_minutes || 0,
+    break_minutes: calculations.break_minutes || calculations.total_break_time || 0,
     extra_break_minutes: calculations.extra_break_minutes || 0,
     late_minutes: calculations.late_minutes || 0,
     early_leave_minutes: calculations.early_leave_minutes || 0,
