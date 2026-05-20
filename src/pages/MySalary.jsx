@@ -392,7 +392,7 @@ const MyPayroll = () => {
                         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-blue-500 mb-2">
                             Payroll Overview
                         </p>
-                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                        <h1 className="mt-1 text-lg font-bold text-slate-900 md:text-xl">
                             My Payroll
                         </h1>
                         <p className="text-sm text-slate-500 mt-1">
