@@ -42,6 +42,44 @@ const toDateInputValue = (value) => {
     return date.toISOString().slice(0, 10);
 };
 
+const toNumber = (value) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+};
+
+const normalizeKey = (value) =>
+    String(value ?? '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '');
+
+const getRequestedDays = (startDate, endDate, isHalfDay) => {
+    if (!startDate || !endDate) return 0;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
+
+    if (isHalfDay) return 0.5;
+
+    return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+};
+
+const normalizeEmployeeLeaveBalances = (employee) => {
+    const balances = employee?.leave_balances || employee?.leaves || [];
+    if (!Array.isArray(balances)) return [];
+
+    return balances.map((leave) => ({
+        leave_config_id: leave.leave_config_id || leave.leave_config?.id || leave.id,
+        code: leave.leave_code || leave.code || leave.type || leave.leave_config?.code || '',
+        name: leave.leave_name || leave.name || leave.leave_config?.name || 'Leave',
+        is_paid: leave.is_paid ?? leave.leave_config?.is_paid ?? true,
+        allow_half_day: leave.allow_half_day ?? leave.leave_config?.allow_half_day ?? false,
+        total_allocated: toNumber(leave.total_allocated ?? leave.total ?? leave.allocated),
+        used: toNumber(leave.used),
+        remaining: toNumber(leave.remaining ?? ((leave.total_allocated ?? leave.total ?? 0) - (leave.used ?? 0))),
+    }));
+};
+
 const ALLOWED_ATTACHMENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const ALLOWED_ATTACHMENT_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
 
@@ -155,6 +193,7 @@ const LeaveManagement = () => {
     const [bulkRejectRemarks, setBulkRejectRemarks] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createForm, setCreateForm] = useState(getEmptyCreateForm);
+    const [createEmployee, setCreateEmployee] = useState(null);
     const [leaveConfigs, setLeaveConfigs] = useState([]);
     const [leaveConfigsLoading, setLeaveConfigsLoading] = useState(false);
     const [createUploading, setCreateUploading] = useState(false);
@@ -165,6 +204,8 @@ const LeaveManagement = () => {
     const [detailLeave, setDetailLeave] = useState(null);
     const [approveLeave, setApproveLeave] = useState(null);
     const [rejectLeave, setRejectLeave] = useState(null);
+    const [approveEmployee, setApproveEmployee] = useState(null);
+    const [approveEmployeeLoading, setApproveEmployeeLoading] = useState(false);
 
     const [approveRemarks, setApproveRemarks] = useState('');
     const [approveForm, setApproveForm] = useState({
@@ -252,12 +293,13 @@ const LeaveManagement = () => {
     }, []);
 
     useEffect(() => {
-        if (showCreateModal) fetchLeaveConfigs();
-    }, [showCreateModal, fetchLeaveConfigs]);
+        if (showCreateModal || approveLeave) fetchLeaveConfigs();
+    }, [showCreateModal, approveLeave, fetchLeaveConfigs]);
 
     const closeCreateModal = () => {
         setShowCreateModal(false);
         setCreateForm(getEmptyCreateForm());
+        setCreateEmployee(null);
     };
 
     const handleCreateAttachmentChange = async (event) => {
@@ -296,11 +338,67 @@ const LeaveManagement = () => {
         }
     };
 
+    useEffect(() => {
+        if (!approveLeave) {
+            setApproveEmployee(null);
+            setApproveEmployeeLoading(false);
+            return;
+        }
+
+        if (approveLeave.leave_balances || approveLeave.leaves) {
+            setApproveEmployee(approveLeave);
+            return;
+        }
+
+        let cancelled = false;
+        const loadEmployeeForApproval = async () => {
+            setApproveEmployeeLoading(true);
+            try {
+                const companyId = JSON.parse(localStorage.getItem('company'))?.id;
+                const params = new URLSearchParams({
+                    page: '1',
+                    limit: '20',
+                });
+                const searchValue = approveLeave.employee_code || approveLeave.employee_name || '';
+                if (searchValue) params.append('search', searchValue);
+
+                const response = await apiCall(`/employees/list?${params.toString()}`, 'GET', null, companyId);
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Failed to load employee balance');
+
+                const employees = result.data || [];
+                const match = employees.find((employee) => {
+                    if (approveLeave.employee_id && String(employee.id) === String(approveLeave.employee_id)) return true;
+                    if (approveLeave.employee_code && String(employee.employee_code) === String(approveLeave.employee_code)) return true;
+                    return normalizeKey(employee.name) === normalizeKey(approveLeave.employee_name);
+                }) || employees[0] || null;
+
+                if (!cancelled) setApproveEmployee(match);
+            } catch (error) {
+                if (!cancelled) {
+                    setApproveEmployee(null);
+                    toast.error(error.message || 'Failed to load employee balance');
+                }
+            } finally {
+                if (!cancelled) setApproveEmployeeLoading(false);
+            }
+        };
+
+        loadEmployeeForApproval();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [approveLeave]);
+
     const submitCreateLeave = async () => {
         if (!createForm.employee_id) return toast.warn('Employee is required');
         if (!createForm.leave_config_id) return toast.warn('Leave type is required');
         if (!createForm.start_date || !createForm.end_date) return toast.warn('Leave date range is required');
         if (createForm.end_date < createForm.start_date) return toast.warn('End date cannot be before start date');
+        if (createOverBalance) {
+            return toast.warn(`Selected ${formatDays(createRequestedDays)} day(s), but ${selectedCreateLeaveConfig.name} has only ${formatDays(selectedCreateLeaveConfig.remaining)} day(s) remaining.`);
+        }
 
         setSubmitting(true);
         try {
@@ -347,6 +445,11 @@ const LeaveManagement = () => {
 
         if (approveForm.start_date && approveForm.end_date && approveForm.end_date < approveForm.start_date) {
             toast.warn('End date cannot be before start date');
+            return;
+        }
+
+        if (approveOverBalance) {
+            toast.warn(`Selected ${formatDays(approveRequestedDays)} day(s), but ${selectedApproveLeaveConfig.name} has only ${formatDays(selectedApproveLeaveConfig.remaining)} day(s) remaining.`);
             return;
         }
 
@@ -550,18 +653,82 @@ const LeaveManagement = () => {
         });
     }, [leaves, typeFilter]);
 
-    const leaveConfigOptions = useMemo(
-        () => leaveConfigs.map((config) => ({
-            value: String(config.id),
-            label: `${config.name || config.leave_name || 'Leave'}${config.code ? ` (${config.code})` : ''}${config.is_paid === false ? ' (Unpaid)' : ''}`,
-        })),
-        [leaveConfigs]
+    const leaveConfigsById = useMemo(() => {
+        const map = new Map();
+        leaveConfigs.forEach((config) => {
+            map.set(String(config.id), config);
+        });
+        return map;
+    }, [leaveConfigs]);
+
+    const buildEmployeeLeaveOptions = useCallback((employee) => {
+        return normalizeEmployeeLeaveBalances(employee).map((balance) => {
+            const config = leaveConfigsById.get(String(balance.leave_config_id));
+            const configName = config?.name || config?.leave_name;
+            const configCode = config?.code || config?.leave_code;
+            const name = configName || balance.name;
+            const code = configCode || balance.code;
+            const isPaid = config?.is_paid ?? balance.is_paid;
+            const allowHalfDay = config?.allow_half_day ?? balance.allow_half_day;
+            const remaining = toNumber(balance.remaining);
+
+            return {
+                value: String(balance.leave_config_id),
+                label: `${name}${code ? ` (${code})` : ''} - ${formatDays(remaining)} left${isPaid === false ? ' (Unpaid)' : ''}`,
+                name,
+                code,
+                remaining,
+                total_allocated: toNumber(balance.total_allocated),
+                used: toNumber(balance.used),
+                is_paid: isPaid,
+                allow_half_day: allowHalfDay,
+                isDisabled: !balance.leave_config_id,
+            };
+        });
+    }, [leaveConfigsById]);
+
+    const createLeaveOptions = useMemo(
+        () => buildEmployeeLeaveOptions(createEmployee),
+        [buildEmployeeLeaveOptions, createEmployee]
     );
 
     const selectedCreateLeaveConfig = useMemo(
-        () => leaveConfigOptions.find((option) => String(option.value) === String(createForm.leave_config_id)) || null,
-        [leaveConfigOptions, createForm.leave_config_id]
+        () => createLeaveOptions.find((option) => String(option.value) === String(createForm.leave_config_id)) || null,
+        [createLeaveOptions, createForm.leave_config_id]
     );
+
+    const createRequestedDays = useMemo(
+        () => getRequestedDays(createForm.start_date, createForm.is_half_day ? createForm.start_date : createForm.end_date, createForm.is_half_day),
+        [createForm.start_date, createForm.end_date, createForm.is_half_day]
+    );
+
+    const createOverBalance = Boolean(selectedCreateLeaveConfig && createRequestedDays > selectedCreateLeaveConfig.remaining);
+
+    const approveLeaveOptions = useMemo(
+        () => buildEmployeeLeaveOptions(approveEmployee),
+        [buildEmployeeLeaveOptions, approveEmployee]
+    );
+
+    const selectedApproveLeaveConfig = useMemo(() => {
+        if (!approveLeave) return null;
+        const requestedId = approveLeave.leave_config_id || approveLeave.leave_type_id;
+        const byId = requestedId
+            ? approveLeaveOptions.find((option) => String(option.value) === String(requestedId))
+            : null;
+        if (byId) return byId;
+
+        const leaveKey = normalizeKey(approveLeave.leave_code || approveLeave.leave_name || approveLeave.leave_type);
+        return approveLeaveOptions.find((option) =>
+            [option.code, option.name].some((value) => normalizeKey(value) === leaveKey)
+        ) || null;
+    }, [approveLeave, approveLeaveOptions]);
+
+    const approveRequestedDays = useMemo(
+        () => getRequestedDays(approveForm.start_date, approveForm.is_half_day ? approveForm.start_date : approveForm.end_date, approveForm.is_half_day),
+        [approveForm.start_date, approveForm.end_date, approveForm.is_half_day]
+    );
+
+    const approveOverBalance = Boolean(selectedApproveLeaveConfig && approveRequestedDays > selectedApproveLeaveConfig.remaining);
 
     const columns = [
         {
@@ -868,7 +1035,7 @@ const LeaveManagement = () => {
                                 <button
                                     type="button"
                                     onClick={submitCreateLeave}
-                                    disabled={submitting || createUploading}
+                                    disabled={submitting || createUploading || createOverBalance}
                                     className="flex px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {submitting ? <FaSpinner className="animate-spin" /> : <FaPlus />}
@@ -885,7 +1052,14 @@ const LeaveManagement = () => {
                                     </label>
                                     <EmployeeSelect
                                         value={createForm.employee_id}
-                                        onChange={(employeeId) => setCreateForm((prev) => ({ ...prev, employee_id: employeeId }))}
+                                        onChange={(employeeId, employee) => {
+                                            setCreateEmployee(employee);
+                                            setCreateForm((prev) => ({
+                                                ...prev,
+                                                employee_id: employeeId,
+                                                leave_config_id: '',
+                                            }));
+                                        }}
                                         placeholder="Select employee..."
                                     />
                                 </div>
@@ -894,15 +1068,55 @@ const LeaveManagement = () => {
                                         Leave Type <span className="text-rose-500">*</span>
                                     </label>
                                     <SelectField
-                                        options={leaveConfigOptions}
+                                        options={createLeaveOptions}
                                         value={selectedCreateLeaveConfig}
                                         onChange={(option) => setCreateForm((prev) => ({ ...prev, leave_config_id: option ? option.value : '' }))}
-                                        placeholder={leaveConfigsLoading ? 'Loading leave types...' : 'Choose leave type...'}
+                                        placeholder={
+                                            !createEmployee
+                                                ? 'Select employee first'
+                                                : leaveConfigsLoading
+                                                    ? 'Loading leave types...'
+                                                    : createLeaveOptions.length
+                                                        ? 'Choose leave type...'
+                                                        : 'No assigned leave balance'
+                                        }
                                         isLoading={leaveConfigsLoading}
+                                        isDisabled={!createEmployee || leaveConfigsLoading || createLeaveOptions.length === 0}
                                         isClearable
                                     />
                                 </div>
                             </div>
+
+                            {createEmployee && (
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                    <div className="mb-2 flex items-center justify-between gap-3">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Available Leaves</p>
+                                        {selectedCreateLeaveConfig && (
+                                            <p className={`text-[11px] font-bold ${createOverBalance ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                Selected {formatDays(createRequestedDays)} / {formatDays(selectedCreateLeaveConfig.remaining)} day(s)
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {createLeaveOptions.length > 0 ? createLeaveOptions.map((option) => (
+                                            <span
+                                                key={option.value}
+                                                className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-bold ${String(option.value) === String(createForm.leave_config_id)
+                                                    ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                                    : 'border-slate-200 bg-white text-slate-600'
+                                                    }`}
+                                            >
+                                                {option.code || option.name}
+                                                <span className={option.remaining <= 0 ? 'text-rose-600' : 'text-emerald-600'}>
+                                                    {formatDays(option.remaining)} left
+                                                </span>
+                                            </span>
+                                        )) : (
+                                            <span className="text-xs font-medium text-slate-400">No leave balances are assigned to this employee.</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                                 <div className="md:col-span-2">
@@ -928,6 +1142,13 @@ const LeaveManagement = () => {
                                         placeholder="Select leave date range"
                                         buttonClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm shadow-sm transition hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/10 font-medium"
                                     />
+                                    {selectedCreateLeaveConfig && (
+                                        <p className={`mt-2 text-[11px] font-semibold ${createOverBalance ? 'text-rose-600' : 'text-slate-500'}`}>
+                                            {createOverBalance
+                                                ? `Selected range is ${formatDays(createRequestedDays)} day(s), which exceeds the ${formatDays(selectedCreateLeaveConfig.remaining)} day(s) remaining.`
+                                                : `Selected range uses ${formatDays(createRequestedDays)} of ${formatDays(selectedCreateLeaveConfig.remaining)} available day(s).`}
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -1099,6 +1320,7 @@ const LeaveManagement = () => {
                         isOpen={!!approveLeave}
                         onClose={() => {
                             setApproveLeave(null);
+                            setApproveEmployee(null);
                             setApproveRemarks('');
                             setApproveForm({
                                 start_date: '',
@@ -1117,6 +1339,7 @@ const LeaveManagement = () => {
                                     type="button"
                                     onClick={() => {
                                         setApproveLeave(null);
+                                        setApproveEmployee(null);
                                         setApproveRemarks('');
                                         setApproveForm({
                                             start_date: '',
@@ -1132,7 +1355,7 @@ const LeaveManagement = () => {
                                 <button
                                     type="button"
                                     onClick={submitApprove}
-                                    disabled={submitting}
+                                    disabled={submitting || approveOverBalance || approveEmployeeLoading}
                                     className="flex px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-medium hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {submitting ? <FaSpinner className="animate-spin" /> : <FaCheck />}
@@ -1143,6 +1366,32 @@ const LeaveManagement = () => {
                     >
                         <div className="space-y-4">
                             <p className="text-gray-600 text-sm leading-relaxed">Approve this leave request for <span className="font-bold text-gray-800">{approveLeave.employee_name}</span>. You can adjust the date range or convert it to a half-day before approving.</p>
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                <div className="mb-2 flex items-center justify-between gap-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Available Balance</p>
+                                    {approveEmployeeLoading && <FaSpinner className="animate-spin text-slate-400" />}
+                                </div>
+                                {selectedApproveLeaveConfig ? (
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800">{selectedApproveLeaveConfig.name}</p>
+                                            <p className="text-[11px] font-medium text-slate-500">
+                                                {selectedApproveLeaveConfig.code || 'Leave'} · {formatDays(selectedApproveLeaveConfig.used)} used of {formatDays(selectedApproveLeaveConfig.total_allocated)}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`text-lg font-black ${approveOverBalance ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                {formatDays(selectedApproveLeaveConfig.remaining)}
+                                            </p>
+                                            <p className="text-[10px] font-bold uppercase text-slate-400">left</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs font-medium text-slate-400">
+                                        {approveEmployeeLoading ? 'Loading employee leave balance...' : 'Balance was not found for this leave type.'}
+                                    </p>
+                                )}
+                            </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Leave Date Range</label>
                                 <AdvancedDateFilter
@@ -1165,6 +1414,13 @@ const LeaveManagement = () => {
                                     placeholder="Select leave date range"
                                     buttonClassName="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
                                 />
+                                {selectedApproveLeaveConfig && (
+                                    <p className={`mt-2 text-[11px] font-semibold ${approveOverBalance ? 'text-rose-600' : 'text-slate-500'}`}>
+                                        {approveOverBalance
+                                            ? `Selected range is ${formatDays(approveRequestedDays)} day(s), which exceeds the ${formatDays(selectedApproveLeaveConfig.remaining)} day(s) remaining.`
+                                            : `Selected range uses ${formatDays(approveRequestedDays)} of ${formatDays(selectedApproveLeaveConfig.remaining)} available day(s).`}
+                                    </p>
+                                )}
                             </div>
                             <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                                 <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
