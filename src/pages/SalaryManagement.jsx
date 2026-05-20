@@ -84,6 +84,10 @@ const getStatusBadge = (effectiveTo) => {
     return { icon: FaTimesCircle, text: "Expired", className: "bg-gray-100 text-gray-800 border border-gray-200" };
 };
 
+const isSalaryExpired = (salary) => {
+    return !!salary?.effective_to && new Date(salary.effective_to) <= new Date();
+};
+
 const getVisibleSalaryColumns = (width) => ({
     showEmployee: true,
     showBaseAmount: width >= 420,
@@ -342,7 +346,6 @@ const SalaryDetailModal = ({ salary, onClose }) => {
 const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
-    const [currencies, setCurrencies] = useState([]);
     const [submitting, setSubmitting] = useState(false);
     const [showOverrideForm, setShowOverrideForm] = useState(false);
 
@@ -371,7 +374,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 }))
             });
             loadComponents();
-            loadCurrencies();
             loadSalaryPackages();
         }
     }, [isOpen, salary]);
@@ -403,14 +405,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) setAvailableComponents(result.data || []);
-        } catch (e) { console.error(e); }
-    };
-
-    const loadCurrencies = async () => {
-        try {
-            const response = await apiCall('/constants/?type=currency', 'GET');
-            const result = await response.json();
-            if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
         } catch (e) { console.error(e); }
     };
 
@@ -498,17 +492,12 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
-                        <div className="flex gap-2">
-                            <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
-                                {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
-                            </select>
-                            <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                onChange={e => {
-                                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                                    if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
-                        </div>
+                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                            onChange={e => {
+                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                            }}
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
                     </div>
                 </div>
 
@@ -618,7 +607,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
-    const [currencies, setCurrencies] = useState([]);
     const [submitting, setSubmitting] = useState(false);
     const [showOverrideForm, setShowOverrideForm] = useState(false);
 
@@ -643,7 +631,6 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                 }))
             });
             loadComponents();
-            loadCurrencies();
             loadSalaryPackages();
         }
     }, [isOpen, salary]);
@@ -675,14 +662,6 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
             const result = await response.json();
             if (result.success) setAvailableComponents(result.data || []);
-        } catch (e) { console.error(e); }
-    };
-
-    const loadCurrencies = async () => {
-        try {
-            const response = await apiCall('/constants/?type=currency', 'GET');
-            const result = await response.json();
-            if (result.success && result.data?.currency_types) setCurrencies(result.data.currency_types);
         } catch (e) { console.error(e); }
     };
 
@@ -759,17 +738,12 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Base Amount *</label>
-                        <div className="flex gap-2">
-                            <select value={formData.currency} onChange={e => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold">
-                                {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
-                            </select>
-                            <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                onChange={e => {
-                                    const val = e.target.value.replace(/[^0-9.]/g, '');
-                                    if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
-                        </div>
+                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                            onChange={e => {
+                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                            }}
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
                     </div>
                 </div>
 
@@ -880,7 +854,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [employees, setEmployees] = useState([]);
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
-    const [currencies, setCurrencies] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingPackages, setLoadingPackages] = useState(false);
     const [submitting, setSubmitting] = useState(false);
@@ -910,7 +883,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     );
 
     useEffect(() => {
-        if (isOpen) { loadEmployeesWithoutSalary(); loadSalaryPackages(); loadSalaryComponents(); loadCurrencies(); }
+        if (isOpen) { loadEmployeesWithoutSalary(); loadSalaryPackages(); loadSalaryComponents(); }
     }, [isOpen]);
 
     // Handle package change and fill components (Quick Fill)
@@ -949,8 +922,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
         } catch (error) { console.error('Failed to load packages:', error); } finally { setLoadingPackages(false); }
     };
     const loadSalaryComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (error) { console.error('Failed to load salary components:', error); } };
-    const loadCurrencies = async () => { try { const response = await apiCall('/constants/?type=currency', 'GET'); const result = await response.json(); if (result.success && result.data?.currency_types) { setCurrencies(result.data.currency_types); const keys = result.data.currency_types.map(c => c.key); setFormData(prev => ({ ...prev, currency: keys.includes(prev.currency) ? prev.currency : (keys[0] || 'USD') })); } } catch (error) { console.error('Failed to load currencies:', error); } };
-
     const filteredEmployees = employees.filter(emp => emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) || emp.employee_code?.toLowerCase().includes(searchTerm.toLowerCase()) || emp.email?.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const addOverride = () => {
@@ -1076,17 +1047,12 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 {/* Base Amount */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
-                                    <div className="flex gap-2">
-                                        <select value={formData.currency} onChange={(e) => setFormData({ ...formData, currency: e.target.value })} className="w-24 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold">
-                                            {currencies.length > 0 ? currencies.map(c => <option key={c.key} value={c.key}>{c.value.symbol} {c.key}</option>) : <option value="USD">$ USD</option>}
-                                        </select>
-                                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
-                                            onChange={e => {
-                                                const val = e.target.value.replace(/[^0-9.]/g, '');
-                                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
-                                            }}
-                                            className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold" />
-                                    </div>
+                                    <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/[^0-9.]/g, '');
+                                            if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                        }}
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold" />
                                 </div>
                             </div>
 
@@ -1319,11 +1285,13 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
 const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEdit, onRevise }) => {
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
+    const expired = isSalaryExpired(salary);
 
     const actions = [
         { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onClick(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-        { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => onEdit(salary), className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' },
-        { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => onRevise(salary), className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
+        expired
+            ? { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => onEdit(salary), className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' }
+            : { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => onRevise(salary), className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
         { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(salary), className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
     ];
 
@@ -1522,12 +1490,16 @@ const SalaryManagement = () => {
         currency: visibleSalaries[0]?.currency || salaries[0]?.currency || 'USD'
     };
 
-    const salaryTableActions = (salary) => ([
-        { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setSelectedSalary(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-        { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); }, className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' },
-        { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); }, className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
-        { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); }, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
-    ]);
+    const salaryTableActions = (salary) => {
+        const expired = isSalaryExpired(salary);
+        return [
+            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setSelectedSalary(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+            expired
+                ? { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); }, className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' }
+                : { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); }, className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
+            { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); }, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+        ];
+    };
 
     const salaryTableColumns = [
         visibleColumns.showEmployee && {
