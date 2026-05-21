@@ -354,7 +354,7 @@ export default function ProfilePage() {
             const payload = type === "email"
                 ? { email: value, otp: contactForm.otp.trim() }
                 : { phone: value, otp: contactForm.otp.trim() };
-            const response = await apiCall(endpoint, "POST", payload);
+            const response = await apiCall(endpoint, "PUT", payload);
             const result = await response.json();
 
             if (!response.ok || result.success === false) {
