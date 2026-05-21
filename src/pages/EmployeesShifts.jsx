@@ -479,11 +479,11 @@ const EmployeesShifts = () => {
                     {/* ─── Page Header ─── */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                         <div>
-                            <div className="flex items-center gap-2 text-blue-600 mb-1">
+                            <div className="inline-flex items-center gap-1 rounded-full border px-2  text-[9px] font-bold uppercase tracking-[0.14em] from-green-600 to-emerald-600 text-green-700 border-green-200">
                                 <FaClock size={14} className="animate-pulse-slow" />
                                 <span className="text-[11px] font-bold uppercase tracking-wider">Workforce Scheduling</span>
                             </div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">Employee Shifts</h1>
+                            <h1 className="mt-1 text-lg font-bold text-slate-900 md:text-xl">Employee Shifts</h1>
                             <p className="text-sm text-slate-500 mt-1">Monitor and manage employee work schedules, attendance rates, and monthly summaries.</p>
                         </div>
                         <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-100">

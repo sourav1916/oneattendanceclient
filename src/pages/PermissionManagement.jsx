@@ -744,7 +744,7 @@ const PermissionManagement = () => {
               <FaShieldAlt size={11} />
               Access control
             </div>
-            <h1 className="mt-3 text-2xl font-bold text-slate-900 md:text-3xl">
+            <h1 className="mt-1 text-lg font-bold text-slate-900 md:text-xl">
               Permission Management
             </h1>
             <p className="mt-2 text-sm text-slate-500 md:text-base">

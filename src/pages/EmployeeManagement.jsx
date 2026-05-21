@@ -1151,7 +1151,7 @@ const EmployeeManagement = () => {
                             Employee management
                         </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                            <h1 className="mt-1 text-lg font-bold text-slate-900 md:text-xl">
                                 Employee Management
                             </h1>
                             <p className="mt-1 max-w-2xl text-sm text-slate-500">

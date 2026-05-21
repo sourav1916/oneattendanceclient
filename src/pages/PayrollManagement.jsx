@@ -499,10 +499,10 @@ const PayrollManagement = () => {
                 className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm"
             >
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-green-500 mb-2">
+                    <p className="inline-flex items-center gap-1 rounded-full border px-2  text-[9px] font-bold uppercase tracking-[0.14em] from-green-600 to-emerald-600 text-green-700 border-green-200">
                         Payroll Overview
                     </p>
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                    <h1 className="mt-1 text-lg font-bold text-slate-900 md:text-xl">
                         Payroll Management
                     </h1>
                     <p className="text-sm text-slate-500 mt-1">
