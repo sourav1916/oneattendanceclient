@@ -228,7 +228,9 @@ export default function EmployeeSelect({ value, onChange, placeholder = "Select 
                                                     {emp.name}
                                                 </p>
                                                 <p className="text-[11px] text-gray-500 font-mono truncate">
-                                                    {emp.employee_code} &middot; <span className="uppercase text-[9px] font-sans tracking-wider">{emp.designation?.replace(/_/g, ' ')}</span>
+                                                    {emp.employee_code} &middot; <span className="uppercase text-[9px] font-sans tracking-wider">
+                                                        {typeof emp.designation === 'object' && emp.designation !== null ? emp.designation.label : (emp.designation?.replace(/_/g, ' ') || 'N/A')}
+                                                    </span>
                                                 </p>
                                             </div>
                                         </div>
