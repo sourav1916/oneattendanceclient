@@ -36,7 +36,7 @@ const backdropVariants = {
 };
 
 const formatDisplay = (str) =>
-  str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+  typeof str === 'object' && str !== null ? str.label || 'N/A' : (str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A");
 
 const getStatusBadge = (isActive) => {
   if (isActive) {

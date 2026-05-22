@@ -148,7 +148,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
     const s = employee.monthly_summary || {};
     const u = employee;
 
-    const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
+    const designationLabel = (v) => typeof v === 'object' && v !== null ? v.label || 'N/A' : v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
 
     const totalDays = (s.present_days || 0) + (s.absent_days || 0) + (s.leave_days || 0) + (s.holiday_days || 0) + (s.weekend_days || 0);
     const workDays = (s.present_days || 0) + (s.absent_days || 0);
@@ -263,7 +263,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 const EmployeeCard = ({ employee, index, onClick }) => {
     const s = employee.monthly_summary || {};
     const u = employee;
-    const designationLabel = (v) => v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
+    const designationLabel = (v) => typeof v === 'object' && v !== null ? v.label || 'N/A' : v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
 
     const totalDays = (s.present_days || 0) + (s.absent_days || 0) + (s.leave_days || 0) + (s.holiday_days || 0) + (s.weekend_days || 0);
     const workDays = (s.present_days || 0) + (s.absent_days || 0);
@@ -458,7 +458,7 @@ const EmployeesShifts = () => {
     };
 
     const designationLabel = (v) =>
-        v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
+        typeof v === 'object' && v !== null ? v.label || 'N/A' : v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
 
     // Responsive column visibility
     const showDesignation = windowWidth >= 1280;
