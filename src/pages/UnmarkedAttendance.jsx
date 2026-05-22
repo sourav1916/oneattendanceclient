@@ -349,7 +349,7 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-xl border p-3 shadow-md transition hover:shadow-lg ${
+      className={`relative rounded-xl border p-3 shadow-md transition hover:shadow-lg ${
         selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''
       } ${
         employee.is_verified
@@ -357,19 +357,20 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
           : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
       }`}
     >
+      {/* Per-card selection toggle */}
+      <div className="absolute left-3 top-3 z-10 flex shrink-0 flex-col items-center gap-1">
+        <ToggleSwitch
+          isOn={selected}
+          onToggle={() => onSelect?.(employee.employee_id)}
+          size="sm"
+        />
+        <span className={`text-[9px] font-bold uppercase tracking-wider ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
+          {selected ? 'On' : 'Off'}
+        </span>
+      </div>
+
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
-        <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px]">
-          {/* Per-card selection toggle */}
-          <div className="flex shrink-0 flex-col items-center gap-1 pt-1">
-            <ToggleSwitch
-              isOn={selected}
-              onToggle={() => onSelect?.(employee.employee_id)}
-              size="sm"
-            />
-            <span className={`text-[9px] font-bold uppercase tracking-wider ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
-              {selected ? 'On' : 'Off'}
-            </span>
-          </div>
+        <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px] pl-10 sm:pl-12">
 
           <EmployeeAvatar employee={employee} />
 
@@ -379,7 +380,7 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
               {employee.employee_code} | {employee.designation?.label || 'No designation'}
             </p>
 
-            <div className="mt-3 flex gap-x-8">
+            <div className="mt-3 flex flex-wrap gap-4 sm:gap-x-8">
               <FieldLabel label="Shift Start">{formatTime(employee.shift_start)}</FieldLabel>
               <FieldLabel label="Shift End">{formatTime(employee.shift_end)}</FieldLabel>
               <FieldLabel label="Punch In">
