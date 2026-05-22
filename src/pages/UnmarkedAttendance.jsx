@@ -192,7 +192,7 @@ const mapEmployee = (employee) => {
     email:               employee.email || src.email || src.user?.email || '',
     phone:               employee.phone || src.phone || src.user?.phone || '',
     employee_code:       employee.employee_code || src.employee_code || src.code || '',
-    designation:         formatTitle(employee.designation || src.designation),
+    designation:         (employee.designation || src.designation) && typeof (employee.designation || src.designation) === 'object' ? (employee.designation || src.designation) : { label: formatTitle(employee.designation || src.designation) },
     profile_picture:     employee.profile_picture || src.profile_picture || src.user?.profile_picture,
     shift_start:         employee.shift?.start_time || attendance.shift?.start_time || null,
     shift_end:           employee.shift?.end_time   || attendance.shift?.end_time   || null,
@@ -376,7 +376,7 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-bold text-slate-900">{employee.name}</p>
             <p className="truncate text-xs font-medium text-slate-500">
-              {employee.employee_code} | {employee.designation || 'No designation'}
+              {employee.employee_code} | {employee.designation?.label || 'No designation'}
             </p>
 
             <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
