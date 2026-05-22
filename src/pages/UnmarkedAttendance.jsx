@@ -599,8 +599,14 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
 
         {showTimeFields && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <TimePickerField label="Punch In"  value={punchIn}  onChange={setPunchIn}  initialValue={employee.shift_start || '09:00:00'} placeholder="Select punch in"  required />
-            <TimePickerField label="Punch Out" value={punchOut} onChange={setPunchOut} initialValue={employee.shift_end   || '18:00:00'} placeholder="Select punch out" required />
+            <TimePickerField
+              label={<span className="inline-flex items-center gap-2">Punch In {!employee?.punch_in_time && <span className="text-[8px] text-amber-600 bg-amber-50 border border-amber-200 px-1 rounded normal-case tracking-normal">System Taken</span>}</span>}
+              value={punchIn} onChange={setPunchIn} initialValue={employee.shift_start || '09:00:00'} placeholder="Select punch in" required
+            />
+            <TimePickerField
+              label={<span className="inline-flex items-center gap-2">Punch Out {!employee?.punch_out_time && <span className="text-[8px] text-amber-600 bg-amber-50 border border-amber-200 px-1 rounded normal-case tracking-normal">System Taken</span>}</span>}
+              value={punchOut} onChange={setPunchOut} initialValue={employee.shift_end || '18:00:00'} placeholder="Select punch out" required
+            />
           </div>
         )}
 
@@ -744,14 +750,22 @@ const BulkApprovalPanel = ({
       </div>
 
       {bulkMode === 'half_day' && (
-        <label className="block">
-          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Half Day Session</span>
-          <select value={bulkHalfDayType} onChange={(e) => setBulkHalfDayType(e.target.value)}
-            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
-            <option value="first_half">First Half</option>
-            <option value="second_half">Second Half</option>
-          </select>
-        </label>
+        <div className="md:col-span-2">
+          <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Half Day Session</span>
+          <div className="grid grid-cols-2 gap-3">
+            {[{ value: 'first_half', label: 'First Half' }, { value: 'second_half', label: 'Second Half' }].map((o) => (
+              <button
+                key={o.value} type="button"
+                onClick={() => setBulkHalfDayType(o.value)}
+                className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+                  bulkHalfDayType === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {bulkMode === 'leave' && (
