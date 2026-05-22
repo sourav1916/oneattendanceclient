@@ -10,8 +10,37 @@ import {
   FaEye, FaTrash, FaCrosshairs, FaChevronDown
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
+import SelectField from "../SelectField";
 
 const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
+
+const DEFAULT_CURRENCY_OPTIONS = [
+  { value: "inr", label: "Indian Rupee (₹)" },
+  { value: "usd", label: "US Dollar ($)" },
+  { value: "eur", label: "Euro (€)" },
+  { value: "jpy", label: "Japanese Yen (¥)" },
+];
+
+const normalizeCurrencyValue = (value) => {
+  if (value && typeof value === "object") {
+    return normalizeCurrencyValue(value.value || value.key);
+  }
+  return String(value || "inr").trim().toLowerCase() || "inr";
+};
+
+const normalizeCurrencyOptions = (items = []) => {
+  const options = items.map((item) => {
+    const value = item?.value || {};
+    const currencyValue = normalizeCurrencyValue(value.value || item?.key);
+    const symbol = value.symbol ? ` (${value.symbol})` : "";
+    return {
+      value: currencyValue,
+      label: `${value.label || item?.label || item?.key || currencyValue.toUpperCase()}${symbol}`,
+    };
+  }).filter((item) => item.value);
+
+  return options.length > 0 ? options : DEFAULT_CURRENCY_OPTIONS;
+};
 
 // Collapsible Section Component
 function CollapsibleSection({ title, icon, children, defaultOpen = false, badge = null }) {
@@ -68,10 +97,14 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
     postal_code: "",
     country: "India",
     latitude: "",
-    longitude: ""
+    longitude: "",
+    transaction_currency: "inr",
+    max_distance: ""
   });
 
   const [originalData, setOriginalData] = useState({});
+  const [currencyOptions, setCurrencyOptions] = useState(DEFAULT_CURRENCY_OPTIONS);
+  const [loadingCurrencies, setLoadingCurrencies] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -96,7 +129,9 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
         postal_code: company.postal_code || "",
         country: company.country || "India",
         latitude: company.latitude || "",
-        longitude: company.longitude || ""
+        longitude: company.longitude || "",
+        transaction_currency: normalizeCurrencyValue(company.transaction_currency),
+        max_distance: company.max_distance ?? ""
       };
       setFormData(data);
       setOriginalData(data);
@@ -107,6 +142,39 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }, [company, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let ignore = false;
+
+    const loadCurrencies = async () => {
+      setLoadingCurrencies(true);
+      try {
+        const response = await apiCall('/constants/?type=currency', 'GET');
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Failed to load currencies");
+        }
+        if (!ignore) {
+          setCurrencyOptions(normalizeCurrencyOptions(result.data?.currency_types || []));
+        }
+      } catch (error) {
+        if (!ignore) {
+          console.error("Failed to load currencies:", error);
+          setCurrencyOptions(DEFAULT_CURRENCY_OPTIONS);
+        }
+      } finally {
+        if (!ignore) setLoadingCurrencies(false);
+      }
+    };
+
+    loadCurrencies();
+
+    return () => {
+      ignore = true;
+    };
+  }, [isOpen]);
 
   // Cleanup object URL
   useEffect(() => {
@@ -150,6 +218,10 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
       setAddressMode('manual');
       setIsAddressAutoDetected(false);
     }
+  };
+
+  const handleCurrencyChange = (option) => {
+    setFormData(prev => ({ ...prev, transaction_currency: normalizeCurrencyValue(option?.value) }));
   };
 
   const handleAddressModeChange = async (mode) => {
@@ -224,7 +296,9 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
     Object.keys(formData).forEach(key => {
       if (key !== 'logo_url' && formData[key] !== originalData[key]) {
         if (formData[key] || originalData[key]) {
-          changedFields[key] = formData[key];
+          changedFields[key] = key === 'max_distance' && formData[key] !== ''
+            ? Number(formData[key])
+            : formData[key];
         }
       }
     });
@@ -382,6 +456,41 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
                 </div>
 
                 {/* ── Address Information (Collapsible) ── */}
+                <CollapsibleSection
+                  title="Company Settings"
+                  icon={<FaGlobe className="w-4 h-4" />}
+                  defaultOpen
+                  badge={formData.transaction_currency?.toUpperCase()}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-gray-700">Transaction Currency</label>
+                      <SelectField
+                        isLoading={loadingCurrencies}
+                        options={currencyOptions}
+                        value={currencyOptions.find((option) => option.value === formData.transaction_currency) || null}
+                        onChange={handleCurrencyChange}
+                        placeholder="Select currency"
+                        isSearchable
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-gray-700">Max Distance (In Metre)</label>
+                      <input
+                        name="max_distance"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        placeholder="e.g., 10"
+                        value={formData.max_distance}
+                        onChange={handleChange}
+                        className={inputClass}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleSection>
+
                 <CollapsibleSection
                   title="Address Information"
                   icon={<FaMapMarkerAlt className="w-4 h-4" />}

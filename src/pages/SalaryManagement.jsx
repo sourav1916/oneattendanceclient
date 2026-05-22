@@ -4,7 +4,7 @@ import {
     FaUserCircle, FaSpinner, FaBriefcase, FaCheckCircle,
     FaTimesCircle, FaSearch, FaTimes, FaChartBar,
     FaInfoCircle, FaEnvelope, FaPhone, FaIdCard, FaUserTag,
-    FaDollarSign, FaHandPaper, FaTag, FaEye,
+    FaHandPaper, FaTag, FaEye,
     FaTh, FaListUl, FaShieldAlt, FaPlus, FaEdit,
     FaTrash, FaHistory, FaMoneyBillWave, FaPercentage,
     FaCalculator, FaCalendarPlus, FaCalendarCheck,
@@ -23,6 +23,8 @@ import ModalScrollLock from '../components/ModalScrollLock';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { DatePickerField } from '../components/DatePicker';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import CurrencyIcon from '../components/common/CurrencyIcon';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -52,10 +54,21 @@ const avatarGradient = (id) => AVATAR_GRADIENTS[id % AVATAR_GRADIENTS.length];
 const getInitials = (name = '') =>
     name.trim().split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-const formatCurrency = (amount, currency = 'USD') => {
+const normalizeCurrencyCode = (currency, fallback = 'INR') => {
+    if (currency && typeof currency === 'object') {
+        return normalizeCurrencyCode(currency.value || currency.key, fallback);
+    }
+    const value = currency || fallback;
+    return String(value).trim().toUpperCase() || fallback;
+};
+
+const getSalaryCurrency = (salary, fallbackCurrency = 'INR') =>
+    normalizeCurrencyCode(salary?.currency, fallbackCurrency);
+
+const formatCurrency = (amount, currency = 'INR') => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currency,
+        currency: normalizeCurrencyCode(currency),
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);
@@ -222,11 +235,12 @@ const ComponentRow = ({ component, currency }) => {
 
 // ─── Salary Detail Modal ─────────────────────────────────────────────────────
 
-const SalaryDetailModal = ({ salary, onClose }) => {
+const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
     if (!salary) return null;
 
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
+    const displayCurrency = getSalaryCurrency(salary, companyCurrency);
 
     return (
         <Modal
@@ -258,19 +272,19 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Amount</p>
-                        <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, salary.currency)}</p>
+                        <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, displayCurrency)}</p>
                     </div>
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Salary</p>
-                        <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, salary.currency)}</p>
+                        <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, displayCurrency)}</p>
                     </div>
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gross Salary</p>
-                        <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, salary.currency)}</p>
+                        <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, displayCurrency)}</p>
                     </div>
                     <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
                         <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Total CTC</p>
-                        <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, salary.currency)}</p>
+                        <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, displayCurrency)}</p>
                     </div>
                 </div>
 
@@ -285,11 +299,11 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                                 { label: 'Salary Package', value: salary.package?.name || 'Custom', icon: <FaBriefcase className="text-indigo-500" /> },
                                 { label: 'Effective From', value: formatDateFull(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
                                 { label: 'Effective To', value: formatDateFull(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
-                                { label: 'Base Amount', value: formatCurrency(salary.base_amount, salary.currency), icon: <FaDollarSign className="text-emerald-500" /> },
-                                { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, salary.currency), icon: <FaMoneyBillWave className="text-blue-500" /> },
-                                { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, salary.currency), icon: <FaChartBar className="text-rose-500" /> },
-                                { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, salary.currency), icon: <FaHandPaper className="text-purple-500" /> },
-                                { label: 'Net Take Home', value: formatCurrency(salary.net_salary, salary.currency), icon: <FaCheckCircle className="text-green-500" /> },
+                                { label: 'Base Amount', value: formatCurrency(salary.base_amount, displayCurrency), icon: <CurrencyIcon className="text-emerald-500" /> },
+                                { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, displayCurrency), icon: <FaMoneyBillWave className="text-blue-500" /> },
+                                { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, displayCurrency), icon: <FaChartBar className="text-rose-500" /> },
+                                { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, displayCurrency), icon: <FaHandPaper className="text-purple-500" /> },
+                                { label: 'Net Take Home', value: formatCurrency(salary.net_salary, displayCurrency), icon: <FaCheckCircle className="text-green-500" /> },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex items-center justify-between px-4 py-3.5">
                                     <div className="flex items-center gap-2.5">
@@ -326,7 +340,7 @@ const SalaryDetailModal = ({ salary, onClose }) => {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, salary.currency)}</p>
+                                        <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, displayCurrency)}</p>
                                         <p className={`text-[9px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-red-600' : 'text-purple-600'}`}>
                                             {comp.type.replace('_', ' ')}
                                         </p>
@@ -343,7 +357,7 @@ const SalaryDetailModal = ({ salary, onClose }) => {
 
 // ─── Edit Salary Modal ────────────────────────────────────────────────────────
 
-const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
+const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }) => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [submitting, setSubmitting] = useState(false);
@@ -351,7 +365,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 
     const [formData, setFormData] = useState({
         base_amount: '',
-        currency: 'USD',
+        currency: normalizeCurrencyCode(companyCurrency),
         effective_from: '',
         effective_to: '',
         component_package_id: '',
@@ -362,7 +376,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         if (isOpen && salary) {
             setFormData({
                 base_amount: salary.base_amount || '',
-                currency: salary.currency || 'USD',
+                currency: getSalaryCurrency(salary, companyCurrency),
                 effective_from: salary.effective_from ? salary.effective_from.split('T')[0] : '',
                 effective_to: salary.effective_to ? salary.effective_to.split('T')[0] : '',
                 component_package_id: salary.package?.id || '',
@@ -376,7 +390,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             loadComponents();
             loadSalaryPackages();
         }
-    }, [isOpen, salary]);
+    }, [isOpen, salary, companyCurrency]);
 
     const loadSalaryPackages = async () => {
         try {
@@ -604,7 +618,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 
 // ─── Revise Salary Modal ──────────────────────────────────────────────────────
 
-const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
+const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }) => {
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
     const [submitting, setSubmitting] = useState(false);
@@ -612,7 +626,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 
     const [formData, setFormData] = useState({
         base_amount: '',
-        currency: 'USD',
+        currency: normalizeCurrencyCode(companyCurrency),
         component_package_id: '',
         components: []
     });
@@ -621,7 +635,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
         if (isOpen && salary) {
             setFormData({
                 base_amount: salary.base_amount || '',
-                currency: salary.currency || 'USD',
+                currency: getSalaryCurrency(salary, companyCurrency),
                 component_package_id: salary.package?.id || '',
                 components: (salary.components || []).map(c => ({
                     component_id: c.id,
@@ -633,7 +647,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
             loadComponents();
             loadSalaryPackages();
         }
-    }, [isOpen, salary]);
+    }, [isOpen, salary, companyCurrency]);
 
     const loadSalaryPackages = async () => {
         try {
@@ -850,7 +864,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary }) => {
 
 // ─── Assign Salary Modal ──────────────────────────────────────────────────────
 
-const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitTitle }) => {
+const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitTitle, companyCurrency }) => {
     const [employees, setEmployees] = useState([]);
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
@@ -861,7 +875,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [searchTerm, setSearchTerm] = useState('');
     const [showOverrideForm, setShowOverrideForm] = useState(false);
     const [editingOverride, setEditingOverride] = useState(null);
-    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', components: [] });
+    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: '', effective_to: '', components: [] });
     const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
 
     // Derived: Selected package details
@@ -883,8 +897,13 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     );
 
     useEffect(() => {
-        if (isOpen) { loadEmployeesWithoutSalary(); loadSalaryPackages(); loadSalaryComponents(); }
-    }, [isOpen]);
+        if (isOpen) {
+            setFormData(prev => ({ ...prev, currency: normalizeCurrencyCode(companyCurrency) }));
+            loadEmployeesWithoutSalary();
+            loadSalaryPackages();
+            loadSalaryComponents();
+        }
+    }, [isOpen, companyCurrency]);
 
     // Handle package change and fill components (Quick Fill)
     const handlePackageChange = (packageId) => {
@@ -936,7 +955,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const editOverride = (index) => { const o = formData.components[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
     const removeOverride = (index) => { setFormData({ ...formData, components: formData.components.filter((_, i) => i !== index), component_package_id: '' }); };
 
-    const resetForm = () => { setSelectedEmployee(null); setSearchTerm(''); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: 'USD', effective_from: '', effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
+    const resetForm = () => { setSelectedEmployee(null); setSearchTerm(''); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: '', effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -1282,10 +1301,11 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
 
 // ─── Salary Card (Grid) ───────────────────────────────────────────────────────
 
-const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEdit, onRevise }) => {
+const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEdit, onRevise, companyCurrency }) => {
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
     const expired = isSalaryExpired(salary);
+    const displayCurrency = getSalaryCurrency(salary, companyCurrency);
 
     const actions = [
         { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onClick(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
@@ -1316,7 +1336,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
             }
             footer={
                 <div className="flex w-full items-center justify-between gap-3 text-xs text-gray-400">
-                    <span>{formatCurrency(salary.ctc, salary.currency)} CTC</span>
+                    <span>{formatCurrency(salary.ctc, displayCurrency)} CTC</span>
                     <span>{salary.components?.length || 0} components</span>
                 </div>
             }
@@ -1325,19 +1345,19 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
                 <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-center">
                         <p className="text-xs text-blue-500 font-bold uppercase tracking-widest mb-1">Gross</p>
-                        <p className="text-sm font-black text-blue-700">{formatCurrency(salary.gross_salary, salary.currency)}</p>
+                        <p className="text-sm font-black text-blue-700">{formatCurrency(salary.gross_salary, displayCurrency)}</p>
                     </div>
                     <div className="rounded-xl border border-green-100 bg-green-50 p-3 text-center">
                         <p className="text-xs text-green-500 font-bold uppercase tracking-widest mb-1">Net</p>
-                        <p className="text-sm font-black text-green-700">{formatCurrency(salary.net_salary, salary.currency)}</p>
+                        <p className="text-sm font-black text-green-700">{formatCurrency(salary.net_salary, displayCurrency)}</p>
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">Base</p>
-                        <p className="text-sm font-black text-slate-700">{formatCurrency(salary.base_amount, salary.currency)}</p>
+                        <p className="text-sm font-black text-slate-700">{formatCurrency(salary.base_amount, displayCurrency)}</p>
                     </div>
                     <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-center">
                         <p className="text-xs text-indigo-500 font-bold uppercase tracking-widest mb-1">CTC</p>
-                        <p className="text-sm font-black text-indigo-700">{formatCurrency(salary.ctc, salary.currency)}</p>
+                        <p className="text-sm font-black text-indigo-700">{formatCurrency(salary.ctc, displayCurrency)}</p>
                     </div>
                 </div>
 
@@ -1358,6 +1378,8 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const SalaryManagement = () => {
+    const { company } = useAuth();
+    const companyCurrency = normalizeCurrencyCode(company?.transaction_currency);
     const [salaries, setSalaries] = useState([]);
     const [meta, setMeta] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -1487,7 +1509,7 @@ const SalaryManagement = () => {
         avgBase: visibleSalaries.length > 0 ? visibleSalaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / visibleSalaries.length : 0,
         totalCTC: visibleSalaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
         activeCount: visibleSalaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
-        currency: visibleSalaries[0]?.currency || salaries[0]?.currency || 'USD'
+        currency: visibleSalaries[0]?.currency || salaries[0]?.currency || companyCurrency
     };
 
     const salaryTableActions = (salary) => {
@@ -1539,14 +1561,14 @@ const SalaryManagement = () => {
             key: 'base_amount',
             label: 'Base Amount',
             className: 'whitespace-nowrap font-semibold text-gray-700',
-            render: (salary) => formatCurrency(salary.base_amount, salary.currency)
+            render: (salary) => formatCurrency(salary.base_amount, getSalaryCurrency(salary, companyCurrency))
         },
         visibleColumns.showGrossSalary && {
             key: 'gross_salary',
             label: 'Gross Salary',
             render: (salary) => (
                 <span className="inline-flex whitespace-nowrap rounded-lg bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 border border-blue-100">
-                    {formatCurrency(salary.gross_salary, salary.currency)}
+                    {formatCurrency(salary.gross_salary, getSalaryCurrency(salary, companyCurrency))}
                 </span>
             )
         },
@@ -1555,7 +1577,7 @@ const SalaryManagement = () => {
             label: 'Net Salary',
             render: (salary) => (
                 <span className="inline-flex whitespace-nowrap rounded-lg bg-green-50 px-3 py-1 text-xs font-bold text-green-700 border border-green-100">
-                    {formatCurrency(salary.net_salary, salary.currency)}
+                    {formatCurrency(salary.net_salary, getSalaryCurrency(salary, companyCurrency))}
                 </span>
             )
         },
@@ -1564,7 +1586,7 @@ const SalaryManagement = () => {
             label: 'Total CTC',
             render: (salary) => (
                 <span className="inline-flex whitespace-nowrap rounded-lg bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-100">
-                    {formatCurrency(salary.ctc, salary.currency)}
+                    {formatCurrency(salary.ctc, getSalaryCurrency(salary, companyCurrency))}
                 </span>
             )
         },
@@ -1738,6 +1760,7 @@ const SalaryManagement = () => {
                                 onDelete={(s) => { setSalaryToDelete(s); setShowDeleteModal(true); }}
                                 activeId={activeActionMenu}
                                 onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
+                                companyCurrency={companyCurrency}
                             />
                         ))}
                     </ManagementGrid>
@@ -1756,13 +1779,13 @@ const SalaryManagement = () => {
                 )}
 
                 {/* Modals */}
-                <SalaryDetailModal salary={selectedSalary} onClose={() => setSelectedSalary(null)} />
+                <SalaryDetailModal salary={selectedSalary} onClose={() => setSelectedSalary(null)} companyCurrency={companyCurrency} />
 
-                <AssignSalaryModal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} onSuccess={() => { fetchSalaries(1, "", true); setShowAssignModal(false); }} />
+                <AssignSalaryModal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} onSuccess={() => { fetchSalaries(1, "", true); setShowAssignModal(false); }} companyCurrency={companyCurrency} />
 
-                <EditSalaryModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }} onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)} salary={salaryToEdit} />
+                <EditSalaryModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }} onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)} salary={salaryToEdit} companyCurrency={companyCurrency} />
 
-                <ReviseSalaryModal isOpen={showReviseModal} onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }} onSuccess={() => fetchSalaries(1, "", true)} salary={salaryToRevise} />
+                <ReviseSalaryModal isOpen={showReviseModal} onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }} onSuccess={() => fetchSalaries(1, "", true)} salary={salaryToRevise} companyCurrency={companyCurrency} />
 
                 <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setSalaryToDelete(null); }} onConfirm={handleDeleteSalary} salary={salaryToDelete} processingId={processingId} />
             </div>
