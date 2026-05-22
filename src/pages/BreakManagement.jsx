@@ -584,55 +584,89 @@ const BreakManagementPage = () => {
                 </div>
 
                 {/* Search / Filter / View Toolbar */}
-                <motion.div
-                    initial={{ opacity: 0, y: 18 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-wrap gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
-                >
-                    <div className="relative w-full lg:w-[300px] lg:flex-none">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(event) => setSearchTerm(event.target.value)}
-                            placeholder="Search by employee name, code, or email..."
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-10 text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
-                        />
-                        {searchTerm && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                                title="Clear search"
-                            >
-                                <FaTimes size={13} />
-                            </button>
-                        )}
-                    </div>
+              <motion.div
+  initial={{ opacity: 0, y: 18 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+>
+  {/* 
+    Responsive Layout:
+    
+    lg:
+    Search | Employee | Date | View Switcher
 
-                    <div className="w-full md:flex-1 lg:w-[240px] lg:flex-none">
-                        <EmployeeSelect
-                            value={employeeId}
-                            onChange={(value) => setEmployeeId(value || '')}
-                            placeholder="All employees"
-                        />
-                    </div>
+    md/sm:
+    Row 1 -> Search
+    Row 2 -> Employee
+    Row 3 -> Date + View Switcher
+  */}
 
-                    <div className="w-full md:flex-1 lg:w-[260px] lg:flex-none">
-                        <AdvancedDateFilter
-                            value={dateFilter}
-                            onChange={(val) => { setDateFilter(val); goToPage(1); }}
-                            placeholder="Date or range"
-                            tabOptions={['date', 'range']}
-                            showDateStepper
-                            buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
-                        />
-                    </div>
+  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
-                    <div className="flex w-full justify-end lg:w-auto">
-                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="amber" />
-                    </div>
-                </motion.div>
+    {/* SEARCH */}
+    <div className="w-full lg:flex-1">
+      <div className="relative">
+        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          placeholder="Search by employee name, code, or email..."
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-10 text-sm outline-none transition focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-500/10"
+        />
+
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            title="Clear search"
+          >
+            <FaTimes size={13} />
+          </button>
+        )}
+      </div>
+    </div>
+
+    {/* EMPLOYEE SELECT */}
+    <div className="w-full lg:w-[240px] lg:flex-none">
+      <EmployeeSelect
+        value={employeeId}
+        onChange={(value) => setEmployeeId(value || '')}
+        placeholder="All employees"
+      />
+    </div>
+
+    {/* DATE + VIEW */}
+    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between lg:w-auto lg:flex-none">
+
+      {/* DATE FILTER */}
+      <div className="w-full sm:flex-1 lg:w-[260px] lg:flex-none">
+        <AdvancedDateFilter
+          value={dateFilter}
+          onChange={(val) => {
+            setDateFilter(val);
+            goToPage(1);
+          }}
+          placeholder="Date or range"
+          tabOptions={['date', 'range']}
+          showDateStepper
+          buttonClassName="h-full min-h-[42px] max-w-[200px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+        />
+      </div>
+
+      {/* VIEW SWITCHER */}
+      <div className="flex justify-end lg:justify-start">
+        <ManagementViewSwitcher
+          viewMode={viewMode}
+          onChange={setViewMode}
+          accent="amber"
+        />
+      </div>
+    </div>
+  </div>
+</motion.div>
 
                 {/* Loading skeleton */}
                 {loading && !records.length && <SkeletonComponent />}

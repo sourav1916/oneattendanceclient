@@ -35,52 +35,52 @@ import {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STATUS_META = {
-  present:    { label: 'Present',    icon: FaCheck,            className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-  absent:     { label: 'Absent',     icon: FaBan,              className: 'border-rose-200 bg-rose-50 text-rose-700' },
-  half_day:   { label: 'Half Day',   icon: FaHourglassHalf,    className: 'border-blue-200 bg-blue-50 text-blue-700' },
-  leave:      { label: 'On Leave',   icon: FaUmbrellaBeach,    className: 'border-violet-200 bg-violet-50 text-violet-700' },
-  paid_leave: { label: 'Paid Leave', icon: FaUmbrellaBeach,    className: 'border-violet-200 bg-violet-50 text-violet-700' },
-  unmarked:   { label: 'Unmarked',   icon: FaExclamationTriangle, className: 'border-amber-200 bg-amber-50 text-amber-700' },
+  present: { label: 'Present', icon: FaCheck, className: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+  absent: { label: 'Absent', icon: FaBan, className: 'border-rose-200 bg-rose-50 text-rose-700' },
+  half_day: { label: 'Half Day', icon: FaHourglassHalf, className: 'border-blue-200 bg-blue-50 text-blue-700' },
+  leave: { label: 'On Leave', icon: FaUmbrellaBeach, className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  paid_leave: { label: 'Paid Leave', icon: FaUmbrellaBeach, className: 'border-violet-200 bg-violet-50 text-violet-700' },
+  unmarked: { label: 'Unmarked', icon: FaExclamationTriangle, className: 'border-amber-200 bg-amber-50 text-amber-700' },
 };
 
 const METHOD_LABELS = {
-  manual:          'Manual Entry',
+  manual: 'Manual Entry',
   by_admin_manual: 'Admin Entry',
-  biometric:       'Biometric',
-  gps:             'GPS',
-  qr:              'QR Code',
+  biometric: 'Biometric',
+  gps: 'GPS',
+  qr: 'QR Code',
 };
 
 const statusOptions = [
-  { value: 'present',  label: 'Present' },
+  { value: 'present', label: 'Present' },
   { value: 'half_day', label: 'Half Day' },
-  { value: 'absent',   label: 'Absent' },
-  { value: 'leave',    label: 'Leave' },
+  { value: 'absent', label: 'Absent' },
+  { value: 'leave', label: 'Leave' },
 ];
 
 const listDayStatusOptions = [
-  { value: '',          label: 'All Statuses' },
-  { value: 'present',   label: 'Present' },
-  { value: 'absent',    label: 'Absent' },
-  { value: 'paid_leave',label: 'Paid Leave' },
-  { value: 'half_day',  label: 'Half Day' },
-  { value: 'unmarked',  label: 'Unmarked' },
+  { value: '', label: 'All Statuses' },
+  { value: 'present', label: 'Present' },
+  { value: 'absent', label: 'Absent' },
+  { value: 'paid_leave', label: 'Paid Leave' },
+  { value: 'half_day', label: 'Half Day' },
+  { value: 'unmarked', label: 'Unmarked' },
 ];
 
 const bulkModeOptions = [
-  { value: 'actual',   label: 'Verify Actual' },
-  { value: 'present',  label: 'Mark Present' },
+  { value: 'actual', label: 'Verify Actual' },
+  { value: 'present', label: 'Mark Present' },
   { value: 'half_day', label: 'Mark Half Day' },
-  { value: 'leave',    label: 'Mark Leave' },
-  { value: 'absent',   label: 'Mark Absent' },
+  { value: 'leave', label: 'Mark Leave' },
+  { value: 'absent', label: 'Mark Absent' },
 ];
 
 const bulkModeDefaultNotes = {
-  actual:   'Bulk approved based on actual mode',
-  present:  'Manual override: Employee forgot ID card',
+  actual: 'Bulk approved based on actual mode',
+  present: 'Manual override: Employee forgot ID card',
   half_day: 'Manual override: Employee forgot ID card',
-  leave:    'Manual override: Employee forgot ID card',
-  absent:   'Unexcused absence',
+  leave: 'Manual override: Employee forgot ID card',
+  absent: 'Unexcused absence',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ const timeToMinutes = (value) => {
 
 const calculateWorkedMinutes = (startTime, endTime) => {
   const start = timeToMinutes(startTime);
-  const end   = timeToMinutes(endTime);
+  const end = timeToMinutes(endTime);
   if (start === null || end === null) return 0;
   return end >= start ? end - start : (24 * 60 - start) + end;
 };
@@ -148,14 +148,14 @@ const getFlagEligibility = (employee, startTime = employee?.punch_in_time, endTi
     return { overtime: false, deductible: false, workedMinutes: 0, differenceMinutes: 0 };
   }
   const expectedMinutes = getExpectedWorkMinutes(employee, status);
-  const workedMinutes   = calculateWorkedMinutes(startTime, endTime);
-  const graceMinutes    = getGraceMinutes(employee);
-  const overtimeEligible   = workedMinutes > expectedMinutes + graceMinutes;
+  const workedMinutes = calculateWorkedMinutes(startTime, endTime);
+  const graceMinutes = getGraceMinutes(employee);
+  const overtimeEligible = workedMinutes > expectedMinutes + graceMinutes;
   const deductibleEligible = workedMinutes < expectedMinutes - graceMinutes;
   let differenceMinutes = 0;
-  if (overtimeEligible)        differenceMinutes = workedMinutes - expectedMinutes;
+  if (overtimeEligible) differenceMinutes = workedMinutes - expectedMinutes;
   else if (deductibleEligible) differenceMinutes = expectedMinutes - workedMinutes;
-  else                         differenceMinutes = Math.abs(workedMinutes - expectedMinutes);
+  else differenceMinutes = Math.abs(workedMinutes - expectedMinutes);
   return { overtime: overtimeEligible, deductible: deductibleEligible, workedMinutes, differenceMinutes };
 };
 
@@ -182,45 +182,45 @@ const getInitials = (name = '') =>
 // ─── Data normalisation ───────────────────────────────────────────────────────
 
 const mapEmployee = (employee) => {
-  const attendance   = employee.attendances?.[0] || employee.attendance || employee;
+  const attendance = employee.attendances?.[0] || employee.attendance || employee;
   const calculations = employee.calculations || attendance.calculations || {};
-  const src          = employee.employee || {};
+  const src = employee.employee || {};
   return {
-    id:                  employee.employee_id || employee.id || src.id,
-    employee_id:         employee.employee_id || employee.id || src.id,
-    name:                employee.name || src.name || src.user?.name || '',
-    email:               employee.email || src.email || src.user?.email || '',
-    phone:               employee.phone || src.phone || src.user?.phone || '',
-    employee_code:       employee.employee_code || src.employee_code || src.code || '',
-    designation:         (employee.designation || src.designation) && typeof (employee.designation || src.designation) === 'object' ? (employee.designation || src.designation) : { label: formatTitle(employee.designation || src.designation) },
-    profile_picture:     employee.profile_picture || src.profile_picture || src.user?.profile_picture,
-    shift_start:         employee.shift?.start_time || attendance.shift?.start_time || null,
-    shift_end:           employee.shift?.end_time   || attendance.shift?.end_time   || null,
+    id: employee.employee_id || employee.id || src.id,
+    employee_id: employee.employee_id || employee.id || src.id,
+    name: employee.name || src.name || src.user?.name || '',
+    email: employee.email || src.email || src.user?.email || '',
+    phone: employee.phone || src.phone || src.user?.phone || '',
+    employee_code: employee.employee_code || src.employee_code || src.code || '',
+    designation: (employee.designation || src.designation) && typeof (employee.designation || src.designation) === 'object' ? (employee.designation || src.designation) : { label: formatTitle(employee.designation || src.designation) },
+    profile_picture: employee.profile_picture || src.profile_picture || src.user?.profile_picture,
+    shift_start: employee.shift?.start_time || attendance.shift?.start_time || null,
+    shift_end: employee.shift?.end_time || attendance.shift?.end_time || null,
     expected_work_minutes: employee.shift?.expected_work_minutes || attendance.shift?.expected_work_minutes || 0,
     allowed_break_minutes: employee.shift?.allowed_break_minutes || attendance.shift?.allowed_break_minutes || 0,
-    grace_minutes:       employee.shift?.grace_minutes || attendance.shift?.grace_minutes || 0,
-    attendance_id:       attendance.attendance_id || null,
-    attendance_date:     attendance.attendance_date || attendance.date || employee.date || '',
-    day_status:          attendance.day_status || 'unmarked',
-    half_day_session:    attendance.half_day_session || attendance.half_day_type || '',
-    leave_type:          attendance.leave_type || '',
-    leave_sub_type:      attendance.leave_sub_type || attendance.leave_type_value || '',
-    is_verified:         Boolean(attendance.is_verified),
-    is_deductible:       Boolean(attendance.is_deductible),
-    is_overtime:         Boolean(attendance.is_overtime),
-    punch_in_time:       attendance.punch_in?.time  || attendance.start_time || '',
-    punch_in_method:     attendance.punch_in?.method || '',
-    punch_out_time:      attendance.punch_out?.time || attendance.end_time  || '',
-    punch_out_method:    attendance.punch_out?.method || '',
-    worked_minutes:      calculations.worked_minutes  || 0,
-    break_minutes:       calculations.break_minutes   || calculations.total_break_time || 0,
+    grace_minutes: employee.shift?.grace_minutes || attendance.shift?.grace_minutes || 0,
+    attendance_id: attendance.attendance_id || null,
+    attendance_date: attendance.attendance_date || attendance.date || employee.date || '',
+    day_status: attendance.day_status || 'unmarked',
+    half_day_session: attendance.half_day_session || attendance.half_day_type || '',
+    leave_type: attendance.leave_type || '',
+    leave_sub_type: attendance.leave_sub_type || attendance.leave_type_value || '',
+    is_verified: Boolean(attendance.is_verified),
+    is_deductible: Boolean(attendance.is_deductible),
+    is_overtime: Boolean(attendance.is_overtime),
+    punch_in_time: attendance.punch_in?.time || attendance.start_time || '',
+    punch_in_method: attendance.punch_in?.method || '',
+    punch_out_time: attendance.punch_out?.time || attendance.end_time || '',
+    punch_out_method: attendance.punch_out?.method || '',
+    worked_minutes: calculations.worked_minutes || 0,
+    break_minutes: calculations.break_minutes || calculations.total_break_time || 0,
     extra_break_minutes: calculations.extra_break_minutes || 0,
-    late_minutes:        calculations.late_minutes    || 0,
+    late_minutes: calculations.late_minutes || 0,
     early_leave_minutes: calculations.early_leave_minutes || 0,
-    overtime_minutes:    calculations.overtime_minutes   || 0,
-    deductible_minutes:  calculations.deductible_minutes || 0,
-    leave_day_overtime:  attendance.leave_day_overtime ?? null,
-    remark:              attendance.remark || '',
+    overtime_minutes: calculations.overtime_minutes || 0,
+    deductible_minutes: calculations.deductible_minutes || 0,
+    leave_day_overtime: attendance.leave_day_overtime ?? null,
+    remark: attendance.remark || '',
   };
 };
 
@@ -235,17 +235,17 @@ const buildCounts = (employees) =>
 const normalizeAttendanceResponse = (response) => {
   const rows = Array.isArray(response)
     ? response
-    : Array.isArray(response?.data)   ? response.data
-    : Array.isArray(response?.records) ? response.records
-    : [];
+    : Array.isArray(response?.data) ? response.data
+      : Array.isArray(response?.records) ? response.records
+        : [];
   return rows.map(mapEmployee);
 };
 
 const normalizeMeta = (response, fallback = {}) => {
-  const meta       = response?.meta || response?.pagination || {};
-  const page       = Number(meta.page       ?? response?.page       ?? fallback.page  ?? 1);
-  const limit      = Number(meta.limit      ?? response?.limit      ?? fallback.limit ?? 10);
-  const total      = Number(meta.total      ?? response?.total      ?? fallback.total ?? 0);
+  const meta = response?.meta || response?.pagination || {};
+  const page = Number(meta.page ?? response?.page ?? fallback.page ?? 1);
+  const limit = Number(meta.limit ?? response?.limit ?? fallback.limit ?? 10);
+  const total = Number(meta.total ?? response?.total ?? fallback.total ?? 0);
   const totalPages = Number(meta.total_pages ?? response?.total_pages ?? Math.ceil(total / limit) ?? 1) || 1;
   return { page, limit, total, total_pages: totalPages, is_last_page: meta.is_last_page ?? page >= totalPages };
 };
@@ -282,9 +282,8 @@ const ToggleSwitch = ({ isOn, onToggle, size = 'md' }) => {
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onToggle(); }}
-      className={`flex ${track} cursor-pointer items-center rounded-full p-1 transition-all duration-300 ${
-        isOn ? 'bg-blue-500 shadow-inner' : 'bg-gray-300'
-      }`}
+      className={`flex ${track} cursor-pointer items-center rounded-full p-1 transition-all duration-300 ${isOn ? 'bg-blue-500 shadow-inner' : 'bg-gray-300'
+        }`}
     >
       <motion.div
         className={`${thumb} rounded-full bg-white shadow-md`}
@@ -298,12 +297,12 @@ const ToggleSwitch = ({ isOn, onToggle, size = 'md' }) => {
 
 const Summary = ({ counts }) => {
   const items = [
-    { key: 'total_employees', label: 'Total',    icon: FaUser,             className: 'bg-slate-50 text-slate-700 border-slate-200' },
-    { key: 'present',         label: 'Present',  icon: FaCheck,            className: STATUS_META.present.className },
-    { key: 'absent',          label: 'Absent',   icon: FaBan,              className: STATUS_META.absent.className },
-    { key: 'half_day',        label: 'Half Day', icon: FaHourglassHalf,    className: STATUS_META.half_day.className },
-    { key: 'leave',           label: 'Leave',    icon: FaUmbrellaBeach,    className: STATUS_META.leave.className },
-    { key: 'unmarked',        label: 'Unmarked', icon: FaExclamationTriangle, className: STATUS_META.unmarked.className },
+    { key: 'total_employees', label: 'Total', icon: FaUser, className: 'bg-slate-50 text-slate-700 border-slate-200' },
+    { key: 'present', label: 'Present', icon: FaCheck, className: STATUS_META.present.className },
+    { key: 'absent', label: 'Absent', icon: FaBan, className: STATUS_META.absent.className },
+    { key: 'half_day', label: 'Half Day', icon: FaHourglassHalf, className: STATUS_META.half_day.className },
+    { key: 'leave', label: 'Leave', icon: FaUmbrellaBeach, className: STATUS_META.leave.className },
+    { key: 'unmarked', label: 'Unmarked', icon: FaExclamationTriangle, className: STATUS_META.unmarked.className },
   ];
   return (
     <div className="grid grid-cols-3 xsm:grid-cols-3 md:grid-cols-6 gap-2">
@@ -341,21 +340,19 @@ const EmployeeAvatar = ({ employee }) => (
 const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, onSelect, isSelectionMode }) => {
   const activeStatus = normalizeStatusForAction(employee.day_status);
   const statusButtonVariant = (s) => (activeStatus === s ? 'solid' : 'soft');
-  const eligibility            = getFlagEligibility(employee);
-  const overtimeActionEnabled  = employee.is_overtime  || eligibility.overtime;
+  const eligibility = getFlagEligibility(employee);
+  const overtimeActionEnabled = employee.is_overtime || eligibility.overtime;
   const deductibleActionEnabled = employee.is_deductible || eligibility.deductible;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative rounded-xl border p-3 shadow-md transition hover:shadow-lg ${
-        selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-      } ${
-        employee.is_verified
+      className={`relative rounded-xl border p-3 shadow-md transition hover:shadow-lg ${selected ? 'ring-2 ring-blue-400 ring-offset-2' : ''
+        } ${employee.is_verified
           ? 'bg-gradient-to-r from-emerald-50 via-green-50 to-teal-50 border-emerald-200 shadow-emerald-100/70'
           : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
-      }`}
+        }`}
     >
       {/* Per-card selection toggle */}
       <div className="absolute left-3 top-3 z-10 flex shrink-0 flex-col items-center gap-1">
@@ -410,20 +407,19 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
         <div className="flex w-full shrink-0 flex-col justify-between gap-3 border-t border-slate-100 pt-3 lg:w-[360px] lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
           <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
             <StatusBadge status={employee.day_status} />
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-              employee.is_verified
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                : 'border-amber-200 bg-amber-50 text-amber-700'
-            }`}>
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${employee.is_verified
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-amber-200 bg-amber-50 text-amber-700'
+              }`}>
               {employee.is_verified ? 'Verified' : 'Pending'}
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            <ManagementButton size="sm" tone="emerald" variant={statusButtonVariant('present')}  fullWidth leftIcon={<FaCheck />}         onClick={() => onManage(employee, 'present')}>Present</ManagementButton>
-            <ManagementButton size="sm" tone="blue"    variant={statusButtonVariant('half_day')} fullWidth leftIcon={<FaHourglassHalf />} onClick={() => onManage(employee, 'half_day')}>Half Day</ManagementButton>
-            <ManagementButton size="sm" tone="rose"    variant={statusButtonVariant('absent')}   fullWidth leftIcon={<FaBan />}           onClick={() => onManage(employee, 'absent')}>Absent</ManagementButton>
-            <ManagementButton size="sm" tone="violet"  variant={statusButtonVariant('leave')}    fullWidth leftIcon={<FaUmbrellaBeach />} onClick={() => onManage(employee, 'leave')}>Leave</ManagementButton>
+            <ManagementButton size="sm" tone="emerald" variant={statusButtonVariant('present')} fullWidth leftIcon={<FaCheck />} onClick={() => onManage(employee, 'present')}>Present</ManagementButton>
+            <ManagementButton size="sm" tone="blue" variant={statusButtonVariant('half_day')} fullWidth leftIcon={<FaHourglassHalf />} onClick={() => onManage(employee, 'half_day')}>Half Day</ManagementButton>
+            <ManagementButton size="sm" tone="rose" variant={statusButtonVariant('absent')} fullWidth leftIcon={<FaBan />} onClick={() => onManage(employee, 'absent')}>Absent</ManagementButton>
+            <ManagementButton size="sm" tone="violet" variant={statusButtonVariant('leave')} fullWidth leftIcon={<FaUmbrellaBeach />} onClick={() => onManage(employee, 'leave')}>Leave</ManagementButton>
             <ManagementButton
               size="sm" tone={employee.is_overtime ? 'amber' : 'slate'} variant="soft" fullWidth
               disabled={!overtimeActionEnabled} leftIcon={<FaClock />}
@@ -487,48 +483,48 @@ const useLeaveConfigs = (isPaid) => {
 // ─── Manage Attendance Modal ──────────────────────────────────────────────────
 
 const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSave, saving = false }) => {
-  const hasActualTime         = Boolean(employee?.punch_in_time || employee?.punch_out_time);
+  const hasActualTime = Boolean(employee?.punch_in_time || employee?.punch_out_time);
   const hasCompleteActualTime = Boolean(employee?.punch_in_time && employee?.punch_out_time);
 
   const getDefaultTimes = (currentStatus, currentHalfDaySession) => {
     const sStart = stripSeconds(employee?.shift_start) || '09:00';
-    const sEnd   = stripSeconds(employee?.shift_end)   || '18:00';
-    let times    = { punchIn: sStart, punchOut: sEnd };
+    const sEnd = stripSeconds(employee?.shift_end) || '18:00';
+    let times = { punchIn: sStart, punchOut: sEnd };
 
     if (currentStatus === 'half_day') {
       const startMins = timeToMinutes(sStart);
-      const endMins   = timeToMinutes(sEnd);
+      const endMins = timeToMinutes(sEnd);
       if (startMins !== null && endMins !== null) {
         const shiftDuration = endMins >= startMins ? endMins - startMins : (24 * 60 - startMins) + endMins;
-        const halfDuration  = Math.round(shiftDuration / 2);
-        const midpointMins  = (startMins + halfDuration) % 1440;
-        const midpoint      = minutesToDurationValue(midpointMins);
+        const halfDuration = Math.round(shiftDuration / 2);
+        const midpointMins = (startMins + halfDuration) % 1440;
+        const midpoint = minutesToDurationValue(midpointMins);
         times = currentHalfDaySession === 'second_half'
           ? { punchIn: midpoint, punchOut: sEnd }
-          : { punchIn: sStart,   punchOut: midpoint };
+          : { punchIn: sStart, punchOut: midpoint };
       }
     }
 
     if (hasActualTime && currentStatus !== 'half_day') {
       return {
-        punchIn:  employee?.punch_in_time  || times.punchIn,
+        punchIn: employee?.punch_in_time || times.punchIn,
         punchOut: employee?.punch_out_time || times.punchOut,
       };
     }
     return times;
   };
 
-  const [status,               setStatus]               = useState(initialStatus || 'present');
-  const [halfDaySession,       setHalfDaySession]       = useState(employee?.half_day_session || 'first_half');
-  const [punchIn,              setPunchIn]              = useState(() => getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half').punchIn);
-  const [punchOut,             setPunchOut]             = useState(() => getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half').punchOut);
-  const [leaveType,            setLeaveType]            = useState(employee?.leave_type || 'unpaid');
-  const [leaveCode,            setLeaveCode]            = useState(employee?.leave_sub_type || '');
-  const [leaveDayOTEnabled,    setLeaveDayOTEnabled]    = useState(Boolean(employee?.leave_day_overtime));
-  const [leaveDayOT,           setLeaveDayOT]           = useState(employee?.leave_day_overtime ? minutesToDurationValue(employee.leave_day_overtime) : null);
-  const [isOvertime,           setIsOvertime]           = useState(false);
-  const [isDeductible,         setIsDeductible]         = useState(false);
-  const [notes,                setNotes]                = useState(employee?.remark || '');
+  const [status, setStatus] = useState(initialStatus || 'present');
+  const [halfDaySession, setHalfDaySession] = useState(employee?.half_day_session || 'first_half');
+  const [punchIn, setPunchIn] = useState(() => getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half').punchIn);
+  const [punchOut, setPunchOut] = useState(() => getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half').punchOut);
+  const [leaveType, setLeaveType] = useState(employee?.leave_type || 'unpaid');
+  const [leaveCode, setLeaveCode] = useState(employee?.leave_sub_type || '');
+  const [leaveDayOTEnabled, setLeaveDayOTEnabled] = useState(Boolean(employee?.leave_day_overtime));
+  const [leaveDayOT, setLeaveDayOT] = useState(employee?.leave_day_overtime ? minutesToDurationValue(employee.leave_day_overtime) : null);
+  const [isOvertime, setIsOvertime] = useState(false);
+  const [isDeductible, setIsDeductible] = useState(false);
+  const [notes, setNotes] = useState(employee?.remark || '');
 
   const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(leaveType === 'paid');
   const leaveOptions = useMemo(() => leaveConfigs.map((c) => ({
@@ -537,9 +533,9 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   })), [leaveConfigs]);
 
   useEffect(() => {
-    const targetStatus  = initialStatus || 'present';
+    const targetStatus = initialStatus || 'present';
     const targetSession = employee?.half_day_session || 'first_half';
-    const defaults      = getDefaultTimes(targetStatus, targetSession);
+    const defaults = getDefaultTimes(targetStatus, targetSession);
     setStatus(targetStatus);
     setHalfDaySession(targetSession);
     setPunchIn(defaults.punchIn);
@@ -571,15 +567,15 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
     }
   };
 
-  const showTimeFields    = status === 'present' || status === 'half_day';
+  const showTimeFields = status === 'present' || status === 'half_day';
   const canUsePayrollFlags = showTimeFields;
-  const modalEmployee     = { ...employee, day_status: status };
-  const modalEligibility  = getFlagEligibility(modalEmployee, punchIn, punchOut);
-  const overtimeEnabled   = canUsePayrollFlags && modalEligibility.overtime;
+  const modalEmployee = { ...employee, day_status: status };
+  const modalEligibility = getFlagEligibility(modalEmployee, punchIn, punchOut);
+  const overtimeEnabled = canUsePayrollFlags && modalEligibility.overtime;
   const deductibleEnabled = canUsePayrollFlags && modalEligibility.deductible;
 
   useEffect(() => {
-    if (!overtimeEnabled   && isOvertime)   setIsOvertime(false);
+    if (!overtimeEnabled && isOvertime) setIsOvertime(false);
     if (!deductibleEnabled && isDeductible) setIsDeductible(false);
   }, [overtimeEnabled, deductibleEnabled]);
 
@@ -595,21 +591,21 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
       return;
     }
     onSave({
-      employee_id:      employee.employee_id,
+      employee_id: employee.employee_id,
       status,
-      punch_in:         showTimeFields ? punchIn : '',
-      punch_out:        showTimeFields ? punchOut : '',
+      punch_in: showTimeFields ? punchIn : '',
+      punch_out: showTimeFields ? punchOut : '',
       half_day_session: status === 'half_day' ? halfDaySession : '',
-      leave_type:       status === 'leave' ? leaveType : '',
-      leave_sub_type:   status === 'leave' ? leaveCode : '',
+      leave_type: status === 'leave' ? leaveType : '',
+      leave_sub_type: status === 'leave' ? leaveCode : '',
       leave_day_overtime: status === 'leave' && leaveDayOTEnabled ? durationValueToMinutes(leaveDayOT) : null,
-      is_overtime:      overtimeEnabled && isOvertime,
-      is_deductible:    deductibleEnabled && isDeductible,
+      is_overtime: overtimeEnabled && isOvertime,
+      is_deductible: deductibleEnabled && isDeductible,
       notes,
     });
   };
 
-  const toggleOvertime   = () => { if (!overtimeEnabled) return;   setIsOvertime((c) => { if (!c) setIsDeductible(false); return !c; }); };
+  const toggleOvertime = () => { if (!overtimeEnabled) return; setIsOvertime((c) => { if (!c) setIsDeductible(false); return !c; }); };
   const toggleDeductible = () => { if (!deductibleEnabled) return; setIsDeductible((c) => { if (!c) setIsOvertime(false); return !c; }); };
 
   return (
@@ -629,16 +625,15 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {statusOptions.map((option) => {
-            const meta   = STATUS_META[option.value];
-            const Icon   = meta.icon;
+            const meta = STATUS_META[option.value];
+            const Icon = meta.icon;
             const isActive = status === option.value;
             return (
               <button
                 key={option.value} type="button"
                 onClick={() => handleStatusChange(option.value)}
-                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${
-                  isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
               >
                 <Icon size={13} /> {option.label}
               </button>
@@ -667,9 +662,8 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 <button
                   key={o.value} type="button"
                   onClick={() => handleHalfDaySessionChange(o.value)}
-                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                    halfDaySession === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${halfDaySession === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
                 >
                   {o.label}
                 </button>
@@ -742,11 +736,10 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Payroll Flags</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button type="button" onClick={toggleOvertime} disabled={!overtimeEnabled}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                  isOvertime && overtimeEnabled ? 'border-orange-200 bg-orange-50 text-orange-700'
-                  : overtimeEnabled             ? 'border-orange-200 bg-white text-orange-700'
-                  : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
-                }`}
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isOvertime && overtimeEnabled ? 'border-orange-200 bg-orange-50 text-orange-700'
+                  : overtimeEnabled ? 'border-orange-200 bg-white text-orange-700'
+                    : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
+                  }`}
               >
                 <span>
                   <span className="block text-sm font-bold">Overtime</span>
@@ -755,11 +748,10 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 <FaBriefcase />
               </button>
               <button type="button" onClick={toggleDeductible} disabled={!deductibleEnabled}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                  isDeductible && deductibleEnabled ? 'border-rose-200 bg-rose-50 text-rose-700'
-                  : deductibleEnabled               ? 'border-rose-200 bg-white text-rose-700'
-                  : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
-                }`}
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${isDeductible && deductibleEnabled ? 'border-rose-200 bg-rose-50 text-rose-700'
+                  : deductibleEnabled ? 'border-rose-200 bg-white text-rose-700'
+                    : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
+                  }`}
               >
                 <span>
                   <span className="block text-sm font-bold">Deductible</span>
@@ -798,94 +790,92 @@ const BulkApprovalPanel = ({
   })), [leaveConfigs]);
 
   return (
-  <div className="space-y-4">
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      <div className="md:col-span-2">
-        <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Bulk Mode</span>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          {bulkModeOptions.map((option) => (
-            <button
-              key={option.value} type="button"
-              onClick={() => setBulkMode(option.value)}
-              className={`rounded-xl border px-3 py-2 whitespace-nowrap text-xs font-bold transition ${
-                bulkMode === option.value
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Bulk Mode</span>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {bulkModeOptions.map((option) => (
+              <button
+                key={option.value} type="button"
+                onClick={() => setBulkMode(option.value)}
+                className={`rounded-xl border px-3 py-2 whitespace-nowrap text-xs font-bold transition ${bulkMode === option.value
                   ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {bulkMode === 'half_day' && (
-        <div className="md:col-span-2">
-          <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Half Day Session</span>
-          <div className="grid grid-cols-2 gap-3">
-            {[{ value: 'first_half', label: 'First Half' }, { value: 'second_half', label: 'Second Half' }].map((o) => (
-              <button
-                key={o.value} type="button"
-                onClick={() => setBulkHalfDayType(o.value)}
-                className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${
-                  bulkHalfDayType === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
-                {o.label}
+                {option.label}
               </button>
             ))}
           </div>
         </div>
-      )}
 
-      {bulkMode === 'leave' && (
-        <>
-          <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Paid Leave</p>
-                <p className="mt-0.5 text-xs font-medium text-slate-400">
-                  If Turn on Paid Leave, then it will be deducted from the employee leave balance
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setBulkLeaveType(prev => prev === 'paid' ? 'unpaid' : 'paid');
-                  setBulkLeaveTypeValue('');
-                }}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${bulkLeaveType === 'paid' ? 'bg-indigo-600' : 'bg-slate-300'}`}
-              >
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${bulkLeaveType === 'paid' ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+        {bulkMode === 'half_day' && (
+          <div className="md:col-span-2">
+            <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Half Day Session</span>
+            <div className="grid grid-cols-2 gap-3">
+              {[{ value: 'first_half', label: 'First Half' }, { value: 'second_half', label: 'Second Half' }].map((o) => (
+                <button
+                  key={o.value} type="button"
+                  onClick={() => setBulkHalfDayType(o.value)}
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${bulkHalfDayType === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                  {o.label}
+                </button>
+              ))}
             </div>
           </div>
+        )}
 
-          <div className="md:col-span-2">
-            <label className="block">
-              <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Code</span>
-              <SelectField
-                value={leaveOptions.find((o) => o.value === bulkLeaveTypeValue) || null}
-                onChange={(selected) => setBulkLeaveTypeValue(selected ? selected.value : '')}
-                options={leaveOptions}
-                isLoading={leaveConfigsLoading}
-                placeholder="Select leave code..."
-                isClearable
-                styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
-              />
-            </label>
-          </div>
-        </>
-      )}
+        {bulkMode === 'leave' && (
+          <>
+            <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Paid Leave</p>
+                  <p className="mt-0.5 text-xs font-medium text-slate-400">
+                    If Turn on Paid Leave, then it will be deducted from the employee leave balance
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBulkLeaveType(prev => prev === 'paid' ? 'unpaid' : 'paid');
+                    setBulkLeaveTypeValue('');
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${bulkLeaveType === 'paid' ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${bulkLeaveType === 'paid' ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
 
-      <label className="block md:col-span-2">
-        <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Notes</span>
-        <input type="text" value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Bulk approval note"
-          className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-        />
-      </label>
+            <div className="md:col-span-2">
+              <label className="block">
+                <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Code</span>
+                <SelectField
+                  value={leaveOptions.find((o) => o.value === bulkLeaveTypeValue) || null}
+                  onChange={(selected) => setBulkLeaveTypeValue(selected ? selected.value : '')}
+                  options={leaveOptions}
+                  isLoading={leaveConfigsLoading}
+                  placeholder="Select leave code..."
+                  isClearable
+                  styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
+                />
+              </label>
+            </div>
+          </>
+        )}
+
+        <label className="block md:col-span-2">
+          <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Notes</span>
+          <input type="text" value={bulkNotes} onChange={(e) => setBulkNotes(e.target.value)} placeholder="Bulk approval note"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+          />
+        </label>
+      </div>
     </div>
-  </div>
   );
 };
 
@@ -894,10 +884,10 @@ const BulkApprovalPanel = ({
 const FlagConfirmModal = ({ state, onClose, onConfirm, saving }) => {
   const employee = state?.employee;
   if (!employee) return null;
-  const isOvertime    = state.flag === 'overtime';
+  const isOvertime = state.flag === 'overtime';
   const currentlyActive = isOvertime ? employee.is_overtime : employee.is_deductible;
-  const nextActive    = !currentlyActive;
-  const title         = `${nextActive ? 'Enable' : 'Disable'} ${isOvertime ? 'Overtime' : 'Deductible'}`;
+  const nextActive = !currentlyActive;
+  const title = `${nextActive ? 'Enable' : 'Disable'} ${isOvertime ? 'Overtime' : 'Deductible'}`;
 
   return (
     <Modal
@@ -923,31 +913,31 @@ const FlagConfirmModal = ({ state, onClose, onConfirm, saving }) => {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function UnmarkedAttendance() {
-  const [employees,           setEmployees]           = useState([]);
-  const [loading,             setLoading]             = useState(true);
-  const [refreshing,          setRefreshing]          = useState(false);
-  const [saving,              setSaving]              = useState(false);
-  const [bulkSaving,          setBulkSaving]          = useState(false);
-  const [search,              setSearch]              = useState('');
-  const [debouncedSearch,     setDebouncedSearch]     = useState('');
-  const [statusFilter,        setStatusFilter]        = useState('');
-  const [employeeId,          setEmployeeId]          = useState('');
-  const [dateFilter,          setDateFilter]          = useState({ date: getToday(), month: '', year: '', from_date: '', to_date: '' });
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
+  const [dateFilter, setDateFilter] = useState({ date: getToday(), month: '', year: '', from_date: '', to_date: '' });
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
-  const [showBulkModal,       setShowBulkModal]       = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   /** 'selected' | 'all' — determines what employee_ids to send */
-  const [bulkScope,           setBulkScope]           = useState('selected');
-  const [bulkMode,            setBulkMode]            = useState('actual');
-  const [bulkHalfDayType,     setBulkHalfDayType]     = useState('first_half');
-  const [bulkLeaveType,       setBulkLeaveType]       = useState('unpaid');
-  const [bulkLeaveTypeValue,  setBulkLeaveTypeValue]  = useState('');
-  const [bulkNotes,           setBulkNotes]           = useState('Bulk approved selected attendance');
-  const [modalState,          setModalState]          = useState(null);
-  const [flagConfirm,         setFlagConfirm]         = useState(null);
+  const [bulkScope, setBulkScope] = useState('selected');
+  const [bulkMode, setBulkMode] = useState('actual');
+  const [bulkHalfDayType, setBulkHalfDayType] = useState('first_half');
+  const [bulkLeaveType, setBulkLeaveType] = useState('unpaid');
+  const [bulkLeaveTypeValue, setBulkLeaveTypeValue] = useState('');
+  const [bulkNotes, setBulkNotes] = useState('Bulk approved selected attendance');
+  const [modalState, setModalState] = useState(null);
+  const [flagConfirm, setFlagConfirm] = useState(null);
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const activeListRequestKey = useRef(null);
-  const latestListRequestId  = useRef(0);
+  const latestListRequestId = useRef(0);
 
   // Debounce search
   useEffect(() => {
@@ -978,16 +968,16 @@ export default function UnmarkedAttendance() {
     }
 
     const params = new URLSearchParams({ page: String(pagination.page), limit: String(pagination.limit), type: 'attendance' });
-    if (debouncedSearch)       params.append('search',      debouncedSearch);
+    if (debouncedSearch) params.append('search', debouncedSearch);
     if (dateFilter?.date) {
       params.append('from_date', dateFilter.date);
-      params.append('to_date',   dateFilter.date);
+      params.append('to_date', dateFilter.date);
     } else {
       if (dateFilter?.from_date) params.append('from_date', dateFilter.from_date);
-      if (dateFilter?.to_date)   params.append('to_date',   dateFilter.to_date);
+      if (dateFilter?.to_date) params.append('to_date', dateFilter.to_date);
     }
-    if (employeeId)   params.append('employee_id', employeeId);
-    if (statusFilter) params.append('day_status',  statusFilter);
+    if (employeeId) params.append('employee_id', employeeId);
+    if (statusFilter) params.append('day_status', statusFilter);
 
     const requestKey = `${companyId}:${params.toString()}`;
     if (activeListRequestKey.current === requestKey) return;
@@ -998,7 +988,7 @@ export default function UnmarkedAttendance() {
 
     try {
       const response = await apiCall(`/attendance/list?${params.toString()}`, 'GET', null, companyId);
-      const result   = await response.json();
+      const result = await response.json();
       if (!response.ok || result.success === false) throw new Error(result.message || 'Failed to load attendance list');
       if (requestId !== latestListRequestId.current) return;
       setEmployees(normalizeAttendanceResponse(result));
@@ -1018,9 +1008,9 @@ export default function UnmarkedAttendance() {
 
   // ── Derived ─────────────────────────────────────────────────────────────────
 
-  const counts              = useMemo(() => buildCounts(employees), [employees]);
-  const visibleEmployeeIds  = useMemo(() => employees.map((e) => e.employee_id), [employees]);
-  const allVisibleSelected  = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id) => selectedEmployeeIds.includes(id));
+  const counts = useMemo(() => buildCounts(employees), [employees]);
+  const visibleEmployeeIds = useMemo(() => employees.map((e) => e.employee_id), [employees]);
+  const allVisibleSelected = visibleEmployeeIds.length > 0 && visibleEmployeeIds.every((id) => selectedEmployeeIds.includes(id));
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
 
@@ -1072,10 +1062,10 @@ export default function UnmarkedAttendance() {
 
     const payload = {
       attendance_date: getBulkAttendanceDate(),
-      employee_ids:    employeeIds,
+      employee_ids: employeeIds,
       attendance_type: 'attendance',
-      mode:            bulkMode,
-      notes:           bulkNotes,
+      mode: bulkMode,
+      notes: bulkNotes,
     };
 
     if (bulkMode === 'half_day') payload.half_day_type = bulkHalfDayType;
@@ -1091,7 +1081,7 @@ export default function UnmarkedAttendance() {
     setBulkSaving(true);
     try {
       const response = await apiCall('/attendance/approve', 'PUT', payload, companyId);
-      const result   = await response.json();
+      const result = await response.json();
       if (!response.ok || result.success === false) throw new Error(result.message || 'Bulk approval failed');
       toast.success(result.message || 'Attendance approved successfully');
       setSelectedEmployeeIds([]);
@@ -1126,8 +1116,8 @@ export default function UnmarkedAttendance() {
     try {
       setSaving(true);
       const markPayload = buildMarkPayload(payload);
-      const response    = await apiCall('/attendance/mark', 'POST', markPayload, companyId);
-      const result      = await response.json();
+      const response = await apiCall('/attendance/mark', 'POST', markPayload, companyId);
+      const result = await response.json();
       if (!response.ok || result.success === false) throw new Error(result.message || 'Failed to mark attendance');
       toast.success(result.message || `Attendance updated for ${modalState.employee.name}`);
       setModalState(null);
@@ -1146,23 +1136,23 @@ export default function UnmarkedAttendance() {
     if (!companyId || !flagConfirm?.employee) { toast.error('Company ID not found'); return; }
     const { employee, flag } = flagConfirm;
     const isOvertimeToggle = flag === 'overtime';
-    const nextOvertime     = isOvertimeToggle ? !employee.is_overtime : false;
-    const nextDeductible   = isOvertimeToggle ? false : !employee.is_deductible;
-    const status           = normalizeStatusForAction(employee.day_status);
+    const nextOvertime = isOvertimeToggle ? !employee.is_overtime : false;
+    const nextDeductible = isOvertimeToggle ? false : !employee.is_deductible;
+    const status = normalizeStatusForAction(employee.day_status);
     try {
       setSaving(true);
       const markPayload = buildMarkPayload({
-        employee_id:      employee.employee_id,
+        employee_id: employee.employee_id,
         status,
-        punch_in:         employee.punch_in_time,
-        punch_out:        employee.punch_out_time,
+        punch_in: employee.punch_in_time,
+        punch_out: employee.punch_out_time,
         half_day_session: employee.half_day_session || 'first_half',
-        is_overtime:      nextOvertime,
-        is_deductible:    nextDeductible,
-        notes:            employee.remark || '',
+        is_overtime: nextOvertime,
+        is_deductible: nextDeductible,
+        notes: employee.remark || '',
       }, employee);
       const response = await apiCall('/attendance/mark', 'POST', markPayload, companyId);
-      const result   = await response.json();
+      const result = await response.json();
       if (!response.ok || result.success === false) throw new Error(result.message || 'Failed to update flag');
       toast.success(result.message || 'Attendance flag updated');
       setFlagConfirm(null);
@@ -1190,45 +1180,92 @@ export default function UnmarkedAttendance() {
 
         {/* ── Filter bar ── */}
         <motion.div
-          initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
-          className="flex flex-wrap gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
         >
-          <div className="relative w-full lg:w-[300px] lg:flex-none">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, code, or email…"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <FaTimes size={13} />
-              </button>
-            )}
-          </div>
+          {/* 
+    Layout:
+    - lg: all in one row
+    - md/sm:
+        Row 1 -> Search
+        Row 2 -> Employee Select
+        Row 3 -> Status + Date
+  */}
 
-          <div className="w-full md:flex-1 lg:w-[240px] lg:flex-none">
-            <EmployeeSelect value={employeeId} onChange={(v) => setEmployeeId(v || '')} placeholder="All employees" />
-          </div>
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
-          <div className="flex w-full gap-3 md:flex-1 lg:w-auto lg:flex-none">
-            <div className="relative flex-1 lg:w-[220px] lg:flex-none">
-              <FaFilter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={12} />
-              <SelectField
-                value={listDayStatusOptions.find((o) => o.value === statusFilter) || null}
-                onChange={(o) => setStatusFilter(o?.value || '')}
-                options={listDayStatusOptions}
-                styles={{ control: (p) => ({ ...p, paddingLeft: '1.5rem' }) }}
+            {/* SEARCH */}
+            <div className="w-full lg:flex-1">
+              <div className="relative">
+                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, code, or email…"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  >
+                    <FaTimes size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* EMPLOYEE SELECT */}
+            <div className="w-full lg:w-[240px] lg:flex-none">
+              <EmployeeSelect
+                value={employeeId}
+                onChange={(v) => setEmployeeId(v || '')}
+                placeholder="All employees"
               />
             </div>
-            <div className="flex-1 lg:w-[260px] lg:flex-none">
-              <AdvancedDateFilter
-                value={dateFilter} onChange={setDateFilter} placeholder="Date or range"
-                tabOptions={['date', 'range']} showDateStepper
-                buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-              />
+
+            {/* FILTERS */}
+            <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:flex-none">
+
+              {/* STATUS */}
+              <div className="relative w-full sm:flex-1 lg:w-[220px] lg:flex-none">
+                <FaFilter
+                  className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400"
+                  size={12}
+                />
+
+                <SelectField
+                  value={
+                    listDayStatusOptions.find((o) => o.value === statusFilter) || null
+                  }
+                  onChange={(o) => setStatusFilter(o?.value || '')}
+                  options={listDayStatusOptions}
+                  styles={{
+                    control: (p) => ({
+                      ...p,
+                      paddingLeft: '1.5rem',
+                      minHeight: '42px',
+                    }),
+                  }}
+                />
+              </div>
+
+              {/* DATE FILTER */}
+              <div className="w-full sm:flex-1 lg:w-[260px] lg:flex-none">
+                <AdvancedDateFilter
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  placeholder="Date or range"
+                  tabOptions={['date', 'range']}
+                  showDateStepper
+                  buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                />
+              </div>
             </div>
           </div>
         </motion.div>
@@ -1326,11 +1363,10 @@ export default function UnmarkedAttendance() {
                 type="button"
                 onClick={openBulkModalForAll}
                 disabled={!allVisibleSelected}
-                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${
-                  allVisibleSelected
-                    ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
-                    : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                }`}
+                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${allVisibleSelected
+                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
+                  }`}
                 title={allVisibleSelected ? "Apply to all employees across all pages" : "Select all visible employees to enable"}
               >
                 <FaLayerGroup size={13} />
@@ -1395,11 +1431,11 @@ export default function UnmarkedAttendance() {
             )}
 
             <BulkApprovalPanel
-              bulkMode={bulkMode}            setBulkMode={setBulkMode}
+              bulkMode={bulkMode} setBulkMode={setBulkMode}
               bulkHalfDayType={bulkHalfDayType} setBulkHalfDayType={setBulkHalfDayType}
-              bulkLeaveType={bulkLeaveType}   setBulkLeaveType={setBulkLeaveType}
+              bulkLeaveType={bulkLeaveType} setBulkLeaveType={setBulkLeaveType}
               bulkLeaveTypeValue={bulkLeaveTypeValue} setBulkLeaveTypeValue={setBulkLeaveTypeValue}
-              bulkNotes={bulkNotes}           setBulkNotes={setBulkNotes}
+              bulkNotes={bulkNotes} setBulkNotes={setBulkNotes}
             />
           </div>
         </Modal>
