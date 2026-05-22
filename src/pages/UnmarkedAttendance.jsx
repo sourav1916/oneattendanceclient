@@ -445,6 +445,43 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
   );
 };
 
+// ─── Custom Hooks ─────────────────────────────────────────────────────────────
+
+const useLeaveConfigs = (isPaid) => {
+  const [configs, setConfigs] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const companyId = getCompanyId();
+    if (!companyId) return;
+
+    let isMounted = true;
+    const fetchConfigs = async () => {
+      setLoading(true);
+      try {
+        const response = await apiCall(`/leave/company?is_paid=${isPaid}`, 'GET', null, companyId);
+        const result = await response.json();
+        if (isMounted) {
+          if (result.success) {
+            setConfigs(result.data || []);
+          } else {
+            setConfigs([]);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch leave configs', e);
+        if (isMounted) setConfigs([]);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchConfigs();
+    return () => { isMounted = false; };
+  }, [isPaid]);
+
+  return { configs, loading };
+};
+
 // ─── Manage Attendance Modal ──────────────────────────────────────────────────
 
 const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSave, saving = false }) => {
@@ -483,13 +520,19 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   const [halfDaySession,       setHalfDaySession]       = useState(employee?.half_day_session || 'first_half');
   const [punchIn,              setPunchIn]              = useState(() => getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half').punchIn);
   const [punchOut,             setPunchOut]             = useState(() => getDefaultTimes(initialStatus || 'present', employee?.half_day_session || 'first_half').punchOut);
-  const [leaveType,            setLeaveType]            = useState(employee?.leave_type || 'paid');
-  const [leaveCode,            setLeaveCode]            = useState(employee?.leave_sub_type || 'CL');
+  const [leaveType,            setLeaveType]            = useState(employee?.leave_type || 'unpaid');
+  const [leaveCode,            setLeaveCode]            = useState(employee?.leave_sub_type || '');
   const [leaveDayOTEnabled,    setLeaveDayOTEnabled]    = useState(Boolean(employee?.leave_day_overtime));
   const [leaveDayOT,           setLeaveDayOT]           = useState(employee?.leave_day_overtime ? minutesToDurationValue(employee.leave_day_overtime) : null);
   const [isOvertime,           setIsOvertime]           = useState(false);
   const [isDeductible,         setIsDeductible]         = useState(false);
   const [notes,                setNotes]                = useState(employee?.remark || '');
+
+  const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(leaveType === 'paid');
+  const leaveOptions = useMemo(() => leaveConfigs.map((c) => ({
+    value: c.code,
+    label: `${c.code} - ${c.name}`
+  })), [leaveConfigs]);
 
   useEffect(() => {
     const targetStatus  = initialStatus || 'present';
@@ -499,8 +542,8 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
     setHalfDaySession(targetSession);
     setPunchIn(defaults.punchIn);
     setPunchOut(defaults.punchOut);
-    setLeaveType(employee?.leave_type || 'paid');
-    setLeaveCode(employee?.leave_sub_type || 'CL');
+    setLeaveType(employee?.leave_type || 'unpaid');
+    setLeaveCode(employee?.leave_sub_type || '');
     setLeaveDayOTEnabled(Boolean(employee?.leave_day_overtime));
     setLeaveDayOT(employee?.leave_day_overtime ? minutesToDurationValue(employee.leave_day_overtime) : null);
     setIsOvertime(false);
@@ -545,6 +588,10 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
       toast.error('Punch in and punch out times are required');
       return;
     }
+    if (status === 'leave' && !leaveCode) {
+      toast.error('Leave code is required');
+      return;
+    }
     onSave({
       employee_id:      employee.employee_id,
       status,
@@ -552,7 +599,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
       punch_out:        showTimeFields ? punchOut : '',
       half_day_session: status === 'half_day' ? halfDaySession : '',
       leave_type:       status === 'leave' ? leaveType : '',
-      leave_sub_type:   status === 'leave' && leaveType === 'paid' ? leaveCode : '',
+      leave_sub_type:   status === 'leave' ? leaveCode : '',
       leave_day_overtime: status === 'leave' && leaveDayOTEnabled ? durationValueToMinutes(leaveDayOT) : null,
       is_overtime:      overtimeEnabled && isOvertime,
       is_deductible:    deductibleEnabled && isDeductible,
@@ -631,26 +678,40 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
 
         {status === 'leave' && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Type</span>
-              <select value={leaveType} onChange={(e) => setLeaveType(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
-                <option value="paid">Paid Leave</option>
-                <option value="unpaid">Unpaid Leave</option>
-              </select>
-            </label>
-            {leaveType === 'paid' && (
+            <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Type</p>
+                  <p className="mt-0.5 text-xs font-medium text-slate-400">
+                    {leaveType === 'paid' ? 'Paid Leave - Regular paid time off' : 'Unpaid Leave - Time off without pay'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLeaveType(prev => prev === 'paid' ? 'unpaid' : 'paid');
+                    setLeaveCode('');
+                  }}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${leaveType === 'paid' ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${leaveType === 'paid' ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
               <label className="block">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Code</span>
-                <select value={leaveCode} onChange={(e) => setLeaveCode(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
-                  <option value="CL">CL - Casual Leave</option>
-                  <option value="SL">SL - Sick Leave</option>
-                  <option value="EL">EL - Earned Leave</option>
-                  <option value="ML">ML - Maternity Leave</option>
-                  <option value="weekend">Weekend</option>
-                  <option value="holiday">Holiday</option>
-                </select>
+                <span className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Leave Code</span>
+                <SelectField
+                  value={leaveOptions.find((o) => o.value === leaveCode) || null}
+                  onChange={(selected) => setLeaveCode(selected ? selected.value : '')}
+                  options={leaveOptions}
+                  isLoading={leaveConfigsLoading}
+                  placeholder="Select leave code..."
+                  isClearable
+                />
               </label>
-            )}
+            </div>
             <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -727,7 +788,14 @@ const BulkApprovalPanel = ({
   bulkLeaveType, setBulkLeaveType,
   bulkLeaveTypeValue, setBulkLeaveTypeValue,
   bulkNotes, setBulkNotes,
-}) => (
+}) => {
+  const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(bulkLeaveType === 'paid');
+  const leaveOptions = useMemo(() => leaveConfigs.map((c) => ({
+    value: c.code,
+    label: `${c.code} - ${c.name}`
+  })), [leaveConfigs]);
+
+  return (
   <div className="space-y-4">
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       <div className="md:col-span-2">
@@ -737,7 +805,7 @@ const BulkApprovalPanel = ({
             <button
               key={option.value} type="button"
               onClick={() => setBulkMode(option.value)}
-              className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+              className={`rounded-xl border px-3 py-2 whitespace-nowrap text-xs font-bold transition ${
                 bulkMode === option.value
                   ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
                   : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -770,28 +838,41 @@ const BulkApprovalPanel = ({
 
       {bulkMode === 'leave' && (
         <>
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Type</span>
-            <select value={bulkLeaveType} onChange={(e) => setBulkLeaveType(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
-              <option value="paid">Paid</option>
-              <option value="unpaid">Unpaid</option>
-            </select>
-          </label>
-          {bulkLeaveType === 'paid' && (
+          <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Leave Type</p>
+                <p className="mt-0.5 text-xs font-medium text-slate-400">
+                  {bulkLeaveType === 'paid' ? 'Paid Leave - Regular paid time off' : 'Unpaid Leave - Time off without pay'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkLeaveType(prev => prev === 'paid' ? 'unpaid' : 'paid');
+                  setBulkLeaveTypeValue('');
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${bulkLeaveType === 'paid' ? 'bg-indigo-600' : 'bg-slate-300'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${bulkLeaveType === 'paid' ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
             <label className="block">
-              <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Code</span>
-              <select value={bulkLeaveTypeValue} onChange={(e) => setBulkLeaveTypeValue(e.target.value)}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10">
-                <option value="CL">CL</option>
-                <option value="SL">SL</option>
-                <option value="EL">EL</option>
-                <option value="ML">ML</option>
-                <option value="weekend">Weekend</option>
-                <option value="holiday">Holiday</option>
-              </select>
+              <span className="mb-2 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Leave Code</span>
+              <SelectField
+                value={leaveOptions.find((o) => o.value === bulkLeaveTypeValue) || null}
+                onChange={(selected) => setBulkLeaveTypeValue(selected ? selected.value : '')}
+                options={leaveOptions}
+                isLoading={leaveConfigsLoading}
+                placeholder="Select leave code..."
+                isClearable
+                styles={{ control: (base) => ({ ...base, minHeight: '40px' }) }}
+              />
             </label>
-          )}
+          </div>
         </>
       )}
 
@@ -803,7 +884,8 @@ const BulkApprovalPanel = ({
       </label>
     </div>
   </div>
-);
+  );
+};
 
 // ─── Flag Confirm Modal ───────────────────────────────────────────────────────
 
@@ -855,8 +937,8 @@ export default function UnmarkedAttendance() {
   const [bulkScope,           setBulkScope]           = useState('selected');
   const [bulkMode,            setBulkMode]            = useState('actual');
   const [bulkHalfDayType,     setBulkHalfDayType]     = useState('first_half');
-  const [bulkLeaveType,       setBulkLeaveType]       = useState('paid');
-  const [bulkLeaveTypeValue,  setBulkLeaveTypeValue]  = useState('CL');
+  const [bulkLeaveType,       setBulkLeaveType]       = useState('unpaid');
+  const [bulkLeaveTypeValue,  setBulkLeaveTypeValue]  = useState('');
   const [bulkNotes,           setBulkNotes]           = useState('Bulk approved selected attendance');
   const [modalState,          setModalState]          = useState(null);
   const [flagConfirm,         setFlagConfirm]         = useState(null);
@@ -996,8 +1078,12 @@ export default function UnmarkedAttendance() {
 
     if (bulkMode === 'half_day') payload.half_day_type = bulkHalfDayType;
     if (bulkMode === 'leave') {
+      if (!bulkLeaveTypeValue) {
+        toast.error('Leave code is required');
+        return;
+      }
       payload.leave_type = bulkLeaveType;
-      if (bulkLeaveType === 'paid') payload.leave_type_value = bulkLeaveTypeValue;
+      payload.leave_type_value = bulkLeaveTypeValue;
     }
 
     setBulkSaving(true);
@@ -1027,7 +1113,7 @@ export default function UnmarkedAttendance() {
       return { ...base, half_day_type: formPayload.half_day_session, start_time: stripSeconds(formPayload.punch_in), end_time: stripSeconds(formPayload.punch_out), is_deductible: Boolean(formPayload.is_deductible), is_overtime: Boolean(formPayload.is_overtime) };
     }
     if (formPayload.status === 'leave') {
-      return { ...base, leave_type: formPayload.leave_type, leave_type_value: formPayload.leave_type === 'paid' ? formPayload.leave_sub_type : null, leave_day_overtime: formPayload.leave_day_overtime };
+      return { ...base, leave_type: formPayload.leave_type, leave_type_value: formPayload.leave_sub_type, leave_day_overtime: formPayload.leave_day_overtime };
     }
     return base;
   };
@@ -1298,7 +1384,7 @@ export default function UnmarkedAttendance() {
             {/* Scope info banner */}
             {bulkScope === 'all' ? (
               <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm font-medium text-amber-700">
-                <span className="font-bold">All employees</span> across all pages will be affected — <code className="rounded bg-amber-100 px-1 text-xs">employee_ids: "all"</code> will be sent.
+                <span className="font-bold">All employees</span> across all pages will be affected
               </p>
             ) : (
               <p className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm font-medium text-blue-700">
