@@ -92,7 +92,8 @@ const formatDateSimple = (date) => {
 
 const formatDisplay = (str) => {
   if (!str) return 'N/A';
-  return str.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  if (typeof str === 'object' && str !== null) return str.label || 'N/A';
+  return String(str).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
 const DEFAULT_DURATION = "00:30";
