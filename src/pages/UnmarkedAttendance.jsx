@@ -306,7 +306,7 @@ const Summary = ({ counts }) => {
     { key: 'unmarked',        label: 'Unmarked', icon: FaExclamationTriangle, className: STATUS_META.unmarked.className },
   ];
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-6 gap-2">
+    <div className="grid grid-cols-3 xsm:grid-cols-3 md:grid-cols-6 gap-2">
       {items.map((item) => {
         const Icon = item.icon;
         return (
