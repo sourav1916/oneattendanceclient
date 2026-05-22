@@ -194,9 +194,8 @@ const Navbar = ({
         navigate("/login");
     };
 
+
     const isSidebarOpen = isMobile ? sidebarOpen : isDesktopSidebarExpanded;
-
-
 
     return (
         <>
@@ -290,7 +289,7 @@ const Navbar = ({
                                             {user?.name || "User"}
                                         </p>
                                         <p className="text-[10px] text-white/70 truncate">
-                                            {isCompanyOwner ? "Company Owner" : (employee?.designation ? formatRole(employee.designation) : formatRole(activeRole || user?.role))}
+                                            {company?.role === 'company_owner' ? "Company Owner" : (company?.designation?.label ? formatRole(company.designation.label) : formatRole(activeRole || user?.role))}
                                         </p>
                                     </div>
 
@@ -318,7 +317,7 @@ const Navbar = ({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-semibold text-gray-800 truncate">{user?.name || "User"}</p>
-                                                    <p className="text-xs text-gray-500 truncate">{isCompanyOwner ? "Company Owner" : (employee?.designation ? formatRole(employee.designation) : formatRole(activeRole || user?.role))}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{company?.role === 'company_owner' ? "Company Owner" : (company?.designation?.label ? formatRole(company.designation.label) : formatRole(activeRole || user?.role))}</p>
                                                 </div>
                                             </div>
 
