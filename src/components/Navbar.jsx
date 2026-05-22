@@ -183,7 +183,7 @@ const Navbar = ({
     companies = [],   // array of all companies user has access to
     onCompanySwitch,  // callback(company) when user selects a different company
 }) => {
-    const { user, logout, activeRole, isEmployee, isCompanyOwner, isSystemAdmin } = useAuth();
+    const { user, employee, logout, activeRole, isEmployee, isCompanyOwner, isSystemAdmin } = useAuth();
     const [openDropdown, setOpenDropdown] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
     const navigate = useNavigate();
@@ -245,11 +245,11 @@ const Navbar = ({
                                 >
                                     <CompanyLogo company={company} size={6} />
                                     <div className="text-left max-w-[110px]">
-                                        <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-none mb-0.5">
-                                            Company
-                                        </p>
                                         <p className="text-xs font-semibold text-white truncate leading-tight">
                                             {company?.name || 'Select Company'}
+                                        </p>
+                                        <p className="text-[9px] font-bold text-white/50 uppercase tracking-widest leading-none mt-0.5">
+                                            {formatRole(activeRole)}
                                         </p>
                                     </div>
                                     <FaExchangeAlt className="w-3 h-3 text-white/40 group-hover:text-white/80 transition-colors ml-0.5" />
@@ -290,7 +290,7 @@ const Navbar = ({
                                             {user?.name || "User"}
                                         </p>
                                         <p className="text-[10px] text-white/70 truncate">
-                                            {formatRole(activeRole || user?.role)}
+                                            {isCompanyOwner ? "Company Owner" : (employee?.designation ? formatRole(employee.designation) : formatRole(activeRole || user?.role))}
                                         </p>
                                     </div>
 
@@ -318,7 +318,7 @@ const Navbar = ({
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-semibold text-gray-800 truncate">{user?.name || "User"}</p>
-                                                    <p className="text-xs text-gray-500 truncate">{formatRole(activeRole || user?.role)}</p>
+                                                    <p className="text-xs text-gray-500 truncate">{isCompanyOwner ? "Company Owner" : (employee?.designation ? formatRole(employee.designation) : formatRole(activeRole || user?.role))}</p>
                                                 </div>
                                             </div>
 
