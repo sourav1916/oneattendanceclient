@@ -681,9 +681,9 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
             <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Leave Type</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Paid Leave</p>
                   <p className="mt-0.5 text-xs font-medium text-slate-400">
-                    {leaveType === 'paid' ? 'Paid Leave - Regular paid time off' : 'Unpaid Leave - Time off without pay'}
+                    If Turn on Paid Leave, then it will be deducted from the employee leave balance
                   </p>
                 </div>
                 <button
@@ -841,9 +841,9 @@ const BulkApprovalPanel = ({
           <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Leave Type</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Paid Leave</p>
                 <p className="mt-0.5 text-xs font-medium text-slate-400">
-                  {bulkLeaveType === 'paid' ? 'Paid Leave - Regular paid time off' : 'Unpaid Leave - Time off without pay'}
+                  If Turn on Paid Leave, then it will be deducted from the employee leave balance
                 </p>
               </div>
               <button
