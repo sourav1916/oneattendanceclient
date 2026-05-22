@@ -10,7 +10,7 @@ import {
   FaUserShield,
   FaRegClock,
 } from "react-icons/fa";
-import { HiOutlineMail, HiOutlineLockClosed } from "react-icons/hi";
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlinePhone } from "react-icons/hi";
 import apiCall from "../../utils/api";
 import { toast } from "react-toastify";
 import { usePasswordValidation } from "../../hooks/usePasswordValidation";
@@ -22,7 +22,8 @@ const ForgotPassword = () => {
   const location = useLocation();
   const { validatePassword } = usePasswordValidation();
 
-  const [email, setEmail] = useState(location.state?.email || "");
+  const [forgotType, setForgotType] = useState(location.state?.email ? "email" : "phone");
+  const [identifier, setIdentifier] = useState(location.state?.email || location.state?.phone || "");
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,9 +33,11 @@ const ForgotPassword = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const isLoading = loadingAction !== null;
+  const pwdValidation = validatePassword(newPassword);
 
   useEffect(() => {
-    if (location.state?.email) setEmail(location.state.email);
+    if (location.state?.email) setIdentifier(location.state.email);
+    else if (location.state?.phone) setIdentifier(location.state.phone);
   }, [location.state]);
 
   useEffect(() => {
@@ -78,20 +81,26 @@ const ForgotPassword = () => {
     }
   };
 
+  const getPayload = () => {
+    return forgotType === "email" 
+      ? { forgot_type: "email", email: identifier }
+      : { forgot_type: "phone", phone: identifier };
+  };
+
   const handleRequestOtp = async () => {
     if (isLoading) return;
-    if (!email) {
-      toast.error("Please enter your email");
+    if (!identifier) {
+      toast.error("Please enter your email or phone number");
       return;
     }
 
     try {
       setLoadingAction("request");
-      const res = await apiCall("/auth/forgot-password/request-otp", "POST", { email });
+      const res = await apiCall("/auth/forgot-password/request-otp", "POST", getPayload());
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to send OTP");
 
-      toast.success(data.message || "OTP sent to your email");
+      toast.success(data.message || "OTP sent successfully");
       setStep("verify");
       setResendTimer(60);
       setOtp(Array(OTP_LENGTH).fill(""));
@@ -113,7 +122,7 @@ const ForgotPassword = () => {
     try {
       setLoadingAction("verify");
       const res = await apiCall("/auth/forgot-password/verify-otp", "POST", {
-        email,
+        ...getPayload(),
         otp: otpString,
       });
       const data = await res.json();
@@ -147,14 +156,14 @@ const ForgotPassword = () => {
     try {
       setLoadingAction("reset");
       const res = await apiCall("/auth/forgot-password/reset", "POST", {
-        email,
+        ...getPayload(),
         new_password: newPassword,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Password reset failed");
 
       toast.success(data.message || "Password reset successfully");
-      navigate("/login", { replace: true, state: { email } });
+      navigate("/login", { replace: true, state: getPayload().forgot_type === 'email' ? { email: identifier } : { phone: identifier } });
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -208,7 +217,7 @@ const ForgotPassword = () => {
               Verify your identity and set a new password using the same secure experience as login.
             </motion.p>
             <div className="mt-8 space-y-4">
-              {["OTP verification", "Fast password reset", "Email-based recovery", "Same secure interface"].map((text, i) => (
+              {["OTP verification", "Fast password reset", "Email/Phone recovery", "Same secure interface"].map((text, i) => (
                 <motion.div
                   key={text}
                   initial={{ x: -50, opacity: 0 }}
@@ -234,26 +243,66 @@ const ForgotPassword = () => {
                 </h2>
                 <p className="text-xs text-gray-500 text-center">
                   {step === "request"
-                    ? "Enter your email to receive an OTP"
+                    ? `Enter your ${forgotType} to receive an OTP`
                     : step === "verify"
-                    ? "Enter the OTP sent to your email"
+                    ? `Enter the OTP sent to your ${forgotType}`
                     : "Create your new password"}
                 </p>
               </div>
 
               {step === "request" && (
-                <div className="space-y-3.5">
-                  <div className="relative">
-                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={isLoading}
-                      className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60"
-                    />
+                <div className="space-y-4">
+                  <div className="flex bg-gray-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => { setForgotType("phone"); setIdentifier(""); }}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                        forgotType === "phone" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Phone
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotType("email"); setIdentifier(""); }}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                        forgotType === "email" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      Email
+                    </button>
                   </div>
+
+                  {forgotType === "email" ? (
+                    <div className="relative">
+                      <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                      <input
+                        type="email"
+                        placeholder="Email address"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        disabled={isLoading}
+                        className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60 transition-colors"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <div className="flex items-center justify-center px-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm font-semibold text-gray-700">
+                        IN +91
+                      </div>
+                      <div className="relative flex-1">
+                        <HiOutlinePhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                        <input
+                          type="text"
+                          placeholder="Phone number"
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          disabled={isLoading}
+                          className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none bg-gray-50 text-sm disabled:opacity-60 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  )}
                   <motion.button
                     whileHover={{ scale: isLoading ? 1 : 1.02 }}
                     whileTap={{ scale: isLoading ? 1 : 0.98 }}
@@ -269,10 +318,14 @@ const ForgotPassword = () => {
               {step === "verify" && (
                 <div className="space-y-3.5">
                   <div className="relative">
-                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    {forgotType === "email" ? (
+                      <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    ) : (
+                      <HiOutlinePhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    )}
                     <input
-                      type="email"
-                      value={email}
+                      type="text"
+                      value={identifier}
                       disabled
                       className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
                     />
@@ -334,10 +387,14 @@ const ForgotPassword = () => {
               {step === "reset" && (
                 <div className="space-y-3.5">
                   <div className="relative">
-                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    {forgotType === "email" ? (
+                      <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    ) : (
+                      <HiOutlinePhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
+                    )}
                     <input
-                      type="email"
-                      value={email}
+                      type="text"
+                      value={identifier}
                       disabled
                       className="w-full pl-11 pr-4 py-2.5 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-500 text-sm"
                     />
@@ -367,20 +424,20 @@ const ForgotPassword = () => {
                     <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-1.5 text-xs">
                       <p className="font-semibold text-gray-700">Password must contain:</p>
                       <div className="grid grid-cols-1 gap-1">
-                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).minLength ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
-                          <span>{validatePassword(newPassword).minLength ? '✓' : '•'}</span>
+                        <div className={`flex items-center gap-1.5 ${pwdValidation.minLength ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{pwdValidation.minLength ? '✓' : '•'}</span>
                           <span>At least 8 characters</span>
                         </div>
-                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasUpper ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
-                          <span>{validatePassword(newPassword).hasUpper ? '✓' : '•'}</span>
+                        <div className={`flex items-center gap-1.5 ${pwdValidation.hasUpper ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{pwdValidation.hasUpper ? '✓' : '•'}</span>
                           <span>At least 1 uppercase letter</span>
                         </div>
-                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasNumber ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
-                          <span>{validatePassword(newPassword).hasNumber ? '✓' : '•'}</span>
+                        <div className={`flex items-center gap-1.5 ${pwdValidation.hasNumber ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{pwdValidation.hasNumber ? '✓' : '•'}</span>
                           <span>At least 1 number</span>
                         </div>
-                        <div className={`flex items-center gap-1.5 ${validatePassword(newPassword).hasSpecial ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
-                          <span>{validatePassword(newPassword).hasSpecial ? '✓' : '•'}</span>
+                        <div className={`flex items-center gap-1.5 ${pwdValidation.hasSpecial ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          <span>{pwdValidation.hasSpecial ? '✓' : '•'}</span>
                           <span>At least 1 special character</span>
                         </div>
                       </div>
