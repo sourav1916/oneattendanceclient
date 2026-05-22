@@ -55,7 +55,10 @@ const formatDateSimple = (date) => {
   });
 };
 
-const formatDisplay = (str) => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+const formatDisplay = (str) => {
+  if (typeof str === 'object' && str !== null) return str.label || "N/A";
+  return str ? String(str).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+};
 
 const minutesToDuration = (value) => {
   if (value === null || typeof value === "undefined" || value === "") return null;

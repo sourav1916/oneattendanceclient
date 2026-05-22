@@ -169,8 +169,10 @@ const EmployeeEditModal = ({
 }) => {
     const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
 
-    const formatDisplay = (value) =>
-        value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+    const formatDisplay = (value) => {
+        if (typeof value === 'object' && value !== null) return value.label || "N/A";
+        return value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
+    };
 
     // weekends is now string[]: ["friday", "sunday"]
     const toggleWeekend = (day) => {
@@ -894,14 +896,14 @@ const EmployeeManagement = () => {
 
             setFormData({
                 name: normalizedEmployee.name || '',
-                designation: normalizedEmployee.designation || '',
+                designation: typeof normalizedEmployee.designation === 'object' ? normalizedEmployee.designation?.value : (normalizedEmployee.designation || ''),
                 email: normalizedEmployee.email || '',
                 phone: normalizedEmployee.phone || '',
                 employee_code: normalizedEmployee.employee_code || '',
-                employment_type: normalizedEmployee.employment_type || '',
-                salary_type: normalizedEmployee.salary_type || '',
+                employment_type: typeof normalizedEmployee.employment_type === 'object' ? normalizedEmployee.employment_type?.value : (normalizedEmployee.employment_type || ''),
+                salary_type: typeof normalizedEmployee.salary_type === 'object' ? normalizedEmployee.salary_type?.value : (normalizedEmployee.salary_type || ''),
                 joining_date: normalizedEmployee.joining_date ? new Date(normalizedEmployee.joining_date).toISOString().split('T')[0] : '',
-                status: normalizedEmployee.status || '',
+                status: typeof normalizedEmployee.status === 'object' ? normalizedEmployee.status?.value : (normalizedEmployee.status || ''),
                 permission_package_id: normalizedEmployee.permission_package_id || normalizedEmployee.package_id || null,
                 selectedPackage: selectedPackage || null,
                 auto_approve: normalizedEmployee.auto_approve ?? false,
@@ -1037,31 +1039,38 @@ const EmployeeManagement = () => {
     };
 
     const getDesignationDisplay = useCallback((v) => {
+        if (typeof v === 'object' && v !== null) return v.label || 'N/A';
         const d = constants.designations?.find(x => x.value === v);
         return d ? d.label : v || 'N/A';
     }, [constants.designations]);
 
     const getEmploymentTypeDisplay = useCallback((v) => {
+        if (typeof v === 'object' && v !== null) return v.label || 'N/A';
         const t = constants.employment_types?.find(x => x.value === v);
         return t ? t.label : v || 'N/A';
     }, [constants.employment_types]);
 
     const getSalaryTypeDisplay = useCallback((v) => {
+        if (typeof v === 'object' && v !== null) return v.label || 'N/A';
         const t = constants.salary_types?.find(x => x.value === v);
         return t ? t.label : v || 'N/A';
     }, [constants.salary_types]);
 
     const getStatusDisplay = useCallback((v) => {
+        if (typeof v === 'object' && v !== null) return v.label || 'N/A';
         const s = constants.employment_status?.find(x => x.value === v);
         return s ? s.label : v || 'N/A';
     }, [constants.employment_status]);
 
-    const getStatusClassName = useCallback((v) => ({
-        active: 'bg-green-100 text-green-800 border border-green-200',
-        inactive: 'bg-gray-100 text-gray-800 border border-gray-200',
-        suspended: 'bg-red-100 text-red-800 border border-red-200',
-        on_leave: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-    }[v] || 'bg-gray-100 text-gray-800 border border-gray-200'), []);
+    const getStatusClassName = useCallback((v) => {
+        const val = typeof v === 'object' && v !== null ? v.value : v;
+        return {
+            active: 'bg-green-100 text-green-800 border border-green-200',
+            inactive: 'bg-gray-100 text-gray-800 border border-gray-200',
+            suspended: 'bg-red-100 text-red-800 border border-red-200',
+            on_leave: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+        }[val] || 'bg-gray-100 text-gray-800 border border-gray-200';
+    }, []);
 
     // ─── Responsive Columns ──────────────────────────────────────────────────
 
