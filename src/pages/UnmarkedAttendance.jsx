@@ -379,8 +379,9 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
               {employee.employee_code} | {employee.designation?.label || 'No designation'}
             </p>
 
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
-              <FieldLabel label="Shift">{formatTime(employee.shift_start)} - {formatTime(employee.shift_end)}</FieldLabel>
+            <div className="mt-3 flex gap-x-8">
+              <FieldLabel label="Shift Start">{formatTime(employee.shift_start)}</FieldLabel>
+              <FieldLabel label="Shift End">{formatTime(employee.shift_end)}</FieldLabel>
               <FieldLabel label="Punch In">
                 <span className={employee.punch_in_time ? 'text-emerald-700' : 'text-slate-400'}>
                   {formatTime(employee.punch_in_time)}
