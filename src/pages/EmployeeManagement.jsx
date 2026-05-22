@@ -1394,6 +1394,7 @@ const EmployeeManagement = () => {
             <AnimatePresence>
                 {/* VIEW MODAL */}
                 <Modal
+                    key={MODAL_TYPES.VIEW}
                     isOpen={modalType === MODAL_TYPES.VIEW && !!selectedEmployee}
                     onClose={closeModal}
                     title="Employee Details"
@@ -1579,6 +1580,7 @@ const EmployeeManagement = () => {
 
                 {/* EDIT MODAL */}
                 <EmployeeEditModal
+                    key={MODAL_TYPES.EDIT}
                     isOpen={modalType === MODAL_TYPES.EDIT}
                     selectedEmployee={selectedEmployee}
                     formData={formData}
@@ -1601,6 +1603,7 @@ const EmployeeManagement = () => {
 
                 {/* DELETE MODAL */}
                 <Modal
+                    key={MODAL_TYPES.DELETE_CONFIRM}
                     isOpen={modalType === MODAL_TYPES.DELETE_CONFIRM && !!selectedEmployee}
                     onClose={closeModal}
                     title="Confirm Delete"

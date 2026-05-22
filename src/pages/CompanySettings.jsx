@@ -1,59 +1,37 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     FaPlus, FaSpinner, FaCheckCircle,
-    FaTimesCircle, FaExclamationTriangle, FaTimes,
-    FaEdit, FaTrash, FaInfoCircle,
-    FaListUl, FaTh, FaEye,
+    FaExclamationTriangle, FaTimes,
+    FaEdit, FaTrash,
     FaBuilding, FaMapMarkerAlt, FaGlobe, FaSearch,
-    FaClock, FaNetworkWired, FaUserCheck, FaRoad, FaCity,
-    FaCrosshairs, FaHistory, FaLink, FaMapPin, FaEnvelope,
-    FaCheck, FaMinusCircle, FaCog
+    FaClock, FaNetworkWired, FaUserCheck, FaRoad,
+    FaHistory, FaMapPin,
+    FaChevronDown, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
-import ActionMenu from '../components/ActionMenu';
-import ManagementGrid from '../components/ManagementGrid';
-import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementHub, RefreshButton } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
 import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
 import ManageMoreCompanyModal from '../components/CompanyModals/ManageMoreCompanyModal';
 
-// ─── Variants ─────────────────────────────────────────────────────────────────
-
-const modalVariants = {
-    hidden: { opacity: 0, scale: 0.92, y: 24 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.45 } },
-    exit: { opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.25 } }
-};
-const backdropVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1 },
-    exit: { opacity: 0 }
-};
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const avatarPalette = [
-    { bg: '#EEF2FF', text: '#4338CA' },
-    { bg: '#F0FDF4', text: '#15803D' },
-    { bg: '#FFF7ED', text: '#C2410C' },
-    { bg: '#FDF4FF', text: '#9333EA' },
-    { bg: '#EFF6FF', text: '#1D4ED8' },
+    { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+    { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+    { bg: 'bg-orange-50', text: 'text-orange-700' },
+    { bg: 'bg-purple-50', text: 'text-purple-700' },
+    { bg: 'bg-blue-50', text: 'text-blue-700' },
 ];
 
 function getInitials(name) {
     if (!name) return '?';
     return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
-}
-
-function formatDate(str) {
-    if (!str) return '—';
-    return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function formatDateTime(str) {
@@ -64,210 +42,394 @@ function formatDateTime(str) {
     });
 }
 
-// FIXED: Parse IPs to handle both object and string formats
+function formatDate(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatCurrency(value) {
+    return value ? String(value).toUpperCase() : '—';
+}
+
+function formatDistance(value) {
+    if (value === null || value === undefined || value === '') return '—';
+    return `${value} m`;
+}
+
+function formatAttendanceMethods(methods) {
+    if (!methods) return '—';
+    const items = Array.isArray(methods) ? methods : [methods];
+    const labels = items
+        .map(item => {
+            if (typeof item === 'string') return item;
+            if (item && typeof item === 'object') return item.method || item.key || item.value || '';
+            return '';
+        })
+        .filter(Boolean)
+        .map(item => item.charAt(0).toUpperCase() + item.slice(1));
+    return labels.length ? labels.join(', ') : '—';
+}
+
+function hasAttendanceMethod(methods, methodToFind) {
+    if (!methods) return false;
+    const items = Array.isArray(methods) ? methods : [methods];
+    return items.some(item => {
+        let val = '';
+        if (typeof item === 'string') val = item;
+        else if (item && typeof item === 'object') val = item.method || item.key || item.value || '';
+        return val.toLowerCase() === methodToFind.toLowerCase();
+    });
+}
+
 function parseIPs(ips) {
     if (!ips) return [];
-
-    // If it's not an array, try to parse or handle as string
     if (!Array.isArray(ips)) {
         if (typeof ips === 'string') {
             try {
                 const parsed = JSON.parse(ips);
-                if (Array.isArray(parsed)) {
-                    ips = parsed;
-                } else {
-                    return [];
-                }
-            } catch {
-                // Not JSON, treat as single string
-                return [ips];
-            }
-        } else {
-            return [];
-        }
+                if (Array.isArray(parsed)) ips = parsed;
+                else return [];
+            } catch { return [ips]; }
+        } else return [];
     }
-
     if (ips.length === 0) return [];
-
-    // Check if first item has ip_v4 property (object format from API)
-    if (ips[0] && typeof ips[0] === 'object' && ips[0].ip_v4) {
-        return ips.map(item => item.ip_v4).filter(Boolean);
-    }
-
-    // Handle array of strings
-    if (typeof ips[0] === 'string') {
-        return ips;
-    }
-
+    if (ips[0] && typeof ips[0] === 'object' && ips[0].ip_v4) return ips.map(i => i.ip_v4).filter(Boolean);
+    if (typeof ips[0] === 'string') return ips;
     return [];
 }
 
-// ─── Small Reusable Components ────────────────────────────────────────────────
-
-const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-            {icon} {label}
-        </label>
-        <div className="text-gray-800 font-semibold text-sm break-words">{value || '—'}</div>
-    </div>
-);
+// ─── Small Shared Components ──────────────────────────────────────────────────
 
 const StatusBadge = ({ isActive }) => (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border flex-shrink-0
         ${isActive
             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+            : 'bg-gray-50 text-gray-400 border-gray-200'}`}>
         <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
         {isActive ? 'Active' : 'Inactive'}
     </span>
 );
 
-const SummaryCard = ({ icon, label, value, gradient, delay = 0 }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ delay, duration: 0.4 }}
-        className={`bg-gradient-to-r ${gradient} rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all duration-300`}>
-        <div className="flex items-center justify-between">
-            <div>
-                <p className="text-xs opacity-80 mb-1">{label}</p>
-                <p className="text-3xl font-bold">{value}</p>
-            </div>
-            <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-xl">
-                {icon}
-            </div>
-        </div>
-    </motion.div>
+const FieldCell = ({ label, value, mono = false }) => (
+    <div>
+        <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+        <p className={`text-sm font-semibold text-slate-700 break-words ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
+    </div>
 );
 
-// ─── Company Detail Modal ─────────────────────────────────────────────────────
+// ─── Section Tabs ─────────────────────────────────────────────────────────────
 
-const CompanyDetailModal = ({ company, onClose, onEdit, onDelete }) => {
-    if (!company) return null;
-    const idx = company.id % 5;
+const TABS = [
+    { key: 'address', label: 'Address', icon: <FaRoad size={10} /> },
+    { key: 'network', label: 'Company Details', icon: <FaBuilding size={10} /> },
+    { key: 'attendance', label: 'Attendance', icon: <FaUserCheck size={10} /> },
+    { key: 'system', label: 'System', icon: <FaHistory size={10} /> },
+];
+
+const SectionTabs = ({ active, onChange }) => (
+    <div className="flex overflow-x-auto border-b border-slate-100 bg-slate-50/70">
+        {TABS.map(tab => (
+            <button
+                key={tab.key}
+                onClick={() => onChange(tab.key)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-colors border-b-2 -mb-px whitespace-nowrap
+                    ${active === tab.key
+                        ? 'border-blue-500 text-blue-600 bg-white'
+                        : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}>
+                {tab.icon} {tab.label}
+            </button>
+        ))}
+    </div>
+);
+
+// ─── Section Panels ───────────────────────────────────────────────────────────
+
+const AddressPanel = ({ company }) => (
+    <div className="p-4 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Address Line 1" value={company.address_line1} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Address Line 2" value={company.address_line2} />
+            </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="City" value={company.city} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="State" value={company.state} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Postal Code" value={company.postal_code} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Country" value={company.country || 'India'} />
+            </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Latitude" value={company.latitude} mono />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Longitude" value={company.longitude} mono />
+            </div>
+        </div>
+    </div>
+);
+
+const NetworkPanel = ({ company }) => {
     const ips = parseIPs(company.company_ips || []);
-
     return (
-        <AnimatePresence>
-            <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6"
-                onClick={onClose}>
-                <ModalScrollLock />
-                <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
-                    className="bg-white relative w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl border border-gray-100 m-auto flex flex-col overflow-hidden"
-                    onClick={e => e.stopPropagation()}>
-
-                    {/* Fixed Header */}
-                    <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 bg-white z-10 flex-shrink-0">
-                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                            <FaBuilding className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900">Company Details</h2>
-                            <p className="text-xs text-gray-400 mt-0.5">View company information</p>
-                        </div>
-                        <button onClick={onClose}
-                            className="ml-auto w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-400 hover:text-gray-600"
-                            aria-label="Close">
-                            <FaTimes className="w-4 h-4" />
-                        </button>
+        <div className="p-4 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                    <FieldCell label="Company Name" value={company.name} />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                    <FieldCell label="Legal Name" value={company.legal_name} />
+                </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                    <FieldCell label="Company ID" value={`#${company.id}`} mono />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                    <FieldCell label="Owner User" value={company.owner_user_id ? `#${company.owner_user_id}` : null} mono />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                    <FieldCell label="Currency" value={formatCurrency(company.transaction_currency)} />
+                </div>
+                <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                    <FieldCell label="Status" value={company.is_active ? 'Active' : 'Inactive'} />
+                </div>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <FaNetworkWired className="text-indigo-400" size={10} /> IP Restrictions
+                </p>
+                {ips.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                        {ips.map((ip, i) => (
+                            <span key={i} className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-mono font-bold text-indigo-700">
+                                {ip}
+                            </span>
+                        ))}
                     </div>
-
-                    {/* Scrollable Body */}
-                    <div className="overflow-y-auto flex-1 px-6 py-5 space-y-6">
-
-                        {/* Identity */}
-                        <div className="flex flex-col sm:flex-row items-center gap-5 pb-5 border-b border-gray-100">
-                            <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow ring-4 ring-gray-100 flex-shrink-0"
-                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
-                                {company.logo_url
-                                    ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                                    : getInitials(company.name)}
-                            </div>
-                            <div className="text-center sm:text-left">
-                                <h3 className="text-2xl font-black text-gray-900">{company.name}</h3>
-                                <p className="text-sm text-gray-400 mt-0.5">{company.legal_name}</p>
-                                <div className="mt-2 flex items-center justify-center sm:justify-start gap-2">
-                                    <StatusBadge isActive={company.is_active} />
-                                    <span className="text-xs text-gray-300 font-mono">#{company.id}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Address Details */}
-                        <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <FaRoad className="w-3 h-3" /> Address Details
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaRoad className="text-blue-400" />} label="Address Line 1" value={company.address_line1} />
-                                <InfoItem icon={<FaRoad className="text-blue-400" />} label="Address Line 2" value={company.address_line2} />
-                                <InfoItem icon={<FaCity className="text-blue-400" />} label="City" value={company.city} />
-                                <InfoItem icon={<FaGlobe className="text-blue-400" />} label="State" value={company.state} />
-                                <InfoItem icon={<FaMapMarkerAlt className="text-blue-400" />} label="Postal Code" value={company.postal_code} />
-                                <InfoItem icon={<FaGlobe className="text-blue-400" />} label="Country" value={company.country || 'India'} />
-                            </div>
-                        </div>
-
-                        {/* Location & Network */}
-                        <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <FaNetworkWired className="w-3 h-3" /> Location &amp; Network
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Latitude" value={company.latitude} />
-                                <InfoItem icon={<FaCrosshairs className="text-indigo-400" />} label="Longitude" value={company.longitude} />
-                                <div className="sm:col-span-2 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
-                                    <label className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                                        <FaNetworkWired /> IP Addresses
-                                    </label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {ips.length > 0
-                                            ? ips.map((ip, i) => (
-                                                <span key={i} className="px-3 py-1.5 bg-white border border-indigo-100 rounded-lg text-xs font-mono font-bold text-indigo-700">
-                                                    {ip}
-                                                </span>
-                                            ))
-                                            : <span className="text-gray-400 text-xs">No IP restrictions configured</span>}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* System Info */}
-                        <div>
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                <FaHistory className="w-3 h-3" /> System Info
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <InfoItem icon={<FaHistory className="text-gray-400" />} label="Created" value={formatDateTime(company.created_at)} />
-                                <InfoItem icon={<FaHistory className="text-gray-400" />} label="Updated" value={formatDateTime(company.updated_at)} />
-                                <InfoItem icon={<FaUserCheck className="text-gray-400" />} label="Created By" value={company.created_by?.name} />
-                                <InfoItem icon={<FaUserCheck className="text-gray-400" />} label="Updated By" value={company.updated_by?.name} />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Fixed Footer */}
-                    <div className="flex flex-col justify-end sm:flex-row gap-3 px-6 py-4 border-t border-gray-100 bg-white flex-shrink-0">
-                        <button onClick={() => { onEdit(company); onClose(); }}
-                            className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-semibold flex items-center justify-center gap-2 shadow-sm">
-                            <FaEdit size={14} /> Edit Company
-                        </button>
-                        <button onClick={() => { onDelete(company); onClose(); }}
-                            className="flex px-5 py-2.5 border-2 border-red-100 text-red-500 rounded-xl hover:bg-red-50 transition-all font-semibold flex items-center justify-center gap-2">
-                            <FaTrash size={14} /> Delete
-                        </button>
-                    </div>
-                </motion.div>
-            </motion.div>
-        </AnimatePresence>
+                ) : (
+                    <p className="text-sm text-gray-400">No IP restrictions configured</p>
+                )}
+            </div>
+        </div>
     );
 };
 
+const AttendancePanel = ({ company }) => {
+    const hasManual = hasAttendanceMethod(company.attendance_methods, 'manual');
+    const hasGps = hasAttendanceMethod(company.attendance_methods, 'gps');
+    const hasIp = hasAttendanceMethod(company.attendance_methods, 'ip');
+    const ips = parseIPs(company.company_ips || []);
 
-// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+    return (
+        <div className="p-4 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className={`border rounded-xl p-4 flex items-center justify-between transition-all ${hasManual ? 'bg-emerald-50/50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <div>
+                        <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${hasManual ? 'text-emerald-600' : 'text-gray-400'}`}>Manual Method</p>
+                        <p className={`text-sm font-bold ${hasManual ? 'text-emerald-700' : 'text-gray-500'}`}>{hasManual ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                    {hasManual ? <FaCheckCircle className="text-emerald-500" size={20} /> : <FaTimes className="text-gray-300" size={20} />}
+                </div>
 
+                <div className={`border rounded-xl p-4 flex items-center justify-between transition-all ${hasGps ? 'bg-emerald-50/50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <div>
+                        <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${hasGps ? 'text-emerald-600' : 'text-gray-400'}`}>GPS Method</p>
+                        <p className={`text-sm font-bold ${hasGps ? 'text-emerald-700' : 'text-gray-500'}`}>{hasGps ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                    {hasGps ? <FaCheckCircle className="text-emerald-500" size={20} /> : <FaTimes className="text-gray-300" size={20} />}
+                </div>
+
+                <div className={`border rounded-xl p-4 flex items-center justify-between transition-all ${hasIp ? 'bg-emerald-50/50 border-emerald-100' : 'bg-gray-50 border-gray-100'}`}>
+                    <div>
+                        <p className={`text-[10px] font-bold uppercase tracking-widest mb-1 ${hasIp ? 'text-emerald-600' : 'text-gray-400'}`}>IP Method</p>
+                        <p className={`text-sm font-bold ${hasIp ? 'text-emerald-700' : 'text-gray-500'}`}>{hasIp ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                    {hasIp ? <FaCheckCircle className="text-emerald-500" size={20} /> : <FaTimes className="text-gray-300" size={20} />}
+                </div>
+            </div>
+
+            {(hasGps || hasIp) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {hasGps && (
+                        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                <FaMapMarkerAlt className="text-emerald-500" size={14} /> GPS Configuration
+                            </p>
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-2">
+                                <FieldCell label="Latitude" value={company.latitude} mono />
+                                <FieldCell label="Longitude" value={company.longitude} mono />
+                                <FieldCell label="Max Distance" value={formatDistance(company.max_distance)} />
+                            </div>
+                        </div>
+                    )}
+
+                    {hasIp && (
+                        <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                                <FaNetworkWired className="text-blue-500" size={14} /> Allowed IPs
+                            </p>
+                            {ips.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {ips.map((ip, i) => (
+                                        <span key={i} className="px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg text-xs font-mono font-bold text-blue-700">
+                                            {ip}
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-400 font-medium">No IPs configured</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const SystemPanel = ({ company }) => (
+    <div className="p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Created At" value={formatDateTime(company.created_at)} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Updated At" value={formatDateTime(company.updated_at)} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Created By" value={company.created_by?.name} />
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-3.5">
+                <FieldCell label="Updated By" value={company.updated_by?.name} />
+            </div>
+        </div>
+    </div>
+);
+
+// ─── Accordion Item ───────────────────────────────────────────────────────────
+
+const CompanyAccordionItem = ({ company, index, onEdit, onDelete, onManageMore }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('address');
+
+    const idx = company.id % 5;
+    const pal = avatarPalette[idx];
+    const ips = parseIPs(company.company_ips || []);
+
+    const summaryParts = [
+        [company.city, company.state].filter(Boolean).join(', '),
+        ips.length > 0 ? `${ips.length} IP${ips.length > 1 ? 's' : ''}` : null,
+        formatAttendanceMethods(company.attendance_methods) !== '—'
+            ? formatAttendanceMethods(company.attendance_methods)
+            : null,
+    ].filter(Boolean).join(' · ');
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.04 }}
+            className={`bg-white rounded-xl border transition-all duration-200
+                ${isOpen
+                    ? 'border-indigo-200 shadow-md shadow-indigo-50/60'
+                    : 'border-gray-100 shadow-sm hover:border-gray-200 hover:shadow-md'}
+                ${!company.is_active ? 'opacity-70' : ''}`}>
+
+            {/* Header */}
+            <button
+                onClick={() => setIsOpen(prev => !prev)}
+                className="w-full flex items-center gap-3 px-5 py-4 text-left">
+                <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden
+                    ${pal.bg} ${pal.text}`}>
+                    {company.logo_url
+                        ? <img src={company.logo_url} alt="" className="w-full h-full object-cover"
+                            onError={e => { e.target.style.display = 'none'; }} />
+                        : getInitials(company.name)}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-800 text-sm">{company.name}</span>
+                        <span className="text-xs text-gray-300 font-mono">#{company.id}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{summaryParts || company.legal_name || '—'}</p>
+                </div>
+
+                <div className="flex items-center gap-3 flex-shrink-0">
+                    <StatusBadge isActive={company.is_active} />
+                    <span className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+                        <FaChevronDown size={12} />
+                    </span>
+                </div>
+            </button>
+
+            {/* Expanded body */}
+            <AnimatePresence initial={false}>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.22, ease: 'easeInOut' }}>
+                        <div className="border-t border-gray-100">
+
+                            {/* Action bar */}
+                            <div className="flex items-center justify-between px-5 py-2.5">
+                                <p className="text-xs text-gray-400 truncate max-w-xs">{company.legal_name || '—'}</p>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => onEdit(company)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors">
+                                        <FaEdit size={12} /> Edit
+                                    </button>
+                                    <button
+                                        onClick={() => onManageMore(company)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                                        <FaCog size={12} /> More
+                                    </button>
+                                    <button
+                                        onClick={() => onDelete(company)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
+                                        <FaTrash size={12} /> Delete
+                                    </button>
+                                </div>
+                            </div>
+
+                            <SectionTabs active={activeTab} onChange={setActiveTab} />
+
+                            <div className="bg-gray-50/50">
+                                {activeTab === 'address' && <AddressPanel company={company} />}
+                                {activeTab === 'network' && <NetworkPanel company={company} />}
+                                {activeTab === 'attendance' && <AttendancePanel company={company} />}
+                                {activeTab === 'system' && <SystemPanel company={company} />}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+};
+
+// ─── Delete Modal ─────────────────────────────────────────────────────────────
+
+const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } };
+const modalVariants = {
+    hidden: { opacity: 0, scale: 0.92, y: 24 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring', duration: 0.45 } },
+    exit: { opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.25 } }
+};
 
 const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
     if (!company) return null;
@@ -280,33 +442,35 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit"
                     className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
                     onClick={e => e.stopPropagation()}>
-                    <div className="sticky top-0 flex justify-between items-center px-6 py-4 bg-white text-gray-800 rounded-t-xl border-b border-gray-100">
-                        <h2 className="text-lg font-bold flex items-center gap-2">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                        <h2 className="text-base font-bold flex items-center gap-2 text-gray-800">
                             <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center">
                                 <FaTrash className="text-red-500" size={13} />
                             </div>
                             Delete Company
                         </h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl"><FaTimes size={17} className="text-gray-500" /></button>
+                        <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl">
+                            <FaTimes size={15} className="text-gray-500" />
+                        </button>
                     </div>
-                    <div className="p-6 sm:p-8 text-center">
+                    <div className="p-6 text-center">
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', duration: 0.5 }}
-                            className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaExclamationTriangle className="text-4xl text-red-400" />
+                            className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaExclamationTriangle className="text-3xl text-red-400" />
                         </motion.div>
-                        <p className="text-xl font-bold text-gray-800 mb-2">Are you sure?</p>
-                        <p className="text-gray-500 mb-6 leading-relaxed text-sm">
+                        <p className="text-lg font-bold text-gray-800 mb-2">Are you sure?</p>
+                        <p className="text-gray-500 mb-6 text-sm leading-relaxed">
                             You are about to permanently delete{' '}
                             <span className="font-bold text-red-500">{company.name}</span>. This action cannot be undone.
                         </p>
                         <div className="flex gap-3">
                             <button onClick={onClose}
-                                className="flex-1 py-3 border-2 border-gray-100 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold transition-all">
+                                className="flex-1 py-2.5 border-2 border-gray-100 rounded-xl text-gray-600 hover:bg-gray-50 font-semibold transition-all text-sm">
                                 Keep
                             </button>
                             <button onClick={() => onConfirm(company.id)} disabled={deleting}
-                                className="flex-1 py-3 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-xl hover:from-red-500 hover:to-rose-600 flex items-center justify-center gap-2 font-semibold disabled:opacity-50 shadow-md">
-                                {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash />}
+                                className="flex-1 py-2.5 bg-gradient-to-r from-red-400 to-rose-500 text-white rounded-xl hover:from-red-500 hover:to-rose-600 flex items-center justify-center gap-2 font-semibold disabled:opacity-50 text-sm">
+                                {deleting ? <FaSpinner className="animate-spin" /> : <FaTrash size={12} />}
                                 {deleting ? 'Deleting...' : 'Delete Now'}
                             </button>
                         </div>
@@ -317,6 +481,29 @@ const DeleteConfirmModal = ({ company, onClose, onConfirm, deleting }) => {
     );
 };
 
+// ─── Stats Bar ────────────────────────────────────────────────────────────────
+
+const StatsBar = ({ stats }) => (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+            { icon: <FaBuilding className="text-blue-400" />, label: 'Total', value: stats.total, color: 'text-blue-600' },
+            { icon: <FaCheckCircle className="text-emerald-400" />, label: 'Active', value: stats.active, color: 'text-emerald-600' },
+            { icon: <FaNetworkWired className="text-violet-400" />, label: 'IP Restricted', value: stats.withIP, color: 'text-violet-600' },
+            { icon: <FaMapMarkerAlt className="text-orange-400" />, label: 'With Logo', value: stats.withLogo, color: 'text-orange-600' },
+        ].map((s, i) => (
+            <motion.div key={i}
+                initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm flex items-center gap-3">
+                <div className="text-base">{s.icon}</div>
+                <div>
+                    <p className={`text-xl font-bold leading-none ${s.color}`}>{s.value}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{s.label}</p>
+                </div>
+            </motion.div>
+        ))}
+    </div>
+);
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const CompanyManagement = () => {
@@ -326,23 +513,13 @@ const CompanyManagement = () => {
     const [deleting, setDeleting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
-    const [viewMode, setViewMode] = useState('table');
-    const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
-    const [detailTarget, setDetailTarget] = useState(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalTarget, setEditModalTarget] = useState(null);
     const [manageMoreTarget, setManageMoreTarget] = useState(null);
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
-
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 500);
@@ -362,25 +539,15 @@ const CompanyManagement = () => {
             const result = await res.json();
             if (result.success) {
                 setCompanies(result.data || []);
-                const currentPage = Number(result.pagination?.page ?? result.current_page ?? result.page ?? page);
-                const perPage = Number(result.pagination?.limit ?? result.per_page ?? result.limit ?? pagination.limit);
-                const total = Number(result.pagination?.total ?? result.total ?? result.meta?.total ?? result.count ?? 0);
-                const totalPages = Number(
-                    result.pagination?.total_pages ??
-                    result.meta?.total_pages ??
-                    result.last_page ??
-                    Math.max(1, Math.ceil(total / perPage))
-                );
+                const currentPage = Number(result.pagination?.page ?? result.current_page ?? page);
+                const perPage = Number(result.pagination?.limit ?? result.per_page ?? pagination.limit);
+                const total = Number(result.pagination?.total ?? result.total ?? 0);
+                const totalPages = Number(result.pagination?.total_pages ?? result.last_page ?? Math.max(1, Math.ceil(total / perPage)));
                 updatePagination({
-                    page: currentPage,
-                    limit: perPage,
-                    total,
-                    total_pages: totalPages,
-                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages),
+                    page: currentPage, limit: perPage, total, total_pages: totalPages,
+                    is_last_page: result.pagination?.is_last_page ?? (currentPage >= totalPages),
                 });
-            } else {
-                throw new Error(result.message || 'Failed to fetch companies');
-            }
+            } else throw new Error(result.message || 'Failed to fetch companies');
         } catch (e) {
             toast.error(e.message || 'Failed to load companies');
         } finally {
@@ -398,14 +565,10 @@ const CompanyManagement = () => {
     }, [debouncedSearch]);
 
     useEffect(() => {
-        if (!isInitialLoad && !fetchInProgress.current) {
-            fetchCompanies(pagination.page, debouncedSearch, true);
-        }
-    }, [pagination.page, pagination.limit, debouncedSearch]);
+        if (!isInitialLoad && !fetchInProgress.current) fetchCompanies(pagination.page, debouncedSearch, true);
+    }, [pagination.page, pagination.limit]);
 
-    useEffect(() => {
-        fetchCompanies(1, '', true);
-    }, []);
+    useEffect(() => { fetchCompanies(1, '', true); }, []);
 
     const handleDelete = async (id) => {
         setDeleting(true);
@@ -425,21 +588,15 @@ const CompanyManagement = () => {
 
     const handleEditSuccess = async (id, changedFields) => {
         try {
-            const payload = {
-                id: id,
-                ...changedFields
-            };
-
-            const res = await apiCall('/company/update', 'PUT', payload);
+            const res = await apiCall('/company/update', 'PUT', { id, ...changedFields });
             const result = await res.json();
-
             if (result.success) {
+                const updated = result.data || { id, ...changedFields };
+                setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
                 toast.success('Company updated successfully!');
                 setEditModalTarget(null);
                 fetchCompanies(pagination.page, debouncedSearch, true);
-            } else {
-                throw new Error(result.message || 'Update failed');
-            }
+            } else throw new Error(result.message || 'Update failed');
         } catch (e) {
             toast.error(e.message || 'Failed to update company');
         }
@@ -450,14 +607,10 @@ const CompanyManagement = () => {
             if (payload?.id) {
                 try {
                     const stored = JSON.parse(localStorage.getItem('company'));
-                    if (stored?.id === payload.id) {
-                        localStorage.setItem('company', JSON.stringify({ ...stored, ...payload }));
-                    }
-                } catch {
-                    // ignore cache update failures
-                }
+                    if (stored?.id === payload.id) localStorage.setItem('company', JSON.stringify({ ...stored, ...payload }));
+                } catch { }
+                setCompanies(prev => prev.map(c => c.id === payload.id ? { ...c, ...payload } : c));
             }
-
             setManageMoreTarget(null);
             fetchCompanies(pagination.page, debouncedSearch, true);
         } catch (e) {
@@ -472,12 +625,9 @@ const CompanyManagement = () => {
         withIP: companies.filter(c => parseIPs(c.company_ips || []).length > 0).length,
     };
 
-    const isMobile = windowWidth < 640;
-    const isTablet = windowWidth < 1024;
-    const showLegal = !isMobile;
-    const showLocation = !isMobile;
-    const showIP = !isTablet;
-    const showCreated = !isTablet;
+    const currentDeleteTarget = deleteTarget ? companies.find(c => c.id === deleteTarget.id) || deleteTarget : null;
+    const currentEditTarget = editModalTarget ? companies.find(c => c.id === editModalTarget.id) || editModalTarget : null;
+    const currentManageMoreTarget = manageMoreTarget ? companies.find(c => c.id === manageMoreTarget.id) || manageMoreTarget : null;
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
@@ -485,7 +635,7 @@ const CompanyManagement = () => {
         <ManagementHub
             eyebrow={<><FaBuilding size={11} /> Company settings</>}
             title="Company Management"
-            description="Manage your registered companies and their details."
+            description="Manage your registered companies and their settings."
             accent="blue"
             summary={
                 <div className="flex items-center gap-2 text-sm bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
@@ -499,7 +649,9 @@ const CompanyManagement = () => {
                     <RefreshButton loading={loading} onClick={() => fetchCompanies(pagination.page, debouncedSearch, true)}>
                         Refresh
                     </RefreshButton>
-                    <motion.button whileHover={{ scale: 1.03, y: -1 }} whileTap={{ scale: 0.97 }}
+                    <motion.button
+                        whileHover={{ scale: 1.03, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => setCreateModalOpen(true)}
                         className="group relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 overflow-hidden">
                         <FaPlus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
@@ -509,253 +661,70 @@ const CompanyManagement = () => {
                 </>
             }
         >
-            <div className="space-y-8">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-                    <SummaryCard icon={<FaBuilding />} label="Total Companies" value={stats.total} gradient="from-blue-400 to-indigo-500" delay={0.05} />
-                    <SummaryCard icon={<FaCheckCircle />} label="Active" value={stats.active} gradient="from-emerald-400 to-teal-500" delay={0.10} />
-                    <SummaryCard icon={<FaNetworkWired />} label="IP Restricted" value={stats.withIP} gradient="from-violet-400 to-purple-500" delay={0.15} />
-                    <SummaryCard icon={<FaMapMarkerAlt />} label="With Logo" value={stats.withLogo} gradient="from-orange-400 to-amber-500" delay={0.20} />
-                </div>
+            <div className="space-y-6">
 
-                {/* Search / View Toolbar */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
-                >
-                    <div className="relative w-full flex-1">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-                        <input
-                            type="text"
-                            placeholder="Search by company name, city, or state..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
-                        />
-                        {searchTerm && (
-                            <button
-                                onClick={() => setSearchTerm('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                                <FaTimes />
-                            </button>
-                        )}
-                    </div>
+                {/* Stats */}
+                <StatsBar stats={stats} />
 
-                    <div className="flex w-full items-center justify-end lg:w-auto">
-                        {!loading && companies.length > 0 && (
-                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
-                        )}
-                    </div>
+                {/* Search */}
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+                    className="relative">
+                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                    <input
+                        type="text"
+                        placeholder="Search by company name, city, or state..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+                    />
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <FaTimes size={13} />
+                        </button>
+                    )}
                 </motion.div>
 
-                {/* Loading skeleton */}
+                {/* Loading */}
                 {loading && !companies.length && <SkeletonComponent />}
 
-                {/* Empty State */}
+                {/* Empty state */}
                 {!loading && companies.length === 0 && (
-                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-xl shadow-md border border-gray-100 p-16 text-center">
-                        <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-5">
-                            <FaBuilding className="text-4xl text-blue-200" />
+                    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-16 text-center">
+                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FaBuilding className="text-3xl text-blue-200" />
                         </div>
-                        <p className="text-xl font-bold text-gray-600 mb-2">No companies found</p>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-lg font-bold text-gray-600 mb-1">No companies found</p>
+                        <p className="text-gray-400 text-sm mb-4">
                             {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Company" to get started'}
                         </p>
                         {debouncedSearch
-                            ? <button onClick={() => setSearchTerm('')} className="mt-4 px-5 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 text-sm font-semibold">Clear Search</button>
-                            : <button onClick={() => setCreateModalOpen(true)} className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-lg">Add Company</button>}
+                            ? <button onClick={() => setSearchTerm('')}
+                                className="px-5 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 text-sm font-semibold">
+                                Clear Search
+                              </button>
+                            : <button onClick={() => setCreateModalOpen(true)}
+                                className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-md">
+                                Add Company
+                              </button>}
                     </motion.div>
                 )}
 
-                {/* Table View */}
-                {!loading && companies.length > 0 && viewMode === 'table' && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="xsm:hidden bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
-                                    <tr>
-                                        <th className="px-6 py-4 font-semibold tracking-wider">Company</th>
-                                        {showLegal && <th className="px-5 py-4 font-semibold tracking-wider">Legal Name</th>}
-                                        {showLocation && <th className="px-5 py-4 font-semibold tracking-wider">Location</th>}
-                                        {showIP && <th className="px-5 py-4 font-semibold tracking-wider">IP Address</th>}
-                                        <th className="px-5 py-4 font-semibold tracking-wider">Status</th>
-                                        {showCreated && <th className="px-5 py-4 font-semibold tracking-wider">Created</th>}
-                                        <th className="px-5 py-4 text-right font-semibold tracking-wider"><FaCog className="w-4 h-4 ml-auto" /></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {companies.map((company, i) => {
-                                        const idx = company.id % 5;
-                                        const ips = parseIPs(company.company_ips || []);
-                                        return (
-                                            <motion.tr key={company.id}
-                                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                                                className="hover:bg-blue-50/30 transition-colors cursor-pointer group"
-                                                onClick={() => setDetailTarget(company)}>
-
-                                                {/* Company */}
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
-                                                            style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
-                                                            {company.logo_url
-                                                                ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                                                                : getInitials(company.name)}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-semibold text-gray-800">{company.name}</p>
-                                                            <p className="text-xs text-indigo-400 font-mono">#{company.id}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                {/* Legal Name */}
-                                                {showLegal && (
-                                                    <td className="px-5 py-4">
-                                                        <p className="text-xs text-gray-500 font-medium">{company.legal_name || '—'}</p>
-                                                    </td>
-                                                )}
-
-                                                {/* Location */}
-                                                {showLocation && (
-                                                    <td className="px-5 py-4">
-                                                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                                                            <FaMapMarkerAlt className="text-rose-400 flex-shrink-0" />
-                                                            <span>{[company.city, company.state].filter(Boolean).join(', ') || '—'}</span>
-                                                        </div>
-                                                    </td>
-                                                )}
-
-                                                {/* IP */}
-                                                {showIP && (
-                                                    <td className="px-5 py-4">
-                                                        {ips.length > 0 ? (
-                                                            <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-mono text-indigo-700">
-                                                                {ips[0]}{ips.length > 1 ? ` +${ips.length - 1}` : ''}
-                                                            </span>
-                                                        ) : <span className="text-gray-300 text-xs">—</span>}
-                                                    </td>
-                                                )}
-
-                                                {/* Status */}
-                                                <td className="px-5 py-4">
-                                                    <StatusBadge isActive={company.is_active} />
-                                                </td>
-
-                                                {/* Created */}
-                                                {showCreated && (
-                                                    <td className="px-5 py-4">
-                                                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                                                            <FaClock className="flex-shrink-0" />
-                                                            {formatDate(company.created_at)}
-                                                        </div>
-                                                    </td>
-                                                )}
-
-                                                {/* Actions */}
-                                                <td className="px-5 py-4 text-right" onClick={e => e.stopPropagation()}>
-                                                    <ActionMenu
-                                                        menuId={`table-${company.id}`}
-                                                        activeId={activeActionMenu}
-                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                        actions={[
-                                                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(company), className: 'text-blue-600 hover:bg-blue-50' },
-                                                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
-                                                            { label: 'Manage More', icon: <FaCog size={13} />, onClick: () => setManageMoreTarget(company), className: 'text-slate-700 hover:bg-slate-100' },
-                                                            { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company), className: 'text-red-500 hover:bg-red-50' },
-                                                        ]}
-                                                    />
-                                                </td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
-                )}
-
-                {/* Card View */}
-                {!loading && companies.length > 0 && viewMode === 'card' && (
-                    <ManagementGrid viewMode={viewMode}>
-                        {companies.map((company, i) => {
-                            const idx = company.id % 5;
-                            const ips = parseIPs(company.company_ips || []);
-                            return (
-                                <motion.div key={company.id}
-                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                                    onClick={() => setDetailTarget(company)}
-                                    className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
-
-                                    {/* Header */}
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
-                                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
-                                                {company.logo_url
-                                                    ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                                                    : getInitials(company.name)}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3 className="font-bold text-gray-800 text-sm leading-tight truncate group-hover:text-blue-600 transition-colors">{company.name}</h3>
-                                                <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[150px]">{company.legal_name || '—'}</p>
-                                            </div>
-                                        </div>
-                                        <StatusBadge isActive={company.is_active} />
-                                    </div>
-
-                                    {/* Body */}
-                                    <div className="space-y-2.5 mb-4 flex-1">
-                                        {(company.city || company.state) && (
-                                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                <FaMapMarkerAlt className="text-rose-400 flex-shrink-0 w-3 h-3" />
-                                                <span>{[company.city, company.state].filter(Boolean).join(', ')}</span>
-                                            </div>
-                                        )}
-                                        {company.address_line1 && (
-                                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                <FaRoad className="text-blue-400 flex-shrink-0 w-3 h-3" />
-                                                <span className="truncate">{company.address_line1}</span>
-                                            </div>
-                                        )}
-                                        {ips.length > 0 && (
-                                            <div className="flex items-center gap-2 text-xs">
-                                                <FaNetworkWired className="text-indigo-400 flex-shrink-0 w-3 h-3" />
-                                                <span className="font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100">
-                                                    {ips[0]}{ips.length > 1 ? ` +${ips.length - 1}` : ''}
-                                                </span>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                                            <FaClock className="flex-shrink-0 w-3 h-3" />
-                                            <span>{formatDate(company.created_at)}</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Footer */}
-                                    <div className="flex items-center justify-between pt-3 border-t border-gray-100" onClick={e => e.stopPropagation()}>
-                                        <span className="text-xs text-gray-300 font-mono">#{company.id}</span>
-                                        <ActionMenu
-                                            menuId={`card-${company.id}`}
-                                            activeId={activeActionMenu}
-                                            onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                            actions={[
-                                                { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(company), className: 'text-blue-600 hover:bg-blue-50' },
-                                                { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(company), className: 'text-emerald-600 hover:bg-emerald-50' },
-                                                { label: 'Manage More', icon: <FaCog size={13} />, onClick: () => setManageMoreTarget(company), className: 'text-slate-700 hover:bg-slate-100' },
-                                                { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => setDeleteTarget(company), className: 'text-red-500 hover:bg-red-50' },
-                                            ]}
-                                        />
-                                    </div>
-                                </motion.div>
-                            );
-                        })}
-                    </ManagementGrid>
+                {/* Accordion list */}
+                {!loading && companies.length > 0 && (
+                    <div className="space-y-3">
+                        {companies.map((company, i) => (
+                            <CompanyAccordionItem
+                                key={company.id}
+                                company={company}
+                                index={i}
+                                onEdit={setEditModalTarget}
+                                onDelete={setDeleteTarget}
+                                onManageMore={setManageMoreTarget}
+                            />
+                        ))}
+                    </div>
                 )}
 
                 {/* Pagination */}
@@ -764,7 +733,7 @@ const CompanyManagement = () => {
                         currentPage={pagination.page}
                         totalItems={pagination.total}
                         itemsPerPage={pagination.limit}
-                        onPageChange={(p) => { if (p !== pagination.page) goToPage(p); }}
+                        onPageChange={p => { if (p !== pagination.page) goToPage(p); }}
                         showInfo={true}
                         onLimitChange={changeLimit}
                     />
@@ -773,20 +742,9 @@ const CompanyManagement = () => {
 
             {/* Modals */}
             <AnimatePresence>
-                {detailTarget && (
-                    <CompanyDetailModal
-                        company={detailTarget}
-                        onClose={() => setDetailTarget(null)}
-                        onEdit={(c) => { setDetailTarget(null); setEditModalTarget(c); }}
-                        onDelete={(c) => { setDetailTarget(null); setDeleteTarget(c); }}
-                    />
-                )}
-            </AnimatePresence>
-
-            <AnimatePresence>
-                {deleteTarget && (
+                {currentDeleteTarget && (
                     <DeleteConfirmModal
-                        company={deleteTarget}
+                        company={currentDeleteTarget}
                         deleting={deleting}
                         onClose={() => setDeleteTarget(null)}
                         onConfirm={handleDelete}
@@ -802,15 +760,15 @@ const CompanyManagement = () => {
             />
 
             <EditCompanyModal
-                isOpen={!!editModalTarget}
-                company={editModalTarget}
+                isOpen={!!currentEditTarget}
+                company={currentEditTarget}
                 onClose={() => setEditModalTarget(null)}
                 onSuccess={handleEditSuccess}
             />
 
             <ManageMoreCompanyModal
-                isOpen={!!manageMoreTarget}
-                company={manageMoreTarget}
+                isOpen={!!currentManageMoreTarget}
+                company={currentManageMoreTarget}
                 onClose={() => setManageMoreTarget(null)}
                 onSuccess={handleManageMoreSuccess}
             />
@@ -819,3 +777,4 @@ const CompanyManagement = () => {
 };
 
 export default CompanyManagement;
+
