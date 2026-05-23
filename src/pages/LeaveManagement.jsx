@@ -709,6 +709,11 @@ const LeaveManagement = () => {
 
     const createOverBalance = Boolean(selectedCreateLeaveConfig && createRequestedDays > selectedCreateLeaveConfig.remaining);
 
+    // ─── Half-day permission flags ────────────────────────────────────────────
+    // When no leave type is selected yet, default to true (don't restrict the toggle prematurely).
+    // When a leave type IS selected, respect its allow_half_day flag exactly.
+    const createAllowHalfDay = selectedCreateLeaveConfig ? (selectedCreateLeaveConfig.allow_half_day ?? true) : true;
+
     const approveLeaveOptions = useMemo(
         () => buildEmployeeLeaveOptions(approveEmployee),
         [buildEmployeeLeaveOptions, approveEmployee]
@@ -734,6 +739,8 @@ const LeaveManagement = () => {
     );
 
     const approveOverBalance = Boolean(selectedApproveLeaveConfig && approveRequestedDays > selectedApproveLeaveConfig.remaining);
+
+    const approveAllowHalfDay = selectedApproveLeaveConfig ? (selectedApproveLeaveConfig.allow_half_day ?? true) : true;
 
     const overBalanceDetails = useMemo(() => {
         if (overBalanceConfirm === 'create' && selectedCreateLeaveConfig) {
@@ -1099,6 +1106,9 @@ const LeaveManagement = () => {
                                                 ...prev,
                                                 employee_id: employeeId,
                                                 leave_config_id: '',
+                                                // Reset half-day when employee changes since leave type resets
+                                                is_half_day: false,
+                                                half_day_type: 'first_half',
                                             }));
                                         }}
                                         placeholder="Select employee..."
@@ -1111,7 +1121,16 @@ const LeaveManagement = () => {
                                     <SelectField
                                         options={createLeaveOptions}
                                         value={selectedCreateLeaveConfig}
-                                        onChange={(option) => setCreateForm((prev) => ({ ...prev, leave_config_id: option ? option.value : '' }))}
+                                        onChange={(option) => {
+                                            const allowHalf = option?.allow_half_day ?? true;
+                                            setCreateForm((prev) => ({
+                                                ...prev,
+                                                leave_config_id: option ? option.value : '',
+                                                // Auto-reset half day if new leave type doesn't allow it
+                                                is_half_day: allowHalf ? prev.is_half_day : false,
+                                                half_day_type: allowHalf ? prev.half_day_type : 'first_half',
+                                            }));
+                                        }}
                                         placeholder={
                                             !createEmployee
                                                 ? 'Select employee first'
@@ -1192,30 +1211,49 @@ const LeaveManagement = () => {
                                     )}
                                 </div>
 
+                                {/* ─── Half Day Toggle — Create Modal ─── */}
                                 <div>
-                                    <div className={`rounded-xl border p-4 transition-all ${createForm.is_half_day ? 'border-blue-200 bg-blue-50/60 ring-2 ring-blue-100' : 'border-slate-200 bg-slate-50'}`}>
+                                    <div className={`rounded-xl border p-4 transition-all ${
+                                        !createAllowHalfDay
+                                            ? 'border-slate-100 bg-slate-50 opacity-60'
+                                            : createForm.is_half_day
+                                                ? 'border-blue-200 bg-blue-50/60 ring-2 ring-blue-100'
+                                                : 'border-slate-200 bg-slate-50'
+                                    }`}>
                                         <div className="flex items-center justify-between gap-4">
                                             <div>
                                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Half Day</p>
                                                 <p className="mt-0.5 text-xs font-medium text-slate-400">
-                                                    {createForm.is_half_day ? 'Half day leave enabled' : 'Enable for half day leave'}
+                                                    {!createAllowHalfDay
+                                                        ? 'Half day not allowed for this leave type'
+                                                        : createForm.is_half_day
+                                                            ? 'Half day leave enabled'
+                                                            : 'Enable for half day leave'}
                                                 </p>
                                             </div>
                                             <button
                                                 type="button"
+                                                disabled={!createAllowHalfDay}
                                                 onClick={() => {
+                                                    if (!createAllowHalfDay) return;
                                                     setCreateForm((prev) => ({
                                                         ...prev,
                                                         is_half_day: !prev.is_half_day,
                                                         half_day_type: !prev.is_half_day ? (prev.half_day_type || 'first_half') : 'first_half',
                                                     }));
                                                 }}
-                                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${createForm.is_half_day ? 'bg-blue-600' : 'bg-slate-300'}`}
+                                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${
+                                                    !createAllowHalfDay
+                                                        ? 'bg-slate-200 cursor-not-allowed'
+                                                        : createForm.is_half_day
+                                                            ? 'bg-blue-600'
+                                                            : 'bg-slate-300'
+                                                }`}
                                             >
                                                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${createForm.is_half_day ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
                                         </div>
-                                        {createForm.is_half_day && (
+                                        {createAllowHalfDay && createForm.is_half_day && (
                                             <div className="mt-4">
                                                 <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Half Day Session</p>
                                                 <div className="grid grid-cols-2 gap-3">
@@ -1471,29 +1509,49 @@ const LeaveManagement = () => {
                                     </p>
                                 )}
                             </div>
-                            <div className={`rounded-xl border p-4 transition-all ${approveForm.is_half_day ? 'border-emerald-200 bg-emerald-50/60 ring-2 ring-emerald-100' : 'border-gray-200 bg-gray-50'}`}>
+
+                            {/* ─── Half Day Toggle — Approve Modal ─── */}
+                            <div className={`rounded-xl border p-4 transition-all ${
+                                !approveAllowHalfDay
+                                    ? 'border-slate-100 bg-slate-50 opacity-60'
+                                    : approveForm.is_half_day
+                                        ? 'border-emerald-200 bg-emerald-50/60 ring-2 ring-emerald-100'
+                                        : 'border-gray-200 bg-gray-50'
+                            }`}>
                                 <div className="flex items-center justify-between gap-4">
                                     <div>
                                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Half Day</p>
                                         <p className="mt-0.5 text-xs font-medium text-slate-400">
-                                            {approveForm.is_half_day ? 'Converting to half day' : 'Convert this leave to half day'}
+                                            {!approveAllowHalfDay
+                                                ? 'Half day not allowed for this leave type'
+                                                : approveForm.is_half_day
+                                                    ? 'Converting to half day'
+                                                    : 'Convert this leave to half day'}
                                         </p>
                                     </div>
                                     <button
                                         type="button"
+                                        disabled={!approveAllowHalfDay}
                                         onClick={() => {
+                                            if (!approveAllowHalfDay) return;
                                             setApproveForm((prev) => ({
                                                 ...prev,
                                                 is_half_day: !prev.is_half_day,
                                                 half_day_type: prev.half_day_type || 'first_half',
                                             }));
                                         }}
-                                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${approveForm.is_half_day ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${
+                                            !approveAllowHalfDay
+                                                ? 'bg-slate-200 cursor-not-allowed'
+                                                : approveForm.is_half_day
+                                                    ? 'bg-emerald-600'
+                                                    : 'bg-slate-300'
+                                        }`}
                                     >
                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${approveForm.is_half_day ? 'translate-x-6' : 'translate-x-1'}`} />
                                     </button>
                                 </div>
-                                {approveForm.is_half_day && (
+                                {approveAllowHalfDay && approveForm.is_half_day && (
                                     <div className="mt-4">
                                         <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Half Day Session</p>
                                         <div className="grid grid-cols-2 gap-3">
@@ -1517,6 +1575,7 @@ const LeaveManagement = () => {
                                     </div>
                                 )}
                             </div>
+
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">Approval Remarks (Optional)</label>
                                 <textarea
