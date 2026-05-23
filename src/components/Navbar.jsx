@@ -88,7 +88,7 @@ const CompanySwitcherModal = ({ companies = [], currentCompany, onSwitch, onClos
                         placeholder="Search by name, branch or email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-400 transition-all"
+                        className="block w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-400 transition-all min-h-[42px]"
                     />
                 </div>
 

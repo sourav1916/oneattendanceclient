@@ -295,7 +295,7 @@ const EmployeeSalaryHistory = () => {
                             placeholder="Search history..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm"
+                            className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm min-h-[42px]"
                         />
                     </div>
                     <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="green" />

@@ -62,7 +62,7 @@ const CountryCodeModal = ({ isOpen, onClose, onSelect, selectedCode }) => {
               placeholder="Search country..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-xs bg-white transition-colors"
+              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-xs bg-white transition-colors min-h-[42px]"
             />
           </div>
 

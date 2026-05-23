@@ -675,7 +675,7 @@ const CompanyManagement = () => {
                         placeholder="Search by company name, city, or state..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 min-h-[42px]"
                     />
                     {searchTerm && (
                         <button onClick={() => setSearchTerm('')}

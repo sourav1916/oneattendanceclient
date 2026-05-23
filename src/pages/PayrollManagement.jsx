@@ -1011,7 +1011,7 @@ const PayrollManagement = () => {
                                                     placeholder="Search available..."
                                                     value={availableSearch}
                                                     onChange={(e) => setAvailableSearch(e.target.value)}
-                                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all min-h-[42px]"
                                                 />
                                             </div>
                                         </div>
@@ -1088,7 +1088,7 @@ const PayrollManagement = () => {
                                                     placeholder="Search selected..."
                                                     value={selectedSearch}
                                                     onChange={(e) => setSelectedSearch(e.target.value)}
-                                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-emerald-50/30"
+                                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-emerald-50/30 min-h-[42px]"
                                                 />
                                             </div>
                                         </div>

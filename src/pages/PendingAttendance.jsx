@@ -887,7 +887,7 @@ const PendingAttendance = ({ companyId }) => {
                                 placeholder={`Search ${activeAttendanceTypeMeta.shortLabel.toLowerCase()} attendance by employee, email, or code...`}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-11 text-sm font-medium text-gray-800 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 min-h-[42px]"
                             />
                             {searchTerm && (
                                 <button

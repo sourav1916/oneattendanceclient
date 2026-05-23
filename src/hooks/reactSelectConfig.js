@@ -7,7 +7,7 @@ export const getReactSelectMenuProps = () => ({
 
 const baseControlStyle = (base, state) => ({
   ...base,
-  minHeight: "48px",
+  minHeight: "42px",
   borderRadius: "0.75rem",
   backgroundColor: "#f9fafb",
   fontSize: "0.875rem",

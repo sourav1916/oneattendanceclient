@@ -923,7 +923,7 @@ const LeaveManagement = () => {
                                 placeholder="Search by name, code, or leave type..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium"
+                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
                             />
                             {search && (
                                 <button
@@ -1086,7 +1086,7 @@ const LeaveManagement = () => {
                         }
                     >
                         <div className="space-y-6">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                                         Employee <span className="text-rose-500">*</span>
@@ -1159,7 +1159,7 @@ const LeaveManagement = () => {
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="md:col-span-2">
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                                         Date Range <span className="text-rose-500">*</span>
@@ -1193,42 +1193,49 @@ const LeaveManagement = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Day Type</label>
-                                    <div className={`rounded-xl border p-3 transition-all ${createForm.is_half_day ? 'border-blue-200 bg-blue-50/60 ring-2 ring-blue-100' : 'border-slate-200 bg-slate-50'}`}>
-                                        <label className="flex items-center justify-between gap-3 text-sm font-bold text-slate-700">
-                                            Half Day
-                                            <input
-                                                type="checkbox"
-                                                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                                checked={createForm.is_half_day}
-                                                onChange={(e) => {
-                                                    const checked = e.target.checked;
+                                    <div className={`rounded-xl border p-4 transition-all ${createForm.is_half_day ? 'border-blue-200 bg-blue-50/60 ring-2 ring-blue-100' : 'border-slate-200 bg-slate-50'}`}>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Half Day</p>
+                                                <p className="mt-0.5 text-xs font-medium text-slate-400">
+                                                    {createForm.is_half_day ? 'Half day leave enabled' : 'Enable for half day leave'}
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
                                                     setCreateForm((prev) => ({
                                                         ...prev,
-                                                        is_half_day: checked,
-                                                        half_day_type: checked ? (prev.half_day_type || 'first_half') : 'first_half',
+                                                        is_half_day: !prev.is_half_day,
+                                                        half_day_type: !prev.is_half_day ? (prev.half_day_type || 'first_half') : 'first_half',
                                                     }));
                                                 }}
-                                            />
-                                        </label>
+                                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${createForm.is_half_day ? 'bg-blue-600' : 'bg-slate-300'}`}
+                                            >
+                                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${createForm.is_half_day ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
                                         {createForm.is_half_day && (
-                                            <div className="mt-3 grid grid-cols-2 gap-2">
-                                                {[
-                                                    { value: 'first_half', label: 'First Half' },
-                                                    { value: 'second_half', label: 'Second Half' },
-                                                ].map((option) => (
-                                                    <button
-                                                        key={option.value}
-                                                        type="button"
-                                                        onClick={() => setCreateForm((prev) => ({ ...prev, half_day_type: option.value }))}
-                                                        className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all ${createForm.half_day_type === option.value
-                                                            ? 'border-blue-500 bg-white text-blue-700 shadow-sm'
-                                                            : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700'
-                                                            }`}
-                                                    >
-                                                        {option.label}
-                                                    </button>
-                                                ))}
+                                            <div className="mt-4">
+                                                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Half Day Session</p>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {[
+                                                        { value: 'first_half', label: 'First Half' },
+                                                        { value: 'second_half', label: 'Second Half' },
+                                                    ].map((option) => (
+                                                        <button
+                                                            key={option.value}
+                                                            type="button"
+                                                            onClick={() => setCreateForm((prev) => ({ ...prev, half_day_type: option.value }))}
+                                                            className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${createForm.half_day_type === option.value
+                                                                ? 'border-blue-200 bg-white text-blue-700 shadow-sm'
+                                                                : 'border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700 hover:bg-slate-50'
+                                                                }`}
+                                                        >
+                                                            {option.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -1464,41 +1471,49 @@ const LeaveManagement = () => {
                                     </p>
                                 )}
                             </div>
-                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-                                <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
-                                    <input
-                                        type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                                        checked={approveForm.is_half_day}
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
+                            <div className={`rounded-xl border p-4 transition-all ${approveForm.is_half_day ? 'border-emerald-200 bg-emerald-50/60 ring-2 ring-emerald-100' : 'border-gray-200 bg-gray-50'}`}>
+                                <div className="flex items-center justify-between gap-4">
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Half Day</p>
+                                        <p className="mt-0.5 text-xs font-medium text-slate-400">
+                                            {approveForm.is_half_day ? 'Converting to half day' : 'Convert this leave to half day'}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
                                             setApproveForm((prev) => ({
                                                 ...prev,
-                                                is_half_day: checked,
+                                                is_half_day: !prev.is_half_day,
                                                 half_day_type: prev.half_day_type || 'first_half',
                                             }));
                                         }}
-                                    />
-                                    Convert to half-day
-                                </label>
+                                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-300 ${approveForm.is_half_day ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-300 ${approveForm.is_half_day ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
                                 {approveForm.is_half_day && (
-                                    <div className="mt-3 grid grid-cols-2 gap-2">
-                                        {[
-                                            { value: 'first_half', label: 'First Half' },
-                                            { value: 'second_half', label: 'Second Half' },
-                                        ].map((option) => (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                onClick={() => setApproveForm((prev) => ({ ...prev, half_day_type: option.value }))}
-                                                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-all ${approveForm.half_day_type === option.value
-                                                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                                                    : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:text-emerald-700'
-                                                    }`}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
+                                    <div className="mt-4">
+                                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Half Day Session</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {[
+                                                { value: 'first_half', label: 'First Half' },
+                                                { value: 'second_half', label: 'Second Half' },
+                                            ].map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => setApproveForm((prev) => ({ ...prev, half_day_type: option.value }))}
+                                                    className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${approveForm.half_day_type === option.value
+                                                        ? 'border-emerald-200 bg-white text-emerald-700 shadow-sm'
+                                                        : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:text-emerald-700 hover:bg-slate-50'
+                                                        }`}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
