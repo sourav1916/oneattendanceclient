@@ -631,7 +631,7 @@ const PayrollManagement = () => {
                                                     {visibleColumns.showDesignation && (
                                                         <td className="px-6 py-4">
                                                             <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium capitalize">
-                                                                {item.employee.designation?.replace('_', ' ')}
+                                                                {typeof item.employee.designation === 'object' ? item.employee.designation?.label : item.employee.designation?.replace('_', ' ')}
                                                             </span>
                                                         </td>
                                                     )}
@@ -867,7 +867,7 @@ const PayrollManagement = () => {
                                                         label="Designation"
                                                         value={
                                                             <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium capitalize">
-                                                                {selectedPayroll.employee.designation?.replace('_', ' ')}
+                                                                {typeof selectedPayroll.employee.designation === 'object' ? selectedPayroll.employee.designation?.label : selectedPayroll.employee.designation?.replace('_', ' ')}
                                                             </span>
                                                         }
                                                     />
