@@ -228,8 +228,8 @@ function HomePage() {
         disabled: !addStaffAccess.allowed
       },
       {
-        title: "Invites Mgmt",
-        description: inviteMgmtAccess.allowed ? "Manage team invites" : "No permission",
+        title: "Onboarding Mgmt",
+        description: inviteMgmtAccess.allowed ? "Manage onboarding" : "No permission",
         icon: FaBuilding,
         color: inviteMgmtAccess.allowed ? "from-indigo-600 to-blue-600" : "from-slate-400 to-slate-500",
         onClick: () => inviteMgmtAccess.allowed && navigate('/employee-management?tab=invites'),
