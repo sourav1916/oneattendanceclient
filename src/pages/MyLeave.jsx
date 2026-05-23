@@ -891,7 +891,7 @@ const MyLeave = () => {
       }));
       setLeaveTypes(types);
     } catch (error) {
-      console.error('Failed to load balances:', error);
+      toast.error(error.message || 'Failed to load leave balances');
     }
   }, []);
 
