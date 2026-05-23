@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import apiCall from '../utils/api';
+import SelectField from '../components/SelectField';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import SkeletonComponent from '../components/SkeletonComponent';
 import ManagementGrid from '../components/ManagementGrid';
@@ -499,10 +500,14 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
-                        <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
-                            <option value="">Custom / Manual</option>
-                            {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                        </select>
+                        <SelectField
+                            value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name ? `${packages.find(p => String(p.id) === String(formData.component_package_id)).name} (${packages.find(p => String(p.id) === String(formData.component_package_id)).code})` : 'Custom / Manual' } : null}
+                            onChange={(opt) => handlePackageChange(opt?.value || '')}
+                            options={packages.map(pkg => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
+                            isClearable
+                            placeholder="Custom / Manual"
+                            menuPortalTarget={document.body}
+                        />
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
@@ -543,18 +548,20 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                                             </div>
                                             <div className="md:col-span-3">
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                <select
-                                                    value={comp.calc_type}
-                                                    onChange={e => {
+                                                <SelectField
+                                                    value={comp.calc_type ? { value: comp.calc_type, label: comp.calc_type === 'percentage' ? 'Percentage (%)' : 'Fixed Amount' } : null}
+                                                    onChange={(opt) => {
                                                         const updated = [...formData.components];
-                                                        updated[idx].calc_type = e.target.value;
+                                                        updated[idx].calc_type = opt?.value || 'percentage';
                                                         setFormData({ ...formData, components: updated, component_package_id: '' });
                                                     }}
-                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
-                                                >
-                                                    <option value="percentage">Percentage (%)</option>
-                                                    <option value="fixed">Fixed Amount</option>
-                                                </select>
+                                                    options={[
+                                                        { value: 'percentage', label: 'Percentage (%)' },
+                                                        { value: 'fixed', label: 'Fixed Amount' }
+                                                    ]}
+                                                    placeholder="Select type"
+                                                    menuPortalTarget={document.body}
+                                                />
                                             </div>
                                             <div className="md:col-span-3">
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
@@ -591,23 +598,20 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                                 <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
                                 <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                             </div>
-                            <select
-                                value=""
-                                onChange={e => {
-                                    const compId = e.target.value;
-                                    const comp = availableComponents.find(c => String(c.id) === String(compId));
+                            <SelectField
+                                value={null}
+                                onChange={(opt) => {
+                                    if (!opt) return;
+                                    const comp = availableComponents.find(c => String(c.id) === String(opt.value));
                                     if (comp) {
                                         setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
                                         setShowOverrideForm(false);
                                     }
                                 }}
-                                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
-                            >
-                                <option value="">Choose a component...</option>
-                                {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
-                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
-                                ))}
-                            </select>
+                                options={availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => ({ value: comp.id, label: `${comp.name} (${comp.code})` }))}
+                                placeholder="Choose a component..."
+                                menuPortalTarget={document.body}
+                            />
                         </div>
                     )}
                 </div>
@@ -745,10 +749,14 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
-                        <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm">
-                            <option value="">Custom / Manual</option>
-                            {packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                        </select>
+                        <SelectField
+                            value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name ? `${packages.find(p => String(p.id) === String(formData.component_package_id)).name} (${packages.find(p => String(p.id) === String(formData.component_package_id)).code})` : 'Custom / Manual' } : null}
+                            onChange={(opt) => handlePackageChange(opt?.value || '')}
+                            options={packages.map(pkg => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
+                            isClearable
+                            placeholder="Custom / Manual"
+                            menuPortalTarget={document.body}
+                        />
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Base Amount *</label>
@@ -789,18 +797,20 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                                             </div>
                                             <div className="md:col-span-3">
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                <select
-                                                    value={comp.calc_type}
-                                                    onChange={e => {
+                                                <SelectField
+                                                    value={comp.calc_type ? { value: comp.calc_type, label: comp.calc_type === 'percentage' ? 'Percentage (%)' : 'Fixed Amount' } : null}
+                                                    onChange={(opt) => {
                                                         const updated = [...formData.components];
-                                                        updated[idx].calc_type = e.target.value;
+                                                        updated[idx].calc_type = opt?.value || 'percentage';
                                                         setFormData({ ...formData, components: updated, component_package_id: '' });
                                                     }}
-                                                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold"
-                                                >
-                                                    <option value="percentage">Percentage (%)</option>
-                                                    <option value="fixed">Fixed Amount</option>
-                                                </select>
+                                                    options={[
+                                                        { value: 'percentage', label: 'Percentage (%)' },
+                                                        { value: 'fixed', label: 'Fixed Amount' }
+                                                    ]}
+                                                    placeholder="Select type"
+                                                    menuPortalTarget={document.body}
+                                                />
                                             </div>
                                             <div className="md:col-span-3">
                                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
@@ -837,23 +847,20 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                                 <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Select Component to Add</p>
                                 <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                             </div>
-                            <select
-                                value=""
-                                onChange={e => {
-                                    const compId = e.target.value;
-                                    const comp = availableComponents.find(c => String(c.id) === String(compId));
+                            <SelectField
+                                value={null}
+                                onChange={(opt) => {
+                                    if (!opt) return;
+                                    const comp = availableComponents.find(c => String(c.id) === String(opt.value));
                                     if (comp) {
                                         setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
                                         setShowOverrideForm(false);
                                     }
                                 }}
-                                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-bold"
-                            >
-                                <option value="">Choose a component...</option>
-                                {availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => (
-                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
-                                ))}
-                            </select>
+                                options={availableComponents.filter(c => !formData.components.find(ec => ec.component_id === c.id)).map(comp => ({ value: comp.id, label: `${comp.name} (${comp.code})` }))}
+                                placeholder="Choose a component..."
+                                menuPortalTarget={document.body}
+                            />
                         </div>
                     )}
                 </div>
@@ -1055,12 +1062,16 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 {/* Salary Package */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
-                                    <select value={formData.component_package_id} onChange={(e) => handlePackageChange(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm">
-                                        <option value="">Custom / Manual</option>
-                                        {loadingPackages ? <option value="">Loading packages...</option>
-                                            : packages.length === 0 ? <option value="">No packages found</option>
-                                                : packages.map(pkg => <option key={pkg.id} value={pkg.id}>{pkg.name} ({pkg.code})</option>)}
-                                    </select>
+                                    <SelectField
+                                        value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name ? `${packages.find(p => String(p.id) === String(formData.component_package_id)).name} (${packages.find(p => String(p.id) === String(formData.component_package_id)).code})` : 'Custom / Manual' } : null}
+                                        onChange={(opt) => handlePackageChange(opt?.value || '')}
+                                        options={packages.map(pkg => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
+                                        isLoading={loadingPackages}
+                                        isClearable
+                                        placeholder={loadingPackages ? 'Loading packages...' : 'Custom / Manual'}
+                                        noOptionsMessage={() => 'No packages found'}
+                                        menuPortalTarget={document.body}
+                                    />
                                 </div>
 
                                 {/* Base Amount */}
@@ -1111,18 +1122,20 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                         {/* Calc Type */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
-                                                            <select
-                                                                value={comp.calc_type}
-                                                                onChange={e => {
+                                                            <SelectField
+                                                                value={comp.calc_type ? { value: comp.calc_type, label: comp.calc_type === 'percentage' ? 'Percentage (%)' : 'Fixed Amount' } : null}
+                                                                onChange={(opt) => {
                                                                     const updated = [...formData.components];
-                                                                    updated[idx].calc_type = e.target.value;
+                                                                    updated[idx].calc_type = opt?.value || 'percentage';
                                                                     setFormData({ ...formData, components: updated, component_package_id: '' });
                                                                 }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all font-semibold"
-                                                            >
-                                                                <option value="percentage">Percentage (%)</option>
-                                                                <option value="fixed">Fixed Amount</option>
-                                                            </select>
+                                                                options={[
+                                                                    { value: 'percentage', label: 'Percentage (%)' },
+                                                                    { value: 'fixed', label: 'Fixed Amount' }
+                                                                ]}
+                                                                placeholder="Select type"
+                                                                menuPortalTarget={document.body}
+                                                            />
                                                         </div>
 
                                                         {/* Calc Value */}
@@ -1189,11 +1202,11 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                             <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                                         </div>
                                         <div className="flex gap-3">
-                                            <select
-                                                value={overrideForm.component_id}
-                                                onChange={e => {
-                                                    const compId = e.target.value;
-                                                    const comp = filteredAvailableComponents.find(c => String(c.id) === String(compId));
+                                            <SelectField
+                                                value={null}
+                                                onChange={(opt) => {
+                                                    if (!opt) return;
+                                                    const comp = filteredAvailableComponents.find(c => String(c.id) === String(opt.value));
                                                     if (comp) {
                                                         const newComp = {
                                                             component_id: comp.id,
@@ -1212,13 +1225,11 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                         setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
                                                     }
                                                 }}
-                                                className="flex-1 px-3 py-2.5 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all font-bold"
-                                            >
-                                                <option value="">Choose a component...</option>
-                                                {filteredAvailableComponents.map(comp => (
-                                                    <option key={comp.id} value={comp.id}>{comp.name} ({comp.code})</option>
-                                                ))}
-                                            </select>
+                                                options={filteredAvailableComponents.map(comp => ({ value: comp.id, label: `${comp.name} (${comp.code})` }))}
+                                                placeholder="Choose a component..."
+                                                className="flex-1"
+                                                menuPortalTarget={document.body}
+                                            />
                                         </div>
                                         {filteredAvailableComponents.length === 0 && (
                                             <p className="text-[10px] text-amber-600 mt-2 italic flex items-center gap-1">
@@ -1778,16 +1789,26 @@ const SalaryManagement = () => {
                     />
                 )}
 
-                {/* Modals */}
-                <SalaryDetailModal salary={selectedSalary} onClose={() => setSelectedSalary(null)} companyCurrency={companyCurrency} />
+                {/* Modals — only mount when needed so API calls don't fire prematurely */}
+                {selectedSalary && (
+                    <SalaryDetailModal salary={selectedSalary} onClose={() => setSelectedSalary(null)} companyCurrency={companyCurrency} />
+                )}
 
-                <AssignSalaryModal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} onSuccess={() => { fetchSalaries(1, "", true); setShowAssignModal(false); }} companyCurrency={companyCurrency} />
+                {showAssignModal && (
+                    <AssignSalaryModal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} onSuccess={() => { fetchSalaries(1, "", true); setShowAssignModal(false); }} companyCurrency={companyCurrency} />
+                )}
 
-                <EditSalaryModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }} onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)} salary={salaryToEdit} companyCurrency={companyCurrency} />
+                {showEditModal && salaryToEdit && (
+                    <EditSalaryModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }} onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)} salary={salaryToEdit} companyCurrency={companyCurrency} />
+                )}
 
-                <ReviseSalaryModal isOpen={showReviseModal} onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }} onSuccess={() => fetchSalaries(1, "", true)} salary={salaryToRevise} companyCurrency={companyCurrency} />
+                {showReviseModal && salaryToRevise && (
+                    <ReviseSalaryModal isOpen={showReviseModal} onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }} onSuccess={() => fetchSalaries(1, "", true)} salary={salaryToRevise} companyCurrency={companyCurrency} />
+                )}
 
-                <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setSalaryToDelete(null); }} onConfirm={handleDeleteSalary} salary={salaryToDelete} processingId={processingId} />
+                {showDeleteModal && salaryToDelete && (
+                    <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setSalaryToDelete(null); }} onConfirm={handleDeleteSalary} salary={salaryToDelete} processingId={processingId} />
+                )}
             </div>
         </ManagementHub>
     );
