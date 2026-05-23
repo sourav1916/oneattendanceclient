@@ -22,6 +22,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import { EmployeeSelect, RefreshButton } from '../components/common';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import Modal from '../components/Modal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -796,474 +797,339 @@ const PayrollManagement = () => {
             )}
 
             {/* Modals */}
-            <AnimatePresence>
-                {modalType !== MODAL_TYPES.NONE && (
-                    <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit"
-                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+            <Modal
+                isOpen={modalType === MODAL_TYPES.VIEW && !!selectedPayroll}
+                onClose={closeModal}
+                title="Payroll Details"
+                subtitle={`${getMonthName(selectedMonth)} ${selectedYear}`}
+                icon={<FaFileInvoiceDollar size={18} />}
+                size="4xl"
+                footer={
+                    <button
                         onClick={closeModal}
+                        className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium"
                     >
-                        <ModalScrollLock />
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                            className="relative w-full bg-white rounded-xl shadow-2xl overflow-hidden max-w-4xl max-h-[90vh] flex flex-col"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            {/* VIEW MODAL */}
-                            {modalType === MODAL_TYPES.VIEW && selectedPayroll && (
-                                <>
-                                    <div className="px-6 py-5 border-b border-gray-100">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                                                    <FaFileInvoiceDollar className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-gray-900">Payroll Details</h2>
-                                                    <p className="text-sm text-gray-500 mt-0.5">
-                                                        {getMonthName(selectedMonth)} {selectedYear}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 90 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={closeModal}
-                                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                                            >
-                                                <FaTimes className="w-5 h-5 text-gray-400" />
-                                            </motion.button>
-                                        </div>
+                        Close
+                    </button>
+                }
+            >
+                {selectedPayroll && (
+                    <div className="grid grid-cols-1 gap-6">
+                        {/* Employee Info */}
+                        <div className="col-span-1 pb-6 border-b">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaUserCircle className="text-emerald-500" />
+                                Employee Information
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <InfoItem icon={<FaUserCircle className="text-emerald-500" />} label="Name" value={selectedPayroll.employee.name} />
+                                <InfoItem icon={<FaIdCard className="text-blue-500" />} label="Employee Code" value={selectedPayroll.employee.employee_code} />
+                                <InfoItem icon={<FaEnvelope className="text-green-500" />} label="Email" value={selectedPayroll.employee.email} />
+                                <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Designation" value={
+                                    <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium capitalize">
+                                        {typeof selectedPayroll.employee.designation === 'object' ? selectedPayroll.employee.designation?.label : selectedPayroll.employee.designation?.replace('_', ' ')}
+                                    </span>
+                                } />
+                            </div>
+                        </div>
+
+                        {/* Salary Summary */}
+                        <div className="col-span-1 pb-6 border-b">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaDollarSign className="text-green-500" />
+                                Salary Summary
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <InfoItem icon={<FaMoneyBillWave className="text-green-500" />} label="Total Earnings" value={formatCurrency(selectedPayroll.payroll.total_earnings)} valueClassName="text-green-600" />
+                                <InfoItem icon={<FaChartLine className="text-red-500" />} label="Total Deductions" value={formatCurrency(selectedPayroll.payroll.total_deductions)} valueClassName="text-red-600" />
+                                <InfoItem icon={<FaCalculator className="text-blue-500" />} label="Net Salary" value={formatCurrency(selectedPayroll.payroll.net_salary)} valueClassName={parseFloat(selectedPayroll.payroll.net_salary) < 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'} />
+                            </div>
+                            <div className="mt-4">
+                                <InfoItem icon={<FaClipboardList className="text-purple-500" />} label="Status" value={<StatusBadge status={selectedPayroll.payroll.status} />} />
+                            </div>
+                        </div>
+
+                        {/* Attendance Details */}
+                        <div className="col-span-1">
+                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <FaCalendarAlt className="text-indigo-500" />
+                                Attendance Details
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaCheckCircle className="text-green-600" />
+                                        <span className="text-xs font-semibold text-gray-600">Present Days</span>
                                     </div>
-
-                                    <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
-                                        <div className="grid grid-cols-1 gap-6">
-                                            {/* Employee Info */}
-                                            <div className="col-span-1 pb-6 border-b">
-                                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                                    <FaUserCircle className="text-emerald-500" />
-                                                    Employee Information
-                                                </h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <InfoItem
-                                                        icon={<FaUserCircle className="text-emerald-500" />}
-                                                        label="Name"
-                                                        value={selectedPayroll.employee.name}
-                                                    />
-                                                    <InfoItem
-                                                        icon={<FaIdCard className="text-blue-500" />}
-                                                        label="Employee Code"
-                                                        value={selectedPayroll.employee.employee_code}
-                                                    />
-                                                    <InfoItem
-                                                        icon={<FaEnvelope className="text-green-500" />}
-                                                        label="Email"
-                                                        value={selectedPayroll.employee.email}
-                                                    />
-                                                    <InfoItem
-                                                        icon={<FaBriefcase className="text-purple-500" />}
-                                                        label="Designation"
-                                                        value={
-                                                            <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium capitalize">
-                                                                {typeof selectedPayroll.employee.designation === 'object' ? selectedPayroll.employee.designation?.label : selectedPayroll.employee.designation?.replace('_', ' ')}
-                                                            </span>
-                                                        }
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Salary Summary */}
-                                            <div className="col-span-1 pb-6 border-b">
-                                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                                    <FaDollarSign className="text-green-500" />
-                                                    Salary Summary
-                                                </h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    <InfoItem
-                                                        icon={<FaMoneyBillWave className="text-green-500" />}
-                                                        label="Total Earnings"
-                                                        value={formatCurrency(selectedPayroll.payroll.total_earnings)}
-                                                        valueClassName="text-green-600"
-                                                    />
-                                                    <InfoItem
-                                                        icon={<FaChartLine className="text-red-500" />}
-                                                        label="Total Deductions"
-                                                        value={formatCurrency(selectedPayroll.payroll.total_deductions)}
-                                                        valueClassName="text-red-600"
-                                                    />
-                                                    <InfoItem
-                                                        icon={<FaCalculator className="text-blue-500" />}
-                                                        label="Net Salary"
-                                                        value={formatCurrency(selectedPayroll.payroll.net_salary)}
-                                                        valueClassName={
-                                                            parseFloat(selectedPayroll.payroll.net_salary) < 0
-                                                                ? 'text-red-600 font-bold'
-                                                                : 'text-green-600 font-bold'
-                                                        }
-                                                    />
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <InfoItem
-                                                        icon={<FaClipboardList className="text-purple-500" />}
-                                                        label="Status"
-                                                        value={<StatusBadge status={selectedPayroll.payroll.status} />}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Attendance Details */}
-                                            <div className="col-span-1">
-                                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                                    <FaCalendarAlt className="text-indigo-500" />
-                                                    Attendance Details
-                                                </h3>
-                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                                    <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaCheckCircle className="text-green-600" />
-                                                            <span className="text-xs font-semibold text-gray-600">Present Days</span>
-                                                        </div>
-                                                        <div className="text-2xl font-bold text-green-700">
-                                                            {formatDays(selectedPayroll.payroll.attendance.present_days)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaExclamationTriangle className="text-red-600" />
-                                                            <span className="text-xs font-semibold text-gray-600">Absent Days</span>
-                                                        </div>
-                                                        <div className="text-2xl font-bold text-red-700">
-                                                            {formatDays(selectedPayroll.payroll.attendance.absent_days)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaCalendarAlt className="text-blue-600" />
-                                                            <span className="text-xs font-semibold text-gray-600">Paid Leave</span>
-                                                        </div>
-                                                        <div className="text-2xl font-bold text-blue-700">
-                                                            {formatDays(selectedPayroll.payroll.attendance.paid_leave_days)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaCalendarAlt className="text-yellow-600" />
-                                                            <span className="text-xs font-semibold text-gray-600">Unpaid Leave</span>
-                                                        </div>
-                                                        <div className="text-2xl font-bold text-yellow-700">
-                                                            {formatDays(selectedPayroll.payroll.attendance.unpaid_leave_days)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaExclamationTriangle className="text-orange-600" />
-                                                            <span className="text-xs font-semibold text-gray-600">LOP Days</span>
-                                                        </div>
-                                                        <div className="text-2xl font-bold text-orange-700">
-                                                            {formatDays(selectedPayroll.payroll.attendance.lop_days)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <FaDollarSign className="text-purple-600" />
-                                                            <span className="text-xs font-semibold text-gray-600">LOP Deduction</span>
-                                                        </div>
-                                                        <div className="text-lg font-bold text-purple-700">
-                                                            {formatCurrency(selectedPayroll.payroll.attendance.lop_deduction)}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                                    <InfoItem
-                                                        icon={<FaClock className="text-indigo-500" />}
-                                                        label="Worked Hours"
-                                                        value={`${selectedPayroll.payroll.worked_hours} hours`}
-                                                    />
-                                                    <InfoItem
-                                                        icon={<FaClock className="text-orange-500" />}
-                                                        label="Overtime Hours"
-                                                        value={`${selectedPayroll.payroll.overtime_hours} hours`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-6 flex justify-end">
-                                            <button
-                                                onClick={closeModal}
-                                                className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium"
-                                            >
-                                                Close
-                                            </button>
-                                        </div>
+                                    <div className="text-2xl font-bold text-green-700">{formatDays(selectedPayroll.payroll.attendance.present_days)}</div>
+                                </div>
+                                <div className="p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaExclamationTriangle className="text-red-600" />
+                                        <span className="text-xs font-semibold text-gray-600">Absent Days</span>
                                     </div>
-                                </>
-                            )}
-
-                            {/* GENERATE MODAL */}
-                            {modalType === MODAL_TYPES.GENERATE && (
-                                <>
-                                    <div className="px-6 py-5 border-b border-gray-100">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200">
-                                                    <FaPlus className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-gray-900">Generate Payroll</h2>
-                                                    <p className="text-sm text-gray-500 mt-0.5">Create payroll for employees</p>
-                                                </div>
-                                            </div>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 90 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={closeModal}
-                                                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
-                                            >
-                                                <FaTimes className="w-5 h-5 text-gray-400" />
-                                            </motion.button>
-                                        </div>
+                                    <div className="text-2xl font-bold text-red-700">{formatDays(selectedPayroll.payroll.attendance.absent_days)}</div>
+                                </div>
+                                <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaCalendarAlt className="text-blue-600" />
+                                        <span className="text-xs font-semibold text-gray-600">Paid Leave</span>
                                     </div>
-
-                                    <form onSubmit={handleGenerate} className="flex flex-col flex-1 overflow-hidden">
-                                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-                                            <div className="space-y-6 p-2 lg:p-0">
-                                                {/* Month and Year Selection */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                            <FaCalendarAlt className="text-emerald-500" />
-                                                            Month
-                                                        </label>
-                                                        <Select
-                                                            options={monthOptions}
-                                                            value={monthOptions.find(opt => opt.value === generateFormData.month)}
-                                                            onChange={(option) => setGenerateFormData(prev => ({
-                                                                ...prev,
-                                                                month: option.value
-                                                            }))}
-                                                            styles={customSelectStyles}
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                            <FaCalendarAlt className="text-emerald-500" />
-                                                            Year
-                                                        </label>
-                                                        <Select
-                                                            options={yearOptions}
-                                                            value={yearOptions.find(opt => opt.value === generateFormData.year)}
-                                                            onChange={(option) => setGenerateFormData(prev => ({
-                                                                ...prev,
-                                                                year: option.value
-                                                            }))}
-                                                            styles={customSelectStyles}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Employee Selection */}
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0, y: 10 }}
-                                                >
-                                                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                                        <FaUserFriends className="text-emerald-500" />
-                                                        Select Employees
-                                                    </label>
-                                                        {employeesLoading ? (
-                                                            <div className="flex items-center justify-center py-4">
-                                                                <FaSpinner className="animate-spin text-emerald-500 mr-2" />
-                                                                <span className="text-gray-500">Loading employees...</span>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 mt-2">
-                                                                
-                                                                {/* Available Employees Pane */}
-                                                                <div className="flex flex-col border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                                                                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
-                                                                        <span className="font-semibold text-sm text-gray-700">Available</span>
-                                                                        <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full">{availableEmployees.length}</span>
-                                                                    </div>
-                                                                    <div className="p-2 border-b border-gray-100">
-                                                                        <div className="relative">
-                                                                            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
-                                                                            <input
-                                                                                type="text"
-                                                                                placeholder="Search available..."
-                                                                                value={availableSearch}
-                                                                                onChange={(e) => setAvailableSearch(e.target.value)}
-                                                                                className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="h-64 overflow-y-auto p-2 custom-scrollbar space-y-1">
-                                                                        {availableEmployees.length === 0 ? (
-                                                                            <div className="text-center py-8 text-sm text-gray-400">No employees found</div>
-                                                                        ) : (
-                                                                            availableEmployees.map(emp => (
-                                                                                <div 
-                                                                                    key={emp.id}
-                                                                                    onClick={() => setGenerateFormData(prev => ({
-                                                                                        ...prev,
-                                                                                        employee_ids: [...prev.employee_ids, emp.id]
-                                                                                    }))}
-                                                                                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 border border-transparent hover:border-emerald-100 cursor-pointer transition-colors group"
-                                                                                >
-                                                                                    <ProfileAvatar
-                                                                                        record={emp}
-                                                                                        name={emp.name}
-                                                                                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}
-                                                                                    >
-                                                                                        {getInitials(emp.name)}
-                                                                                    </ProfileAvatar>
-                                                                                    <div className="min-w-0 flex-1">
-                                                                                        <div className="text-sm font-semibold text-gray-800 truncate">{emp.name}</div>
-                                                                                        <div className="text-xs text-gray-500 truncate">{emp.employee_code}</div>
-                                                                                    </div>
-                                                                                    <div className="opacity-0 group-hover:opacity-100 text-emerald-500">
-                                                                                        <FaCheckCircle size={14} />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Divider / Visual Arrows */}
-                                                                <div className="hidden md:flex flex-col items-center justify-center gap-3 px-2">
-                                                                    <button 
-                                                                        type="button"
-                                                                        title="Select All"
-                                                                        onClick={() => setGenerateFormData(prev => ({
-                                                                            ...prev,
-                                                                            employee_ids: [...new Set([...prev.employee_ids, ...availableEmployees.map(emp => emp.id)])]
-                                                                        }))}
-                                                                        className="p-2 rounded-lg bg-gray-50 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 border border-gray-200 hover:border-emerald-200 transition-colors"
-                                                                    >
-                                                                        <FaAngleDoubleRight size={16} />
-                                                                    </button>
-                                                                    <button 
-                                                                        type="button"
-                                                                        title="Deselect All"
-                                                                        onClick={() => setGenerateFormData(prev => ({
-                                                                            ...prev,
-                                                                            employee_ids: prev.employee_ids.filter(id => !selectedEmployees.find(emp => emp.id === id))
-                                                                        }))}
-                                                                        className="p-2 rounded-lg bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 transition-colors"
-                                                                    >
-                                                                        <FaAngleDoubleLeft size={16} />
-                                                                    </button>
-                                                                </div>
-
-                                                                {/* Selected Employees Pane */}
-                                                                <div className="flex flex-col border border-emerald-200 rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-emerald-50">
-                                                                    <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
-                                                                        <span className="font-semibold text-sm text-emerald-800">Selected</span>
-                                                                        <span className="bg-emerald-200 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full">{selectedEmployees.length}</span>
-                                                                    </div>
-                                                                    <div className="p-2 border-b border-emerald-50">
-                                                                        <div className="relative">
-                                                                            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-400" size={12} />
-                                                                            <input
-                                                                                type="text"
-                                                                                placeholder="Search selected..."
-                                                                                value={selectedSearch}
-                                                                                onChange={(e) => setSelectedSearch(e.target.value)}
-                                                                                className="w-full pl-8 pr-3 py-1.5 text-sm border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-emerald-50/30"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="h-64 overflow-y-auto p-2 custom-scrollbar space-y-1">
-                                                                        {selectedEmployees.length === 0 ? (
-                                                                            <div className="text-center py-8 text-sm text-emerald-400">No employees selected</div>
-                                                                        ) : (
-                                                                            selectedEmployees.map(emp => (
-                                                                                <div 
-                                                                                    key={emp.id}
-                                                                                    onClick={() => setGenerateFormData(prev => ({
-                                                                                        ...prev,
-                                                                                        employee_ids: prev.employee_ids.filter(id => id !== emp.id)
-                                                                                    }))}
-                                                                                    className="flex items-center gap-3 p-2 rounded-lg bg-emerald-50/50 hover:bg-red-50 border border-emerald-100 hover:border-red-100 cursor-pointer transition-colors group"
-                                                                                >
-                                                                                    <ProfileAvatar
-                                                                                        record={emp}
-                                                                                        name={emp.name}
-                                                                                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}
-                                                                                    >
-                                                                                        {getInitials(emp.name)}
-                                                                                    </ProfileAvatar>
-                                                                                    <div className="min-w-0 flex-1">
-                                                                                        <div className="text-sm font-semibold text-emerald-900 truncate group-hover:text-red-900">{emp.name}</div>
-                                                                                        <div className="text-xs text-emerald-600 truncate group-hover:text-red-600">{emp.employee_code}</div>
-                                                                                    </div>
-                                                                                    <div className="opacity-0 group-hover:opacity-100 text-red-500">
-                                                                                        <FaTimes size={14} />
-                                                                                    </div>
-                                                                                </div>
-                                                                            ))
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            </>
-                                                        )}
-                                                    </motion.div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 rounded-b-2xl">
-                                            <motion.button
-                                                type="button"
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={closeModal}
-                                                disabled={loading}
-                                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                Cancel
-                                            </motion.button>
-                                            <motion.button
-                                                type="submit"
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                disabled={loading || employeesLoading || generatePayrollAccess.disabled}
-                                                title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
-                                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <FaSpinner className="w-4 h-4 animate-spin" />
-                                                        Generating...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FaCalculator className="w-4 h-4" />
-                                                        Generate Payroll
-                                                    </>
-                                                )}
-                                            </motion.button>
-                                        </div>
-                                    </form>
-                                </>
-                            )}
-                        </motion.div>
-                    </motion.div>
+                                    <div className="text-2xl font-bold text-blue-700">{formatDays(selectedPayroll.payroll.attendance.paid_leave_days)}</div>
+                                </div>
+                                <div className="p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaCalendarAlt className="text-yellow-600" />
+                                        <span className="text-xs font-semibold text-gray-600">Unpaid Leave</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-yellow-700">{formatDays(selectedPayroll.payroll.attendance.unpaid_leave_days)}</div>
+                                </div>
+                                <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaExclamationTriangle className="text-orange-600" />
+                                        <span className="text-xs font-semibold text-gray-600">LOP Days</span>
+                                    </div>
+                                    <div className="text-2xl font-bold text-orange-700">{formatDays(selectedPayroll.payroll.attendance?.lop_days || 0)}</div>
+                                </div>
+                                <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <FaDollarSign className="text-purple-600" />
+                                        <span className="text-xs font-semibold text-gray-600">LOP Deduction</span>
+                                    </div>
+                                    <div className="text-lg font-bold text-purple-700">{formatCurrency(selectedPayroll.payroll.attendance?.lop_deduction || 0)}</div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <InfoItem icon={<FaClock className="text-indigo-500" />} label="Worked Hours" value={`${selectedPayroll.payroll.work?.worked_hours || 0} hours`} />
+                                <InfoItem icon={<FaClock className="text-orange-500" />} label="Overtime Hours" value={`${selectedPayroll.payroll.work?.overtime_hours || 0} hours`} />
+                            </div>
+                        </div>
+                    </div>
                 )}
-            </AnimatePresence>
+            </Modal>
+
+            <Modal
+                isOpen={modalType === MODAL_TYPES.GENERATE}
+                onClose={closeModal}
+                title="Generate Payroll"
+                subtitle="Create payroll for employees"
+                icon={<FaPlus size={18} />}
+                size="4xl"
+                footer={
+                    <div className="flex justify-end gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            disabled={loading}
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            form="generate-payroll-form"
+                            disabled={loading || employeesLoading || generatePayrollAccess.disabled}
+                            title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <FaSpinner className="w-4 h-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <FaCalculator className="w-4 h-4" />
+                                    Generate Payroll
+                                </>
+                            )}
+                        </button>
+                    </div>
+                }
+            >
+                <form id="generate-payroll-form" onSubmit={handleGenerate} className="flex flex-col flex-1">
+                    <div className="space-y-6">
+                        {/* Month and Year Selection */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                    <FaCalendarAlt className="text-emerald-500" />
+                                    Month
+                                </label>
+                                <Select
+                                    options={monthOptions}
+                                    value={monthOptions.find(opt => opt.value === generateFormData.month)}
+                                    onChange={(option) => setGenerateFormData(prev => ({
+                                        ...prev,
+                                        month: option.value
+                                    }))}
+                                    styles={customSelectStyles}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                    <FaCalendarAlt className="text-emerald-500" />
+                                    Year
+                                </label>
+                                <Select
+                                    options={yearOptions}
+                                    value={yearOptions.find(opt => opt.value === generateFormData.year)}
+                                    onChange={(option) => setGenerateFormData(prev => ({
+                                        ...prev,
+                                        year: option.value
+                                    }))}
+                                    styles={customSelectStyles}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Employee Selection */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <FaUserFriends className="text-emerald-500" />
+                                Select Employees
+                            </label>
+                            {employeesLoading ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <FaSpinner className="animate-spin text-emerald-500 mr-2" />
+                                    <span className="text-gray-500">Loading employees...</span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 mt-2">
+                                    {/* Available Employees Pane */}
+                                    <div className="flex flex-col border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                                        <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                                            <span className="font-semibold text-sm text-gray-700">Available</span>
+                                            <span className="bg-gray-200 text-gray-600 text-xs font-bold px-2 py-0.5 rounded-full">{availableEmployees.length}</span>
+                                        </div>
+                                        <div className="p-2 border-b border-gray-100">
+                                            <div className="relative">
+                                                <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={12} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search available..."
+                                                    value={availableSearch}
+                                                    onChange={(e) => setAvailableSearch(e.target.value)}
+                                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="h-64 overflow-y-auto p-2 custom-scrollbar space-y-1">
+                                            {availableEmployees.length === 0 ? (
+                                                <div className="text-center py-8 text-sm text-gray-400">No employees found</div>
+                                            ) : (
+                                                availableEmployees.map(emp => (
+                                                    <div 
+                                                        key={emp.id}
+                                                        onClick={() => setGenerateFormData(prev => ({
+                                                            ...prev,
+                                                            employee_ids: [...prev.employee_ids, emp.id]
+                                                        }))}
+                                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-emerald-50 border border-transparent hover:border-emerald-100 cursor-pointer transition-colors group"
+                                                    >
+                                                        <ProfileAvatar
+                                                            record={emp}
+                                                            name={emp.name}
+                                                            className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}
+                                                        >
+                                                            {getInitials(emp.name)}
+                                                        </ProfileAvatar>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-sm font-semibold text-gray-800 truncate">{emp.name}</div>
+                                                            <div className="text-xs text-gray-500 truncate">{emp.employee_code}</div>
+                                                        </div>
+                                                        <div className="opacity-0 group-hover:opacity-100 text-emerald-500">
+                                                            <FaCheckCircle size={14} />
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Divider / Visual Arrows */}
+                                    <div className="hidden md:flex flex-col items-center justify-center gap-3 px-2">
+                                        <button 
+                                            type="button"
+                                            title="Select All"
+                                            onClick={() => setGenerateFormData(prev => ({
+                                                ...prev,
+                                                employee_ids: [...new Set([...prev.employee_ids, ...availableEmployees.map(emp => emp.id)])]
+                                            }))}
+                                            className="p-2 rounded-lg bg-gray-50 hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 border border-gray-200 hover:border-emerald-200 transition-colors"
+                                        >
+                                            <FaAngleDoubleRight size={16} />
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            title="Deselect All"
+                                            onClick={() => setGenerateFormData(prev => ({
+                                                ...prev,
+                                                employee_ids: prev.employee_ids.filter(id => !selectedEmployees.find(emp => emp.id === id))
+                                            }))}
+                                            className="p-2 rounded-lg bg-gray-50 hover:bg-red-50 text-gray-400 hover:text-red-600 border border-gray-200 hover:border-red-200 transition-colors"
+                                        >
+                                            <FaAngleDoubleLeft size={16} />
+                                        </button>
+                                    </div>
+
+                                    {/* Selected Employees Pane */}
+                                    <div className="flex flex-col border border-emerald-200 rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-emerald-50">
+                                        <div className="bg-emerald-50 px-3 py-2 border-b border-emerald-100 flex justify-between items-center">
+                                            <span className="font-semibold text-sm text-emerald-800">Selected</span>
+                                            <span className="bg-emerald-200 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full">{selectedEmployees.length}</span>
+                                        </div>
+                                        <div className="p-2 border-b border-emerald-50">
+                                            <div className="relative">
+                                                <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-400" size={12} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search selected..."
+                                                    value={selectedSearch}
+                                                    onChange={(e) => setSelectedSearch(e.target.value)}
+                                                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-emerald-50/30"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="h-64 overflow-y-auto p-2 custom-scrollbar space-y-1">
+                                            {selectedEmployees.length === 0 ? (
+                                                <div className="text-center py-8 text-sm text-emerald-400">No employees selected</div>
+                                            ) : (
+                                                selectedEmployees.map(emp => (
+                                                    <div 
+                                                        key={emp.id}
+                                                        onClick={() => setGenerateFormData(prev => ({
+                                                            ...prev,
+                                                            employee_ids: prev.employee_ids.filter(id => id !== emp.id)
+                                                        }))}
+                                                        className="flex items-center gap-3 p-2 rounded-lg bg-emerald-50/50 hover:bg-red-50 border border-emerald-100 hover:border-red-100 cursor-pointer transition-colors group"
+                                                    >
+                                                        <ProfileAvatar
+                                                            record={emp}
+                                                            name={emp.name}
+                                                            className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarGradient(emp.id)} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}
+                                                        >
+                                                            {getInitials(emp.name)}
+                                                        </ProfileAvatar>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-sm font-semibold text-emerald-900 truncate group-hover:text-red-900">{emp.name}</div>
+                                                            <div className="text-xs text-emerald-600 truncate group-hover:text-red-600">{emp.employee_code}</div>
+                                                        </div>
+                                                        <div className="opacity-0 group-hover:opacity-100 text-red-500">
+                                                            <FaTimes size={14} />
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </form>
+            </Modal>
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
