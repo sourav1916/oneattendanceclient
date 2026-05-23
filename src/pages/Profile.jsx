@@ -909,7 +909,8 @@ export default function ProfilePage() {
                                 allPermissions={groupedPermissions}
                                 selectedIds={groupedPermissionIds}
                                 onChange={() => { }}
-                                readOnly
+                                readOnly={true}
+                                listHeightClass="max-h-[60vh]"
                             />
                         </motion.div>
                     )}

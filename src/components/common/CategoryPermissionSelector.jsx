@@ -146,7 +146,7 @@ CategoryRow.displayName = 'CategoryRow';
  *   selectedIds     — number[] (array of selected permission IDs)
  *   onChange        — (newIds: number[]) => void
  */
-const CategoryPermissionSelector = ({ allPermissions = [], selectedIds = [], onChange, readOnly = false }) => {
+const CategoryPermissionSelector = ({ allPermissions = [], selectedIds = [], onChange, readOnly = false, listHeightClass = "max-h-[38vh]" }) => {
   const [openCategories, setOpenCategories] = useState(new Set());
 
   // Build a Set for O(1) lookup
@@ -268,7 +268,7 @@ const CategoryPermissionSelector = ({ allPermissions = [], selectedIds = [], onC
       </div>
 
       {/* Category list */}
-      <div className="p-2.5 space-y-1.5 max-h-[38vh] overflow-y-auto custom-scrollbar bg-white">
+      <div className={`p-2.5 space-y-1.5 ${listHeightClass} overflow-y-auto custom-scrollbar bg-white`}>
         {allPermissions.length === 0 ? (
           <div className="text-center py-10 text-slate-400 text-sm italic">
             No permissions available

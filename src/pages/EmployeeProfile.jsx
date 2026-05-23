@@ -26,18 +26,19 @@ import AttendanceLogsModal from "../components/AttendanceLogsModal";
 import AttendanceTypeTabs, { getAttendanceTypeConfig } from "../components/AttendanceTypeTabs";
 import ProfileAvatar from "../components/common/ProfileAvatar";
 import AdvancedDateFilter from "../components/AdvancedDateFilter";
+import CategoryPermissionSelector from "../components/common/CategoryPermissionSelector";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: "permissions", label: "Permissions", icon: <FaShieldAlt size={12} /> },
   { key: "attendance", label: "Attendance", icon: <FaClock size={12} /> },
+  { key: "permissions", label: "Permissions", icon: <FaShieldAlt size={12} /> },
   { key: "salary", label: "Salary", icon: <FaMoneyBillWave size={12} /> },
   { key: "payroll", label: "Payroll", icon: <FaCalendarAlt size={12} /> },
   { key: "shifts", label: "Shifts", icon: <FaExchangeAlt size={12} /> },
   { key: "leaves", label: "Leaves", icon: <FaUmbrellaBeach size={12} /> },
 ];
 const PROFILE_TAB_IDS = new Set(TABS.map((tab) => tab.key));
-const DEFAULT_PROFILE_TAB = "permissions";
+const DEFAULT_PROFILE_TAB = "attendance";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 const fmt = (str) =>
@@ -1550,7 +1551,11 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
     }
   }, [employeeId, isAttendance, subType, normalizedTabKey, tabKey, updatePagination]);
 
-  useEffect(() => { fetchData(pagination.page, pagination.limit); }, [normalizedTabKey, subType, pagination.page, pagination.limit]);
+  useEffect(() => { 
+    const page = normalizedTabKey === "permissions" ? 1 : pagination.page;
+    const limit = normalizedTabKey === "permissions" ? 1000 : pagination.limit;
+    fetchData(page, limit); 
+  }, [normalizedTabKey, subType, pagination.page, pagination.limit]);
 
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
   useEffect(() => {
@@ -1603,7 +1608,9 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
                 <FaHistory size={10} /> History
               </button>
             )}
-            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
+            {normalizedTabKey !== "permissions" && (
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
+            )}
           </div>
         </div>
       )}
@@ -1622,17 +1629,29 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
         </div>
       )}
 
-      {!loading && rows.length > 0 && viewMode === "table" && (
+      {!loading && rows.length > 0 && normalizedTabKey === "permissions" && (
+        <CategoryPermissionSelector 
+          allPermissions={rows.map(r => ({ 
+            ...r, 
+            category: r.category || (r.code ? r.code.split('_')[0].replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown') 
+          }))} 
+          selectedIds={rows.map(r => r.id)} 
+          readOnly={true} 
+          listHeightClass="max-h-[60vh]"
+        />
+      )}
+
+      {!loading && rows.length > 0 && normalizedTabKey !== "permissions" && viewMode === "table" && (
         <ManagementTable rows={rows} columns={columns} rowKey={rowKey} onRowClick={onView} activeId={activeMenu} onToggleAction={(e, id) => setActiveMenu((c) => (c === id ? null : id))} getActions={getActions} accent={accent} headerClassName="xsm:hidden" />
       )}
 
-      {!loading && rows.length > 0 && viewMode === "card" && (
+      {!loading && rows.length > 0 && normalizedTabKey !== "permissions" && viewMode === "card" && (
         <ManagementGrid viewMode={viewMode}>
           {rows.map((row, idx) => cardRenderer(row, idx, activeMenu, (e, id) => setActiveMenu((c) => (c === id ? null : id))))}
         </ManagementGrid>
       )}
 
-      {!loading && rows.length > 0 && (
+      {!loading && rows.length > 0 && normalizedTabKey !== "permissions" && (
         <Pagination currentPage={pagination.page} totalItems={pagination.total} itemsPerPage={pagination.limit} onPageChange={goToPage} onLimitChange={changeLimit} className="mt-2" />
       )}
 
