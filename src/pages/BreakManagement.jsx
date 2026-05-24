@@ -23,6 +23,7 @@ import { EmployeeSelect, ManagementHub, RefreshButton } from '../components/comm
 import ModalScrollLock from '../components/ModalScrollLock';
 import TimePickerField from '../components/TimePicker';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 // ─── Variants ──────────────────────────────────────────────────────────────────
 
@@ -161,6 +162,7 @@ const SummaryCard = ({ icon, label, value, gradient, delay = 0 }) => (
 // ─── Break Detail Modal ────────────────────────────────────────────────────────
 
 const BreakDetailModal = ({ record, onClose, onEdit }) => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     if (!record) return null;
     const idx = (record.employee_id || 0) % 5;
     const breakStart = record.break_start;
@@ -200,14 +202,22 @@ const BreakDetailModal = ({ record, onClose, onEdit }) => {
 
                         {/* Identity */}
                         <div className="flex flex-col sm:flex-row items-center gap-5 pb-5 border-b border-gray-100">
-                            <div className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow ring-4 ring-gray-100 flex-shrink-0"
-                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
+                            <div 
+                                className="w-20 h-20 rounded-xl flex items-center justify-center text-2xl font-black overflow-hidden shadow ring-4 ring-gray-100 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}
+                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                            >
                                 {record.profile_picture
                                     ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
                                     : getInitials(record.name)}
                             </div>
                             <div className="text-center sm:text-left">
-                                <h3 className="text-2xl font-black text-gray-900">{record.name}</h3>
+                                <h3 
+                                    className="text-2xl font-black text-gray-900 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                >
+                                    {record.name}
+                                </h3>
                                 <p className="text-sm text-gray-400 mt-0.5">{desigLabel(record.designation)}</p>
                                 <div className="mt-2 flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                                     <VerifiedBadge isVerified={record.is_verified} />
@@ -402,6 +412,7 @@ const BreakFormModal = ({ record, onClose, onSubmit, saving, isEdit = false }) =
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 const BreakManagementPage = () => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -721,14 +732,22 @@ const BreakManagementPage = () => {
                                                 {/* Employee */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform"
-                                                            style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
+                                                        <div 
+                                                            className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform cursor-pointer hover:opacity-80"
+                                                            style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}
+                                                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                                        >
                                                             {record.profile_picture
                                                                 ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
                                                                 : getInitials(record.name)}
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold text-gray-800">{record.name}</p>
+                                                            <p 
+                                                                className="font-semibold text-gray-800 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                                            >
+                                                                {record.name}
+                                                            </p>
                                                             <p className="text-xs text-indigo-400 font-mono">{record.employee_code}</p>
                                                         </div>
                                                     </div>
@@ -821,14 +840,22 @@ const BreakManagementPage = () => {
                                     {/* Header */}
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300"
-                                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}>
+                                            <div 
+                                                className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-base font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform duration-300 cursor-pointer hover:opacity-80"
+                                                style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}
+                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                            >
                                                 {record.profile_picture
                                                     ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
                                                     : getInitials(record.name)}
                                             </div>
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-gray-800 text-sm leading-tight truncate group-hover:text-amber-600 transition-colors">{record.name}</h3>
+                                                <h3 
+                                                    className="font-bold text-gray-800 text-sm leading-tight truncate group-hover:text-amber-600 transition-colors cursor-pointer hover:underline hover:text-indigo-600"
+                                                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                                >
+                                                    {record.name}
+                                                </h3>
                                                 <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[150px] font-mono">{record.employee_code}</p>
                                             </div>
                                         </div>

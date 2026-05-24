@@ -22,6 +22,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import { EmployeeSelect, RefreshButton } from '../components/common';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 import Modal from '../components/Modal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const PayrollManagement = () => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [payrollList, setPayrollList] = useState([]);
     const [employeeList, setEmployeeList] = useState([]);
@@ -619,11 +621,21 @@ const PayrollManagement = () => {
                                                     {visibleColumns.showName && (
                                                         <td className="px-6 py-4 font-semibold">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-100">
-                                                                    <FaUserCircle className="text-emerald-500 text-sm" />
-                                                                </div>
+                                                                <ProfileAvatar
+                                                                    record={item.employee}
+                                                                    name={item.employee.name}
+                                                                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold bg-gradient-to-br from-emerald-500 to-green-600 shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                                                                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
+                                                                >
+                                                                    {getInitials(item.employee.name)}
+                                                                </ProfileAvatar>
                                                                 <div>
-                                                                    <div className="text-gray-800 font-medium">{item.employee.name}</div>
+                                                                    <div 
+                                                                        className="text-gray-800 font-medium cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
+                                                                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
+                                                                    >
+                                                                        {item.employee.name}
+                                                                    </div>
                                                                     <div className="text-xs text-gray-500">{item.employee.email}</div>
                                                                 </div>
                                                             </div>
@@ -720,7 +732,12 @@ const PayrollManagement = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="font-bold text-lg text-gray-800 truncate">{item.employee.name}</h3>
+                                                    <h3 
+                                                        className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
+                                                    >
+                                                        {item.employee.name}
+                                                    </h3>
                                                     <StatusBadge status={item.payroll.status} />
                                                 </div>
                                                 <p className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded-lg inline-block">

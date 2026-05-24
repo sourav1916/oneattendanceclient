@@ -24,21 +24,32 @@ export default function ProfileAvatar({
   name = 'User',
   className,
   imgClassName = '',
+  onClick,
   children,
 }) {
   const [failed, setFailed] = useState(false);
   const src = getProfilePictureUrl(profilePicture || getUserProfilePicture(record));
+
+  const interactiveClass = onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : '';
 
   if (src && !failed) {
     return (
       <img
         src={src}
         alt={name || 'User'}
-        className={`${className} object-cover ${imgClassName}`}
+        className={`${className} object-cover ${imgClassName} ${interactiveClass}`}
         onError={() => setFailed(true)}
+        onClick={onClick}
       />
     );
   }
 
-  return <div className={className}>{children}</div>;
+  return (
+      <div 
+        className={`${className} ${interactiveClass}`} 
+        onClick={onClick}
+      >
+        {children}
+      </div>
+  );
 }

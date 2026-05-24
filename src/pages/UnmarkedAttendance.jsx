@@ -31,6 +31,7 @@ import {
   ManagementButton,
   ManagementHub,
 } from '../components/common';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -322,8 +323,11 @@ const Summary = ({ counts }) => {
   );
 };
 
-const EmployeeAvatar = ({ employee }) => (
-  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-100 text-xs font-bold text-slate-600">
+const EmployeeAvatar = ({ employee, onClick }) => (
+  <div 
+    className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-100 text-xs font-bold text-slate-600 ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+    onClick={onClick}
+  >
     {employee.profile_picture ? (
       <img
         src={employee.profile_picture}
@@ -338,6 +342,7 @@ const EmployeeAvatar = ({ employee }) => (
 // ─── Employee Row Card ────────────────────────────────────────────────────────
 
 const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, onSelect, isSelectionMode }) => {
+  const navigateToEmployeeProfile = useEmployeeNavigation();
   const activeStatus = normalizeStatusForAction(employee.day_status);
   const statusButtonVariant = (s) => (activeStatus === s ? 'solid' : 'soft');
   const eligibility = getFlagEligibility(employee);
@@ -369,10 +374,18 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
         <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px] pl-10 sm:pl-12">
 
-          <EmployeeAvatar employee={employee} />
+          <EmployeeAvatar 
+            employee={employee} 
+            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
+          />
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-slate-900">{employee.name}</p>
+            <p 
+                className="truncate text-sm font-bold text-slate-900 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
+            >
+                {employee.name}
+            </p>
             <p className="truncate text-xs font-medium text-slate-500">
               {employee.employee_code} | {employee.designation?.label || 'No designation'}
             </p>

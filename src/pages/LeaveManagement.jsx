@@ -16,6 +16,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { EmployeeSelect, ManagementButton, ManagementCard, ManagementHub, ManagementTable } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (d) => {
@@ -176,6 +177,7 @@ const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
 );
 
 const LeaveManagement = () => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -816,12 +818,18 @@ const LeaveManagement = () => {
                         <ProfileAvatar
                             record={leave}
                             name={leave.employee_name}
-                            className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden"
+                            className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(leave.employee_id); }}
                         >
                             {leave.employee_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </ProfileAvatar>
                         <div className="min-w-0">
-                            <div className="font-semibold text-slate-800 truncate">{leave.employee_name}</div>
+                            <div 
+                                className="font-semibold text-slate-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(leave.employee_id); }}
+                            >
+                                {leave.employee_name}
+                            </div>
                             <div className="text-[10px] text-slate-400 font-mono tracking-tighter">{leave.employee_code}</div>
                         </div>
                     </div>
@@ -1008,8 +1016,15 @@ const LeaveManagement = () => {
                                         <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span>
                                     </div>
                                 }
-                                title={leave.employee_name}
-                                description={<div className="font-mono text-[10px] text-slate-400">{leave.employee_code}</div>}
+                                title={
+                                    <span 
+                                        className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
+                                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(leave.employee_id); }}
+                                    >
+                                        {leave.employee_name}
+                                    </span>
+                                }
+                                subtitle={<div className="font-mono text-[10px] text-slate-400">{leave.employee_code}</div>}
                                 actions={ActionMenuButtons(leave)}
                                 onClick={() => setDetailLeave(leave)}
                             >

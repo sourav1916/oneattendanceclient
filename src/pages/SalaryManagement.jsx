@@ -26,6 +26,7 @@ import { DatePickerField } from '../components/DatePicker';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import CurrencyIcon from '../components/common/CurrencyIcon';
 import { useAuth } from '../context/AuthContext';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -237,6 +238,8 @@ const ComponentRow = ({ component, currency }) => {
 // ─── Salary Detail Modal ─────────────────────────────────────────────────────
 
 const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
+
     if (!salary) return null;
 
     const status = getStatusBadge(salary.effective_to);
@@ -254,6 +257,7 @@ const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
                     record={salary.employee}
                     name={salary.employee?.name}
                     className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} shadow-lg shadow-slate-200 overflow-hidden`}
+                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }}
                 >
                     <span className="text-xl font-bold text-white">{getInitials(salary.employee?.name)}</span>
                 </ProfileAvatar>
@@ -1313,6 +1317,7 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
 // ─── Salary Card (Grid) ───────────────────────────────────────────────────────
 
 const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEdit, onRevise, companyCurrency }) => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
     const expired = isSalaryExpired(salary);
@@ -1337,7 +1342,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
             menuId={`card-${salary.salary_id}`}
             actions={actions}
             hoverable
-            title={salary.employee?.name || 'No name'}
+            title={<span onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }} className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors">{salary.employee?.name || 'No name'}</span>}
             subtitle={`${salary.employee?.employee_code || 'N/A'} • ${salary.employee?.email || 'N/A'}`}
             eyebrow={salary.package?.name || 'Salary package'}
             badge={
@@ -1390,6 +1395,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
 
 const SalaryManagement = () => {
     const { company } = useAuth();
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const companyCurrency = normalizeCurrencyCode(company?.transaction_currency);
     const [salaries, setSalaries] = useState([]);
     const [meta, setMeta] = useState(null);
@@ -1545,11 +1551,17 @@ const SalaryManagement = () => {
                         record={salary.employee}
                         name={salary.employee?.name}
                         className={`w-10 h-10 rounded-full shrink-0 bg-gradient-to-br ${avatarGradient(salary.employee?.id || 1)} flex items-center justify-center text-white font-semibold overflow-hidden`}
+                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }}
                     >
                         {getInitials(salary.employee?.name)}
                     </ProfileAvatar>
                     <div className="min-w-0">
-                        <p className="font-semibold text-gray-800 truncate">{salary.employee?.name || 'No name'}</p>
+                        <p 
+                            className="font-semibold text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }}
+                        >
+                            {salary.employee?.name || 'No name'}
+                        </p>
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
                             <FaEnvelope className="shrink-0 text-gray-400" size={10} />
                             <span className="truncate">{salary.employee?.email}</span>

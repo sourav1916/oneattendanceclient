@@ -15,6 +15,7 @@ import ProfileAvatar from '../components/common/ProfileAvatar';
 import SelectField from '../components/SelectField';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
     <div
@@ -31,6 +32,7 @@ const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
 );
 
 export default function PayrollAdjustment() {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const createAccess = checkActionAccess('payrollAdjustment', 'create');
     const updateAccess = checkActionAccess('payrollAdjustment', 'update');
@@ -374,12 +376,18 @@ export default function PayrollAdjustment() {
                         <ProfileAvatar
                             record={adj}
                             name={adj.employee_name}
-                            className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-100 flex-shrink-0"
+                            className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-100 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(adj.employee_id); }}
                         >
                             {adj.employee_name?.charAt(0).toUpperCase() || 'E'}
                         </ProfileAvatar>
                         <div>
-                            <p className="font-semibold text-gray-800 leading-tight">{adj.employee_name || 'N/A'}</p>
+                            <p 
+                                className="font-semibold text-gray-800 leading-tight cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
+                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(adj.employee_id); }}
+                            >
+                                {adj.employee_name || 'N/A'}
+                            </p>
                             {adj.employee_code && <p className="text-[10px] text-gray-500 font-mono mt-0.5">{adj.employee_code}</p>}
                         </div>
                     </div>
@@ -606,13 +614,21 @@ export default function PayrollAdjustment() {
                                                 <span className="text-[10px] font-bold text-gray-400"># {adj.id}</span>
                                             </div>
                                         }
-                                        title={adj.employee_name}
+                                        title={
+                                            <span 
+                                                className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
+                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(adj.employee_id); }}
+                                            >
+                                                {adj.employee_name}
+                                            </span>
+                                        }
                                         subtitle={adj.employee_code}
                                         icon={
                                             <ProfileAvatar
                                                 record={adj}
                                                 name={adj.employee_name}
-                                                className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-100 flex-shrink-0"
+                                                className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm border border-indigo-100 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(adj.employee_id); }}
                                             >
                                                 {adj.employee_name?.charAt(0).toUpperCase() || 'E'}
                                             </ProfileAvatar>

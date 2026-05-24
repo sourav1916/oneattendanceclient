@@ -24,6 +24,7 @@ import TimeDurationPickerField from '../components/TimeDurationPicker';
 import Modal from '../components/Modal';
 import { RefreshButton } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -472,6 +473,7 @@ const EmployeeEditModal = ({
 
 const EmployeeManagement = () => {
     const navigate = useNavigate();
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
     const [employees, setEmployees] = useState([]);
     const [constants, setConstants] = useState({
@@ -1265,10 +1267,14 @@ const EmployeeManagement = () => {
                                                                 record={emp}
                                                                 name={emp.name}
                                                                 className="w-10 h-10 flex items-center justify-center rounded-xl bg-purple-100 overflow-hidden"
+                                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.id); }}
                                                             >
                                                                 <FaUser className="text-purple-500 text-sm" />
                                                             </ProfileAvatar>
-                                                            <span className="text-gray-800 font-medium truncate max-w-[120px] sm:max-w-[180px]">
+                                                            <span 
+                                                                className="text-gray-800 font-medium truncate max-w-[120px] sm:max-w-[180px] cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.id); }}
+                                                            >
                                                                 {emp.name}
                                                             </span>
                                                         </div>
@@ -1357,12 +1363,18 @@ const EmployeeManagement = () => {
                                             record={emp}
                                             name={emp.name}
                                             className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.id); }}
                                         >
                                             <FaUserCircle className="text-white text-3xl" />
                                         </ProfileAvatar>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-start">
-                                                <h3 className="font-bold text-lg text-gray-800 truncate">{emp.name}</h3>
+                                                <h3 
+                                                    className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.id); }}
+                                                >
+                                                    {emp.name}
+                                                </h3>
                                                 <span className={`px-3 py-1 rounded-xl text-xs font-medium ${getStatusClassName(emp.status)}`}>{getStatusDisplay(emp.status)}</span>
                                             </div>
                                             <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-xl inline-block">{emp.employee_code}</p>

@@ -19,6 +19,7 @@ import ModalScrollLock from "../components/ModalScrollLock";
 import ActionMenu from '../components/ActionMenu';
 import { RefreshButton } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,7 @@ const InfoRow = ({ icon, label, value }) => (
 );
 
 const EmployeeDetailModal = ({ employee, onClose }) => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     if (!employee) return null;
     const s = employee.monthly_summary || {};
     const u = employee;
@@ -196,12 +198,18 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             <ProfileAvatar
                                 record={employee}
                                 name={u.name || employee.name}
-                                className={`w-16 h-16 bg-gradient-to-br ${avatarGradient(employee.employee_id)} rounded-xl flex items-center justify-center shrink-0 overflow-hidden`}
+                                className={`w-16 h-16 bg-gradient-to-br ${avatarGradient(employee.employee_id)} rounded-xl flex items-center justify-center shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity`}
+                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
                             >
                                 <FaUserCircle className="text-white text-4xl" />
                             </ProfileAvatar>
                             <div>
-                                <h3 className="text-xl font-bold text-gray-800">{u.name || employee.name || 'Unknown'}</h3>
+                                <h3 
+                                    className="text-xl font-bold text-gray-800 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
+                                >
+                                    {u.name || employee.name || 'Unknown'}
+                                </h3>
                                 <p className="text-xs text-gray-600 flex items-center gap-2 mt-1">
                                     <FaIdCard className="text-blue-500" size={12} />{employee.employee_code}
                                 </p>
@@ -261,6 +269,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
 // ─── Employee Card (Grid) ─────────────────────────────────────────────────────
 
 const EmployeeCard = ({ employee, index, onClick }) => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const s = employee.monthly_summary || {};
     const u = employee;
     const designationLabel = (v) => typeof v === 'object' && v !== null ? v.label || 'N/A' : v?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'N/A';
@@ -283,12 +292,18 @@ const EmployeeCard = ({ employee, index, onClick }) => {
                 <ProfileAvatar
                     record={employee}
                     name={u.name || employee.name}
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden`}
+                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${avatarGradient(employee.employee_id)} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden cursor-pointer hover:opacity-80`}
+                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
                 >
                     <span className="text-white font-bold text-base">{getInitials(u.name || employee.name || '')}</span>
                 </ProfileAvatar>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-800 truncate text-sm">{u.name || employee.name || 'Unknown'}</h3>
+                    <h3 
+                        className="font-bold text-gray-800 truncate text-sm cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
+                    >
+                        {u.name || employee.name || 'Unknown'}
+                    </h3>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{designationLabel(employee.designation)}</p>
                     <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-gray-400 font-mono">{employee.employee_code}</span>
@@ -332,6 +347,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const EmployeesShifts = () => {
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());
@@ -680,12 +696,18 @@ const EmployeesShifts = () => {
                                                             <ProfileAvatar
                                                                 record={emp}
                                                                 name={u.name || emp.name}
-                                                                className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden`}
+                                                                className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center text-white font-semibold flex-shrink-0 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity`}
+                                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.employee_id); }}
                                                             >
                                                                 {getInitials(u.name || emp.name || '')}
                                                             </ProfileAvatar>
                                                             <div className="min-w-0">
-                                                                <p className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none">{u.name || emp.name || 'Unknown'}</p>
+                                                                <p 
+                                                                    className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                                    onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.employee_id); }}
+                                                                >
+                                                                    {u.name || emp.name || 'Unknown'}
+                                                                </p>
                                                                 <p className="text-xs text-gray-500 flex items-center gap-1">
                                                                     <FaEnvelope className="text-gray-400 flex-shrink-0" size={10} />
                                                                     <span className="truncate max-w-[120px] md:max-w-none">{u.email || 'N/A'}</span>
