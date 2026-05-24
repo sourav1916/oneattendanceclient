@@ -4,7 +4,7 @@ import {
   FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
   FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
   FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
-  FaSearch, FaTimes, FaShieldAlt, FaUserCircle, FaTh, FaListUl, FaChevronDown, FaUserCheck, FaCog
+  FaSearch, FaTimes, FaShieldAlt, FaUserCircle, FaPlus, FaListUl, FaChevronDown, FaUserCheck, FaCog
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
@@ -397,7 +397,7 @@ export default function CompanyInvites() {
                 title={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2.5 font-bold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <FaEnvelope size={14} />
+                <FaPlus size={14} />
                 <span className="text-sm">Create</span>
               </motion.button>
             </div>

@@ -18,6 +18,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementHub } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import SelectField from "../components/SelectField";
 
 // â”€â”€â”€ Constants & Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -697,17 +698,23 @@ export default function MyInvites() {
 
           <div className="flex w-full md:w-auto items-center justify-between md:justify-end gap-3">
             <div className="flex items-center gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="min-w-[150px] rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
-              >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="accepted">Accepted</option>
-                <option value="rejected">Rejected</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <SelectField
+                options={[
+                  { value: "all", label: "All Statuses" },
+                  { value: "pending", label: "Pending" },
+                  { value: "accepted", label: "Accepted" },
+                  { value: "rejected", label: "Rejected" },
+                  { value: "cancelled", label: "Cancelled" },
+                ]}
+                value={[
+                  { value: "all", label: "All Statuses" },
+                  { value: "pending", label: "Pending" },
+                  { value: "accepted", label: "Accepted" },
+                  { value: "rejected", label: "Rejected" },
+                  { value: "cancelled", label: "Cancelled" },
+                ].find((o) => o.value === statusFilter)}
+                onChange={(val) => setStatusFilter(val.value)}
+              />
             </div>
 
             <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
