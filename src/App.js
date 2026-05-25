@@ -23,6 +23,7 @@ import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import MySalary from "./pages/MySalary";
+import MyLedger from "./pages/MyLedger";
 import SalaryManagement from "./pages/SalaryManagement";
 import SalaryComponentsManagement from "./pages/SalaryComponentsManagement";
 import SalaryPackageManagement from "./pages/SalaryPackageManagement";
@@ -332,6 +333,7 @@ function AppContent() {
         /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><Navigate to="/attendance?tab=history" replace /></ProtectedRoute>} />
         <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-ledger" element={<ProtectedRoute pageKey="myLedger"><MainLayout><MyLedger /></MainLayout></ProtectedRoute>} />
         <Route path="/my-accounts" element={<ProtectedRoute pageKey="employeeBankAccount"><MainLayout><MyAccounts /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><TabbedManagementHub
           routePath="/attendance-management"

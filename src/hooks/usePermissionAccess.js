@@ -34,6 +34,10 @@ const PERMISSION_ACCESS_CONFIG = {
       permissions: ["salary_view_own"],
       disableForCompanyOwner: true,
     },
+    myLedger: {
+      permissions: ["salary_view_own"],
+      disableForCompanyOwner: true,
+    },
     employeeBankAccount: {
       permissions: ["emp_bnk_create", "emp_bnk_view", "emp_bnk_update", "emp_bnk_delete"],
       disableForCompanyOwner: true,

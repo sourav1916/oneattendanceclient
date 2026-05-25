@@ -155,6 +155,7 @@ function HomePage() {
     const myShiftsAccess = checkPageAccess("myShifts");
     const myLeavesAccess = checkPageAccess("myLeaves");
     const mySalaryAccess = checkPageAccess("mySalary");
+    const myLedgerAccess = checkPageAccess("myLedger");
     const myInvitesAccess = checkPageAccess("myInvites");
     const addStaffAccess = checkActionAccess("workspace", "addStaff");
     const inviteMgmtAccess = checkPageAccess("companyInvites");
@@ -208,6 +209,15 @@ function HomePage() {
         onClick: () => mySalaryAccess.allowed && navigate('/my-salary'),
         gradient: mySalaryAccess.allowed ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-slate-200",
         disabled: !mySalaryAccess.allowed
+      },
+      {
+        title: "My Ledger",
+        description: myLedgerAccess.allowed ? "View ledger transactions" : "No permission",
+        icon: FaChartBar,
+        color: myLedgerAccess.allowed ? "from-violet-500 to-indigo-500" : "from-slate-400 to-slate-500",
+        onClick: () => myLedgerAccess.allowed && navigate('/my-ledger'),
+        gradient: myLedgerAccess.allowed ? "bg-gradient-to-r from-violet-500 to-indigo-500" : "bg-slate-200",
+        disabled: !myLedgerAccess.allowed
       },
       {
         title: "My Invites",
@@ -298,15 +308,6 @@ function HomePage() {
         onClick: () => holidayMgmtAccess.allowed && navigate('/holiday-management'),
         gradient: holidayMgmtAccess.allowed ? "bg-gradient-to-r from-sky-500 to-indigo-500" : "bg-slate-200",
         disabled: !holidayMgmtAccess.allowed
-      },
-      {
-        title: "My Calendar",
-        description: holidaysAccess.allowed ? "View attendance & holiday calendars" : "Select company first",
-        icon: FaRegCalendarAlt,
-        color: holidaysAccess.allowed ? "from-rose-500 to-orange-500" : "from-slate-400 to-slate-500",
-        onClick: () => holidaysAccess.allowed && navigate('/my-calendar'),
-        gradient: holidaysAccess.allowed ? "bg-gradient-to-r from-rose-500 to-orange-500" : "bg-slate-200",
-        disabled: !holidaysAccess.allowed
       },
       {
         title: "Company Config",
