@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FaCog } from 'react-icons/fa';
 import ActionMenu from '../ActionMenu';
@@ -37,7 +37,35 @@ export default function ManagementTable({
   actionsHeader = <FaCog className="ml-auto h-4 w-4" />,
   actionsClassName = '',
 }) {
-  const visibleColumns = columns.filter((column) => column.visible !== false);
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(1024);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setContainerWidth(entries[0].contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const allVisibleColumns = columns.filter((column) => column.visible !== false);
+
+  const getResponsiveColumns = () => {
+    let maxCols = allVisibleColumns.length;
+    if (containerWidth < 340) maxCols = 1;
+    else if (containerWidth < 480) maxCols = 2;
+    else if (containerWidth < 640) maxCols = 3;
+    else if (containerWidth < 768) maxCols = 4;
+    else if (containerWidth < 1024) maxCols = 5;
+    else if (containerWidth < 1280) maxCols = 6;
+    
+    return allVisibleColumns.slice(0, maxCols);
+  };
+
+  const visibleColumns = getResponsiveColumns();
   const densityClasses = compact ? 'px-3 py-3' : 'px-4 lg:px-6 py-4';
   const cardAccentMap = {
     slate: 'border-slate-200 shadow-slate-200/50',
@@ -57,14 +85,15 @@ export default function ManagementTable({
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={joinClasses('overflow-hidden rounded-xl bg-white', cardClass, containerClassName, className)}
+      className={joinClasses('overflow-hidden rounded-xl bg-white w-full', cardClass, containerClassName, className)}
     >
-      <div className={joinClasses('overflow-x-auto', tableClassName)}>
-        <table className="w-full text-left text-sm text-gray-700">
+      <div className={joinClasses('overflow-x-hidden w-full', tableClassName)}>
+        <table className="w-full text-left text-sm text-gray-700 table-fixed sm:table-auto">
           {showHeader && (
-            <thead className={joinClasses('bg-gradient-to-r from-gray-100 to-gray-200 text-xs uppercase text-gray-600', headerClassName)}>
+            <thead className={joinClasses('hidden sm:table-header-group bg-gradient-to-r from-gray-100 to-gray-200 text-xs uppercase text-gray-600', headerClassName)}>
               <tr>
                 {visibleColumns.map((column) => (
                   <th
@@ -109,6 +138,7 @@ export default function ManagementTable({
                         key={column.key}
                         className={joinClasses(
                           densityClasses,
+                          'truncate',
                           column.className,
                           cellClassName
                         )}
