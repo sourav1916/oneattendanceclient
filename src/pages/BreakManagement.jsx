@@ -19,7 +19,7 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import { EmployeeSelect, ManagementHub, RefreshButton } from '../components/common';
+import { EmployeeSelect, ManagementHub, ManagementTable, RefreshButton } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import TimePickerField from '../components/TimePicker';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
@@ -100,9 +100,16 @@ function getBreakDurationMins(startTime, endTime) {
     return Math.max(0, Math.round((end - start) / 60000));
 }
 
-function desigLabel(str) {
-    if (!str) return '—';
-    return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+function desigLabel(val) {
+    if (!val) return '—';
+    // Handle deeply nested API object: { value: { value, label }, label: { value, label } }
+    if (typeof val === 'object' && val !== null) {
+        const inner = val.label ?? val.value;
+        if (typeof inner === 'object' && inner !== null) return inner.label || '—';
+        if (typeof inner === 'string') return inner;
+    }
+    if (typeof val === 'string') return val.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return '—';
 }
 
 // ─── Small Reusable Components ─────────────────────────────────────────────────
@@ -429,16 +436,8 @@ const BreakManagementPage = () => {
         date: getTodayIso(),
         month: '', year: '', from_date: '', to_date: '',
     });
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
     const fetchInProgress = useRef(false);
-
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 500);
@@ -548,12 +547,7 @@ const BreakManagementPage = () => {
         present: records.filter(r => r.day_status === 'present').length,
     }), [records, pagination.total]);
 
-    const isMobile = windowWidth < 640;
-    const isTablet = windowWidth < 1024;
-    const showEmail = !isMobile;
-    const showDesig = !isMobile;
-    const showEndTime = !isTablet;
-    const showDate = !isMobile;
+
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
@@ -701,125 +695,77 @@ const BreakManagementPage = () => {
 
                 {/* Table View */}
                 {!loading && records.length > 0 && viewMode === 'table' && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gradient-to-r from-gray-50 to-slate-50 text-gray-500 uppercase text-xs border-b border-gray-100">
-                                    <tr>
-                                        <th className="px-6 py-4 font-semibold tracking-wider">Employee</th>
-                                        {showDesig && <th className="px-5 py-4 font-semibold tracking-wider">Designation</th>}
-                                        {showDate && <th className="px-5 py-4 font-semibold tracking-wider">Date</th>}
-                                        <th className="px-5 py-4 font-semibold tracking-wider">Break Start</th>
-                                        {showEndTime && <th className="px-5 py-4 font-semibold tracking-wider">Break End</th>}
-                                        <th className="px-5 py-4 font-semibold tracking-wider">Status</th>
-                                        <th className="px-5 py-4 font-semibold tracking-wider">Verified</th>
-                                        <th className="px-5 py-4 text-right font-semibold tracking-wider"><FaCog className="w-4 h-4 ml-auto" /></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {records.map((record, i) => {
-                                        const idx = (record.employee_id || 0) % 5;
-                                        const startStr = formatTime(record.break_start);
-                                        const endStr = formatTime(record.break_end);
-                                        const isOpen = getTimeStr(record.break_start) && !getTimeStr(record.break_end);
-                                        return (
-                                            <motion.tr key={record.attendance_id}
-                                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                                                className="hover:bg-amber-50/30 transition-colors cursor-pointer group"
-                                                onClick={() => setDetailTarget(record)}>
-
-                                                {/* Employee */}
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div 
-                                                            className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm group-hover:scale-105 transition-transform cursor-pointer hover:opacity-80"
-                                                            style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}
-                                                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
-                                                        >
-                                                            {record.profile_picture
-                                                                ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
-                                                                : getInitials(record.name)}
-                                                        </div>
-                                                        <div>
-                                                            <p 
-                                                                className="font-semibold text-gray-800 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
-                                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
-                                                            >
-                                                                {record.name}
-                                                            </p>
-                                                            <p className="text-xs text-indigo-400 font-mono">{record.employee_code}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                {/* Designation */}
-                                                {showDesig && (
-                                                    <td className="px-5 py-4">
-                                                        <p className="text-xs text-gray-500 font-medium">{desigLabel(record.designation)}</p>
-                                                    </td>
-                                                )}
-
-                                                {/* Date */}
-                                                {showDate && (
-                                                    <td className="px-5 py-4">
-                                                        <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                                                            <FaCalendarAlt className="text-amber-400 flex-shrink-0" />
-                                                            <span>{formatDate(record.attendance_date)}</span>
-                                                        </div>
-                                                    </td>
-                                                )}
-
-                                                {/* Break Start */}
-                                                <td className="px-5 py-4">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <FaPlay className="text-emerald-400 flex-shrink-0" size={10} />
-                                                        <span className="text-xs font-mono font-semibold text-gray-700">{startStr}</span>
-                                                        {isOpen && (
-                                                            <span className="ml-1 px-1.5 py-0.5 bg-orange-50 border border-orange-200 rounded text-[10px] font-bold text-orange-500 animate-pulse">LIVE</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-
-                                                {/* Break End */}
-                                                {showEndTime && (
-                                                    <td className="px-5 py-4">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <FaStop className="text-red-400 flex-shrink-0" size={10} />
-                                                            <span className="text-xs font-mono font-semibold text-gray-700">{endStr}</span>
-                                                        </div>
-                                                    </td>
-                                                )}
-
-                                                {/* Day Status */}
-                                                <td className="px-5 py-4">
-                                                    <DayStatusBadge status={record.day_status} />
-                                                </td>
-
-                                                {/* Verified */}
-                                                <td className="px-5 py-4">
-                                                    <VerifiedBadge isVerified={record.is_verified} />
-                                                </td>
-
-                                                {/* Actions */}
-                                                <td className="px-5 py-4 text-right" onClick={e => e.stopPropagation()}>
-                                                    <ActionMenu
-                                                        menuId={`table-${record.attendance_id}`}
-                                                        activeId={activeActionMenu}
-                                                        onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
-                                                        actions={[
-                                                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-blue-600 hover:bg-blue-50' },
-                                                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-emerald-600 hover:bg-emerald-50' },
-                                                        ]}
-                                                    />
-                                                </td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </motion.div>
+                    <ManagementTable
+                        rows={records}
+                        columns={[
+                            { key: 'employee', label: 'Employee', render: (record) => {
+                                const idx = (record.employee_id || 0) % 5;
+                                return (
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden shadow-sm cursor-pointer hover:opacity-80"
+                                            style={{ background: avatarPalette[idx].bg, color: avatarPalette[idx].text }}
+                                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                        >
+                                            {record.profile_picture
+                                                ? <img src={record.profile_picture} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} />
+                                                : getInitials(record.name)}
+                                        </div>
+                                        <div>
+                                            <p
+                                                className="font-semibold text-gray-800 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(record.employee_id); }}
+                                            >
+                                                {record.name}
+                                            </p>
+                                            <p className="text-xs text-indigo-400 font-mono">{record.employee_code}</p>
+                                        </div>
+                                    </div>
+                                );
+                            }},
+                            { key: 'designation', label: 'Designation', render: (record) => (
+                                <p className="text-xs text-gray-500 font-medium">{desigLabel(record.designation)}</p>
+                            )},
+                            { key: 'date', label: 'Date', render: (record) => (
+                                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                                    <FaCalendarAlt className="text-amber-400 flex-shrink-0" />
+                                    <span>{formatDate(record.attendance_date)}</span>
+                                </div>
+                            )},
+                            { key: 'break_start', label: 'Break Start', render: (record) => {
+                                const startStr = formatTime(record.break_start);
+                                const isOpen = getTimeStr(record.break_start) && !getTimeStr(record.break_end);
+                                return (
+                                    <div className="flex items-center gap-1.5">
+                                        <FaPlay className="text-emerald-400 flex-shrink-0" size={10} />
+                                        <span className="text-xs font-mono font-semibold text-gray-700">{startStr}</span>
+                                        {isOpen && (
+                                            <span className="ml-1 px-1.5 py-0.5 bg-orange-50 border border-orange-200 rounded text-[10px] font-bold text-orange-500 animate-pulse">LIVE</span>
+                                        )}
+                                    </div>
+                                );
+                            }},
+                            { key: 'break_end', label: 'Break End', render: (record) => (
+                                <div className="flex items-center gap-1.5">
+                                    <FaStop className="text-red-400 flex-shrink-0" size={10} />
+                                    <span className="text-xs font-mono font-semibold text-gray-700">{formatTime(record.break_end)}</span>
+                                </div>
+                            )},
+                            { key: 'day_status', label: 'Status', render: (record) => (
+                                <DayStatusBadge status={record.day_status} />
+                            )},
+                            { key: 'verified', label: 'Verified', render: (record) => (
+                                <VerifiedBadge isVerified={record.is_verified} />
+                            )},
+                        ]}
+                        rowKey={(row) => row.attendance_id}
+                        onRowClick={(row) => setDetailTarget(row)}
+                        getActions={(record) => [
+                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-blue-600 hover:bg-blue-50' },
+                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-emerald-600 hover:bg-emerald-50' },
+                        ]}
+                        accent="amber"
+                    />
                 )}
 
                 {/* Card View */}
