@@ -27,6 +27,7 @@ import AttendanceTypeTabs, { getAttendanceTypeConfig } from "../components/Atten
 import ProfileAvatar from "../components/common/ProfileAvatar";
 import AdvancedDateFilter from "../components/AdvancedDateFilter";
 import CategoryPermissionSelector from "../components/common/CategoryPermissionSelector";
+import CompanyLedger from "./CompanyLedger";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -36,6 +37,7 @@ const TABS = [
   { key: "payroll", label: "Payroll", icon: <FaCalendarAlt size={12} /> },
   { key: "shifts", label: "Shifts", icon: <FaExchangeAlt size={12} /> },
   { key: "leaves", label: "Leaves", icon: <FaUmbrellaBeach size={12} /> },
+  { key: "ledger", label: "Ledger", icon: <FaChartBar size={12} /> },
 ];
 const PROFILE_TAB_IDS = new Set(TABS.map((tab) => tab.key));
 const DEFAULT_PROFILE_TAB = "attendance";
@@ -1814,6 +1816,8 @@ export default function EmployeeProfilePage() {
                 <div className="space-y-4">
                   {activeTab === "attendance" ? (
                     <EmployeeAttendanceCalendar employee={profile.employee} fallbackId={employeeId} refreshKey={refreshKey} />
+                  ) : activeTab === "ledger" ? (
+                    <CompanyLedger employeeId={profile.employee?.id ?? employeeId} />
                   ) : (
                     <TabContent tabKey={activeTab} tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"} employeeId={profile.employee?.id ?? employeeId} refreshKey={refreshKey} />
                   )}
