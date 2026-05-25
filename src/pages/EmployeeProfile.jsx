@@ -5,7 +5,7 @@ import {
   FaChevronDown, FaHistory, FaEye, FaShieldAlt,
   FaClock, FaMoneyBillWave, FaCalendarAlt, FaExchangeAlt,
   FaEnvelope, FaIdCard, FaCheckCircle, FaTimesCircle,
-  FaUserCircle, FaTimes, FaDollarSign, FaCalculator, FaPhone,
+  FaTimes, FaDollarSign, FaCalculator, FaPhone,
   FaChartBar, FaHandPaper, FaCalendarPlus, FaCalendarCheck,
   FaTag, FaBriefcase, FaMapMarkerAlt, FaNetworkWired,
   FaArrowDown, FaArrowUp, FaUmbrellaBeach, FaChevronRight,
@@ -19,7 +19,7 @@ import { toast } from "react-toastify";
 import Pagination, { usePagination } from "../components/PaginationComponent";
 import ManagementGrid from "../components/ManagementGrid";
 import ManagementViewSwitcher from "../components/ManagementViewSwitcher";
-import { ManagementCard, ManagementTable } from "../components/common";
+import { ManagementCard, ManagementTable, RefreshButton } from "../components/common";
 import Modal from "../components/Modal";
 import ModalScrollLock from "../components/ModalScrollLock";
 import AttendanceLogsModal from "../components/AttendanceLogsModal";
@@ -608,7 +608,7 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
 
 // ─── EMPLOYEE ATTENDANCE CALENDAR ─────────────────────────────────────────────
 
-function EmployeeAttendanceCalendar({ employee, fallbackId }) {
+function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
   const employeeId = employee?.id || fallbackId;
   const [currentDate, setCurrentDate] = useState(new Date());
   const [data, setData] = useState(null);
@@ -648,11 +648,11 @@ function EmployeeAttendanceCalendar({ employee, fallbackId }) {
   }, [employeeId]);
 
   useEffect(() => {
-    const fetchKey = `${employeeId}-${month}-${year}`;
+    const fetchKey = `${employeeId}-${month}-${year}-${refreshKey}`;
     if (lastFetchedKeyRef.current === fetchKey) return;
     lastFetchedKeyRef.current = fetchKey;
     fetchCalendar(month, year);
-  }, [employeeId, fetchCalendar, month, year]);
+  }, [employeeId, fetchCalendar, month, year, refreshKey]);
 
   const navigateMonth = (dir) => {
     setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1));
@@ -742,13 +742,13 @@ function EmployeeAttendanceCalendar({ employee, fallbackId }) {
 
       {/* Stats row — from data.meta */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-4">
-        <CalendarSummaryCard label="Total"    value={meta.total_days || 0} icon={FaCalendarAlt}  type="upcoming"  />
-        <CalendarSummaryCard label="Present"  value={meta.present || 0}    icon={FaCheckCircle}  type="present"   />
-        <CalendarSummaryCard label="Absent"   value={meta.absent || 0}     icon={FaTimesCircle}  type="absent"    />
-        <CalendarSummaryCard label="Leave"    value={meta.leave || 0}      icon={FaInfoCircle}   type="leave"     />
-        <CalendarSummaryCard label="Holiday"  value={meta.holiday || 0}    icon={FaUmbrellaBeach} type="holiday"  />
-        <CalendarSummaryCard label="Weekend"  value={meta.weekend || 0}    icon={FaCalendarAlt}  type="weekend"   />
-        <CalendarSummaryCard label="Half Day" value={meta.half_day || 0}   icon={FaHourglassHalf} type="half_day" />
+        <CalendarSummaryCard label="Total" value={meta.total_days || 0} icon={FaCalendarAlt} type="upcoming" />
+        <CalendarSummaryCard label="Present" value={meta.present || 0} icon={FaCheckCircle} type="present" />
+        <CalendarSummaryCard label="Absent" value={meta.absent || 0} icon={FaTimesCircle} type="absent" />
+        <CalendarSummaryCard label="Leave" value={meta.leave || 0} icon={FaInfoCircle} type="leave" />
+        <CalendarSummaryCard label="Holiday" value={meta.holiday || 0} icon={FaUmbrellaBeach} type="holiday" />
+        <CalendarSummaryCard label="Weekend" value={meta.weekend || 0} icon={FaCalendarAlt} type="weekend" />
+        <CalendarSummaryCard label="Half Day" value={meta.half_day || 0} icon={FaHourglassHalf} type="half_day" />
       </div>
 
       {/* Calendar grid */}
@@ -810,54 +810,92 @@ function EmployeeAttendanceCalendar({ employee, fallbackId }) {
 
 // ─── ProfileHub ───────────────────────────────────────────────────────────────
 
-function ProfileHub({ eyebrow, title, description, accent = "slate", summary, tabs = [], activeTab, onTabChange, children }) {
-  const accentClass = {
-    slate: "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-700",
-    green: "inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-700",
-    blue: "inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-blue-700",
-    indigo: "inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-indigo-700",
-    amber: "inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-amber-700",
-  }[accent] || "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-700";
-
-  const activeButtonStyles = {
-    slate: "bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-md",
-    green: "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-md shadow-green-300",
-    blue: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300",
-    indigo: "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-300",
-    amber: "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-md shadow-amber-300",
-  }[accent] || "bg-gradient-to-r from-slate-700 to-slate-900 text-white shadow-md";
+function ProfileHub({
+  eyebrow, title, description, accent = "slate",
+  summary, actions, tabs = [], activeTab, onTabChange, children,
+}) {
+  const ACCENT_COLORS = {
+    slate: { active: "#444441", border: "#444441" },
+    green: { active: "#3B6D11", border: "#3B6D11" },
+    blue: { active: "#185FA5", border: "#185FA5" },
+    indigo: { active: "#534AB7", border: "#534AB7" },
+    amber: { active: "#854F0B", border: "#854F0B" },
+  };
+  const { active: activeColor } = ACCENT_COLORS[accent] || ACCENT_COLORS.indigo;
 
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-7xl">
         <motion.div
-          initial={{ opacity: 0, y: -14 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-6 rounded-xl border border-slate-200 bg-white/90 p-2 shadow-xl shadow-slate-200/60 backdrop-blur"
+          transition={{ duration: 0.3 }}
+          className="mb-6 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden"
         >
+          {/* ── Top row: title + summary ── */}
+          <div className="flex items-start justify-between gap-4 px-5 pt-4 pb-4 border-b border-gray-100">
+            {/* Left: avatar + text */}
+            <div className="flex items-center gap-3 min-w-0">
+              {/* small inline avatar */}
+              {summary && (
+                <div className="shrink-0 hidden sm:block">
+                  {/* summary contains the big avatar — we show a compact version here */}
+                </div>
+              )}
+              <div className="min-w-0">
+                {eyebrow && (
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">
+                    {eyebrow}
+                  </div>
+                )}
+                {title && (
+                  <h1 className="text-base font-bold text-slate-900 truncate leading-snug">
+                    {title}
+                  </h1>
+                )}
+                {description && (
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{description}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Right: summary (avatar + meta) */}
+            {(summary || actions) && (
+              <div className="shrink-0 flex flex-wrap items-center justify-end gap-3">
+                {summary}
+                {actions}
+              </div>
+            )}
+          </div>
+
+          {/* ── Tab bar ── */}
           {tabs?.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-1 px-4 overflow-x-auto scrollbar-none">
               {tabs.map((tab) => {
                 const isActive = tab.id === activeTab;
-                const disabled = tab.disabled || false;
-                const Icon = tab.icon;
+                const isDisabled = tab.disabled || false;
                 return (
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => !disabled && onTabChange && onTabChange(tab.id)}
-                    disabled={disabled}
-                    title={tab.title || tab.description || tab.label}
-                    className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                    onClick={() => !isDisabled && onTabChange?.(tab.id)}
+                    disabled={isDisabled}
+                    title={tab.title || tab.label}
+                    style={isActive ? { color: activeColor, borderBottomColor: activeColor } : {}}
+                    className={[
+                      "inline-flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium",
+                      "border-b-2 whitespace-nowrap transition-colors duration-150",
+                      "-mb-px",   /* sits flush on the border-b of the container */
                       isActive
-                        ? activeButtonStyles
-                        : disabled
-                          ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
-                          : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                    }`}
+                        ? "border-current"
+                        : isDisabled
+                          ? "border-transparent text-slate-300 cursor-not-allowed"
+                          : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300",
+                    ].join(" ")}
                   >
-                    {Icon ? (typeof Icon === "function" ? <Icon size={13} /> : Icon) : null}
+                    {tab.icon
+                      ? (typeof tab.icon === "function" ? <tab.icon size={12} /> : tab.icon)
+                      : null}
                     {tab.label}
                   </button>
                 );
@@ -865,7 +903,8 @@ function ProfileHub({ eyebrow, title, description, accent = "slate", summary, ta
             </div>
           )}
         </motion.div>
-        <div className="p-[10px] lg:p-2">{children}</div>
+
+        <div className="px-1 lg:px-0">{children}</div>
       </div>
     </div>
   );
@@ -1248,49 +1287,51 @@ function Field({ label, value, mono, highlight }) {
   );
 }
 
-// ─── PROFILE CARD ─────────────────────────────────────────────────────────────
+// ─── PROFILE HEADER SUMMARY ───────────────────────────────────────────────────
 
-function ProfileCard({ data }) {
-  const { employee: e, user: u, company: c } = data;
+function ProfileHeaderSummary({ data }) {
+  const { employee: e, user: u } = data;
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="bg-white rounded-xl border border-gray-100 shadow-sm p-5"
-    >
-      <div className="flex items-start gap-4 flex-wrap pb-2">
-        <ProfileAvatar
-          record={u}
-          name={u.name}
-          className={`w-[64px] h-[64px] rounded-xl bg-gradient-to-br ${avatarGradient(u.id)} flex items-center justify-center text-2xl font-bold text-white shadow-md shrink-0 select-none overflow-hidden`}
-        >
-          {getInitials(u.name)}
-        </ProfileAvatar>
-        <div className="flex-1 min-w-[160px]">
-          <h2 className="text-2xl font-bold text-gray-800 leading-tight">{u.name}</h2>
-          <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
-            <FaBriefcase className="text-emerald-500" size={12} />
-            {fmt(e.designation)}
-          </p>
-          <div className="flex flex-col gap-1 mt-2">
-            <p className="text-sm text-gray-600 flex items-center gap-2 break-all">
-              <FaEnvelope className="text-blue-500" size={12} />
-              <span>{u.email || "—"}</span>
-            </p>
-            <p className="text-sm text-gray-600 flex items-center gap-2">
-              <FaPhone className="text-emerald-500" size={12} />
-              <span>{u.phone || "—"}</span>
-            </p>
-          </div>
-          <div className="flex gap-1.5 flex-wrap mt-3">
-            <Pill value={e.status} />
-            <Pill value={e.employment_type} />
-            <Pill value={e.salary_type} />
-          </div>
+    <div className="flex items-center gap-3">
+      {/* Meta column */}
+      <div className="text-right hidden sm:block">
+        {/* Status badges */}
+        <div className="flex items-center justify-end gap-1.5 mb-1.5 flex-wrap">
+          <Pill value={e.status} />
+          <Pill value={e.employment_type} />
+          <Pill value={e.salary_type} />
         </div>
+        {/* Code */}
+        <p className="flex items-center justify-end gap-1.5 text-[11px] font-bold text-blue-600 mb-1">
+          <FaIdCard size={10} className="shrink-0" />
+          {e.code || e.employee_code || "—"}
+        </p>
+        {/* Designation */}
+        <p className="flex items-center justify-end gap-1.5 text-xs text-slate-600 mb-0.5">
+          <FaBriefcase size={10} className="shrink-0 text-emerald-500" />
+          {fmt(e.designation)}
+        </p>
+        {/* Email */}
+        <p className="flex items-center justify-end gap-1.5 text-xs text-slate-400">
+          <FaEnvelope size={10} className="shrink-0 text-blue-400" />
+          <span className="truncate max-w-[180px]">{u.email || "—"}</span>
+        </p>
+        {/* Phone */}
+        <p className="flex items-center justify-end gap-1.5 text-xs text-slate-400">
+          <FaPhone size={10} className="shrink-0 text-emerald-400" />
+          {u.phone || "—"}
+        </p>
       </div>
-    </motion.div>
+      {/* Avatar */}
+      <ProfileAvatar
+        record={u}
+        name={u.name}
+        className={`h-12 w-12 shrink-0 rounded-xl bg-gradient-to-br ${avatarGradient(u.id)}
+          flex items-center justify-center text-base font-bold text-white overflow-hidden select-none`}
+      >
+        {getInitials(u.name)}
+      </ProfileAvatar>
+    </div>
   );
 }
 
@@ -1499,7 +1540,7 @@ function useShiftConfig(onView, width) {
 
 // ─── GENERIC TAB CONTENT ──────────────────────────────────────────────────────
 
-function TabContent({ tabKey, tabLabel, employeeId }) {
+function TabContent({ tabKey, tabLabel, employeeId, refreshKey = 0 }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1551,11 +1592,11 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
     }
   }, [employeeId, isAttendance, subType, normalizedTabKey, tabKey, updatePagination]);
 
-  useEffect(() => { 
+  useEffect(() => {
     const page = normalizedTabKey === "permissions" ? 1 : pagination.page;
     const limit = normalizedTabKey === "permissions" ? 1000 : pagination.limit;
-    fetchData(page, limit); 
-  }, [normalizedTabKey, subType, pagination.page, pagination.limit]);
+    fetchData(page, limit);
+  }, [normalizedTabKey, subType, pagination.page, pagination.limit, refreshKey]);
 
   const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
   useEffect(() => {
@@ -1630,13 +1671,13 @@ function TabContent({ tabKey, tabLabel, employeeId }) {
       )}
 
       {!loading && rows.length > 0 && normalizedTabKey === "permissions" && (
-        <CategoryPermissionSelector 
-          allPermissions={rows.map(r => ({ 
-            ...r, 
-            category: r.category || (r.code ? r.code.split('_')[0].replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown') 
-          }))} 
-          selectedIds={rows.map(r => r.id)} 
-          readOnly={true} 
+        <CategoryPermissionSelector
+          allPermissions={rows.map(r => ({
+            ...r,
+            category: r.category || (r.code ? r.code.split('_')[0].replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown')
+          }))}
+          selectedIds={rows.map(r => r.id)}
+          readOnly={true}
           listHeightClass="max-h-[60vh]"
         />
       )}
@@ -1674,6 +1715,7 @@ export default function EmployeeProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const mountedRef = useRef(false);
   const requestedTab = new URLSearchParams(location.search).get("tab");
   const activeTab = PROFILE_TAB_IDS.has(tabKey) ? tabKey : DEFAULT_PROFILE_TAB;
@@ -1723,6 +1765,11 @@ export default function EmployeeProfilePage() {
     navigate(`/employee-profile/${employeeId}/${nextTab}`);
   }, [activeTab, employeeId, navigate]);
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshKey((key) => key + 1);
+    await fetchProfile(employeeId);
+  }, [employeeId, fetchProfile]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
       <div className="mx-auto max-w-7xl">
@@ -1747,27 +1794,26 @@ export default function EmployeeProfilePage() {
         <AnimatePresence>
           {profile && !loading && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-2">
-              <ProfileCard data={profile} />
               <ProfileHub
                 eyebrow={<><FaIdCard size={11} /> Employee Profile</>}
-                title="Employee Profile"
+                title={`${profile.employee?.name || profile.user?.name || "Employee"} Profile`}
                 description="Detailed overview of employee performance, attendance, and employment records."
                 accent="blue"
-                summary={(
-                  <div className="flex items-center gap-2 text-sm bg-gray-50 px-4 py-2 rounded-xl border border-gray-200">
-                    <FaUserCircle className="text-blue-500" />
-                    <span className="font-medium text-gray-700">Staff Member</span>
-                  </div>
-                )}
+                summary={<ProfileHeaderSummary data={profile} />}
+                actions={
+                  <RefreshButton loading={loading} onClick={handleRefresh}>
+                    Refresh
+                  </RefreshButton>
+                }
                 tabs={TABS.map((tab) => ({ id: tab.key, label: tab.label, icon: tab.icon, title: tab.label }))}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
               >
                 <div className="space-y-4">
                   {activeTab === "attendance" ? (
-                    <EmployeeAttendanceCalendar employee={profile.employee} fallbackId={employeeId} />
+                    <EmployeeAttendanceCalendar employee={profile.employee} fallbackId={employeeId} refreshKey={refreshKey} />
                   ) : (
-                    <TabContent tabKey={activeTab} tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"} employeeId={profile.employee?.id ?? employeeId} />
+                    <TabContent tabKey={activeTab} tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"} employeeId={profile.employee?.id ?? employeeId} refreshKey={refreshKey} />
                   )}
                 </div>
               </ProfileHub>
