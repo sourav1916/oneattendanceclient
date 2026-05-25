@@ -833,18 +833,18 @@ function ProfileHub({
           className="mb-6 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden"
         >
           {/* ── Top row: title + summary ── */}
-          <div className="flex items-start justify-between gap-4 px-5 pt-4 pb-4 border-b border-gray-100">
+          <div className="flex flex-col items-start justify-between gap-4 px-5 pt-4 pb-4 border-b border-gray-100">
             {/* Left: avatar + text */}
             <div className="flex items-center gap-3 min-w-0">
               {/* small inline avatar */}
               {summary && (
-                <div className="shrink-0 hidden sm:block">
+                <div className="shrink-0 flex-col hidden sm:block">
                   {/* summary contains the big avatar — we show a compact version here */}
                 </div>
               )}
               <div className="min-w-0">
                 {eyebrow && (
-                  <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-1">
+                  <div className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] from-blue-600 to-indigo-600 text-blue-700 border-blue-200">
                     {eyebrow}
                   </div>
                 )}
@@ -861,7 +861,7 @@ function ProfileHub({
 
             {/* Right: summary (avatar + meta) */}
             {(summary || actions) && (
-              <div className="shrink-0 flex flex-wrap items-center justify-end gap-3">
+              <div className="w-full flex items-center justify-between gap-3">
                 {summary}
                 {actions}
               </div>
@@ -1293,35 +1293,7 @@ function ProfileHeaderSummary({ data }) {
   const { employee: e, user: u } = data;
   return (
     <div className="flex items-center gap-3">
-      {/* Meta column */}
-      <div className="text-right hidden sm:block">
-        {/* Status badges */}
-        <div className="flex items-center justify-end gap-1.5 mb-1.5 flex-wrap">
-          <Pill value={e.status} />
-          <Pill value={e.employment_type} />
-          <Pill value={e.salary_type} />
-        </div>
-        {/* Code */}
-        <p className="flex items-center justify-end gap-1.5 text-[11px] font-bold text-blue-600 mb-1">
-          <FaIdCard size={10} className="shrink-0" />
-          {e.code || e.employee_code || "—"}
-        </p>
-        {/* Designation */}
-        <p className="flex items-center justify-end gap-1.5 text-xs text-slate-600 mb-0.5">
-          <FaBriefcase size={10} className="shrink-0 text-emerald-500" />
-          {fmt(e.designation)}
-        </p>
-        {/* Email */}
-        <p className="flex items-center justify-end gap-1.5 text-xs text-slate-400">
-          <FaEnvelope size={10} className="shrink-0 text-blue-400" />
-          <span className="truncate max-w-[180px]">{u.email || "—"}</span>
-        </p>
-        {/* Phone */}
-        <p className="flex items-center justify-end gap-1.5 text-xs text-slate-400">
-          <FaPhone size={10} className="shrink-0 text-emerald-400" />
-          {u.phone || "—"}
-        </p>
-      </div>
+
       {/* Avatar */}
       <ProfileAvatar
         record={u}
@@ -1331,6 +1303,36 @@ function ProfileHeaderSummary({ data }) {
       >
         {getInitials(u.name)}
       </ProfileAvatar>
+
+      {/* Meta column */}
+      <div className="text-right hidden sm:block">
+        {/* Status badges */}
+        <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+          <Pill value={e.status} />
+          <Pill value={e.employment_type} />
+          <Pill value={e.salary_type} />
+        </div>
+        {/* Code */}
+        <p className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 mb-1">
+          <FaIdCard size={10} className="shrink-0" />
+          {e.code || e.employee_code || "—"}
+        </p>
+        {/* Designation */}
+        <p className="flex items-center gap-1.5 text-xs text-slate-600 mb-0.5">
+          <FaBriefcase size={10} className="shrink-0 text-emerald-500" />
+          {fmt(e.designation)}
+        </p>
+        {/* Email */}
+        <p className="flex items-center gap-1.5 text-xs text-slate-400">
+          <FaEnvelope size={10} className="shrink-0 text-blue-400" />
+          <span className="truncate max-w-[180px]">{u.email || "—"}</span>
+        </p>
+        {/* Phone */}
+        <p className="flex items-center gap-1.5 text-xs text-slate-400">
+          <FaPhone size={10} className="shrink-0 text-emerald-400" />
+          {u.phone || "—"}
+        </p>
+      </div>
     </div>
   );
 }
