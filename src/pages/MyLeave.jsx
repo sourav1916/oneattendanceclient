@@ -23,7 +23,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import { DateRangePickerField } from '../components/DatePicker';
-import { ManagementHub } from '../components/common';
+import { ManagementHub, ManagementTable } from '../components/common';
 import Modal from '../components/Modal';
 import SelectField from '../components/SelectField';
 
@@ -820,14 +820,6 @@ const MyLeave = () => {
   const [viewMode, setViewMode] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth < 768 ? 'card' : 'table'
   );
-  const [visibleColumns, setVisibleColumns] = useState(() => ({
-    showLeaveType: true,
-    showStartDate: window.innerWidth >= 540,
-    showEndDate: window.innerWidth >= 768,
-    showDuration: window.innerWidth >= 640,
-    showStatus: true,
-    showAppliedOn: window.innerWidth >= 1024,
-  }));
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const [resultMeta, setResultMeta] = useState({ total: 0, total_pages: 1 });
   const [viewLeave, setViewLeave] = useState(null);
@@ -915,30 +907,6 @@ const MyLeave = () => {
   useEffect(() => {
     loadLeaves(pagination.page);
   }, [pagination.page, loadLeaves]);
-
-  useEffect(() => {
-    let timer;
-    const onResize = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setVisibleColumns({
-          showLeaveType: true,
-          showStartDate: window.innerWidth >= 540,
-          showEndDate: window.innerWidth >= 768,
-          showDuration: window.innerWidth >= 640,
-          showStatus: true,
-          showAppliedOn: window.innerWidth >= 1024,
-        });
-      }, 150);
-    };
-
-    onResize();
-    window.addEventListener('resize', onResize);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', onResize);
-    };
-  }, []);
 
   // Calculate statistics
   const stats = {
@@ -1122,78 +1090,66 @@ const MyLeave = () => {
           ) : (
             <>
               {viewMode === 'table' && (
-                <div className="overflow-x-auto rounded-t-xl overflow-y-visible">
-                  <table className="w-full text-sm text-left text-gray-700">
-                    <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
-                      <tr>
-                        {visibleColumns.showLeaveType && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Leave Type</th>}
-                        {visibleColumns.showStartDate && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Start Date</th>}
-                        {visibleColumns.showEndDate && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">End Date</th>}
-                        {visibleColumns.showDuration && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>}
-                        {visibleColumns.showStatus && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>}
-                        {visibleColumns.showAppliedOn && <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applied On</th>}
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase"><FaCog className="w-4 h-4 mx-auto" /></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {filteredLeaves.map((leave) => (
-                        <tr key={leave.id} className="cursor-pointer transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50" onClick={() => setViewLeave(leave)}>
-                          {visibleColumns.showLeaveType && (
-                            <td className="px-4 py-3">
-                              <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
-                              <p className="mt-1 text-xs text-gray-500">{formatDays(leave.total_days)} day(s)</p>
-                            </td>
-                          )}
-                          {visibleColumns.showStartDate && <td className="px-4 py-3 text-sm">{formatDate(leave.start_date)}</td>}
-                          {visibleColumns.showEndDate && <td className="px-4 py-3 text-sm">{formatDate(leave.end_date)}</td>}
-                          {visibleColumns.showDuration && (
-                            <td className="px-4 py-3 text-sm">
-                              {formatDays(leave.total_days)} day(s)
-                              {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
-                            </td>
-                          )}
-                          {visibleColumns.showStatus && <td className="px-4 py-3"><StatusBadge status={leave.status} /></td>}
-                          {visibleColumns.showAppliedOn && <td className="px-4 py-3 text-sm">{formatDateTime(leave.applied_at)}</td>}
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex justify-center">
-                              <ActionMenu
-                                menuId={`leave-table-${leave.id}`}
-                                actions={[
-                                  {
-                                    label: 'View Details',
-                                    icon: <FaEye size={12} />,
-                                    onClick: () => setViewLeave(leave),
-                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
-                                  },
-                                  ...(leave.status === 'pending'
-                                    ? [
-                                      {
-                                        label: 'Edit',
-                                        icon: <FaEdit size={12} />,
-                                        onClick: () => setEditLeave(leave),
-                                        className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
-                                      }
-                                    ]
-                                    : []),
-                                  ...(leave.status === 'pending'
-                                    ? [
-                                      {
-                                        label: 'Cancel',
-                                        icon: <FaTimes size={12} />,
-                                        onClick: () => setCancellingLeave(leave),
-                                        className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                                      }
-                                    ]
-                                    : []),
-                                ]}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ManagementTable
+                  rows={filteredLeaves}
+                  columns={[
+                    { key: 'leave_type', label: 'Leave Type', render: (leave) => (
+                      <>
+                        <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
+                        <p className="mt-1 text-xs text-gray-500">{formatDays(leave.total_days)} day(s)</p>
+                      </>
+                    )},
+                    { key: 'start_date', label: 'Start Date', render: (leave) => (
+                      <span className="text-sm">{formatDate(leave.start_date)}</span>
+                    )},
+                    { key: 'end_date', label: 'End Date', render: (leave) => (
+                      <span className="text-sm">{formatDate(leave.end_date)}</span>
+                    )},
+                    { key: 'duration', label: 'Duration', render: (leave) => (
+                      <span className="text-sm">
+                        {formatDays(leave.total_days)} day(s)
+                        {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
+                      </span>
+                    )},
+                    { key: 'status', label: 'Status', render: (leave) => (
+                      <StatusBadge status={leave.status} />
+                    )},
+                    { key: 'applied_on', label: 'Applied On', render: (leave) => (
+                      <span className="text-sm">{formatDateTime(leave.applied_at)}</span>
+                    )}
+                  ]}
+                  rowKey={(row) => row.id}
+                  onRowClick={(row) => setViewLeave(row)}
+                  getActions={(leave) => [
+                    {
+                      label: 'View Details',
+                      icon: <FaEye size={12} />,
+                      onClick: () => setViewLeave(leave),
+                      className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+                    },
+                    ...(leave.status === 'pending'
+                      ? [
+                        {
+                          label: 'Edit',
+                          icon: <FaEdit size={12} />,
+                          onClick: () => setEditLeave(leave),
+                          className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                        }
+                      ]
+                      : []),
+                    ...(leave.status === 'pending'
+                      ? [
+                        {
+                          label: 'Cancel',
+                          icon: <FaTimes size={12} />,
+                          onClick: () => setCancellingLeave(leave),
+                          className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                        }
+                      ]
+                      : []),
+                  ]}
+                  accent="violet"
+                />
               )}
 
               {viewMode === 'card' && (
