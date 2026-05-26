@@ -458,11 +458,16 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
 
 // ─── Custom Hooks ─────────────────────────────────────────────────────────────
 
-const useLeaveConfigs = (isPaid) => {
+const useLeaveConfigs = (isPaid, enabled = true) => {
   const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!enabled) {
+      setConfigs([]);
+      return;
+    }
+
     const companyId = getCompanyId();
     if (!companyId) return;
 
@@ -488,7 +493,7 @@ const useLeaveConfigs = (isPaid) => {
     };
     fetchConfigs();
     return () => { isMounted = false; };
-  }, [isPaid]);
+  }, [isPaid, enabled]);
 
   return { configs, loading };
 };
@@ -539,7 +544,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   const [isDeductible, setIsDeductible] = useState(false);
   const [notes, setNotes] = useState(employee?.remark || '');
 
-  const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(leaveType === 'paid');
+  const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(leaveType === 'paid', isOpen && status === 'leave');
   const leaveOptions = useMemo(() => leaveConfigs.map((c) => ({
     value: c.code,
     label: `${c.code} - ${c.name}`
@@ -796,7 +801,7 @@ const BulkApprovalPanel = ({
   bulkLeaveTypeValue, setBulkLeaveTypeValue,
   bulkNotes, setBulkNotes,
 }) => {
-  const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(bulkLeaveType === 'paid');
+  const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(bulkLeaveType === 'paid', bulkMode === 'leave');
   const leaveOptions = useMemo(() => leaveConfigs.map((c) => ({
     value: c.code,
     label: `${c.code} - ${c.name}`
