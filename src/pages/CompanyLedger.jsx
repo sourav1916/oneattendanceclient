@@ -62,10 +62,39 @@ const formatCurrency = (amount) =>
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  });
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
 };
+
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num || 0);
+};
+
+const renderParticulars = (tx) => {
+  if (tx.remark) {
+    return (
+      <div className="flex flex-col">
+        <span className="font-bold text-slate-800">{tx.remark}</span>
+      </div>
+    );
+  }
+  const name = tx.employee?.name || tx.created_by?.name || '—';
+  const sub = tx.employee?.email || tx.created_by?.email || '';
+  return (
+    <div className="flex flex-col">
+      <span className="font-bold text-slate-800">{name}</span>
+      {sub && <span className="text-[10px] text-slate-400">{sub}</span>}
+    </div>
+  );
+};
+
 
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '—';
@@ -838,17 +867,6 @@ const CompanyLedger = ({ employeeId }) => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // Fetch employees (for Add modal)
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const companyId = getCompanyId();
-      const res = await apiCall('/employees', 'GET', null, companyId);
-      const data = await res.json();
-      if (data.success) setEmployees(data.data || []);
-    } catch { /* silent */ }
-  }, []);
-
-  useEffect(() => { fetchEmployees(); }, [fetchEmployees]);
 
   // Fetch ledger
   const fetchTransactions = useCallback(async () => {
@@ -940,73 +958,112 @@ const CompanyLedger = ({ employeeId }) => {
     goToPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [goToPage]);
-
-  const columns = [
+  const columns = useMemo(() => [
     {
-      key: 'transaction_id',
-      label: 'Transaction ID',
-      render: (tx) => (
-        <div className="flex flex-col">
-          <span className="font-mono text-xs font-semibold text-slate-600">{tx.transaction_id}</span>
-          <span className="text-[10px] text-slate-400">{formatDate(tx.transaction_date)}</span>
-        </div>
-      ),
+      key: 'row_num',
+      label: '#',
+      render: (tx, idx) => {
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        const offset = pagination.page === 1 ? -1 : 0;
+        const rowNum = (pagination.page - 1) * pagination.limit + idx + 1 + offset;
+        return <span className="font-medium text-slate-400">{rowNum}</span>;
+      },
+      className: 'w-12 text-center',
     },
     {
-      key: 'employee',
-      label: 'Employee',
-      render: (tx) => tx.employee ? (
-        <div className="flex items-center gap-2">
-          {tx.employee.profile_picture ? (
-            <img src={tx.employee.profile_picture} alt="" className="w-7 h-7 rounded-full object-cover border border-slate-100" />
-          ) : (
-            <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center">
-              <FaUser size={10} className="text-violet-500" />
-            </div>
-          )}
-          <div>
-            <p className="text-xs font-bold text-slate-700">{tx.employee.name}</p>
-            <p className="text-[10px] text-slate-400">{tx.employee.employee_code}</p>
-          </div>
-        </div>
-      ) : <span className="text-slate-300 text-xs">—</span>,
+      key: 'transaction_date',
+      label: 'Date',
+      render: (tx) => {
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return <span className="whitespace-nowrap font-medium text-slate-600">{formatDate(tx.transaction_date)}</span>;
+      },
+    },
+    {
+      key: 'particulars',
+      label: 'Particulars',
+      render: (tx) => {
+        if (tx.isOpeningBalance) {
+          return <span className="font-bold text-slate-800">Opening Balance</span>;
+        }
+        return renderParticulars(tx);
+      },
     },
     {
       key: 'type',
       label: 'Type',
-      render: (tx) => (
-        <div className="flex flex-col gap-1">
-          <TransactionTypeBadge type={tx.transaction_type} compact />
-          <EntryTypeBadge entryType={tx.entry_type} compact />
-        </div>
-      ),
+      render: (tx) => {
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return <TransactionTypeBadge type={tx.transaction_type} compact />;
+      },
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      render: (tx) => (
-        <span className={`font-bold text-sm ${tx.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
-          {tx.entry_type === 'debit' ? '-' : '+'}{formatCurrency(tx.amount)}
-        </span>
-      ),
+      key: 'transaction_id',
+      label: 'Voucher No',
+      render: (tx) => {
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return <span className="font-mono text-xs text-slate-500">{tx.transaction_id}</span>;
+      },
+    },
+    {
+      key: 'debit',
+      label: 'Debit',
+      render: (tx) => {
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-mono">0.00</span>;
+        return tx.debit > 0 ? (
+          <span className="font-bold text-blue-600 font-mono">{formatNumber(tx.debit)}</span>
+        ) : (
+          <span className="text-slate-400 font-mono">0.00</span>
+        );
+      },
+      className: 'text-right',
+    },
+    {
+      key: 'credit',
+      label: 'Credit',
+      render: (tx) => {
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-mono">0.00</span>;
+        return tx.credit > 0 ? (
+          <span className="font-bold text-amber-600 font-mono">{formatNumber(tx.credit)}</span>
+        ) : (
+          <span className="text-slate-400 font-mono">0.00</span>
+        );
+      },
+      className: 'text-right',
     },
     {
       key: 'balance',
       label: 'Balance',
-      render: (tx) => (
-        <span className={`font-mono font-bold text-sm ${Number(tx.balance) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {formatCurrency(tx.balance)}
-        </span>
-      ),
+      render: (tx) => {
+        return (
+          <span className={`font-mono font-bold ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+            {formatNumber(tx.balance)}
+          </span>
+        );
+      },
+      className: 'text-right',
     },
-    {
-      key: 'remark',
-      label: 'Remark',
-      render: (tx) => (
-        <p className="text-xs text-slate-500 max-w-[180px] truncate">{tx.remark || '—'}</p>
-      ),
-    },
-  ];
+  ], [pagination.page, pagination.limit]);
+
+  const tableRows = useMemo(() => {
+    if (pagination.page === 1) {
+      return [
+        {
+          isOpeningBalance: true,
+          id: 'opening-balance',
+          transaction_date: '',
+          remark: 'Opening Balance',
+          transaction_type: 'opening_balance',
+          entry_type: 'credit',
+          amount: 0,
+          debit: 0,
+          credit: 0,
+          balance: openingBalance.balance,
+        },
+        ...paginatedData,
+      ];
+    }
+    return paginatedData;
+  }, [paginatedData, pagination.page, openingBalance.balance]);
 
   if (loading && transactions.length === 0) {
     return (
@@ -1148,33 +1205,50 @@ const CompanyLedger = ({ employeeId }) => {
             </button>
           </motion.div>
         ) : viewMode === 'table' ? (
-          <ManagementTable
-            rows={paginatedData}
-            columns={columns}
-            rowKey={row => row.id}
-            onRowClick={row => setViewModal({ open: true, transaction: row })}
-            getActions={row => [
-              {
-                label: 'View Details',
-                icon: <FaEye size={13} />,
-                onClick: () => setViewModal({ open: true, transaction: row }),
-                className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
-              },
-              {
-                label: 'Edit',
-                icon: <FaEdit size={13} />,
-                onClick: () => setEditModal({ open: true, transaction: row }),
-                className: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
-              },
-              {
-                label: 'Delete',
-                icon: <FaTrash size={13} />,
-                onClick: () => setDeleteModal({ open: true, transaction: row }),
-                className: 'text-gray-700 hover:text-rose-600 hover:bg-rose-50',
-              },
-            ]}
-            accent="violet"
-          />
+          <>
+            {pagination.page === 1 && (
+              <style dangerouslySetInnerHTML={{ __html: `
+                .company-ledger-table tbody tr:first-child td:last-child div {
+                  display: none !important;
+                  pointer-events: none !important;
+                }
+              ` }} />
+            )}
+            <ManagementTable
+              className="company-ledger-table"
+              rows={tableRows}
+              columns={columns}
+              rowKey={row => row.id}
+              onRowClick={(row) => {
+                if (row.isOpeningBalance) return;
+                setViewModal({ open: true, transaction: row });
+              }}
+              getActions={(row) => {
+                if (row.isOpeningBalance) return [];
+                return [
+                  {
+                    label: 'View Details',
+                    icon: <FaEye size={13} />,
+                    onClick: () => setViewModal({ open: true, transaction: row }),
+                    className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
+                  },
+                  {
+                    label: 'Edit',
+                    icon: <FaEdit size={13} />,
+                    onClick: () => setEditModal({ open: true, transaction: row }),
+                    className: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
+                  },
+                  {
+                    label: 'Delete',
+                    icon: <FaTrash size={13} />,
+                    onClick: () => setDeleteModal({ open: true, transaction: row }),
+                    className: 'text-gray-700 hover:text-rose-600 hover:bg-rose-50',
+                  },
+                ];
+              }}
+              accent="violet"
+            />
+          </>
         ) : (
           <ManagementGrid>
             {paginatedData.map(tx => (
