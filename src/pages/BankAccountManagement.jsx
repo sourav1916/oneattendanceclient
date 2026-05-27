@@ -259,9 +259,10 @@ const BankAccountManagement = () => {
   const { checkActionAccess, getAccessMessage } = usePermissionAccess();
   const isMountedRef = useRef(true);
   const [accounts, setAccounts] = useState([]);
-  const [filteredAccounts, setFilteredAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [totalServerItems, setTotalServerItems] = useState(0);
   const [viewModal, setViewModal] = useState({ open: false, account: null });
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -324,83 +325,76 @@ const BankAccountManagement = () => {
 
   // ── Fetch ────────────────────────────────────────────────────────────────────
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const fetchData = useCallback(async ({ force = false } = {}) => {
     const companyId = getCompanyId();
-    const cacheKey = getBankAccountsListCacheKey(companyId);
+    const params = new URLSearchParams({
+      page: pagination.page,
+      limit: pagination.limit
+    });
+    if (debouncedSearchTerm) {
+      params.append('search', debouncedSearchTerm);
+    }
+    const queryString = params.toString();
+    const cacheKey = getBankAccountsListCacheKey(companyId) + '-' + queryString;
+    
     let requestPromise = force ? null : bankAccountsListRequestCache.get(cacheKey);
 
     if (!requestPromise) {
       requestPromise = (async () => {
-        const response = await apiCall('/bank-accounts/management/company', 'GET', null, companyId);
+        const response = await apiCall(`/bank-accounts/management/company?${queryString}`, 'GET', null, companyId);
         return response.json();
       })();
       bankAccountsListRequestCache.set(cacheKey, requestPromise);
     }
 
-    if (isMountedRef.current) {
-      setLoading(true);
-    }
+    if (isMountedRef.current) setLoading(true);
 
     try {
       const result = await requestPromise;
-      if (!isMountedRef.current) {
-        return;
-      }
+      if (!isMountedRef.current) return;
+      
       if (result.success) {
         setAccounts(result.data || []);
+        setTotalServerItems(result.meta?.total || result.total || result.data?.length || 0);
       } else {
         toast.error(result.message || 'Failed to fetch bank accounts');
         setAccounts([]);
+        setTotalServerItems(0);
       }
     } catch (error) {
-      if (!isMountedRef.current) {
-        return;
-      }
+      if (!isMountedRef.current) return;
       toast.error('Connection error while fetching bank accounts');
       setAccounts([]);
+      setTotalServerItems(0);
     } finally {
-      if (isMountedRef.current) {
-        setLoading(false);
-      }
+      if (isMountedRef.current) setLoading(false);
       if (bankAccountsListRequestCache.get(cacheKey) === requestPromise) {
         bankAccountsListRequestCache.delete(cacheKey);
       }
     }
-  }, []);
+  }, [debouncedSearchTerm, pagination.page, pagination.limit]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Filter ───────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) { setFilteredAccounts(accounts); return; }
-    setFilteredAccounts(
-      accounts.filter((a) =>
-        a.account_holder_name?.toLowerCase().includes(q) ||
-        a.bank_name?.toLowerCase().includes(q) ||
-        a.account_number?.toLowerCase().includes(q) ||
-        a.ifsc_code?.toLowerCase().includes(q) ||
-        a.branch_name?.toLowerCase().includes(q) ||
-        a.account_type?.toLowerCase().includes(q) ||
-        a.status?.toLowerCase().includes(q)
-      )
-    );
-  }, [accounts, searchTerm]);
+  useEffect(() => { goToPage(1); }, [debouncedSearchTerm, goToPage]);
 
-  useEffect(() => { goToPage(1); }, [searchTerm, goToPage]);
-
-  const totalItems = filteredAccounts.length;
+  const totalItems = totalServerItems;
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
 
   useEffect(() => {
-    if (pagination.page > totalPages) goToPage(totalPages);
+    if (pagination.page > totalPages && totalPages > 0) goToPage(totalPages);
   }, [goToPage, pagination.page, totalPages]);
 
-  const paginatedData = useMemo(
-    () => filteredAccounts.slice((pagination.page - 1) * pagination.limit, pagination.page * pagination.limit),
-    [filteredAccounts, pagination.page, pagination.limit]
-  );
+  const paginatedData = accounts;
 
   // ── Stats ────────────────────────────────────────────────────────────────────
 
