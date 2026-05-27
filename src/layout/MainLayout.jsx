@@ -107,14 +107,15 @@ const MainLayout = ({ children }) => {
             flex-1 transition-all duration-300 ease-out
             ${getContentMargin()}
             min-h-[calc(100vh-64px)]
-            max-w-full
+            overflow-x-hidden
           `}
           style={{
             padding: isMobile ? '0px' : '1rem',
-            transition: 'margin-left 0.3s ease-out'
+            transition: 'margin-left 0.3s ease-out',
+            maxWidth: isMobile ? '100%' : `calc(100vw - ${desktopSidebarCollapsed ? '64px' : '256px'})`,
           }}
         >
-          <div className="max-w-full" key={refreshKey}>
+          <div className="w-full" key={refreshKey}>
             {children}
           </div>
         </main>
