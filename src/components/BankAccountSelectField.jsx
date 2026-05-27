@@ -15,6 +15,11 @@ const getCompanyId = () => {
 
 const getAccountId = (account) => account?.bank_id ?? account?.id ?? account?.account_id ?? '';
 
+const getAccountIds = (account) =>
+  [account?.bank_id, account?.id, account?.account_id]
+    .filter(id => id !== undefined && id !== null && id !== '')
+    .map(String);
+
 const getAccountTitle = (account) =>
   account?.account_holder_name || account?.employee_name || account?.bank_name || 'Account';
 
@@ -107,8 +112,7 @@ const BankAccountSelectField = ({
 
   const initialOption = useMemo(() => {
     if (!initialAccount || !value) return null;
-    const accountId = getAccountId(initialAccount);
-    if (String(accountId) !== String(value)) return null;
+    if (!getAccountIds(initialAccount).includes(String(value))) return null;
     return toOption(initialAccount);
   }, [initialAccount, value]);
 

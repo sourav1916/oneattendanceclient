@@ -98,7 +98,7 @@ export default function ManagementTable({
                 {visibleColumns.map((column) => (
                   <th
                     key={column.key}
-                    className={joinClasses(densityClasses, 'font-semibold', column.headerClassName)}
+                    className={joinClasses(densityClasses, 'font-semibold text-center', column.headerClassName)}
                   >
                     {column.label}
                   </th>
@@ -123,7 +123,7 @@ export default function ManagementTable({
                   key={key}
                   onClick={onRowClick ? () => onRowClick(row, index) : undefined}
                   className={joinClasses(
-                    'align-middle transition-all duration-200',
+                    'align-middle text-center transition-all duration-200',
                     onRowClick && 'cursor-pointer hover:bg-slate-50',
                     rowClassName
                   )}

@@ -354,7 +354,7 @@ export default function CompanyInvites() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen">
-      <div className="max-w-9xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
 
         {/* Header */}
         <motion.div

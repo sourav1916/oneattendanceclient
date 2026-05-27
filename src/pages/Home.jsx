@@ -343,7 +343,7 @@ function HomePage() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/10 to-purple-100/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Compact Header */}
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>

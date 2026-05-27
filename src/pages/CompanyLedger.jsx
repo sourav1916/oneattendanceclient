@@ -609,8 +609,8 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
         amount: transaction.amount || '',
         transaction_date: toInputDate(transaction.transaction_date),
         entry_type: transaction.entry_type || 'credit',
-        employee_account: transaction.accounts?.employee_account?.id || '',
-        company_account: transaction.accounts?.company_account?.id || '',
+        employee_account: transaction.accounts?.employee_account?.bank_id ?? transaction.accounts?.employee_account?.id ?? '',
+        company_account: transaction.accounts?.company_account?.bank_id ?? transaction.accounts?.company_account?.id ?? '',
         remark: transaction.remark || '',
       });
     }

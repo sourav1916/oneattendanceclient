@@ -502,7 +502,7 @@ const AttendanceHistory = () => {
 
 
       <div className="space-y-4">
-        <div className="max-w-9xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -552,8 +552,8 @@ const AttendanceHistory = () => {
                       onClick={() => setActiveType(tab.value)}
                       title={tab.label}
                       className={`w-12 h-9 flex items-center justify-center rounded-lg transition-all ${isActive
-                          ? tab.activeClassName
-                          : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                        ? tab.activeClassName
+                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
                         }`}
                     >
                       <TabIcon size={15} />

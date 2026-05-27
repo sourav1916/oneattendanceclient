@@ -489,7 +489,7 @@ const EmployeesShifts = () => {
 
     return (
         <div className="min-h-screen">
-            <div className="max-w-9xl mx-auto">
+            <div className="max-w-[1600px] mx-auto">
 
                 <div className="space-y-6 p-2 lg:p-0">
                     {/* ─── Page Header ─── */}

@@ -827,7 +827,7 @@ function ProfileHub({
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-9xl">
+      <div className="mx-auto max-w-[1600px]">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1776,7 +1776,7 @@ export default function EmployeeProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
-      <div className="mx-auto max-w-9xl">
+      <div className="mx-auto max-w-[1600px]">
         {loading && (
           <div className="flex flex-col items-center py-16 gap-2 text-slate-400">
             <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />

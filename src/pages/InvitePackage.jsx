@@ -1160,7 +1160,7 @@ export default function InvitePackageManagement() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-9xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
 
         {/* ── Page Header ── */}
         <motion.div

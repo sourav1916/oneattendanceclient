@@ -16,6 +16,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { fetchIfscDetails } from '../utils/ifscLookup';
 import EmployeeSelect from '../components/common/EmployeeSelect';
+import SelectField from '../components/SelectField';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -210,6 +211,12 @@ const EmployeeBankAccountManagement = () => {
   const [filteredAccounts, setFilteredAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState(null);
+  const [filterAccountType, setFilterAccountType] = useState(null);
+  const [filterIsPrimary, setFilterIsPrimary] = useState(null);
+  const [filterEmployee, setFilterEmployee] = useState(null);
+  const [totalServerItems, setTotalServerItems] = useState(null);
   const [viewModal, setViewModal] = useState({ open: false, account: null });
   const [viewMode, setViewMode] = useState('table');
 
@@ -265,12 +272,24 @@ const EmployeeBankAccountManagement = () => {
     const companyId = getCompanyId();
     if (!companyId) return;
 
-    const cacheKey = getEmployeeBankAccountsCacheKey(companyId);
+    const params = new URLSearchParams();
+    params.append('page', pagination.page);
+    params.append('limit', pagination.limit);
+    if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+    if (filterStatus?.value) params.append('status', filterStatus.value);
+    if (filterAccountType?.value) params.append('account_type', filterAccountType.value);
+    if (filterIsPrimary?.value !== undefined && filterIsPrimary?.value !== '') params.append('is_primary', filterIsPrimary.value);
+    if (filterEmployee?.id) params.append('employee_id', filterEmployee.id);
+
+    const qs = params.toString();
+    const url = `/bank-accounts/management/employee${qs ? `?${qs}` : ''}`;
+
+    const cacheKey = getEmployeeBankAccountsCacheKey(companyId) + '-' + qs;
     let requestPromise = force ? null : employeeBankAccountsRequestCache.get(cacheKey);
 
     if (!requestPromise) {
       requestPromise = (async () => {
-        const response = await apiCall('/bank-accounts/management/employee', 'GET', null, companyId);
+        const response = await apiCall(url, 'GET', null, companyId);
         return response.json();
       })();
       employeeBankAccountsRequestCache.set(cacheKey, requestPromise);
@@ -283,31 +302,59 @@ const EmployeeBankAccountManagement = () => {
       if (!isMountedRef.current) return;
       if (result.success) {
         setAccounts(result.data || []);
+        if (result.meta?.total !== undefined) {
+           setTotalServerItems(result.meta.total);
+        } else if (result.total !== undefined) {
+           setTotalServerItems(result.total);
+        } else {
+           setTotalServerItems(null);
+        }
       } else {
         toast.error(result.message || 'Failed to fetch employee bank accounts');
         setAccounts([]);
+        setTotalServerItems(null);
       }
     } catch (error) {
       if (!isMountedRef.current) return;
       toast.error('Connection error while fetching employee bank accounts');
       setAccounts([]);
+      setTotalServerItems(null);
     } finally {
       if (isMountedRef.current) setLoading(false);
       if (employeeBankAccountsRequestCache.get(cacheKey) === requestPromise) {
         employeeBankAccountsRequestCache.delete(cacheKey);
       }
     }
-  }, []);
+  }, [debouncedSearchTerm, filterStatus, filterAccountType, filterIsPrimary, filterEmployee, pagination.page, pagination.limit]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const initialDone = useRef(false);
+  const prevDep = useRef('');
+
+  useEffect(() => {
+    const dep = `${debouncedSearchTerm}|${filterStatus?.value || ''}|${filterAccountType?.value || ''}|${filterIsPrimary?.value || ''}|${filterEmployee?.id || ''}|${pagination.page}|${pagination.limit}`;
+    if (!initialDone.current || prevDep.current !== dep) {
+      fetchData();
+      initialDone.current = true;
+      prevDep.current = dep;
+    }
+  }, [debouncedSearchTerm, filterStatus, filterAccountType, filterIsPrimary, filterEmployee, pagination.page, pagination.limit, fetchData]);
 
   // ── Filter ───────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) { setFilteredAccounts(accounts); return; }
-    setFilteredAccounts(
-      accounts.filter((a) =>
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (totalServerItems !== null) {
+      setFilteredAccounts(accounts);
+      return;
+    }
+    const q = debouncedSearchTerm.trim().toLowerCase();
+    let list = [...accounts];
+    if (q) {
+      list = list.filter((a) =>
         a.employee_name?.toLowerCase().includes(q) ||
         a.employee_id?.toLowerCase().includes(q) ||
         a.account_holder_name?.toLowerCase().includes(q) ||
@@ -316,23 +363,29 @@ const EmployeeBankAccountManagement = () => {
         a.ifsc_code?.toLowerCase().includes(q) ||
         a.account_type?.toLowerCase().includes(q) ||
         a.status?.toLowerCase().includes(q)
-      )
-    );
-  }, [accounts, searchTerm]);
+      );
+    }
+    if (filterStatus?.value) list = list.filter(a => a.status === filterStatus.value);
+    if (filterAccountType?.value) list = list.filter(a => a.account_type === filterAccountType.value);
+    if (filterIsPrimary?.value !== undefined && filterIsPrimary?.value !== '') list = list.filter(a => String(a.is_primary) === String(filterIsPrimary.value));
+    if (filterEmployee?.id) list = list.filter(a => String(a.employee_id) === String(filterEmployee.id));
 
-  useEffect(() => { goToPage(1); }, [searchTerm, goToPage]);
+    setFilteredAccounts(list);
+  }, [accounts, debouncedSearchTerm, filterStatus, filterAccountType, filterIsPrimary, filterEmployee, totalServerItems]);
 
-  const totalItems = filteredAccounts.length;
+  useEffect(() => { goToPage(1); }, [debouncedSearchTerm, filterStatus, filterAccountType, filterIsPrimary, filterEmployee, goToPage]);
+
+  const totalItems = totalServerItems !== null ? totalServerItems : filteredAccounts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
 
   useEffect(() => {
-    if (pagination.page > totalPages) goToPage(totalPages);
+    if (pagination.page > totalPages && totalPages > 0) goToPage(totalPages);
   }, [goToPage, pagination.page, totalPages]);
 
-  const paginatedData = useMemo(
-    () => filteredAccounts.slice((pagination.page - 1) * pagination.limit, pagination.page * pagination.limit),
-    [filteredAccounts, pagination.page, pagination.limit]
-  );
+  const paginatedData = useMemo(() => {
+    if (totalServerItems !== null) return filteredAccounts;
+    return filteredAccounts.slice((pagination.page - 1) * pagination.limit, pagination.page * pagination.limit);
+  }, [filteredAccounts, pagination.page, pagination.limit, totalServerItems]);
 
   // ── Stats ────────────────────────────────────────────────────────────────────
 
@@ -654,9 +707,9 @@ const EmployeeBankAccountManagement = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
+          className="flex flex-col gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
         >
-          <div className="flex flex-col md:flex-row md:items-center gap-4 flex-1">
+          <div className="flex flex-col lg:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -664,13 +717,47 @@ const EmployeeBankAccountManagement = () => {
                 placeholder="Search by employee, holder name, bank, account number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none shadow-sm transition-all text-sm font-medium min-h-[42px]"
+                className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none shadow-sm transition-all text-sm font-medium min-h-[42px]"
+              />
+            </div>
+            <div className="w-full lg:w-[250px]">
+              <EmployeeSelect
+                value={filterEmployee}
+                onChange={(val) => { setFilterEmployee(val); goToPage(1); }}
+                placeholder="All Employees"
+                isClearable
               />
             </div>
           </div>
-          <div className="flex items-center justify-end">
-            <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
-            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="w-[140px]">
+                <SelectField
+                  options={[{ value: '', label: 'All Status' }, { value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }]}
+                  value={filterStatus || { value: '', label: 'All Status' }}
+                  onChange={opt => { setFilterStatus(opt.value ? opt : null); goToPage(1); }}
+                />
+              </div>
+              <div className="w-[150px]">
+                <SelectField
+                  options={[{ value: '', label: 'All Types' }, { value: 'savings', label: 'Savings' }, { value: 'current', label: 'Current' }, { value: 'upi', label: 'UPI' }]}
+                  value={filterAccountType || { value: '', label: 'All Types' }}
+                  onChange={opt => { setFilterAccountType(opt.value ? opt : null); goToPage(1); }}
+                />
+              </div>
+              <div className="w-[140px]">
+                <SelectField
+                  options={[{ value: '', label: 'All Primary' }, { value: '1', label: 'Primary Only' }, { value: '0', label: 'Non-Primary' }]}
+                  value={filterIsPrimary || { value: '', label: 'All Primary' }}
+                  onChange={opt => { setFilterIsPrimary(opt.value ? opt : null); goToPage(1); }}
+                />
+              </div>
+            </div>
+            <div className="flex w-full lg:w-auto justify-end">
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+            </div>
+
           </div>
         </motion.div>
 

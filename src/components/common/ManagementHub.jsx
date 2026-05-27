@@ -45,7 +45,7 @@ export default function ManagementHub({
   children,
   className = '',
   contentClassName = '',
-  widthClassName = 'max-w-9xl',
+  widthClassName = 'max-w-[1600px]',
 }) {
   const accentClass = accentStyles[accent] || accentStyles.slate;
 
