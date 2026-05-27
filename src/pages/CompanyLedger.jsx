@@ -15,6 +15,7 @@ import { ManagementButton, ManagementHub, ManagementTable, RefreshButton } from 
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import SelectField from '../components/SelectField';
+import BankAccountSelectField from '../components/BankAccountSelectField';
 import { DatePickerField } from '../components/DatePicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ const STAT_STYLES = {
   amber: { iconWrap: 'bg-amber-50 text-amber-600', gradient: 'from-amber-600 to-orange-600' },
 };
 
+// Valid transaction types for Add Transaction (opening_balance excluded — handled separately)
 const TRANSACTION_TYPES = [
   { value: 'salary', label: 'Salary', icon: FaMoneyBillWave, color: 'emerald' },
   { value: 'bonus', label: 'Bonus', icon: FaStar, color: 'amber' },
@@ -45,6 +47,9 @@ const TRANSACTION_TYPES = [
   { value: 'fine', label: 'Fine', icon: FaTag, color: 'violet' },
   { value: 'opening_balance', label: 'Opening Balance', icon: FaWallet, color: 'gray' },
 ];
+
+// Types shown inside Add Transaction dropdown (no opening_balance)
+const ADD_TRANSACTION_TYPES = TRANSACTION_TYPES.filter(t => t.value !== 'opening_balance');
 
 const ENTRY_TYPES = [
   { value: 'debit', label: 'Debit (Payment Out)', icon: FaArrowUp, color: 'rose' },
@@ -256,16 +261,23 @@ const FormField = ({ label, children, required }) => (
 const inputClass = "w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none text-sm font-medium text-slate-700 transition-all";
 const selectClass = `${inputClass} cursor-pointer appearance-none`;
 
+// ─── Helper: does this transaction type need account IDs? ─────────────────────
+// payment → employee_account + company_account
+// receive → employee_account + company_account
+const typeNeedsAccounts = (type) => ['payment', 'receive'].includes(type);
+
+// salary / bonus / fine / receive / payment → no entry_type field (always inferred server-side)
+// opening_balance → entry_type required
+const typeNeedsEntryType = (type) => type === 'opening_balance';
+
 // ─── Add Transaction Modal ────────────────────────────────────────────────────
 
 const EMPTY_FORM = {
   transaction_type: 'salary',
-  entry_type: 'credit',
   amount: '',
   transaction_date: new Date().toISOString().split('T')[0],
   employee_account: '',
   company_account: '',
-  value1: '',
   remark: '',
 };
 
@@ -279,9 +291,7 @@ const AddTransactionModal = ({ open, onClose, onSuccess, employeeId }) => {
 
   const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
 
-  const needsAccounts = ['payment', 'receive'].includes(form.transaction_type);
-  const needsEntryType = form.transaction_type === 'opening_balance';
-  const needsValue1 = form.transaction_type === 'bonus';
+  const needsAccounts = typeNeedsAccounts(form.transaction_type);
 
   const handleSubmit = async () => {
     if (!employeeId || !form.amount || !form.transaction_date) {
@@ -290,19 +300,22 @@ const AddTransactionModal = ({ open, onClose, onSuccess, employeeId }) => {
     }
     setSaving(true);
     try {
+      // Build payload according to transaction type
       const body = {
         employee_id: Number(employeeId),
         transaction_type: form.transaction_type,
         amount: parseFloat(form.amount),
         transaction_date: form.transaction_date,
       };
-      if (needsEntryType) body.entry_type = form.entry_type;
+
+      // payment & receive: optionally include account IDs
       if (needsAccounts) {
         if (form.employee_account) body.employee_account = Number(form.employee_account);
         if (form.company_account) body.company_account = Number(form.company_account);
       }
-      if (needsValue1 && form.value1) body.value1 = Number(form.value1);
-      if (form.remark) body.remark = form.remark;
+
+      // remark is optional for all types
+      if (form.remark.trim()) body.remark = form.remark.trim();
 
       const companyId = getCompanyId();
       const res = await apiCall('/transactions/add', 'POST', body, companyId);
@@ -346,16 +359,18 @@ const AddTransactionModal = ({ open, onClose, onSuccess, employeeId }) => {
       }
     >
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
+          {/* Transaction Type */}
           <FormField label="Transaction Type" required>
             <SelectField
-              options={[...TRANSACTION_TYPES.filter(t => t.value !== 'opening_balance'), { value: 'opening_balance', label: 'Opening Balance', icon: FaWallet, color: 'gray' }]}
-              value={{ value: form.transaction_type, label: form.transaction_type === 'opening_balance' ? 'Opening Balance' : TRANSACTION_TYPES.find(t => t.value === form.transaction_type)?.label }}
+              options={ADD_TRANSACTION_TYPES}
+              value={ADD_TRANSACTION_TYPES.find(t => t.value === form.transaction_type)}
               onChange={opt => set('transaction_type', opt.value)}
               formatOptionLabel={formatTransactionOption}
             />
           </FormField>
 
+          {/* Amount */}
           <FormField label="Amount" required>
             <div className="relative">
               <FaRupeeSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
@@ -367,14 +382,13 @@ const AddTransactionModal = ({ open, onClose, onSuccess, employeeId }) => {
                 value={form.amount}
                 onChange={e => {
                   const val = e.target.value;
-                  if (/^\d*\.?\d*$/.test(val)) {
-                    set('amount', val);
-                  }
+                  if (/^\d*\.?\d*$/.test(val)) set('amount', val);
                 }}
               />
             </div>
           </FormField>
 
+          {/* Transaction Date */}
           <FormField label="Transaction Date" required>
             <DatePickerField
               mode="single"
@@ -386,75 +400,192 @@ const AddTransactionModal = ({ open, onClose, onSuccess, employeeId }) => {
             />
           </FormField>
 
-          {needsEntryType && (
-            <FormField label="Entry Type" required>
-              <SelectField
-                options={ENTRY_TYPES}
-                value={ENTRY_TYPES.find(t => t.value === form.entry_type)}
-                onChange={opt => set('entry_type', opt.value)}
-                formatOptionLabel={formatEntryOption}
-              />
-            </FormField>
-          )}
-
+          {/* Account IDs — only for payment & receive */}
           {needsAccounts && (
             <>
-              <FormField label="Employee Account ID">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="e.g. 101"
-                  className={inputClass}
+              <FormField label="Employee Account">
+                <BankAccountSelectField
+                  ownerType="employee"
+                  employeeId={employeeId}
                   value={form.employee_account}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (/^\d*$/.test(val)) {
-                      set('employee_account', val);
-                    }
-                  }}
+                  onChange={(val) => set('employee_account', val)}
+                  placeholder="Search employee account..."
                 />
               </FormField>
-              <FormField label="Company Account ID">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="e.g. 5"
-                  className={inputClass}
+              <FormField label="Company Account">
+                <BankAccountSelectField
+                  ownerType="company"
                   value={form.company_account}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (/^\d*$/.test(val)) {
-                      set('company_account', val);
-                    }
-                  }}
+                  onChange={(val) => set('company_account', val)}
+                  placeholder="Search company account..."
                 />
               </FormField>
             </>
           )}
-
-          {needsValue1 && (
-            <FormField label="Adjustment Entry ID (value1)">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="e.g. 88"
-                className={inputClass}
-                value={form.value1}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (/^\d*$/.test(val)) {
-                    set('value1', val);
-                  }
-                }}
-              />
-            </FormField>
-          )}
         </div>
 
+        {/* Remark — available for all types */}
         <FormField label="Remark">
           <textarea
             rows={3}
             placeholder="Optional note..."
+            className={`${inputClass} resize-none`}
+            value={form.remark}
+            onChange={e => set('remark', e.target.value)}
+          />
+        </FormField>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── Opening Balance Modal ────────────────────────────────────────────────────
+// Used for both Create (isEdit=false) and Edit (isEdit=true) opening balance.
+
+const EMPTY_OB_FORM = {
+  entry_type: 'credit',
+  amount: '',
+  transaction_date: new Date().toISOString().split('T')[0],
+  remark: '',
+};
+
+const OpeningBalanceModal = ({ open, onClose, onSuccess, employeeId, isEdit, existingBalance }) => {
+  const [form, setForm] = useState(EMPTY_OB_FORM);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      if (isEdit && existingBalance) {
+        setForm({
+          entry_type: existingBalance.entry_type || 'credit',
+          amount: existingBalance.amount || '',
+          transaction_date: toInputDate(existingBalance.transaction_date) || new Date().toISOString().split('T')[0],
+          remark: existingBalance.remark || '',
+        });
+      } else {
+        setForm(EMPTY_OB_FORM);
+      }
+    }
+  }, [open, isEdit, existingBalance]);
+
+  const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
+
+  const handleSubmit = async () => {
+    if (!form.amount || !form.transaction_date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setSaving(true);
+    try {
+      const body = {
+        employee_id: Number(employeeId),
+        transaction_type: 'opening_balance',
+        entry_type: form.entry_type,
+        amount: parseFloat(form.amount),
+        transaction_date: form.transaction_date,
+      };
+      if (form.remark.trim()) body.remark = form.remark.trim();
+
+      // If editing, include the existing transaction id
+      if (isEdit && existingBalance?.id) body.id = existingBalance.id;
+
+      const companyId = getCompanyId();
+      const endpoint = isEdit ? '/transactions/update' : '/transactions/add';
+      const method = isEdit ? 'PUT' : 'POST';
+      const res = await apiCall(endpoint, method, body, companyId);
+      const data = await res.json();
+      if (data.success) {
+        toast.success(isEdit ? 'Opening balance updated' : 'Opening balance created');
+        onSuccess();
+        onClose();
+      } else {
+        toast.error(data.message || 'Failed to save opening balance');
+      }
+    } catch {
+      toast.error('Connection error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title={isEdit ? 'Edit Opening Balance' : 'Create Opening Balance'}
+      subtitle={isEdit ? 'Update the initial balance entry' : 'Set the initial balance for this employee'}
+      icon={<FaWallet size={20} />}
+      size="md"
+      footer={
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all">
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-60 flex items-center gap-2"
+          >
+            {saving ? <FaSpinner className="animate-spin" size={13} /> : <FaCheck size={13} />}
+            {saving ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Opening Balance'}
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        {!isEdit && (
+          <div className="p-3 bg-violet-50 border border-violet-100 rounded-xl text-xs text-violet-700 font-medium flex items-center gap-2">
+            <FaInfoCircle size={12} /> Opening balance is the starting financial position for this employee's ledger.
+          </div>
+        )}
+
+        <div className="flex flex-col gap-4">
+          {/* Entry Type */}
+          <FormField label="Entry Type" required>
+            <SelectField
+              options={ENTRY_TYPES}
+              value={ENTRY_TYPES.find(t => t.value === form.entry_type)}
+              onChange={opt => set('entry_type', opt.value)}
+              formatOptionLabel={formatEntryOption}
+            />
+          </FormField>
+
+          {/* Amount */}
+          <FormField label="Amount" required>
+            <div className="relative">
+              <FaRupeeSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                className={`${inputClass} pl-9`}
+                value={form.amount}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (/^\d*\.?\d*$/.test(val)) set('amount', val);
+                }}
+              />
+            </div>
+          </FormField>
+
+          {/* Transaction Date */}
+          <FormField label="Effective Date" required>
+            <DatePickerField
+              mode="single"
+              initialTab="single"
+              showQuickSelect={false}
+              value={form.transaction_date}
+              onChange={val => set('transaction_date', val)}
+              buttonClassName={`${inputClass} text-left font-normal`}
+            />
+          </FormField>
+        </div>
+
+        {/* Remark */}
+        <FormField label="Remark">
+          <textarea
+            rows={3}
+            placeholder="Optional note about this opening balance..."
             className={`${inputClass} resize-none`}
             value={form.remark}
             onChange={e => set('remark', e.target.value)}
@@ -556,7 +687,7 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
             <FaInfoCircle size={12} /> Transaction type and employee cannot be changed after creation.
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-3">
             <FormField label="Amount" required>
               <div className="relative">
                 <FaRupeeSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
@@ -596,35 +727,24 @@ const EditTransactionModal = ({ open, onClose, onSuccess, transaction }) => {
               />
             </FormField>
 
-            <FormField label="Employee Account ID">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="e.g. 101"
-                className={inputClass}
+            <FormField label="Employee Account">
+              <BankAccountSelectField
+                ownerType="employee"
+                employeeId={transaction?.employee?.id || transaction?.employee_id}
                 value={form.employee_account}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (/^\d*$/.test(val)) {
-                    set('employee_account', val);
-                  }
-                }}
+                onChange={(val) => set('employee_account', val)}
+                initialAccount={transaction?.accounts?.employee_account}
+                placeholder="Search employee account..."
               />
             </FormField>
 
-            <FormField label="Company Account ID">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="e.g. 5"
-                className={inputClass}
+            <FormField label="Company Account">
+              <BankAccountSelectField
+                ownerType="company"
                 value={form.company_account}
-                onChange={e => {
-                  const val = e.target.value;
-                  if (/^\d*$/.test(val)) {
-                    set('company_account', val);
-                  }
-                }}
+                onChange={(val) => set('company_account', val)}
+                initialAccount={transaction?.accounts?.company_account}
+                placeholder="Search company account..."
               />
             </FormField>
           </div>
@@ -838,12 +958,15 @@ const ViewModal = ({ open, onClose, transaction }) => (
   </Modal>
 );
 
+// ─── Helper: is opening_balance all zeros? ────────────────────────────────────
+const isOpeningBalanceEmpty = (ob) =>
+  !ob || (Number(ob.debit) === 0 && Number(ob.credit) === 0 && Number(ob.balance) === 0);
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const CompanyLedger = ({ employeeId }) => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -856,8 +979,14 @@ const CompanyLedger = ({ employeeId }) => {
   const [editModal, setEditModal] = useState({ open: false, transaction: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, transaction: null });
 
+  // Opening balance modal state
+  const [obModal, setObModal] = useState(false);
+
   const [summary, setSummary] = useState({ total_debit: 0, total_credit: 0, closing_balance: 0 });
-  const [openingBalance, setOpeningBalance] = useState({ balance: 0 });
+  const [openingBalance, setOpeningBalance] = useState({ debit: 0, credit: 0, balance: 0 });
+
+  // The actual opening_balance transaction row (if it exists in data, for edit)
+  const [openingBalanceTx, setOpeningBalanceTx] = useState(null);
 
   const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
 
@@ -867,13 +996,12 @@ const CompanyLedger = ({ employeeId }) => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-
   // Fetch ledger
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
       const companyId = getCompanyId();
-      const id = employeeId || 19; // fallback to 19 from props
+      const id = employeeId || 19;
       const params = new URLSearchParams();
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filterType?.value) params.append('transaction_type', filterType.value);
@@ -883,16 +1011,22 @@ const CompanyLedger = ({ employeeId }) => {
       const res = await apiCall(url, 'GET', null, companyId);
       const result = await res.json();
       if (result.success) {
-        setTransactions(result.data || []);
-        setOpeningBalance(result.opening_balance || { balance: 0 });
+        const txList = result.data || [];
+        setTransactions(txList);
+        setOpeningBalance(result.opening_balance || { debit: 0, credit: 0, balance: 0 });
+
+        // Find the opening_balance transaction row if present, for edit purposes
+        const obTx = txList.find(t => t.transaction_type === 'opening_balance') || null;
+        setOpeningBalanceTx(obTx);
+
         if (result.meta?.summary) {
           setSummary(result.meta.summary);
         } else {
-          const totals = (result.data || []).reduce(
+          const totals = txList.reduce(
             (acc, t) => { acc.total_debit += t.debit || 0; acc.total_credit += t.credit || 0; return acc; },
             { total_debit: 0, total_credit: 0 }
           );
-          const last = result.data?.[result.data.length - 1];
+          const last = txList[txList.length - 1];
           setSummary({ ...totals, closing_balance: last?.balance || 0 });
         }
       } else {
@@ -958,6 +1092,10 @@ const CompanyLedger = ({ employeeId }) => {
     goToPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [goToPage]);
+
+  // Determine opening balance button label & behaviour
+  const obIsEmpty = isOpeningBalanceEmpty(openingBalance);
+
   const columns = useMemo(() => [
     {
       key: 'row_num',
@@ -1083,15 +1221,29 @@ const CompanyLedger = ({ employeeId }) => {
       description="View, add, edit, and delete all financial transactions across employees."
       accent="violet"
       actions={
-        <div className="flex items-center gap-3">
-          <RefreshButton loading={loading} onClick={fetchTransactions}>Refresh</RefreshButton>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {/* Opening Balance button — Create if empty, Edit if exists */}
+          <button
+            onClick={() => setObModal(true)}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all border ${obIsEmpty
+                ? 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              }`}
+          >
+            <FaWallet size={13} />
+            {obIsEmpty ? 'Create Opening Balance' : 'Edit Opening Balance'}
+          </button>
+
           <ManagementButton
             icon={<FaPlus size={13} />}
             onClick={() => setAddModal(true)}
-            accent="violet"
+            tone="violet"
           >
-            Add Transaction
+            <div className="flex items-center gap-2">
+              <FaPlus size={12}/> Create
+            </div>
           </ManagementButton>
+          <RefreshButton loading={loading} onClick={fetchTransactions}>Refresh</RefreshButton>
         </div>
       }
     >
@@ -1207,7 +1359,8 @@ const CompanyLedger = ({ employeeId }) => {
         ) : viewMode === 'table' ? (
           <>
             {pagination.page === 1 && (
-              <style dangerouslySetInnerHTML={{ __html: `
+              <style dangerouslySetInnerHTML={{
+                __html: `
                 .company-ledger-table tbody tr:first-child td:last-child div {
                   display: none !important;
                   pointer-events: none !important;
@@ -1284,6 +1437,15 @@ const CompanyLedger = ({ employeeId }) => {
         onClose={() => setAddModal(false)}
         onSuccess={fetchTransactions}
         employeeId={employeeId || 19}
+      />
+
+      <OpeningBalanceModal
+        open={obModal}
+        onClose={() => setObModal(false)}
+        onSuccess={fetchTransactions}
+        employeeId={employeeId || 19}
+        isEdit={!obIsEmpty}
+        existingBalance={openingBalanceTx}
       />
 
       <EditTransactionModal
