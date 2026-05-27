@@ -99,6 +99,7 @@ const BankAccountSelectField = ({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -167,8 +168,10 @@ const BankAccountSelectField = ({
   }, [employeeId, ownerType]);
 
   useEffect(() => {
-    fetchAccounts(page, debouncedSearch);
-  }, [debouncedSearch, fetchAccounts, page]);
+    if (isOpen) {
+      fetchAccounts(page, debouncedSearch);
+    }
+  }, [debouncedSearch, fetchAccounts, page, isOpen]);
 
   useEffect(() => {
     if (initialOption) {
@@ -189,6 +192,8 @@ const BankAccountSelectField = ({
       value={selectedOption}
       placeholder={placeholder}
       inputValue={inputValue}
+      onMenuOpen={() => setIsOpen(true)}
+      onMenuClose={() => setIsOpen(false)}
       onInputChange={(nextValue, meta) => {
         if (meta.action === 'input-change') setInputValue(nextValue);
         if (meta.action === 'menu-close') setInputValue('');
@@ -203,6 +208,7 @@ const BankAccountSelectField = ({
       components={{
         LoadingIndicator: () => <FaSpinner className="animate-spin text-blue-500 mr-3" size={13} />,
       }}
+      minMenuHeight={300}
     />
   );
 };
