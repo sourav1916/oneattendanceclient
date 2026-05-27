@@ -169,19 +169,19 @@ const InviteCard = ({ invite, index, onView, onAccept, onReject }) => {
         },
         ...(isPending
           ? [
-              {
-                label: 'Accept Invite',
-                icon: <FaCheck size={12} />,
-                onClick: () => onAccept(invite),
-                className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
-              },
-              {
-                label: 'Reject Invite',
-                icon: <FaBan size={12} />,
-                onClick: () => onReject(invite),
-                className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-              },
-            ]
+            {
+              label: 'Accept Invite',
+              icon: <FaCheck size={12} />,
+              onClick: () => onAccept(invite),
+              className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+            },
+            {
+              label: 'Reject Invite',
+              icon: <FaBan size={12} />,
+              onClick: () => onReject(invite),
+              className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+            },
+          ]
           : []),
       ]}
       menuId={`invite-card-${invite.invite_id}`}
@@ -767,7 +767,7 @@ export default function MyInvites() {
                 placeholder="Search by company, designation, or inviter..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm min-h-[42px]"
+                className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm min-h-[42px]"
               />
               {searchTerm && (
                 <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
@@ -834,7 +834,7 @@ export default function MyInvites() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="rounded-xl bg-white shadow-xl overflow-visible"
+              className="rounded-xl bg-white shadow-xl"
             >
               {/* Table View */}
               {viewMode === 'table' && (
@@ -852,19 +852,19 @@ export default function MyInvites() {
                     },
                     ...(invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at)
                       ? [
-                          {
-                            label: 'Accept Invite',
-                            icon: <FaCheck size={12} />,
-                            onClick: () => openModal(invite, 'accept'),
-                            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
-                          },
-                          {
-                            label: 'Reject Invite',
-                            icon: <FaBan size={12} />,
-                            onClick: () => openModal(invite, 'reject'),
-                            className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
-                          },
-                        ]
+                        {
+                          label: 'Accept Invite',
+                          icon: <FaCheck size={12} />,
+                          onClick: () => openModal(invite, 'accept'),
+                          className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+                        },
+                        {
+                          label: 'Reject Invite',
+                          icon: <FaBan size={12} />,
+                          onClick: () => openModal(invite, 'reject'),
+                          className: 'text-red-600 hover:text-red-700 hover:bg-red-50',
+                        },
+                      ]
                       : []),
                   ]}
                   accent="violet"

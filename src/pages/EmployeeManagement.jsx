@@ -55,13 +55,13 @@ const MODAL_TYPES = { NONE: 'NONE', EDIT: 'EDIT', VIEW: 'VIEW', DELETE_CONFIRM: 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const DEFAULT_SHIFT_START = '09:00:00';
-const DEFAULT_SHIFT_END   = '18:00:00';
-const DEFAULT_DURATION    = '00:30';
+const DEFAULT_SHIFT_END = '18:00:00';
+const DEFAULT_DURATION = '00:30';
 
 const EMPLOYEE_REQUEST_CACHE_TTL = 5000;
-let constantsRequestCache        = { companyId: null, promise: null, data: null };
+let constantsRequestCache = { companyId: null, promise: null, data: null };
 let permissionPackagesRequestCache = { companyId: null, promise: null, data: null };
-const employeeListRequestCache   = new Map();
+const employeeListRequestCache = new Map();
 
 const getEmployeeListCacheKey = ({ companyId, page, limit, search }) =>
     `${companyId ?? 'none'}|${page}|${limit}|${search ?? ''}`;
@@ -251,7 +251,7 @@ const EmployeeEditModal = ({
                                                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
                                                     ? 'border-indigo-300 bg-indigo-600 text-white shadow-sm'
                                                     : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50'
-                                                } ${!method.available ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    } ${!method.available ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                                 {active && <FaCheck className="h-3 w-3" />}
                                                 {method.name}
                                             </button>
@@ -354,25 +354,25 @@ const EmployeeEditModal = ({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const EmployeeManagement = () => {
-    const navigate                    = useNavigate();
-    const navigateToEmployeeProfile   = useEmployeeNavigation();
+    const navigate = useNavigate();
+    const navigateToEmployeeProfile = useEmployeeNavigation();
     const { checkActionAccess, getAccessMessage } = usePermissionAccess();
 
-    const [employees, setEmployees]         = useState([]);
-    const [constants, setConstants]         = useState({
+    const [employees, setEmployees] = useState([]);
+    const [constants, setConstants] = useState({
         employment_types: [], salary_types: [], designations: [],
         employment_status: [], attendance_methods: [],
     });
     const [permissionPackages, setPermissionPackages] = useState([]);
-    const [loading, setLoading]                       = useState(false);
+    const [loading, setLoading] = useState(false);
     const [permissionsLoading, setPermissionsLoading] = useState(false);
-    const [constantsLoading, setConstantsLoading]     = useState(false);
-    const [modalType, setModalType]                   = useState(MODAL_TYPES.NONE);
-    const [selectedEmployee, setSelectedEmployee]     = useState(null);
-    const [activeActionMenu, setActiveActionMenu]     = useState(null);
-    const [viewMode, setViewMode]                     = useState('table');
-    const [showPermissions, setShowPermissions]       = useState(false);
-    const [searchTerm, setSearchTerm]                 = useState('');
+    const [constantsLoading, setConstantsLoading] = useState(false);
+    const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [viewMode, setViewMode] = useState('table');
+    const [showPermissions, setShowPermissions] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
     const [formData, setFormData] = useState({
@@ -387,16 +387,16 @@ const EmployeeManagement = () => {
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
 
-    const constantsFetched    = useRef(false);
-    const permissionsFetched  = useRef(false);
-    const isMounted           = useRef(true);
-    const fetchInProgress     = useRef(false);
-    const initialFetchDone    = useRef(false);
-    const isInitialLoad       = useRef(true);
+    const constantsFetched = useRef(false);
+    const permissionsFetched = useRef(false);
+    const isMounted = useRef(true);
+    const fetchInProgress = useRef(false);
+    const initialFetchDone = useRef(false);
+    const isInitialLoad = useRef(true);
 
     const updateEmployeeAccess = checkActionAccess('employeeManagement', 'update');
     const deleteEmployeeAccess = checkActionAccess('employeeManagement', 'delete');
-    const readEmployeeAccess   = checkActionAccess('employeeManagement', 'read');
+    const readEmployeeAccess = checkActionAccess('employeeManagement', 'read');
 
     useEffect(() => {
         isMounted.current = true;
@@ -425,7 +425,7 @@ const EmployeeManagement = () => {
         if (constantsFetched.current) return;
         setConstantsLoading(true);
         try {
-            const company   = JSON.parse(localStorage.getItem('company'));
+            const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
 
             if (constantsRequestCache.companyId === companyId && constantsRequestCache.data) {
@@ -439,15 +439,15 @@ const EmployeeManagement = () => {
             if (!constantsRequestCache.promise) {
                 constantsRequestCache.promise = (async () => {
                     const response = await apiCall('/constants/', 'GET', null, companyId);
-                    const result   = await response.json();
+                    const result = await response.json();
                     if (!result.success) throw new Error(result.message || 'Failed to load constants');
                     const d = result.data;
                     const mapped = {
-                        employment_types:    d.employment_types?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
-                        salary_types:        d.salary_types?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
-                        designations:        d.designations?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
-                        employment_status:   d.employment_status?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
-                        attendance_methods:  d.attendance_methods?.map(i => ({
+                        employment_types: d.employment_types?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
+                        salary_types: d.salary_types?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
+                        designations: d.designations?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
+                        employment_status: d.employment_status?.map(i => ({ value: i.value.value, key: i.key, label: i.value.label, description: i.value.description })) || [],
+                        attendance_methods: d.attendance_methods?.map(i => ({
                             id: i.key.toLowerCase(), name: i.value.label, icon: getIconForType(i.key),
                             description: i.value.description, available: i.value.is_available,
                             requiresDevice: i.value.requiresDevice || false,
@@ -470,7 +470,7 @@ const EmployeeManagement = () => {
         if (permissionsFetched.current) return;
         setPermissionsLoading(true);
         try {
-            const company   = JSON.parse(localStorage.getItem('company'));
+            const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
 
             if (permissionPackagesRequestCache.companyId === companyId && permissionPackagesRequestCache.data) {
@@ -484,7 +484,7 @@ const EmployeeManagement = () => {
             if (!permissionPackagesRequestCache.promise) {
                 permissionPackagesRequestCache.promise = (async () => {
                     const response = await apiCall('/permissions/permission-packages', 'GET', null, companyId);
-                    const result   = await response.json();
+                    const result = await response.json();
                     if (!result.success) throw new Error(result.message || 'Failed to load permission packages');
                     const packages = (result.data?.packages || []).map(pkg => ({
                         value: pkg.id, label: pkg.package_name, description: pkg.description,
@@ -510,12 +510,12 @@ const EmployeeManagement = () => {
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
         try {
-            const company   = JSON.parse(localStorage.getItem('company'));
+            const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
-            const params    = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
+            const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
 
-            const requestKey  = getEmployeeListCacheKey({ companyId, page, limit: pagination.limit, search: debouncedSearchTerm });
+            const requestKey = getEmployeeListCacheKey({ companyId, page, limit: pagination.limit, search: debouncedSearchTerm });
             const cachedEntry = employeeListRequestCache.get(requestKey);
             let result;
 
@@ -526,7 +526,7 @@ const EmployeeManagement = () => {
             } else {
                 const requestPromise = (async () => {
                     const response = await apiCall(`/employees/list?${params}`, 'GET', null, companyId);
-                    const json     = await response.json();
+                    const json = await response.json();
                     if (!json.success) throw new Error(json.message || 'Failed to fetch employees');
                     employeeListRequestCache.set(requestKey, { data: json, expiresAt: Date.now() + EMPLOYEE_REQUEST_CACHE_TTL });
                     return json;
@@ -538,7 +538,7 @@ const EmployeeManagement = () => {
             if (result.success) {
                 const normalizedEmployees = (result.data || []).map(normalizeEmployeeRecord);
                 setEmployees(normalizedEmployees);
-                const meta       = result.pagination || result.meta || {};
+                const meta = result.pagination || result.meta || {};
                 const totalPages = meta.total_pages || Math.max(1, Math.ceil((meta.total || normalizedEmployees.length || 0) / (meta.limit || pagination.limit)));
                 updatePagination({
                     page: meta.page || page, limit: meta.limit || pagination.limit,
@@ -554,7 +554,7 @@ const EmployeeManagement = () => {
         } finally {
             setLoading(false);
             fetchInProgress.current = false;
-            isInitialLoad.current   = false;
+            isInitialLoad.current = false;
         }
     }, [pagination.page, pagination.limit, debouncedSearchTerm, updatePagination]);
 
@@ -585,7 +585,7 @@ const EmployeeManagement = () => {
                 weekends: employeeData.weekends,
             };
             const response = await apiCall('/employees/update', 'PUT', payload, company?.id);
-            const result   = await response.json();
+            const result = await response.json();
             if (result.success) { employeeListRequestCache.clear(); await fetchEmployees(pagination.page, false); return { success: true }; }
             throw new Error(result.message || 'Update failed');
         } catch (e) {
@@ -596,9 +596,9 @@ const EmployeeManagement = () => {
     const deleteEmployee = async (id) => {
         setLoading(true);
         try {
-            const company  = JSON.parse(localStorage.getItem('company'));
+            const company = JSON.parse(localStorage.getItem('company'));
             const response = await apiCall('/employees/delete', 'DELETE', { id }, company?.id);
-            const result   = await response.json();
+            const result = await response.json();
             if (result.success) { employeeListRequestCache.clear(); await fetchEmployees(pagination.page, false); return { success: true }; }
             throw new Error(result.message || 'Delete failed');
         } catch (e) {
@@ -613,7 +613,7 @@ const EmployeeManagement = () => {
         setConstantsLoading(true);
         setPermissionsLoading(true);
         try {
-            if (!constantsFetched.current)   await fetchConstants();
+            if (!constantsFetched.current) await fetchConstants();
             if (!permissionsFetched.current) await fetchPermissionPackages();
 
             const norm = normalizeEmployeeRecord(employee);
@@ -631,30 +631,30 @@ const EmployeeManagement = () => {
             }
             setAttendanceMethodsConfig(initialConfig);
 
-            const selectedPackage   = permissionPackages.find(p => p.value === (norm.permission_package_id || norm.package_id));
-            const rawWeekends       = norm.weekends;
+            const selectedPackage = permissionPackages.find(p => p.value === (norm.permission_package_id || norm.package_id));
+            const rawWeekends = norm.weekends;
             const normalizedWeekends = Array.isArray(rawWeekends)
                 ? rawWeekends.map(w => (typeof w === 'string' ? w : w?.day)).filter(Boolean)
                 : [];
 
             setFormData({
-                name:                 norm.name || '',
-                designation:          typeof norm.designation === 'object' ? norm.designation?.value : (norm.designation || ''),
-                email:                norm.email || '',
-                phone:                norm.phone || '',
-                employee_code:        norm.employee_code || '',
-                employment_type:      typeof norm.employment_type === 'object' ? norm.employment_type?.value : (norm.employment_type || ''),
-                salary_type:          typeof norm.salary_type === 'object' ? norm.salary_type?.value : (norm.salary_type || ''),
-                joining_date:         norm.joining_date ? new Date(norm.joining_date).toISOString().split('T')[0] : '',
-                status:               typeof norm.status === 'object' ? norm.status?.value : (norm.status || ''),
+                name: norm.name || '',
+                designation: typeof norm.designation === 'object' ? norm.designation?.value : (norm.designation || ''),
+                email: norm.email || '',
+                phone: norm.phone || '',
+                employee_code: norm.employee_code || '',
+                employment_type: typeof norm.employment_type === 'object' ? norm.employment_type?.value : (norm.employment_type || ''),
+                salary_type: typeof norm.salary_type === 'object' ? norm.salary_type?.value : (norm.salary_type || ''),
+                joining_date: norm.joining_date ? new Date(norm.joining_date).toISOString().split('T')[0] : '',
+                status: typeof norm.status === 'object' ? norm.status?.value : (norm.status || ''),
                 permission_package_id: norm.permission_package_id || norm.package_id || null,
-                selectedPackage:      selectedPackage || null,
-                auto_approve:         norm.auto_approve ?? false,
-                shift_start:          norm.shift_start || DEFAULT_SHIFT_START,
-                shift_end:            norm.shift_end || DEFAULT_SHIFT_END,
-                break_minutes:        normalizeDuration(norm.break_minutes, DEFAULT_DURATION),
-                grace_minutes:        normalizeDuration(norm.grace_minutes, DEFAULT_DURATION),
-                weekends:             normalizedWeekends,
+                selectedPackage: selectedPackage || null,
+                auto_approve: norm.auto_approve ?? false,
+                shift_start: norm.shift_start || DEFAULT_SHIFT_START,
+                shift_end: norm.shift_end || DEFAULT_SHIFT_END,
+                break_minutes: normalizeDuration(norm.break_minutes, DEFAULT_DURATION),
+                grace_minutes: normalizeDuration(norm.grace_minutes, DEFAULT_DURATION),
+                weekends: normalizedWeekends,
             });
 
             setModalType(MODAL_TYPES.EDIT);
@@ -764,18 +764,18 @@ const EmployeeManagement = () => {
     const getStatusClassName = useCallback((v) => {
         const val = typeof v === 'object' && v !== null ? v.value : v;
         return {
-            active:    'bg-green-100 text-green-800 border border-green-200',
-            inactive:  'bg-gray-100 text-gray-800 border border-gray-200',
+            active: 'bg-green-100 text-green-800 border border-green-200',
+            inactive: 'bg-gray-100 text-gray-800 border border-gray-200',
             suspended: 'bg-red-100 text-red-800 border border-red-200',
-            on_leave:  'bg-yellow-100 text-yellow-800 border border-yellow-200',
+            on_leave: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
         }[val] || 'bg-gray-100 text-gray-800 border border-gray-200';
     }, []);
 
     // ─── Memoised Options ─────────────────────────────────────────────────────
 
-    const designationOptions    = useMemo(() => constants.designations?.map(d => ({ value: d.value, label: d.label, description: d.description })) || [], [constants.designations]);
-    const employmentTypeOptions  = useMemo(() => constants.employment_types?.map(t => ({ value: t.value, label: t.label, description: t.description })) || [], [constants.employment_types]);
-    const salaryTypeOptions      = useMemo(() => constants.salary_types?.map(t => ({ value: t.value, label: t.label, description: t.description })) || [], [constants.salary_types]);
+    const designationOptions = useMemo(() => constants.designations?.map(d => ({ value: d.value, label: d.label, description: d.description })) || [], [constants.designations]);
+    const employmentTypeOptions = useMemo(() => constants.employment_types?.map(t => ({ value: t.value, label: t.label, description: t.description })) || [], [constants.employment_types]);
+    const salaryTypeOptions = useMemo(() => constants.salary_types?.map(t => ({ value: t.value, label: t.label, description: t.description })) || [], [constants.salary_types]);
 
     const handlePageChange = useCallback((newPage) => {
         if (newPage !== pagination.page) goToPage(newPage);
@@ -920,7 +920,7 @@ const EmployeeManagement = () => {
                                 placeholder="Search employees by name, email, or code..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm min-h-[42px]"
+                                className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm min-h-[42px]"
                             />
                             {searchTerm && (
                                 <button onClick={() => setSearchTerm('')}
@@ -1102,12 +1102,12 @@ const EmployeeManagement = () => {
 
                             {/* Info grid */}
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                <InfoItem icon={<FaIdCard />}       label="Employee Code"  value={selectedEmployee.employee_code} />
-                                <InfoItem icon={<FaEnvelope />}     label="Email Address"  value={selectedEmployee.email} />
-                                <InfoItem icon={<FaPhone />}        label="Phone Number"   value={selectedEmployee.phone || 'N/A'} />
-                                <InfoItem icon={<FaBriefcase />}    label="Employment"     value={getEmploymentTypeDisplay(selectedEmployee.employment_type)} />
-                                <InfoItem icon={<FaDollarSign />}   label="Salary Type"    value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
-                                <InfoItem icon={<FaCalendarAlt />}  label="Joining Date"   value={formatDate(selectedEmployee.joining_date)} />
+                                <InfoItem icon={<FaIdCard />} label="Employee Code" value={selectedEmployee.employee_code} />
+                                <InfoItem icon={<FaEnvelope />} label="Email Address" value={selectedEmployee.email} />
+                                <InfoItem icon={<FaPhone />} label="Phone Number" value={selectedEmployee.phone || 'N/A'} />
+                                <InfoItem icon={<FaBriefcase />} label="Employment" value={getEmploymentTypeDisplay(selectedEmployee.employment_type)} />
+                                <InfoItem icon={<FaDollarSign />} label="Salary Type" value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
+                                <InfoItem icon={<FaCalendarAlt />} label="Joining Date" value={formatDate(selectedEmployee.joining_date)} />
                             </div>
 
                             {/* Work Schedule */}
@@ -1118,7 +1118,7 @@ const EmployeeManagement = () => {
                                 <div className="flex flex-wrap gap-2">
                                     {[
                                         { label: 'Shift Hours', value: `${selectedEmployee.shift_start || 'N/A'} – ${selectedEmployee.shift_end || 'N/A'}` },
-                                        { label: 'Break Time',  value: formatDurationDisplay(selectedEmployee.break_minutes) },
+                                        { label: 'Break Time', value: formatDurationDisplay(selectedEmployee.break_minutes) },
                                         { label: 'Grace Period', value: formatDurationDisplay(selectedEmployee.grace_minutes) },
                                     ].map(({ label, value }) => (
                                         <div key={label} className="bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col">

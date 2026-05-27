@@ -841,7 +841,7 @@ const SalaryComponents = () => {
                                 placeholder="Search by name or code..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
+                                className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
                             />
                             {searchTerm && (
                                 <button
@@ -852,7 +852,7 @@ const SalaryComponents = () => {
                                 </button>
                             )}
                         </div>
-                        
+
                         <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
 
                         <ManagementViewSwitcher

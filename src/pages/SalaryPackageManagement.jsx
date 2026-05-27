@@ -94,87 +94,87 @@ const PackageDetailModal = ({ pkg, onClose }) => {
             }
         >
             <div className="space-y-6">
-            {/* Summary Stats */}
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Items</p>
-                                    <p className="text-lg font-black text-slate-900">{pkg.items.length}</p>
+                {/* Summary Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Items</p>
+                        <p className="text-lg font-black text-slate-900">{pkg.items.length}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Earnings</p>
+                        <p className="text-lg font-black text-green-600">{earningItems.length}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Deductions</p>
+                        <p className="text-lg font-black text-rose-600">{deductionItems.length}</p>
+                    </div>
+                    <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
+                        <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Contributions</p>
+                        <p className="text-lg font-black text-white">{contributionItems.length}</p>
+                    </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                        {/* Description */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Package Description</p>
+                            <p className="text-sm text-slate-600 leading-relaxed italic">
+                                {pkg.description || "No description provided for this package."}
+                            </p>
+                        </div>
+
+                        {/* Additional Info */}
+                        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
+                                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Metadata</p>
+                            </div>
+                            <div className="divide-y divide-slate-50">
+                                <div className="flex items-center justify-between px-4 py-3.5">
+                                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                        <FaCalendarAlt className="text-blue-500" /> Created On
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-800">{formatDate(pkg.created_at)}</span>
                                 </div>
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Earnings</p>
-                                    <p className="text-lg font-black text-green-600">{earningItems.length}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Deductions</p>
-                                    <p className="text-lg font-black text-rose-600">{deductionItems.length}</p>
-                                </div>
-                                <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
-                                    <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Contributions</p>
-                                    <p className="text-lg font-black text-white">{contributionItems.length}</p>
+                                <div className="flex items-center justify-between px-4 py-3.5">
+                                    <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                        <FaCog className="text-indigo-500" /> System ID
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-slate-800">#{pkg.id}</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            {/* Details Grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-6">
-                                    {/* Description */}
-                                    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3">Package Description</p>
-                                        <p className="text-sm text-slate-600 leading-relaxed italic">
-                                            {pkg.description || "No description provided for this package."}
+                    {/* Components List */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between px-1">
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Included Components</p>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{pkg.items.length} Total</span>
+                        </div>
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                            {[...pkg.items].sort((a, b) => a.display_order - b.display_order).map((item, idx) => (
+                                <div key={idx} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:border-slate-300">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                            {item.display_order}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-800 leading-none">{item.name}</p>
+                                            <p className="text-[10px] text-slate-400 mt-1 font-mono">{item.code} · {item.calc_type}: {item.calc_value}{item.calc_type === 'percentage' ? '%' : ''}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`text-[9px] font-bold uppercase tracking-wider ${item.type === 'earning' ? 'text-green-600' : item.type === 'deduction' ? 'text-rose-600' : 'text-blue-600'}`}>
+                                            {item.type.replace('_', ' ')}
                                         </p>
                                     </div>
-
-                                    {/* Additional Info */}
-                                    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                                        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50">
-                                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Metadata</p>
-                                        </div>
-                                        <div className="divide-y divide-slate-50">
-                                            <div className="flex items-center justify-between px-4 py-3.5">
-                                                <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                                                    <FaCalendarAlt className="text-blue-500" /> Created On
-                                                </span>
-                                                <span className="text-xs font-bold text-slate-800">{formatDate(pkg.created_at)}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between px-4 py-3.5">
-                                                <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">
-                                                    <FaCog className="text-indigo-500" /> System ID
-                                                </span>
-                                                <span className="text-xs font-mono font-bold text-slate-800">#{pkg.id}</span>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
-
-                                {/* Components List */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between px-1">
-                                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Included Components</p>
-                                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{pkg.items.length} Total</span>
-                                    </div>
-                                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-                                        {[...pkg.items].sort((a, b) => a.display_order - b.display_order).map((item, idx) => (
-                                            <div key={idx} className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:border-slate-300">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
-                                                        {item.display_order}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-800 leading-none">{item.name}</p>
-                                                        <p className="text-[10px] text-slate-400 mt-1 font-mono">{item.code} · {item.calc_type}: {item.calc_value}{item.calc_type === 'percentage' ? '%' : ''}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${item.type === 'earning' ? 'text-green-600' : item.type === 'deduction' ? 'text-rose-600' : 'text-blue-600'}`}>
-                                                        {item.type.replace('_', ' ')}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         </Modal>
     );
@@ -862,7 +862,7 @@ const SalaryPackages = () => {
                                 placeholder="Search packages by name or code..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
+                                className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
                             />
                             {searchTerm && (
                                 <button
@@ -873,7 +873,7 @@ const SalaryPackages = () => {
                                 </button>
                             )}
                         </div>
-                       
+
                     </div>
 
                     {/* Right Section: Controls */}

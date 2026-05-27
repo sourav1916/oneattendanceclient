@@ -526,7 +526,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
       onClose={onClose}
       title={title}
       subtitle={isEditing ? 'Update your leave request details.' : 'Submit a new leave application.'}
-      icon={isEditing ? <FaEdit className="h-6 w-6 text-white" /> : <FaPlus className="h-6 w-6 text-white" />}
+      icon={isEditing ? <FaEdit className="h-6 w-6 text-blue-600" /> : <FaPlus className="h-6 w-6 text-blue-600" />}
       size="3xl"
       footer={
         <div className="flex gap-3 w-full justify-end sm:w-auto">
@@ -546,7 +546,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
             className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-md shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? <FaSpinner className="animate-spin" /> : (isEditing ? <FaEdit /> : <FaPlus />)}
-            {saving ? 'Processing...' : 'Save Application'}
+            {saving ? 'Processing...' : 'Save'}
           </button>
         </div>
       }
@@ -580,7 +580,7 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
         </div>
 
         {/* Form Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-6">
           {/* Leave Type */}
           <div className="md:col-span-2">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Leave Type <span className="text-rose-500">*</span></label>
@@ -660,8 +660,8 @@ const LeaveFormModal = ({ open, title, leaveTypes, balances, initialLeave, onClo
                           type="button"
                           onClick={() => setForm(prev => ({ ...prev, half_day_type: type }))}
                           className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${form.half_day_type === type
-                              ? 'bg-white text-violet-600 shadow-sm'
-                              : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-violet-600 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
                             }`}
                         >
                           {type === 'first_half' ? '1st' : '2nd'} Half
@@ -1017,7 +1017,7 @@ const MyLeave = () => {
           <div className="flex items-center gap-4 flex-1">
             <div className="relative flex-1 w-full">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-              <input className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm min-h-[42px]"
+              <input className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm min-h-[42px]"
                 placeholder="Search leaves by type or reason..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -1093,30 +1093,42 @@ const MyLeave = () => {
                 <ManagementTable
                   rows={filteredLeaves}
                   columns={[
-                    { key: 'leave_type', label: 'Leave Type', render: (leave) => (
-                      <>
-                        <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
-                        <p className="mt-1 text-xs text-gray-500">{formatDays(leave.total_days)} day(s)</p>
-                      </>
-                    )},
-                    { key: 'start_date', label: 'Start Date', render: (leave) => (
-                      <span className="text-sm">{formatDate(leave.start_date)}</span>
-                    )},
-                    { key: 'end_date', label: 'End Date', render: (leave) => (
-                      <span className="text-sm">{formatDate(leave.end_date)}</span>
-                    )},
-                    { key: 'duration', label: 'Duration', render: (leave) => (
-                      <span className="text-sm">
-                        {formatDays(leave.total_days)} day(s)
-                        {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
-                      </span>
-                    )},
-                    { key: 'status', label: 'Status', render: (leave) => (
-                      <StatusBadge status={leave.status} />
-                    )},
-                    { key: 'applied_on', label: 'Applied On', render: (leave) => (
-                      <span className="text-sm">{formatDateTime(leave.applied_at)}</span>
-                    )}
+                    {
+                      key: 'leave_type', label: 'Leave Type', render: (leave) => (
+                        <>
+                          <LeaveTypeBadge name={leave.leave_type_name} isPaid={leave.is_paid} />
+                          <p className="mt-1 text-xs text-gray-500">{formatDays(leave.total_days)} day(s)</p>
+                        </>
+                      )
+                    },
+                    {
+                      key: 'start_date', label: 'Start Date', render: (leave) => (
+                        <span className="text-sm">{formatDate(leave.start_date)}</span>
+                      )
+                    },
+                    {
+                      key: 'end_date', label: 'End Date', render: (leave) => (
+                        <span className="text-sm">{formatDate(leave.end_date)}</span>
+                      )
+                    },
+                    {
+                      key: 'duration', label: 'Duration', render: (leave) => (
+                        <span className="text-sm">
+                          {formatDays(leave.total_days)} day(s)
+                          {leave.is_half_day && ` (${leave.half_day_type === 'first_half' ? 'First Half' : 'Second Half'})`}
+                        </span>
+                      )
+                    },
+                    {
+                      key: 'status', label: 'Status', render: (leave) => (
+                        <StatusBadge status={leave.status} />
+                      )
+                    },
+                    {
+                      key: 'applied_on', label: 'Applied On', render: (leave) => (
+                        <span className="text-sm">{formatDateTime(leave.applied_at)}</span>
+                      )
+                    }
                   ]}
                   rowKey={(row) => row.id}
                   onRowClick={(row) => setViewLeave(row)}

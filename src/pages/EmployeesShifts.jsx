@@ -204,7 +204,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                                 <FaUserCircle className="text-white text-4xl" />
                             </ProfileAvatar>
                             <div>
-                                <h3 
+                                <h3
                                     className="text-xl font-bold text-gray-800 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
                                     onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
                                 >
@@ -298,7 +298,7 @@ const EmployeeCard = ({ employee, index, onClick }) => {
                     <span className="text-white font-bold text-base">{getInitials(u.name || employee.name || '')}</span>
                 </ProfileAvatar>
                 <div className="flex-1 min-w-0">
-                    <h3 
+                    <h3
                         className="font-bold text-gray-800 truncate text-sm cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
                         onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
                     >
@@ -532,7 +532,7 @@ const EmployeesShifts = () => {
                                     placeholder="Search by name, email, or code..."
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
+                                    className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-medium min-h-[42px]"
                                 />
                                 {searchTerm && (
                                     <button
@@ -702,7 +702,7 @@ const EmployeesShifts = () => {
                                                                 {getInitials(u.name || emp.name || '')}
                                                             </ProfileAvatar>
                                                             <div className="min-w-0">
-                                                                <p 
+                                                                <p
                                                                     className="font-semibold text-gray-800 truncate max-w-[150px] md:max-w-none cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
                                                                     onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(emp.employee_id); }}
                                                                 >

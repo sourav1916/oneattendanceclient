@@ -57,13 +57,13 @@ const getVisibleColumns = (width) => ({
 
 // Weekday options
 const WEEKDAYS = [
-  { value: "monday",    label: "Monday" },
-  { value: "tuesday",   label: "Tuesday" },
+  { value: "monday", label: "Monday" },
+  { value: "tuesday", label: "Tuesday" },
   { value: "wednesday", label: "Wednesday" },
-  { value: "thursday",  label: "Thursday" },
-  { value: "friday",    label: "Friday" },
-  { value: "saturday",  label: "Saturday" },
-  { value: "sunday",    label: "Sunday" }
+  { value: "thursday", label: "Thursday" },
+  { value: "friday", label: "Friday" },
+  { value: "saturday", label: "Saturday" },
+  { value: "sunday", label: "Sunday" }
 ];
 
 const normalizeAttendanceMethodValue = (value) => {
@@ -153,11 +153,10 @@ const WeekendConfig = ({ weekends, onChange }) => {
             key={day.value}
             type="button"
             onClick={() => toggleDay(day.value)}
-            className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-semibold transition-all duration-200 ${
-              isSelected
+            className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-semibold transition-all duration-200 ${isSelected
                 ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-[1.02]"
                 : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50"
-            }`}
+              }`}
           >
             <span>{day.label}</span>
             {isSelected && <FaCheckCircle className="w-3.5 h-3.5 opacity-90" />}
@@ -248,7 +247,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
       await Promise.all([
         (async () => {
           try {
-            const permRes  = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
+            const permRes = await apiCall('/permissions/permission-packages', 'GET', null, company?.id);
             const permJson = await permRes.json();
             if (permJson.success) setPermissionPackages(permJson.data?.packages || []);
           } catch (error) {
@@ -257,13 +256,13 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         })(),
         (async () => {
           try {
-            const constRes  = await apiCall('/constants/', 'GET', null, company?.id);
+            const constRes = await apiCall('/constants/', 'GET', null, company?.id);
             const constJson = await constRes.json();
             if (constJson.success) {
               const data = constJson.data;
               setConstants({
-                designations:     data.designations?.map(d => ({ value: d.value.value, label: d.value.label })) || [],
-                salary_types:     data.salary_types?.map(s => ({ value: s.value.value, label: s.value.label })) || [],
+                designations: data.designations?.map(d => ({ value: d.value.value, label: d.value.label })) || [],
+                salary_types: data.salary_types?.map(s => ({ value: s.value.value, label: s.value.label })) || [],
                 employment_types: data.employment_types?.map(e => ({ value: e.value.value, label: e.value.label })) || []
               });
             }
@@ -303,20 +302,20 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 
       // weekends is already string[] — send as-is
       const payload = {
-        code:                  formData.code,
-        name:                  formData.name,
-        designation:           formData.designation,
-        salary_type:           formData.salary_type,
-        employment_type:       formData.employment_type,
+        code: formData.code,
+        name: formData.name,
+        designation: formData.designation,
+        salary_type: formData.salary_type,
+        employment_type: formData.employment_type,
         permission_package_id: parseInt(formData.permission_package_id),
-        shift_start:           formData.shift_start,
-        shift_end:             formData.shift_end,
-        break_minutes:         formData.break_minutes,
-        grace_minutes:         formData.grace_minutes,
-        weekends:              formData.weekends,            // ["saturday","sunday",...]
-        attendance_methods:    formData.attendance_methods,
-        auto_approve:          formData.auto_approve,
-        remarks:               formData.remarks
+        shift_start: formData.shift_start,
+        shift_end: formData.shift_end,
+        break_minutes: formData.break_minutes,
+        grace_minutes: formData.grace_minutes,
+        weekends: formData.weekends,            // ["saturday","sunday",...]
+        attendance_methods: formData.attendance_methods,
+        auto_approve: formData.auto_approve,
+        remarks: formData.remarks
       };
 
       let response;
@@ -583,17 +582,15 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                                   key={method.method}
                                   type="button"
                                   onClick={() => handleAttendanceToggle(method.method)}
-                                  className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 ${
-                                    isSelected
+                                  className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 ${isSelected
                                       ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
                                       : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
-                                  }`}
+                                    }`}
                                 >
                                   <div className="flex w-full items-center justify-between gap-3">
                                     <span className="font-semibold">{method.label || formatAttendanceMethod(method.method)}</span>
-                                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                                      isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
-                                    }`}>
+                                    <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700'
+                                      }`}>
                                       {isSelected ? 'Selected' : 'Available'}
                                     </span>
                                   </div>
@@ -627,13 +624,11 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                   <button
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, auto_approve: !prev.auto_approve }))}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      formData.auto_approve ? 'bg-indigo-600' : 'bg-gray-200'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.auto_approve ? 'bg-indigo-600' : 'bg-gray-200'
+                      }`}
                   >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                      formData.auto_approve ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${formData.auto_approve ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
                   </button>
                 </div>
               </div>
@@ -735,14 +730,14 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
 
               {/* Information Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <InfoItem icon={<FaUserTie className="text-blue-500" />}    label="Designation"  value={formatDisplay(pkg.designation)} />
-                <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment"   value={formatDisplay(pkg.employment_type)} />
+                <InfoItem icon={<FaUserTie className="text-blue-500" />} label="Designation" value={formatDisplay(pkg.designation)} />
+                <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment" value={formatDisplay(pkg.employment_type)} />
                 <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
-                <InfoItem icon={<FaClock className="text-orange-500" />}    label="Shift Start"  value={pkg.shift_start} />
-                <InfoItem icon={<FaClock className="text-amber-500" />}     label="Shift End"    value={pkg.shift_end} />
-                <InfoItem icon={<FaClock className="text-rose-500" />}      label="Break Time"   value={pkg.break_minutes} />
-                <InfoItem icon={<FaClock className="text-indigo-500" />}    label="Grace Period" value={pkg.grace_minutes} />
-                <InfoItem icon={<FaTag className="text-slate-500" />}       label="Remarks"      value={pkg.remarks || "—"} className="col-span-2" />
+                <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Start" value={pkg.shift_start} />
+                <InfoItem icon={<FaClock className="text-amber-500" />} label="Shift End" value={pkg.shift_end} />
+                <InfoItem icon={<FaClock className="text-rose-500" />} label="Break Time" value={pkg.break_minutes} />
+                <InfoItem icon={<FaClock className="text-indigo-500" />} label="Grace Period" value={pkg.grace_minutes} />
+                <InfoItem icon={<FaTag className="text-slate-500" />} label="Remarks" value={pkg.remarks || "—"} className="col-span-2" />
               </div>
 
               {/* Advanced Settings */}
@@ -755,11 +750,10 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                     </div>
                     <span className="text-sm font-semibold text-slate-700">Auto Approve Attendance</span>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    pkg.auto_approve
+                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${pkg.auto_approve
                       ? 'bg-green-100 text-green-700 border border-green-200'
                       : 'bg-slate-100 text-slate-500 border border-slate-200'
-                  }`}>
+                    }`}>
                     {pkg.auto_approve ? "Enabled" : "Disabled"}
                   </span>
                 </div>
@@ -915,11 +909,10 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
         className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className={`flex justify-between items-center p-5 border-b text-white ${
-          isActivating
+        <div className={`flex justify-between items-center p-5 border-b text-white ${isActivating
             ? 'bg-gradient-to-r from-green-600 to-emerald-600'
             : 'bg-gradient-to-r from-amber-600 to-orange-600'
-        }`}>
+          }`}>
           <div className="flex items-center gap-2">
             {isActivating ? <FaToggleOn className="w-5 h-5" /> : <FaToggleOff className="w-5 h-5" />}
             <h2 className="text-xl font-semibold">{isActivating ? "Activate Package" : "Deactivate Package"}</h2>
@@ -930,9 +923,8 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
         </div>
 
         <div className="p-6 text-center">
-          <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${
-            isActivating ? 'bg-green-100' : 'bg-amber-100'
-          }`}>
+          <div className={`w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center ${isActivating ? 'bg-green-100' : 'bg-amber-100'
+            }`}>
             {isActivating
               ? <FaCheckCircle className="text-3xl text-green-600" />
               : <FaTimesCircle className="text-3xl text-amber-600" />}
@@ -953,9 +945,8 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
             <button
               onClick={() => onConfirm(pkg.id, newStatus)}
               disabled={processing}
-              className={`px-5 py-2 rounded-xl text-white transition shadow-md flex items-center gap-2 disabled:opacity-50 ${
-                isActivating ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'
-              }`}
+              className={`px-5 py-2 rounded-xl text-white transition shadow-md flex items-center gap-2 disabled:opacity-50 ${isActivating ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'
+                }`}
             >
               {processing && <FaSpinner className="w-4 h-4 animate-spin" />}
               {isActivating ? "Activate" : "Deactivate"}
@@ -971,34 +962,34 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
 
 export default function InvitePackageManagement() {
   const { checkActionAccess, getAccessMessage } = usePermissionAccess();
-  const [packages, setPackages]               = useState([]);
-  const [loading, setLoading]                 = useState(true);
-  const [processingId, setProcessingId]       = useState(null);
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  const [modalType, setModalType]             = useState(null);
+  const [modalType, setModalType] = useState(null);
   const [activeActionMenu, setActiveActionMenu] = useState(null);
-  const [searchTerm, setSearchTerm]           = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [viewMode, setViewMode]               = useState("table");
+  const [viewMode, setViewMode] = useState("table");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingPackage, setEditingPackage]   = useState(null);
+  const [editingPackage, setEditingPackage] = useState(null);
   const [toggleNewStatus, setToggleNewStatus] = useState(false);
   const fetchInProgress = useRef(false);
-  const isInitialLoad   = useRef(true);
+  const isInitialLoad = useRef(true);
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
 
   const createAccess = checkActionAccess("invitePackages", "create");
   const updateAccess = checkActionAccess("invitePackages", "update");
   const deleteAccess = checkActionAccess("invitePackages", "delete");
-  const readAccess   = checkActionAccess("invitePackages", "read");
+  const readAccess = checkActionAccess("invitePackages", "read");
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
   const fetchPackages = useCallback(async (
-    page         = pagination.page,
-    search       = debouncedSearchTerm,
+    page = pagination.page,
+    search = debouncedSearchTerm,
     resetLoading = true
   ) => {
     if (fetchInProgress.current) return;
@@ -1007,7 +998,7 @@ export default function InvitePackageManagement() {
 
     try {
       const company = JSON.parse(localStorage.getItem("company"));
-      const params  = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
+      const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
       if (search) params.append("search", search);
 
       const response = await apiCall(`/company/invites/package-list?${params.toString()}`, 'GET', null, company?.id);
@@ -1018,11 +1009,11 @@ export default function InvitePackageManagement() {
         setPackages((result.data || []).map(normalizePackageRecord));
         const meta = result.meta;
         updatePagination({
-          page:          meta?.page          || page,
-          limit:         meta?.limit         || pagination.limit,
-          total:         meta?.total         || 0,
-          total_pages:   meta?.total_pages   || 1,
-          is_last_page:  meta?.is_last_page  || (page >= meta?.total_pages)
+          page: meta?.page || page,
+          limit: meta?.limit || pagination.limit,
+          total: meta?.total || 0,
+          total_pages: meta?.total_pages || 1,
+          is_last_page: meta?.is_last_page || (page >= meta?.total_pages)
         });
       } else {
         throw new Error(result.message || "Failed to fetch packages");
@@ -1033,7 +1024,7 @@ export default function InvitePackageManagement() {
     } finally {
       setLoading(false);
       fetchInProgress.current = false;
-      isInitialLoad.current   = false;
+      isInitialLoad.current = false;
     }
   }, [pagination.limit, pagination.page, updatePagination, debouncedSearchTerm]);
 
@@ -1088,9 +1079,9 @@ export default function InvitePackageManagement() {
   const handleDelete = async (packageId) => {
     setProcessingId(packageId);
     try {
-      const company  = JSON.parse(localStorage.getItem("company"));
+      const company = JSON.parse(localStorage.getItem("company"));
       const response = await apiCall('/company/invites/package-delete', 'DELETE', { package_id: packageId }, company?.id);
-      const result   = await response.json();
+      const result = await response.json();
       if (result.success) {
         toast.success("Package deleted successfully!");
         fetchPackages(pagination.page, debouncedSearchTerm, false);
@@ -1108,7 +1099,7 @@ export default function InvitePackageManagement() {
   const handleToggleStatus = async (packageId, newStatus) => {
     setProcessingId(packageId);
     try {
-      const company  = JSON.parse(localStorage.getItem("company"));
+      const company = JSON.parse(localStorage.getItem("company"));
       const response = await apiCall(
         '/company/invites/package-update', 'PUT',
         { package_id: packageId, is_active: newStatus },
@@ -1229,7 +1220,7 @@ export default function InvitePackageManagement() {
               placeholder="Search by name, code, or designation..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm min-h-[42px]"
+              className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm min-h-[42px]"
             />
             {searchTerm && (
               <button
@@ -1280,13 +1271,13 @@ export default function InvitePackageManagement() {
               <table className="w-full table-fixed text-sm text-left text-gray-700">
                 <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs xsm:hidden">
                   <tr>
-                    {visibleColumns.showCode        && <th className="px-4 lg:px-6 py-4">Code</th>}
-                    {visibleColumns.showName        && <th className="px-4 lg:px-6 py-4">Package Name</th>}
+                    {visibleColumns.showCode && <th className="px-4 lg:px-6 py-4">Code</th>}
+                    {visibleColumns.showName && <th className="px-4 lg:px-6 py-4">Package Name</th>}
                     {visibleColumns.showDesignation && <th className="px-4 lg:px-6 py-4">Designation</th>}
-                    {visibleColumns.showEmployment  && <th className="px-4 lg:px-6 py-4">Employment</th>}
+                    {visibleColumns.showEmployment && <th className="px-4 lg:px-6 py-4">Employment</th>}
                     {visibleColumns.showPermissions && <th className="px-4 lg:px-6 py-4">Permissions</th>}
-                    {visibleColumns.showSchedule    && <th className="px-4 lg:px-6 py-4">Schedule</th>}
-                    {visibleColumns.showStatus      && <th className="px-4 lg:px-6 py-4">Status</th>}
+                    {visibleColumns.showSchedule && <th className="px-4 lg:px-6 py-4">Schedule</th>}
+                    {visibleColumns.showStatus && <th className="px-4 lg:px-6 py-4">Status</th>}
                     <th className="px-2 py-4 text-right w-16"><FaCog className="text-gray-700 ml-auto mr-4" size={16} /></th>
                   </tr>
                 </thead>
@@ -1482,11 +1473,10 @@ export default function InvitePackageManagement() {
                       onClick={() => openToggleModal(pkg, !pkg.is_active)}
                       disabled={updateAccess.disabled}
                       title={updateAccess.disabled ? getAccessMessage(updateAccess) : (pkg.is_active ? "Deactivate" : "Activate")}
-                      className={`p-2.5 rounded-xl transition disabled:opacity-50 ${
-                        pkg.is_active
+                      className={`p-2.5 rounded-xl transition disabled:opacity-50 ${pkg.is_active
                           ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
                           : 'bg-green-50 text-green-600 hover:bg-green-100'
-                      }`}
+                        }`}
                     >
                       {pkg.is_active ? <FaToggleOff size={14} /> : <FaToggleOn size={14} />}
                     </button>

@@ -1556,7 +1556,7 @@ const SalaryManagement = () => {
                         {getInitials(salary.employee?.name)}
                     </ProfileAvatar>
                     <div className="min-w-0">
-                        <p 
+                        <p
                             className="font-semibold text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
                             onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }}
                         >
@@ -1685,7 +1685,7 @@ const SalaryManagement = () => {
                                 placeholder="Search by employee name, code or email..."
                                 value={searchTerm}
                                 onChange={e => setSearchTerm(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm min-h-[42px]"
+                                className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm min-h-[42px]"
                             />
                             {searchTerm && (
                                 <button
@@ -1714,7 +1714,7 @@ const SalaryManagement = () => {
                                 value={dateFilterValue}
                                 onChange={handleDateFilterApply}
                                 placeholder={dateFilterLabel}
-                                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 min-w-[200px]"
+                                buttonClassName="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 min-w-[200px]"
                                 tabOptions={["date", "month", "range"]}
                             />
                             {dateFilterLabel !== 'Filter by date' && (

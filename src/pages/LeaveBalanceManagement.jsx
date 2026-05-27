@@ -896,7 +896,7 @@ const LeaveBalanceManagement = () => {
                 placeholder="Search by name, code, or leave type..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-11 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium min-h-[42px]"
+                className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 outline-none transition-all text-sm font-medium min-h-[42px]"
               />
               {searchTerm && (
                 <button
@@ -907,25 +907,26 @@ const LeaveBalanceManagement = () => {
                 </button>
               )}
             </div>
-
+          </div>
+          <div className="flex justify-between gap-3">
             <div className="flex items-center gap-2">
               <YearPicker
                 value={selectedYear}
                 onChange={setSelectedYear}
               />
             </div>
+            {/* Right Section: Controls */}
+            <div className="flex items-center gap-3 justify-between sm:justify-end">
+
+              {/* View Switcher */}
+              <ManagementViewSwitcher
+                viewMode={viewMode}
+                onChange={setViewMode}
+                accent="violet"
+              />
+            </div>
           </div>
 
-          {/* Right Section: Controls */}
-          <div className="flex items-center gap-3 justify-between sm:justify-end">
-
-            {/* View Switcher */}
-            <ManagementViewSwitcher
-              viewMode={viewMode}
-              onChange={setViewMode}
-              accent="violet"
-            />
-          </div>
         </motion.div>
 
         {/* Data View */}
@@ -1195,6 +1196,7 @@ const LeaveBalanceManagement = () => {
                         onChange={(id) => setFormData({ ...formData, employee_id: id })}
                         disabled={modalMode === 'edit'}
                         placeholder="Choose an employee..."
+                        initialEmployee={selectedBalance ? { id: selectedBalance.employee_id, name: selectedBalance.employee_name, employee_code: selectedBalance.employee_code } : null}
                       />
                     </div>
 
