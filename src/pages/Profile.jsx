@@ -405,7 +405,7 @@ export default function ProfilePage() {
                 <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float animation-delay-2000" />
             </div>
 
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="relative max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 {/* ── Profile Hero ── */}
                 <motion.div
@@ -849,7 +849,7 @@ export default function ProfilePage() {
                                                     </div>
                                                 </div>
 
-                                                
+
 
                                                 {/* Date */}
                                                 {company.created_at && (
@@ -861,7 +861,7 @@ export default function ProfilePage() {
 
                                                 {/* Footer */}
                                                 <div className="flex items-center justify-end pt-1 border-t border-slate-100">
-                                                   
+
                                                     <span className="text-[10px] text-slate-400 truncate max-w-[80px] text-right">
                                                         {company.role || company.user_role || "Member"}
                                                     </span>

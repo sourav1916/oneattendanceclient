@@ -502,7 +502,7 @@ const AttendanceHistory = () => {
 
 
       <div className="space-y-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-9xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -531,7 +531,7 @@ const AttendanceHistory = () => {
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto">
-              
+
               <div className="relative">
                 <AdvancedDateFilter
                   value={dateFilter}
@@ -551,11 +551,10 @@ const AttendanceHistory = () => {
                       type="button"
                       onClick={() => setActiveType(tab.value)}
                       title={tab.label}
-                      className={`w-12 h-9 flex items-center justify-center rounded-lg transition-all ${
-                        isActive
+                      className={`w-12 h-9 flex items-center justify-center rounded-lg transition-all ${isActive
                           ? tab.activeClassName
                           : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
-                      }`}
+                        }`}
                     >
                       <TabIcon size={15} />
                     </button>

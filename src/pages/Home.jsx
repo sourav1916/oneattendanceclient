@@ -343,7 +343,7 @@ function HomePage() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-indigo-100/10 to-purple-100/10 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="relative max-w-9xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Compact Header */}
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -364,88 +364,88 @@ function HomePage() {
         {checkPageAccess('attendanceManagement').allowed && (
           <section className="mb-8">
             {loadingSummary && !dashboardData ? (
-            <div className="h-32 w-full bg-white/50 animate-pulse rounded-2xl border border-slate-100"></div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col lg:flex-row"
-            >
-              {/* Left Grid: Summary Data */}
-              <div className="flex-1 p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 bg-gradient-to-br from-white to-slate-50/50">
-                {[
-                  {
-                    label: "Present Today",
-                    value: dashboardData?.attendance_today?.present || 0,
-                    color: "text-indigo-600",
-                    icon: FaUserCheck,
-                    bg: "bg-indigo-50",
-                    iconColor: "text-indigo-500"
-                  },
-                  {
-                    label: "Total Staff",
-                    value: dashboardData?.employees?.total || 0,
-                    color: "text-slate-800",
-                    icon: FaUsers,
-                    bg: "bg-slate-100",
-                    iconColor: "text-slate-500"
-                  },
-                  {
-                    label: "Overtime",
-                    value: dashboardData?.attendance_today?.overtime_employees || 0,
-                    color: "text-amber-600",
-                    icon: FaClock,
-                    bg: "bg-amber-50",
-                    iconColor: "text-amber-500"
-                  },
-                  {
-                    label: "Attendance Rate",
-                    value: dashboardData?.employees?.total > 0
-                      ? `${Math.round(((dashboardData?.attendance_today?.present || 0) / dashboardData.employees.total) * 100)}%`
-                      : "0%",
-                    color: "text-emerald-600",
-                    icon: FaChartBar,
-                    bg: "bg-emerald-50",
-                    iconColor: "text-emerald-500"
-                  }
-                ].map((stat) => (
-                  <div key={stat.label} className="flex items-center gap-4 group">
-                    <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
-                      <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+              <div className="h-32 w-full bg-white/50 animate-pulse rounded-2xl border border-slate-100"></div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden flex flex-col lg:flex-row"
+              >
+                {/* Left Grid: Summary Data */}
+                <div className="flex-1 p-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 bg-gradient-to-br from-white to-slate-50/50">
+                  {[
+                    {
+                      label: "Present Today",
+                      value: dashboardData?.attendance_today?.present || 0,
+                      color: "text-indigo-600",
+                      icon: FaUserCheck,
+                      bg: "bg-indigo-50",
+                      iconColor: "text-indigo-500"
+                    },
+                    {
+                      label: "Total Staff",
+                      value: dashboardData?.employees?.total || 0,
+                      color: "text-slate-800",
+                      icon: FaUsers,
+                      bg: "bg-slate-100",
+                      iconColor: "text-slate-500"
+                    },
+                    {
+                      label: "Overtime",
+                      value: dashboardData?.attendance_today?.overtime_employees || 0,
+                      color: "text-amber-600",
+                      icon: FaClock,
+                      bg: "bg-amber-50",
+                      iconColor: "text-amber-500"
+                    },
+                    {
+                      label: "Attendance Rate",
+                      value: dashboardData?.employees?.total > 0
+                        ? `${Math.round(((dashboardData?.attendance_today?.present || 0) / dashboardData.employees.total) * 100)}%`
+                        : "0%",
+                      color: "text-emerald-600",
+                      icon: FaChartBar,
+                      bg: "bg-emerald-50",
+                      iconColor: "text-emerald-500"
+                    }
+                  ].map((stat) => (
+                    <div key={stat.label} className="flex items-center gap-4 group">
+                      <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300`}>
+                        <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</span>
+                        <span className={`text-2xl   tracking-tight ${stat.color}`}>{stat.value}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</span>
-                      <span className={`text-2xl   tracking-tight ${stat.color}`}>{stat.value}</span>
-                    </div>
+                  ))}
+                </div>
+
+                {/* Right Grid: Refresh & Date */}
+                <div className="bg-slate-900 text-white p-8 flex items-center justify-between lg:justify-end gap-8 lg:min-w-[320px] relative overflow-hidden">
+                  {/* Decorative background circle */}
+                  <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
+
+                  <div className="flex flex-col lg:items-end text-left lg:text-right relative z-10">
+                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Last Sync</span>
+                    <div className="text-sm   text-white uppercase tracking-tight">{currentDate.split(',')[0]}</div>
+                    <div className="text-[11px] font-bold text-white/60">{currentDate.split(',')[1]}</div>
                   </div>
-                ))}
-              </div>
 
-              {/* Right Grid: Refresh & Date */}
-              <div className="bg-slate-900 text-white p-8 flex items-center justify-between lg:justify-end gap-8 lg:min-w-[320px] relative overflow-hidden">
-                {/* Decorative background circle */}
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
-
-                <div className="flex flex-col lg:items-end text-left lg:text-right relative z-10">
-                  <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider mb-1.5">Last Sync</span>
-                  <div className="text-sm   text-white uppercase tracking-tight">{currentDate.split(',')[0]}</div>
-                  <div className="text-[11px] font-bold text-white/60">{currentDate.split(',')[1]}</div>
+                  <div className="flex items-center gap-5 relative z-10">
+                    <div className="h-10 w-px bg-white/10 hidden lg:block"></div>
+                    <button
+                      onClick={fetchDashboardSummary}
+                      disabled={loadingSummary}
+                      className={`group p-4 rounded-2xl bg-white/10 border border-white/10 text-white/80 hover:text-white hover:bg-white/20 hover:border-white/20 hover:shadow-xl transition-all active:scale-95 ${loadingSummary ? 'opacity-50' : ''}`}
+                      title="Refresh Summary"
+                    >
+                      <FaSync className={`w-5 h-5 transition-transform duration-700 ${loadingSummary ? 'animate-spin text-white' : 'group-hover:rotate-180'}`} />
+                    </button>
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-5 relative z-10">
-                  <div className="h-10 w-px bg-white/10 hidden lg:block"></div>
-                  <button
-                    onClick={fetchDashboardSummary}
-                    disabled={loadingSummary}
-                    className={`group p-4 rounded-2xl bg-white/10 border border-white/10 text-white/80 hover:text-white hover:bg-white/20 hover:border-white/20 hover:shadow-xl transition-all active:scale-95 ${loadingSummary ? 'opacity-50' : ''}`}
-                    title="Refresh Summary"
-                  >
-                    <FaSync className={`w-5 h-5 transition-transform duration-700 ${loadingSummary ? 'animate-spin text-white' : 'group-hover:rotate-180'}`} />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
+              </motion.div>
+            )}
           </section>
         )}
         {/* Single High-Density Section Header */}

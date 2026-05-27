@@ -102,7 +102,7 @@ export default function LandingPage() {
         transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
         className="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <motion.div
               className="flex items-center"
@@ -170,7 +170,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="py-20 lg:py-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center"
             initial={{ opacity: 0, y: 30 }}
@@ -283,7 +283,7 @@ export default function LandingPage() {
 
       {/* Features Section */}
       <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="grid md:grid-cols-2 lg:grid-cols-5 gap-8"
             variants={staggerContainer}

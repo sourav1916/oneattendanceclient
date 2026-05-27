@@ -154,8 +154,8 @@ const WeekendConfig = ({ weekends, onChange }) => {
             type="button"
             onClick={() => toggleDay(day.value)}
             className={`flex items-center justify-between px-4 py-3 rounded-xl border text-sm font-semibold transition-all duration-200 ${isSelected
-                ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-[1.02]"
-                : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50"
+              ? "bg-indigo-600 border-indigo-600 text-white shadow-md scale-[1.02]"
+              : "bg-white border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-indigo-50"
               }`}
           >
             <span>{day.label}</span>
@@ -583,8 +583,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                                   type="button"
                                   onClick={() => handleAttendanceToggle(method.method)}
                                   className={`flex flex-col items-start gap-1 rounded-xl border px-4 py-2.5 text-left text-sm font-medium transition-all duration-200 ${isSelected
-                                      ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
-                                      : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
+                                    ? 'border-indigo-600 bg-indigo-600 text-white shadow-md'
+                                    : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50'
                                     }`}
                                 >
                                   <div className="flex w-full items-center justify-between gap-3">
@@ -751,8 +751,8 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                     <span className="text-sm font-semibold text-slate-700">Auto Approve Attendance</span>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${pkg.auto_approve
-                      ? 'bg-green-100 text-green-700 border border-green-200'
-                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                    ? 'bg-green-100 text-green-700 border border-green-200'
+                    : 'bg-slate-100 text-slate-500 border border-slate-200'
                     }`}>
                     {pkg.auto_approve ? "Enabled" : "Disabled"}
                   </span>
@@ -910,8 +910,8 @@ function ToggleStatusModal({ isOpen, onClose, onConfirm, package: pkg, processin
         onClick={e => e.stopPropagation()}
       >
         <div className={`flex justify-between items-center p-5 border-b text-white ${isActivating
-            ? 'bg-gradient-to-r from-green-600 to-emerald-600'
-            : 'bg-gradient-to-r from-amber-600 to-orange-600'
+          ? 'bg-gradient-to-r from-green-600 to-emerald-600'
+          : 'bg-gradient-to-r from-amber-600 to-orange-600'
           }`}>
           <div className="flex items-center gap-2">
             {isActivating ? <FaToggleOn className="w-5 h-5" /> : <FaToggleOff className="w-5 h-5" />}
@@ -1160,7 +1160,7 @@ export default function InvitePackageManagement() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-9xl mx-auto">
 
         {/* ── Page Header ── */}
         <motion.div
@@ -1474,8 +1474,8 @@ export default function InvitePackageManagement() {
                       disabled={updateAccess.disabled}
                       title={updateAccess.disabled ? getAccessMessage(updateAccess) : (pkg.is_active ? "Deactivate" : "Activate")}
                       className={`p-2.5 rounded-xl transition disabled:opacity-50 ${pkg.is_active
-                          ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
-                          : 'bg-green-50 text-green-600 hover:bg-green-100'
+                        ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                        : 'bg-green-50 text-green-600 hover:bg-green-100'
                         }`}
                     >
                       {pkg.is_active ? <FaToggleOff size={14} /> : <FaToggleOn size={14} />}
