@@ -23,6 +23,7 @@ import EmployeeManagement from "./pages/EmployeeManagement";
 import PunchAttendance from "./pages/PunchAttendance";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import MySalary from "./pages/MySalary";
+import MyPayroll from "./pages/MyPayroll";
 import MyLedger from "./pages/MyLedger";
 import SalaryManagement from "./pages/SalaryManagement";
 import SalaryComponentsManagement from "./pages/SalaryComponentsManagement";
@@ -69,6 +70,7 @@ import {
   FaCoffee,
   FaBuilding,
   FaUniversity,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -275,6 +277,29 @@ const BANK_HUB_TABS = [
   },
 ];
 
+const MY_SALARY_HUB_TABS = [
+  {
+    id: "salary",
+    label: "My Salary",
+    shortLabel: "Salary",
+    description: "View your current salary structure and components.",
+    icon: FaMoneyBillWave,
+    pageKey: "mySalary",
+    component: MySalary,
+    accent: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  {
+    id: "payroll",
+    label: "My Payroll",
+    shortLabel: "Payroll",
+    description: "Review your payroll history and payment records.",
+    icon: FaFileInvoiceDollar,
+    pageKey: "mySalary",
+    component: MyPayroll,
+    accent: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+];
+
 
 function AppContent() {
   const { user, loading, mustSelectCompany, serverUnavailable, retryConnection } = useAuth();
@@ -332,7 +357,18 @@ function AppContent() {
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-history" element={<ProtectedRoute pageKey="attendanceHistory"><Navigate to="/attendance?tab=history" replace /></ProtectedRoute>} />
-        <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><MySalary /></MainLayout></ProtectedRoute>} />
+        <Route path="/my-salary" element={<ProtectedRoute pageKey="mySalary"><MainLayout><TabbedManagementHub
+          routePath="/my-salary"
+          defaultTab="salary"
+          title="My Salary & Payroll"
+          description="View your salary structure, earnings breakdown, and payroll history in one place."
+          eyebrow={<><FaMoneyBillWave size={11} /> My Salary</>}
+          accent="emerald"
+          tabs={MY_SALARY_HUB_TABS}
+          accessDeniedTitle="No salary tabs available"
+          accessDeniedDescription="Your current role does not have access to salary or payroll information."
+          accessDeniedIcon={FaInfoCircle}
+        /></MainLayout></ProtectedRoute>} />
         <Route path="/my-ledger" element={<ProtectedRoute pageKey="myLedger"><MainLayout><MyLedger /></MainLayout></ProtectedRoute>} />
         <Route path="/my-accounts" element={<ProtectedRoute pageKey="employeeBankAccount"><MainLayout><MyAccounts /></MainLayout></ProtectedRoute>} />
         <Route path="/attendance-management" element={<ProtectedRoute pageKey="attendanceManagement"><MainLayout><TabbedManagementHub
