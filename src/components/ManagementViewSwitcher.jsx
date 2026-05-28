@@ -25,7 +25,7 @@ export default function ManagementViewSwitcher({
   const CardIcon = iconByView.card;
 
   return (
-    <div className={`flex justify-end ${className}`.trim()}>
+    <div className={`flex justify-end w-full ${className}`.trim()}>
       <div className="inline-flex items-center gap-1 p-1">
         <button type="button" onClick={() => onChange('table')} className={buttonClass('table')}>
           <TableIcon size={14} />

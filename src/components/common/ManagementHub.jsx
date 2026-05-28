@@ -105,7 +105,7 @@ export default function ManagementHub({
                     disabled={disabled}
                     title={tab.title || tab.description || tab.label}
                     className={joinClasses(
-                      'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-semibold transition-all duration-200',
+                      'inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-200',
                       isActive
                         ? activeButtonStyles[accent] || activeButtonStyles.slate
                         : disabled

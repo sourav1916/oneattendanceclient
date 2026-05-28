@@ -530,39 +530,42 @@ const AttendanceHistory = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex items-center gap-2 w-full md:w-auto justify-between xsm:flex-col">
 
-              <div className="relative">
+              <div className="flex items-center gap-2 ">
                 <AdvancedDateFilter
                   value={dateFilter}
                   onChange={(val) => setDateFilter(val)}
                   buttonClassName="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition-all min-w-[200px]"
                   tabOptions={["date", "month", "range"]}
                 />
+
+                {/* Attendance / Break icon-only toggle */}
+                <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-0.5">
+                  {Object.values(ATTENDANCE_TYPE_CONFIG).map((tab) => {
+                    const TabIcon = tab.icon;
+                    const isActive = activeType === tab.value;
+                    return (
+                      <button
+                        key={tab.value}
+                        type="button"
+                        onClick={() => setActiveType(tab.value)}
+                        title={tab.label}
+                        className={`w-12 h-9 flex items-center justify-center rounded-lg transition-all ${isActive
+                          ? tab.activeClassName
+                          : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                          }`}
+                      >
+                        <TabIcon size={15} />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              {/* Attendance / Break icon-only toggle */}
-              <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-0.5">
-                {Object.values(ATTENDANCE_TYPE_CONFIG).map((tab) => {
-                  const TabIcon = tab.icon;
-                  const isActive = activeType === tab.value;
-                  return (
-                    <button
-                      key={tab.value}
-                      type="button"
-                      onClick={() => setActiveType(tab.value)}
-                      title={tab.label}
-                      className={`w-12 h-9 flex items-center justify-center rounded-lg transition-all ${isActive
-                        ? tab.activeClassName
-                        : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
-                        }`}
-                    >
-                      <TabIcon size={15} />
-                    </button>
-                  );
-                })}
+              <div className="flex items-center gap-2 xsm:w-full justify-end">
+                <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
+                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
               </div>
-              <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
-              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} />
             </div>
           </motion.div>
 
