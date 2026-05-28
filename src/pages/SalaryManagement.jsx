@@ -1706,7 +1706,7 @@ const SalaryManagement = () => {
                     </div>
 
                     {/* Right Section: Controls */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2">
 
                         {/* Date Filter */}
                         <div className="flex items-center gap-2">

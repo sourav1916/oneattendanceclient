@@ -4,7 +4,7 @@ import {
     FaBriefcase, FaCalendarAlt, FaCamera, FaCheck, FaClock, FaCog,
     FaDollarSign, FaEdit, FaEnvelope, FaEye, FaFingerprint,
     FaHandPaper, FaIdCard, FaMapMarkerAlt, FaNetworkWired, FaPhone,
-    FaPlus, FaRobot, FaSave, FaSearch, FaShieldAlt, FaSpinner,
+    FaPlus, FaRobot, FaSave, FaSearch, FaShieldAlt, FaSpinner, FaListAlt,
     FaTimes, FaTrash, FaUser, FaUserCheck, FaUserCircle, FaUserCog,
     FaUserTag, FaUserTie, FaChevronDown, FaInfoCircle
 } from 'react-icons/fa';
@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Select from '../components/SelectField';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
+import countryCodes from '../utils/countryCodes.json';
+import { getPreciseLocation } from '../utils/geolocation';
 import SkeletonComponent from '../components/SkeletonComponent';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import ManagementGrid from '../components/ManagementGrid';
@@ -19,7 +21,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import TimeDurationPickerField from '../components/TimeDurationPicker';
 import Modal from '../components/Modal';
-import { ManagementHub, ManagementTable, RefreshButton, ManagementCard } from '../components/common';
+import { CountryCodeModal, getFlagEmoji, ManagementHub, ManagementTable, RefreshButton, ManagementCard } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
@@ -50,7 +52,7 @@ const customSelectStyles = {
     }),
 };
 
-const MODAL_TYPES = { NONE: 'NONE', EDIT: 'EDIT', VIEW: 'VIEW', DELETE_CONFIRM: 'DELETE_CONFIRM' };
+const MODAL_TYPES = { NONE: 'NONE', CREATE: 'CREATE', EDIT: 'EDIT', VIEW: 'VIEW', DELETE_CONFIRM: 'DELETE_CONFIRM' };
 
 const DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -58,9 +60,30 @@ const DEFAULT_SHIFT_START = '09:00:00';
 const DEFAULT_SHIFT_END = '18:00:00';
 const DEFAULT_DURATION = '00:30';
 
+const getDefaultCreateFormData = () => ({
+    signup_type: 'email',
+    email: '',
+    country_code: '91',
+    phone: '',
+    otp: '',
+    name: '',
+    platform: 'web',
+    permission_package_id: null,
+    selectedPackage: null,
+    designation: '',
+    salary_type: '',
+    employment_type: '',
+    weekends: [],
+    shift_start: '',
+    shift_end: '',
+    break_minutes: '',
+    grace_minutes: '',
+});
+
 const EMPLOYEE_REQUEST_CACHE_TTL = 5000;
 let constantsRequestCache = { companyId: null, promise: null, data: null };
 let permissionPackagesRequestCache = { companyId: null, promise: null, data: null };
+let onboardingPackagesRequestCache = { companyId: null, promise: null, data: null };
 const employeeListRequestCache = new Map();
 
 const getEmployeeListCacheKey = ({ companyId, page, limit, search }) =>
@@ -351,6 +374,346 @@ const EmployeeEditModal = ({
     );
 };
 
+const ManualCreateEmployeeModal = ({
+    isOpen, formData, setFormData, constantsLoading, permissionsLoading, loading,
+    permissionPackages, designationOptions, employmentTypeOptions, salaryTypeOptions,
+    onboardingPackages, onboardingPackagesLoading, otpRequested, setOtpRequested,
+    handleRequestCreateOtp, handleCreateEmployee, loadOnboardingPackages, closeModal,
+}) => {
+    const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
+    const [isCountryCodeOpen, setIsCountryCodeOpen] = useState(false);
+    const [selectedOnboardingPackage, setSelectedOnboardingPackage] = useState(null);
+    const isEmailSignup = formData.signup_type === 'email';
+    const selectedCountry = countryCodes.find(c => c.dial_code === formData.country_code);
+    const contactDisplay = isEmailSignup ? formData.email : `+${formData.country_code}${formData.phone}`;
+
+    useEffect(() => {
+        if (isOpen) setSelectedOnboardingPackage(null);
+    }, [isOpen]);
+
+    const toggleWeekend = (day) => {
+        setFormData(prev => {
+            const current = Array.isArray(prev.weekends) ? prev.weekends : [];
+            return {
+                ...prev,
+                weekends: current.includes(day) ? current.filter(d => d !== day) : [...current, day],
+            };
+        });
+    };
+
+    const handleOnboardingPackageSelect = (pkg) => {
+        setSelectedOnboardingPackage(pkg);
+        if (!pkg) return;
+
+        const getOptionValue = (value) => (typeof value === 'object' && value !== null ? value.value : value);
+        const designationValue = getOptionValue(pkg.designation);
+        const employmentTypeValue = getOptionValue(pkg.employment_type);
+        const salaryTypeValue = getOptionValue(pkg.salary_type);
+        const selectedPackage = permissionPackages.find(p => p.value === pkg.permission_package_id)
+            || (pkg.permission_package_id ? {
+                value: pkg.permission_package_id,
+                label: pkg.permission_package_name || `Package #${pkg.permission_package_id}`,
+            } : null);
+        const normalizedWeekends = Array.isArray(pkg.weekends)
+            ? pkg.weekends.map(w => (typeof w === 'object' ? w.day : w)).filter(Boolean)
+            : [];
+
+        setFormData(prev => ({
+            ...prev,
+            designation: designationValue || prev.designation,
+            employment_type: employmentTypeValue || prev.employment_type,
+            salary_type: salaryTypeValue || prev.salary_type,
+            permission_package_id: pkg.permission_package_id || prev.permission_package_id,
+            selectedPackage: selectedPackage || prev.selectedPackage,
+            shift_start: pkg.shift_start || prev.shift_start,
+            shift_end: pkg.shift_end || prev.shift_end,
+            break_minutes: typeof pkg.break_minutes !== 'undefined'
+                ? normalizeDuration(pkg.break_minutes, prev.break_minutes || '')
+                : prev.break_minutes,
+            grace_minutes: typeof pkg.grace_minutes !== 'undefined'
+                ? normalizeDuration(pkg.grace_minutes, prev.grace_minutes || '')
+                : prev.grace_minutes,
+            weekends: normalizedWeekends.length ? normalizedWeekends : prev.weekends,
+        }));
+
+        if (normalizedWeekends.length) setIsWeekendsOpen(true);
+        toast.info(`Applied details from ${pkg.name || pkg.label}`);
+    };
+
+    const handleOnboardingPackageMenuOpen = () => {
+        if (!onboardingPackages.length && !onboardingPackagesLoading) {
+            loadOnboardingPackages();
+        }
+    };
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={closeModal}
+            title="Create Employee"
+            subtitle="Verify contact with OTP and add employee details"
+            icon={<FaUserCheck className="h-6 w-6" />}
+            size="4xl"
+            footer={
+                <>
+                    <button type="button" onClick={closeModal} disabled={loading}
+                        className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50">
+                        Cancel
+                    </button>
+                    <button type="button" onClick={handleRequestCreateOtp}
+                        disabled={loading || constantsLoading || permissionsLoading}
+                        className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-5 py-2.5 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50">
+                        {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaEnvelope className="h-4 w-4" />}
+                        {otpRequested ? 'Resend OTP' : 'Send OTP'}
+                    </button>
+                    {otpRequested && (
+                        <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                            disabled={loading || constantsLoading || permissionsLoading}
+                            onClick={handleCreateEmployee}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50">
+                            {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaPlus className="h-4 w-4" />}
+                            Create Employee
+                        </motion.button>
+                    )}
+                </>
+            }
+        >
+            {(constantsLoading || permissionsLoading) ? (
+                <div className="flex items-center justify-center py-16">
+                    <FaSpinner className="h-8 w-8 animate-spin text-indigo-500" />
+                    <span className="ml-3 text-sm font-medium text-slate-500">Loading form data...</span>
+                </div>
+            ) : (
+                <div className="space-y-6 p-2 lg:p-0">
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                        {otpRequested ? (
+                            <div className="space-y-4">
+                                <div className="rounded-xl border border-emerald-200 bg-white px-4 py-3">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-slate-800 break-words">
+                                                OTP sent to {contactDisplay}
+                                            </p>
+                                            <p className="mt-1 text-xs font-medium text-slate-500">
+                                                Enter the verification code received on this {isEmailSignup ? 'email address' : 'phone number'} to continue creating the employee.
+                                            </p>
+                                        </div>
+                                        <button type="button"
+                                            onClick={() => {
+                                                setFormData(p => ({ ...p, otp: '' }));
+                                                setOtpRequested(false);
+                                            }}
+                                            className="shrink-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-indigo-600">
+                                            Change
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700">OTP</label>
+                                    <input type="text" inputMode="numeric" value={formData.otp}
+                                        onChange={e => setFormData(p => ({ ...p, otp: e.target.value }))}
+                                        placeholder="Enter OTP"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700">Signup Type</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {['email', 'phone'].map(type => (
+                                            <button key={type} type="button"
+                                                onClick={() => {
+                                                    setFormData(p => ({ ...p, signup_type: type, otp: '' }));
+                                                    setOtpRequested(false);
+                                                }}
+                                                className={`rounded-xl border px-3 py-2 text-sm font-semibold capitalize transition ${formData.signup_type === type
+                                                    ? 'border-indigo-500 bg-indigo-600 text-white'
+                                                    : 'border-slate-200 bg-white text-slate-600 hover:bg-indigo-50'}`}>
+                                                {type}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        {isEmailSignup ? <FaEnvelope className="text-indigo-500" /> : <FaPhone className="text-indigo-500" />}
+                                        {isEmailSignup ? 'Email' : 'Phone'}
+                                    </label>
+                                    {isEmailSignup ? (
+                                        <input type="email"
+                                            value={formData.email}
+                                            onChange={e => {
+                                                setFormData(p => ({ ...p, email: e.target.value, otp: '' }));
+                                                setOtpRequested(false);
+                                            }}
+                                            placeholder="employee@example.com"
+                                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <button type="button"
+                                                onClick={() => setIsCountryCodeOpen(true)}
+                                                className="flex min-h-[46px] shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                                                <span>{getFlagEmoji(selectedCountry?.code || 'IN')}</span>
+                                                <span>+{formData.country_code}</span>
+                                                <FaChevronDown className="h-3 w-3 text-slate-400" />
+                                            </button>
+                                            <input type="tel"
+                                                value={formData.phone}
+                                                onChange={e => {
+                                                    setFormData(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 15), otp: '' }));
+                                                    setOtpRequested(false);
+                                                }}
+                                                placeholder="9876543210"
+                                                inputMode="numeric"
+                                                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {otpRequested && (
+                        <>
+                            <div className="space-y-2">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaUser className="text-indigo-500" />Employee Name</label>
+                                <input value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
+                                    placeholder="Employee name"
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                            </div>
+
+                            <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
+                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                    <FaListAlt className="h-4 w-4 text-indigo-500" />
+                                    Onboarding Package
+                                </label>
+                                <Select
+                                    options={onboardingPackages}
+                                    value={selectedOnboardingPackage}
+                                    onChange={handleOnboardingPackageSelect}
+                                    onMenuOpen={handleOnboardingPackageMenuOpen}
+                                    onFocus={handleOnboardingPackageMenuOpen}
+                                    placeholder={onboardingPackagesLoading ? 'Loading packages...' : 'Optional: Select a package to auto-fill'}
+                                    isClearable
+                                    isLoading={onboardingPackagesLoading}
+                                    styles={customSelectStyles}
+                                />
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaUserTie className="text-indigo-500" />Designation</label>
+                                    <Select options={designationOptions}
+                                        value={designationOptions.find(o => o.value === formData.designation) || null}
+                                        onChange={(o) => setFormData(p => ({ ...p, designation: o?.value || '' }))}
+                                        placeholder="Select designation" isClearable styles={customSelectStyles} />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaShieldAlt className="text-indigo-500" />Permission Package</label>
+                                    <Select options={permissionPackages}
+                                        value={formData.selectedPackage || null}
+                                        onChange={(o) => setFormData(p => ({ ...p, selectedPackage: o, permission_package_id: o?.value || null }))}
+                                        placeholder="Select permission package" isClearable styles={customSelectStyles} />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaBriefcase className="text-indigo-500" />Employment Type</label>
+                                    <Select options={employmentTypeOptions}
+                                        value={employmentTypeOptions.find(o => o.value === formData.employment_type) || null}
+                                        onChange={(o) => setFormData(p => ({ ...p, employment_type: o?.value || '' }))}
+                                        placeholder="Select employment type" isClearable styles={customSelectStyles} />
+                                </div>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaDollarSign className="text-indigo-500" />Salary Type</label>
+                                    <Select options={salaryTypeOptions}
+                                        value={salaryTypeOptions.find(o => o.value === formData.salary_type) || null}
+                                        onChange={(o) => setFormData(p => ({ ...p, salary_type: o?.value || '' }))}
+                                        placeholder="Select salary type" isClearable styles={customSelectStyles} />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaClock className="h-4 w-4 text-indigo-500" />
+                                        Shift Timings
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <TimeDurationPickerField label="Start Time" value={formData.shift_start}
+                                            onChange={(v) => setFormData(p => ({ ...p, shift_start: v }))} mode="time" />
+                                        <TimeDurationPickerField label="End Time" value={formData.shift_end}
+                                            onChange={(v) => setFormData(p => ({ ...p, shift_end: v }))} mode="time" />
+                                    </div>
+                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaClock className="h-4 w-4 text-indigo-500" />
+                                        Duration Settings
+                                    </label>
+                                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                        <TimeDurationPickerField label="Break Minutes" value={formData.break_minutes}
+                                            onChange={(v) => setFormData(p => ({ ...p, break_minutes: v }))} mode="duration" />
+                                        <TimeDurationPickerField label="Grace Minutes" value={formData.grace_minutes}
+                                            onChange={(v) => setFormData(p => ({ ...p, grace_minutes: v }))} mode="duration" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                <button type="button" onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
+                                    className="flex w-full items-center justify-between">
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                                        <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
+                                        Weekends
+                                        {formData.weekends?.length > 0 && (
+                                            <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                                                {formData.weekends.length} Selected
+                                            </span>
+                                        )}
+                                    </label>
+                                    <FaChevronDown className={`h-3 w-3 text-slate-400 transition-transform ${isWeekendsOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                <AnimatePresence>
+                                    {isWeekendsOpen && (
+                                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                                            <div className="flex flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap">
+                                                {DAYS_OF_WEEK.map(day => {
+                                                    const selected = (formData.weekends || []).includes(day);
+                                                    return (
+                                                        <button key={day} type="button" onClick={() => toggleWeekend(day)}
+                                                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all border ${selected
+                                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md'
+                                                                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-200 hover:bg-indigo-50'}`}>
+                                                            <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${selected ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                                                {selected && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                                            </div>
+                                                            {day.charAt(0).toUpperCase() + day.slice(1)}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+            <CountryCodeModal
+                isOpen={isCountryCodeOpen}
+                onClose={() => setIsCountryCodeOpen(false)}
+                onSelect={(code) => {
+                    setFormData(p => ({ ...p, country_code: code, otp: '' }));
+                    setOtpRequested(false);
+                }}
+                selectedCode={formData.country_code}
+            />
+        </Modal>
+    );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const EmployeeManagement = () => {
@@ -364,8 +727,10 @@ const EmployeeManagement = () => {
         employment_status: [], attendance_methods: [],
     });
     const [permissionPackages, setPermissionPackages] = useState([]);
+    const [onboardingPackages, setOnboardingPackages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [permissionsLoading, setPermissionsLoading] = useState(false);
+    const [onboardingPackagesLoading, setOnboardingPackagesLoading] = useState(false);
     const [constantsLoading, setConstantsLoading] = useState(false);
     const [modalType, setModalType] = useState(MODAL_TYPES.NONE);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -374,6 +739,8 @@ const EmployeeManagement = () => {
     const [showPermissions, setShowPermissions] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const [createFormData, setCreateFormData] = useState(getDefaultCreateFormData);
+    const [createOtpRequested, setCreateOtpRequested] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '', designation: '', email: '', phone: '', employee_code: '',
@@ -397,14 +764,11 @@ const EmployeeManagement = () => {
     const updateEmployeeAccess = checkActionAccess('employeeManagement', 'update');
     const deleteEmployeeAccess = checkActionAccess('employeeManagement', 'delete');
     const readEmployeeAccess = checkActionAccess('employeeManagement', 'read');
+    const createEmployeeAccess = checkActionAccess('employeeManagement', 'create');
 
     useEffect(() => {
         isMounted.current = true;
         return () => { isMounted.current = false; };
-    }, []);
-
-    useEffect(() => {
-        Promise.all([fetchConstants(), fetchPermissionPackages()]).catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -503,6 +867,45 @@ const EmployeeManagement = () => {
             console.error(e);
             toast.error('Failed to load permission packages');
         } finally { setPermissionsLoading(false); }
+    }, []);
+
+    const fetchOnboardingPackages = useCallback(async () => {
+        setOnboardingPackagesLoading(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const companyId = company?.id ?? null;
+
+            if (onboardingPackagesRequestCache.companyId === companyId && onboardingPackagesRequestCache.data) {
+                setOnboardingPackages(onboardingPackagesRequestCache.data);
+                return;
+            }
+            if (onboardingPackagesRequestCache.companyId !== companyId) {
+                onboardingPackagesRequestCache = { companyId, promise: null, data: null };
+            }
+            if (!onboardingPackagesRequestCache.promise) {
+                onboardingPackagesRequestCache.promise = (async () => {
+                    const response = await apiCall('/company/invites/package-list', 'GET', null, companyId);
+                    const result = await response.json();
+                    if (!result.success) throw new Error(result.message || 'Failed to load onboarding packages');
+                    const packages = (result.data || [])
+                        .filter(pkg => pkg.is_active)
+                        .map(pkg => ({
+                            ...pkg,
+                            value: pkg.id,
+                            label: `${pkg.name} (${pkg.code})`,
+                        }));
+                    onboardingPackagesRequestCache = { companyId, promise: null, data: packages };
+                    return packages;
+                })().catch(e => { onboardingPackagesRequestCache = { companyId, promise: null, data: null }; throw e; });
+            }
+            const packages = await onboardingPackagesRequestCache.promise;
+            setOnboardingPackages(packages);
+        } catch (e) {
+            console.error(e);
+            toast.error(e.message || 'Failed to load onboarding packages');
+        } finally {
+            setOnboardingPackagesLoading(false);
+        }
     }, []);
 
     const fetchEmployees = useCallback(async (page = pagination.page, resetLoading = true) => {
@@ -606,7 +1009,109 @@ const EmployeeManagement = () => {
         } finally { setLoading(false); }
     };
 
+    const normalizeTimeForApi = (value) => {
+        if (!value) return '';
+        const parts = String(value).split(':');
+        if (parts.length >= 3) return parts.slice(0, 3).join(':');
+        if (parts.length === 2) return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}:00`;
+        return value;
+    };
+
+    const durationToMinutes = (value) => {
+        if (typeof value === 'number') return value;
+        if (!String(value).includes(':')) return Number(value);
+        const [hours = '0', minutes = '0'] = String(value).split(':');
+        return (Number(hours) * 60) + Number(minutes);
+    };
+
+    const appendIfPresent = (payload, key, value, transform = v => v) => {
+        if (value === null || typeof value === 'undefined' || value === '') return;
+        if (Array.isArray(value) && value.length === 0) return;
+        payload[key] = transform(value);
+    };
+
+    const getCreateContactValue = () => (
+        createFormData.signup_type === 'email'
+            ? createFormData.email.trim()
+            : `+${createFormData.country_code}${createFormData.phone}`.trim()
+    );
+
+    const requestCreateOtp = async () => {
+        setLoading(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const payload = { signup_type: createFormData.signup_type };
+            payload[createFormData.signup_type] = getCreateContactValue();
+
+            const response = await apiCall('/employees/request-create-otp', 'POST', payload, company?.id);
+            const result = await response.json();
+            if (result.success) return { success: true };
+            throw new Error(result.message || 'Failed to send OTP');
+        } catch (e) {
+            return { success: false, error: e.message };
+        } finally { setLoading(false); }
+    };
+
+    const createEmployee = async () => {
+        setLoading(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const location = await getPreciseLocation();
+            const payload = {
+                signup_type: createFormData.signup_type,
+                otp: createFormData.otp.trim(),
+                permission_package_id: Number(createFormData.permission_package_id),
+                designation: createFormData.designation,
+                salary_type: createFormData.salary_type,
+                employment_type: createFormData.employment_type,
+                platform: 'web',
+                latitude: location.latitude,
+                longitude: location.longitude,
+            };
+
+            payload[createFormData.signup_type] = getCreateContactValue();
+
+            appendIfPresent(payload, 'name', createFormData.name?.trim());
+            appendIfPresent(payload, 'weekends', createFormData.weekends);
+            appendIfPresent(payload, 'shift_start', createFormData.shift_start, normalizeTimeForApi);
+            appendIfPresent(payload, 'shift_end', createFormData.shift_end, normalizeTimeForApi);
+            appendIfPresent(payload, 'break_minutes', createFormData.break_minutes, durationToMinutes);
+            appendIfPresent(payload, 'grace_minutes', createFormData.grace_minutes, durationToMinutes);
+
+            const response = await apiCall('/employees/create', 'POST', payload, company?.id);
+            const result = await response.json();
+            if (result.success) {
+                employeeListRequestCache.clear();
+                await fetchEmployees(1, false);
+                return { success: true };
+            }
+            throw new Error(result.message || 'Create failed');
+        } catch (e) {
+            return { success: false, error: e.message };
+        } finally { setLoading(false); }
+    };
+
     // ─── Modal Handlers ───────────────────────────────────────────────────────
+
+    const openCreateModal = async () => {
+        if (createEmployeeAccess.disabled) return;
+        setConstantsLoading(true);
+        setPermissionsLoading(true);
+        try {
+            if (!constantsFetched.current) await fetchConstants();
+            if (!permissionsFetched.current) await fetchPermissionPackages();
+            setCreateFormData(getDefaultCreateFormData());
+            setCreateOtpRequested(false);
+            setModalType(MODAL_TYPES.CREATE);
+            setActiveActionMenu(null);
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to load create form data');
+        } finally {
+            setConstantsLoading(false);
+            setPermissionsLoading(false);
+        }
+    };
 
     const openEditModal = async (employee) => {
         if (updateEmployeeAccess.disabled) return;
@@ -668,7 +1173,8 @@ const EmployeeManagement = () => {
         }
     };
 
-    const openViewModal = (emp) => {
+    const openViewModal = async (emp) => {
+        if (!constantsFetched.current) await fetchConstants();
         setShowPermissions(false);
         setSelectedEmployee(normalizeEmployeeRecord(emp));
         setModalType(MODAL_TYPES.VIEW);
@@ -693,6 +1199,8 @@ const EmployeeManagement = () => {
         setSelectedEmployee(null);
         setShowPermissions(false);
         setAttendanceMethodsConfig({});
+        setCreateFormData(getDefaultCreateFormData());
+        setCreateOtpRequested(false);
         setFormData({
             name: '', designation: '', email: '', phone: '', employee_code: '',
             employment_type: '', salary_type: '', joining_date: '', status: '',
@@ -703,6 +1211,43 @@ const EmployeeManagement = () => {
     };
 
     // ─── Form Handlers ────────────────────────────────────────────────────────
+
+    const validateCreateContact = () => {
+        if (createFormData.signup_type === 'email') {
+            if (!createFormData.email.trim()) return 'Email is required';
+            return null;
+        }
+        if (!createFormData.phone.trim()) return 'Phone is required';
+        return null;
+    };
+
+    const handleRequestCreateOtp = async () => {
+        const contactError = validateCreateContact();
+        if (contactError) { toast.warning(contactError); return; }
+
+        const result = await requestCreateOtp();
+        if (result.success) {
+            setCreateOtpRequested(true);
+            toast.success('OTP sent successfully');
+        } else {
+            toast.error(result.error || 'Failed to send OTP');
+        }
+    };
+
+    const handleCreateEmployee = async (e) => {
+        e.preventDefault();
+        const contactError = validateCreateContact();
+        if (contactError) { toast.warning(contactError); return; }
+        if (!createFormData.otp.trim()) { toast.warning('OTP is required'); return; }
+        if (!createFormData.permission_package_id) { toast.warning('Permission package is required'); return; }
+        if (!createFormData.designation) { toast.warning('Designation is required'); return; }
+        if (!createFormData.salary_type) { toast.warning('Salary type is required'); return; }
+        if (!createFormData.employment_type) { toast.warning('Employment type is required'); return; }
+
+        const result = await createEmployee();
+        if (result.success) { toast.success('Employee created successfully!'); closeModal(); }
+        else toast.error(result.error || 'Failed to create employee');
+    };
 
     const handleEdit = async (e) => {
         e.preventDefault();
@@ -900,9 +1445,19 @@ const EmployeeManagement = () => {
                 </div>
             }
             actions={
-                <RefreshButton loading={loading} onClick={() => fetchEmployees(pagination.page, true)}>
-                    Refresh
-                </RefreshButton>
+                <div className="flex flex-wrap items-center gap-2">
+                    <button type="button"
+                        onClick={openCreateModal}
+                        disabled={loading || createEmployeeAccess.disabled}
+                        title={createEmployeeAccess.disabled ? getAccessMessage(createEmployeeAccess) : ''}
+                        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50">
+                        <FaPlus size={13} />
+                        Manual Create
+                    </button>
+                    <RefreshButton loading={loading} onClick={() => fetchEmployees(pagination.page, true)}>
+                        Refresh
+                    </RefreshButton>
+                </div>
             }
         >
             <div className="space-y-6">
@@ -930,7 +1485,9 @@ const EmployeeManagement = () => {
                             )}
                         </div>
                         <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1" />
-                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                        <div>
+                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                        </div>
                     </div>
                 </motion.div>
 
@@ -1051,6 +1608,29 @@ const EmployeeManagement = () => {
 
             {/* ── Modals ── */}
             <AnimatePresence>
+
+                {/* CREATE MODAL */}
+                <ManualCreateEmployeeModal
+                    key={MODAL_TYPES.CREATE}
+                    isOpen={modalType === MODAL_TYPES.CREATE}
+                    formData={createFormData}
+                    setFormData={setCreateFormData}
+                    constantsLoading={constantsLoading}
+                    permissionsLoading={permissionsLoading}
+                    loading={loading}
+                    permissionPackages={permissionPackages}
+                    designationOptions={designationOptions}
+                    employmentTypeOptions={employmentTypeOptions}
+                    salaryTypeOptions={salaryTypeOptions}
+                    onboardingPackages={onboardingPackages}
+                    onboardingPackagesLoading={onboardingPackagesLoading}
+                    otpRequested={createOtpRequested}
+                    setOtpRequested={setCreateOtpRequested}
+                    handleRequestCreateOtp={handleRequestCreateOtp}
+                    handleCreateEmployee={handleCreateEmployee}
+                    loadOnboardingPackages={fetchOnboardingPackages}
+                    closeModal={closeModal}
+                />
 
                 {/* VIEW MODAL */}
                 <Modal

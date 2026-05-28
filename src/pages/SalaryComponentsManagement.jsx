@@ -854,12 +854,14 @@ const SalaryComponents = () => {
                         </div>
 
                         <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1"></div>
+                        <div>
+                            <ManagementViewSwitcher
+                                viewMode={viewMode}
+                                onChange={setViewMode}
+                                accent="blue"
+                            />
+                        </div>
 
-                        <ManagementViewSwitcher
-                            viewMode={viewMode}
-                            onChange={setViewMode}
-                            accent="blue"
-                        />
                     </div>
                 </motion.div>
 
