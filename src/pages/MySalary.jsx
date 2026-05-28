@@ -29,9 +29,11 @@ export default function MySalary() {
       if (data.success) {
         setSalaryData(data.data);
       } else {
+        setSalaryData(null);
         toast.error(data.message || "Failed to fetch salary details");
       }
     } catch (error) {
+      setSalaryData(null);
       toast.error("Error fetching salary details");
     } finally {
       setLoading(false);
@@ -44,18 +46,6 @@ export default function MySalary() {
       fetchSalary();
     }
   }, [company?.id, fetchSalary]);
-
-  if (loading) return <Skeleton />;
-
-  if (!salaryData) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
-        <FaMoneyBillWave className="w-16 h-16 text-slate-300 mb-4" />
-        <h2 className="text-xl font-semibold">No Salary Data Available</h2>
-        <p className="text-sm">Your salary structure has not been set up yet.</p>
-      </div>
-    );
-  }
 
   const tabs = [
     { id: "overview", label: "Overview", icon: FaInfoCircle },
@@ -80,6 +70,21 @@ export default function MySalary() {
       onRefresh={fetchSalary}
       refreshing={loading}
     >
+      {loading && <Skeleton />}
+
+      {!loading && !salaryData && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-16 bg-white rounded-xl shadow-xl"
+        >
+          <FaMoneyBillWave className="text-8xl text-gray-300 mx-auto mb-4" />
+          <p className="text-xl text-gray-500">No salary data found</p>
+          <p className="text-gray-400 mt-2">Your salary structure will appear here once configured</p>
+        </motion.div>
+      )}
+
+      {!loading && salaryData && (
       <div className="w-full">
 
       {/* Main Info Card */}
@@ -280,6 +285,7 @@ export default function MySalary() {
         </AnimatePresence>
       </div>
       </div>
+      )}
     </ManagementHub>
   );
 }

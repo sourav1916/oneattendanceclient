@@ -15,7 +15,7 @@ const ProtectedRoute = ({ children, pageKey }) => {
   useEffect(() => {
     if (!loading && user && !mustSelectCompany && pageKey && !access.allowed) {
       toast.error(getAccessMessage(access));
-      navigate(-1);
+      navigate('/home');
     }
   }, [loading, user, mustSelectCompany, pageKey, access.allowed, getAccessMessage, navigate]);
 
