@@ -21,6 +21,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import TimeDurationPickerField from '../components/TimeDurationPicker';
 import Modal from '../components/Modal';
+import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { CountryCodeModal, getFlagEmoji, ManagementHub, ManagementTable, RefreshButton, ManagementCard } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
@@ -60,25 +61,30 @@ const DEFAULT_SHIFT_START = '09:00:00';
 const DEFAULT_SHIFT_END = '18:00:00';
 const DEFAULT_DURATION = '00:30';
 
-const getDefaultCreateFormData = () => ({
-    signup_type: 'email',
-    email: '',
-    country_code: '91',
-    phone: '',
-    otp: '',
-    name: '',
-    platform: 'web',
-    permission_package_id: null,
-    selectedPackage: null,
-    designation: '',
-    salary_type: '',
-    employment_type: '',
-    weekends: [],
-    shift_start: '',
-    shift_end: '',
-    break_minutes: '',
-    grace_minutes: '',
-});
+const getDefaultCreateFormData = () => {
+    const today = new Date();
+    const joining_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return {
+        signup_type: 'email',
+        email: '',
+        country_code: '91',
+        phone: '',
+        otp: '',
+        name: '',
+        platform: 'web',
+        permission_package_id: null,
+        selectedPackage: null,
+        designation: '',
+        salary_type: '',
+        employment_type: '',
+        weekends: [],
+        shift_start: '',
+        shift_end: '',
+        break_minutes: '',
+        grace_minutes: '',
+        joining_date,
+    };
+};
 
 const EMPLOYEE_REQUEST_CACHE_TTL = 5000;
 let constantsRequestCache = { companyId: null, promise: null, data: null };
@@ -375,7 +381,7 @@ const EmployeeEditModal = ({
 };
 
 const ManualCreateEmployeeModal = ({
-    isOpen, formData, setFormData, constantsLoading, permissionsLoading, loading,
+    isOpen, formData, setFormData, constantsLoading, permissionsLoading, otpLoading, createLoading,
     permissionPackages, designationOptions, employmentTypeOptions, salaryTypeOptions,
     onboardingPackages, onboardingPackagesLoading, otpRequested, setOtpRequested,
     handleRequestCreateOtp, handleCreateEmployee, loadOnboardingPackages, closeModal,
@@ -456,22 +462,22 @@ const ManualCreateEmployeeModal = ({
             size="4xl"
             footer={
                 <>
-                    <button type="button" onClick={closeModal} disabled={loading}
+                    <button type="button" onClick={closeModal} disabled={otpLoading || createLoading}
                         className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 disabled:opacity-50">
                         Cancel
                     </button>
                     <button type="button" onClick={handleRequestCreateOtp}
-                        disabled={loading || constantsLoading || permissionsLoading}
+                        disabled={otpLoading || createLoading || constantsLoading || permissionsLoading}
                         className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-5 py-2.5 text-sm font-semibold text-indigo-600 transition hover:bg-indigo-50 disabled:opacity-50">
-                        {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaEnvelope className="h-4 w-4" />}
+                        {otpLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaEnvelope className="h-4 w-4" />}
                         {otpRequested ? 'Resend OTP' : 'Send OTP'}
                     </button>
                     {otpRequested && (
                         <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                            disabled={loading || constantsLoading || permissionsLoading}
+                            disabled={otpLoading || createLoading || constantsLoading || permissionsLoading}
                             onClick={handleCreateEmployee}
                             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50">
-                            {loading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaPlus className="h-4 w-4" />}
+                            {createLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaPlus className="h-4 w-4" />}
                             Create Employee
                         </motion.button>
                     )}
@@ -630,6 +636,16 @@ const ManualCreateEmployeeModal = ({
                                         onChange={(o) => setFormData(p => ({ ...p, salary_type: o?.value || '' }))}
                                         placeholder="Select salary type" isClearable styles={customSelectStyles} />
                                 </div>
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaCalendarAlt className="text-indigo-500" />Joining Date</label>
+                                    <AdvancedDateFilter
+                                        value={{ date: formData.joining_date }}
+                                        onChange={(val) => setFormData(p => ({ ...p, joining_date: val.date }))}
+                                        tabOptions={['date']}
+                                        placeholder="Select joining date"
+                                        buttonClassName="w-full min-h-[48px] rounded-xl border border-slate-200 bg-[#f9fafb] px-4 py-3 text-sm outline-none transition hover:border-slate-300 focus:border-indigo-500"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid gap-4 md:grid-cols-2">
@@ -741,6 +757,8 @@ const EmployeeManagement = () => {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [createFormData, setCreateFormData] = useState(getDefaultCreateFormData);
     const [createOtpRequested, setCreateOtpRequested] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [createLoading, setCreateLoading] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '', designation: '', email: '', phone: '', employee_code: '',
@@ -1037,7 +1055,7 @@ const EmployeeManagement = () => {
     );
 
     const requestCreateOtp = async () => {
-        setLoading(true);
+        setOtpLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const payload = { signup_type: createFormData.signup_type };
@@ -1049,11 +1067,11 @@ const EmployeeManagement = () => {
             throw new Error(result.message || 'Failed to send OTP');
         } catch (e) {
             return { success: false, error: e.message };
-        } finally { setLoading(false); }
+        } finally { setOtpLoading(false); }
     };
 
     const createEmployee = async () => {
-        setLoading(true);
+        setCreateLoading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const location = await getPreciseLocation();
@@ -1077,6 +1095,7 @@ const EmployeeManagement = () => {
             appendIfPresent(payload, 'shift_end', createFormData.shift_end, normalizeTimeForApi);
             appendIfPresent(payload, 'break_minutes', createFormData.break_minutes, durationToMinutes);
             appendIfPresent(payload, 'grace_minutes', createFormData.grace_minutes, durationToMinutes);
+            appendIfPresent(payload, 'joining_date', createFormData.joining_date);
 
             const response = await apiCall('/employees/create', 'POST', payload, company?.id);
             const result = await response.json();
@@ -1088,7 +1107,7 @@ const EmployeeManagement = () => {
             throw new Error(result.message || 'Create failed');
         } catch (e) {
             return { success: false, error: e.message };
-        } finally { setLoading(false); }
+        } finally { setCreateLoading(false); }
     };
 
     // ─── Modal Handlers ───────────────────────────────────────────────────────
@@ -1617,7 +1636,8 @@ const EmployeeManagement = () => {
                     setFormData={setCreateFormData}
                     constantsLoading={constantsLoading}
                     permissionsLoading={permissionsLoading}
-                    loading={loading}
+                    otpLoading={otpLoading}
+                    createLoading={createLoading}
                     permissionPackages={permissionPackages}
                     designationOptions={designationOptions}
                     employmentTypeOptions={employmentTypeOptions}
