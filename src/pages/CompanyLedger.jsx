@@ -1018,9 +1018,43 @@ const CompanyLedger = ({ employeeId }) => {
       const res = await apiCall(url, 'GET', null, companyId);
       const result = await res.json();
       if (result.success) {
-        const txList = result.data || [];
-        setTransactions(txList);
-        setOpeningBalance(result.opening_balance || { debit: 0, credit: 0, balance: 0 });
+        let txList = [];
+        if (Array.isArray(result.data)) {
+          txList = result.data;
+        } else if (result.data?.list) {
+          txList = result.data.list;
+        }
+        
+        const normalizedTxList = txList.map(tx => {
+           let entry_type = tx.type || tx.entry_type;
+           if (!entry_type && tx.amount) {
+              if (tx.new_balance !== undefined && tx.old_balance !== undefined) {
+                 entry_type = tx.new_balance > tx.old_balance ? 'credit' : 'debit';
+              }
+           }
+           return {
+              ...tx,
+              entry_type: entry_type || 'credit',
+              debit: tx.debit !== undefined ? tx.debit : (entry_type === 'debit' ? tx.amount : 0),
+              credit: tx.credit !== undefined ? tx.credit : (entry_type === 'credit' ? tx.amount : 0),
+              balance: tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0),
+           };
+        });
+        
+        setTransactions(normalizedTxList);
+
+        let ob = { debit: 0, credit: 0, balance: 0 };
+        const rawOb = result.data?.opening_balance ?? result.opening_balance;
+        if (typeof rawOb === 'number') {
+          ob = {
+            balance: rawOb,
+            debit: rawOb < 0 ? Math.abs(rawOb) : 0,
+            credit: rawOb > 0 ? rawOb : 0
+          };
+        } else if (rawOb) {
+          ob = rawOb;
+        }
+        setOpeningBalance(ob);
 
         // Find the opening_balance transaction row if present, for edit purposes
         const obTx = txList.find(t => t.transaction_type === 'opening_balance') || null;
@@ -1029,6 +1063,12 @@ const CompanyLedger = ({ employeeId }) => {
         if (result.meta) {
           if (result.meta.summary) {
             setSummary(result.meta.summary);
+          } else if (result.meta.credit !== undefined && result.meta.debit !== undefined) {
+            setSummary({
+              total_credit: result.meta.credit || 0,
+              total_debit: result.meta.debit || 0,
+              closing_balance: result.meta.net || 0
+            });
           }
           if (result.meta.total !== undefined) {
             setTotalItems(result.meta.total);
@@ -1042,7 +1082,7 @@ const CompanyLedger = ({ employeeId }) => {
             { total_debit: 0, total_credit: 0 }
           );
           const last = txList[txList.length - 1];
-          setSummary({ ...totals, closing_balance: last?.balance || 0 });
+          setSummary({ ...totals, closing_balance: last?.balance || last?.new_balance || 0 });
         }
       } else {
         toast.error(result.message || 'Failed to fetch transactions');
