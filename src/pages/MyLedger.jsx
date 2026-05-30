@@ -183,7 +183,7 @@ const MyLedger = () => {
   const isMountedRef = useRef(true);
 
   const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -195,6 +195,7 @@ const MyLedger = () => {
     closing_balance: 0,
   });
   const [openingBalance, setOpeningBalance] = useState({ debit: 0, credit: 0, balance: 0 });
+  const [totalItems, setTotalItems] = useState(0);
 
   const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
 
@@ -215,6 +216,8 @@ const MyLedger = () => {
     try {
       const companyId = getCompanyId();
       const queryParams = new URLSearchParams();
+      queryParams.append('page_no', pagination.page);
+      queryParams.append('limit', pagination.limit);
       if (debouncedSearchTerm) {
         queryParams.append('search', debouncedSearchTerm);
       }
@@ -224,13 +227,62 @@ const MyLedger = () => {
       const result = await response.json();
 
       if (result.success) {
-        setTransactions(result.data || []);
-        setOpeningBalance(result.opening_balance || { debit: 0, credit: 0, balance: 0 });
-        if (result.meta?.summary) {
-          setSummary(result.meta.summary);
+        let txList = [];
+        if (Array.isArray(result.data)) {
+          txList = result.data;
+        } else if (result.data?.list) {
+          txList = result.data.list;
+        }
+        
+        const normalizedTxList = txList.map(tx => {
+           let entry_type = tx.type || tx.entry_type;
+           if (!entry_type && tx.amount) {
+              if (tx.new_balance !== undefined && tx.old_balance !== undefined) {
+                 entry_type = tx.new_balance > tx.old_balance ? 'credit' : 'debit';
+              }
+           }
+           return {
+              ...tx,
+              entry_type: entry_type || 'credit',
+              debit: tx.debit !== undefined ? tx.debit : (entry_type === 'debit' ? tx.amount : 0),
+              credit: tx.credit !== undefined ? tx.credit : (entry_type === 'credit' ? tx.amount : 0),
+              balance: tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0),
+           };
+        });
+        
+        setTransactions(normalizedTxList);
+
+        let ob = { debit: 0, credit: 0, balance: 0 };
+        const rawOb = result.data?.opening_balance ?? result.opening_balance;
+        if (typeof rawOb === 'number') {
+          ob = {
+            balance: rawOb,
+            debit: rawOb < 0 ? Math.abs(rawOb) : 0,
+            credit: rawOb > 0 ? rawOb : 0
+          };
+        } else if (rawOb) {
+          ob = rawOb;
+        }
+        setOpeningBalance(ob);
+
+        if (result.meta) {
+          if (result.meta.summary) {
+            setSummary(result.meta.summary);
+          } else if (result.meta.credit !== undefined && result.meta.debit !== undefined) {
+            setSummary({
+              total_credit: result.meta.credit || 0,
+              total_debit: result.meta.debit || 0,
+              closing_balance: result.meta.net || 0
+            });
+          }
+          if (result.meta.total !== undefined) {
+            setTotalItems(result.meta.total);
+          } else {
+            setTotalItems(txList.length);
+          }
         } else {
-          // Calculate summary from data if not provided
-          const totals = (result.data || []).reduce(
+          setTotalItems(txList.length);
+          const totals = normalizedTxList.reduce(
             (acc, t) => {
               acc.total_debit += t.debit || 0;
               acc.total_credit += t.credit || 0;
@@ -238,7 +290,7 @@ const MyLedger = () => {
             },
             { total_debit: 0, total_credit: 0 }
           );
-          const lastTx = result.data?.[result.data.length - 1];
+          const lastTx = normalizedTxList[normalizedTxList.length - 1];
           setSummary({
             total_debit: totals.total_debit,
             total_credit: totals.total_credit,
@@ -248,63 +300,41 @@ const MyLedger = () => {
       } else {
         toast.error(result.message || 'Failed to fetch ledger');
         setTransactions([]);
+        setTotalItems(0);
       }
     } catch (error) {
       console.error('Fetch error:', error);
       toast.error('Connection error while fetching ledger');
       setTransactions([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, pagination.page, pagination.limit]);
 
   const initialFetchDone = useRef(false);
-  const prevSearchTerm = useRef(debouncedSearchTerm);
+  const prevDep = useRef('');
 
   useEffect(() => {
-    if (!initialFetchDone.current) {
+    const dep = `${debouncedSearchTerm}|${pagination.page}|${pagination.limit}`;
+    if (!initialFetchDone.current || prevDep.current !== dep) {
       fetchTransactions();
       initialFetchDone.current = true;
-      prevSearchTerm.current = debouncedSearchTerm;
-    } else if (prevSearchTerm.current !== debouncedSearchTerm) {
-      fetchTransactions();
-      prevSearchTerm.current = debouncedSearchTerm;
+      prevDep.current = dep;
     }
-  }, [debouncedSearchTerm, fetchTransactions]);
-
-  // ── Filter locally for search term (backend already filters but we keep for consistency) ──
-  useEffect(() => {
-    const q = debouncedSearchTerm.trim().toLowerCase();
-    if (!q) {
-      setFilteredTransactions(transactions);
-      return;
-    }
-    setFilteredTransactions(
-      transactions.filter(
-        (t) =>
-          t.transaction_id?.toLowerCase().includes(q) ||
-          t.remark?.toLowerCase().includes(q) ||
-          t.transaction_type?.toLowerCase().includes(q) ||
-          t.employee?.name?.toLowerCase().includes(q)
-      )
-    );
-  }, [transactions, debouncedSearchTerm]);
+  }, [debouncedSearchTerm, pagination.page, pagination.limit, fetchTransactions]);
 
   useEffect(() => {
     goToPage(1);
   }, [debouncedSearchTerm, goToPage]);
 
-  const totalItems = filteredTransactions.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
 
   useEffect(() => {
     if (pagination.page > totalPages) goToPage(totalPages);
   }, [goToPage, pagination.page, totalPages]);
 
-  const paginatedData = useMemo(
-    () => filteredTransactions.slice((pagination.page - 1) * pagination.limit, pagination.page * pagination.limit),
-    [filteredTransactions, pagination.page, pagination.limit]
-  );
+  const paginatedData = transactions;
 
   // ── Stats ───────────────────────────────────────────────────────────────────
 
