@@ -1,20 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   FaWallet, FaArrowUp, FaArrowDown, FaSearch, FaEye, FaSpinner,
-  FaTimes, FaCalendarAlt, FaFilter, FaRupeeSign, FaChartLine,
-  FaDownload, FaExchangeAlt, FaUser, FaShieldAlt, FaTag, FaInfoCircle,
-  FaFileInvoice, FaMoneyBillWave, FaChartBar, FaStar,
+  FaRupeeSign, FaChartLine, FaExchangeAlt, FaUser, FaShieldAlt,
+  FaTag, FaInfoCircle, FaFileInvoice, FaMoneyBillWave, FaChartBar,
+  FaStar,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
-import { ManagementButton, ManagementHub, ManagementTable, RefreshButton } from '../components/common';
-import usePermissionAccess from '../hooks/usePermissionAccess';
-import { useAuth } from '../context/AuthContext';
+import { ManagementHub, ManagementTable, RefreshButton } from '../components/common';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 15;
 
@@ -36,33 +36,80 @@ const STAT_STYLES = {
 
 const TRANSACTION_TYPES = [
   { value: 'salary', label: 'Salary', icon: FaMoneyBillWave, color: 'emerald' },
-  { value: 'reimbursement', label: 'Reimbursement', icon: FaFileInvoice, color: 'blue' },
   { value: 'bonus', label: 'Bonus', icon: FaStar, color: 'amber' },
+  { value: 'reimbursement', label: 'Reimbursement', icon: FaFileInvoice, color: 'blue' },
   { value: 'deduction', label: 'Deduction', icon: FaArrowDown, color: 'rose' },
   { value: 'advance', label: 'Advance', icon: FaMoneyBillWave, color: 'violet' },
+  { value: 'opening_balance', label: 'Opening Balance', icon: FaWallet, color: 'gray' },
   { value: 'other', label: 'Other', icon: FaExchangeAlt, color: 'gray' },
 ];
 
-const ENTRY_TYPES = [
-  { value: 'debit', label: 'Debit (Payment Out)', icon: FaArrowUp, color: 'rose' },
-  { value: 'credit', label: 'Credit (Payment In)', icon: FaArrowDown, color: 'emerald' },
-];
+// ─── Formatters ───────────────────────────────────────────────────────────────
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+  }).format(Math.abs(amount || 0));
+
+const formatNumber = (num) =>
+  new Intl.NumberFormat('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num || 0);
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+};
+
+// ─── Normalize transaction from API ──────────────────────────────────────────
+const normalizeTx = (tx) => {
+  const entry_type = tx.type || tx.entry_type || (
+    (tx.new_balance !== undefined && tx.old_balance !== undefined)
+      ? (tx.new_balance > tx.old_balance ? 'credit' : 'debit')
+      : 'credit'
+  );
+  return {
+    ...tx,
+    entry_type,
+    debit:   tx.debit   !== undefined ? tx.debit   : (entry_type === 'debit'  ? tx.amount : 0),
+    credit:  tx.credit  !== undefined ? tx.credit  : (entry_type === 'credit' ? tx.amount : 0),
+    balance: tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0),
+    remark:  tx.remark || tx.remarks || '',
+    created_by: tx.created_by || tx.create_by || null,
+    created_at: tx.created_at || tx.create_date || '',
+  };
+};
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
+
+const colorMap = {
+  emerald: 'bg-emerald-100 border-emerald-200 text-emerald-700',
+  blue:    'bg-blue-100 border-blue-200 text-blue-700',
+  amber:   'bg-amber-100 border-amber-200 text-amber-700',
+  rose:    'bg-rose-100 border-rose-200 text-rose-700',
+  violet:  'bg-violet-100 border-violet-200 text-violet-700',
+  gray:    'bg-gray-100 border-gray-200 text-gray-600',
+};
 
 const TransactionTypeBadge = ({ type, compact = false }) => {
   const config = TRANSACTION_TYPES.find(t => t.value === type) || TRANSACTION_TYPES[TRANSACTION_TYPES.length - 1];
   const Icon = config.icon;
-  const colorMap = {
-    emerald: 'bg-emerald-100 border-emerald-200 text-emerald-700',
-    blue: 'bg-blue-100 border-blue-200 text-blue-700',
-    amber: 'bg-amber-100 border-amber-200 text-amber-700',
-    rose: 'bg-rose-100 border-rose-200 text-rose-700',
-    violet: 'bg-violet-100 border-violet-200 text-violet-700',
-    gray: 'bg-gray-100 border-gray-200 text-gray-600',
-  };
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${colorMap[config.color]} ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold border ${colorMap[config.color]} ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
       <Icon size={compact ? 8 : 10} />
       {config.label}
     </span>
@@ -72,43 +119,31 @@ const TransactionTypeBadge = ({ type, compact = false }) => {
 const EntryTypeBadge = ({ entryType, compact = false }) => {
   const isDebit = entryType === 'debit';
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${isDebit
-      ? 'bg-rose-100 border border-rose-200 text-rose-700'
-      : 'bg-emerald-100 border border-emerald-200 text-emerald-700'
-      } ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold border ${isDebit
+      ? 'bg-rose-100 border-rose-200 text-rose-700'
+      : 'bg-emerald-100 border-emerald-200 text-emerald-700'
+    } ${compact ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs'}`}>
       {isDebit ? <FaArrowUp size={compact ? 8 : 10} /> : <FaArrowDown size={compact ? 8 : 10} />}
       {isDebit ? 'DEBIT' : 'CREDIT'}
     </span>
   );
 };
 
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 2,
-  }).format(Math.abs(amount || 0));
-};
+// ─── Stat Card ────────────────────────────────────────────────────────────────
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return '—';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-};
+const StatCard = ({ label, value, icon: Icon, color, prefix = '' }) => (
+  <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">{label}</p>
+      <p className="text-2xl font-black text-slate-800 mt-1">{prefix}{formatCurrency(value)}</p>
+    </div>
+    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[color].iconWrap}`}>
+      <Icon size={18} />
+    </div>
+  </div>
+);
 
-const formatDateTime = (dateStr) => {
-  if (!dateStr) return '—';
-  const date = new Date(dateStr);
-  return date.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-// ─── Mobile Transaction Card ─────────────────────────────────────────────────
+// ─── Mobile Transaction Card ──────────────────────────────────────────────────
 
 const MobileTransactionCard = ({ transaction, onView }) => (
   <motion.div
@@ -117,13 +152,9 @@ const MobileTransactionCard = ({ transaction, onView }) => (
     className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 cursor-pointer hover:shadow-md transition-all duration-300 group"
     onClick={() => onView(transaction)}
   >
-    {/* Header */}
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${transaction.entry_type === 'debit'
-          ? 'bg-rose-50 text-rose-600'
-          : 'bg-emerald-50 text-emerald-600'
-          }`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${transaction.entry_type === 'debit' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
           {transaction.entry_type === 'debit' ? <FaArrowUp size={16} /> : <FaArrowDown size={16} />}
         </div>
         <div>
@@ -138,301 +169,340 @@ const MobileTransactionCard = ({ transaction, onView }) => (
         <p className={`text-base font-black ${transaction.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
           {transaction.entry_type === 'debit' ? '-' : '+'}{formatCurrency(transaction.amount)}
         </p>
-        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{transaction.transaction_id}</p>
+        <p className={`text-xs font-mono font-bold mt-0.5 ${Number(transaction.balance) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+          Bal: {formatNumber(transaction.balance)}
+        </p>
       </div>
     </div>
-
-    {/* Details */}
-    <div className="border-t border-slate-50 pt-3 mt-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-400">Balance after</span>
-        <span className={`font-bold ${Number(transaction.balance) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {formatCurrency(transaction.balance)}
-        </span>
+    {transaction.remark && (
+      <div className="border-t border-slate-50 pt-2 mt-1">
+        <p className="text-xs text-slate-500 line-clamp-1">{transaction.remark}</p>
       </div>
-      {transaction.remark && (
-        <p className="text-xs text-slate-500 mt-2 line-clamp-1">{transaction.remark}</p>
-      )}
-    </div>
+    )}
   </motion.div>
 );
 
-// ─── Stat Card ───────────────────────────────────────────────────────────────
+// ─── View Modal ───────────────────────────────────────────────────────────────
 
-const StatCard = ({ label, value, icon: Icon, color, prefix = '', suffix = '' }) => (
-  <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-md transition-all">
-    <div>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">
-        {label}
-      </p>
-      <p className="text-2xl font-black text-slate-800 mt-1">
-        {prefix}{typeof value === 'number' ? formatCurrency(value) : value}{suffix}
-      </p>
-    </div>
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${STAT_STYLES[color].iconWrap}`}>
-      <Icon size={18} />
-    </div>
-  </div>
-);
+const ViewModal = ({ open, onClose, transaction: tx }) => {
+  if (!tx) return null;
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Transaction Details"
+      subtitle={tx.transaction_id || `#${tx.id}`}
+      icon={<FaInfoCircle size={22} />}
+      size="lg"
+      footer={
+        <button
+          onClick={onClose}
+          className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm"
+        >
+          Close
+        </button>
+      }
+    >
+      <div className="space-y-6">
+        <div className="flex flex-wrap gap-2">
+          <TransactionTypeBadge type={tx.transaction_type} />
+          <EntryTypeBadge entryType={tx.entry_type} />
+        </div>
 
+        <div className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg bg-gradient-to-br ${tx.entry_type === 'debit' ? 'from-rose-600 via-pink-600 to-rose-800' : 'from-emerald-600 via-teal-600 to-emerald-800'}`}>
+          <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
+          <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-2">Transaction Amount</p>
+          <p className="text-3xl font-black tracking-tight">
+            {tx.entry_type === 'debit' ? '-' : '+'}{formatCurrency(tx.amount)}
+          </p>
+          <div className="mt-4 flex justify-between items-end">
+            <div>
+              <p className="text-[9px] text-white/50 uppercase tracking-widest">Balance After</p>
+              <p className="text-base font-bold">{formatNumber(tx.balance)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] text-white/50 uppercase tracking-widest">Date</p>
+              <p className="text-sm font-medium">{formatDate(tx.transaction_date)}</p>
+            </div>
+          </div>
+        </div>
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Transaction ID</p>
+            <p className="text-sm font-mono font-bold text-slate-700">{tx.transaction_id || `#${tx.id}`}</p>
+          </div>
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Created On</p>
+            <p className="text-sm font-bold text-slate-700">{formatDateTime(tx.created_at)}</p>
+          </div>
+          {tx.remark && (
+            <div className="sm:col-span-2 bg-slate-50 border border-slate-100 p-4 rounded-xl">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Remark</p>
+              <p className="text-sm font-medium text-slate-700">{tx.remark}</p>
+            </div>
+          )}
+          {tx.created_by && (
+            <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Created By</p>
+              <div className="flex items-center gap-2">
+                <FaUser size={12} className="text-slate-400" />
+                <p className="text-sm font-bold text-slate-700">{tx.created_by.name}</p>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">{tx.created_by.email}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-xl">
+          <FaShieldAlt className="text-violet-400 shrink-0" size={16} />
+          <p className="text-xs text-violet-600 font-medium">
+            This transaction is recorded in your permanent financial history.
+          </p>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 const MyLedger = () => {
-  const { employee, user, company } = useAuth();
-  const isMountedRef = useRef(true);
-
   const [transactions, setTransactions] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [viewModal, setViewModal] = useState({ open: false, transaction: null });
   const [viewMode, setViewMode] = useState('table');
-  const [summary, setSummary] = useState({
-    total_debit: 0,
-    total_credit: 0,
-    closing_balance: 0,
-  });
-  const [openingBalance, setOpeningBalance] = useState({ debit: 0, credit: 0, balance: 0 });
   const [totalItems, setTotalItems] = useState(0);
+  const [openingBalance, setOpeningBalance] = useState({ debit: 0, credit: 0, balance: 0 });
+  const [summary, setSummary] = useState({ total_debit: 0, total_credit: 0, closing_balance: 0 });
 
   const { pagination, goToPage, changeLimit } = usePagination(1, ITEMS_PER_PAGE);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => { isMountedRef.current = false; };
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 500);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
-  // ── Fetch Transactions ─────────────────────────────────────────────────────
+  useEffect(() => { goToPage(1); }, [debouncedSearchTerm, goToPage]);
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
       const companyId = getCompanyId();
-      const queryParams = new URLSearchParams();
-      queryParams.append('page_no', pagination.page);
-      queryParams.append('limit', pagination.limit);
-      if (debouncedSearchTerm) {
-        queryParams.append('search', debouncedSearchTerm);
-      }
-      const queryString = queryParams.toString();
-      const url = `/transactions/my-ledger${queryString ? `?${queryString}` : ''}`;
-      const response = await apiCall(url, 'GET', null, companyId);
-      const result = await response.json();
+      const params = new URLSearchParams();
+      params.append('page_no', pagination.page);
+      params.append('limit', pagination.limit);
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+      const url = `/transactions/my-ledger?${params.toString()}`;
+      const res = await apiCall(url, 'GET', null, companyId);
+      const result = await res.json();
 
       if (result.success) {
-        let txList = [];
-        if (Array.isArray(result.data)) {
-          txList = result.data;
-        } else if (result.data?.list) {
-          txList = result.data.list;
-        }
-        
-        const normalizedTxList = txList.map(tx => {
-           let entry_type = tx.type || tx.entry_type;
-           if (!entry_type && tx.amount) {
-              if (tx.new_balance !== undefined && tx.old_balance !== undefined) {
-                 entry_type = tx.new_balance > tx.old_balance ? 'credit' : 'debit';
-              }
-           }
-           return {
-              ...tx,
-              entry_type: entry_type || 'credit',
-              debit: tx.debit !== undefined ? tx.debit : (entry_type === 'debit' ? tx.amount : 0),
-              credit: tx.credit !== undefined ? tx.credit : (entry_type === 'credit' ? tx.amount : 0),
-              balance: tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0),
-           };
-        });
-        
-        setTransactions(normalizedTxList);
+        let txList = Array.isArray(result.data) ? result.data : (result.data?.list || []);
+        const normalized = txList.map(normalizeTx);
+        setTransactions(normalized);
 
-        let ob = { debit: 0, credit: 0, balance: 0 };
+        // Opening balance
         const rawOb = result.data?.opening_balance ?? result.opening_balance;
         if (typeof rawOb === 'number') {
-          ob = {
+          setOpeningBalance({
             balance: rawOb,
-            debit: rawOb < 0 ? Math.abs(rawOb) : 0,
-            credit: rawOb > 0 ? rawOb : 0
-          };
+            debit:  rawOb < 0 ? Math.abs(rawOb) : 0,
+            credit: rawOb > 0 ? rawOb : 0,
+          });
         } else if (rawOb) {
-          ob = rawOb;
+          setOpeningBalance(rawOb);
         }
-        setOpeningBalance(ob);
 
+        // Summary
         if (result.meta) {
           if (result.meta.summary) {
             setSummary(result.meta.summary);
-          } else if (result.meta.credit !== undefined && result.meta.debit !== undefined) {
+          } else {
             setSummary({
-              total_credit: result.meta.credit || 0,
-              total_debit: result.meta.debit || 0,
-              closing_balance: result.meta.net || 0
+              total_credit:    result.meta.credit || 0,
+              total_debit:     result.meta.debit  || 0,
+              closing_balance: result.meta.net    || 0,
             });
           }
-          if (result.meta.total !== undefined) {
-            setTotalItems(result.meta.total);
-          } else {
-            setTotalItems(txList.length);
-          }
+          setTotalItems(result.meta.total ?? txList.length);
         } else {
-          setTotalItems(txList.length);
-          const totals = normalizedTxList.reduce(
-            (acc, t) => {
-              acc.total_debit += t.debit || 0;
-              acc.total_credit += t.credit || 0;
-              return acc;
-            },
+          const totals = normalized.reduce(
+            (acc, t) => { acc.total_debit += t.debit || 0; acc.total_credit += t.credit || 0; return acc; },
             { total_debit: 0, total_credit: 0 }
           );
-          const lastTx = normalizedTxList[normalizedTxList.length - 1];
-          setSummary({
-            total_debit: totals.total_debit,
-            total_credit: totals.total_credit,
-            closing_balance: lastTx?.balance || 0,
-          });
+          const last = normalized[normalized.length - 1];
+          setSummary({ ...totals, closing_balance: last?.balance || 0 });
+          setTotalItems(txList.length);
         }
       } else {
         toast.error(result.message || 'Failed to fetch ledger');
-        setTransactions([]);
-        setTotalItems(0);
+        setTransactions([]); setTotalItems(0);
       }
-    } catch (error) {
-      console.error('Fetch error:', error);
+    } catch (err) {
+      console.error(err);
       toast.error('Connection error while fetching ledger');
-      setTransactions([]);
-      setTotalItems(0);
+      setTransactions([]); setTotalItems(0);
     } finally {
       setLoading(false);
     }
   }, [debouncedSearchTerm, pagination.page, pagination.limit]);
 
-  const initialFetchDone = useRef(false);
+  const initialDone = useRef(false);
   const prevDep = useRef('');
 
   useEffect(() => {
     const dep = `${debouncedSearchTerm}|${pagination.page}|${pagination.limit}`;
-    if (!initialFetchDone.current || prevDep.current !== dep) {
+    if (!initialDone.current || prevDep.current !== dep) {
       fetchTransactions();
-      initialFetchDone.current = true;
+      initialDone.current = true;
       prevDep.current = dep;
     }
   }, [debouncedSearchTerm, pagination.page, pagination.limit, fetchTransactions]);
 
-  useEffect(() => {
-    goToPage(1);
-  }, [debouncedSearchTerm, goToPage]);
-
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
+  useEffect(() => { if (pagination.page > totalPages) goToPage(totalPages); }, [goToPage, pagination.page, totalPages]);
 
-  useEffect(() => {
-    if (pagination.page > totalPages) goToPage(totalPages);
-  }, [goToPage, pagination.page, totalPages]);
+  const handlePageChange = useCallback((page) => {
+    goToPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [goToPage]);
 
-  const paginatedData = transactions;
+  // ── Stats ──────────────────────────────────────────────────────────────────
 
-  // ── Stats ───────────────────────────────────────────────────────────────────
-
-  const stats = useMemo(
-    () => [
-      {
-        label: 'Opening Balance',
-        value: openingBalance.balance,
-        icon: FaChartLine,
-        color: 'violet',
-        prefix: '',
-      },
-      {
-        label: 'Total Credit',
-        value: summary.total_credit,
-        icon: FaArrowDown,
-        color: 'emerald',
-        prefix: '+',
-      },
-      {
-        label: 'Total Debit',
-        value: summary.total_debit,
-        icon: FaArrowUp,
-        color: 'rose',
-        prefix: '-',
-      },
-      {
-        label: 'Closing Balance',
-        value: summary.closing_balance,
-        icon: FaWallet,
-        color: summary.closing_balance >= 0 ? 'emerald' : 'rose',
-        prefix: '',
-      },
-    ],
-    [openingBalance, summary]
-  );
-
-  const handlePageChange = useCallback(
-    (page) => {
-      goToPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    },
-    [goToPage]
-  );
+  const stats = useMemo(() => [
+    { label: 'Opening Balance', value: openingBalance.balance, icon: FaChartLine, color: 'violet' },
+    { label: 'Total Credit',    value: summary.total_credit,  icon: FaArrowDown,  color: 'emerald', prefix: '+' },
+    { label: 'Total Debit',     value: summary.total_debit,   icon: FaArrowUp,    color: 'rose',    prefix: '-' },
+    { label: 'Closing Balance', value: summary.closing_balance, icon: FaWallet,   color: summary.closing_balance >= 0 ? 'emerald' : 'rose' },
+  ], [openingBalance, summary]);
 
   // ── Table Columns ──────────────────────────────────────────────────────────
 
-  const columns = [
+  const columns = useMemo(() => [
     {
-      key: 'transaction_id',
-      label: 'Transaction ID',
-      render: (tx) => (
-        <div className="flex flex-col">
-          <span className="font-mono text-xs font-semibold text-slate-600">{tx.transaction_id}</span>
-          <span className="text-[10px] text-slate-400">{formatDate(tx.transaction_date)}</span>
-        </div>
-      ),
+      key: 'row_num',
+      label: '#',
+      render: (tx, idx) => {
+        if (tx.isTotalRow) return <span className="font-black text-slate-800 text-sm">Total</span>;
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        const offset = pagination.page === 1 ? -1 : 0;
+        return <span className="font-medium text-slate-400">{(pagination.page - 1) * pagination.limit + idx + 1 + offset}</span>;
+      },
+      className: 'w-12 text-center',
+    },
+    {
+      key: 'transaction_date',
+      label: 'Date',
+      render: (tx) => {
+        if (tx.isTotalRow) return null;
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return <span className="whitespace-nowrap font-medium text-slate-600">{formatDate(tx.transaction_date)}</span>;
+      },
+    },
+    {
+      key: 'particulars',
+      label: 'Particulars',
+      render: (tx) => {
+        if (tx.isTotalRow) return null;
+        if (tx.isOpeningBalance) return <span className="font-bold text-slate-800">Opening Balance</span>;
+        if (tx.remark) return (
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-800">{tx.remark}</span>
+          </div>
+        );
+        const name = tx.created_by?.name || '—';
+        const email = tx.created_by?.email || '';
+        return (
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-800">{name}</span>
+            {email && <span className="text-[10px] text-slate-400">{email}</span>}
+          </div>
+        );
+      },
     },
     {
       key: 'type',
       label: 'Type',
-      render: (tx) => (
-        <div className="flex flex-col gap-1">
-          <TransactionTypeBadge type={tx.transaction_type} compact />
-          <EntryTypeBadge entryType={tx.entry_type} compact />
-        </div>
-      ),
+      render: (tx) => {
+        if (tx.isTotalRow) return null;
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return (
+          <div className="flex flex-col gap-1">
+            <TransactionTypeBadge type={tx.transaction_type} compact />
+            <EntryTypeBadge entryType={tx.entry_type} compact />
+          </div>
+        );
+      },
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      render: (tx) => (
-        <span className={`font-bold text-sm ${tx.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
-          {tx.entry_type === 'debit' ? '-' : '+'}{formatCurrency(tx.amount)}
-        </span>
-      ),
+      key: 'debit',
+      label: 'Debit',
+      render: (tx) => {
+        if (tx.isTotalRow) return <span className="font-bold text-blue-600 font-mono text-sm">{formatNumber(tx.debit)}</span>;
+        return tx.debit > 0
+          ? <span className="font-bold text-blue-600 font-mono">{formatNumber(tx.debit)}</span>
+          : <span className="text-slate-400 font-mono">0.00</span>;
+      },
+      className: 'text-right',
+    },
+    {
+      key: 'credit',
+      label: 'Credit',
+      render: (tx) => {
+        if (tx.isTotalRow) return <span className="font-bold text-amber-600 font-mono text-sm">{formatNumber(tx.credit)}</span>;
+        return tx.credit > 0
+          ? <span className="font-bold text-amber-600 font-mono">{formatNumber(tx.credit)}</span>
+          : <span className="text-slate-400 font-mono">0.00</span>;
+      },
+      className: 'text-right',
     },
     {
       key: 'balance',
       label: 'Balance',
-      render: (tx) => (
-        <span className={`font-mono font-bold text-sm ${Number(tx.balance) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {formatCurrency(tx.balance)}
-        </span>
-      ),
+      render: (tx) => {
+        const cls = `font-mono font-bold ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`;
+        if (tx.isTotalRow) return <span className={`text-sm ${cls}`}>{formatNumber(tx.balance)}</span>;
+        return <span className={cls}>{formatNumber(tx.balance)}</span>;
+      },
+      className: 'text-right',
     },
-    {
-      key: 'remark',
-      label: 'Remark',
-      render: (tx) => (
-        <p className="text-xs text-slate-500 max-w-[200px] truncate">
-          {tx.remark || '—'}
-        </p>
-      ),
-    },
-  ];
+  ], [pagination.page, pagination.limit]);
 
-  // ── Loading State ──────────────────────────────────────────────────────────
+  // ── Table Rows (with opening balance row + total row) ──────────────────────
+
+  const tableRows = useMemo(() => {
+    let rows = [];
+    if (pagination.page === 1) {
+      rows.push({
+        isOpeningBalance: true,
+        id: 'opening-balance',
+        transaction_date: '',
+        remark: 'Opening Balance',
+        transaction_type: 'opening_balance',
+        entry_type: openingBalance.debit > 0 ? 'debit' : 'credit',
+        amount: Math.abs(openingBalance.balance || 0),
+        debit:  openingBalance.debit  || 0,
+        credit: openingBalance.credit || 0,
+        balance: openingBalance.balance || 0,
+      });
+    }
+    rows = [...rows, ...transactions];
+    rows.push({
+      isTotalRow: true,
+      id: 'total-row',
+      debit:   summary.total_debit    || 0,
+      credit:  summary.total_credit   || 0,
+      balance: summary.closing_balance || 0,
+    });
+    return rows;
+  }, [transactions, pagination.page, openingBalance, summary]);
+
+  // ── Loading ────────────────────────────────────────────────────────────────
 
   if (loading && transactions.length === 0) {
     return (
@@ -459,55 +529,34 @@ const MyLedger = () => {
         </RefreshButton>
       }
     >
-      <div className="space-y-6 p-2 lg:p-0">
-        {/* ── Stats ── */}
+      <div className="space-y-6">
+        {/* Stats */}
         {!loading && transactions.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-2 lg:grid-cols-4 gap-4"
           >
-            {stats.map((stat) => (
-              <StatCard
-                key={stat.label}
-                label={stat.label}
-                value={stat.value}
-                icon={stat.icon}
-                color={stat.color}
-                prefix={stat.prefix}
-              />
+            {stats.map(s => (
+              <StatCard key={s.label} label={s.label} value={s.value} icon={s.icon} color={s.color} prefix={s.prefix || ''} />
             ))}
           </motion.div>
         )}
 
-        {/* ── Balance Summary Card ── */}
+        {/* Balance Banner */}
         {!loading && summary.closing_balance !== 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-          >
-            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br p-6 text-white shadow-xl ${summary.closing_balance >= 0
-              ? STAT_STYLES.emerald.gradient
-              : STAT_STYLES.rose.gradient
-              }`}>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+            <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br p-6 text-white shadow-xl ${summary.closing_balance >= 0 ? STAT_STYLES.emerald.gradient : STAT_STYLES.rose.gradient}`}>
               <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
               <div className="pointer-events-none absolute -bottom-6 right-16 h-28 w-28 rounded-full bg-white/5" />
-
               <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <FaWallet size={11} className="text-white/60" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">
-                      Current Balance
-                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Current Balance</span>
                   </div>
-                  <p className="text-3xl font-black tracking-tight">
-                    {formatCurrency(Math.abs(summary.closing_balance))}
-                  </p>
-                  <p className="text-sm text-white/70 mt-1">
-                    {summary.closing_balance >= 0 ? 'In Credit' : 'In Debit'}
-                  </p>
+                  <p className="text-3xl font-black tracking-tight">{formatCurrency(Math.abs(summary.closing_balance))}</p>
+                  <p className="text-sm text-white/70 mt-1">{summary.closing_balance >= 0 ? 'In Credit' : 'In Debit'}</p>
                 </div>
                 <div className="flex flex-col gap-2 text-sm">
                   <div className="flex items-center gap-3">
@@ -530,31 +579,29 @@ const MyLedger = () => {
           </motion.div>
         )}
 
-
-
-        {/* ── Search & View Switcher Bar ── */}
+        {/* Search + View Switcher */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
+          className="flex flex-col lg:flex-row lg:items-center gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm"
         >
           <div className="relative flex-1">
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
             <input
               type="text"
-              placeholder="Search by transaction ID, remark, or type..."
+              placeholder="Search by ID, remark, or type..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
             />
           </div>
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center justify-end">
             <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
           </div>
         </motion.div>
 
-        {/* ── Transaction List ── */}
+        {/* Transaction List */}
         {totalItems === 0 && !loading ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -566,40 +613,44 @@ const MyLedger = () => {
             </div>
             <p className="text-slate-500 font-bold">No transactions found</p>
             <p className="text-slate-400 text-sm mt-1 mx-auto max-w-xs">
-              {searchTerm
-                ? `No matching transactions for your search`
-                : 'No transactions recorded'}
+              {searchTerm ? 'No matches for your search' : 'No transactions recorded yet'}
             </p>
           </motion.div>
         ) : viewMode === 'table' ? (
           <ManagementTable
-            rows={paginatedData}
+            rows={tableRows}
             columns={columns}
-            rowKey={(row) => row.id}
-            onRowClick={(row) => setViewModal({ open: true, transaction: row })}
-            getActions={(row) => [
-              {
-                label: 'View Details',
-                icon: <FaEye size={13} />,
-                onClick: () => setViewModal({ open: true, transaction: row }),
-                className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
-              },
-            ]}
+            rowKey={row => row.id}
+            onRowClick={(row) => {
+              if (row.isOpeningBalance || row.isTotalRow) return;
+              setViewModal({ open: true, transaction: row });
+            }}
+            getActions={(row) => {
+              if (row.isOpeningBalance || row.isTotalRow) return [];
+              return [
+                {
+                  label: 'View Details',
+                  icon: <FaEye size={13} />,
+                  onClick: () => setViewModal({ open: true, transaction: row }),
+                  className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
+                },
+              ];
+            }}
             accent="violet"
           />
         ) : (
           <ManagementGrid>
-            {paginatedData.map((transaction) => (
+            {transactions.map(tx => (
               <MobileTransactionCard
-                key={transaction.id}
-                transaction={transaction}
-                onView={(t) => setViewModal({ open: true, transaction: t })}
+                key={tx.id}
+                transaction={tx}
+                onView={t => setViewModal({ open: true, transaction: t })}
               />
             ))}
           </ManagementGrid>
         )}
 
-        {/* ── Pagination ── */}
+        {/* Pagination */}
         {totalItems > 0 && (
           <div className="mt-8">
             <Pagination
@@ -614,104 +665,12 @@ const MyLedger = () => {
         )}
       </div>
 
-      {/* ── View Transaction Modal ── */}
-      <Modal
-        isOpen={viewModal.open && !!viewModal.transaction}
+      {/* View Modal */}
+      <ViewModal
+        open={viewModal.open && !!viewModal.transaction}
         onClose={() => setViewModal({ open: false, transaction: null })}
-        title="Transaction Details"
-        subtitle={viewModal.transaction?.transaction_id}
-        icon={<FaInfoCircle size={22} />}
-        size="lg"
-        footer={
-          <>
-            <button
-              onClick={() => setViewModal({ open: false, transaction: null })}
-              className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm"
-            >
-              Close
-            </button>
-          </>
-        }
-      >
-        {viewModal.transaction && (
-          <div className="space-y-6">
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2">
-              <TransactionTypeBadge type={viewModal.transaction.transaction_type} />
-              <EntryTypeBadge entryType={viewModal.transaction.entry_type} />
-            </div>
-
-            {/* Amount Card */}
-            <div className={`relative overflow-hidden rounded-xl p-6 text-white shadow-lg bg-gradient-to-br ${viewModal.transaction.entry_type === 'debit'
-              ? 'from-rose-600 via-pink-600 to-rose-800'
-              : 'from-emerald-600 via-teal-600 to-emerald-800'
-              }`}>
-              <div className="pointer-events-none absolute -right-6 -top-6 h-28 w-28 rounded-full bg-white/5" />
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/50 mb-2">
-                Transaction Amount
-              </p>
-              <p className="text-3xl font-black tracking-tight">
-                {viewModal.transaction.entry_type === 'debit' ? '-' : '+'}{formatCurrency(viewModal.transaction.amount)}
-              </p>
-              <div className="mt-4 flex justify-between items-end">
-                <div>
-                  <p className="text-[9px] text-white/50 uppercase tracking-widest">Balance After</p>
-                  <p className="text-base font-bold">{formatCurrency(viewModal.transaction.balance)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-white/50 uppercase tracking-widest">Date</p>
-                  <p className="text-sm font-medium">{formatDate(viewModal.transaction.transaction_date)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Transaction ID</p>
-                <p className="text-sm font-mono font-bold text-slate-700">{viewModal.transaction.transaction_id}</p>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Created On</p>
-                <p className="text-sm font-bold text-slate-700">{formatDateTime(viewModal.transaction.created_at)}</p>
-              </div>
-              {viewModal.transaction.remark && (
-                <div className="sm:col-span-2 bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Remark</p>
-                  <p className="text-sm font-medium text-slate-700">{viewModal.transaction.remark}</p>
-                </div>
-              )}
-              {viewModal.transaction.employee && (
-                <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Employee</p>
-                  <div className="flex items-center gap-2">
-                    <FaUser size={12} className="text-slate-400" />
-                    <p className="text-sm font-bold text-slate-700">{viewModal.transaction.employee.name}</p>
-                  </div>
-                </div>
-              )}
-              {viewModal.transaction.created_by && (
-                <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Created By</p>
-                  <div className="flex items-center gap-2">
-                    <FaUser size={12} className="text-slate-400" />
-                    <p className="text-sm font-bold text-slate-700">{viewModal.transaction.created_by.name}</p>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">{viewModal.transaction.created_by.email}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Note */}
-            <div className="flex items-center gap-3 p-4 bg-violet-50/60 border border-violet-100 rounded-xl">
-              <FaShieldAlt className="text-violet-400 shrink-0" size={16} />
-              <p className="text-xs text-violet-600 font-medium">
-                This transaction is recorded in your permanent financial history.
-              </p>
-            </div>
-          </div>
-        )}
-      </Modal>
+        transaction={viewModal.transaction}
+      />
     </ManagementHub>
   );
 };
