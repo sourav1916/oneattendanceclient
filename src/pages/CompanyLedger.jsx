@@ -1006,15 +1006,15 @@ const CompanyLedger = ({ employeeId }) => {
     setLoading(true);
     try {
       const companyId = getCompanyId();
-      const id = employeeId || 19;
       const params = new URLSearchParams();
-      params.append('page', pagination.page);
+      params.append('page_no', pagination.page);
       params.append('limit', pagination.limit);
+      if (employeeId) params.append('employee_id', employeeId);
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filterType?.value) params.append('transaction_type', filterType.value);
       if (filterEntry?.value) params.append('entry_type', filterEntry.value);
       const qs = params.toString();
-      const url = `/transactions/company-ledger/${id}${qs ? `?${qs}` : ''}`;
+      const url = `/transactions/company-ledger${qs ? `?${qs}` : ''}`;
       const res = await apiCall(url, 'GET', null, companyId);
       const result = await res.json();
       if (result.success) {
@@ -1201,7 +1201,7 @@ const CompanyLedger = ({ employeeId }) => {
         balance: openingBalance.balance || 0,
       });
     }
-    
+
     rows = [...rows, ...paginatedData];
 
     rows.push({
@@ -1238,8 +1238,8 @@ const CompanyLedger = ({ employeeId }) => {
           <button
             onClick={() => setObModal(true)}
             className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all border ${obIsEmpty
-                ? 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+              ? 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
               }`}
           >
             <FaWallet size={13} />
@@ -1252,14 +1252,14 @@ const CompanyLedger = ({ employeeId }) => {
             tone="violet"
           >
             <div className="flex items-center gap-2">
-              <FaPlus size={12}/> Create
+              <FaPlus size={12} /> Create
             </div>
           </ManagementButton>
           <RefreshButton loading={loading} onClick={fetchTransactions}>Refresh</RefreshButton>
         </div>
       }
     >
-      <div className="space-y-6 p-2 lg:p-0">
+      <div className="space-y-6">
         {/* Stats */}
         {!loading && transactions.length > 0 && (
           <motion.div
@@ -1323,27 +1323,32 @@ const CompanyLedger = ({ employeeId }) => {
               placeholder="Search by ID, name, remark, or type..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
+              className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-violet-500/10 focus:border-violet-400 outline-none shadow-sm transition-all text-sm font-medium"
             />
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="w-[180px]">
-              <SelectField
-                options={[{ value: '', label: 'All Types' }, ...TRANSACTION_TYPES]}
-                value={filterType || { value: '', label: 'All Types' }}
-                onChange={opt => { setFilterType(opt.value ? opt : null); goToPage(1); }}
-                formatOptionLabel={opt => opt.value === '' ? opt.label : formatTransactionOption(opt)}
-              />
+          <div className="flex items-center gap-3 justify-between">
+            <div className="flex items-center gap-3">
+              <div>
+                <SelectField
+                  options={[{ value: '', label: 'All Types' }, ...TRANSACTION_TYPES]}
+                  value={filterType || { value: '', label: 'All Types' }}
+                  onChange={opt => { setFilterType(opt.value ? opt : null); goToPage(1); }}
+                  formatOptionLabel={opt => opt.value === '' ? opt.label : formatTransactionOption(opt)}
+                />
+              </div>
+              <div>
+                <SelectField
+                  options={[{ value: '', label: 'All Entries' }, ...ENTRY_TYPES]}
+                  value={filterEntry || { value: '', label: 'All Entries' }}
+                  onChange={opt => { setFilterEntry(opt.value ? opt : null); goToPage(1); }}
+                  formatOptionLabel={opt => opt.value === '' ? opt.label : formatEntryOption(opt)}
+                />
+              </div>
             </div>
-            <div className="w-[160px]">
-              <SelectField
-                options={[{ value: '', label: 'All Entries' }, ...ENTRY_TYPES]}
-                value={filterEntry || { value: '', label: 'All Entries' }}
-                onChange={opt => { setFilterEntry(opt.value ? opt : null); goToPage(1); }}
-                formatOptionLabel={opt => opt.value === '' ? opt.label : formatEntryOption(opt)}
-              />
+
+            <div>
+              <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
             </div>
-            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="violet" />
           </div>
         </motion.div>
 
