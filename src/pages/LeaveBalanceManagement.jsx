@@ -1278,17 +1278,19 @@ const LeaveBalanceManagement = () => {
                               <div className="space-y-2">
                                 <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Total Days</label>
                                 <input
-                                  type="number"
-                                  step="0.5"
+                                  type="text"
                                   value={row.total_allocated}
-                                  onChange={(e) =>
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      leaves: prev.leaves.map((l, i) =>
-                                        i === idx ? { ...l, total_allocated: e.target.value } : l
-                                      ),
-                                    }))
-                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (/^\d*\.?\d*$/.test(val)) {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        leaves: prev.leaves.map((l, i) =>
+                                          i === idx ? { ...l, total_allocated: val } : l
+                                        ),
+                                      }));
+                                    }
+                                  }}
                                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/5"
                                 />
                               </div>

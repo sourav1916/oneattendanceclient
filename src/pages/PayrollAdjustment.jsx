@@ -821,11 +821,15 @@ export default function PayrollAdjustment() {
                             <div>
                                 <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Amount *</label>
                                 <input
-                                    type="number"
-                                    step="0.01"
+                                    type="text"
                                     placeholder="0.00"
                                     value={formData.amount}
-                                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (/^\d*\.?\d*$/.test(val)) {
+                                            setFormData({ ...formData, amount: val });
+                                        }
+                                    }}
                                     className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold text-gray-800"
                                 />
                             </div>

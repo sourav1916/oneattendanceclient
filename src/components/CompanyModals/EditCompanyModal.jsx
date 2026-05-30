@@ -479,12 +479,15 @@ function EditCompanyModal({ isOpen, onClose, onSuccess, company }) {
                       <label className="text-sm font-medium text-gray-700">Max Distance (In Metre)</label>
                       <input
                         name="max_distance"
-                        type="number"
-                        min="0"
-                        step="0.1"
+                        type="text"
                         placeholder="e.g., 10"
                         value={formData.max_distance}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (/^\d*\.?\d*$/.test(val)) {
+                            handleChange(e);
+                          }
+                        }}
                         className={inputClass}
                       />
                     </div>
