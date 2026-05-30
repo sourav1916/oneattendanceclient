@@ -83,15 +83,17 @@ const formatNumber = (num) => {
 };
 
 const renderParticulars = (tx) => {
-  if (tx.remark) {
+  const remark = tx.remark || tx.remarks || '';
+  if (remark) {
     return (
       <div className="flex flex-col">
-        <span className="font-bold text-slate-800">{tx.remark}</span>
+        <span className="font-bold text-slate-800">{remark}</span>
       </div>
     );
   }
-  const name = tx.employee?.name || tx.created_by?.name || '—';
-  const sub = tx.employee?.email || tx.created_by?.email || '';
+  const createdBy = tx.created_by || tx.create_by || {};
+  const name = tx.employee?.name || createdBy?.name || '—';
+  const sub  = tx.employee?.email || createdBy?.email || '';
   return (
     <div className="flex flex-col">
       <span className="font-bold text-slate-800">{name}</span>
@@ -1026,18 +1028,27 @@ const CompanyLedger = ({ employeeId }) => {
         }
         
         const normalizedTxList = txList.map(tx => {
+           // Derive entry_type: use explicit `type` field first, then infer from balance change
            let entry_type = tx.type || tx.entry_type;
-           if (!entry_type && tx.amount) {
+           if (!entry_type) {
               if (tx.new_balance !== undefined && tx.old_balance !== undefined) {
                  entry_type = tx.new_balance > tx.old_balance ? 'credit' : 'debit';
+              } else {
+                 entry_type = 'debit';
               }
            }
+           const balance = tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0);
+           const debit  = tx.debit  !== undefined ? tx.debit  : (entry_type === 'debit'  ? tx.amount : 0);
+           const credit = tx.credit !== undefined ? tx.credit : (entry_type === 'credit' ? tx.amount : 0);
            return {
               ...tx,
-              entry_type: entry_type || 'credit',
-              debit: tx.debit !== undefined ? tx.debit : (entry_type === 'debit' ? tx.amount : 0),
-              credit: tx.credit !== undefined ? tx.credit : (entry_type === 'credit' ? tx.amount : 0),
-              balance: tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0),
+              entry_type,
+              debit,
+              credit,
+              balance,
+              remark:     tx.remark     || tx.remarks    || '',
+              created_by: tx.created_by || tx.create_by  || null,
+              created_at: tx.created_at || tx.create_date || '',
            };
         });
         
