@@ -457,8 +457,8 @@ const OpeningBalanceModal = ({ open, onClose, onSuccess, employeeId, isEdit, exi
     if (open) {
       if (isEdit && existingBalance) {
         setForm({
-          entry_type: existingBalance.entry_type || 'credit',
-          amount: existingBalance.amount || '',
+          entry_type: existingBalance.entry_type || (Number(existingBalance.debit) > 0 ? 'debit' : 'credit'),
+          amount: existingBalance.amount || existingBalance.debit || existingBalance.credit || '',
           transaction_date: toInputDate(existingBalance.transaction_date) || new Date().toISOString().split('T')[0],
           remark: existingBalance.remark || '',
         });
@@ -966,7 +966,7 @@ const isOpeningBalanceEmpty = (ob) =>
 
 const CompanyLedger = ({ employeeId }) => {
   const [transactions, setTransactions] = useState([]);
-  const [filteredTransactions, setFilteredTransactions] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -996,6 +996,11 @@ const CompanyLedger = ({ employeeId }) => {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
+  // Reset to page 1 on filter change
+  useEffect(() => {
+    goToPage(1);
+  }, [debouncedSearchTerm, filterType, filterEntry, goToPage]);
+
   // Fetch ledger
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
@@ -1003,6 +1008,8 @@ const CompanyLedger = ({ employeeId }) => {
       const companyId = getCompanyId();
       const id = employeeId || 19;
       const params = new URLSearchParams();
+      params.append('page', pagination.page);
+      params.append('limit', pagination.limit);
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
       if (filterType?.value) params.append('transaction_type', filterType.value);
       if (filterEntry?.value) params.append('entry_type', filterEntry.value);
@@ -1019,9 +1026,17 @@ const CompanyLedger = ({ employeeId }) => {
         const obTx = txList.find(t => t.transaction_type === 'opening_balance') || null;
         setOpeningBalanceTx(obTx);
 
-        if (result.meta?.summary) {
-          setSummary(result.meta.summary);
+        if (result.meta) {
+          if (result.meta.summary) {
+            setSummary(result.meta.summary);
+          }
+          if (result.meta.total !== undefined) {
+            setTotalItems(result.meta.total);
+          } else {
+            setTotalItems(txList.length);
+          }
         } else {
+          setTotalItems(txList.length);
           const totals = txList.reduce(
             (acc, t) => { acc.total_debit += t.debit || 0; acc.total_credit += t.credit || 0; return acc; },
             { total_debit: 0, total_credit: 0 }
@@ -1032,54 +1047,36 @@ const CompanyLedger = ({ employeeId }) => {
       } else {
         toast.error(result.message || 'Failed to fetch transactions');
         setTransactions([]);
+        setTotalItems(0);
       }
     } catch {
       toast.error('Connection error');
       setTransactions([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchTerm, filterType, filterEntry, employeeId]);
+  }, [debouncedSearchTerm, filterType, filterEntry, employeeId, pagination.page, pagination.limit]);
 
   const initialDone = useRef(false);
   const prevDep = useRef('');
 
   useEffect(() => {
-    const dep = `${debouncedSearchTerm}|${filterType?.value || ''}|${filterEntry?.value || ''}`;
+    const dep = `${debouncedSearchTerm}|${filterType?.value || ''}|${filterEntry?.value || ''}|${pagination.page}|${pagination.limit}`;
     if (!initialDone.current || prevDep.current !== dep) {
       fetchTransactions();
       initialDone.current = true;
       prevDep.current = dep;
     }
-  }, [debouncedSearchTerm, filterType, filterEntry, fetchTransactions]);
+  }, [debouncedSearchTerm, filterType, filterEntry, pagination.page, pagination.limit, fetchTransactions]);
 
-  // Local filter (client-side fallback)
-  useEffect(() => {
-    const q = debouncedSearchTerm.trim().toLowerCase();
-    let list = [...transactions];
-    if (q) {
-      list = list.filter(t =>
-        t.transaction_id?.toLowerCase().includes(q) ||
-        t.remark?.toLowerCase().includes(q) ||
-        t.transaction_type?.toLowerCase().includes(q) ||
-        t.employee?.name?.toLowerCase().includes(q)
-      );
-    }
-    setFilteredTransactions(list);
-    goToPage(1);
-  }, [transactions, debouncedSearchTerm, goToPage]);
+  const paginatedData = transactions;
 
-  const totalItems = filteredTransactions.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pagination.limit));
 
   useEffect(() => {
     if (pagination.page > totalPages) goToPage(totalPages);
   }, [goToPage, pagination.page, totalPages]);
-
-  const paginatedData = useMemo(
-    () => filteredTransactions.slice((pagination.page - 1) * pagination.limit, pagination.page * pagination.limit),
-    [filteredTransactions, pagination.page, pagination.limit]
-  );
 
   const stats = useMemo(() => [
     { label: 'Opening Balance', value: openingBalance.balance, icon: FaChartLine, color: 'violet' },
@@ -1101,6 +1098,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'row_num',
       label: '#',
       render: (tx, idx) => {
+        if (tx.isTotalRow) return <span className="font-black text-slate-800 text-sm">Total</span>;
         if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
         const offset = pagination.page === 1 ? -1 : 0;
         const rowNum = (pagination.page - 1) * pagination.limit + idx + 1 + offset;
@@ -1112,6 +1110,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'transaction_date',
       label: 'Date',
       render: (tx) => {
+        if (tx.isTotalRow) return null;
         if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
         return <span className="whitespace-nowrap font-medium text-slate-600">{formatDate(tx.transaction_date)}</span>;
       },
@@ -1120,6 +1119,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'particulars',
       label: 'Particulars',
       render: (tx) => {
+        if (tx.isTotalRow) return null;
         if (tx.isOpeningBalance) {
           return <span className="font-bold text-slate-800">Opening Balance</span>;
         }
@@ -1130,6 +1130,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'type',
       label: 'Type',
       render: (tx) => {
+        if (tx.isTotalRow) return null;
         if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
         return <TransactionTypeBadge type={tx.transaction_type} compact />;
       },
@@ -1138,6 +1139,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'transaction_id',
       label: 'Voucher No',
       render: (tx) => {
+        if (tx.isTotalRow) return null;
         if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
         return <span className="font-mono text-xs text-slate-500">{tx.transaction_id}</span>;
       },
@@ -1146,7 +1148,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'debit',
       label: 'Debit',
       render: (tx) => {
-        if (tx.isOpeningBalance) return <span className="text-slate-400 font-mono">0.00</span>;
+        if (tx.isTotalRow) return <span className="font-bold text-blue-600 font-mono text-sm">{formatNumber(tx.debit)}</span>;
         return tx.debit > 0 ? (
           <span className="font-bold text-blue-600 font-mono">{formatNumber(tx.debit)}</span>
         ) : (
@@ -1159,7 +1161,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'credit',
       label: 'Credit',
       render: (tx) => {
-        if (tx.isOpeningBalance) return <span className="text-slate-400 font-mono">0.00</span>;
+        if (tx.isTotalRow) return <span className="font-bold text-amber-600 font-mono text-sm">{formatNumber(tx.credit)}</span>;
         return tx.credit > 0 ? (
           <span className="font-bold text-amber-600 font-mono">{formatNumber(tx.credit)}</span>
         ) : (
@@ -1172,6 +1174,7 @@ const CompanyLedger = ({ employeeId }) => {
       key: 'balance',
       label: 'Balance',
       render: (tx) => {
+        if (tx.isTotalRow) return <span className={`font-mono font-bold text-sm ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>{formatNumber(tx.balance)}</span>;
         return (
           <span className={`font-mono font-bold ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
             {formatNumber(tx.balance)}
@@ -1183,25 +1186,34 @@ const CompanyLedger = ({ employeeId }) => {
   ], [pagination.page, pagination.limit]);
 
   const tableRows = useMemo(() => {
+    let rows = [];
     if (pagination.page === 1) {
-      return [
-        {
-          isOpeningBalance: true,
-          id: 'opening-balance',
-          transaction_date: '',
-          remark: 'Opening Balance',
-          transaction_type: 'opening_balance',
-          entry_type: 'credit',
-          amount: 0,
-          debit: 0,
-          credit: 0,
-          balance: openingBalance.balance,
-        },
-        ...paginatedData,
-      ];
+      rows.push({
+        isOpeningBalance: true,
+        id: 'opening-balance',
+        transaction_date: '',
+        remark: 'Opening Balance',
+        transaction_type: 'opening_balance',
+        entry_type: openingBalance.debit > 0 ? 'debit' : 'credit',
+        amount: Math.abs(openingBalance.balance || 0),
+        debit: openingBalance.debit || 0,
+        credit: openingBalance.credit || 0,
+        balance: openingBalance.balance || 0,
+      });
     }
-    return paginatedData;
-  }, [paginatedData, pagination.page, openingBalance.balance]);
+    
+    rows = [...rows, ...paginatedData];
+
+    rows.push({
+      isTotalRow: true,
+      id: 'total-row',
+      debit: summary.total_debit || 0,
+      credit: summary.total_credit || 0,
+      balance: summary.closing_balance || 0,
+    });
+
+    return rows;
+  }, [paginatedData, pagination.page, openingBalance, summary]);
 
   if (loading && transactions.length === 0) {
     return (
@@ -1358,26 +1370,17 @@ const CompanyLedger = ({ employeeId }) => {
           </motion.div>
         ) : viewMode === 'table' ? (
           <>
-            {pagination.page === 1 && (
-              <style dangerouslySetInnerHTML={{
-                __html: `
-                .company-ledger-table tbody tr:first-child td:last-child div {
-                  display: none !important;
-                  pointer-events: none !important;
-                }
-              ` }} />
-            )}
             <ManagementTable
               className="company-ledger-table"
               rows={tableRows}
               columns={columns}
               rowKey={row => row.id}
               onRowClick={(row) => {
-                if (row.isOpeningBalance) return;
+                if (row.isOpeningBalance || row.isTotalRow) return;
                 setViewModal({ open: true, transaction: row });
               }}
               getActions={(row) => {
-                if (row.isOpeningBalance) return [];
+                if (row.isOpeningBalance || row.isTotalRow) return [];
                 return [
                   {
                     label: 'View Details',
@@ -1445,7 +1448,10 @@ const CompanyLedger = ({ employeeId }) => {
         onSuccess={fetchTransactions}
         employeeId={employeeId || 19}
         isEdit={!obIsEmpty}
-        existingBalance={openingBalanceTx}
+        existingBalance={openingBalanceTx || {
+          entry_type: openingBalance.debit > 0 ? 'debit' : 'credit',
+          amount: openingBalance.debit > 0 ? openingBalance.debit : openingBalance.credit,
+        }}
       />
 
       <EditTransactionModal
