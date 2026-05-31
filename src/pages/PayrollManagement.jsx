@@ -99,6 +99,7 @@ const PayrollManagement = () => {
 
     const [availableSearch, setAvailableSearch] = useState('');
     const [selectedSearch, setSelectedSearch] = useState('');
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const currentDate = new Date();
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -110,6 +111,7 @@ const PayrollManagement = () => {
         employee_ids: [],
         month: currentDate.getMonth() + 1,
         year: currentDate.getFullYear(),
+        send_pdf: false,
     });
 
     const {
@@ -248,7 +250,8 @@ const PayrollManagement = () => {
             const payload = {
                 employee_id: data.employee_ids,
                 month: data.month,
-                year: data.year
+                year: data.year,
+                send_pdf: data.send_pdf ?? false,
             };
 
             const response = await apiCall('/payroll/generate-payroll', 'POST', payload, company?.id);
@@ -279,7 +282,8 @@ const PayrollManagement = () => {
             employee_id: null,
             employee_ids: [],
             month: currentDate.getMonth() + 1,
-            year: currentDate.getFullYear()
+            year: currentDate.getFullYear(),
+            send_pdf: false,
         });
         setModalType(MODAL_TYPES.GENERATE);
         setAvailableSearch('');
@@ -307,7 +311,8 @@ const PayrollManagement = () => {
         const result = await generatePayroll(GENERATION_MODES.MULTIPLE, {
             employee_ids: generateFormData.employee_ids,
             month: generateFormData.month,
-            year: generateFormData.year
+            year: generateFormData.year,
+            send_pdf: generateFormData.send_pdf,
         });
 
         if (result.success) {
@@ -349,6 +354,26 @@ const PayrollManagement = () => {
             goToPage(1);
         }
     }, [currentDate, goToPage, pagination.page]);
+
+    const handleDownloadPdf = async (payrollEntryId) => {
+        setIsDownloading(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const companyId = company?.id ?? null;
+            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId }, companyId);
+            const result = await response.json();
+            if (result.success && result.url) {
+                toast.success(result.message || 'Payslip generated successfully');
+                window.open(result.url, '_blank');
+            } else {
+                throw new Error(result.message || 'Failed to download payslip');
+            }
+        } catch (e) {
+            toast.error(e.message || 'Failed to download payslip');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -467,15 +492,15 @@ const PayrollManagement = () => {
     const availableEmployees = useMemo(() => {
         return employeeList
             .filter(emp => !generateFormData.employee_ids.includes(emp.id))
-            .filter(emp => emp.name.toLowerCase().includes(availableSearch.toLowerCase()) || 
-                           emp.employee_code.toLowerCase().includes(availableSearch.toLowerCase()));
+            .filter(emp => emp.name.toLowerCase().includes(availableSearch.toLowerCase()) ||
+                emp.employee_code.toLowerCase().includes(availableSearch.toLowerCase()));
     }, [employeeList, generateFormData.employee_ids, availableSearch]);
 
     const selectedEmployees = useMemo(() => {
         return employeeList
             .filter(emp => generateFormData.employee_ids.includes(emp.id))
-            .filter(emp => emp.name.toLowerCase().includes(selectedSearch.toLowerCase()) || 
-                           emp.employee_code.toLowerCase().includes(selectedSearch.toLowerCase()));
+            .filter(emp => emp.name.toLowerCase().includes(selectedSearch.toLowerCase()) ||
+                emp.employee_code.toLowerCase().includes(selectedSearch.toLowerCase()));
     }, [employeeList, generateFormData.employee_ids, selectedSearch]);
 
     // Avatar styling helper for dual list
@@ -493,7 +518,25 @@ const PayrollManagement = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            
+            {/* Full Page Loader for PDF Download */}
+            <AnimatePresence>
+                {isDownloading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center"
+                    >
+                        <FaSpinner className="animate-spin text-emerald-600 text-5xl mb-4" />
+                        <p className="text-gray-800 font-semibold shadow-sm px-5 py-2.5 bg-white rounded-xl border border-gray-100 flex items-center gap-2">
+                            <FaFileInvoiceDollar className="text-emerald-500" />
+                            Preparing PDF Payslip...
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Header */}
             <motion.div
@@ -630,7 +673,7 @@ const PayrollManagement = () => {
                                                                     {getInitials(item.employee.name)}
                                                                 </ProfileAvatar>
                                                                 <div>
-                                                                    <div 
+                                                                    <div
                                                                         className="text-gray-800 font-medium cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
                                                                         onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
                                                                     >
@@ -702,6 +745,12 @@ const PayrollManagement = () => {
                                                                     onClick: () => openViewModal(item),
                                                                     className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                                                                 },
+                                                                {
+                                                                    label: 'Download PDF',
+                                                                    icon: <FaDownload size={14} />,
+                                                                    onClick: () => handleDownloadPdf(item.payroll.id),
+                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                                },
                                                             ]}
                                                         />
                                                     </td>
@@ -732,7 +781,7 @@ const PayrollManagement = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-2">
-                                                    <h3 
+                                                    <h3
                                                         className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
                                                         onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
                                                     >
@@ -789,8 +838,16 @@ const PayrollManagement = () => {
 
                                         <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
                                             <button
+                                                onClick={(e) => { e.stopPropagation(); handleDownloadPdf(item.payroll.id); }}
+                                                className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"
+                                                title="Download PDF"
+                                            >
+                                                <FaDownload size={16} />
+                                            </button>
+                                            <button
                                                 onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
                                                 className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"
+                                                title="View Details"
                                             >
                                                 <FaEye size={16} />
                                             </button>
@@ -1000,6 +1057,36 @@ const PayrollManagement = () => {
                                 />
                             </div>
                         </div>
+                        {/* Send PDF Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gradient-to-r from-gray-50 to-slate-50 shadow-sm">
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <FaDownload className="text-emerald-500" size={13} />
+                                    Send Payslip via Email
+                                </span>
+                                <span className="text-xs text-gray-500 leading-relaxed">
+                                    When enabled, a PDF payslip will be automatically emailed to each selected employee after payroll is generated.
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={generateFormData.send_pdf}
+                                onClick={() => setGenerateFormData(prev => ({ ...prev, send_pdf: !prev.send_pdf }))}
+                                className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shrink-0 ${generateFormData.send_pdf
+                                        ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-200 shadow-md'
+                                        : 'bg-gray-200'
+                                    }`}
+                            >
+                                <span
+                                    className={`inline-block w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${generateFormData.send_pdf ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                />
+                                {generateFormData.send_pdf && (
+                                    <span className="absolute left-1.5 text-white" style={{ fontSize: '7px', fontWeight: 800, lineHeight: 1, letterSpacing: '0.05em' }}>ON</span>
+                                )}
+                            </button>
+                        </div>
 
                         {/* Employee Selection */}
                         <div>
@@ -1037,7 +1124,7 @@ const PayrollManagement = () => {
                                                 <div className="text-center py-8 text-sm text-gray-400">No employees found</div>
                                             ) : (
                                                 availableEmployees.map(emp => (
-                                                    <div 
+                                                    <div
                                                         key={emp.id}
                                                         onClick={() => setGenerateFormData(prev => ({
                                                             ...prev,
@@ -1067,7 +1154,7 @@ const PayrollManagement = () => {
 
                                     {/* Divider / Visual Arrows */}
                                     <div className="hidden md:flex flex-col items-center justify-center gap-3 px-2">
-                                        <button 
+                                        <button
                                             type="button"
                                             title="Select All"
                                             onClick={() => setGenerateFormData(prev => ({
@@ -1078,7 +1165,7 @@ const PayrollManagement = () => {
                                         >
                                             <FaAngleDoubleRight size={16} />
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
                                             title="Deselect All"
                                             onClick={() => setGenerateFormData(prev => ({
@@ -1114,7 +1201,7 @@ const PayrollManagement = () => {
                                                 <div className="text-center py-8 text-sm text-emerald-400">No employees selected</div>
                                             ) : (
                                                 selectedEmployees.map(emp => (
-                                                    <div 
+                                                    <div
                                                         key={emp.id}
                                                         onClick={() => setGenerateFormData(prev => ({
                                                             ...prev,
@@ -1144,6 +1231,8 @@ const PayrollManagement = () => {
                                 </div>
                             )}
                         </div>
+
+
                     </div>
                 </form>
             </Modal>

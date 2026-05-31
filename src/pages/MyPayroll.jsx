@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     FaMoneyBillWave, FaCalendarAlt, FaUserCircle, FaBriefcase,
     FaChartBar, FaArrowUp, FaArrowDown, FaInfoCircle,
-    FaSpinner, FaSearch, FaTimes, FaEye,
+    FaSpinner, FaSearch, FaTimes, FaEye, FaDownload,
     FaRegClock, FaFileInvoiceDollar, FaExclamationTriangle,
     FaCheckCircle, FaTimesCircle, FaHourglassHalf, FaIdCard,
     FaUserTag, FaWallet, FaCalendarCheck, FaUserTie, FaCog
@@ -232,6 +232,7 @@ const MyPayroll = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [activeActionMenu, setActiveActionMenu] = useState(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 12);
     const fetchInProgress = useRef(false);
@@ -378,11 +379,48 @@ const MyPayroll = () => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
+    const handleDownloadPdf = async (payrollEntryId) => {
+        setIsDownloading(true);
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const companyId = company?.id ?? null;
+            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId }, companyId);
+            const result = await response.json();
+            if (result.success && result.url) {
+                toast.success(result.message || 'Payslip generated successfully');
+                window.open(result.url, '_blank');
+            } else {
+                throw new Error(result.message || 'Failed to download payslip');
+            }
+        } catch (e) {
+            toast.error(e.message || 'Failed to download payslip');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     // ─── Render ─────────────────────────────────────────────────────────────────
 
     return (
-        <ManagementHub
-            eyebrow={<><FaFileInvoiceDollar size={11} /> My Payroll</>}
+        <>
+            <AnimatePresence>
+                {isDownloading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center"
+                    >
+                        <FaSpinner className="animate-spin text-blue-600 text-5xl mb-4" />
+                        <p className="text-gray-800 font-semibold shadow-sm px-5 py-2.5 bg-white rounded-xl border border-gray-100 flex items-center gap-2">
+                            <FaFileInvoiceDollar className="text-blue-500" />
+                            Preparing PDF Payslip...
+                        </p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            <ManagementHub
+                eyebrow={<><FaFileInvoiceDollar size={11} /> My Payroll</>}
             title="My Payroll"
             description="Review your payroll history, earnings, deductions, and attendance impact."
             accent="blue"
@@ -605,6 +643,11 @@ const MyPayroll = () => {
                                                                     label: 'View Details',
                                                                     icon: <FaEye />,
                                                                     onClick: () => openViewModal(item)
+                                                                },
+                                                                {
+                                                                    label: 'Download PDF',
+                                                                    icon: <FaDownload />,
+                                                                    onClick: () => handleDownloadPdf(item.payroll.id)
                                                                 }
                                                             ]}
                                                         />
@@ -711,6 +754,11 @@ const MyPayroll = () => {
                                                         label: 'View Details',
                                                         icon: <FaEye />,
                                                         onClick: () => openViewModal(item)
+                                                    },
+                                                    {
+                                                        label: 'Download PDF',
+                                                        icon: <FaDownload />,
+                                                        onClick: () => handleDownloadPdf(item.payroll.id)
                                                     }
                                                 ]}
                                             />
@@ -764,6 +812,7 @@ const MyPayroll = () => {
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
             `}</style>
         </ManagementHub>
+        </>
     );
 };
 
