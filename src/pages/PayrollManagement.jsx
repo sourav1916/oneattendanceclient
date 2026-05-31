@@ -3,7 +3,7 @@ import {
     FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaUserCircle,
     FaSearch, FaSpinner, FaCalendarAlt, FaDollarSign,
     FaMoneyBillWave, FaChartLine, FaExclamationTriangle,
-    FaCheckCircle, FaFileInvoiceDollar, FaClock, FaPlus,
+    FaCheckCircle, FaCheckSquare, FaFileInvoiceDollar, FaClock, FaPlus,
     FaDownload, FaSave, FaCalculator, FaClipboardList,
     FaTh, FaListUl, FaBriefcase, FaEnvelope, FaIdCard,
     FaUsers, FaUserFriends, FaUser, FaCog, FaAngleDoubleRight, FaAngleDoubleLeft
@@ -69,15 +69,15 @@ const InfoItem = ({ icon, label, value, valueClassName = '' }) => (
     </div>
 );
 
-const ToggleSwitch = ({ isOn, onToggle, accent = "green" }) => (
+const ToggleSwitch = ({ isOn, onToggle, accent = "green", size = "md" }) => (
     <div
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+        className={`${size === 'sm' ? 'h-4 w-8' : 'h-5 w-10'} flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
     >
         <motion.div
-            className="bg-white w-3 h-3 rounded-full shadow-md"
+            className={`${size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} bg-white rounded-full shadow-md`}
             initial={false}
-            animate={{ x: isOn ? 20 : 0 }}
+            animate={{ x: isOn ? (size === 'sm' ? 16 : 20) : 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
         />
     </div>
@@ -96,7 +96,6 @@ const PayrollManagement = () => {
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [viewMode, setViewMode] = useState('table');
     const [selectedIds, setSelectedIds] = useState([]);
-    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     const [availableSearch, setAvailableSearch] = useState('');
     const [selectedSearch, setSelectedSearch] = useState('');
@@ -343,24 +342,20 @@ const PayrollManagement = () => {
 
     const getPayrollEntryId = (item) => item?.payroll?.id;
 
-    const toggleSelectionMode = () => {
-        setIsSelectionMode(prev => {
-            if (prev) setSelectedIds([]);
-            return !prev;
+    const visiblePayrollIds = payrollList.map(getPayrollEntryId).filter(Boolean);
+    const allVisibleSelected = visiblePayrollIds.length > 0 && visiblePayrollIds.every(id => selectedIds.includes(id));
+
+    const toggleSelectAll = () => {
+        setSelectedIds(prev => {
+            if (allVisibleSelected) {
+                const visibleSet = new Set(visiblePayrollIds);
+                return prev.filter(id => !visibleSet.has(id));
+            }
+            return Array.from(new Set([...prev, ...visiblePayrollIds]));
         });
     };
 
-    const toggleSelectAll = () => {
-        const currentIds = payrollList.map(getPayrollEntryId).filter(Boolean);
-        if (selectedIds.length === currentIds.length && currentIds.length > 0) {
-            setSelectedIds([]);
-        } else {
-            setSelectedIds(currentIds);
-        }
-    };
-
-    const toggleSelectRow = (e, id) => {
-        e.stopPropagation();
+    const toggleSelectRow = (id) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]);
     };
 
@@ -463,7 +458,6 @@ const PayrollManagement = () => {
                 toast.success(result.message || `Email sent for ${payrollIds.length} payroll record${payrollIds.length > 1 ? 's' : ''}`);
                 if (isBulkEmail) {
                     setSelectedIds([]);
-                    setIsSelectionMode(false);
                 }
             } else {
                 throw new Error(result.message || 'Failed to send email');
@@ -615,7 +609,7 @@ const PayrollManagement = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-6 relative">
+        <div className="space-y-3 relative">
             
             {/* Full Page Loader for PDF Download */}
             <AnimatePresence>
@@ -731,6 +725,30 @@ const PayrollManagement = () => {
 
             {!loading && payrollList.length > 0 && (
                 <>
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col gap-3"
+                    >
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={toggleSelectAll}
+                                className="inline-flex items-center gap-2 rounded-xl border border-green-100 bg-green-50 px-3 py-2 text-xs font-bold text-green-700 transition hover:bg-green-100"
+                            >
+                                {allVisibleSelected
+                                    ? <><FaCheckSquare size={13} /> Deselect all</>
+                                    : <><FaCheck size={13} /> Select all</>
+                                }
+                            </button>
+                            {selectedIds.length > 0 && (
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                    {selectedIds.length} selected
+                                </span>
+                            )}
+                        </div>
+                    </motion.div>
+
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
                             className="bg-white rounded-xl shadow-xl overflow-visible"
@@ -741,22 +759,7 @@ const PayrollManagement = () => {
                                         <tr>
                                             {visibleColumns.showName && (
                                                 <th className="px-6 py-4">
-                                                    <div className="flex items-center gap-4">
-                                                        {isSelectionMode && (
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selectedIds.length > 0 && selectedIds.length === payrollList.length}
-                                                                onChange={toggleSelectAll}
-                                                                className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
-                                                            />
-                                                        )}
-                                                        <ToggleSwitch
-                                                            isOn={isSelectionMode}
-                                                            onToggle={toggleSelectionMode}
-                                                            accent="green"
-                                                        />
-                                                        <span>Employee</span>
-                                                    </div>
+                                                    Employee
                                                 </th>
                                             )}
                                             {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
@@ -782,16 +785,15 @@ const PayrollManagement = () => {
                                                     {visibleColumns.showName && (
                                                         <td className="px-6 py-4 font-semibold">
                                                             <div className="flex items-center gap-3">
-                                                                {isSelectionMode && (
-                                                                    <div onClick={(e) => e.stopPropagation()}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={selectedIds.includes(item.payroll.id)}
-                                                                            onChange={(e) => toggleSelectRow(e, item.payroll.id)}
-                                                                            className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
-                                                                        />
-                                                                    </div>
-                                                                )}
+                                                                <div className="flex shrink-0 flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                                    <ToggleSwitch
+                                                                        isOn={selectedIds.includes(item.payroll.id)}
+                                                                        onToggle={() => toggleSelectRow(item.payroll.id)}
+                                                                        accent="green"
+                                                                        size="sm"
+                                                                    />
+                                                                    
+                                                                </div>
                                                                 <ProfileAvatar
                                                                     record={item.employee}
                                                                     name={item.employee.name}
@@ -901,26 +903,27 @@ const PayrollManagement = () => {
                                 return (
                                     <motion.div key={item.payroll.id} initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                        className="bg-white rounded-xl shadow-md border border-gray-100 p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                                        className={`relative bg-white rounded-xl shadow-md border p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group ${selectedIds.includes(item.payroll.id) ? 'border-green-200 ring-2 ring-green-400 ring-offset-2' : 'border-gray-100'}`}
                                         onClick={() => openViewModal(item)}
                                     >
+                                        <div className="absolute left-3 top-3 z-10 flex shrink-0 flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                            <ToggleSwitch
+                                                isOn={selectedIds.includes(item.payroll.id)}
+                                                onToggle={() => toggleSelectRow(item.payroll.id)}
+                                                accent="green"
+                                                size="sm"
+                                            />
+                                            <span className={`text-[9px] font-bold uppercase tracking-wider ${selectedIds.includes(item.payroll.id) ? 'text-green-600' : 'text-slate-400'}`}>
+                                                {selectedIds.includes(item.payroll.id) ? 'On' : 'Off'}
+                                            </span>
+                                        </div>
                                         <div className="flex items-start gap-4 mb-4">
-                                            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-xl">
+                                            <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-xl ml-10">
                                                 <FaFileInvoiceDollar className="text-white text-3xl" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-2 relative">
                                                     <div className="flex min-w-0 items-center gap-2">
-                                                        {isSelectionMode && (
-                                                            <div onClick={(e) => e.stopPropagation()}>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selectedIds.includes(item.payroll.id)}
-                                                                    onChange={(e) => toggleSelectRow(e, item.payroll.id)}
-                                                                    className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
-                                                                />
-                                                            </div>
-                                                        )}
                                                         <h3
                                                             className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors pr-2"
                                                             onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
@@ -1037,7 +1040,8 @@ const PayrollManagement = () => {
                         <div className="h-10 w-px bg-gray-200 mx-2"></div>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
+                                type="button"
+                                onClick={() => setSelectedIds([])}
                                 className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
                             >
                                 Close
