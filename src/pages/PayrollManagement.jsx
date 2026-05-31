@@ -19,7 +19,7 @@ import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import usePermissionAccess from '../hooks/usePermissionAccess';
-import { EmployeeSelect, RefreshButton } from '../components/common';
+import { EmployeeSelect, ManagementButton, RefreshButton } from '../components/common';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
@@ -69,6 +69,20 @@ const InfoItem = ({ icon, label, value, valueClassName = '' }) => (
     </div>
 );
 
+const ToggleSwitch = ({ isOn, onToggle, accent = "green" }) => (
+    <div
+        onClick={(e) => { e.stopPropagation(); onToggle(); }}
+        className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+    >
+        <motion.div
+            className="bg-white w-3 h-3 rounded-full shadow-md"
+            initial={false}
+            animate={{ x: isOn ? 20 : 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        />
+    </div>
+);
+
 
 const PayrollManagement = () => {
     const navigateToEmployeeProfile = useEmployeeNavigation();
@@ -81,6 +95,8 @@ const PayrollManagement = () => {
     const [selectedPayroll, setSelectedPayroll] = useState(null);
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [viewMode, setViewMode] = useState('table');
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
 
     const [availableSearch, setAvailableSearch] = useState('');
     const [selectedSearch, setSelectedSearch] = useState('');
@@ -248,6 +264,13 @@ const PayrollManagement = () => {
         }
     }, [pagination.page, fetchPayrollList]);
 
+    useEffect(() => {
+        setSelectedIds(prev => {
+            const currentIds = new Set(payrollList.map(item => item?.payroll?.id).filter(Boolean));
+            return prev.filter(id => currentIds.has(id));
+        });
+    }, [payrollList]);
+
     const generatePayroll = async (mode, data) => {
         setLoading(true);
         try {
@@ -305,9 +328,40 @@ const PayrollManagement = () => {
         setActiveActionMenu(null);
     };
 
+    const openBulkEmailModal = () => {
+        if (selectedIds.length === 0) return;
+        setSelectedPayroll(null);
+        setEmailOverride('');
+        setModalType(MODAL_TYPES.SEND_EMAIL);
+        setActiveActionMenu(null);
+    };
+
     const closeModal = () => {
         setModalType(MODAL_TYPES.NONE);
         setSelectedPayroll(null);
+    };
+
+    const getPayrollEntryId = (item) => item?.payroll?.id;
+
+    const toggleSelectionMode = () => {
+        setIsSelectionMode(prev => {
+            if (prev) setSelectedIds([]);
+            return !prev;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const currentIds = payrollList.map(getPayrollEntryId).filter(Boolean);
+        if (selectedIds.length === currentIds.length && currentIds.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(currentIds);
+        }
+    };
+
+    const toggleSelectRow = (e, id) => {
+        e.stopPropagation();
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]);
     };
 
     // ─── Form Handlers ───────────────────────────────────────────────────────
@@ -389,23 +443,28 @@ const PayrollManagement = () => {
 
     const handleConfirmSendEmail = async (e) => {
         if (e) e.preventDefault();
-        if (!selectedPayroll) return;
+        const payrollIds = selectedPayroll ? [selectedPayroll.payroll.id] : selectedIds;
+        if (!payrollIds.length) return;
         
         setIsEmailing(true);
-        const payrollId = selectedPayroll.payroll.id;
+        const isBulkEmail = !selectedPayroll;
         closeModal();
         
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
-            const payload = { payroll_entry_id: [payrollId] };
+            const payload = { payroll_entry_id: payrollIds };
             if (emailOverride && emailOverride.trim()) {
                 payload.email = emailOverride.trim();
             }
             const response = await apiCall('/payroll/send-email', 'POST', payload, companyId);
             const result = await response.json();
             if (result.success) {
-                toast.success(result.message || 'Email sent successfully');
+                toast.success(result.message || `Email sent for ${payrollIds.length} payroll record${payrollIds.length > 1 ? 's' : ''}`);
+                if (isBulkEmail) {
+                    setSelectedIds([]);
+                    setIsSelectionMode(false);
+                }
             } else {
                 throw new Error(result.message || 'Failed to send email');
             }
@@ -438,7 +497,6 @@ const PayrollManagement = () => {
     // ─── Responsive Columns ──────────────────────────────────────────────────
 
     const [visibleColumns, setVisibleColumns] = useState(() => ({
-        showEmployeeCode: window.innerWidth >= 1280,
         showName: true,
         showDesignation: window.innerWidth >= 768,
         showNetSalary: true,
@@ -452,7 +510,6 @@ const PayrollManagement = () => {
         const onResize = () => {
             clearTimeout(t);
             t = setTimeout(() => setVisibleColumns({
-                showEmployeeCode: window.innerWidth >= 1280,
                 showName: true,
                 showDesignation: window.innerWidth >= 768,
                 showNetSalary: true,
@@ -682,8 +739,26 @@ const PayrollManagement = () => {
                                 <table className="w-full text-sm text-left text-gray-700">
                                     <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                         <tr>
-                                            {visibleColumns.showEmployeeCode && <th className="px-6 py-4">Employee Code</th>}
-                                            {visibleColumns.showName && <th className="px-6 py-4">Employee</th>}
+                                            {visibleColumns.showName && (
+                                                <th className="px-6 py-4">
+                                                    <div className="flex items-center gap-4">
+                                                        {isSelectionMode && (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedIds.length > 0 && selectedIds.length === payrollList.length}
+                                                                onChange={toggleSelectAll}
+                                                                className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                                                            />
+                                                        )}
+                                                        <ToggleSwitch
+                                                            isOn={isSelectionMode}
+                                                            onToggle={toggleSelectionMode}
+                                                            accent="green"
+                                                        />
+                                                        <span>Employee</span>
+                                                    </div>
+                                                </th>
+                                            )}
                                             {visibleColumns.showDesignation && <th className="px-6 py-4">Designation</th>}
                                             {visibleColumns.showNetSalary && <th className="px-6 py-4">Net Salary</th>}
                                             {visibleColumns.showEarnings && <th className="px-6 py-4">Earnings</th>}
@@ -704,14 +779,19 @@ const PayrollManagement = () => {
                                                     className="cursor-pointer hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300"
                                                     onClick={() => openViewModal(item)}
                                                 >
-                                                    {visibleColumns.showEmployeeCode && (
-                                                        <td className="px-6 py-4 font-mono text-xs font-medium text-gray-600">
-                                                            {item.employee.employee_code}
-                                                        </td>
-                                                    )}
                                                     {visibleColumns.showName && (
                                                         <td className="px-6 py-4 font-semibold">
                                                             <div className="flex items-center gap-3">
+                                                                {isSelectionMode && (
+                                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedIds.includes(item.payroll.id)}
+                                                                            onChange={(e) => toggleSelectRow(e, item.payroll.id)}
+                                                                            className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                                 <ProfileAvatar
                                                                     record={item.employee}
                                                                     name={item.employee.name}
@@ -830,12 +910,24 @@ const PayrollManagement = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-2 relative">
-                                                    <h3
-                                                        className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors pr-2"
-                                                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
-                                                    >
-                                                        {item.employee.name}
-                                                    </h3>
+                                                    <div className="flex min-w-0 items-center gap-2">
+                                                        {isSelectionMode && (
+                                                            <div onClick={(e) => e.stopPropagation()}>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedIds.includes(item.payroll.id)}
+                                                                    onChange={(e) => toggleSelectRow(e, item.payroll.id)}
+                                                                    className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <h3
+                                                            className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors pr-2"
+                                                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
+                                                        >
+                                                            {item.employee.name}
+                                                        </h3>
+                                                    </div>
                                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                         <ActionMenu
                                                             menuId={`card-${item.payroll.id}`}
@@ -929,6 +1021,41 @@ const PayrollManagement = () => {
                     />
                 </>
             )}
+
+            <AnimatePresence>
+                {selectedIds.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 100 }}
+                        className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
+                    >
+                        <div className="flex flex-col">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
+                            <span className="text-sm font-black text-slate-800">{selectedIds.length} Selected</span>
+                        </div>
+                        <div className="h-10 w-px bg-gray-200 mx-2"></div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
+                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                                Close
+                            </button>
+                            <ManagementButton
+                                tone="violet"
+                                variant="solid"
+                                leftIcon={<FaEnvelope />}
+                                onClick={openBulkEmailModal}
+                                disabled={isEmailing}
+                                className="shadow-lg shadow-purple-200"
+                            >
+                                Send Email
+                            </ManagementButton>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Modals */}
             <Modal
@@ -1298,7 +1425,7 @@ const PayrollManagement = () => {
             </Modal>
 
             <Modal
-                isOpen={modalType === MODAL_TYPES.SEND_EMAIL && !!selectedPayroll}
+                isOpen={modalType === MODAL_TYPES.SEND_EMAIL && (!!selectedPayroll || selectedIds.length > 0)}
                 onClose={closeModal}
                 title="Send Payslip Email"
                 subtitle="Confirm and optionally provide an alternate email address."
@@ -1335,20 +1462,34 @@ const PayrollManagement = () => {
                     </div>
                 }
             >
-                {selectedPayroll && (
+                {(selectedPayroll || selectedIds.length > 0) && (
                     <div className="space-y-6 pb-2">
                         <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-start gap-4">
                             <div className="bg-white p-3 rounded-xl shadow-sm text-purple-500 mt-0.5">
                                 <FaFileInvoiceDollar size={24} />
                             </div>
                             <div className="flex-1">
-                                <h4 className="font-semibold text-gray-800 text-base">{selectedPayroll.employee.name}</h4>
-                                <p className="text-sm text-gray-600 mb-1">
-                                    Payslip for <span className="font-medium text-gray-800">{getMonthName(selectedMonth)} {selectedYear}</span>
-                                </p>
-                                <p className="text-xs text-gray-500 font-mono">
-                                    Default Email: <span className="text-gray-700 font-medium">{selectedPayroll.employee.email || 'N/A'}</span>
-                                </p>
+                                {selectedPayroll ? (
+                                    <>
+                                        <h4 className="font-semibold text-gray-800 text-base">{selectedPayroll.employee.name}</h4>
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            Payslip for <span className="font-medium text-gray-800">{getMonthName(selectedMonth)} {selectedYear}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-500 font-mono">
+                                            Default Email: <span className="text-gray-700 font-medium">{selectedPayroll.employee.email || 'N/A'}</span>
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h4 className="font-semibold text-gray-800 text-base">{selectedIds.length} payroll records selected</h4>
+                                        <p className="text-sm text-gray-600 mb-1">
+                                            Payslips for <span className="font-medium text-gray-800">{getMonthName(selectedMonth)} {selectedYear}</span>
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            Emails will be sent to the selected employees.
+                                        </p>
+                                    </>
+                                )}
                             </div>
                         </div>
 
