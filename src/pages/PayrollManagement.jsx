@@ -31,6 +31,7 @@ const MODAL_TYPES = {
     NONE: 'NONE',
     VIEW: 'VIEW',
     GENERATE: 'GENERATE',
+    SEND_EMAIL: 'SEND_EMAIL',
 };
 
 const modalVariants = {
@@ -100,6 +101,8 @@ const PayrollManagement = () => {
     const [availableSearch, setAvailableSearch] = useState('');
     const [selectedSearch, setSelectedSearch] = useState('');
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isEmailing, setIsEmailing] = useState(false);
+    const [emailOverride, setEmailOverride] = useState('');
 
     const currentDate = new Date();
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -293,6 +296,13 @@ const PayrollManagement = () => {
         await fetchEmployees();
     };
 
+    const openEmailModal = (item) => {
+        setSelectedPayroll(item);
+        setEmailOverride('');
+        setModalType(MODAL_TYPES.SEND_EMAIL);
+        setActiveActionMenu(null);
+    };
+
     const closeModal = () => {
         setModalType(MODAL_TYPES.NONE);
         setSelectedPayroll(null);
@@ -372,6 +382,35 @@ const PayrollManagement = () => {
             toast.error(e.message || 'Failed to download payslip');
         } finally {
             setIsDownloading(false);
+        }
+    };
+
+    const handleConfirmSendEmail = async (e) => {
+        if (e) e.preventDefault();
+        if (!selectedPayroll) return;
+        
+        setIsEmailing(true);
+        const payrollId = selectedPayroll.payroll.id;
+        closeModal();
+        
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const companyId = company?.id ?? null;
+            const payload = { payroll_entry_id: [payrollId] };
+            if (emailOverride && emailOverride.trim()) {
+                payload.email = emailOverride.trim();
+            }
+            const response = await apiCall('/payroll/send-email', 'POST', payload, companyId);
+            const result = await response.json();
+            if (result.success) {
+                toast.success(result.message || 'Email sent successfully');
+            } else {
+                throw new Error(result.message || 'Failed to send email');
+            }
+        } catch (error) {
+            toast.error(error.message || 'Failed to send email');
+        } finally {
+            setIsEmailing(false);
         }
     };
 
@@ -522,17 +561,26 @@ const PayrollManagement = () => {
             
             {/* Full Page Loader for PDF Download */}
             <AnimatePresence>
-                {isDownloading && (
+                {(isDownloading || isEmailing) && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center"
                     >
-                        <FaSpinner className="animate-spin text-emerald-600 text-5xl mb-4" />
+                        <FaSpinner className={`animate-spin text-5xl mb-4 ${isDownloading ? 'text-emerald-600' : 'text-purple-600'}`} />
                         <p className="text-gray-800 font-semibold shadow-sm px-5 py-2.5 bg-white rounded-xl border border-gray-100 flex items-center gap-2">
-                            <FaFileInvoiceDollar className="text-emerald-500" />
-                            Preparing PDF Payslip...
+                            {isDownloading ? (
+                                <>
+                                    <FaFileInvoiceDollar className="text-emerald-500" />
+                                    Preparing PDF Payslip...
+                                </>
+                            ) : (
+                                <>
+                                    <FaEnvelope className="text-purple-500" />
+                                    Sending Email...
+                                </>
+                            )}
                         </p>
                     </motion.div>
                 )}
@@ -751,6 +799,12 @@ const PayrollManagement = () => {
                                                                     onClick: () => handleDownloadPdf(item.payroll.id),
                                                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                                 },
+                                                                {
+                                                                    label: 'Send Email',
+                                                                    icon: <FaEnvelope size={14} />,
+                                                                    onClick: () => openEmailModal(item),
+                                                                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                                                },
                                                             ]}
                                                         />
                                                     </td>
@@ -837,6 +891,13 @@ const PayrollManagement = () => {
                                         </div>
 
                                         <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); openEmailModal(item); }}
+                                                className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110"
+                                                title="Send Email"
+                                            >
+                                                <FaEnvelope size={16} />
+                                            </button>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleDownloadPdf(item.payroll.id); }}
                                                 className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"
@@ -1235,6 +1296,84 @@ const PayrollManagement = () => {
 
                     </div>
                 </form>
+            </Modal>
+
+            <Modal
+                isOpen={modalType === MODAL_TYPES.SEND_EMAIL && !!selectedPayroll}
+                onClose={closeModal}
+                title="Send Payslip Email"
+                subtitle="Confirm and optionally provide an alternate email address."
+                icon={<FaEnvelope size={18} />}
+                size="md"
+                footer={
+                    <div className="flex justify-end gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            disabled={isEmailing}
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleConfirmSendEmail}
+                            disabled={isEmailing}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-purple-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {isEmailing ? (
+                                <>
+                                    <FaSpinner className="w-4 h-4 animate-spin" />
+                                    Sending...
+                                </>
+                            ) : (
+                                <>
+                                    <FaEnvelope className="w-4 h-4" />
+                                    Confirm & Send
+                                </>
+                            )}
+                        </button>
+                    </div>
+                }
+            >
+                {selectedPayroll && (
+                    <div className="space-y-6 pb-2">
+                        <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-start gap-4">
+                            <div className="bg-white p-3 rounded-xl shadow-sm text-purple-500 mt-0.5">
+                                <FaFileInvoiceDollar size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-gray-800 text-base">{selectedPayroll.employee.name}</h4>
+                                <p className="text-sm text-gray-600 mb-1">
+                                    Payslip for <span className="font-medium text-gray-800">{getMonthName(selectedMonth)} {selectedYear}</span>
+                                </p>
+                                <p className="text-xs text-gray-500 font-mono">
+                                    Default Email: <span className="text-gray-700 font-medium">{selectedPayroll.employee.email || 'N/A'}</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Alternate Email Address (Optional)
+                            </label>
+                            <div className="relative">
+                                <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="email"
+                                    value={emailOverride}
+                                    onChange={(e) => setEmailOverride(e.target.value)}
+                                    placeholder="Leave blank to use default email"
+                                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-sm"
+                                    disabled={isEmailing}
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2 ml-1">
+                                If provided, the payslip will be sent to this email instead of the employee's default registered email.
+                            </p>
+                        </div>
+                    </div>
+                )}
             </Modal>
 
             <style>{`
