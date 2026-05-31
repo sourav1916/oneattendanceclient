@@ -13,6 +13,7 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 import { EmployeeSelect, ManagementCard, ManagementTable, ManagementHub, ManagementButton } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import SelectField from '../components/SelectField';
+import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
@@ -41,19 +42,19 @@ export default function PayrollAdjustment() {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState('table');
-    
+
     // Filters
     const currentDate = new Date();
     const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
     const [adjustmentType, setAdjustmentType] = useState('');
-    
+
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 20);
 
     const isMounted = useRef(true);
     const fetchInProgress = useRef(false);
-    
+
     // Modal & Selection States
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAdjustment, setEditingAdjustment] = useState(null);
@@ -61,7 +62,7 @@ export default function PayrollAdjustment() {
     const [deleteConfirmState, setDeleteConfirmState] = useState(null); // { type: 'single' | 'bulk', id?: number, ids?: number[] }
     const [submitting, setSubmitting] = useState(false);
     const [activeMenuId, setActiveMenuId] = useState(null);
-    
+
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
 
@@ -163,7 +164,7 @@ export default function PayrollAdjustment() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!editingAdjustment && !formData.employee_id) {
             toast.warning('Please select an employee');
             return;
@@ -177,7 +178,7 @@ export default function PayrollAdjustment() {
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            
+
             let response;
             if (editingAdjustment) {
                 response = await apiCall('/payroll/adjustments/update', 'PUT', {
@@ -200,7 +201,7 @@ export default function PayrollAdjustment() {
                     adjustment_period: formData.adjustment_period
                 }, company?.id);
             }
-            
+
             const result = await response.json();
             if (result.success) {
                 toast.success(editingAdjustment ? 'Adjustment updated successfully!' : 'Adjustment created successfully!');
@@ -237,32 +238,32 @@ export default function PayrollAdjustment() {
 
     const confirmDelete = async () => {
         if (!deleteConfirmState) return;
-        
+
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
-            const idsToDelete = deleteConfirmState.type === 'single' 
-                ? [deleteConfirmState.id] 
+            const idsToDelete = deleteConfirmState.type === 'single'
+                ? [deleteConfirmState.id]
                 : deleteConfirmState.ids;
-                
+
             const response = await apiCall('/payroll/adjustments/delete', 'DELETE', {
                 ids: idsToDelete
             }, company?.id);
-            
+
             const result = await response.json();
             if (result.success) {
-                toast.success(deleteConfirmState.type === 'single' 
-                    ? 'Adjustment deleted successfully!' 
+                toast.success(deleteConfirmState.type === 'single'
+                    ? 'Adjustment deleted successfully!'
                     : `${idsToDelete.length} adjustments deleted successfully!`
                 );
-                
+
                 if (deleteConfirmState.type === 'bulk') {
                     setSelectedIds([]);
                     setIsSelectionMode(false);
                 } else {
                     setSelectedIds(prev => prev.filter(id => id !== deleteConfirmState.id));
                 }
-                
+
                 setDeleteConfirmState(null);
                 fetchAdjustments(deleteConfirmState.type === 'bulk' ? 1 : pagination.page);
             } else {
@@ -321,13 +322,13 @@ export default function PayrollAdjustment() {
             onClick: () => setDetailAdjustment(adj),
             className: 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
         },
-        { 
-            label: 'Edit', 
-            icon: <FaEdit size={13} />, 
-            onClick: () => openEditModal(adj), 
+        {
+            label: 'Edit',
+            icon: <FaEdit size={13} />,
+            onClick: () => openEditModal(adj),
             disabled: updateAccess.disabled,
             title: updateAccess.disabled ? getAccessMessage(updateAccess) : 'Edit adjustment',
-            className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' 
+            className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
         },
         {
             label: 'Delete',
@@ -382,7 +383,7 @@ export default function PayrollAdjustment() {
                             {adj.employee_name?.charAt(0).toUpperCase() || 'E'}
                         </ProfileAvatar>
                         <div>
-                            <p 
+                            <p
                                 className="font-semibold text-gray-800 leading-tight cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
                                 onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(adj.employee_id); }}
                             >
@@ -408,9 +409,8 @@ export default function PayrollAdjustment() {
             key: 'adjustment_type',
             label: 'Type',
             render: (adj) => (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                    adj.adjustment_type === 'bonus' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${adj.adjustment_type === 'bonus' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                    }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${adj.adjustment_type === 'bonus' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                     {adj.adjustment_type === 'bonus' ? 'Bonus' : 'Fine'}
                 </span>
@@ -432,9 +432,8 @@ export default function PayrollAdjustment() {
             headerClassName: 'text-right',
             className: 'text-right',
             render: (adj) => (
-                <span className={`font-black text-base ${
-                    adj.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'
-                }`}>
+                <span className={`font-black text-base ${adj.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>
                     {adj.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(adj.amount)}
                 </span>
             )
@@ -508,57 +507,76 @@ export default function PayrollAdjustment() {
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between"
+                    className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm"
                 >
-                    {/* Top Row on md/sm, Left Part on lg (At first shows employee select) */}
-                    <div className="w-full lg:w-80 shrink-0">
-                        <EmployeeSelect
-                            value={selectedEmployeeId}
-                            onChange={(id) => setSelectedEmployeeId(id || '')}
-                            placeholder="All Employees"
-                        />
-                    </div>
+                    {/* LG Layout */}
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
-                    {/* Bottom Row on md/sm, Right Part on lg */}
-                    <div className="flex flex-col lg:flex-row  items-center gap-3 justify-between lg:justify-end flex-1 min-w-0">
-                        <div className="flex flex-row items-center gap-3 flex-1 lg:flex-none">
-                            {/* Month and Year picker */}
-                            <div className="shrink-0">
-                                <AdvancedDateFilter
-                                    tabOptions={["month"]}
-                                    value={{
-                                        date: "",
-                                        month: selectedMonth,
-                                        year: selectedYear,
-                                        from_date: "",
-                                        to_date: ""
-                                    }}
-                                    onChange={(val) => {
-                                        if (val && val.month && val.year) {
-                                            setSelectedMonth(Number(val.month));
-                                            setSelectedYear(Number(val.year));
-                                        }
-                                    }}
-                                    buttonClassName="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none hover:border-gray-300 transition-all flex items-center justify-between cursor-pointer"
-                                />
-                            </div>
-
-                            {/* Adjustment Type Filter */}
-                            <div className="shrink-0">
-                                <SelectField
-                                    options={typeOptions}
-                                    value={selectedTypeOption}
-                                    onChange={(opt) => setAdjustmentType(opt ? opt.value : '')}
-                                    isClearable={false}
-                                    placeholder="Adjustment Type"
-                                    styles={{ control: (base) => ({ ...base, minHeight: '42px', height: '42px' }) }}
-                                />
-                            </div>
+                        {/* Employee Select */}
+                        <div className="w-full">
+                            <EmployeeSelect
+                                value={selectedEmployeeId}
+                                onChange={(id) => setSelectedEmployeeId(id || "")}
+                                placeholder="All Employees"
+                            />
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
-                            <div className="h-8 w-px bg-gray-100 hidden lg:block"></div>
-                            <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                        {/* Right Section */}
+                        <div className="flex flex-col lg:flex-row gap-3 w-full justify-end">
+
+                            {/* MD & SM: Filters Row */}
+                            <div className="flex flex-col sm:flex-row gap-3 lg:items-center">
+
+                                {/* Date Filter */}
+                                <div className="flex-1 lg:flex-none min-w-0">
+                                    <AdvancedDateFilter
+                                        tabOptions={["month"]}
+                                        value={{
+                                            date: "",
+                                            month: selectedMonth,
+                                            year: selectedYear,
+                                            from_date: "",
+                                            to_date: ""
+                                        }}
+                                        onChange={(val) => {
+                                            if (val?.month && val?.year) {
+                                                setSelectedMonth(Number(val.month));
+                                                setSelectedYear(Number(val.year));
+                                            }
+                                        }}
+                                        buttonClassName="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none hover:border-gray-300 transition-all flex items-center justify-between cursor-pointer"
+                                    />
+                                </div>
+
+                                {/* Adjustment Type */}
+                                <div className="flex-1 lg:flex-none min-w-0">
+                                    <SelectField
+                                        options={typeOptions}
+                                        value={selectedTypeOption}
+                                        onChange={(opt) =>
+                                            setAdjustmentType(opt ? opt.value : "")
+                                        }
+                                        isClearable={false}
+                                        placeholder="Adjustment Type"
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                minHeight: "42px",
+                                                height: "42px"
+                                            })
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Switcher */}
+                            <div className="flex justify-start lg:justify-end">
+                                <ManagementViewSwitcher
+                                    viewMode={viewMode}
+                                    onChange={setViewMode}
+                                    accent="blue"
+                                />
+                            </div>
                         </div>
                     </div>
                 </motion.div>
@@ -606,16 +624,15 @@ export default function PayrollAdjustment() {
                                                         />
                                                     </div>
                                                 )}
-                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                                                    adj.adjustment_type === 'bonus' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
-                                                }`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${adj.adjustment_type === 'bonus' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                                    }`}>
                                                     {adj.adjustment_type}
                                                 </span>
                                                 <span className="text-[10px] font-bold text-gray-400"># {adj.id}</span>
                                             </div>
                                         }
                                         title={
-                                            <span 
+                                            <span
                                                 className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
                                                 onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(adj.employee_id); }}
                                             >
@@ -643,9 +660,8 @@ export default function PayrollAdjustment() {
                                                     <FaCalendarAlt />
                                                     <span>{formatDate(adj.adjustment_period)}</span>
                                                 </div>
-                                                <span className={`text-lg font-black ${
-                                                    adj.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'
-                                                }`}>
+                                                <span className={`text-lg font-black ${adj.adjustment_type === 'bonus' ? 'text-emerald-600' : 'text-rose-600'
+                                                    }`}>
                                                     {adj.adjustment_type === 'bonus' ? '+' : '-'}{formatCurrency(adj.amount)}
                                                 </span>
                                             </div>
@@ -758,8 +774,8 @@ export default function PayrollAdjustment() {
                         ) : (
                             <div>
                                 <label className="block text-xs font-bold text-gray-600 uppercase mb-1.5">Employee *</label>
-                                <EmployeeSelect 
-                                    value={formData.employee_id} 
+                                <EmployeeSelect
+                                    value={formData.employee_id}
                                     onChange={(id) => setFormData({ ...formData, employee_id: id })}
                                 />
                             </div>
