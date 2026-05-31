@@ -69,22 +69,6 @@ const InfoItem = ({ icon, label, value, valueClassName = '' }) => (
     </div>
 );
 
-const StatusBadge = ({ status }) => {
-    const statusConfig = {
-        draft: { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200', label: 'Draft' },
-        approved: { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200', label: 'Approved' },
-        paid: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200', label: 'Paid' },
-        rejected: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200', label: 'Rejected' },
-    };
-
-    const config = statusConfig[status] || statusConfig.draft;
-
-    return (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${config.bg} ${config.text} ${config.border}`}>
-            {config.label}
-        </span>
-    );
-};
 
 const PayrollManagement = () => {
     const navigateToEmployeeProfile = useEmployeeNavigation();
@@ -214,12 +198,30 @@ const PayrollManagement = () => {
 
             if (result.success) {
                 setPayrollList(result.data);
+                
+                const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
+                const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
+                const total = Number(
+                    result.pagination?.total ??
+                    result.meta?.total ??
+                    result.total ??
+                    result.data?.length ??
+                    0
+                );
+                const totalPages = Number(
+                    result.pagination?.total_pages ??
+                    result.meta?.total_pages ??
+                    result.total_pages ??
+                    result.last_page ??
+                    Math.max(1, Math.ceil(total / perPage))
+                );
+
                 updatePagination({
-                    page: result.pagination?.page || page,
-                    limit: result.pagination?.limit || pagination.limit,
-                    total: result.pagination?.total || 0,
-                    total_pages: result.pagination?.total_pages || 1,
-                    is_last_page: result.pagination?.is_last_page ?? (page === result.pagination?.total_pages)
+                    page: currentPage,
+                    limit: perPage,
+                    total,
+                    total_pages: totalPages,
+                    is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= totalPages)
                 });
             } else {
                 throw new Error(result.message || 'Failed to fetch payroll');
@@ -442,7 +444,6 @@ const PayrollManagement = () => {
         showNetSalary: true,
         showEarnings: window.innerWidth >= 1100,
         showDeductions: window.innerWidth >= 1100,
-        showStatus: window.innerWidth >= 640,
         showAttendance: window.innerWidth >= 1440,
     }));
 
@@ -627,7 +628,7 @@ const PayrollManagement = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
+                className="flex w-full justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-6"
             >
                 {/* Left Section: Time Period Filters */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 flex-1">
@@ -643,13 +644,13 @@ const PayrollManagement = () => {
                 </div>
 
                 {/* Right Section: Controls */}
-                <div className="flex w-full lg:w-auto items-center justify-between lg:justify-end gap-4">
+                <div className="flex gap-4">
 
                     {/* Vertical Separator */}
                     <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
 
                     {/* View Switcher */}
-                    <div className="flex w-full lg:w-auto justify-end">
+                    <div>
                         <ManagementViewSwitcher
                             viewMode={viewMode}
                             onChange={setViewMode}
@@ -687,7 +688,6 @@ const PayrollManagement = () => {
                                             {visibleColumns.showNetSalary && <th className="px-6 py-4">Net Salary</th>}
                                             {visibleColumns.showEarnings && <th className="px-6 py-4">Earnings</th>}
                                             {visibleColumns.showDeductions && <th className="px-6 py-4">Deductions</th>}
-                                            {visibleColumns.showStatus && <th className="px-6 py-4">Status</th>}
                                             {visibleColumns.showAttendance && <th className="px-6 py-4">Attendance</th>}
                                             <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
@@ -760,11 +760,6 @@ const PayrollManagement = () => {
                                                             </div>
                                                         </td>
                                                     )}
-                                                    {visibleColumns.showStatus && (
-                                                        <td className="px-6 py-4">
-                                                            <StatusBadge status={item.payroll.status} />
-                                                        </td>
-                                                    )}
                                                     {visibleColumns.showAttendance && (
                                                         <td className="px-6 py-4">
                                                             <div className="text-xs space-y-1">
@@ -834,14 +829,42 @@ const PayrollManagement = () => {
                                                 <FaFileInvoiceDollar className="text-white text-3xl" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start mb-2">
+                                                <div className="flex justify-between items-start mb-2 relative">
                                                     <h3
-                                                        className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+                                                        className="font-bold text-lg text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors pr-2"
                                                         onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
                                                     >
                                                         {item.employee.name}
                                                     </h3>
-                                                    <StatusBadge status={item.payroll.status} />
+                                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                        <ActionMenu
+                                                            menuId={`card-${item.payroll.id}`}
+                                                            activeId={activeActionMenu}
+                                                            onToggle={(e, id) => {
+                                                                setActiveActionMenu((current) => (current === id ? null : id));
+                                                            }}
+                                                            actions={[
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={14} />,
+                                                                    onClick: () => openViewModal(item),
+                                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                                },
+                                                                {
+                                                                    label: 'Download PDF',
+                                                                    icon: <FaDownload size={14} />,
+                                                                    onClick: () => handleDownloadPdf(item.payroll.id),
+                                                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                                                },
+                                                                {
+                                                                    label: 'Send Email',
+                                                                    icon: <FaEnvelope size={14} />,
+                                                                    onClick: () => openEmailModal(item),
+                                                                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
+                                                                },
+                                                            ]}
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <p className="text-xs text-gray-500 font-mono bg-gray-50 px-2 py-1 rounded-lg inline-block">
                                                     {item.employee.employee_code}
@@ -888,30 +911,6 @@ const PayrollManagement = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); openEmailModal(item); }}
-                                                className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all duration-300 hover:scale-110"
-                                                title="Send Email"
-                                            >
-                                                <FaEnvelope size={16} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleDownloadPdf(item.payroll.id); }}
-                                                className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"
-                                                title="Download PDF"
-                                            >
-                                                <FaDownload size={16} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); openViewModal(item); }}
-                                                className="p-3 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110"
-                                                title="View Details"
-                                            >
-                                                <FaEye size={16} />
-                                            </button>
                                         </div>
                                     </motion.div>
                                 );

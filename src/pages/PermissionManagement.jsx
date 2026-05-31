@@ -1004,15 +1004,52 @@ const PermissionManagement = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2">
                         <h3 className="font-bold text-base text-gray-800 truncate">{pkg.package_name}</h3>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200 flex-shrink-0">
-                          <FaCode size={8} />{pkg.group_code}
-                        </span>
+                        <div className="flex flex-shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium border border-purple-200">
+                            <FaCode size={8} />{pkg.group_code}
+                          </span>
+                          <ActionMenu
+                            menuId={`card-${pkg.id}`}
+                            activeId={activeActionMenu}
+                            onToggle={(e, id) => {
+                              setActiveActionMenu((current) => (current === id ? null : id));
+                            }}
+                            actions={[
+                              {
+                                label: 'View Details',
+                                icon: <FaEye size={12} />,
+                                onClick: () => openViewModal(pkg),
+                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                              },
+                              {
+                                label: 'Edit',
+                                icon: <FaEdit size={12} />,
+                                onClick: () => openEditModal(pkg),
+                                disabled: updateAccess.disabled,
+                                title: updateAccess.disabled ? getAccessMessage(updateAccess) : '',
+                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                              },
+                              {
+                                label: 'Delete',
+                                icon: <FaTrash size={12} />,
+                                onClick: () => openDeleteModal(pkg),
+                                disabled: deleteAccess.disabled || hasAssignedEmployees(pkg),
+                                title: deleteAccess.disabled
+                                  ? getAccessMessage(deleteAccess)
+                                  : hasAssignedEmployees(pkg)
+                                    ? `Cannot delete package. It is assigned to ${getUsedByEmployees(pkg).length} employee(s)`
+                                    : '',
+                                className: 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                              }
+                            ]}
+                          />
+                        </div>
                       </div>
                       {pkg.description && <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">{pkg.description}</p>}
                       <div className="mt-3 flex items-center justify-between">
                         <p className="text-xs font-medium text-gray-400 flex items-center gap-1"><FaTag size={9} /> Permissions</p>
                         {(pkg.permissions?.length || 0) > 0 ? (
-                          <button type="button" onClick={() => openPermListModal(pkg)}
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openPermListModal(pkg); }}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 text-blue-700 text-xs font-bold hover:from-blue-100 hover:to-purple-100 hover:border-blue-400 hover:shadow-md transition-all duration-200">
                             <FaShieldAlt size={10} className="text-purple-500" />
                             {pkg.permissions.length} permission{pkg.permissions.length !== 1 ? 's' : ''}
@@ -1022,7 +1059,7 @@ const PermissionManagement = () => {
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-xs font-medium text-gray-400 flex items-center gap-1"><FaLayerGroup size={9} /> Used by</p>
                         {getPackageUsageCount(pkg) > 0 ? (
-                          <button type="button" onClick={() => openEmployeeListModal(pkg)}
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openEmployeeListModal(pkg); }}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-700 text-xs font-bold hover:from-emerald-100 hover:to-teal-100 hover:border-emerald-400 hover:shadow-md transition-all duration-200">
                             <FaLayerGroup size={10} className="text-emerald-500" />
                             {getPackageUsageCount(pkg)} employee{getPackageUsageCount(pkg) !== 1 ? 's' : ''}
@@ -1030,23 +1067,6 @@ const PermissionManagement = () => {
                         ) : <span className="text-xs text-gray-400 italic">No employees</span>}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" onClick={() => openViewModal(pkg)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all duration-300 hover:scale-110"><FaEye size={14} /></button>
-                    <button type="button" onClick={() => openEditModal(pkg)} disabled={updateAccess.disabled} title={updateAccess.disabled ? getAccessMessage(updateAccess) : ''} className="p-2.5 bg-green-50 text-green-600 rounded-xl hover:bg-green-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"><FaEdit size={14} /></button>
-                    <button
-                      type="button"
-                      onClick={() => openDeleteModal(pkg)}
-                      disabled={deleteAccess.disabled || hasAssignedEmployees(pkg)}
-                      title={deleteAccess.disabled
-                        ? getAccessMessage(deleteAccess)
-                        : hasAssignedEmployees(pkg)
-                          ? `Cannot delete package. It is assigned to ${getUsedByEmployees(pkg).length} employee(s)`
-                          : ''}
-                      className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FaTrash size={14} />
-                    </button>
                   </div>
                 </motion.div>
               ))}
