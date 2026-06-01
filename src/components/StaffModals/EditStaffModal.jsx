@@ -99,6 +99,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [salaryComponents, setSalaryComponents] = useState([]);
   const [availableSalaryComponents, setAvailableSalaryComponents] = useState([]);
   const [isLoadingSalaryComponents, setIsLoadingSalaryComponents] = useState(false);
+  const [salaryPackages, setSalaryPackages] = useState([]);
+  const [selectedSalaryPackageId, setSelectedSalaryPackageId] = useState("");
+  const [isLoadingSalaryPackages, setIsLoadingSalaryPackages] = useState(false);
 
   const [invitePackages, setInvitePackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -237,6 +240,20 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     }
   };
 
+  const fetchSalaryPackages = async () => {
+    setIsLoadingSalaryPackages(true);
+    try {
+      const company = JSON.parse(localStorage.getItem("company"));
+      const response = await apiCall("/salary/components/packages", "GET", null, company?.id);
+      const result = await response.json();
+      if (result.success) setSalaryPackages(result.data || []);
+    } catch (err) {
+      console.error("Failed to fetch salary packages", err);
+    } finally {
+      setIsLoadingSalaryPackages(false);
+    }
+  };
+
   const fetchInvitePackages = async () => {
     setIsLoadingPackages(true);
     try {
@@ -320,6 +337,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     if (typeof pkg.effective_to !== "undefined") setEffectiveTo(normalizeDate(pkg.effective_to));
     if (Array.isArray(pkg.components)) {
       setSalaryComponents(normalizeSalaryComponents(pkg.components));
+      setSelectedSalaryPackageId("");
       if (pkg.components.length > 0) setIsSalaryComponentsOpen(true);
     }
 
@@ -539,6 +557,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       setEffectiveFrom(normalizeDate(staffData.effective_from));
       setEffectiveTo(normalizeDate(staffData.effective_to));
       setSalaryComponents(normalizeSalaryComponents(staffData.components || []));
+      setSelectedSalaryPackageId("");
       if (Array.isArray(staffData.components) && staffData.components.length > 0) {
         setIsSalaryComponentsOpen(true);
       }
@@ -669,10 +688,12 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       updated[index] = { ...updated[index], [key]: value };
       return updated;
     });
+    setSelectedSalaryPackageId("");
   };
 
   const removeSalaryComponent = (index) => {
     setSalaryComponents((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    setSelectedSalaryPackageId("");
   };
 
   const addSalaryComponent = (option) => {
@@ -690,7 +711,33 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         reason: "",
       },
     ]);
+    setSelectedSalaryPackageId("");
     setIsSalaryComponentsOpen(false);
+  };
+
+  const handleSalaryPackageMenuOpen = () => {
+    if (!salaryPackages.length && !isLoadingSalaryPackages) fetchSalaryPackages();
+  };
+
+  const handleSalaryPackageChange = (option) => {
+    const packageId = option?.value || "";
+    setSelectedSalaryPackageId(packageId);
+    if (!packageId) return;
+
+    const salaryPackage = salaryPackages.find((pkg) => String(pkg.id) === String(packageId));
+    if (!salaryPackage) return;
+
+    setSalaryComponents(
+      (salaryPackage.items || []).map((item) => ({
+        component_id: item.component_id,
+        calc_type: item.calc_type || "percentage",
+        calc_value: parseFloat(item.calc_value || 0).toFixed(2),
+        effective_from: effectiveFrom || "",
+        effective_to: null,
+        reason: `Default from ${salaryPackage.name} package`,
+      }))
+    );
+    if ((salaryPackage.items || []).length > 0) setIsSalaryComponentsOpen(false);
   };
 
   const selectedSalaryComponentIds = useMemo(
@@ -704,6 +751,19 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         .filter((component) => !selectedSalaryComponentIds.includes(String(component.id)))
         .map((component) => ({ value: component.id, label: `${component.name} (${component.code})` })),
     [availableSalaryComponents, selectedSalaryComponentIds]
+  );
+
+  const salaryPackageOptions = useMemo(
+    () => salaryPackages.map((pkg) => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` })),
+    [salaryPackages]
+  );
+
+  const selectedSalaryPackageOption = useMemo(
+    () =>
+      selectedSalaryPackageId
+        ? salaryPackageOptions.find((pkg) => String(pkg.value) === String(selectedSalaryPackageId)) || null
+        : null,
+    [salaryPackageOptions, selectedSalaryPackageId]
   );
 
   const handleSubmit = async () => {
@@ -809,6 +869,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setEffectiveFrom("");
     setEffectiveTo("");
     setSalaryComponents([]);
+    setSelectedSalaryPackageId("");
     setSelectedPackage(null);
     setIsSubmitting(false);
     onClose();
@@ -995,7 +1056,25 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                     </label>
                     <span className="text-xs text-slate-500">Required for invite payroll setup</span>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Package (Quick Fill)</label>
+                      <Select
+                        value={selectedSalaryPackageOption}
+                        onChange={handleSalaryPackageChange}
+                        onMenuOpen={handleSalaryPackageMenuOpen}
+                        onFocus={handleSalaryPackageMenuOpen}
+                        options={salaryPackageOptions}
+                        isLoading={isLoadingSalaryPackages}
+                        isClearable
+                        placeholder={isLoadingSalaryPackages ? "Loading packages..." : "Custom / Manual"}
+                        noOptionsMessage={() => "No packages found"}
+                        menuPlacement="auto"
+                        menuPosition="fixed"
+                        menuPortalTarget={document.body}
+                        styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                      />
+                    </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
                       <input
@@ -1051,7 +1130,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                           placeholder={isLoadingSalaryComponents ? "Loading components..." : "Choose a component"}
                           isLoading={isLoadingSalaryComponents}
                           noOptionsMessage={() => "No components available"}
-                          styles={customSelectStyles}
+                          menuPlacement="auto"
+                          menuPosition="fixed"
+                          menuPortalTarget={document.body}
+                          styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                         />
                       </div>
                     )}
@@ -1079,7 +1161,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                                       { value: "percentage", label: "Percentage (%)" },
                                       { value: "fixed", label: "Fixed Amount" },
                                     ]}
-                                    styles={customSelectStyles}
+                                    menuPlacement="auto"
+                                    menuPosition="fixed"
+                                    menuPortalTarget={document.body}
+                                    styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
                                   />
                                 </div>
                                 <div className="md:col-span-3">
