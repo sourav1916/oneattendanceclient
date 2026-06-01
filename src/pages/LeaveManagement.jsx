@@ -941,8 +941,8 @@ const LeaveManagement = () => {
                     </div>
 
                     {/* Right Section: View Mode */}
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 flex-col gap-1.5 sm:w-56">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-[170px] flex-col sm:w-56">
                             <SelectField
                                 options={leaveTypeFilterOptions}
                                 value={selectedLeaveTypeFilter}
@@ -1715,19 +1715,19 @@ const LeaveManagement = () => {
                         initial={{ opacity: 0, y: 100 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 100 }}
-                        className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 bg-white/80 backdrop-blur-md px-6 py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
+                        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 sm:bottom-8 z-[100] flex flex-wrap items-center gap-2 sm:gap-4 bg-white/90 backdrop-blur-md px-4 py-3 sm:px-6 sm:py-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-white/20"
                     >
-                        <div className="flex flex-col">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Bulk Actions</span>
                             <span className="text-sm font-black text-slate-800">{selectedIds.length} Selected</span>
                         </div>
-                        <div className="h-10 w-px bg-gray-200 mx-2"></div>
-                        <div className="flex items-center gap-2">
+                        <div className="hidden sm:block h-10 w-px bg-gray-200 mx-1"></div>
+                        <div className="flex items-center gap-2 flex-wrap">
                             <button
                                 onClick={() => setSelectedIds([])}
-                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                                className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors"
                             >
-                                Close
+                                Clear
                             </button>
                             <ManagementButton
                                 tone="green"
@@ -1735,7 +1735,7 @@ const LeaveManagement = () => {
                                 leftIcon={<FaCheck />}
                                 onClick={() => { setBulkApproveRemarks(''); setShowBulkApproveModal(true); }}
                                 disabled={approveAccess.disabled}
-                                className={`shadow-lg shadow-green-200`}
+                                className="shadow-lg shadow-green-200 !text-xs !px-3 !py-1.5"
                                 title={approveAccess.disabled ? reviewMessage : ""}
                             >
                                 Approve All
@@ -1746,7 +1746,7 @@ const LeaveManagement = () => {
                                 leftIcon={<FaTimes />}
                                 onClick={() => { setBulkRejectRemarks(''); setShowBulkRejectModal(true); }}
                                 disabled={rejectAccess.disabled}
-                                className={`shadow-lg shadow-red-200`}
+                                className="shadow-lg shadow-red-200 !text-xs !px-3 !py-1.5"
                                 title={rejectAccess.disabled ? reviewMessage : ""}
                             >
                                 Reject All
