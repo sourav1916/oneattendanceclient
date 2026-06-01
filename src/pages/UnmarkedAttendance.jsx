@@ -359,16 +359,15 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
           : 'bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 border-amber-200 shadow-amber-100/70'
         }`}
     >
-      {/* Per-card selection toggle */}
-      <div className="absolute left-3 top-3 z-10 flex shrink-0 flex-col items-center gap-1">
-        <ToggleSwitch
-          isOn={selected}
-          onToggle={() => onSelect?.(employee.employee_id)}
-          size="sm"
+      {/* Per-card selection checkbox */}
+      <div className="absolute left-3 top-3 z-10 flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={() => onSelect?.(employee.employee_id)}
+          className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer accent-blue-600"
+          onClick={(e) => e.stopPropagation()}
         />
-        <span className={`text-[9px] font-bold uppercase tracking-wider ${selected ? 'text-blue-500' : 'text-slate-400'}`}>
-          {selected ? 'On' : 'Off'}
-        </span>
       </div>
 
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
@@ -1357,23 +1356,23 @@ export default function UnmarkedAttendance() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-8 right-8 z-[100] flex items-center gap-4 rounded-2xl border border-white/20 bg-white/80 px-6 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-md"
+            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-8 sm:bottom-8 z-[100] flex flex-wrap items-center gap-2 sm:gap-4 rounded-2xl border border-white/20 bg-white/90 px-4 py-3 sm:px-6 sm:py-4 shadow-[0_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-md"
           >
-            <div className="flex flex-col">
-              <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Bulk Actions</span>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Bulk Actions</span>
               <span className="text-sm font-black text-slate-800">{selectedEmployeeIds.length} Selected</span>
             </div>
 
-            <div className="mx-2 h-10 w-px bg-gray-200" />
+            <div className="hidden sm:block mx-1 h-10 w-px bg-gray-200" />
 
-            <div className="flex items-center gap-2">
-              {/* Close */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Clear */}
               <button
                 type="button"
                 onClick={() => setSelectedEmployeeIds([])}
-                className="px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:text-gray-700"
+                className="px-3 py-1.5 text-xs font-bold text-gray-500 transition-colors hover:text-gray-700"
               >
-                Close
+                Clear
               </button>
 
               {/* All — sends employee_ids: "all" */}
@@ -1381,13 +1380,13 @@ export default function UnmarkedAttendance() {
                 type="button"
                 onClick={openBulkModalForAll}
                 disabled={!allVisibleSelected}
-                className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition ${allVisibleSelected
+                className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${allVisibleSelected
                   ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
                   }`}
                 title={allVisibleSelected ? "Apply to all employees across all pages" : "Select all visible employees to enable"}
               >
-                <FaLayerGroup size={13} />
+                <FaLayerGroup size={11} />
                 All
               </button>
 
@@ -1396,9 +1395,9 @@ export default function UnmarkedAttendance() {
                 tone="blue" variant="solid"
                 leftIcon={<FaCheck />}
                 onClick={openBulkModalForSelected}
-                className="shadow-lg shadow-blue-200"
+                className="shadow-lg shadow-blue-200 !text-xs !px-3 !py-1.5"
               >
-                Continue to choose mode
+                Continue
               </ManagementButton>
             </div>
           </motion.div>
