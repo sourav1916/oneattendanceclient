@@ -143,6 +143,49 @@ const StatCard = ({ label, value, icon: Icon, color, prefix = '' }) => (
   </div>
 );
 
+const LedgerSummaryStrip = ({ row }) => {
+  const isOpening = row.isOpeningBalance;
+  const balanceClass = Number(row.balance) >= 0 ? 'text-blue-600' : 'text-rose-600';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`xs:col-span-2 sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-xl border px-4 py-3 shadow-sm ${
+        isOpening ? 'border-violet-100 bg-violet-50/70' : 'border-slate-200 bg-slate-50'
+      }`}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-black uppercase tracking-wide ${
+            isOpening ? 'border-violet-200 bg-white text-violet-700' : 'border-slate-200 bg-white text-slate-700'
+          }`}>
+            <FaWallet size={11} />
+            {isOpening ? 'Opening Balance' : 'Total'}
+          </span>
+          <span className="text-xs font-semibold text-slate-500">
+            {isOpening ? 'Starting balance' : 'Summary'}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-right text-xs sm:min-w-[420px]">
+          <div>
+            <p className="font-bold uppercase tracking-wide text-slate-400">Debit</p>
+            <p className="font-mono font-bold text-blue-600">{formatNumber(row.debit)}</p>
+          </div>
+          <div>
+            <p className="font-bold uppercase tracking-wide text-slate-400">Credit</p>
+            <p className="font-mono font-bold text-amber-600">{formatNumber(row.credit)}</p>
+          </div>
+          <div>
+            <p className="font-bold uppercase tracking-wide text-slate-400">Balance</p>
+            <p className={`font-mono font-bold ${balanceClass}`}>{formatNumber(row.balance)}</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 // ─── Mobile Transaction Card ──────────────────────────────────────────────────
 
 const MobileTransactionCard = ({ transaction, onView }) => (
@@ -639,13 +682,17 @@ const MyLedger = () => {
             accent="violet"
           />
         ) : (
-          <ManagementGrid>
-            {transactions.map(tx => (
-              <MobileTransactionCard
-                key={tx.id}
-                transaction={tx}
-                onView={t => setViewModal({ open: true, transaction: t })}
-              />
+          <ManagementGrid viewMode={viewMode}>
+            {tableRows.map(tx => (
+              tx.isOpeningBalance || tx.isTotalRow ? (
+                <LedgerSummaryStrip key={tx.id} row={tx} />
+              ) : (
+                <MobileTransactionCard
+                  key={tx.id}
+                  transaction={tx}
+                  onView={t => setViewModal({ open: true, transaction: t })}
+                />
+              )
             ))}
           </ManagementGrid>
         )}

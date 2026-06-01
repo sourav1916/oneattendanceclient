@@ -116,6 +116,7 @@ export default function ManagementTable({
             {rows.map((row, index) => {
               const key = resolveRowKey(row, rowKey, index);
               const rowActions = typeof getActions === 'function' ? getActions(row, index) : actions;
+              const hasRowActions = Array.isArray(rowActions) ? rowActions.length > 0 : Boolean(rowActions);
               const rowId = `row-${String(key)}`;
 
               return (
@@ -149,12 +150,14 @@ export default function ManagementTable({
 
                   {showActionsColumn && (actions || getActions) && (
                     <td className="w-12 pr-4 text-right" onClick={(event) => event.stopPropagation()}>
-                      <ActionMenu
-                        menuId={rowId}
-                        activeId={activeId}
-                        onToggle={onToggleAction}
-                        actions={rowActions || []}
-                      />
+                      {hasRowActions && (
+                        <ActionMenu
+                          menuId={rowId}
+                          activeId={activeId}
+                          onToggle={onToggleAction}
+                          actions={rowActions}
+                        />
+                      )}
                     </td>
                   )}
                 </tr>
