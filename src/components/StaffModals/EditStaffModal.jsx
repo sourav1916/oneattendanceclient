@@ -26,11 +26,14 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaSave,
+  FaDollarSign,
+  FaPlus,
 } from "react-icons/fa";
 import TimeDurationPickerField from "../TimeDurationPicker";
 import ModalScrollLock from "../ModalScrollLock";
 import Modal from "../Modal";
 import ProfileAvatar from "../common/ProfileAvatar";
+import AdvancedDateFilter from "../AdvancedDateFilter";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -44,6 +47,19 @@ const ATTENDANCE_LABELS = {
 const DEFAULT_SHIFT_START = "09:00:00";
 const DEFAULT_SHIFT_END = "18:00:00";
 const DEFAULT_DURATION = "00:30";
+
+const normalizeDate = (value) => (value ? String(value).split("T")[0] : "");
+
+const getMonthYearValue = (value) =>
+  value
+    ? {
+        month: parseInt(String(value).split("-")[1], 10),
+        year: parseInt(String(value).split("-")[0], 10),
+      }
+    : null;
+
+const monthYearToDate = (value) =>
+  value && value.month && value.year ? `${value.year}-${String(value.month).padStart(2, "0")}-01` : "";
 
 const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
   if (typeof value === "number") {
@@ -77,11 +93,18 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [breakMinutes, setBreakMinutes] = useState(DEFAULT_DURATION);
   const [graceMinutes, setGraceMinutes] = useState(DEFAULT_DURATION);
   const [weekends, setWeekends] = useState([]); // Array of days (strings)
+  const [baseAmount, setBaseAmount] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState("");
+  const [effectiveTo, setEffectiveTo] = useState("");
+  const [salaryComponents, setSalaryComponents] = useState([]);
+  const [availableSalaryComponents, setAvailableSalaryComponents] = useState([]);
+  const [isLoadingSalaryComponents, setIsLoadingSalaryComponents] = useState(false);
 
   const [invitePackages, setInvitePackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
   const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
+  const [isSalaryComponentsOpen, setIsSalaryComponentsOpen] = useState(false);
 
   const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,7 +208,34 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     fetchPermissionPackages();
     fetchAllConstants();
     fetchInvitePackages();
+    fetchSalaryComponents();
   }, [isOpen]);
+
+  const normalizeSalaryComponents = (components = []) =>
+    components
+      .map((component) => ({
+        component_id: component.component_id ?? component.id,
+        calc_type: component.calc_type || "percentage",
+        calc_value: component.calc_value === null || typeof component.calc_value === "undefined" ? "" : String(component.calc_value),
+        effective_from: normalizeDate(component.effective_from),
+        effective_to: normalizeDate(component.effective_to),
+        reason: component.reason || "",
+      }))
+      .filter((component) => component.component_id);
+
+  const fetchSalaryComponents = async () => {
+    setIsLoadingSalaryComponents(true);
+    try {
+      const company = JSON.parse(localStorage.getItem("company"));
+      const response = await apiCall("/salary/components/list", "GET", null, company?.id);
+      const result = await response.json();
+      if (result.success) setAvailableSalaryComponents(result.data || []);
+    } catch (err) {
+      console.error("Failed to fetch salary components", err);
+    } finally {
+      setIsLoadingSalaryComponents(false);
+    }
+  };
 
   const fetchInvitePackages = async () => {
     setIsLoadingPackages(true);
@@ -263,6 +313,14 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     if (Array.isArray(pkg.weekends)) {
       setWeekends(pkg.weekends.map(w => typeof w === 'object' ? w.day : w));
       if (pkg.weekends.length > 0) setIsWeekendsOpen(true);
+    }
+
+    if (typeof pkg.base_amount !== "undefined") setBaseAmount(String(pkg.base_amount || ""));
+    if (pkg.effective_from) setEffectiveFrom(normalizeDate(pkg.effective_from));
+    if (typeof pkg.effective_to !== "undefined") setEffectiveTo(normalizeDate(pkg.effective_to));
+    if (Array.isArray(pkg.components)) {
+      setSalaryComponents(normalizeSalaryComponents(pkg.components));
+      if (pkg.components.length > 0) setIsSalaryComponentsOpen(true);
     }
 
     toast.info(`Applied details from ${pkg.name}`);
@@ -477,6 +535,13 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       setBreakMinutes(normalizeDuration(staffData.break_minutes));
       setGraceMinutes(normalizeDuration(staffData.grace_minutes));
       setWeekends(Array.isArray(staffData.weekends) ? staffData.weekends.map(w => typeof w === 'object' ? w.day : w) : []);
+      setBaseAmount(staffData.base_amount === null || typeof staffData.base_amount === "undefined" ? "" : String(staffData.base_amount));
+      setEffectiveFrom(normalizeDate(staffData.effective_from));
+      setEffectiveTo(normalizeDate(staffData.effective_to));
+      setSalaryComponents(normalizeSalaryComponents(staffData.components || []));
+      if (Array.isArray(staffData.components) && staffData.components.length > 0) {
+        setIsSalaryComponentsOpen(true);
+      }
       if (Array.isArray(staffData.weekends) && staffData.weekends.length > 0) {
         setIsWeekendsOpen(true);
       }
@@ -524,10 +589,18 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       breakMinutes: normalizeDuration(staffData?.break_minutes),
       graceMinutes: normalizeDuration(staffData?.grace_minutes),
       weekends: Array.isArray(staffData?.weekends) ? staffData.weekends.map(w => typeof w === 'object' ? w.day : w).sort() : [],
+      baseAmount: staffData?.base_amount === null || typeof staffData?.base_amount === "undefined" ? "" : String(staffData.base_amount),
+      effectiveFrom: normalizeDate(staffData?.effective_from),
+      effectiveTo: normalizeDate(staffData?.effective_to),
+      components: normalizeSalaryComponents(staffData?.components || []).sort((a, b) => String(a.component_id).localeCompare(String(b.component_id))),
     };
   }, [staffData]);
 
   const currentAttendanceMethods = useMemo(() => [...selectedAttendanceMethods].sort(), [selectedAttendanceMethods]);
+  const currentSalaryComponents = useMemo(
+    () => normalizeSalaryComponents(salaryComponents).sort((a, b) => String(a.component_id).localeCompare(String(b.component_id))),
+    [salaryComponents]
+  );
 
   const isUpdateDirty = useMemo(() => {
     if (!selectedUser) return false;
@@ -544,6 +617,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       shiftEnd !== initialInviteState.shiftEnd ||
       breakMinutes !== initialInviteState.breakMinutes ||
       graceMinutes !== initialInviteState.graceMinutes ||
+      baseAmount !== initialInviteState.baseAmount ||
+      effectiveFrom !== initialInviteState.effectiveFrom ||
+      effectiveTo !== initialInviteState.effectiveTo ||
+      JSON.stringify(currentSalaryComponents) !== JSON.stringify(initialInviteState.components) ||
       JSON.stringify([...weekends].sort()) !== JSON.stringify(initialInviteState.weekends) ||
       JSON.stringify(currentAttendanceMethods) !== JSON.stringify(initialInviteState.attendanceMethods)
     );
@@ -559,6 +636,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     shiftEnd,
     breakMinutes,
     graceMinutes,
+    baseAmount,
+    effectiveFrom,
+    effectiveTo,
+    currentSalaryComponents,
     weekends,
     initialInviteState,
   ]);
@@ -569,11 +650,61 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     Boolean(staffType) &&
     Boolean(employmentType) &&
     selectedAttendanceMethods.length > 0 &&
+    Boolean(baseAmount) &&
+    Boolean(effectiveFrom) &&
     isUpdateDirty &&
     !isSubmitting &&
     !isLoadingConstants &&
     !isLoadingStaff &&
     !submitDisabled;
+
+  const handleBaseAmountChange = (value) => {
+    const nextValue = value.replace(/[^0-9.]/g, "");
+    if (nextValue === "" || /^\d*\.?\d*$/.test(nextValue)) setBaseAmount(nextValue);
+  };
+
+  const updateSalaryComponent = (index, key, value) => {
+    setSalaryComponents((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [key]: value };
+      return updated;
+    });
+  };
+
+  const removeSalaryComponent = (index) => {
+    setSalaryComponents((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const addSalaryComponent = (option) => {
+    if (!option) return;
+    const component = availableSalaryComponents.find((item) => String(item.id) === String(option.value));
+    if (!component) return;
+    setSalaryComponents((prev) => [
+      ...prev,
+      {
+        component_id: component.id,
+        calc_type: component.calc_type || "percentage",
+        calc_value: component.calc_value === null || typeof component.calc_value === "undefined" ? "" : String(component.calc_value),
+        effective_from: effectiveFrom,
+        effective_to: "",
+        reason: "",
+      },
+    ]);
+    setIsSalaryComponentsOpen(false);
+  };
+
+  const selectedSalaryComponentIds = useMemo(
+    () => salaryComponents.map((component) => String(component.component_id)),
+    [salaryComponents]
+  );
+
+  const salaryComponentOptions = useMemo(
+    () =>
+      availableSalaryComponents
+        .filter((component) => !selectedSalaryComponentIds.includes(String(component.id)))
+        .map((component) => ({ value: component.id, label: `${component.name} (${component.code})` })),
+    [availableSalaryComponents, selectedSalaryComponentIds]
+  );
 
   const handleSubmit = async () => {
     if (!selectedUser?.id) {
@@ -600,6 +731,19 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       toast.warning("Please select at least one attendance method");
       return;
     }
+    if (!baseAmount) {
+      toast.warning("Please enter base amount");
+      return;
+    }
+    if (!effectiveFrom) {
+      toast.warning("Please select salary effective from date");
+      return;
+    }
+    const invalidComponent = salaryComponents.find((component) => !component.component_id || !component.calc_type || component.calc_value === "");
+    if (invalidComponent) {
+      toast.warning("Please complete salary component details");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -618,6 +762,17 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         break_minutes: normalizeDuration(breakMinutes),
         grace_minutes: normalizeDuration(graceMinutes),
         weekends: weekends,
+        base_amount: parseFloat(baseAmount),
+        effective_from: effectiveFrom,
+        effective_to: effectiveTo || null,
+        components: salaryComponents.map((component) => ({
+          component_id: Number(component.component_id),
+          calc_type: component.calc_type,
+          calc_value: parseFloat(component.calc_value),
+          ...(component.effective_from ? { effective_from: component.effective_from } : {}),
+          effective_to: component.effective_to || null,
+          reason: component.reason || "",
+        })),
       };
 
       const response = await apiCall("/company/invites/update", "PUT", payload, company?.id);
@@ -650,6 +805,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setBreakMinutes(DEFAULT_DURATION);
     setGraceMinutes(DEFAULT_DURATION);
     setWeekends([]);
+    setBaseAmount("");
+    setEffectiveFrom("");
+    setEffectiveTo("");
+    setSalaryComponents([]);
     setSelectedPackage(null);
     setIsSubmitting(false);
     onClose();
@@ -825,6 +984,147 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       isClearable
                       styles={customSelectStyles}
                     />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <FaDollarSign className="h-4 w-4 text-indigo-500" />
+                      Salary Details
+                    </label>
+                    <span className="text-xs text-slate-500">Required for invite payroll setup</span>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={baseAmount}
+                        onChange={(e) => handleBaseAmountChange(e.target.value)}
+                        placeholder="Enter amount"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</label>
+                      <AdvancedDateFilter
+                        tabOptions={["month"]}
+                        value={getMonthYearValue(effectiveFrom)}
+                        onChange={(value) => setEffectiveFrom(monthYearToDate(value))}
+                        placeholder="Select month"
+                        buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective To</label>
+                      <AdvancedDateFilter
+                        tabOptions={["month"]}
+                        value={getMonthYearValue(effectiveTo)}
+                        onChange={(value) => setEffectiveTo(monthYearToDate(value))}
+                        placeholder="Optional"
+                        buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-5 border-t border-slate-100 pt-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Components</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsSalaryComponentsOpen((prev) => !prev)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 transition hover:bg-indigo-100"
+                      >
+                        <FaPlus className="h-2.5 w-2.5" />
+                        Add Component
+                      </button>
+                    </div>
+
+                    {isSalaryComponentsOpen && (
+                      <div className="mb-4 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-3">
+                        <Select
+                          value={null}
+                          onChange={addSalaryComponent}
+                          options={salaryComponentOptions}
+                          placeholder={isLoadingSalaryComponents ? "Loading components..." : "Choose a component"}
+                          isLoading={isLoadingSalaryComponents}
+                          noOptionsMessage={() => "No components available"}
+                          styles={customSelectStyles}
+                        />
+                      </div>
+                    )}
+
+                    {salaryComponents.length > 0 ? (
+                      <div className="space-y-3">
+                        {salaryComponents.map((component, index) => {
+                          const componentData = availableSalaryComponents.find((item) => String(item.id) === String(component.component_id));
+                          return (
+                            <div key={`${component.component_id}-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                              <div className="grid gap-3 md:grid-cols-12">
+                                <div className="md:col-span-4">
+                                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Component</label>
+                                  <div className="truncate rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+                                    {componentData?.name || `Component ${component.component_id}`}
+                                    {componentData?.code && <span className="ml-2 text-[10px] font-normal text-slate-400">({componentData.code})</span>}
+                                  </div>
+                                </div>
+                                <div className="md:col-span-3">
+                                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</label>
+                                  <Select
+                                    value={{ value: component.calc_type, label: component.calc_type === "percentage" ? "Percentage (%)" : "Fixed Amount" }}
+                                    onChange={(option) => updateSalaryComponent(index, "calc_type", option?.value || "percentage")}
+                                    options={[
+                                      { value: "percentage", label: "Percentage (%)" },
+                                      { value: "fixed", label: "Fixed Amount" },
+                                    ]}
+                                    styles={customSelectStyles}
+                                  />
+                                </div>
+                                <div className="md:col-span-3">
+                                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Value</label>
+                                  <input
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={component.calc_value}
+                                    onChange={(e) => {
+                                      const value = e.target.value.replace(/[^0-9.]/g, "");
+                                      if (value === "" || /^\d*\.?\d*$/.test(value)) updateSalaryComponent(index, "calc_value", value);
+                                    }}
+                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                  />
+                                </div>
+                                <div className="flex items-end justify-end md:col-span-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSalaryComponent(index)}
+                                    className="rounded-lg p-2.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                    title="Remove component"
+                                  >
+                                    <FaTimes className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="md:col-span-12">
+                                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Reason</label>
+                                  <input
+                                    type="text"
+                                    value={component.reason || ""}
+                                    onChange={(e) => updateSalaryComponent(index, "reason", e.target.value)}
+                                    placeholder="Reason for this component value"
+                                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm italic text-slate-600 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                        No salary components selected.
+                      </div>
+                    )}
                   </div>
                 </div>
 
