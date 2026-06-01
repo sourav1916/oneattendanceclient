@@ -162,10 +162,13 @@ function StatusBadge({ status }) {
     );
 }
 
-const ToggleSwitch = ({ isOn, onToggle, accent = "blue" }) => (
+const ToggleSwitch = ({ isOn, onToggle, accent = "blue", disabled = false }) => (
     <div
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className={`w-10 h-5 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+        onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) onToggle();
+        }}
+        className={`w-10 h-5 flex items-center rounded-full p-1 transition-all duration-300 ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'} ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
     >
         <motion.div
             className="bg-white w-3 h-3 rounded-full shadow-md"
@@ -188,7 +191,6 @@ const LeaveManagement = () => {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const [selectedIds, setSelectedIds] = useState([]);
-    const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [showBulkApproveModal, setShowBulkApproveModal] = useState(false);
     const [bulkApproveRemarks, setBulkApproveRemarks] = useState('');
     const [showBulkRejectModal, setShowBulkRejectModal] = useState(false);
@@ -517,24 +519,21 @@ const LeaveManagement = () => {
         }
     };
 
-    const toggleSelectionMode = () => {
-        setIsSelectionMode(prev => {
-            if (prev) setSelectedIds([]);
-            return !prev;
-        });
-    };
-
     const toggleSelectAll = () => {
         const pendingLeaves = visibleLeaves.filter(l => l.status === 'pending');
-        if (selectedIds.length === pendingLeaves.length && pendingLeaves.length > 0) {
+        const pendingIds = pendingLeaves.map(l => l.id);
+        const allPendingSelected = pendingIds.length > 0 && pendingIds.every(id => selectedIds.includes(id));
+
+        if (allPendingSelected) {
             setSelectedIds([]);
         } else {
-            setSelectedIds(pendingLeaves.map(l => l.id));
+            setSelectedIds(pendingIds);
         }
     };
 
-    const toggleSelectRow = (e, id) => {
-        e.stopPropagation();
+    const toggleSelectRow = (eOrId, maybeId) => {
+        if (eOrId?.stopPropagation) eOrId.stopPropagation();
+        const id = maybeId ?? eOrId;
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
@@ -548,7 +547,6 @@ const LeaveManagement = () => {
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to approve');
             toast.success(`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} approved successfully`);
             setSelectedIds([]);
-            setIsSelectionMode(false);
             setShowBulkApproveModal(false);
             setBulkApproveRemarks('');
             fetchLeaves();
@@ -570,7 +568,6 @@ const LeaveManagement = () => {
             if (!response.ok || !result.success) throw new Error(result.message || 'Failed to reject');
             toast.success(`${selectedIds.length} leave request${selectedIds.length > 1 ? 's' : ''} rejected successfully`);
             setSelectedIds([]);
-            setIsSelectionMode(false);
             setShowBulkRejectModal(false);
             setBulkRejectRemarks('');
             fetchLeaves();
@@ -659,6 +656,12 @@ const LeaveManagement = () => {
             return candidates.some((value) => value === normalized || value.includes(normalized));
         });
     }, [leaves, typeFilter]);
+
+    const visiblePendingLeaves = useMemo(
+        () => visibleLeaves.filter((leave) => leave.status === 'pending'),
+        [visibleLeaves]
+    );
+    const allVisibleSelected = visiblePendingLeaves.length > 0 && visiblePendingLeaves.every((leave) => selectedIds.includes(leave.id));
 
     const leaveConfigsById = useMemo(() => {
         const map = new Map();
@@ -784,37 +787,23 @@ const LeaveManagement = () => {
         {
             key: 'employee',
             label: (
-                <div className="flex items-center gap-4">
-                    {isSelectionMode && (
-                        <input
-                            type="checkbox"
-                            checked={selectedIds.length > 0 && selectedIds.length === visibleLeaves.filter(l => l.status === 'pending').length}
-                            onChange={toggleSelectAll}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                    )}
-                    <ToggleSwitch
-                        isOn={isSelectionMode}
-                        onToggle={toggleSelectionMode}
-                        accent="blue"
-                    />
+                <div className="flex items-center gap-2">
                     <span>Employee</span>
                 </div>
             ),
             render: (leave) => (
                 <div className="flex items-center gap-4">
-                    {isSelectionMode && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                            <input
-                                type="checkbox"
-                                checked={selectedIds.includes(leave.id)}
-                                onChange={(e) => toggleSelectRow(e, leave.id)}
-                                disabled={leave.status !== 'pending'}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-50"
-                            />
-                        </div>
-                    )}
-                    <div className="flex items-center gap-3">
+                    <div className="flex shrink-0 items-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.includes(leave.id)}
+                            onChange={() => toggleSelectRow(leave.id)}
+                            disabled={leave.status !== 'pending'}
+                            className="w-3 h-3 lg:w-4 lg:h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-blue-600"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                    <div className="flex min-w-0 items-center gap-3">
                         <ProfileAvatar
                             record={leave}
                             name={leave.employee_name}
@@ -985,82 +974,111 @@ const LeaveManagement = () => {
                                     : "Employee leave applications will appear here."}
                         </p>
                     </motion.div>
-                ) : viewMode === 'table' ? (
-                    <ManagementTable
-                        rows={visibleLeaves}
-                        columns={columns}
-                        rowKey={(row) => row.id}
-                        onRowClick={(row) => setDetailLeave(row)}
-                        getActions={ActionMenuButtons}
-                        accent="blue"
-                    />
                 ) : (
-                    <ManagementGrid>
-                        {visibleLeaves.map((leave) => (
-                            <ManagementCard
-                                key={leave.id}
-                                eyebrow={
-                                    <div className="flex items-center gap-2">
-                                        {isSelectionMode && (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedIds.includes(leave.id)}
-                                                    onChange={(e) => toggleSelectRow(e, leave.id)}
-                                                    disabled={leave.status !== 'pending'}
-                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:opacity-50 mr-2"
-                                                />
-                                            </div>
-                                        )}
-                                        <StatusBadge status={leave.status} />
-                                        <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span>
-                                    </div>
-                                }
-                                title={
-                                    <span
-                                        className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
-                                        onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(leave.employee_id); }}
-                                    >
-                                        {leave.employee_name}
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col gap-3"
+                        >
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={toggleSelectAll}
+                                    disabled={visiblePendingLeaves.length === 0}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {allVisibleSelected
+                                        ? <><FaCheck size={13} /> Deselect all</>
+                                        : <><FaCheck size={13} /> Select all</>
+                                    }
+                                </button>
+                                {selectedIds.length > 0 && (
+                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                        {selectedIds.length} selected
                                     </span>
-                                }
-                                subtitle={<div className="font-mono text-[10px] text-slate-400">{leave.employee_code}</div>}
-                                actions={ActionMenuButtons(leave)}
-                                onClick={() => setDetailLeave(leave)}
-                            >
-                                <div className="space-y-4 pt-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leave Type</p>
-                                            <p className="text-sm font-bold text-slate-700">{leave.leave_name}</p>
-                                        </div>
-                                        <div className="text-right space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Duration</p>
-                                            <p className="text-sm font-black text-blue-600">{formatDays(leave.total_days)} Days</p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-50 rounded-xl p-3 border border-slate-100/50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase">From</span>
-                                                <span className="text-xs font-bold text-slate-600">{fmt(leave.start_date)}</span>
+                                )}
+                            </div>
+                        </motion.div>
+
+                        {viewMode === 'table' ? (
+                            <ManagementTable
+                                rows={visibleLeaves}
+                                columns={columns}
+                                rowKey={(row) => row.id}
+                                onRowClick={(row) => setDetailLeave(row)}
+                                getActions={ActionMenuButtons}
+                                accent="blue"
+                            />
+                        ) : (
+                            <ManagementGrid viewMode={viewMode}>
+                                {visibleLeaves.map((leave) => (
+                                    <ManagementCard
+                                        key={leave.id}
+                                        className={selectedIds.includes(leave.id) ? 'border-blue-200 ring-2 ring-blue-400 ring-offset-2' : ''}
+                                        eyebrow={
+                                            <div className="flex items-center gap-2">
+                                                <div onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(leave.id)}
+                                                        onChange={() => toggleSelectRow(leave.id)}
+                                                        disabled={leave.status !== 'pending'}
+                                                        className="w-3 h-3 lg:w-4 lg:h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 accent-blue-600"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                </div>
+                                                <StatusBadge status={leave.status} />
+                                                <span className="text-[10px] font-bold text-slate-400"># {leave.id}</span>
                                             </div>
-                                            <div className="h-4 w-[1px] bg-slate-200" />
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase">To</span>
-                                                <span className="text-xs font-bold text-slate-600">{fmt(leave.end_date)}</span>
+                                        }
+                                        title={
+                                            <span
+                                                className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
+                                                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(leave.employee_id); }}
+                                            >
+                                                {leave.employee_name}
+                                            </span>
+                                        }
+                                        subtitle={<div className="font-mono text-[10px] text-slate-400">{leave.employee_code}</div>}
+                                        actions={ActionMenuButtons(leave)}
+                                        onClick={() => setDetailLeave(leave)}
+                                    >
+                                        <div className="space-y-4 pt-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Leave Type</p>
+                                                    <p className="text-sm font-bold text-slate-700">{leave.leave_name}</p>
+                                                </div>
+                                                <div className="text-right space-y-1">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Duration</p>
+                                                    <p className="text-sm font-black text-blue-600">{formatDays(leave.total_days)} Days</p>
+                                                </div>
                                             </div>
+                                            <div className="bg-slate-50 rounded-xl p-3 border border-slate-100/50">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">From</span>
+                                                        <span className="text-xs font-bold text-slate-600">{fmt(leave.start_date)}</span>
+                                                    </div>
+                                                    <div className="h-4 w-[1px] bg-slate-200" />
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase">To</span>
+                                                        <span className="text-xs font-bold text-slate-600">{fmt(leave.end_date)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {leave.reason && (
+                                                <div className="text-[11px] text-slate-500 italic line-clamp-2">
+                                                    "{leave.reason}"
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                    {leave.reason && (
-                                        <div className="text-[11px] text-slate-500 italic line-clamp-2">
-                                            "{leave.reason}"
-                                        </div>
-                                    )}
-                                </div>
-                            </ManagementCard>
-                        ))}
-                    </ManagementGrid>
+                                    </ManagementCard>
+                                ))}
+                            </ManagementGrid>
+                        )}
+                    </>
                 )}
 
                 {pagination.total > 0 && (
@@ -1706,7 +1724,7 @@ const LeaveManagement = () => {
                         <div className="h-10 w-px bg-gray-200 mx-2"></div>
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }}
+                                onClick={() => setSelectedIds([])}
                                 className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
                             >
                                 Close
