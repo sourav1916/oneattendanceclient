@@ -31,6 +31,7 @@ const MODAL_TYPES = {
     NONE: 'NONE',
     VIEW: 'VIEW',
     GENERATE: 'GENERATE',
+    CONFIRM_GENERATE: 'CONFIRM_GENERATE',
     SEND_EMAIL: 'SEND_EMAIL',
 };
 
@@ -58,6 +59,28 @@ const GENERATION_MODES = {
     ALL: 'all'
 };
 
+const PAYROLL_ROW_TYPES = {
+    GENERATED: 'generated',
+    PREVIEW: 'preview',
+};
+
+const normalizePayrollList = (data) => {
+    if (Array.isArray(data)) {
+        return data.map(item => ({
+            ...item,
+            rowType: item?.rowType || (item?.payroll?.id ? PAYROLL_ROW_TYPES.GENERATED : PAYROLL_ROW_TYPES.PREVIEW),
+        }));
+    }
+
+    const generatedPayrolls = Array.isArray(data?.generated_payrolls) ? data.generated_payrolls : [];
+    const previewPayrolls = Array.isArray(data?.preview_payrolls) ? data.preview_payrolls : [];
+
+    return [
+        ...generatedPayrolls.map(item => ({ ...item, rowType: PAYROLL_ROW_TYPES.GENERATED })),
+        ...previewPayrolls.map(item => ({ ...item, rowType: PAYROLL_ROW_TYPES.PREVIEW })),
+    ];
+};
+
 // ─── Helper Components ───────────────────────────────────────────────────────
 
 const InfoItem = ({ icon, label, value, valueClassName = '' }) => (
@@ -72,10 +95,10 @@ const InfoItem = ({ icon, label, value, valueClassName = '' }) => (
 const ToggleSwitch = ({ isOn, onToggle, accent = "green", size = "md" }) => (
     <div
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className={`${size === 'sm' ? 'h-4 w-8' : 'h-5 w-10'} flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
+        className={`${size === 'sm' ? 'h-5 w-9' : 'h-5 w-10'} flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${isOn ? `bg-${accent}-500 shadow-inner` : 'bg-gray-300'}`}
     >
         <motion.div
-            className={`${size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'} bg-white rounded-full shadow-md`}
+            className={`${size === 'sm' ? 'h-3 w-3': 'h-4 w-4'} bg-white rounded-full shadow-md`}
             initial={false}
             animate={{ x: isOn ? (size === 'sm' ? 16 : 20) : 0 }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -87,6 +110,7 @@ const StatusBadge = ({ status }) => {
     const normalizedStatus = String(status || 'generated').toLowerCase();
     const statusStyles = {
         generated: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        preview: 'bg-amber-50 text-amber-700 border-amber-200',
         paid: 'bg-blue-50 text-blue-700 border-blue-200',
         pending: 'bg-amber-50 text-amber-700 border-amber-200',
         failed: 'bg-red-50 text-red-700 border-red-200',
@@ -123,6 +147,7 @@ const PayrollManagement = () => {
     const [isDownloading, setIsDownloading] = useState(false);
     const [isEmailing, setIsEmailing] = useState(false);
     const [emailOverride, setEmailOverride] = useState('');
+    const [previewGenerateSendPdf, setPreviewGenerateSendPdf] = useState(true);
 
     const currentDate = new Date();
     const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
@@ -233,7 +258,8 @@ const PayrollManagement = () => {
             }
 
             if (result.success) {
-                setPayrollList(result.data);
+                const normalizedPayrolls = normalizePayrollList(result.data);
+                setPayrollList(normalizedPayrolls);
                 
                 const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
                 const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
@@ -241,7 +267,7 @@ const PayrollManagement = () => {
                     result.pagination?.total ??
                     result.meta?.total ??
                     result.total ??
-                    result.data?.length ??
+                    normalizedPayrolls.length ??
                     0
                 );
                 const totalPages = Number(
@@ -341,6 +367,14 @@ const PayrollManagement = () => {
         await fetchEmployees();
     };
 
+    const openPreviewGenerateConfirm = (item) => {
+        if (generatePayrollAccess.disabled) return;
+        setSelectedPayroll(item);
+        setPreviewGenerateSendPdf(true);
+        setModalType(MODAL_TYPES.CONFIRM_GENERATE);
+        setActiveActionMenu(null);
+    };
+
     const openEmailModal = (item) => {
         setSelectedPayroll(item);
         setEmailOverride('');
@@ -399,6 +433,27 @@ const PayrollManagement = () => {
 
         if (result.success) {
             toast.success(`Payroll generated for ${generateFormData.employee_ids.length} employees successfully!`);
+            closeModal();
+        } else {
+            toast.error(result.error || 'Failed to generate payroll');
+        }
+    };
+
+    const handleConfirmPreviewGenerate = async () => {
+        if (!selectedPayroll?.employee?.id) {
+            toast.error('Employee details not found');
+            return;
+        }
+
+        const result = await generatePayroll(GENERATION_MODES.INDIVIDUAL, {
+            employee_ids: [selectedPayroll.employee.id],
+            month: selectedPayroll.payroll?.month ?? selectedMonth,
+            year: selectedPayroll.payroll?.year ?? selectedYear,
+            send_pdf: previewGenerateSendPdf,
+        });
+
+        if (result.success) {
+            toast.success('Payroll generated successfully!');
             closeModal();
         } else {
             toast.error(result.error || 'Failed to generate payroll');
@@ -630,7 +685,7 @@ const PayrollManagement = () => {
     // ─── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div className="space-y-3 relative">
+        <div className="space-y-3 relative min-w-0 max-w-full overflow-x-hidden">
             
             {/* Full Page Loader for PDF Download */}
             <AnimatePresence>
@@ -771,10 +826,10 @@ const PayrollManagement = () => {
 
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-xl shadow-xl overflow-visible"
+                            className="max-w-full overflow-hidden rounded-xl bg-white shadow-xl"
                         >
-                            <div className="overflow-x-auto overflow-y-visible">
-                                <table className="w-full text-sm text-left text-gray-700">
+                            <div className="w-full max-w-full overflow-x-auto">
+                                <table className="min-w-[680px] w-full text-sm text-left text-gray-700">
                                     <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                         <tr>
                                             {visibleColumns.showName && (
@@ -794,24 +849,32 @@ const PayrollManagement = () => {
                                         {payrollList.map((item, index) => {
                                             const netSalary = parseFloat(item.payroll.net_salary);
                                             const isNegative = netSalary < 0;
+                                            const isPreview = item.rowType === PAYROLL_ROW_TYPES.PREVIEW;
+                                            const rowKey = item.payroll.id ?? `preview-${item.employee?.id}-${item.payroll?.month}-${item.payroll?.year}`;
 
                                             return (
-                                                <motion.tr key={item.payroll.id} initial={{ opacity: 0, y: 20 }}
+                                                <motion.tr key={rowKey} initial={{ opacity: 0, y: 20 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: index * 0.05 }}
                                                     className="cursor-pointer hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300"
                                                     onClick={() => openViewModal(item)}
                                                 >
                                                     {visibleColumns.showName && (
-                                                        <td className="px-6 py-4 font-semibold">
-                                                            <div className="flex items-center gap-3">
+                                                        <td className="px-3 py-4 font-semibold sm:px-6">
+                                                            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                                                                 <div className="flex shrink-0 flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                                                    <ToggleSwitch
-                                                                        isOn={selectedIds.includes(item.payroll.id)}
-                                                                        onToggle={() => toggleSelectRow(item.payroll.id)}
-                                                                        accent="green"
-                                                                        size="sm"
-                                                                    />
+                                                                    {isPreview ? (
+                                                                        <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                                                                            Preview
+                                                                        </span>
+                                                                    ) : (
+                                                                        <ToggleSwitch
+                                                                            isOn={selectedIds.includes(item.payroll.id)}
+                                                                            onToggle={() => toggleSelectRow(item.payroll.id)}
+                                                                            accent="green"
+                                                                            size="sm"
+                                                                        />
+                                                                    )}
                                                                     
                                                                 </div>
                                                                 <ProfileAvatar
@@ -822,7 +885,7 @@ const PayrollManagement = () => {
                                                                 >
                                                                     {getInitials(item.employee.name)}
                                                                 </ProfileAvatar>
-                                                                <div>
+                                                                <div className="xsm:hidden inline">
                                                                     <div
                                                                         className="text-gray-800 font-medium cursor-pointer hover:underline hover:text-indigo-600 transition-colors inline-block"
                                                                         onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(item.employee.id); }}
@@ -878,12 +941,27 @@ const PayrollManagement = () => {
                                                     )}
                                                     <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                         <ActionMenu
-                                                            menuId={item.payroll.id}
+                                                            menuId={rowKey}
                                                             activeId={activeActionMenu}
                                                             onToggle={(e, id) => {
                                                                 setActiveActionMenu((current) => (current === id ? null : id));
                                                             }}
-                                                            actions={[
+                                                            actions={isPreview ? [
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={14} />,
+                                                                    onClick: () => openViewModal(item),
+                                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                                },
+                                                                {
+                                                                    label: 'Generate Payroll',
+                                                                    icon: <FaCalculator size={14} />,
+                                                                    onClick: () => openPreviewGenerateConfirm(item),
+                                                                    disabled: generatePayrollAccess.disabled,
+                                                                    title: generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : '',
+                                                                    className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                                                                },
+                                                            ] : [
                                                                 {
                                                                     label: 'View Details',
                                                                     icon: <FaEye size={14} />,
@@ -919,23 +997,33 @@ const PayrollManagement = () => {
                             {payrollList.map((item, index) => {
                                 const netSalary = parseFloat(item.payroll.net_salary);
                                 const isNegative = netSalary < 0;
+                                const isPreview = item.rowType === PAYROLL_ROW_TYPES.PREVIEW;
+                                const rowKey = item.payroll.id ?? `preview-${item.employee?.id}-${item.payroll?.month}-${item.payroll?.year}`;
 
                                 return (
-                                    <motion.div key={item.payroll.id} initial={{ opacity: 0, y: 20 }}
+                                    <motion.div key={rowKey} initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
-                                        className={`relative bg-white rounded-xl shadow-md border p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group ${selectedIds.includes(item.payroll.id) ? 'border-green-200 ring-2 ring-green-400 ring-offset-2' : 'border-gray-100'}`}
+                                        className={`relative bg-white rounded-xl shadow-md border p-5 cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group ${!isPreview && selectedIds.includes(item.payroll.id) ? 'border-green-200 ring-2 ring-green-400 ring-offset-2' : 'border-gray-100'}`}
                                         onClick={() => openViewModal(item)}
                                     >
                                         <div className="absolute left-3 top-3 z-10 flex shrink-0 flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                            <ToggleSwitch
-                                                isOn={selectedIds.includes(item.payroll.id)}
-                                                onToggle={() => toggleSelectRow(item.payroll.id)}
-                                                accent="green"
-                                                size="sm"
-                                            />
-                                            <span className={`text-[9px] font-bold uppercase tracking-wider ${selectedIds.includes(item.payroll.id) ? 'text-green-600' : 'text-slate-400'}`}>
-                                                {selectedIds.includes(item.payroll.id) ? 'On' : 'Off'}
-                                            </span>
+                                            {isPreview ? (
+                                                <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-700">
+                                                    Preview
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <ToggleSwitch
+                                                        isOn={selectedIds.includes(item.payroll.id)}
+                                                        onToggle={() => toggleSelectRow(item.payroll.id)}
+                                                        accent="green"
+                                                        size="sm"
+                                                    />
+                                                    <span className={`text-[9px] font-bold uppercase tracking-wider ${selectedIds.includes(item.payroll.id) ? 'text-green-600' : 'text-slate-400'}`}>
+                                                        {selectedIds.includes(item.payroll.id) ? 'On' : 'Off'}
+                                                    </span>
+                                                </>
+                                            )}
                                         </div>
                                         <div className="flex items-start gap-4 mb-4">
                                             <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-xl ml-10">
@@ -953,12 +1041,27 @@ const PayrollManagement = () => {
                                                     </div>
                                                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                                         <ActionMenu
-                                                            menuId={`card-${item.payroll.id}`}
+                                                            menuId={`card-${rowKey}`}
                                                             activeId={activeActionMenu}
                                                             onToggle={(e, id) => {
                                                                 setActiveActionMenu((current) => (current === id ? null : id));
                                                             }}
-                                                            actions={[
+                                                            actions={isPreview ? [
+                                                                {
+                                                                    label: 'View Details',
+                                                                    icon: <FaEye size={14} />,
+                                                                    onClick: () => openViewModal(item),
+                                                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                                },
+                                                                {
+                                                                    label: 'Generate Payroll',
+                                                                    icon: <FaCalculator size={14} />,
+                                                                    onClick: () => openPreviewGenerateConfirm(item),
+                                                                    disabled: generatePayrollAccess.disabled,
+                                                                    title: generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : '',
+                                                                    className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                                                                },
+                                                            ] : [
                                                                 {
                                                                     label: 'View Details',
                                                                     icon: <FaEye size={14} />,
@@ -1086,7 +1189,7 @@ const PayrollManagement = () => {
                 isOpen={modalType === MODAL_TYPES.VIEW && !!selectedPayroll}
                 onClose={closeModal}
                 title="Payroll Details"
-                subtitle={`${getMonthName(selectedMonth)} ${selectedYear}`}
+                subtitle={`${getMonthName(selectedPayroll?.payroll?.month ?? selectedMonth)} ${selectedPayroll?.payroll?.year ?? selectedYear}`}
                 icon={<FaFileInvoiceDollar size={18} />}
                 size="4xl"
                 footer={
@@ -1130,7 +1233,7 @@ const PayrollManagement = () => {
                                 <InfoItem icon={<FaCalculator className="text-blue-500" />} label="Net Salary" value={formatCurrency(selectedPayroll.payroll.net_salary)} valueClassName={parseFloat(selectedPayroll.payroll.net_salary) < 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'} />
                             </div>
                             <div className="mt-4">
-                                <InfoItem icon={<FaClipboardList className="text-purple-500" />} label="Status" value={<StatusBadge status={selectedPayroll.payroll.status} />} />
+                                <InfoItem icon={<FaClipboardList className="text-purple-500" />} label="Status" value={<StatusBadge status={selectedPayroll.payroll.status || selectedPayroll.rowType} />} />
                             </div>
                         </div>
 
@@ -1188,6 +1291,100 @@ const PayrollManagement = () => {
                                 <InfoItem icon={<FaClock className="text-indigo-500" />} label="Worked Hours" value={`${selectedPayroll.payroll.work?.worked_hours || 0} hours`} />
                                 <InfoItem icon={<FaClock className="text-orange-500" />} label="Overtime Hours" value={`${selectedPayroll.payroll.work?.overtime_hours || 0} hours`} />
                             </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            <Modal
+                isOpen={modalType === MODAL_TYPES.CONFIRM_GENERATE && !!selectedPayroll}
+                onClose={closeModal}
+                title="Generate Payroll"
+                subtitle="Confirm payroll generation for this preview."
+                icon={<FaCalculator size={18} />}
+                size="md"
+                footer={
+                    <div className="flex justify-end gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            disabled={loading}
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleConfirmPreviewGenerate}
+                            disabled={loading || generatePayrollAccess.disabled}
+                            title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-emerald-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            {loading ? (
+                                <>
+                                    <FaSpinner className="w-4 h-4 animate-spin" />
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <FaCalculator className="w-4 h-4" />
+                                    Confirm Generate
+                                </>
+                            )}
+                        </button>
+                    </div>
+                }
+            >
+                {selectedPayroll && (
+                    <div className="space-y-5 pb-2">
+                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-start gap-4">
+                            <div className="bg-white p-3 rounded-xl shadow-sm text-emerald-600 mt-0.5">
+                                <FaFileInvoiceDollar size={24} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-800 text-base truncate">{selectedPayroll.employee.name}</h4>
+                                <p className="text-sm text-gray-600 mb-1">
+                                    Generate payroll for <span className="font-medium text-gray-800">{getMonthName(selectedPayroll.payroll?.month ?? selectedMonth)} {selectedPayroll.payroll?.year ?? selectedYear}</span>
+                                </p>
+                                <p className="text-xs text-gray-500 font-mono">
+                                    Employee ID: <span className="text-gray-700 font-medium">{selectedPayroll.employee.id}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <InfoItem icon={<FaMoneyBillWave className="text-green-500" />} label="Total Earnings" value={formatCurrency(selectedPayroll.payroll.total_earnings)} valueClassName="text-green-600" />
+                            <InfoItem icon={<FaChartLine className="text-red-500" />} label="Deductions" value={formatCurrency(selectedPayroll.payroll.total_deductions)} valueClassName="text-red-600" />
+                            <InfoItem icon={<FaCalculator className="text-blue-500" />} label="Net Salary" value={formatCurrency(selectedPayroll.payroll.net_salary)} valueClassName="text-green-600 font-bold" />
+                        </div>
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50">
+                            <div>
+                                <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <FaEnvelope className="text-emerald-500" />
+                                    Send PDF Payslip
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Email the payslip PDF after payroll generation.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={previewGenerateSendPdf}
+                                onClick={() => setPreviewGenerateSendPdf(prev => !prev)}
+                                disabled={loading}
+                                className={`relative inline-flex items-center h-6 w-11 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 shrink-0 disabled:opacity-60 disabled:cursor-not-allowed ${previewGenerateSendPdf
+                                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-200 shadow-md'
+                                    : 'bg-gray-200'
+                                    }`}
+                            >
+                                <span
+                                    className={`inline-block w-4 h-4 bg-white rounded-full shadow-md transform transition-transform duration-300 ${previewGenerateSendPdf ? 'translate-x-6' : 'translate-x-1'
+                                        }`}
+                                />
+                                {previewGenerateSendPdf && (
+                                    <span className="absolute left-1.5 text-white" style={{ fontSize: '7px', fontWeight: 800, lineHeight: 1, letterSpacing: '0.05em' }}></span>
+                                )}
+                            </button>
                         </div>
                     </div>
                 )}
@@ -1294,7 +1491,7 @@ const PayrollManagement = () => {
                                         }`}
                                 />
                                 {generateFormData.send_pdf && (
-                                    <span className="absolute left-1.5 text-white" style={{ fontSize: '7px', fontWeight: 800, lineHeight: 1, letterSpacing: '0.05em' }}>ON</span>
+                                    <span className="absolute left-1.5 text-white" style={{ fontSize: '7px', fontWeight: 800, lineHeight: 1, letterSpacing: '0.05em' }}></span>
                                 )}
                             </button>
                         </div>
